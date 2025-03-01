@@ -11,19 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#include "State.h"
 
 namespace LiveKitCpp
 {
 
-enum class WebsocketState
-{
-    Connecting,
-    Connected,
-    Disconnecting,
-    Disconnected,
-};
-
-const char* toString(WebsocketState state);
+const char* toString(State state) {
+    switch (state) {
+        case State::Connecting:
+            return "connecting";
+        case State::Connected:
+            return "connected";
+        case State::Disconnecting:
+            return "disconnecting";
+        case State::Disconnected:
+            return "disconnected";
+        default:
+            break;
+    }
+    return "unknown";
+}
 
 } // namespace LiveKitCpp

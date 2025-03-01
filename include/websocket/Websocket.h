@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "WebsocketState.h"
+#include "State.h"
 #include "WebsocketCloseCode.h"
 #include "WebsocketOptions.h"
 #include "CommandSender.h"
@@ -33,7 +33,7 @@ public:
     virtual bool open(WebsocketOptions options, uint64_t connectionId = 0U) = 0;
     virtual void close() = 0;
     virtual std::string host() const = 0;
-    virtual WebsocketState state() const = 0;
+    virtual State state() const = 0;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
 };
 

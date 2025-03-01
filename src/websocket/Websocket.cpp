@@ -36,16 +36,23 @@ WebsocketOptions::WebsocketOptions(std::string host, const std::string& user,
     addAuthHeader(user, password);
 }
 
-WebsocketOptions::WebsocketOptions(const Url& url)
-    : WebsocketOptions(url._host, url._user, url._password)
+WebsocketOptions::WebsocketOptions(std::string host, const std::string& auth)
+    : _host(std::move(host))
 {
+    addAuthHeader(auth);
 }
 
 void WebsocketOptions::addAuthHeader(const std::string& user, const std::string& password)
 {
     if (!user.empty() || !password.empty()) {
         // https://datatracker.ietf.org/doc/html/rfc6750.html
-        auto auth = base64Encode(user + ":" + password);
+        addAuthHeader(base64Encode(user + ":" + password));
+    }
+}
+
+void WebsocketOptions::addAuthHeader(const std::string& auth)
+{
+    if (!auth.empty()) {
         _extraHeaders["Authorization"] = "Basic " + auth;
     }
 }
@@ -102,22 +109,6 @@ std::string toString(const WebsocketError& error)
     return stream.str();
 }
 
-const char* toString(WebsocketState state) {
-    switch (state) {
-        case WebsocketState::Connecting:
-            return "connecting";
-        case WebsocketState::Connected:
-            return "connected";
-        case WebsocketState::Disconnecting:
-            return "disconnecting";
-        case WebsocketState::Disconnected:
-            return "disconnected";
-        default:
-            break;
-    }
-    return "unknown";
-}
-
 } // namespace LiveKitCpp
 
 std::ostream& operator << (std::ostream& os, const LiveKitCpp::WebsocketError& error)
@@ -166,8 +157,7 @@ std::string base64Encode(const uint8_t* data, size_t len)
     in  = data;
     pos = const_cast<uint8_t*>(out);
 
-    while (end - in >= 3)
-    {
+    while (end - in >= 3) {
         *pos++ = g_Base64Table[in[0] >> 2];
         *pos++ = g_Base64Table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
         *pos++ = g_Base64Table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
@@ -175,17 +165,13 @@ std::string base64Encode(const uint8_t* data, size_t len)
         in += 3;
     }
 
-    if (end - in)
-    {
+    if (end - in) {
         *pos++ = g_Base64Table[in[0] >> 2];
 
-        if (end - in == 1)
-        {
+        if (end - in == 1) {
             *pos++ = g_Base64Table[(in[0] & 0x03) << 4];
             *pos++ = '=';
-        }
-        else
-        {
+        } else {
             *pos++ = g_Base64Table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
             *pos++ = g_Base64Table[(in[1] & 0x0f) << 2];
         }

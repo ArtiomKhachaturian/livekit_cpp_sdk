@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once
 #include "WebsocketTls.h"
-#include "Url.h"
 #include <optional>
 #include <unordered_map>
 
@@ -24,15 +23,17 @@ struct WebsocketOptions
 {
     using Linger = std::pair<bool, uint16_t>;
 public:
-    WebsocketOptions(std::string host = std::string(),
+    WebsocketOptions() = default;
+    WebsocketOptions(std::string host,
                      const std::string& user = std::string(),
                      const std::string& password = std::string());
-    WebsocketOptions(const Url& url);
+    WebsocketOptions(std::string host, const std::string& auth);
     WebsocketOptions(const WebsocketOptions&) = default;
     WebsocketOptions(WebsocketOptions&&) = default;
     WebsocketOptions& operator = (const WebsocketOptions&) = default;
     WebsocketOptions& operator = (WebsocketOptions&&) = default;
     void addAuthHeader(const std::string& user, const std::string& password);
+    void addAuthHeader(const std::string& auth);
     // URL/URI
     std::string _host;
     // agent

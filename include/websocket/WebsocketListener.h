@@ -18,14 +18,14 @@ namespace LiveKitCpp
 {
 
 class WebsocketError;
-enum class WebsocketState;
+enum class State;
 
 class WebsocketListener
 {
 public:
     virtual void onStateChanged(uint64_t /*socketId*/, uint64_t /*connectionId*/,
                                 const std::string_view& /*host*/,
-                                WebsocketState /*state*/) {}
+                                State /*state*/) {}
     virtual void onError(uint64_t /*socketId*/, uint64_t /*connectionId*/,
                          const std::string_view& /*host*/,
                          const WebsocketError& /*error*/) {}
