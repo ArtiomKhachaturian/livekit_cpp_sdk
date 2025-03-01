@@ -1,3 +1,6 @@
 [submodule "protocol"]
 	path = protocol
 	url = https://github.com/livekit/protocol.git
+[submodule "psrpc"]
+	path = psrpc
+	url = https://github.com/livekit/psrpc.git

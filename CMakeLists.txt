@@ -8,26 +8,49 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Specify source files
-set(SOURCE_FILES)
+set(SOURCE_FILES ${CMAKE_SOURCE_DIR}/fake.cpp)
 
 # Generate C++ code from proto files
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
 
-file(GLOB_RECURSE PROTO_FILES ${CMAKE_SOURCE_DIR}/*.proto)
+file(GLOB_RECURSE PROTO_FILES ${CMAKE_SOURCE_DIR}/protocol/*.proto)
+file(GLOB_RECURSE PSRPC_PROTO_FILES ${CMAKE_SOURCE_DIR}/psrpc/protoc-gen-psrpc/*.proto)
+list(APPEND PROTO_FILES ${PSRPC_PROTO_FILES})
 
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES}) # Generate .cpp and .h files from proto
-message(STATUS "PROTO_SRCS = ${PROTO_SRCS}")
+set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
+file(MAKE_DIRECTORY ${GENERATED_DIR})
+
+# there is a huge problem with [protobuf_generate_cpp] function:
+# it expects of flat structure for the folder with protofiles,
+# see documentation at https://cmake.org/cmake/help/latest/module/FindProtobuf.html
+# ("Note The protobuf_generate_cpp and protobuf_generate_python 
+# functions and add_executable() or add_library() calls only work properly within the same directory.")
+foreach(PROTO_FILE ${PROTO_FILES})
+    get_filename_component(FILENAME ${PROTO_FILE} NAME)
+    set(DEST_FILE ${GENERATED_DIR}/${FILENAME})
+    configure_file(${PROTO_FILE} ${DEST_FILE} COPYONLY)
+endforeach()
+file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
+
+# Generate .cpp and .h files from proto
+protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
 # Create a static library
 add_library(LiveKitCppClient STATIC
     ${SOURCE_FILES}
-    ${PROTO_SRCS} # Add generated .cpp files
+    ${PROTO_SOURCES} # Add generated .cpp files
+    ${PROTO_HEADERS}
 )
+
+source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_SOURCES})
+source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_HEADERS})
+source_group(TREE ${CMAKE_SOURCE_DIR} PREFIX "Sources" FILES ${SOURCE_FILES})
 
 # Add include directories
 target_include_directories(LiveKitCppClient PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )
 
