@@ -12,6 +12,7 @@ set(SOURCE_FILES ${CMAKE_SOURCE_DIR}/fake.cpp)
 
 # Generate C++ code from proto files
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
+find_package(absl REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
 
 file(GLOB_RECURSE PROTO_FILES ${CMAKE_SOURCE_DIR}/protocol/*.proto)
@@ -37,7 +38,7 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
 # Create a static library
-add_library(LiveKitCppClient STATIC
+add_library(LiveKitCppClient SHARED
     ${SOURCE_FILES}
     ${PROTO_SOURCES} # Add generated .cpp files
     ${PROTO_HEADERS}
@@ -56,3 +57,4 @@ target_include_directories(LiveKitCppClient PUBLIC
 
 # Link Protobuf library
 target_link_libraries(LiveKitCppClient PUBLIC ${Protobuf_LIBRARIES})
+target_link_libraries(LiveKitCppClient PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
