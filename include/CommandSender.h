@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CommandSender.h
-#include <stddef.h> // for size_t
+#include <string>
 
 namespace google::protobuf {
 class Message;
@@ -25,9 +25,10 @@ class CommandSender
 {
 public:
     virtual ~CommandSender() = default;
-    virtual void send(const void* data, size_t dataLen) = 0;
+    virtual void sendBinary(const void* data, size_t dataLen) = 0;
+    virtual void sendText(std::string_view text) = 0;
 protected:
     void send(const google::protobuf::Message& message);
 };
 
-}
+} // namespace LiveKitCpp

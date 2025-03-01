@@ -11,25 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CommandSender.h"
-#include "google/protobuf/message.h"
-#include <vector>
+#pragma once // SignalClient.h
+#include "CommandReceiver.h"
 
 namespace LiveKitCpp
 {
 
-void CommandSender::send(const google::protobuf::Message& message)
+class CommandSender;
+class Websocket;
+class WebsocketFactory;
+
+class SignalClient : public CommandReceiver
 {
-    static thread_local std::vector<uint8_t> data; // TLS storage
-    data.resize(message.ByteSizeLong());
-    if (const auto size = data.size()) {
-        if (message.SerializeToArray(data.data(), int(size))) {
-            sendBinary(data.data(), size);
-        }
-        else {
-            // TODO: log error
-        }
-    }
-}
+public:
+    SignalClient(CommandSender* commandSender);
+    // impl. of CommandReceiver
+    void receiveBinary(const void* data, size_t dataLen) final;
+    void receiveText(const std::string_view& text) final;
+private:
+    CommandSender* const _commandSender;
+};
 
 } // namespace LiveKitCpp

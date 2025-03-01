@@ -57,6 +57,8 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Sources" FILES ${SOURCE_FILES}
 # Add include directories
 target_include_directories(LiveKitCppClient PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/websocket
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )

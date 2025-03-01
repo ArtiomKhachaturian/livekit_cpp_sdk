@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CommandReceiver.h
-#include <stddef.h> // for size_t
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -21,7 +21,8 @@ class CommandReceiver
 {
 public:
     virtual ~CommandReceiver() = default;
-    virtual void receive(const void* data, size_t dataLen) = 0;
+    virtual void receiveBinary(const void* data, size_t dataLen) = 0;
+    virtual void receiveText(const std::string_view& text) = 0;
 };
 
-}
+} // namespace LiveKitCpp
