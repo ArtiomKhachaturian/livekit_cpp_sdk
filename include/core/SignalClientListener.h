@@ -33,6 +33,8 @@ struct RoomUpdate;
 struct StreamStateUpdate;
 struct SubscribedQualityUpdate;
 struct ReconnectResponse;
+struct TrackSubscribed;
+struct RequestResponse;
 
 class SignalClientListener
 {
@@ -71,6 +73,10 @@ public:
                                 const std::string& /*authToken*/) {}
     virtual void onReconnect(uint64_t /*signalClientId*/,
                              const ReconnectResponse& /*response*/) {}
+    virtual void onTrackSubscribed(uint64_t /*signalClientId*/,
+                                   const TrackSubscribed& /*subscribed*/) {}
+    virtual void onRequest(uint64_t /*signalClientId*/,
+                           const RequestResponse& /*response*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,
                         const std::chrono::milliseconds& /*timestamp*/,
                         const std::chrono::milliseconds& /*lastPingTimestamp*/ = {}) {}

@@ -25,6 +25,8 @@
 #include "rtc/TrackUnpublishedResponse.h"
 #include "rtc/SubscribedQualityUpdate.h"
 #include "rtc/ReconnectResponse.h"
+#include "rtc/TrackSubscribed.h"
+#include "rtc/RequestResponse.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -45,6 +47,7 @@ public:
         }
         return std::nullopt;
     }
+    // responses & requests
     static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
     static JoinResponse from(const livekit::JoinResponse& in);
     static TrickleRequest from(const livekit::TrickleRequest& in);
@@ -59,6 +62,9 @@ public:
     static StreamStateUpdate from(const livekit::StreamStateUpdate& in);
     static SubscribedQualityUpdate from(const livekit::SubscribedQualityUpdate& in);
     static ReconnectResponse from(const livekit::ReconnectResponse& in);
+    static TrackSubscribed from(const livekit::TrackSubscribed& in);
+    static RequestResponse from(const livekit::RequestResponse& in);
+    // data
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);
@@ -94,6 +100,7 @@ public:
     static SubscribedQuality from(const livekit::SubscribedQuality& in);
     static SubscribedCodec from(const livekit::SubscribedCodec& in);
     static ICEServer from(const livekit::ICEServer& in);
+    static RequestResponseReason from(livekit::RequestResponse_Reason in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> from(const TProtoBufRepeated& in);

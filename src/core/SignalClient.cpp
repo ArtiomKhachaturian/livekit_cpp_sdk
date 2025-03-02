@@ -351,12 +351,12 @@ void SignalClient::Impl::handle(const livekit::SubscriptionResponse& response) c
 
 void SignalClient::Impl::handle(const livekit::RequestResponse& response) const
 {
-    
+    signal(&SignalClientListener::onRequest, response);
 }
 
 void SignalClient::Impl::handle(const livekit::TrackSubscribed& subscribed) const
 {
-    
+    signal(&SignalClientListener::onTrackSubscribed, subscribed);
 }
 
 void SignalClient::Impl::handle(const livekit::Pong& pong) const

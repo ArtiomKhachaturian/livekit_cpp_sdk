@@ -148,6 +148,22 @@ ReconnectResponse SignalParser::from(const livekit::ReconnectResponse& in)
     return out;
 }
 
+TrackSubscribed SignalParser::from(const livekit::TrackSubscribed& in)
+{
+    TrackSubscribed out;
+    out._trackSid = in.track_sid();
+    return out;
+}
+
+RequestResponse SignalParser::from(const livekit::RequestResponse& in)
+{
+    RequestResponse out;
+    out._requestId = in.request_id();
+    out._reason = from(in.reason());
+    out._message = in.message();
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
@@ -649,6 +665,24 @@ ICEServer SignalParser::from(const livekit::ICEServer& in)
     out._username = in.username();
     out._credential = in.credential();
     return out;
+}
+
+RequestResponseReason SignalParser::from(livekit::RequestResponse_Reason in)
+{
+    switch (in) {
+        case livekit::RequestResponse_Reason_OK:
+            break;
+        case livekit::RequestResponse_Reason_NOT_FOUND:
+            return RequestResponseReason::NotFound;
+        case livekit::RequestResponse_Reason_NOT_ALLOWED:
+            return RequestResponseReason::NotAllowed;
+        case livekit::RequestResponse_Reason_LIMIT_EXCEEDED:
+            return RequestResponseReason::LimitExceeded;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return RequestResponseReason::Ok;
 }
 
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
