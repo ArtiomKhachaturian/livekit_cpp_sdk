@@ -20,7 +20,6 @@
 #include "WebsocketTppApi.h"
 #include "WebsocketTppExtensions.h"
 #include "WebsocketTppMemoryBlock.h"
-//#include "RTC/MediaTranslate/OStreamLogger.hpp"
 #include "Listeners.h"
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/client.hpp>

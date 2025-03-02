@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#pragma once // WebsocketTppFactory.h
 #ifdef USE_ZAPHOYD_TPP_SOCKETS
 #include "WebsocketFactory.h"
 
@@ -24,12 +24,11 @@ class WebsocketTppFactory : public WebsocketFactory
 {
     class ServiceProvider;
 public:
-    static std::unique_ptr<WebsocketFactory> createFactory();
+    WebsocketTppFactory();
     // impl. of WebsocketFactory
     ~WebsocketTppFactory() override;
     std::unique_ptr<Websocket> create() const override;
-protected:
-    WebsocketTppFactory();
+private:
     std::shared_ptr<WebsocketTppServiceProvider> serviceProvider() const;
 #ifdef WEBSOCKETS_TPP_SHARED_IO_SERVICE
 private:

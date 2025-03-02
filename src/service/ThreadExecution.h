@@ -59,4 +59,4 @@ private:
     bool _started = false;
 };
 
-} // namespace RTC
+} // namespace LiveKitCpp

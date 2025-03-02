@@ -14,6 +14,7 @@
 #include "Websocket.h"
 #include "WebsocketFactory.h"
 #include "MemoryBlock.h"
+#include "State.h"
 
 namespace LiveKitCpp
 {
@@ -38,6 +39,51 @@ SignalClientWs::~SignalClientWs()
     if (_socket) {
         _socket->close();
         _socket->removeListener(this);
+    }
+}
+
+void SignalClientWs::setHost(std::string host)
+{
+    _socketOptions._host = std::move(host);
+}
+
+void SignalClientWs::setAuthentification(const std::string& user,
+                                         const std::string& password)
+{
+    _socketOptions.addAuthHeader(user, password);
+}
+
+void SignalClientWs::setAuthentification(const std::string& authToken)
+{
+    _socketOptions.addAuthHeader(authToken);
+}
+
+bool SignalClientWs::connect()
+{
+    bool ok = false;
+    if (_socket && changeState(State::Connecting)) {
+        ok = _socket->open(_socketOptions);
+        if (!ok) {
+            changeState(State::Disconnected);
+        }
+    }
+    return ok;
+}
+
+void SignalClientWs::disconnect()
+{
+    if (_socket) {
+        _socket->close();
+    }
+}
+
+void SignalClientWs::onStateChanged(uint64_t socketId, uint64_t connectionId,
+                                    const std::string_view& host,
+                                    State state)
+{
+    WebsocketListener::onStateChanged(socketId, connectionId, host, state);
+    if (changeState(state)) {
+        // TODO: primary logic
     }
 }
 

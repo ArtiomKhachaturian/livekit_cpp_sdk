@@ -82,11 +82,6 @@ WebsocketTppFactory::~WebsocketTppFactory()
 {
 }
 
-std::unique_ptr<WebsocketFactory> WebsocketTppFactory::createFactory()
-{
-    return absl::WrapUnique(new WebsocketTppFactory);
-}
-
 std::shared_ptr<WebsocketTppServiceProvider> WebsocketTppFactory::serviceProvider() const
 {
 #ifdef WEBSOCKETS_TPP_SHARED_IO_SERVICE

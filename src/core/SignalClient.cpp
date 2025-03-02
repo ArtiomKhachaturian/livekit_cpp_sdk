@@ -12,13 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "SignalClient.h"
+#include "State.h"
 
 namespace LiveKitCpp
 {
 
 SignalClient::SignalClient(CommandSender* commandSender)
     : _commandSender(commandSender)
+    , _state(State::Disconnected)
 {
+}
+
+bool SignalClient::connect()
+{
+    return changeState(State::Connected);
+}
+
+void SignalClient::disconnect()
+{
+    changeState(State::Disconnected);
+}
+
+State SignalClient::state() const noexcept
+{
+    LOCK_READ_PROTECTED_OBJ(_state);
+    return _state.constRef();
 }
 
 void SignalClient::receiveBinary(const void* /*data*/, size_t /*dataLen*/)
@@ -27,6 +45,34 @@ void SignalClient::receiveBinary(const void* /*data*/, size_t /*dataLen*/)
 
 void SignalClient::receiveText(const std::string_view& /*text*/)
 {
+}
+
+bool SignalClient::changeState(State state)
+{
+    LOCK_WRITE_PROTECTED_OBJ(_state);
+    if (_state != state) {
+        bool accepted = false;
+        switch(_state.constRef()) {
+            case State::Connecting:
+                // any state is good
+                accepted = true;
+                break;
+            case State::Connected:
+                accepted = State::Disconnecting == state || State::Disconnected == state;
+                break;
+            case State::Disconnecting:
+                accepted = State::Disconnected == state;
+                break;
+            case State::Disconnected:
+                accepted = State::Connecting == state || State::Connected == state;
+                break;
+        }
+        if (accepted) {
+            _state = state;
+        }
+        return accepted;
+    }
+    return true;
 }
 
 } // namespace LiveKitCpp

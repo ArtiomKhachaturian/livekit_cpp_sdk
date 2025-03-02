@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
 #include "SignalClient.h"
+#include "WebsocketOptions.h"
 #include "WebsocketListener.h"
 #include <memory>
 
@@ -27,14 +28,24 @@ public:
     SignalClientWs(std::unique_ptr<Websocket> socket);
     SignalClientWs(const WebsocketFactory& socketFactory);
     ~SignalClientWs() final;
+    void setHost(std::string host);
+    void setAuthentification(const std::string& user, const std::string& password);
+    void setAuthentification(const std::string& authToken);
+    // impl. of SignalClient
+    bool connect() final;
+    void disconnect() final;
 private:
     // impl. of WebsocketListener
+    void onStateChanged(uint64_t socketId, uint64_t connectionId,
+                        const std::string_view& host,
+                        State state) final;
     void onTextMessageReceived(uint64_t socketId, uint64_t connectionId,
                                const std::string_view& message) final;
     void onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
                                 const std::shared_ptr<const MemoryBlock>& message) final;
 private:
     const std::unique_ptr<Websocket> _socket;
+    WebsocketOptions _socketOptions;
 };
 
 } // namespace LiveKitCpp
