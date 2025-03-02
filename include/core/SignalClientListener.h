@@ -31,27 +31,41 @@ struct MuteTrackRequest;
 struct SpeakersChanged;
 struct RoomUpdate;
 struct StreamStateUpdate;
+struct SubscribedQualityUpdate;
 
 class SignalClientListener
 {
 public:
     virtual void onTransportStateChanged(uint64_t /*signalClientId*/, State /*state*/) {}
     virtual void onServerResponseParseError(uint64_t /*signalClientId*/) {}
-    virtual void onJoin(uint64_t /*signalClientId*/, const JoinResponse& /*response*/) {}
+    virtual void onJoin(uint64_t /*signalClientId*/,
+                        const JoinResponse& /*response*/) {}
     virtual void onOffer(uint64_t /*signalClientId*/, const std::string& /*type*/,
                          const std::string& /*sdp*/) {}
     virtual void onAnswer(uint64_t /*signalClientId*/, const std::string& /*type*/,
                           const std::string& /*sdp*/) {}
-    virtual void onTrickle(uint64_t /*signalClientId*/, const TrickleRequest& /*request*/) {}
-    virtual void onParticipantUpdate(uint64_t /*signalClientId*/, const ParticipantUpdate& /*update*/) {}
-    virtual void onTrackPublished(uint64_t /*signalClientId*/, const TrackPublishedResponse& /*published*/) {}
-    virtual void onTrackUnpublished(uint64_t /*signalClientId*/, const TrackUnpublishedResponse& /*unpublished*/) {}
-    virtual void onLeave(uint64_t /*signalClientId*/, const LeaveRequest& /*leave*/) {}
-    virtual void onMuteTrack(uint64_t /*signalClientId*/, const MuteTrackRequest& /*mute*/) {}
-    virtual void onSpeakersChanged(uint64_t /*signalClientId*/, const SpeakersChanged& /*changed*/) {}
-    virtual void onRoomUpdate(uint64_t /*signalClientId*/, const RoomUpdate& /*update*/) {}
-    virtual void onConnectionQualityUpdate(uint64_t /*signalClientId*/, const ConnectionQualityUpdate& /*update*/) {}
-    virtual void onStreamStateUpdate(uint64_t /*signalClientId*/, const StreamStateUpdate& /*update*/) {}
+    virtual void onTrickle(uint64_t /*signalClientId*/,
+                           const TrickleRequest& /*request*/) {}
+    virtual void onParticipantUpdate(uint64_t /*signalClientId*/,
+                                     const ParticipantUpdate& /*update*/) {}
+    virtual void onTrackPublished(uint64_t /*signalClientId*/,
+                                  const TrackPublishedResponse& /*published*/) {}
+    virtual void onTrackUnpublished(uint64_t /*signalClientId*/,
+                                    const TrackUnpublishedResponse& /*unpublished*/) {}
+    virtual void onLeave(uint64_t /*signalClientId*/,
+                         const LeaveRequest& /*leave*/) {}
+    virtual void onMuteTrack(uint64_t /*signalClientId*/,
+                             const MuteTrackRequest& /*mute*/) {}
+    virtual void onSpeakersChanged(uint64_t /*signalClientId*/,
+                                   const SpeakersChanged& /*changed*/) {}
+    virtual void onRoomUpdate(uint64_t /*signalClientId*/,
+                              const RoomUpdate& /*update*/) {}
+    virtual void onConnectionQualityUpdate(uint64_t /*signalClientId*/,
+                                           const ConnectionQualityUpdate& /*update*/) {}
+    virtual void onStreamStateUpdate(uint64_t /*signalClientId*/,
+                                     const StreamStateUpdate& /*update*/) {}
+    virtual void onSubscribedQualityUpdate(uint64_t /*signalClientId*/,
+                                           const SubscribedQualityUpdate& /*update*/) {}
     virtual void onRefreshToken(uint64_t /*signalClientId*/,
                                 const std::string& /*authToken*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,

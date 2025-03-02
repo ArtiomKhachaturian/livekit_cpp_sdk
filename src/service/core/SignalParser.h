@@ -23,6 +23,7 @@
 #include "rtc/StreamStateUpdate.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
+#include "rtc/SubscribedQualityUpdate.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -55,6 +56,7 @@ public:
     static RoomUpdate from(const livekit::RoomUpdate& in);
     static ConnectionQualityUpdate from(const livekit::ConnectionQualityUpdate& in);
     static StreamStateUpdate from(const livekit::StreamStateUpdate& in);
+    static SubscribedQualityUpdate from(const livekit::SubscribedQualityUpdate& in);
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);
@@ -87,6 +89,8 @@ public:
     static ConnectionQualityInfo from(const livekit::ConnectionQualityInfo& in);
     static StreamState from(livekit::StreamState in);
     static StreamStateInfo from(const livekit::StreamStateInfo& in);
+    static SubscribedQuality from(const livekit::SubscribedQuality& in);
+    static SubscribedCodec from(const livekit::SubscribedCodec& in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> from(const TProtoBufRepeated& in);

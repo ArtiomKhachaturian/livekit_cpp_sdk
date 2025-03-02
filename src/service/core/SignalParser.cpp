@@ -124,6 +124,16 @@ ConnectionQualityUpdate SignalParser::from(const livekit::ConnectionQualityUpdat
 StreamStateUpdate SignalParser::from(const livekit::StreamStateUpdate& in)
 {
     StreamStateUpdate out;
+    out._streamStates = from<StreamStateInfo, livekit::StreamStateInfo>(in.stream_states());
+    return out;
+}
+
+SubscribedQualityUpdate SignalParser::from(const livekit::SubscribedQualityUpdate& in)
+{
+    SubscribedQualityUpdate out;
+    out._trackSid = in.track_sid();
+    out._subscribedQualities = from<SubscribedQuality, livekit::SubscribedQuality>(in.subscribed_qualities());
+    out._subscribedCodecs = from<SubscribedCodec, livekit::SubscribedCodec>(in.subscribed_codecs());
     return out;
 }
 
@@ -599,6 +609,22 @@ StreamStateInfo SignalParser::from(const livekit::StreamStateInfo& in)
     out._participantSid = in.participant_sid();
     out._trackSid = in.track_sid();
     out._state = from(in.state());
+    return out;
+}
+
+SubscribedQuality SignalParser::from(const livekit::SubscribedQuality& in)
+{
+    SubscribedQuality out;
+    out._quality = from(in.quality());
+    out._enabled = in.enabled();
+    return out;
+}
+
+SubscribedCodec SignalParser::from(const livekit::SubscribedCodec& in)
+{
+    SubscribedCodec out;
+    out._codec = in.codec();
+    out._qualities = from<SubscribedQuality, livekit::SubscribedQuality>(in.qualities());
     return out;
 }
 

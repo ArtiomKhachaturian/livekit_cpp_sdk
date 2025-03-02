@@ -326,7 +326,7 @@ void SignalClient::Impl::handle(const livekit::StreamStateUpdate& update) const
 
 void SignalClient::Impl::handle(const livekit::SubscribedQualityUpdate& update) const
 {
-    
+    signal(&SignalClientListener::onSubscribedQualityUpdate, update);
 }
 
 void SignalClient::Impl::handle(const livekit::SubscriptionPermissionUpdate& update) const
