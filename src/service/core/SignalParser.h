@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // SignalParser.h
 #include "rtc/JoinResponse.h"
+#include "rtc/TrickleRequest.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 
@@ -34,6 +35,7 @@ public:
     }
     static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
     static JoinResponse fromProto(const livekit::JoinResponse& in);
+    static TrickleRequest fromProto(const livekit::TrickleRequest& in);
     static Room fromProto(const livekit::Room& in);
     static Codec fromProto(const livekit::Codec& in);
     static TimedVersion fromProto(const livekit::TimedVersion& in);
@@ -57,6 +59,7 @@ public:
     static VideoConfiguration fromProto(const livekit::VideoConfiguration& in);
     static ServerEdition fromProto(livekit::ServerInfo_Edition in);
     static ServerInfo fromProto(const livekit::ServerInfo& in);
+    static SignalTarget fromProto(livekit::SignalTarget in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> fromProto(const TProtoBufRepeated& in);

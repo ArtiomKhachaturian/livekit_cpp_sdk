@@ -11,15 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ServerEdition.h
+#pragma once // TrickleRequest.h
+#include "rtc/SignalTarget.h"
+#include <string>
 
 namespace LiveKitCpp
 {
 
-enum class ServerEdition
+struct TrickleRequest
 {
-    Standard = 0,
-    Cloud = 1,
+    std::string _candidateInit;
+    SignalTarget _target = {};
+    bool _final = {};
 };
 
 } // namespace LiveKitCpp

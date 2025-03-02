@@ -49,6 +49,15 @@ JoinResponse SignalParser::fromProto(const livekit::JoinResponse& in)
     return out;
 }
 
+TrickleRequest SignalParser::fromProto(const livekit::TrickleRequest& in)
+{
+    TrickleRequest out;
+    out._candidateInit = in.candidateinit();
+    out._target = fromProto(in.target());
+    out._final = in.final();
+    return out;
+}
+
 Room SignalParser::fromProto(const livekit::Room& in)
 {
     Room out;
@@ -417,6 +426,20 @@ ServerInfo SignalParser::fromProto(const livekit::ServerInfo& in)
     out._debugInfo = in.debug_info();
     out._agentProtocol = in.agent_protocol();
     return out;
+}
+
+SignalTarget SignalParser::fromProto(livekit::SignalTarget in)
+{
+    switch (in) {
+        case livekit::PUBLISHER:
+            break;
+        case livekit::SUBSCRIBER:
+            return SignalTarget::Subscriber;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return SignalTarget::Publisher;
 }
 
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>

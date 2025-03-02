@@ -11,15 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ServerEdition.h
+#pragma once // SignalTarget.h
 
 namespace LiveKitCpp
 {
 
-enum class ServerEdition
+enum class SignalTarget
 {
-    Standard = 0,
-    Cloud = 1,
+    Publisher = 0,
+    Subscriber = 1,
 };
 
 } // namespace LiveKitCpp

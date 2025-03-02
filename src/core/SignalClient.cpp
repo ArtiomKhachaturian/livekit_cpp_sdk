@@ -269,7 +269,7 @@ void SignalClient::Impl::handle(const livekit::SessionDescription& desc, bool of
 
 void SignalClient::Impl::handle(const livekit::TrickleRequest& trickle)
 {
-    
+    invokeListener(&SignalClientListener::onTrickle, SignalParser::fromProto(trickle));
 }
 
 void SignalClient::Impl::handle(const livekit::ParticipantUpdate& participantUpdate)
