@@ -21,51 +21,66 @@ std::optional<livekit::SignalResponse> SignalParser::parse(const void* data, siz
     return toProto<livekit::SignalResponse>(data, dataLen);
 }
 
-JoinResponse SignalParser::fromProto(const livekit::JoinResponse& in)
+JoinResponse SignalParser::from(const livekit::JoinResponse& in)
 {
     JoinResponse out;
     if (in.has_room()) {
-        out._room = fromProto(in.room());
+        out._room = from(in.room());
     }
     if (in.has_participant()) {
-        out._participant = fromProto(in.participant());
+        out._participant = from(in.participant());
     }
-    out._otherParticipants = fromProto<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
+    out._otherParticipants = from<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
     out._serverVersion = in.server_version();
     out._subscriberPrimary = in.subscriber_primary();
     out._alternativeUrl = in.alternative_url();
     if (in.has_client_configuration()) {
-        out._clientConfiguration = fromProto(in.client_configuration());
+        out._clientConfiguration = from(in.client_configuration());
     }
     out._serverRegion = in.server_region();
     out._pingTimeout = in.ping_timeout();
     out._pingInterval = in.ping_interval();
     if (in.has_server_info()) {
-        out._serverInfo = fromProto(in.server_info());
+        out._serverInfo = from(in.server_info());
     }
     out._sifTrailer = in.sif_trailer();
-    out._enabledPublishCodecs = fromProto<Codec, livekit::Codec>(in.enabled_publish_codecs());
+    out._enabledPublishCodecs = from<Codec, livekit::Codec>(in.enabled_publish_codecs());
     out._fastPublish = in.fast_publish();
     return out;
 }
 
-TrickleRequest SignalParser::fromProto(const livekit::TrickleRequest& in)
+TrickleRequest SignalParser::from(const livekit::TrickleRequest& in)
 {
     TrickleRequest out;
     out._candidateInit = in.candidateinit();
-    out._target = fromProto(in.target());
+    out._target = from(in.target());
     out._final = in.final();
     return out;
 }
 
-ParticipantUpdate SignalParser::fromProto(const livekit::ParticipantUpdate& in)
+ParticipantUpdate SignalParser::from(const livekit::ParticipantUpdate& in)
 {
     ParticipantUpdate out;
-    out._participants = fromProto<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
+    out._participants = from<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
     return out;
 }
 
-Room SignalParser::fromProto(const livekit::Room& in)
+TrackPublishedResponse SignalParser::from(const livekit::TrackPublishedResponse& in)
+{
+    TrackPublishedResponse out;
+    out._cid = in.cid();
+    out._track = from(in.track());
+    return out;
+}
+
+TrackUnpublishedResponse SignalParser::from(const livekit::TrackUnpublishedResponse& in)
+{
+    TrackUnpublishedResponse out;
+    out._trackSid = in.track_sid();
+    return out;
+}
+
+Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
     out._sid = in.sid();
@@ -76,51 +91,51 @@ Room SignalParser::fromProto(const livekit::Room& in)
     out._creationTime = in.creation_time();
     out._creationTimeMs = in.creation_time_ms();
     out._turnPassword = in.turn_password();
-    out._enabledCodecs = fromProto<Codec, livekit::Codec>(in.enabled_codecs());
+    out._enabledCodecs = from<Codec, livekit::Codec>(in.enabled_codecs());
     out._metadata = in.metadata();
     out._numParticipants = in.num_participants();
     out._numPublishers = in.num_publishers();
     out._activeRecording = in.active_recording();
     if (in.has_version()) {
-        out._version = fromProto(in.version());
+        out._version = from(in.version());
     }
     return out;
 }
 
-Codec SignalParser::fromProto(const livekit::Codec& in)
+Codec SignalParser::from(const livekit::Codec& in)
 {
     return {in.mime(), in.fmtp_line()};
 }
 
-TimedVersion SignalParser::fromProto(const livekit::TimedVersion& in)
+TimedVersion SignalParser::from(const livekit::TimedVersion& in)
 {
     return {in.unix_micro(), in.ticks()};
 }
 
-ParticipantInfo SignalParser::fromProto(const livekit::ParticipantInfo& in)
+ParticipantInfo SignalParser::from(const livekit::ParticipantInfo& in)
 {
     ParticipantInfo out;
     out._sid = in.sid();
     out._identity = in.identity();
-    out._state = fromProto(in.state());
-    out._tracks = fromProto<TrackInfo, livekit::TrackInfo>(in.tracks());
+    out._state = from(in.state());
+    out._tracks = from<TrackInfo, livekit::TrackInfo>(in.tracks());
     out._metadata = in.metadata();
     out._joinedAt = in.joined_at();
     out.joinedAtMs = in.joined_at_ms();
     out._name = in.name();
     out._version = in.version();
     if (in.has_permission()) {
-        out._permission = fromProto(in.permission());
+        out._permission = from(in.permission());
     }
     out._region = in.region();
     out._isPublisher = in.is_publisher();
-    out._kind = fromProto(in.kind());
+    out._kind = from(in.kind());
     //out._attributes
-    out._disconnectReason = fromProto(in.disconnect_reason());
+    out._disconnectReason = from(in.disconnect_reason());
     return out;
 }
 
-ParticipantKind SignalParser::fromProto(livekit::ParticipantInfo_Kind in)
+ParticipantKind SignalParser::from(livekit::ParticipantInfo_Kind in)
 {
     switch (in) {
         case livekit::ParticipantInfo_Kind_STANDARD:
@@ -140,7 +155,7 @@ ParticipantKind SignalParser::fromProto(livekit::ParticipantInfo_Kind in)
     return ParticipantKind::Standard;
 }
 
-ParticipantState SignalParser::fromProto(livekit::ParticipantInfo_State in)
+ParticipantState SignalParser::from(livekit::ParticipantInfo_State in)
 {
     switch (in) {
         case livekit::ParticipantInfo_State_JOINING:
@@ -158,13 +173,13 @@ ParticipantState SignalParser::fromProto(livekit::ParticipantInfo_State in)
     return ParticipantState::Disconnected;
 }
 
-ParticipantPermission SignalParser::fromProto(const livekit::ParticipantPermission& in)
+ParticipantPermission SignalParser::from(const livekit::ParticipantPermission& in)
 {
     ParticipantPermission out;
     out._canSubscribe = in.can_subscribe();
     out._canPublish = in.can_publish();
     out._canPublish_data = in.can_publish_data();
-    out._canPublishSources = fromProto<TrackSource, livekit::TrackSource>(in.can_publish_sources());
+    out._canPublishSources = from<TrackSource, livekit::TrackSource>(in.can_publish_sources());
     out._hidden = in.hidden();
     out._recorder = in.recorder();
     out._canUpdateMetadata = in.can_update_metadata();
@@ -173,7 +188,7 @@ ParticipantPermission SignalParser::fromProto(const livekit::ParticipantPermissi
     return out;
 }
 
-DisconnectReason SignalParser::fromProto(livekit::DisconnectReason in)
+DisconnectReason SignalParser::from(livekit::DisconnectReason in)
 {
     switch (in) {
         case livekit::UNKNOWN_REASON:
@@ -211,7 +226,7 @@ DisconnectReason SignalParser::fromProto(livekit::DisconnectReason in)
     return DisconnectReason::UnknownReason;
 }
 
-TrackSource SignalParser::fromProto(livekit::TrackSource in)
+TrackSource SignalParser::from(livekit::TrackSource in)
 {
     switch (in) {
         case livekit::UNKNOWN:
@@ -231,35 +246,35 @@ TrackSource SignalParser::fromProto(livekit::TrackSource in)
     return TrackSource::Unknown;
 }
 
-TrackInfo SignalParser::fromProto(const livekit::TrackInfo& in)
+TrackInfo SignalParser::from(const livekit::TrackInfo& in)
 {
     TrackInfo out;
     out._sid = in.sid();
-    out._type = fromProto(in.type());
+    out._type = from(in.type());
     out._name = in.name();
     out._muted = in.muted();
     out._width = in.width();
     out._height = in.height();
     out._simulcast = in.simulcast();
     out._disableDtx = in.disable_dtx();
-    out._source = fromProto(in.source());
-    out._layers = fromProto<VideoLayer, livekit::VideoLayer>(in.layers());
+    out._source = from(in.source());
+    out._layers = from<VideoLayer, livekit::VideoLayer>(in.layers());
     out._mimeType = in.mime_type();
     out._mid = in.mid();
-    out._codecs = fromProto<SimulcastCodecInfo, livekit::SimulcastCodecInfo>(in.codecs());
+    out._codecs = from<SimulcastCodecInfo, livekit::SimulcastCodecInfo>(in.codecs());
     out._stereo = in.stereo();
     out._disableRed = in.disable_red();
-    out._encryption = fromProto(in.encryption());
+    out._encryption = from(in.encryption());
     out._stream = in.stream();
     if (in.has_version()) {
-        out._version = fromProto(in.version());
+        out._version = from(in.version());
     }
-    out._audioFeatures = fromProto<AudioTrackFeature, livekit::AudioTrackFeature>(in.audio_features());
-    out._backupCodecPolicy = fromProto(in.backup_codec_policy());
+    out._audioFeatures = from<AudioTrackFeature, livekit::AudioTrackFeature>(in.audio_features());
+    out._backupCodecPolicy = from(in.backup_codec_policy());
     return out;
 }
 
-VideoQuality SignalParser::fromProto(livekit::VideoQuality in)
+VideoQuality SignalParser::from(livekit::VideoQuality in)
 {
     switch (in) {
         case livekit::LOW:
@@ -277,10 +292,10 @@ VideoQuality SignalParser::fromProto(livekit::VideoQuality in)
     return VideoQuality::Low;
 }
 
-VideoLayer SignalParser::fromProto(const livekit::VideoLayer& in)
+VideoLayer SignalParser::from(const livekit::VideoLayer& in)
 {
     VideoLayer out;
-    out._quality = fromProto(in.quality());
+    out._quality = from(in.quality());
     out._width = in.width();
     out._height = in.height();
     out._bitrate = in.bitrate();
@@ -288,7 +303,7 @@ VideoLayer SignalParser::fromProto(const livekit::VideoLayer& in)
     return out;
 }
 
-TrackType SignalParser::fromProto(livekit::TrackType in)
+TrackType SignalParser::from(livekit::TrackType in)
 {
     switch (in) {
         case livekit::AUDIO:
@@ -304,17 +319,17 @@ TrackType SignalParser::fromProto(livekit::TrackType in)
     return TrackType::Audio;
 }
 
-SimulcastCodecInfo SignalParser::fromProto(const livekit::SimulcastCodecInfo& in)
+SimulcastCodecInfo SignalParser::from(const livekit::SimulcastCodecInfo& in)
 {
     SimulcastCodecInfo out;
     out._mimeType = in.mime_type();
     out._mid = in.mid();
     out._cid = in.cid();
-    out._layers = fromProto<VideoLayer, livekit::VideoLayer>(in.layers());
+    out._layers = from<VideoLayer, livekit::VideoLayer>(in.layers());
     return out;
 }
 
-BackupCodecPolicy SignalParser::fromProto(livekit::BackupCodecPolicy in)
+BackupCodecPolicy SignalParser::from(livekit::BackupCodecPolicy in)
 {
     switch (in) {
         case livekit::REGRESSION:
@@ -328,7 +343,7 @@ BackupCodecPolicy SignalParser::fromProto(livekit::BackupCodecPolicy in)
     return BackupCodecPolicy::Regression;
 }
 
-EncryptionType SignalParser::fromProto(livekit::Encryption_Type in)
+EncryptionType SignalParser::from(livekit::Encryption_Type in)
 {
     switch (in) {
         case livekit::Encryption_Type_NONE:
@@ -344,7 +359,7 @@ EncryptionType SignalParser::fromProto(livekit::Encryption_Type in)
     return EncryptionType::None;
 }
 
-AudioTrackFeature SignalParser::fromProto(livekit::AudioTrackFeature in)
+AudioTrackFeature SignalParser::from(livekit::AudioTrackFeature in)
 {
     switch (in) {
         case livekit::TF_STEREO:
@@ -366,7 +381,7 @@ AudioTrackFeature SignalParser::fromProto(livekit::AudioTrackFeature in)
     return AudioTrackFeature::TFStereo;
 }
 
-ClientConfigSetting SignalParser::fromProto(livekit::ClientConfigSetting in)
+ClientConfigSetting SignalParser::from(livekit::ClientConfigSetting in)
 {
     switch (in) {
         case livekit::UNSET:
@@ -382,33 +397,33 @@ ClientConfigSetting SignalParser::fromProto(livekit::ClientConfigSetting in)
     return ClientConfigSetting::Unset;
 }
 
-ClientConfiguration SignalParser::fromProto(const livekit::ClientConfiguration& in)
+ClientConfiguration SignalParser::from(const livekit::ClientConfiguration& in)
 {
     ClientConfiguration out;
-    out._video = fromProto(in.video());
-    out._screen = fromProto(in.screen());
-    out._resumeConnection = fromProto(in.resume_connection());
-    out._disabledCodecs = fromProto(in.disabled_codecs());
-    out._forceRelay = fromProto(in.force_relay());
+    out._video = from(in.video());
+    out._screen = from(in.screen());
+    out._resumeConnection = from(in.resume_connection());
+    out._disabledCodecs = from(in.disabled_codecs());
+    out._forceRelay = from(in.force_relay());
     return out;
 }
 
-DisabledCodecs SignalParser::fromProto(const livekit::DisabledCodecs& in)
+DisabledCodecs SignalParser::from(const livekit::DisabledCodecs& in)
 {
     DisabledCodecs out;
-    out._codecs = fromProto<Codec, livekit::Codec>(in.codecs());
-    out._publish = fromProto<Codec, livekit::Codec>(in.publish());
+    out._codecs = from<Codec, livekit::Codec>(in.codecs());
+    out._publish = from<Codec, livekit::Codec>(in.publish());
     return out;
 }
 
-VideoConfiguration SignalParser::fromProto(const livekit::VideoConfiguration& in)
+VideoConfiguration SignalParser::from(const livekit::VideoConfiguration& in)
 {
     VideoConfiguration out;
-    out._hardwareEncoder = fromProto(in.hardware_encoder());
+    out._hardwareEncoder = from(in.hardware_encoder());
     return out;
 }
 
-ServerEdition SignalParser::fromProto(livekit::ServerInfo_Edition in)
+ServerEdition SignalParser::from(livekit::ServerInfo_Edition in)
 {
     switch (in) {
         case livekit::ServerInfo_Edition_Standard:
@@ -422,10 +437,10 @@ ServerEdition SignalParser::fromProto(livekit::ServerInfo_Edition in)
     return ServerEdition::Standard;
 }
 
-ServerInfo SignalParser::fromProto(const livekit::ServerInfo& in)
+ServerInfo SignalParser::from(const livekit::ServerInfo& in)
 {
     ServerInfo out;
-    out._edition = fromProto(in.edition());
+    out._edition = from(in.edition());
     out._version = in.version();
     out._protocol = in.protocol();
     out._region = in.region();
@@ -435,7 +450,7 @@ ServerInfo SignalParser::fromProto(const livekit::ServerInfo& in)
     return out;
 }
 
-SignalTarget SignalParser::fromProto(livekit::SignalTarget in)
+SignalTarget SignalParser::from(livekit::SignalTarget in)
 {
     switch (in) {
         case livekit::PUBLISHER:
@@ -450,13 +465,13 @@ SignalTarget SignalParser::fromProto(livekit::SignalTarget in)
 }
 
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
-std::vector<TCppType> SignalParser::fromProto(const TProtoBufRepeated& in)
+std::vector<TCppType> SignalParser::from(const TProtoBufRepeated& in)
 {
     if (const auto size = in.size()) {
         std::vector<TCppType> out;
         out.reserve(size_t(size));
         for (const auto& val : in) {
-            out.push_back(fromProto(TProtoBufType(val)));
+            out.push_back(from(TProtoBufType(val)));
         }
         return out;
     }

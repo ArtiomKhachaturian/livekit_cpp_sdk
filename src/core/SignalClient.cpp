@@ -36,7 +36,7 @@ private:
     void handle(const livekit::SessionDescription& desc, bool offer);
     void handle(const livekit::TrickleRequest& trickle);
     void handle(const livekit::ParticipantUpdate& participantUpdate);
-    void handle(const livekit::TrackPublishedResponse& trackPublished);
+    void handle(const livekit::TrackPublishedResponse& published);
     void handle(const livekit::LeaveRequest& leave);
     void handle(const livekit::MuteTrackRequest& muteTrack);
     void handle(const livekit::SpeakersChanged& speakersChanged);
@@ -45,7 +45,7 @@ private:
     void handle(const livekit::StreamStateUpdate& stateUpdate);
     void handle(const livekit::SubscribedQualityUpdate& qualityUpdate);
     void handle(const livekit::SubscriptionPermissionUpdate& permissionUpdate);
-    void handle(const livekit::TrackUnpublishedResponse& trackUnpublished);
+    void handle(const livekit::TrackUnpublishedResponse& unpublished);
     void handle(const livekit::ReconnectResponse& reconnect);
     void handle(const livekit::SubscriptionResponse& subscription);
     void handle(const livekit::RequestResponse& request);
@@ -254,7 +254,7 @@ void SignalClient::Impl::invokeListener(const Method& method, Args&&... args) co
 
 void SignalClient::Impl::handle(const livekit::JoinResponse& join)
 {
-    invokeListener(&SignalClientListener::onJoin, SignalParser::fromProto(join));
+    invokeListener(&SignalClientListener::onJoin, SignalParser::from(join));
 }
 
 void SignalClient::Impl::handle(const livekit::SessionDescription& desc, bool offer)
@@ -269,17 +269,17 @@ void SignalClient::Impl::handle(const livekit::SessionDescription& desc, bool of
 
 void SignalClient::Impl::handle(const livekit::TrickleRequest& trickle)
 {
-    invokeListener(&SignalClientListener::onTrickle, SignalParser::fromProto(trickle));
+    invokeListener(&SignalClientListener::onTrickle, SignalParser::from(trickle));
 }
 
 void SignalClient::Impl::handle(const livekit::ParticipantUpdate& participantUpdate)
 {
-    invokeListener(&SignalClientListener::onParticipantUpdate, SignalParser::fromProto(participantUpdate));
+    invokeListener(&SignalClientListener::onParticipantUpdate, SignalParser::from(participantUpdate));
 }
 
-void SignalClient::Impl::handle(const livekit::TrackPublishedResponse& trackPublished)
+void SignalClient::Impl::handle(const livekit::TrackPublishedResponse& published)
 {
-    
+    invokeListener(&SignalClientListener::onTrackPublished, SignalParser::from(published));
 }
 
 void SignalClient::Impl::handle(const livekit::LeaveRequest& leave)
@@ -322,9 +322,9 @@ void SignalClient::Impl::handle(const livekit::SubscriptionPermissionUpdate& per
     
 }
 
-void SignalClient::Impl::handle(const livekit::TrackUnpublishedResponse& trackUnpublished)
+void SignalClient::Impl::handle(const livekit::TrackUnpublishedResponse& unpublished)
 {
-    
+    invokeListener(&SignalClientListener::onTrackUnpublished, SignalParser::from(unpublished));
 }
 
 void SignalClient::Impl::handle(const livekit::ReconnectResponse& reconnect)

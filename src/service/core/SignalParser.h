@@ -15,6 +15,8 @@
 #include "rtc/JoinResponse.h"
 #include "rtc/TrickleRequest.h"
 #include "rtc/ParticipantUpdate.h"
+#include "rtc/TrackPublishedResponse.h"
+#include "rtc/TrackUnpublishedResponse.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 
@@ -35,36 +37,38 @@ public:
         return std::nullopt;
     }
     static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
-    static JoinResponse fromProto(const livekit::JoinResponse& in);
-    static TrickleRequest fromProto(const livekit::TrickleRequest& in);
-    static ParticipantUpdate fromProto(const livekit::ParticipantUpdate& in);
-    static Room fromProto(const livekit::Room& in);
-    static Codec fromProto(const livekit::Codec& in);
-    static TimedVersion fromProto(const livekit::TimedVersion& in);
-    static ParticipantInfo fromProto(const livekit::ParticipantInfo& in);
-    static ParticipantKind fromProto(livekit::ParticipantInfo_Kind in);
-    static ParticipantState fromProto(livekit::ParticipantInfo_State in);
-    static ParticipantPermission fromProto(const livekit::ParticipantPermission& in);
-    static DisconnectReason fromProto(livekit::DisconnectReason in);
-    static TrackSource fromProto(livekit::TrackSource in);
-    static TrackInfo fromProto(const livekit::TrackInfo& in);
-    static VideoQuality fromProto(livekit::VideoQuality in);
-    static VideoLayer fromProto(const livekit::VideoLayer& in);
-    static TrackType fromProto(livekit::TrackType in);
-    static SimulcastCodecInfo fromProto(const livekit::SimulcastCodecInfo& in);
-    static BackupCodecPolicy fromProto(livekit::BackupCodecPolicy in);
-    static EncryptionType fromProto(livekit::Encryption_Type in);
-    static AudioTrackFeature fromProto(livekit::AudioTrackFeature in);
-    static ClientConfigSetting fromProto(livekit::ClientConfigSetting in);
-    static ClientConfiguration fromProto(const livekit::ClientConfiguration& in);
-    static DisabledCodecs fromProto(const livekit::DisabledCodecs& in);
-    static VideoConfiguration fromProto(const livekit::VideoConfiguration& in);
-    static ServerEdition fromProto(livekit::ServerInfo_Edition in);
-    static ServerInfo fromProto(const livekit::ServerInfo& in);
-    static SignalTarget fromProto(livekit::SignalTarget in);
+    static JoinResponse from(const livekit::JoinResponse& in);
+    static TrickleRequest from(const livekit::TrickleRequest& in);
+    static ParticipantUpdate from(const livekit::ParticipantUpdate& in);
+    static TrackPublishedResponse from(const livekit::TrackPublishedResponse& in);
+    static TrackUnpublishedResponse from(const livekit::TrackUnpublishedResponse& in);
+    static Room from(const livekit::Room& in);
+    static Codec from(const livekit::Codec& in);
+    static TimedVersion from(const livekit::TimedVersion& in);
+    static ParticipantInfo from(const livekit::ParticipantInfo& in);
+    static ParticipantKind from(livekit::ParticipantInfo_Kind in);
+    static ParticipantState from(livekit::ParticipantInfo_State in);
+    static ParticipantPermission from(const livekit::ParticipantPermission& in);
+    static DisconnectReason from(livekit::DisconnectReason in);
+    static TrackSource from(livekit::TrackSource in);
+    static TrackInfo from(const livekit::TrackInfo& in);
+    static VideoQuality from(livekit::VideoQuality in);
+    static VideoLayer from(const livekit::VideoLayer& in);
+    static TrackType from(livekit::TrackType in);
+    static SimulcastCodecInfo from(const livekit::SimulcastCodecInfo& in);
+    static BackupCodecPolicy from(livekit::BackupCodecPolicy in);
+    static EncryptionType from(livekit::Encryption_Type in);
+    static AudioTrackFeature from(livekit::AudioTrackFeature in);
+    static ClientConfigSetting from(livekit::ClientConfigSetting in);
+    static ClientConfiguration from(const livekit::ClientConfiguration& in);
+    static DisabledCodecs from(const livekit::DisabledCodecs& in);
+    static VideoConfiguration from(const livekit::VideoConfiguration& in);
+    static ServerEdition from(livekit::ServerInfo_Edition in);
+    static ServerInfo from(const livekit::ServerInfo& in);
+    static SignalTarget from(livekit::SignalTarget in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
-    static std::vector<TCppType> fromProto(const TProtoBufRepeated& in);
+    static std::vector<TCppType> from(const TProtoBufRepeated& in);
 };
 
 } // namespace LiveKitCpp
