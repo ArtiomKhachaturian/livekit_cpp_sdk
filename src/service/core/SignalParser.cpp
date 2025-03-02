@@ -81,6 +81,7 @@ ParticipantInfo SignalParser::fromProto(const livekit::ParticipantInfo& in)
     out._sid = in.sid();
     out._identity = in.identity();
     out._state = fromProto(in.state());
+    out._tracks = fromProto<TrackInfo, livekit::TrackInfo>(in.tracks());
     out._metadata = in.metadata();
     out._joinedAt = in.joined_at();
     out.joinedAtMs = in.joined_at_ms();
@@ -212,7 +213,7 @@ TrackInfo SignalParser::fromProto(const livekit::TrackInfo& in)
 {
     TrackInfo out;
     out._sid = in.sid();
-    //out._type = in.type();
+    out._type = fromProto(in.type());
     out._name = in.name();
     out._muted = in.muted();
     out._width = in.width();
@@ -220,20 +221,127 @@ TrackInfo SignalParser::fromProto(const livekit::TrackInfo& in)
     out._simulcast = in.simulcast();
     out._disableDtx = in.disable_dtx();
     out._source = fromProto(in.source());
-    //out._layers = mapFrom<>(in.layers());
+    out._layers = fromProto<VideoLayer, livekit::VideoLayer>(in.layers());
     out._mimeType = in.mime_type();
     out._mid = in.mid();
-    //out._codecs = mapFrom<>(in.codecs());
+    out._codecs = fromProto<SimulcastCodecInfo, livekit::SimulcastCodecInfo>(in.codecs());
     out._stereo = in.stereo();
     out._disableRed = in.disable_red();
-    //out._encryption = mapFrom(in.encryption());
+    out._encryption = fromProto(in.encryption());
     out._stream = in.stream();
     if (in.has_version()) {
         out._version = fromProto(in.version());
     }
-    //out._audioFeatures = mapFrom<>(in.audio_features());
-    //out._backupCodecPolicy = mapFrom(in.backup_codec_policy());
+    out._audioFeatures = fromProto<AudioTrackFeature, livekit::AudioTrackFeature>(in.audio_features());
+    out._backupCodecPolicy = fromProto(in.backup_codec_policy());
     return out;
+}
+
+VideoQuality SignalParser::fromProto(livekit::VideoQuality in)
+{
+    switch (in) {
+        case livekit::LOW:
+            break;
+        case livekit::MEDIUM:
+            return VideoQuality::Medium;
+        case livekit::HIGH:
+            return VideoQuality::High;
+        case livekit::OFF:
+            return VideoQuality::Off;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return VideoQuality::Low;
+}
+
+VideoLayer SignalParser::fromProto(const livekit::VideoLayer& in)
+{
+    VideoLayer out;
+    out._quality = fromProto(in.quality());
+    out._width = in.width();
+    out._height = in.height();
+    out._bitrate = in.bitrate();
+    out._ssrc = in.ssrc();
+    return out;
+}
+
+TrackType SignalParser::fromProto(livekit::TrackType in)
+{
+    switch (in) {
+        case livekit::AUDIO:
+            break;
+        case livekit::VIDEO:
+            return TrackType::Video;
+        case livekit::DATA:
+            return TrackType::Data;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return TrackType::Audio;
+}
+
+SimulcastCodecInfo SignalParser::fromProto(const livekit::SimulcastCodecInfo& in)
+{
+    SimulcastCodecInfo out;
+    out._mimeType = in.mime_type();
+    out._mid = in.mid();
+    out._cid = in.cid();
+    out._layers = fromProto<VideoLayer, livekit::VideoLayer>(in.layers());
+    return out;
+}
+
+BackupCodecPolicy SignalParser::fromProto(livekit::BackupCodecPolicy in)
+{
+    switch (in) {
+        case livekit::REGRESSION:
+            break;
+        case livekit::SIMULCAST:
+            return BackupCodecPolicy::Simulcast;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return BackupCodecPolicy::Regression;
+}
+
+EncryptionType SignalParser::fromProto(livekit::Encryption_Type in)
+{
+    switch (in) {
+        case livekit::Encryption_Type_NONE:
+            break;
+        case livekit::Encryption_Type_GCM:
+            return EncryptionType::Gcm;
+        case livekit::Encryption_Type_CUSTOM:
+            return EncryptionType::Custom;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return EncryptionType::None;
+}
+
+AudioTrackFeature SignalParser::fromProto(livekit::AudioTrackFeature in)
+{
+    switch (in) {
+        case livekit::TF_STEREO:
+            break;
+        case livekit::TF_NO_DTX:
+            return AudioTrackFeature::TFNoDtx;
+        case livekit::TF_AUTO_GAIN_CONTROL:
+            return AudioTrackFeature::TFAutoGainControl;
+        case livekit::TF_ECHO_CANCELLATION:
+            return AudioTrackFeature::TFEchocancellation;
+        case livekit::TF_NOISE_SUPPRESSION:
+            return AudioTrackFeature::TFNoiseSuppression;
+        case livekit::TF_ENHANCED_NOISE_CANCELLATION:
+            return AudioTrackFeature::TFEnhancedNoiseCancellation;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return AudioTrackFeature::TFStereo;
 }
 
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>

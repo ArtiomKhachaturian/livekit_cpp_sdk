@@ -29,7 +29,7 @@ struct ParticipantInfo
     std::string _sid;
     std::string _identity;
     ParticipantState _state = {};
-    //repeated TrackInfo tracks = 4;
+    std::vector<TrackInfo> _tracks;
     std::string _metadata;
     // timestamp when participant joined room, in seconds
     int64_t _joinedAt = {};

@@ -44,6 +44,13 @@ public:
     static DisconnectReason fromProto(livekit::DisconnectReason in);
     static TrackSource fromProto(livekit::TrackSource in);
     static TrackInfo fromProto(const livekit::TrackInfo& in);
+    static VideoQuality fromProto(livekit::VideoQuality in);
+    static VideoLayer fromProto(const livekit::VideoLayer& in);
+    static TrackType fromProto(livekit::TrackType in);
+    static SimulcastCodecInfo fromProto(const livekit::SimulcastCodecInfo& in);
+    static BackupCodecPolicy fromProto(livekit::BackupCodecPolicy in);
+    static EncryptionType fromProto(livekit::Encryption_Type in);
+    static AudioTrackFeature fromProto(livekit::AudioTrackFeature in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> fromProto(const TProtoBufRepeated& in);

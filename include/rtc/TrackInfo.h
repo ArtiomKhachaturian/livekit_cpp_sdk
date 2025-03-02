@@ -12,8 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TrackInfo.h
+#include "rtc/AudioTrackFeature.h"
+#include "rtc/BackupCodecPolicy.h"
+#include "rtc/EncryptionType.h"
 #include "rtc/TrackSource.h"
+#include "rtc/TrackType.h"
+#include "rtc/SimulcastCodecInfo.h"
 #include "rtc/TimedVersion.h"
+#include "rtc/VideoLayer.h"
 #include <optional>
 #include <string>
 #include <vector>
@@ -24,7 +30,7 @@ namespace LiveKitCpp
 struct TrackInfo
 {
     std::string _sid = {};
-    //TrackType _type = {};
+    TrackType _type = {};
     std::string _name = {};
     bool _muted = {};
     // original width of video (unset for audio)
@@ -38,19 +44,19 @@ struct TrackInfo
     bool _disableDtx = {};
     // source of media
     TrackSource _source = {};
-    //repeated VideoLayer _layers = 10;
+    std::vector<VideoLayer> _layers;
     // mime type of codec
     std::string _mimeType;
     std::string _mid;
-    //repeated SimulcastCodecInfo codecs = 13;
+    std::vector<SimulcastCodecInfo> _codecs;
     bool _stereo = {};
     // true if RED (Redundant Encoding) is disabled for audio
     bool _disableRed = {};
-    //Encryption.Type _encryption = {};
+    EncryptionType _encryption = {};
     std::string _stream;
     std::optional<TimedVersion> _version;
-    //repeated AudioTrackFeature _audioFeatures;
-    //BackupCodecPolicy _backupCodecPolicy = {};
+    std::vector<AudioTrackFeature> _audioFeatures;
+    BackupCodecPolicy _backupCodecPolicy = {};
 };
 
 } // namespace LiveKitCpp
