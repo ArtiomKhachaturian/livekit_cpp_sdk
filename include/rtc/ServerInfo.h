@@ -12,9 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ServerInfo.h
+#include "rtc/ServerEdition.h"
+#include <string>
 
 namespace LiveKitCpp
 {
 
+// details about the server
+struct ServerInfo
+{
+    ServerEdition _edition = {};
+    std::string _version;
+    int32_t _protocol = {};
+    std::string _region;
+    std::string _nodeId;
+    // additional debugging information. sent only if server is in development mode
+    std::string _debugInfo;
+    int32_t _agentProtocol = {};
+};
 
 } // namespace LiveKitCpp

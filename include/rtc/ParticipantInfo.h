@@ -37,7 +37,7 @@ struct ParticipantInfo
     int64_t joinedAtMs = {};
     std::string _name;
     uint32_t _version = {};
-    ParticipantPermission _permission;
+    ParticipantPermission _permission = {};
     std::string _region;
     // indicates the participant has an active publisher connection
     // and can publish to the server

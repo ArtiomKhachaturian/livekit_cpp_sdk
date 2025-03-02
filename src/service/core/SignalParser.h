@@ -51,6 +51,12 @@ public:
     static BackupCodecPolicy fromProto(livekit::BackupCodecPolicy in);
     static EncryptionType fromProto(livekit::Encryption_Type in);
     static AudioTrackFeature fromProto(livekit::AudioTrackFeature in);
+    static ClientConfigSetting fromProto(livekit::ClientConfigSetting in);
+    static ClientConfiguration fromProto(const livekit::ClientConfiguration& in);
+    static DisabledCodecs fromProto(const livekit::DisabledCodecs& in);
+    static VideoConfiguration fromProto(const livekit::VideoConfiguration& in);
+    static ServerEdition fromProto(livekit::ServerInfo_Edition in);
+    static ServerInfo fromProto(const livekit::ServerInfo& in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> fromProto(const TProtoBufRepeated& in);

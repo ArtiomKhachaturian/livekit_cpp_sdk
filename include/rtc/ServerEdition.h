@@ -11,22 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ClientConfiguration.h
-#include "rtc/ClientConfigSetting.h"
-#include "rtc/DisabledCodecs.h"
-#include "rtc/VideoConfiguration.h"
+#pragma once // ServerEdition.h
 
 namespace LiveKitCpp
 {
 
-// server provided client configuration
-struct ClientConfiguration
+enum ServerEdition
 {
-    VideoConfiguration _video = {};
-    VideoConfiguration _screen = {};
-    ClientConfigSetting _resumeConnection = {};
-    DisabledCodecs _disabledCodecs = {};
-    ClientConfigSetting _forceRelay = {};
+    Standard = 0,
+    Cloud = 1,
 };
 
 } // namespace LiveKitCpp

@@ -34,9 +34,15 @@ JoinResponse SignalParser::fromProto(const livekit::JoinResponse& in)
     out._serverVersion = in.server_version();
     out._subscriberPrimary = in.subscriber_primary();
     out._alternativeUrl = in.alternative_url();
+    if (in.has_client_configuration()) {
+        out._clientConfiguration = fromProto(in.client_configuration());
+    }
     out._serverRegion = in.server_region();
     out._pingTimeout = in.ping_timeout();
     out._pingInterval = in.ping_interval();
+    if (in.has_server_info()) {
+        out._serverInfo = fromProto(in.server_info());
+    }
     out._sifTrailer = in.sif_trailer();
     out._enabledPublishCodecs = fromProto<Codec, livekit::Codec>(in.enabled_publish_codecs());
     out._fastPublish = in.fast_publish();
@@ -342,6 +348,75 @@ AudioTrackFeature SignalParser::fromProto(livekit::AudioTrackFeature in)
             break;
     }
     return AudioTrackFeature::TFStereo;
+}
+
+ClientConfigSetting SignalParser::fromProto(livekit::ClientConfigSetting in)
+{
+    switch (in) {
+        case livekit::UNSET:
+            break;
+        case livekit::DISABLED:
+            return ClientConfigSetting::Disabled;
+        case livekit::ENABLED:
+            return ClientConfigSetting::Enabled;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return ClientConfigSetting::Unset;
+}
+
+ClientConfiguration SignalParser::fromProto(const livekit::ClientConfiguration& in)
+{
+    ClientConfiguration out;
+    out._video = fromProto(in.video());
+    out._screen = fromProto(in.screen());
+    out._resumeConnection = fromProto(in.resume_connection());
+    out._disabledCodecs = fromProto(in.disabled_codecs());
+    out._forceRelay = fromProto(in.force_relay());
+    return out;
+}
+
+DisabledCodecs SignalParser::fromProto(const livekit::DisabledCodecs& in)
+{
+    DisabledCodecs out;
+    out._codecs = fromProto<Codec, livekit::Codec>(in.codecs());
+    out._publish = fromProto<Codec, livekit::Codec>(in.publish());
+    return out;
+}
+
+VideoConfiguration SignalParser::fromProto(const livekit::VideoConfiguration& in)
+{
+    VideoConfiguration out;
+    out._hardwareEncoder = fromProto(in.hardware_encoder());
+    return out;
+}
+
+ServerEdition SignalParser::fromProto(livekit::ServerInfo_Edition in)
+{
+    switch (in) {
+        case livekit::ServerInfo_Edition_Standard:
+            break;
+        case livekit::ServerInfo_Edition_Cloud:
+            return ServerEdition::Cloud;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return ServerEdition::Standard;
+}
+
+ServerInfo SignalParser::fromProto(const livekit::ServerInfo& in)
+{
+    ServerInfo out;
+    out._edition = fromProto(in.edition());
+    out._version = in.version();
+    out._protocol = in.protocol();
+    out._region = in.region();
+    out._nodeId = in.node_id();
+    out._debugInfo = in.debug_info();
+    out._agentProtocol = in.agent_protocol();
+    return out;
 }
 
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>

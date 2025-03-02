@@ -29,9 +29,9 @@ namespace LiveKitCpp
 
 struct TrackInfo
 {
-    std::string _sid = {};
+    std::string _sid;
     TrackType _type = {};
-    std::string _name = {};
+    std::string _name;
     bool _muted = {};
     // original width of video (unset for audio)
     // clients may receive a lower resolution version with simulcast

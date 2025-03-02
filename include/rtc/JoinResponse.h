@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // JoinResponse.h
+#include "rtc/ClientConfiguration.h"
+#include "rtc/Codec.h"
+#include "rtc/ICEServer.h"
 #include "rtc/Room.h"
 #include "rtc/ParticipantInfo.h"
-#include "rtc/ICEServer.h"
-#include "rtc/ClientConfiguration.h"
 #include "rtc/ServerInfo.h"
-#include "rtc/Codec.h"
 #include <string>
 #include <vector>
 
@@ -26,8 +26,8 @@ namespace LiveKitCpp
 
 struct JoinResponse
 {
-    Room _room;
-    ParticipantInfo _participant;
+    Room _room = {};
+    ParticipantInfo _participant = {};
     std::vector<ParticipantInfo> _otherParticipants;
      // deprecated. use server_info.version instead.
     [[deprecated("Use _serverInfo._version instead.")]] std::string _serverVersion;
@@ -37,12 +37,12 @@ struct JoinResponse
      // when the current server isn't available, return alternate url to retry connection
      // when this is set, the other fields will be largely empty
     std::string _alternativeUrl;
-    //ClientConfiguration client_configuration = 8;
+    ClientConfiguration _clientConfiguration = {};
      // deprecated. use server_info.region instead.
     [[deprecated("Use _serverInfo._region instead.")]] std::string _serverRegion;
     int32_t _pingTimeout = {};
     int32_t _pingInterval = {};
-    //ServerInfo server_info = 12;
+    ServerInfo _serverInfo = {};
     // Server-Injected-Frame byte trailer, used to identify unencrypted frames when e2ee is enabled
     std::string _sifTrailer;
     std::vector<Codec> _enabledPublishCodecs;

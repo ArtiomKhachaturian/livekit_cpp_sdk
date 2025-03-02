@@ -11,22 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ClientConfiguration.h
-#include "rtc/ClientConfigSetting.h"
-#include "rtc/DisabledCodecs.h"
-#include "rtc/VideoConfiguration.h"
+#pragma once // DisabledCodecs.h
+#include "rtc/Codec.h"
+#include <vector>
 
 namespace LiveKitCpp
 {
 
-// server provided client configuration
-struct ClientConfiguration
+struct DisabledCodecs
 {
-    VideoConfiguration _video = {};
-    VideoConfiguration _screen = {};
-    ClientConfigSetting _resumeConnection = {};
-    DisabledCodecs _disabledCodecs = {};
-    ClientConfigSetting _forceRelay = {};
+    // disabled for both publish and subscribe
+    std::vector<Codec> _codecs;
+    // only disable for publish
+    std::vector<Codec> _publish;
 };
 
 } // namespace LiveKitCpp
