@@ -17,6 +17,7 @@
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrickleRequest.h"
 #include "rtc/ParticipantUpdate.h"
+#include "rtc/RoomUpdate.h"
 #include "rtc/SpeakersChanged.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
@@ -49,6 +50,7 @@ public:
     static LeaveRequest from(const livekit::LeaveRequest& in);
     static MuteTrackRequest from(const livekit::MuteTrackRequest& in);
     static SpeakersChanged from(const livekit::SpeakersChanged& in);
+    static RoomUpdate from(const livekit::RoomUpdate& in);
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);

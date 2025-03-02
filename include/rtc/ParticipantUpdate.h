@@ -18,6 +18,7 @@
 namespace LiveKitCpp
 {
 
+// sent when participants in the room has changed
 struct ParticipantUpdate
 {
     std::vector<ParticipantInfo> _participants;

@@ -17,6 +17,7 @@
 namespace LiveKitCpp
 {
 
+// server initiated track unpublish
 struct TrackUnpublishedResponse
 {
     std::string _trackSid;

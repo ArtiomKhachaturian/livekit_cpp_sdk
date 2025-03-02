@@ -24,6 +24,7 @@
 namespace LiveKitCpp
 {
 
+// sent when join is accepted
 struct JoinResponse
 {
     Room _room = {};

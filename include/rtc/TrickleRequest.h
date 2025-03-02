@@ -18,6 +18,7 @@
 namespace LiveKitCpp
 {
 
+// sent when an ICE candidate is available
 struct TrickleRequest
 {
     std::string _candidateInit;

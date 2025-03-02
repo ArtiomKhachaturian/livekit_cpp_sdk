@@ -19,6 +19,7 @@
 namespace LiveKitCpp
 {
 
+// Immediately terminate session
 struct LeaveRequest
 {
     // sent when server initiates the disconnect due to server-restart

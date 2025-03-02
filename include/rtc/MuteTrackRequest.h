@@ -17,6 +17,7 @@
 namespace LiveKitCpp
 {
 
+// server initiated mute
 struct MuteTrackRequest
 {
     std::string _sid;

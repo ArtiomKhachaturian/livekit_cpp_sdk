@@ -105,6 +105,15 @@ SpeakersChanged SignalParser::from(const livekit::SpeakersChanged& in)
     return out;
 }
 
+RoomUpdate SignalParser::from(const livekit::RoomUpdate& in)
+{
+    RoomUpdate out;
+    if (in.has_room()) {
+        out._room = from(in.room());
+    }
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;

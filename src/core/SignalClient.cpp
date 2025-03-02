@@ -40,7 +40,7 @@ private:
     void handle(const livekit::LeaveRequest& leave);
     void handle(const livekit::MuteTrackRequest& muteTrack);
     void handle(const livekit::SpeakersChanged& changed);
-    void handle(const livekit::RoomUpdate& roomtUpdate);
+    void handle(const livekit::RoomUpdate& update);
     void handle(const livekit::ConnectionQualityUpdate& qualityUpdate);
     void handle(const livekit::StreamStateUpdate& stateUpdate);
     void handle(const livekit::SubscribedQualityUpdate& qualityUpdate);
@@ -297,9 +297,9 @@ void SignalClient::Impl::handle(const livekit::SpeakersChanged& changed)
     invokeListener(&SignalClientListener::onSpeakersChanged, SignalParser::from(changed));
 }
 
-void SignalClient::Impl::handle(const livekit::RoomUpdate& roomtUpdate)
+void SignalClient::Impl::handle(const livekit::RoomUpdate& update)
 {
-    
+    invokeListener(&SignalClientListener::onRoomUpdate, SignalParser::from(update));
 }
 
 void SignalClient::Impl::handle(const livekit::ConnectionQualityUpdate& qualityUpdate)

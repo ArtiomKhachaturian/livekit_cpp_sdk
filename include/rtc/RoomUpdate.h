@@ -11,18 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // TrackPublishedResponse.h
-#include "rtc/TrackInfo.h"
-#include <string>
+#pragma once // RoomUpdate.h
+#include "rtc/Room.h"
 
 namespace LiveKitCpp
 {
 
-// sent to the participant when their track has been published
-struct TrackPublishedResponse
+// sent when metadata of the room has changed
+struct RoomUpdate
 {
-    std::string _cid;
-    TrackInfo _track = {};
+    Room _room = {};
 };
 
 } // namespace LiveKitCpp
