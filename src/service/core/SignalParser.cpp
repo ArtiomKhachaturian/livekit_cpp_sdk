@@ -114,6 +114,13 @@ RoomUpdate SignalParser::from(const livekit::RoomUpdate& in)
     return out;
 }
 
+ConnectionQualityUpdate SignalParser::from(const livekit::ConnectionQualityUpdate& in)
+{
+    ConnectionQualityUpdate out;
+    out._updates = from<ConnectionQualityInfo, livekit::ConnectionQualityInfo>(in.updates());
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
@@ -536,6 +543,33 @@ SpeakerInfo SignalParser::from(const livekit::SpeakerInfo& in)
     out._sid = in.sid();
     out._level = in.level();
     out._active = in.active();
+    return out;
+}
+
+ConnectionQuality SignalParser::from(livekit::ConnectionQuality in)
+{
+    switch (in) {
+        case livekit::POOR:
+            break;
+        case livekit::GOOD:
+            return ConnectionQuality::Good;
+        case livekit::EXCELLENT:
+            return ConnectionQuality::Excellent;
+        case livekit::LOST:
+            return ConnectionQuality::Lost;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return ConnectionQuality::Poor;
+}
+
+ConnectionQualityInfo SignalParser::from(const livekit::ConnectionQualityInfo& in)
+{
+    ConnectionQualityInfo out;
+    out._participantSid = in.participant_sid();
+    out._quality = from(in.quality());
+    out._score = in.score();
     return out;
 }
 

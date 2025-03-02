@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalParser.h
+#include "rtc/ConnectionQualityUpdate.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/LeaveRequest.h"
 #include "rtc/MuteTrackRequest.h"
@@ -51,6 +52,7 @@ public:
     static MuteTrackRequest from(const livekit::MuteTrackRequest& in);
     static SpeakersChanged from(const livekit::SpeakersChanged& in);
     static RoomUpdate from(const livekit::RoomUpdate& in);
+    static ConnectionQualityUpdate from(const livekit::ConnectionQualityUpdate& in);
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);
@@ -79,6 +81,8 @@ public:
     static RegionInfo from(const livekit::RegionInfo& in);
     static RegionSettings from(const livekit::RegionSettings& in);
     static SpeakerInfo from(const livekit::SpeakerInfo& in);
+    static ConnectionQuality from(livekit::ConnectionQuality in);
+    static ConnectionQualityInfo from(const livekit::ConnectionQualityInfo& in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> from(const TProtoBufRepeated& in);

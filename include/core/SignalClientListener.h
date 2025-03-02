@@ -20,6 +20,7 @@ namespace LiveKitCpp
 
 enum class State;
 // these structs are defined in /include/rtc subfolder
+struct ConnectionQualityUpdate;
 struct JoinResponse;
 struct TrickleRequest;
 struct ParticipantUpdate;
@@ -48,6 +49,7 @@ public:
     virtual void onMuteTrack(uint64_t /*signalClientId*/, const MuteTrackRequest& /*mute*/) {}
     virtual void onSpeakersChanged(uint64_t /*signalClientId*/, const SpeakersChanged& /*changed*/) {}
     virtual void onRoomUpdate(uint64_t /*signalClientId*/, const RoomUpdate& /*update*/) {}
+    virtual void onConnectionQualityUpdate(uint64_t /*signalClientId*/, const ConnectionQualityUpdate& /*update*/) {}
     virtual void onRefreshToken(uint64_t /*signalClientId*/,
                                 const std::string& /*authToken*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,
