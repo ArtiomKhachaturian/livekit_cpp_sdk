@@ -13,6 +13,11 @@
 // limitations under the License.
 #include "Websocket.h"
 #include "WebsocketFailure.h"
+#ifdef USE_ZAPHOYD_TPP_SOCKETS
+#include "zaphoyd_tpp/WebsocketTppFactory.h"
+#else
+#include "WebsocketFactory.h"
+#endif
 #include <inttypes.h>
 #include <sstream>
 
@@ -24,36 +29,46 @@ inline std::string base64Encode(const std::string_view& str) {
     return base64Encode(reinterpret_cast<const uint8_t*>(str.data()), str.size());
 }
 
+#ifndef USE_ZAPHOYD_TPP_SOCKETS
+class NullFactory : public LiveKitCpp::WebsocketFactory
+{
+public:
+    NullFactory() = default;
+    std::unique_ptr<LiveKitCpp::Websocket> create() const final { return {}; }
+};
+#endif
+
 }
 
 namespace LiveKitCpp
 {
 
-WebsocketOptions::WebsocketOptions(std::string host, const std::string& user,
-                                   const std::string& password)
+WebsocketOptions::WebsocketOptions(std::string host)
     : _host(std::move(host))
 {
-    addAuthHeader(user, password);
 }
 
-WebsocketOptions::WebsocketOptions(std::string host, const std::string& auth)
-    : _host(std::move(host))
-{
-    addAuthHeader(auth);
-}
 
-void WebsocketOptions::addAuthHeader(const std::string& user, const std::string& password)
+void WebsocketOptions::addBasicAuthHeader(const std::string& user,
+                                          const std::string& password)
 {
-    if (!user.empty() || !password.empty()) {
+    if (!user.empty() && !password.empty()) {
         // https://datatracker.ietf.org/doc/html/rfc6750.html
-        addAuthHeader(base64Encode(user + ":" + password));
+        addAuthHeader("Basic " + base64Encode(user + ":" + password));
     }
 }
 
-void WebsocketOptions::addAuthHeader(const std::string& auth)
+void WebsocketOptions::addBearerAuthHeader(const std::string& token)
+{
+    if (!token.empty()) {
+        addAuthHeader("Bearer " + token);
+    }
+}
+
+void WebsocketOptions::addAuthHeader(std::string auth)
 {
     if (!auth.empty()) {
-        _extraHeaders["Authorization"] = "Basic " + auth;
+        _extraHeaders["Authorization"] = std::move(auth);
     }
 }
 
@@ -78,6 +93,16 @@ WebsocketError WebsocketError::fromSystemError(WebsocketFailure type,
                                                const std::system_error& error)
 {
     return WebsocketError(type, error.code(), error.what());
+}
+
+const WebsocketFactory& WebsocketFactory::defaultFactory()
+{
+#ifdef USE_ZAPHOYD_TPP_SOCKETS
+    static const WebsocketTppFactory factory;
+#else
+    static const NullFactory factory;
+#endif
+    return factory;
 }
 
 const char* toString(WebsocketFailure failure) {

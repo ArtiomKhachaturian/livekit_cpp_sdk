@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
 #include "SignalClient.h"
-#include "WebsocketOptions.h"
-#include "WebsocketListener.h"
+#include "websocket/WebsocketOptions.h"
+#include "websocket/WebsocketListener.h"
 #include <memory>
 
 namespace LiveKitCpp
@@ -29,8 +29,7 @@ public:
     SignalClientWs(const WebsocketFactory& socketFactory);
     ~SignalClientWs() final;
     void setHost(std::string host);
-    void setAuthentification(const std::string& user, const std::string& password);
-    void setAuthentification(const std::string& authToken);
+    void setAuthToken(const std::string& authToken);
     // impl. of SignalClient
     bool connect() final;
     void disconnect() final;

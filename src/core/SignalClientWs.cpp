@@ -14,7 +14,6 @@
 #include "Websocket.h"
 #include "WebsocketFactory.h"
 #include "MemoryBlock.h"
-#include "State.h"
 
 namespace LiveKitCpp
 {
@@ -47,15 +46,9 @@ void SignalClientWs::setHost(std::string host)
     _socketOptions._host = std::move(host);
 }
 
-void SignalClientWs::setAuthentification(const std::string& user,
-                                         const std::string& password)
+void SignalClientWs::setAuthToken(const std::string& authToken)
 {
-    _socketOptions.addAuthHeader(user, password);
-}
-
-void SignalClientWs::setAuthentification(const std::string& authToken)
-{
-    _socketOptions.addAuthHeader(authToken);
+    _socketOptions.addBearerAuthHeader(authToken);
 }
 
 bool SignalClientWs::connect()

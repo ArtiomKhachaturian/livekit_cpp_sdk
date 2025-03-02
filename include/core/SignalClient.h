@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // SignalClient.h
 #include "CommandReceiver.h"
-#include "ProtectedObj.h"
+#include "State.h"
 
 namespace LiveKitCpp
 {
@@ -21,12 +21,13 @@ namespace LiveKitCpp
 class CommandSender;
 class Websocket;
 class WebsocketFactory;
-enum class State;
 
 class SignalClient : public CommandReceiver
 {
+    struct Impl;
 public:
     SignalClient(CommandSender* commandSender);
+    ~SignalClient() override;
     virtual bool connect();
     virtual void disconnect();
     State state() const noexcept;
@@ -36,8 +37,7 @@ public:
 protected:
     bool changeState(State state);
 private:
-    CommandSender* const _commandSender;
-    ProtectedObj<State> _state;
+    const std::unique_ptr<Impl> _impl;
 };
 
 } // namespace LiveKitCpp

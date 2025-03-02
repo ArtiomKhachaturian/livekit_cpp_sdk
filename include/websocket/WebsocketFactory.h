@@ -25,6 +25,8 @@ class WebsocketFactory
 public:
     virtual ~WebsocketFactory() = default;
     virtual std::unique_ptr<Websocket> create() const = 0;
+    // valid factory only if [USE_ZAPHOYD_TPP_SOCKETS] was ON for library
+    static const WebsocketFactory& defaultFactory();
 };
 
 } // namespace LiveKitCpp

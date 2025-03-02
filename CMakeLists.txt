@@ -58,8 +58,6 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
 option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" OFF)
-#set(TPP_HDRS_DIR)
-#set(ASIO_HDRS_DIR)
 
 if (USE_ZAPHOYD_TPP_SOCKETS)
     find_package(OpenSSL REQUIRED)
@@ -100,9 +98,9 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
 )
 
 # Link Protobuf library
-target_link_libraries(${LIB_PROJECT_NAME} PRIVATE ${Protobuf_LIBRARIES})
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
 # Link abseil
-target_link_libraries(${LIB_PROJECT_NAME} PRIVATE absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
 # Websockets
 if (USE_ZAPHOYD_TPP_SOCKETS)
     target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
@@ -111,7 +109,22 @@ if (USE_ZAPHOYD_TPP_SOCKETS)
     endif(ZAPHOYD_SHARED_IO_SERVICE)
     target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} ${ASIO_HDRS_DIR})
     if (WIN32)
-        target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "ws2_32")
+        target_link_libraries(${LIB_PROJECT_NAME} PUBLIC "ws2_32")
     endif(WIN32)
-    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
+    target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${OPENSSL_LIBRARIES})
+endif(USE_ZAPHOYD_TPP_SOCKETS)
+
+# test application
+if (USE_ZAPHOYD_TPP_SOCKETS)
+    set(TEST_APP_NAME ${LIB_PROJECT_NAME}TestApp)
+    file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/test/*.cpp)
+    file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/test/*.h)
+
+    add_executable(${TEST_APP_NAME} 
+        ${CPP_HEADERS}
+        ${CPP_SOURCES}
+    )
+
+    target_include_directories(${TEST_APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(${TEST_APP_NAME} PRIVATE ${LIB_PROJECT_NAME})
 endif(USE_ZAPHOYD_TPP_SOCKETS)

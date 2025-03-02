@@ -24,16 +24,14 @@ struct WebsocketOptions
     using Linger = std::pair<bool, uint16_t>;
 public:
     WebsocketOptions() = default;
-    WebsocketOptions(std::string host,
-                     const std::string& user = std::string(),
-                     const std::string& password = std::string());
-    WebsocketOptions(std::string host, const std::string& auth);
+    WebsocketOptions(std::string host);
     WebsocketOptions(const WebsocketOptions&) = default;
     WebsocketOptions(WebsocketOptions&&) = default;
     WebsocketOptions& operator = (const WebsocketOptions&) = default;
     WebsocketOptions& operator = (WebsocketOptions&&) = default;
-    void addAuthHeader(const std::string& user, const std::string& password);
-    void addAuthHeader(const std::string& auth);
+    void addBasicAuthHeader(const std::string& user, const std::string& password);
+    void addBearerAuthHeader(const std::string& token);
+    void addAuthHeader(std::string auth);
     // URL/URI
     std::string _host;
     // agent
