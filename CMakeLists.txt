@@ -57,7 +57,7 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 # Generate .cpp and .h files from proto
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
-option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" OFF)
+option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
 
 if (USE_ZAPHOYD_TPP_SOCKETS)
     find_package(OpenSSL REQUIRED)

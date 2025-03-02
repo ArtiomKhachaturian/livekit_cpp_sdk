@@ -11,8 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
-#include "SignalClient.h"
-#include "websocket/WebsocketOptions.h"
+#include "core/SignalClient.h"
+#include "core/SignalClientListener.h"
 #include "websocket/WebsocketListener.h"
 #include <memory>
 
@@ -22,14 +22,22 @@ namespace LiveKitCpp
 class Websocket;
 class WebsocketFactory;
 
-class SignalClientWs : public SignalClient, private WebsocketListener
+class SignalClientWs : public SignalClient,
+                       private WebsocketListener,
+                       private SignalClientListener
 {
 public:
     SignalClientWs(std::unique_ptr<Websocket> socket);
     SignalClientWs(const WebsocketFactory& socketFactory);
     ~SignalClientWs() final;
+    const std::string& host() const noexcept;
+    const std::string& authToken() const noexcept;
+    bool autoSubscribe() const noexcept;
+    bool adaptiveStream() const noexcept;
     void setHost(std::string host);
-    void setAuthToken(const std::string& authToken);
+    void setAuthToken(std::string authToken);
+    void setAutoSubscribe(bool autoSubscribe);
+    void setAdaptiveStream(bool adaptiveStream);
     // impl. of SignalClient
     bool connect() final;
     void disconnect() final;
@@ -42,9 +50,14 @@ private:
                                const std::string_view& message) final;
     void onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
                                 const std::shared_ptr<const MemoryBlock>& message) final;
+    // impl. of SignalClientListener
+    void onServerResponseParseError(uint64_t signalClientId) final;
 private:
     const std::unique_ptr<Websocket> _socket;
-    WebsocketOptions _socketOptions;
+    std::string _host;
+    std::string _authToken;
+    bool _autoSubscribe = true;
+    bool _adaptiveStream = true;
 };
 
 } // namespace LiveKitCpp

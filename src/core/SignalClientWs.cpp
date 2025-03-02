@@ -14,10 +14,46 @@
 #include "Websocket.h"
 #include "WebsocketFactory.h"
 #include "MemoryBlock.h"
+#include "WebsocketOptions.h"
+
+namespace {
+
+inline std::string stringVal(const std::string& key, const std::string& val) {
+    return key + "=" + val;
+}
+
+inline std::string integerVal(const std::string& key, int val) {
+    return stringVal(key, std::to_string(val));
+}
+
+inline std::string booleanVal(const std::string& key, bool val) {
+    return integerVal(key, val ? 1 : 0);
+}
+
+inline LiveKitCpp::WebsocketOptions formatWsOptions(const std::string& host,
+                                                    const std::string& authToken,
+                                                    bool autoSubscribe,
+                                                    bool adaptiveStream) {
+    LiveKitCpp::WebsocketOptions options;
+    if (!host.empty() && !authToken.empty()) {
+        options._host = host;
+        if ('/' != options._host.back()) {
+            options._host += '/';
+        }
+        options._host += "rtc?access_token=" + authToken;
+        options._host += "&" + booleanVal("auto_subscribe", autoSubscribe);
+        options._host += "&" + stringVal("sdk", "cpp");
+        options._host += "&" + stringVal("version", "2.9.5");
+        options._host += "&" + integerVal("protocol", 15);
+        options._host += "&" + booleanVal("adaptive_stream", adaptiveStream);
+    }
+    return options;
+}
+
+}
 
 namespace LiveKitCpp
 {
-
 
 SignalClientWs::SignalClientWs(std::unique_ptr<Websocket> socket)
     : SignalClient(socket.get())
@@ -25,6 +61,7 @@ SignalClientWs::SignalClientWs(std::unique_ptr<Websocket> socket)
 {
     if (_socket) {
         _socket->addListener(this);
+        addListener(this);
     }
 }
 
@@ -36,28 +73,62 @@ SignalClientWs::SignalClientWs(const WebsocketFactory& socketFactory)
 SignalClientWs::~SignalClientWs()
 {
     if (_socket) {
+        removeListener(this);
         _socket->close();
         _socket->removeListener(this);
     }
 }
 
-void SignalClientWs::setHost(std::string host)
+const std::string& SignalClientWs::host() const noexcept
 {
-    _socketOptions._host = std::move(host);
+    return _host;
 }
 
-void SignalClientWs::setAuthToken(const std::string& authToken)
+const std::string& SignalClientWs::authToken() const noexcept
 {
-    _socketOptions.addBearerAuthHeader(authToken);
+    return _authToken;
+}
+
+bool SignalClientWs::autoSubscribe() const noexcept
+{
+    return _autoSubscribe;
+}
+
+bool SignalClientWs::adaptiveStream() const noexcept
+{
+    return _adaptiveStream;
+}
+
+void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
+{
+    
+}
+
+void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
+{
+    
+}
+
+void SignalClientWs::setHost(std::string host)
+{
+    _host = std::move(host);
+}
+
+void SignalClientWs::setAuthToken(std::string authToken)
+{
+    _authToken = std::move(authToken);
 }
 
 bool SignalClientWs::connect()
 {
     bool ok = false;
-    if (_socket && changeState(State::Connecting)) {
-        ok = _socket->open(_socketOptions);
+    if (_socket && changeTransportState(State::Connecting)) {
+        ok = _socket->open(formatWsOptions(_host,
+                                           _authToken,
+                                           _autoSubscribe,
+                                           _adaptiveStream));
         if (!ok) {
-            changeState(State::Disconnected);
+            changeTransportState(State::Disconnected);
         }
     }
     return ok;
@@ -75,7 +146,7 @@ void SignalClientWs::onStateChanged(uint64_t socketId, uint64_t connectionId,
                                     State state)
 {
     WebsocketListener::onStateChanged(socketId, connectionId, host, state);
-    if (changeState(state)) {
+    if (changeTransportState(state)) {
         // TODO: primary logic
     }
 }
@@ -94,6 +165,12 @@ void SignalClientWs::onBinaryMessageReceved(uint64_t socketId, uint64_t connecti
     if (message) {
         receiveBinary(message->data(), message->size());
     }
+}
+
+void SignalClientWs::onServerResponseParseError(uint64_t signalClientId)
+{
+    SignalClientWs::onServerResponseParseError(signalClientId);
+    disconnect();
 }
 
 } // namespace LiveKitCpp
