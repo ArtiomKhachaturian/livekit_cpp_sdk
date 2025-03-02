@@ -11,19 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AudioTrackFeature.h
+#pragma once // StreamStateUpdate.h
+#include "rtc/StreamStateInfo.h"
+#include <vector>
 
 namespace LiveKitCpp
 {
 
-enum class AudioTrackFeature
+// when streamed tracks state changed, used to notify when any of the streams were paused due to
+// congestion
+struct StreamStateUpdate
 {
-    TFStereo = 0,
-    TFNoDtx = 1,
-    TFAutoGainControl = 2,
-    TFEchocancellation = 3,
-    TFNoiseSuppression = 4,
-    TFEnhancedNoiseCancellation = 5,
+    std::vector<StreamStateInfo> _streamStates;
 };
 
 } // namespace LiveKitCpp

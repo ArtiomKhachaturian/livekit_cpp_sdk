@@ -20,6 +20,7 @@
 #include "rtc/ParticipantUpdate.h"
 #include "rtc/RoomUpdate.h"
 #include "rtc/SpeakersChanged.h"
+#include "rtc/StreamStateUpdate.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
 #include "livekit_rtc.pb.h"
@@ -53,6 +54,7 @@ public:
     static SpeakersChanged from(const livekit::SpeakersChanged& in);
     static RoomUpdate from(const livekit::RoomUpdate& in);
     static ConnectionQualityUpdate from(const livekit::ConnectionQualityUpdate& in);
+    static StreamStateUpdate from(const livekit::StreamStateUpdate& in);
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);
@@ -83,6 +85,8 @@ public:
     static SpeakerInfo from(const livekit::SpeakerInfo& in);
     static ConnectionQuality from(livekit::ConnectionQuality in);
     static ConnectionQualityInfo from(const livekit::ConnectionQualityInfo& in);
+    static StreamState from(livekit::StreamState in);
+    static StreamStateInfo from(const livekit::StreamStateInfo& in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> from(const TProtoBufRepeated& in);

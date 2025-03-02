@@ -11,19 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AudioTrackFeature.h
+#pragma once // StreamState.h
 
 namespace LiveKitCpp
 {
 
-enum class AudioTrackFeature
+enum StreamState
 {
-    TFStereo = 0,
-    TFNoDtx = 1,
-    TFAutoGainControl = 2,
-    TFEchocancellation = 3,
-    TFNoiseSuppression = 4,
-    TFEnhancedNoiseCancellation = 5,
+    Active = 0,
+    Paused = 1,
 };
 
 } // namespace LiveKitCpp

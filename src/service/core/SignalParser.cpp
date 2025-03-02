@@ -121,6 +121,12 @@ ConnectionQualityUpdate SignalParser::from(const livekit::ConnectionQualityUpdat
     return out;
 }
 
+StreamStateUpdate SignalParser::from(const livekit::StreamStateUpdate& in)
+{
+    StreamStateUpdate out;
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
@@ -570,6 +576,29 @@ ConnectionQualityInfo SignalParser::from(const livekit::ConnectionQualityInfo& i
     out._participantSid = in.participant_sid();
     out._quality = from(in.quality());
     out._score = in.score();
+    return out;
+}
+
+StreamState SignalParser::from(livekit::StreamState in)
+{
+    switch (in) {
+        case livekit::ACTIVE:
+            break;
+        case livekit::PAUSED:
+            return StreamState::Paused;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return StreamState::Active;
+}
+
+StreamStateInfo SignalParser::from(const livekit::StreamStateInfo& in)
+{
+    StreamStateInfo out;
+    out._participantSid = in.participant_sid();
+    out._trackSid = in.track_sid();
+    out._state = from(in.state());
     return out;
 }
 

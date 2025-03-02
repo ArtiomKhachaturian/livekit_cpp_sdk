@@ -30,6 +30,7 @@ struct LeaveRequest;
 struct MuteTrackRequest;
 struct SpeakersChanged;
 struct RoomUpdate;
+struct StreamStateUpdate;
 
 class SignalClientListener
 {
@@ -50,6 +51,7 @@ public:
     virtual void onSpeakersChanged(uint64_t /*signalClientId*/, const SpeakersChanged& /*changed*/) {}
     virtual void onRoomUpdate(uint64_t /*signalClientId*/, const RoomUpdate& /*update*/) {}
     virtual void onConnectionQualityUpdate(uint64_t /*signalClientId*/, const ConnectionQualityUpdate& /*update*/) {}
+    virtual void onStreamStateUpdate(uint64_t /*signalClientId*/, const StreamStateUpdate& /*update*/) {}
     virtual void onRefreshToken(uint64_t /*signalClientId*/,
                                 const std::string& /*authToken*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,
