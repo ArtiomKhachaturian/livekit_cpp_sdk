@@ -11,28 +11,31 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CommandSender.h"
-#include "MemoryBlock.h"
-#include "google/protobuf/message.h"
+#pragma once
+#ifdef USE_ZAPHOYD_TPP_SOCKETS
+#include "WebsocketFactory.h"
 
 namespace LiveKitCpp
 {
 
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to)
+class WebsocketTppServiceProvider;
+
+class WebsocketTppFactory : public WebsocketFactory
 {
-    if (to) {
-        std::vector<uint8_t> data; // TLS storage
-        data.resize(message.ByteSizeLong());
-        if (const auto size = int(data.size())) {
-            if (message.SerializeToArray(data.data(), size)) {
-                return to->sendBinary(MemoryBlock::make(std::move(data)));
-            }
-            else {
-                // TODO: log error
-            }
-        }
-    }
-    return false;
-}
+    class ServiceProvider;
+public:
+    static std::unique_ptr<WebsocketFactory> createFactory();
+    // impl. of WebsocketFactory
+    ~WebsocketTppFactory() override;
+    std::unique_ptr<Websocket> create() const override;
+protected:
+    WebsocketTppFactory();
+    std::shared_ptr<WebsocketTppServiceProvider> serviceProvider() const;
+#ifdef WEBSOCKETS_TPP_SHARED_IO_SERVICE
+private:
+    const std::shared_ptr<ServiceProvider> _serviceProvider;
+#endif
+};
 
 } // namespace LiveKitCpp
+#endif

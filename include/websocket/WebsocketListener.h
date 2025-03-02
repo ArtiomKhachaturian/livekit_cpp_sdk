@@ -13,10 +13,12 @@
 // limitations under the License.
 #pragma once
 #include <string_view>
+#include <memory>
 
 namespace LiveKitCpp
 {
 
+class MemoryBlock;
 class WebsocketError;
 enum class State;
 
@@ -32,7 +34,7 @@ public:
     virtual void onTextMessageReceived(uint64_t /*socketId*/, uint64_t /*connectionId*/,
                                        const std::string_view& /*message*/) {}
     virtual void onBinaryMessageReceved(uint64_t /*socketId*/, uint64_t /*connectionId*/,
-                                        const void* /*data*/, size_t /*dataLen*/) {}
+                                        const std::shared_ptr<const MemoryBlock>& /*message*/) {}
 protected:
     virtual ~WebsocketListener() = default;
 };

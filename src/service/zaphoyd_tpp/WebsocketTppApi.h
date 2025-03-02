@@ -11,28 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#pragma once
+#ifdef USE_ZAPHOYD_TPP_SOCKETS
 #include "CommandSender.h"
-#include "MemoryBlock.h"
-#include "google/protobuf/message.h"
 
 namespace LiveKitCpp
 {
 
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to)
+enum class State;
+
+class WebsocketTppApi : public CommandSender
 {
-    if (to) {
-        std::vector<uint8_t> data; // TLS storage
-        data.resize(message.ByteSizeLong());
-        if (const auto size = int(data.size())) {
-            if (message.SerializeToArray(data.data(), size)) {
-                return to->sendBinary(MemoryBlock::make(std::move(data)));
-            }
-            else {
-                // TODO: log error
-            }
-        }
-    }
-    return false;
-}
+public:
+    ~WebsocketTppApi() override = default;
+    virtual bool open() = 0;
+    virtual std::string host() const = 0;
+    virtual State state() const = 0;
+    virtual void destroy() = 0;
+};
 
 } // namespace LiveKitCpp
+#endif

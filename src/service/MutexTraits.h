@@ -11,28 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CommandSender.h"
-#include "MemoryBlock.h"
-#include "google/protobuf/message.h"
+#pragma once // MutexTraits.h
+#include "SharedLockGuard.h"
+#include <mutex>
+#include <shared_mutex>
 
 namespace LiveKitCpp
 {
 
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to)
-{
-    if (to) {
-        std::vector<uint8_t> data; // TLS storage
-        data.resize(message.ByteSizeLong());
-        if (const auto size = int(data.size())) {
-            if (message.SerializeToArray(data.data(), size)) {
-                return to->sendBinary(MemoryBlock::make(std::move(data)));
-            }
-            else {
-                // TODO: log error
-            }
-        }
-    }
-    return false;
-}
+template<class TMutexType> struct MutexTraits {
+    using WriteLock = std::lock_guard<TMutexType>;
+    using ReadLock  = WriteLock;
+};
+
+template<> struct MutexTraits<std::shared_mutex> {
+    using WriteLock = std::lock_guard<std::shared_mutex>;
+    using ReadLock  = SharedLockGuard<std::shared_mutex>;
+};
+
 
 } // namespace LiveKitCpp

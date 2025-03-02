@@ -13,6 +13,7 @@
 #include "SignalClientWs.h"
 #include "Websocket.h"
 #include "WebsocketFactory.h"
+#include "MemoryBlock.h"
 
 namespace LiveKitCpp
 {
@@ -48,10 +49,12 @@ void SignalClientWs::onTextMessageReceived(uint64_t socketId, uint64_t connectio
 }
 
 void SignalClientWs::onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
-                                            const void* data, size_t dataLen)
+                                            const std::shared_ptr<const MemoryBlock>& message)
 {
-    WebsocketListener::onBinaryMessageReceved(socketId, connectionId, data, dataLen);
-    receiveBinary(data, dataLen);
+    WebsocketListener::onBinaryMessageReceved(socketId, connectionId, message);
+    if (message) {
+        receiveBinary(message->data(), message->size());
+    }
 }
 
 } // namespace LiveKitCpp

@@ -10,8 +10,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Specify source files
-file(GLOB_RECURSE INCLUDE_FILES ${CMAKE_SOURCE_DIR}/include/*.h)
-file(GLOB_RECURSE SOURCE_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
+file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/src/*.h)
+file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 # Generate C++ code from proto files
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
@@ -60,7 +61,9 @@ option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websocke
 #set(TPP_HDRS_DIR)
 #set(ASIO_HDRS_DIR)
 
-if(USE_ZAPHOYD_TPP_SOCKETS)
+if (USE_ZAPHOYD_TPP_SOCKETS)
+    find_package(OpenSSL REQUIRED)
+    option(ZAPHOYD_SHARED_IO_SERVICE "Common I/O worker thread for all websockets instances" ON)
     set(TPP_ZIP_URL "https://github.com/zaphoyd/websocketpp/archive/refs/heads/master.zip")
     set(TPP_SRC_DIR ${CMAKE_BINARY_DIR}/zaphoyd_tpp_src)
     set(ASIO_ZIP_URL "https://sourceforge.net/projects/asio/files/asio/1.30.2%20%28Stable%29/asio-1.30.2.tar.gz/download")
@@ -73,22 +76,25 @@ endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # Create a static library
 add_library(${LIB_PROJECT_NAME} SHARED
-    ${INCLUDE_FILES}
-    ${SOURCE_FILES}
+    ${PUBLIC_HEADERS}
+    ${CPP_HEADERS}
+    ${CPP_SOURCES}
     ${PROTO_SOURCES} # Add generated .cpp files
     ${PROTO_HEADERS}
 )
 
 source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_SOURCES})
 source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_HEADERS})
-source_group(TREE ${CMAKE_SOURCE_DIR}/include PREFIX "Headers" FILES ${INCLUDE_FILES})
-source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Sources" FILES ${SOURCE_FILES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/include PREFIX "PublicHeaders" FILES ${PUBLIC_HEADERS})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Headers" FILES ${CPP_HEADERS})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Sources" FILES ${CPP_SOURCES})
 
 # Add include directories
 target_include_directories(${LIB_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core
     ${CMAKE_CURRENT_SOURCE_DIR}/include/websocket
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/service
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )
@@ -98,10 +104,14 @@ target_link_libraries(${LIB_PROJECT_NAME} PRIVATE ${Protobuf_LIBRARIES})
 # Link abseil
 target_link_libraries(${LIB_PROJECT_NAME} PRIVATE absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
 # Websockets
-if(USE_ZAPHOYD_TPP_SOCKETS)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS)
+if (USE_ZAPHOYD_TPP_SOCKETS)
+    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
+    if (ZAPHOYD_SHARED_IO_SERVICE)
+        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
+    endif(ZAPHOYD_SHARED_IO_SERVICE)
     target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} ${ASIO_HDRS_DIR})
-    if(WIN32)
+    if (WIN32)
         target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "ws2_32")
     endif(WIN32)
+    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
 endif(USE_ZAPHOYD_TPP_SOCKETS)

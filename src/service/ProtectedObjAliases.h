@@ -11,27 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CommandSender.h
+#pragma once // ProtectedObjAliases.h
+#include "ProtectedObj.h"
 #include <memory>
-#include <string>
-
-namespace google::protobuf {
-class Message;
-}
+#include <optional>
 
 namespace LiveKitCpp
 {
+// aliases for most common std types
 
-class MemoryBlock;
+template <typename T, class TMutexType = std::recursive_mutex>
+using ProtectedSharedPtr = ProtectedObj<std::shared_ptr<T>, TMutexType>;
 
-class CommandSender
-{
-public:
-    virtual ~CommandSender() = default;
-    virtual bool sendBinary(const std::shared_ptr<const MemoryBlock>& binary) = 0;
-    virtual bool sendText(const std::string_view& text) = 0;
-};
+template <typename T, class TMutexType = std::recursive_mutex>
+using ProtectedWeakPtr = ProtectedObj<std::weak_ptr<T>, TMutexType>;
 
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to);
+template <typename T, class TMutexType = std::recursive_mutex>
+using ProtectedUniquePtr = ProtectedObj<std::unique_ptr<T>, TMutexType>;
+
+template <typename T, class TMutexType = std::recursive_mutex>
+using ProtectedOptional = ProtectedObj<std::optional<T>, TMutexType>;
 
 } // namespace LiveKitCpp

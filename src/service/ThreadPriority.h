@@ -11,28 +11,33 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CommandSender.h"
-#include "MemoryBlock.h"
-#include "google/protobuf/message.h"
+#pragma once // ThreadPriority.h
+#include <limits>
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 namespace LiveKitCpp
 {
 
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to)
+enum class ThreadPriority : int
 {
-    if (to) {
-        std::vector<uint8_t> data; // TLS storage
-        data.resize(message.ByteSizeLong());
-        if (const auto size = int(data.size())) {
-            if (message.SerializeToArray(data.data(), size)) {
-                return to->sendBinary(MemoryBlock::make(std::move(data)));
-            }
-            else {
-                // TODO: log error
-            }
-        }
-    }
-    return false;
-}
+    Auto     = std::numeric_limits<int>::min(),
+#ifdef _WIN32
+    Low      = THREAD_PRIORITY_BELOW_NORMAL,
+    Normal   = THREAD_PRIORITY_NORMAL,
+    High     = THREAD_PRIORITY_ABOVE_NORMAL,
+    Highest  = THREAD_PRIORITY_HIGHEST,
+    Realtime = THREAD_PRIORITY_TIME_CRITICAL
+#else
+    Low      = 1,
+    Normal   = 2,
+    High     = 3,
+    Highest  = 4,
+    Realtime = 5
+#endif
+};
+
+const char* ToString(ThreadPriority priority);
 
 } // namespace LiveKitCpp

@@ -40,7 +40,7 @@ public:
     const std::error_code& code() const noexcept { return _code; }
     const std::string& details() const noexcept { return _details; }
     std::string toString() const; // maybe for logs
-    bool isCritical() const noexcept { return WebsocketFailure::SocketOption != type(); }
+    bool critical() const noexcept { return WebsocketFailure::SocketOption != type(); }
     static WebsocketError fromSystemError(WebsocketFailure type, const std::system_error& error);
 private:
     WebsocketFailure _type;

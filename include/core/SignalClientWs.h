@@ -32,7 +32,7 @@ private:
     void onTextMessageReceived(uint64_t socketId, uint64_t connectionId,
                                const std::string_view& message) final;
     void onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
-                                const void* data, size_t dataLen) final;
+                                const std::shared_ptr<const MemoryBlock>& message) final;
 private:
     const std::unique_ptr<Websocket> _socket;
 };

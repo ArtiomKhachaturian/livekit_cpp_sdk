@@ -11,28 +11,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CommandSender.h"
+#pragma once // WebsocketTppMemoryBlock.h
 #include "MemoryBlock.h"
-#include "google/protobuf/message.h"
 
 namespace LiveKitCpp
 {
 
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to)
+template<class MessagePtr>
+class WebsocketTppMemoryBlock : public MemoryBlock
 {
-    if (to) {
-        std::vector<uint8_t> data; // TLS storage
-        data.resize(message.ByteSizeLong());
-        if (const auto size = int(data.size())) {
-            if (message.SerializeToArray(data.data(), size)) {
-                return to->sendBinary(MemoryBlock::make(std::move(data)));
-            }
-            else {
-                // TODO: log error
-            }
-        }
-    }
-    return false;
+public:
+    WebsocketTppMemoryBlock(MessagePtr message);
+    ~WebsocketTppMemoryBlock() final;
+private:
+    const MessagePtr _message;
+};
+
+template<class MessagePtr>
+WebsocketTppMemoryBlock<MessagePtr>::WebsocketTppMemoryBlock(MessagePtr message)
+    : _message(std::move(message))
+{
+    auto& payload = _message->get_raw_payload();
+    setData(reinterpret_cast<uint8_t*>(payload.data()), payload.size());
+}
+
+template<class MessagePtr>
+WebsocketTppMemoryBlock<MessagePtr>::~WebsocketTppMemoryBlock()
+{
+    _message->recycle();
 }
 
 } // namespace LiveKitCpp

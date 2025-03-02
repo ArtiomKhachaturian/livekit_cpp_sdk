@@ -11,28 +11,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CommandSender.h"
-#include "MemoryBlock.h"
-#include "google/protobuf/message.h"
+#ifdef USE_ZAPHOYD_TPP_SOCKETS
+#include "WebsocketTppConfig.h"
 
 namespace LiveKitCpp
 {
 
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to)
+WebsocketTppConfig::WebsocketTppConfig(websocketpp::uri_ptr uri, WebsocketOptions options)
+    : _uri(std::move(uri))
+    , _options(std::move(options))
 {
-    if (to) {
-        std::vector<uint8_t> data; // TLS storage
-        data.resize(message.ByteSizeLong());
-        if (const auto size = int(data.size())) {
-            if (message.SerializeToArray(data.data(), size)) {
-                return to->sendBinary(MemoryBlock::make(std::move(data)));
-            }
-            else {
-                // TODO: log error
-            }
+}
+
+WebsocketTppConfig WebsocketTppConfig::create(WebsocketOptions options)
+{
+    if (!options._host.empty()) {
+        auto uri = std::make_shared<websocketpp::uri>(options._host);
+        if (uri->get_valid()) {
+            return WebsocketTppConfig(std::move(uri), std::move(options));
         }
+    }
+    return {};
+}
+
+bool WebsocketTppConfig::secure() const noexcept
+{
+    if (const auto& u = uri()) {
+        return u->get_secure();
     }
     return false;
 }
 
 } // namespace LiveKitCpp
+#endif
