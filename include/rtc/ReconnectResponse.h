@@ -11,18 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ICEServer.h
-#include <string>
+#pragma once // ReconnectResponse.h
+#include "rtc/ICEServer.h"
+#include "rtc/ClientConfiguration.h"
 #include <vector>
 
 namespace LiveKitCpp
 {
 
-struct ICEServer
+// sent when client reconnects
+struct ReconnectResponse
 {
-    std::vector<std::string> _urls;
-    std::string _username;
-    std::string _credential;
+    std::vector<ICEServer> _iceServers;
+    ClientConfiguration _clientConfiguration = {};
 };
 
 } // namespace LiveKitCpp

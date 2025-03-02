@@ -341,7 +341,7 @@ void SignalClient::Impl::handle(const livekit::TrackUnpublishedResponse& respons
 
 void SignalClient::Impl::handle(const livekit::ReconnectResponse& response) const
 {
-    
+    signal(&SignalClientListener::onReconnect, response);
 }
 
 void SignalClient::Impl::handle(const livekit::SubscriptionResponse& response) const

@@ -32,6 +32,7 @@ struct SpeakersChanged;
 struct RoomUpdate;
 struct StreamStateUpdate;
 struct SubscribedQualityUpdate;
+struct ReconnectResponse;
 
 class SignalClientListener
 {
@@ -68,6 +69,8 @@ public:
                                            const SubscribedQualityUpdate& /*update*/) {}
     virtual void onRefreshToken(uint64_t /*signalClientId*/,
                                 const std::string& /*authToken*/) {}
+    virtual void onReconnect(uint64_t /*signalClientId*/,
+                             const ReconnectResponse& /*response*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,
                         const std::chrono::milliseconds& /*timestamp*/,
                         const std::chrono::milliseconds& /*lastPingTimestamp*/ = {}) {}

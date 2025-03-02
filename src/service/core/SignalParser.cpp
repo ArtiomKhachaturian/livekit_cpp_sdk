@@ -32,6 +32,7 @@ JoinResponse SignalParser::from(const livekit::JoinResponse& in)
     }
     out._otherParticipants = from<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
     out._serverVersion = in.server_version();
+    out._iceServers = from<ICEServer, livekit::ICEServer>(in.ice_servers());
     out._subscriberPrimary = in.subscriber_primary();
     out._alternativeUrl = in.alternative_url();
     if (in.has_client_configuration()) {
@@ -134,6 +135,16 @@ SubscribedQualityUpdate SignalParser::from(const livekit::SubscribedQualityUpdat
     out._trackSid = in.track_sid();
     out._subscribedQualities = from<SubscribedQuality, livekit::SubscribedQuality>(in.subscribed_qualities());
     out._subscribedCodecs = from<SubscribedCodec, livekit::SubscribedCodec>(in.subscribed_codecs());
+    return out;
+}
+
+ReconnectResponse SignalParser::from(const livekit::ReconnectResponse& in)
+{
+    ReconnectResponse out;
+    out._iceServers = from<ICEServer, livekit::ICEServer>(in.ice_servers());
+    if (in.has_client_configuration()) {
+        out._clientConfiguration = from(in.client_configuration());
+    }
     return out;
 }
 
@@ -625,6 +636,18 @@ SubscribedCodec SignalParser::from(const livekit::SubscribedCodec& in)
     SubscribedCodec out;
     out._codec = in.codec();
     out._qualities = from<SubscribedQuality, livekit::SubscribedQuality>(in.qualities());
+    return out;
+}
+
+ICEServer SignalParser::from(const livekit::ICEServer& in)
+{
+    ICEServer out;
+    out._urls.reserve(in.urls_size());
+    for (const auto& url : in.urls()) {
+        out._urls.push_back(url);
+    }
+    out._username = in.username();
+    out._credential = in.credential();
     return out;
 }
 

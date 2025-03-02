@@ -32,7 +32,7 @@ struct JoinResponse
     std::vector<ParticipantInfo> _otherParticipants;
      // deprecated. use server_info.version instead.
     [[deprecated("Use _serverInfo._version instead.")]] std::string _serverVersion;
-     //repeated ICEServer ice_servers = 5;
+    std::vector<ICEServer> _iceServers;
      // use subscriber as the primary PeerConnection
     bool _subscriberPrimary = {};
      // when the current server isn't available, return alternate url to retry connection
