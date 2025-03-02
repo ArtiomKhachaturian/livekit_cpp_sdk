@@ -15,31 +15,9 @@
 #include "SignalClientListener.h"
 #include "ProtectedObjAliases.h"
 #include "Listeners.h"
+#include "rtc/JoinResponse.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
-
-using namespace livekit;
-
-namespace {
-
-template <class TProtoBuffResponseClass>
-inline std::optional<TProtoBuffResponseClass> parseResponse(const void* data,
-                                                            size_t dataLen) {
-    if (data && dataLen) {
-        TProtoBuffResponseClass response;
-        if (response.ParseFromArray(data, int(dataLen))) {
-            return response;
-        }
-    }
-    return std::nullopt;
-}
-
-inline std::optional<SignalResponse> parseSignalResponse(const void* data,
-                                                         size_t dataLen) {
-    return parseResponse<SignalResponse>(data, dataLen);
-}
-
-}
 
 namespace LiveKitCpp
 {
@@ -56,24 +34,41 @@ public:
 private:
     template <class Method, typename... Args>
     void invokeListener(const Method& method, Args&&... args) const;
-    void handle(const JoinResponse& join);
-    void handle(const SessionDescription& desc, bool offer);
-    void handle(const TrickleRequest& trickle);
-    void handle(const ParticipantUpdate& participantUpdate);
-    void handle(const TrackPublishedResponse& trackPublished);
-    void handle(const LeaveRequest& leave);
-    void handle(const MuteTrackRequest& muteTrack);
-    void handle(const SpeakersChanged& speakersChanged);
-    void handle(const RoomUpdate& roomtUpdate);
-    void handle(const ConnectionQualityUpdate& qualityUpdate);
-    void handle(const StreamStateUpdate& stateUpdate);
-    void handle(const SubscribedQualityUpdate& qualityUpdate);
-    void handle(const SubscriptionPermissionUpdate& permissionUpdate);
-    void handle(const TrackUnpublishedResponse& trackUnpublished);
-    void handle(const ReconnectResponse& reconnect);
-    void handle(const SubscriptionResponse& subscription);
-    void handle(const RequestResponse& request);
-    void handle(const TrackSubscribed& trackSubscribed);
+    void handle(const livekit::JoinResponse& join);
+    void handle(const livekit::SessionDescription& desc, bool offer);
+    void handle(const livekit::TrickleRequest& trickle);
+    void handle(const livekit::ParticipantUpdate& participantUpdate);
+    void handle(const livekit::TrackPublishedResponse& trackPublished);
+    void handle(const livekit::LeaveRequest& leave);
+    void handle(const livekit::MuteTrackRequest& muteTrack);
+    void handle(const livekit::SpeakersChanged& speakersChanged);
+    void handle(const livekit::RoomUpdate& roomtUpdate);
+    void handle(const livekit::ConnectionQualityUpdate& qualityUpdate);
+    void handle(const livekit::StreamStateUpdate& stateUpdate);
+    void handle(const livekit::SubscribedQualityUpdate& qualityUpdate);
+    void handle(const livekit::SubscriptionPermissionUpdate& permissionUpdate);
+    void handle(const livekit::TrackUnpublishedResponse& trackUnpublished);
+    void handle(const livekit::ReconnectResponse& reconnect);
+    void handle(const livekit::SubscriptionResponse& subscription);
+    void handle(const livekit::RequestResponse& request);
+    void handle(const livekit::TrackSubscribed& trackSubscribed);
+    void handle(const livekit::Pong& pong);
+    template <typename TProtoBufType>
+    static std::optional<TProtoBufType> parse(const void* data, size_t dataLen);
+    template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
+    static std::vector<TCppType> mapFrom(const TProtoBufRepeated& in);
+    static std::optional<livekit::SignalResponse>
+        parseSignalResponse(const void* data, size_t dataLen);
+    static Room mapFrom(const livekit::Room& in);
+    static Codec mapFrom(const livekit::Codec& in);
+    static TimedVersion mapFrom(const livekit::TimedVersion& in);
+    static ParticipantInfo mapFrom(const livekit::ParticipantInfo& in);
+    static ParticipantKind mapFrom(livekit::ParticipantInfo_Kind in);
+    static ParticipantState mapFrom(livekit::ParticipantInfo_State in);
+    static ParticipantPermission mapFrom(const livekit::ParticipantPermission& in);
+    static DisconnectReason mapFrom(livekit::DisconnectReason in);
+    static TrackSource mapFrom(livekit::TrackSource in);
+    static TrackInfo mapFrom(const livekit::TrackInfo& in);
 private:
     const uint64_t _id;
     CommandSender* const _commandSender;
@@ -181,70 +176,72 @@ void SignalClient::Impl::parseBinary(const void* data, size_t dataLen)
 {
     if (auto response = parseSignalResponse(data, dataLen)) {
         switch (response->message_case()) {
-            case SignalResponse::kJoin:
+            case livekit::SignalResponse::kJoin:
                 handle(response->join());
                 break;
-            case SignalResponse::kAnswer:
+            case livekit::SignalResponse::kAnswer:
                 handle(response->answer(), false);
                 break;
-            case SignalResponse::kOffer:
+            case livekit::SignalResponse::kOffer:
                 handle(response->offer(), true);
                 break;
-            case SignalResponse::kTrickle:
+            case livekit::SignalResponse::kTrickle:
                 handle(response->trickle());
                 break;
-            case SignalResponse::kUpdate:
+            case livekit::SignalResponse::kUpdate:
                 handle(response->update());
                 break;
-            case SignalResponse::kTrackPublished:
+            case livekit::SignalResponse::kTrackPublished:
                 handle(response->track_published());
                 break;
-            case SignalResponse::kLeave:
+            case livekit::SignalResponse::kLeave:
                 handle(response->leave());
                 break;
-            case SignalResponse::kMute:
+            case livekit::SignalResponse::kMute:
                 handle(response->mute());
                 break;
-            case SignalResponse::kSpeakersChanged:
+            case livekit::SignalResponse::kSpeakersChanged:
                 handle(response->speakers_changed());
                 break;
-            case SignalResponse::kRoomUpdate:
+            case livekit::SignalResponse::kRoomUpdate:
                 handle(response->room_update());
                 break;
-            case SignalResponse::kConnectionQuality:
+            case livekit::SignalResponse::kConnectionQuality:
                 handle(response->connection_quality());
                 break;
-            case SignalResponse::kStreamStateUpdate:
+            case livekit::SignalResponse::kStreamStateUpdate:
                 handle(response->stream_state_update());
                 break;
-            case SignalResponse::kSubscribedQualityUpdate:
+            case livekit::SignalResponse::kSubscribedQualityUpdate:
                 handle(response->subscribed_quality_update());
                 break;
-            case SignalResponse::kSubscriptionPermissionUpdate:
+            case livekit::SignalResponse::kSubscriptionPermissionUpdate:
                 handle(response->subscription_permission_update());
                 break;
-            case SignalResponse::kRefreshToken:
-                response->refresh_token(); // std::string
+            case livekit::SignalResponse::kRefreshToken:
+                invokeListener(&SignalClientListener::onRefreshToken, response->refresh_token());
                 break;
-            case SignalResponse::kTrackUnpublished:
+            case livekit::SignalResponse::kTrackUnpublished:
                 handle(response->track_unpublished());
                 break;
-            case SignalResponse::kPong:
-                response->pong(); // int64_t
+            case livekit::SignalResponse::kPong: // deprecated
+                invokeListener(&SignalClientListener::onPong,
+                               std::chrono::milliseconds{response->pong()},
+                               std::chrono::milliseconds{});
                 break;
-            case SignalResponse::kReconnect:
+            case livekit::SignalResponse::kReconnect:
                 handle(response->reconnect());
                 break;
-            case SignalResponse::kPongResp:
-                response->pong(); // int64_t
+            case livekit::SignalResponse::kPongResp:
+                handle(response->pong_resp());
                 break;
-            case SignalResponse::kSubscriptionResponse:
+            case livekit::SignalResponse::kSubscriptionResponse:
                 handle(response->subscription_response());
                 break;
-            case SignalResponse::kRequestResponse:
+            case livekit::SignalResponse::kRequestResponse:
                 handle(response->request_response());
                 break;
-            case SignalResponse::kTrackSubscribed:
+            case livekit::SignalResponse::kTrackSubscribed:
                 handle(response->track_subscribed());
                 break;
             default:
@@ -273,94 +270,348 @@ void SignalClient::Impl::invokeListener(const Method& method, Args&&... args) co
     _listeners.invokeMethod(method, _id, std::forward<Args>(args)...);
 }
 
-void SignalClient::Impl::handle(const JoinResponse& join)
+void SignalClient::Impl::handle(const livekit::JoinResponse& join)
+{
+    JoinResponse resp;
+    if (join.has_room()) {
+        resp._room = mapFrom(join.room());
+    }
+    if (join.has_participant()) {
+        resp._participant = mapFrom(join.participant());
+    }
+    resp._otherParticipants = mapFrom<ParticipantInfo, livekit::ParticipantInfo>(join.other_participants());
+    resp._serverVersion = join.server_version();
+    resp._subscriberPrimary = join.subscriber_primary();
+    resp._alternativeUrl = join.alternative_url();
+    resp._serverRegion = join.server_region();
+    resp._pingTimeout = join.ping_timeout();
+    resp._pingInterval = join.ping_interval();
+    resp._sifTrailer = join.sif_trailer();
+    resp._enabledPublishCodecs = mapFrom<Codec, livekit::Codec>(join.enabled_publish_codecs());
+    resp._fastPublish = join.fast_publish();
+    invokeListener(&SignalClientListener::onJoin, resp);
+}
+
+void SignalClient::Impl::handle(const livekit::SessionDescription& desc, bool offer)
+{
+    if (offer) {
+        invokeListener(&SignalClientListener::onOffer, desc.type(), desc.sdp());
+    }
+    else {
+        invokeListener(&SignalClientListener::onAnswer, desc.type(), desc.sdp());
+    }
+}
+
+void SignalClient::Impl::handle(const livekit::TrickleRequest& trickle)
 {
     
 }
 
-void SignalClient::Impl::handle(const SessionDescription& desc, bool offer)
+void SignalClient::Impl::handle(const livekit::ParticipantUpdate& participantUpdate)
 {
     
 }
 
-void SignalClient::Impl::handle(const TrickleRequest& trickle)
+void SignalClient::Impl::handle(const livekit::TrackPublishedResponse& trackPublished)
 {
     
 }
 
-void SignalClient::Impl::handle(const ParticipantUpdate& participantUpdate)
+void SignalClient::Impl::handle(const livekit::LeaveRequest& leave)
 {
     
 }
 
-void SignalClient::Impl::handle(const TrackPublishedResponse& trackPublished)
+void SignalClient::Impl::handle(const livekit::MuteTrackRequest& muteTrack)
 {
     
 }
 
-void SignalClient::Impl::handle(const LeaveRequest& leave)
+void SignalClient::Impl::handle(const livekit::SpeakersChanged& speakersChanged)
 {
     
 }
 
-void SignalClient::Impl::handle(const MuteTrackRequest& muteTrack)
+void SignalClient::Impl::handle(const livekit::RoomUpdate& roomtUpdate)
 {
     
 }
 
-void SignalClient::Impl::handle(const SpeakersChanged& speakersChanged)
+void SignalClient::Impl::handle(const livekit::ConnectionQualityUpdate& qualityUpdate)
 {
     
 }
 
-void SignalClient::Impl::handle(const RoomUpdate& roomtUpdate)
+void SignalClient::Impl::handle(const livekit::StreamStateUpdate& stateUpdate)
 {
     
 }
 
-void SignalClient::Impl::handle(const ConnectionQualityUpdate& qualityUpdate)
+void SignalClient::Impl::handle(const livekit::SubscribedQualityUpdate& qualityUpdate)
 {
     
 }
 
-void SignalClient::Impl::handle(const StreamStateUpdate& stateUpdate)
+void SignalClient::Impl::handle(const livekit::SubscriptionPermissionUpdate& permissionUpdate)
 {
     
 }
 
-void SignalClient::Impl::handle(const SubscribedQualityUpdate& qualityUpdate)
+void SignalClient::Impl::handle(const livekit::TrackUnpublishedResponse& trackUnpublished)
 {
     
 }
 
-void SignalClient::Impl::handle(const SubscriptionPermissionUpdate& permissionUpdate)
+void SignalClient::Impl::handle(const livekit::ReconnectResponse& reconnect)
 {
     
 }
 
-void SignalClient::Impl::handle(const TrackUnpublishedResponse& trackUnpublished)
+void SignalClient::Impl::handle(const livekit::SubscriptionResponse& subscription)
 {
     
 }
 
-void SignalClient::Impl::handle(const ReconnectResponse& reconnect)
+void SignalClient::Impl::handle(const livekit::RequestResponse& request)
 {
     
 }
 
-void SignalClient::Impl::handle(const SubscriptionResponse& subscription)
+void SignalClient::Impl::handle(const livekit::TrackSubscribed& trackSubscribed)
 {
     
 }
 
-void SignalClient::Impl::handle(const RequestResponse& request)
+void SignalClient::Impl::handle(const livekit::Pong& pong)
 {
-    
+    invokeListener(&SignalClientListener::onPong,
+                   std::chrono::milliseconds{pong.timestamp()},
+                   std::chrono::milliseconds{pong.last_ping_timestamp()});
 }
 
-void SignalClient::Impl::handle(const TrackSubscribed& trackSubscribed)
+template <class TProtoBufType>
+std::optional<TProtoBufType> SignalClient::Impl::parse(const void* data,
+                                                         size_t dataLen) {
+    if (data && dataLen) {
+        TProtoBufType instance;
+        if (instance.ParseFromArray(data, int(dataLen))) {
+            return instance;
+        }
+    }
+    return std::nullopt;
+}
+
+template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
+std::vector<TCppType> SignalClient::Impl::mapFrom(const TProtoBufRepeated& in)
 {
-    
+    if (const auto size = in.size()) {
+        std::vector<TCppType> out;
+        out.reserve(size_t(size));
+        for (const auto& val : in) {
+            out.push_back(mapFrom(TProtoBufType(val)));
+        }
+        return out;
+    }
+    return {};
+}
+
+std::optional<livekit::SignalResponse> SignalClient::Impl::
+    parseSignalResponse(const void* data, size_t dataLen)
+{
+    return parse<livekit::SignalResponse>(data, dataLen);
+}
+
+Room SignalClient::Impl::mapFrom(const livekit::Room& in)
+{
+    Room out;
+    out._sid = in.sid();
+    out._name = in.name();
+    out._emptyTimeout = in.empty_timeout();
+    out._departureTimeout = in.departure_timeout();
+    out._maxParticipants = in.max_participants();
+    out._creationTime = in.creation_time();
+    out._creationTimeMs = in.creation_time_ms();
+    out._turnPassword = in.turn_password();
+    out._enabledCodecs = mapFrom<Codec, livekit::Codec>(in.enabled_codecs());
+    out._metadata = in.metadata();
+    out._numParticipants = in.num_participants();
+    out._numPublishers = in.num_publishers();
+    out._activeRecording = in.active_recording();
+    if (in.has_version()) {
+        out._version = mapFrom(in.version());
+    }
+    return out;
+}
+
+Codec SignalClient::Impl::mapFrom(const livekit::Codec& in)
+{
+    return {in.mime(), in.fmtp_line()};
+}
+
+TimedVersion SignalClient::Impl::mapFrom(const livekit::TimedVersion& in)
+{
+    return {in.unix_micro(), in.ticks()};
+}
+
+ParticipantInfo SignalClient::Impl::mapFrom(const livekit::ParticipantInfo& in)
+{
+    ParticipantInfo out;
+    out._sid = in.sid();
+    out._identity = in.identity();
+    out._state = mapFrom(in.state());
+    out._metadata = in.metadata();
+    out._joinedAt = in.joined_at();
+    out.joinedAtMs = in.joined_at_ms();
+    out._name = in.name();
+    out._version = in.version();
+    if (in.has_permission()) {
+        out._permission = mapFrom(in.permission());
+    }
+    out._region = in.region();
+    out._isPublisher = in.is_publisher();
+    out._kind = mapFrom(in.kind());
+    //out._attributes
+    out._disconnectReason = mapFrom(in.disconnect_reason());
+    return out;
+}
+
+ParticipantKind SignalClient::Impl::mapFrom(livekit::ParticipantInfo_Kind in)
+{
+    switch (in) {
+        case livekit::ParticipantInfo_Kind_STANDARD:
+            break;
+        case livekit::ParticipantInfo_Kind_INGRESS:
+            return ParticipantKind::Ingress;
+        case livekit::ParticipantInfo_Kind_EGRESS:
+            return ParticipantKind::Egress;
+        case livekit::ParticipantInfo_Kind_SIP:
+            return ParticipantKind::Sip;
+        case livekit::ParticipantInfo_Kind_AGENT:
+            return ParticipantKind::Agent;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return ParticipantKind::Standard;
+}
+
+ParticipantState SignalClient::Impl::mapFrom(livekit::ParticipantInfo_State in)
+{
+    switch (in) {
+        case livekit::ParticipantInfo_State_JOINING:
+            return ParticipantState::Joining;
+        case livekit::ParticipantInfo_State_JOINED:
+            return ParticipantState::Joined;
+        case livekit::ParticipantInfo_State_ACTIVE:
+            return ParticipantState::Active;
+        case livekit::ParticipantInfo_State_DISCONNECTED:
+            break;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return ParticipantState::Disconnected;
+}
+
+ParticipantPermission SignalClient::Impl::mapFrom(const livekit::ParticipantPermission& in)
+{
+    ParticipantPermission out;
+    out._canSubscribe = in.can_subscribe();
+    out._canPublish = in.can_publish();
+    out._canPublish_data = in.can_publish_data();
+    out._canPublishSources = mapFrom<TrackSource, livekit::TrackSource>(in.can_publish_sources());
+    out._hidden = in.hidden();
+    out._recorder = in.recorder();
+    out._canUpdateMetadata = in.can_update_metadata();
+    out._agent = in.agent();
+    out._canSubscribeMetrics = in.can_subscribe_metrics();
+    return out;
+}
+
+DisconnectReason SignalClient::Impl::mapFrom(livekit::DisconnectReason in)
+{
+    switch (in) {
+        case livekit::UNKNOWN_REASON:
+            break;
+        case livekit::CLIENT_INITIATED:
+            return DisconnectReason::ClientInitiated;
+        case livekit::DUPLICATE_IDENTITY:
+            return DisconnectReason::DuplicateIdentity;
+        case livekit::SERVER_SHUTDOWN:
+            return DisconnectReason::ServerShutdown;
+        case livekit::PARTICIPANT_REMOVED:
+            return DisconnectReason::ParticipantRemoved;
+        case livekit::ROOM_DELETED:
+            return DisconnectReason::RoomDeleted;
+        case livekit::STATE_MISMATCH:
+            return DisconnectReason::StateMismatch;
+        case livekit::JOIN_FAILURE:
+            return DisconnectReason::JoinFailure;
+        case livekit::MIGRATION:
+            return DisconnectReason::Migration;
+        case livekit::SIGNAL_CLOSE:
+            return DisconnectReason::SignalClose;
+        case livekit::ROOM_CLOSED:
+            return DisconnectReason::RoomClosed;
+        case livekit::USER_UNAVAILABLE:
+            return DisconnectReason::UserUnavailable;
+        case livekit::USER_REJECTED:
+            return DisconnectReason::UserRejected;
+        case livekit::SIP_TRUNK_FAILURE:
+            return DisconnectReason::SipTrunkFailure;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return DisconnectReason::UnknownReason;
+}
+
+TrackSource SignalClient::Impl::mapFrom(livekit::TrackSource in)
+{
+    switch (in) {
+        case livekit::UNKNOWN:
+            break;
+        case livekit::CAMERA:
+            return TrackSource::Camera;
+        case livekit::MICROPHONE:
+            return TrackSource::Microphone;
+        case livekit::SCREEN_SHARE:
+            return TrackSource::ScreenShare;
+        case livekit::SCREEN_SHARE_AUDIO:
+            return TrackSource::ScreenShareAudio;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return TrackSource::Unknown;
+}
+
+TrackInfo SignalClient::Impl::mapFrom(const livekit::TrackInfo& in)
+{
+    TrackInfo out;
+    out._sid = in.sid();
+    //out._type = in.type();
+    out._name = in.name();
+    out._muted = in.muted();
+    out._width = in.width();
+    out._height = in.height();
+    out._simulcast = in.simulcast();
+    out._disableDtx = in.disable_dtx();
+    out._source = mapFrom(in.source());
+    //out._layers = mapFrom<>(in.layers());
+    out._mimeType = in.mime_type();
+    out._mid = in.mid();
+    //out._codecs = mapFrom<>(in.codecs());
+    out._stereo = in.stereo();
+    out._disableRed = in.disable_red();
+    //out._encryption = mapFrom(in.encryption());
+    out._stream = in.stream();
+    if (in.has_version()) {
+        out._version = mapFrom(in.version());
+    }
+    //out._audioFeatures = mapFrom<>(in.audio_features());
+    //out._backupCodecPolicy = mapFrom(in.backup_codec_policy());
+    return out;
 }
 
 } // namespace LiveKitCpp

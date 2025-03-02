@@ -18,16 +18,16 @@
 
 namespace {
 
-inline std::string stringVal(const std::string& key, const std::string& val) {
-    return key + "=" + val;
+inline std::string urlQueryItem(const std::string& key, const std::string& val) {
+    return "&" + key + "=" + val;
 }
 
-inline std::string integerVal(const std::string& key, int val) {
-    return stringVal(key, std::to_string(val));
+inline std::string urlQueryItem(const std::string& key, int val) {
+    return urlQueryItem(key, std::to_string(val));
 }
 
-inline std::string booleanVal(const std::string& key, bool val) {
-    return integerVal(key, val ? 1 : 0);
+inline std::string urlQueryItem(const std::string& key, bool val) {
+    return urlQueryItem(key, val ? 1 : 0);
 }
 
 inline LiveKitCpp::WebsocketOptions formatWsOptions(const std::string& host,
@@ -36,16 +36,17 @@ inline LiveKitCpp::WebsocketOptions formatWsOptions(const std::string& host,
                                                     bool adaptiveStream) {
     LiveKitCpp::WebsocketOptions options;
     if (!host.empty() && !authToken.empty()) {
+        // see example in https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Support/Utils.swift#L138
         options._host = host;
         if ('/' != options._host.back()) {
             options._host += '/';
         }
         options._host += "rtc?access_token=" + authToken;
-        options._host += "&" + booleanVal("auto_subscribe", autoSubscribe);
-        options._host += "&" + stringVal("sdk", "cpp");
-        options._host += "&" + stringVal("version", "2.9.5");
-        options._host += "&" + integerVal("protocol", 15);
-        options._host += "&" + booleanVal("adaptive_stream", adaptiveStream);
+        options._host += urlQueryItem("auto_subscribe", autoSubscribe);
+        options._host += urlQueryItem("sdk", "cpp");
+        options._host += urlQueryItem("version", "2.9.5");
+        options._host += urlQueryItem("protocol", 15);
+        options._host += urlQueryItem("adaptive_stream", adaptiveStream);
     }
     return options;
 }
@@ -101,12 +102,12 @@ bool SignalClientWs::adaptiveStream() const noexcept
 
 void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
 {
-    
+    _autoSubscribe = autoSubscribe;
 }
 
 void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
 {
-    
+    _adaptiveStream = adaptiveStream;
 }
 
 void SignalClientWs::setHost(std::string host)

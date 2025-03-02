@@ -12,17 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalClientListener.h
+#include <chrono>
+#include <string>
 
 namespace LiveKitCpp
 {
 
 enum class State;
+// these structs are defined in /include/rtc subfolder
+struct JoinResponse;
 
 class SignalClientListener
 {
 public:
     virtual void onTransportStateChanged(uint64_t /*signalClientId*/, State /*state*/) {}
     virtual void onServerResponseParseError(uint64_t /*signalClientId*/) {}
+    virtual void onJoin(uint64_t /*signalClientId*/,
+                        const JoinResponse& /*joinResponse*/) {}
+    virtual void onOffer(uint64_t /*signalClientId*/, const std::string& /*type*/,
+                         const std::string& /*sdp*/) {}
+    virtual void onAnswer(uint64_t /*signalClientId*/, const std::string& /*type*/,
+                          const std::string& /*sdp*/) {}
+    virtual void onRefreshToken(uint64_t /*signalClientId*/,
+                                const std::string& /*authToken*/) {}
+    virtual void onPong(uint64_t /*signalClientId*/,
+                        const std::chrono::milliseconds& /*timestamp*/,
+                        const std::chrono::milliseconds& /*lastPingTimestamp*/ = {}) {}
 protected:
     virtual ~SignalClientListener() = default;
 };
