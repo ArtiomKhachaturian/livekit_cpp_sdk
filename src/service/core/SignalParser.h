@@ -14,6 +14,7 @@
 #pragma once // SignalParser.h
 #include "rtc/JoinResponse.h"
 #include "rtc/LeaveRequest.h"
+#include "rtc/MuteTrackRequest.h"
 #include "rtc/TrickleRequest.h"
 #include "rtc/ParticipantUpdate.h"
 #include "rtc/TrackPublishedResponse.h"
@@ -45,6 +46,7 @@ public:
     static TrackPublishedResponse from(const livekit::TrackPublishedResponse& in);
     static TrackUnpublishedResponse from(const livekit::TrackUnpublishedResponse& in);
     static LeaveRequest from(const livekit::LeaveRequest& in);
+    static MuteTrackRequest from(const livekit::MuteTrackRequest& in);
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);

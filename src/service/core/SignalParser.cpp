@@ -90,6 +90,14 @@ LeaveRequest SignalParser::from(const livekit::LeaveRequest& in)
     return out;
 }
 
+MuteTrackRequest SignalParser::from(const livekit::MuteTrackRequest& in)
+{
+    MuteTrackRequest out;
+    out._sid = in.sid();
+    out._muted = in.muted();
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;

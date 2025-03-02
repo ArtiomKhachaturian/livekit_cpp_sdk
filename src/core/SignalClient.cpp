@@ -289,7 +289,7 @@ void SignalClient::Impl::handle(const livekit::LeaveRequest& leave)
 
 void SignalClient::Impl::handle(const livekit::MuteTrackRequest& muteTrack)
 {
-    
+    invokeListener(&SignalClientListener::onMuteTrack, SignalParser::from(muteTrack));
 }
 
 void SignalClient::Impl::handle(const livekit::SpeakersChanged& speakersChanged)
