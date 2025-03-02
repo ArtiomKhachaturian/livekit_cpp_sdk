@@ -17,6 +17,7 @@
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrickleRequest.h"
 #include "rtc/ParticipantUpdate.h"
+#include "rtc/SpeakersChanged.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
 #include "livekit_rtc.pb.h"
@@ -47,6 +48,7 @@ public:
     static TrackUnpublishedResponse from(const livekit::TrackUnpublishedResponse& in);
     static LeaveRequest from(const livekit::LeaveRequest& in);
     static MuteTrackRequest from(const livekit::MuteTrackRequest& in);
+    static SpeakersChanged from(const livekit::SpeakersChanged& in);
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);
@@ -74,6 +76,7 @@ public:
     static LeaveRequestAction from(livekit::LeaveRequest_Action in);
     static RegionInfo from(const livekit::RegionInfo& in);
     static RegionSettings from(const livekit::RegionSettings& in);
+    static SpeakerInfo from(const livekit::SpeakerInfo& in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> from(const TProtoBufRepeated& in);

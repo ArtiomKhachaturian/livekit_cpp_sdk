@@ -27,6 +27,7 @@ struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 struct LeaveRequest;
 struct MuteTrackRequest;
+struct SpeakersChanged;
 
 class SignalClientListener
 {
@@ -44,6 +45,7 @@ public:
     virtual void onTrackUnpublished(uint64_t /*signalClientId*/, const TrackUnpublishedResponse& /*unpublished*/) {}
     virtual void onLeave(uint64_t /*signalClientId*/, const LeaveRequest& /*leave*/) {}
     virtual void onMuteTrack(uint64_t /*signalClientId*/, const MuteTrackRequest& /*mute*/) {}
+    virtual void onSpeakersChanged(uint64_t /*signalClientId*/, const SpeakersChanged& /*changed*/) {}
     virtual void onRefreshToken(uint64_t /*signalClientId*/,
                                 const std::string& /*authToken*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,

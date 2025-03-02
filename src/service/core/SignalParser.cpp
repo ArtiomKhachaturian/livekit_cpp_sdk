@@ -98,6 +98,13 @@ MuteTrackRequest SignalParser::from(const livekit::MuteTrackRequest& in)
     return out;
 }
 
+SpeakersChanged SignalParser::from(const livekit::SpeakersChanged& in)
+{
+    SpeakersChanged out;
+    out._speakers = from<SpeakerInfo, livekit::SpeakerInfo>(in.speakers());
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
@@ -511,6 +518,15 @@ RegionSettings SignalParser::from(const livekit::RegionSettings& in)
 {
     RegionSettings out;
     out._regions = from<RegionInfo, livekit::RegionInfo>(in.regions());
+    return out;
+}
+
+SpeakerInfo SignalParser::from(const livekit::SpeakerInfo& in)
+{
+    SpeakerInfo out;
+    out._sid = in.sid();
+    out._level = in.level();
+    out._active = in.active();
     return out;
 }
 
