@@ -80,6 +80,16 @@ TrackUnpublishedResponse SignalParser::from(const livekit::TrackUnpublishedRespo
     return out;
 }
 
+LeaveRequest SignalParser::from(const livekit::LeaveRequest& in)
+{
+    LeaveRequest out;
+    out._canReconnect = in.can_reconnect();
+    out._reason = from(in.reason());
+    out._action = from(in.action());
+    out._regions = from(in.regions());
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
@@ -130,7 +140,7 @@ ParticipantInfo SignalParser::from(const livekit::ParticipantInfo& in)
     out._region = in.region();
     out._isPublisher = in.is_publisher();
     out._kind = from(in.kind());
-    //out._attributes
+    out._attributes = from(in.attributes());
     out._disconnectReason = from(in.disconnect_reason());
     return out;
 }
@@ -464,6 +474,38 @@ SignalTarget SignalParser::from(livekit::SignalTarget in)
     return SignalTarget::Publisher;
 }
 
+LeaveRequestAction SignalParser::from(livekit::LeaveRequest_Action in)
+{
+    switch (in) {
+        case livekit::LeaveRequest_Action_DISCONNECT:
+            break;
+        case livekit::LeaveRequest_Action_RESUME:
+            return LeaveRequestAction::Resume;
+        case livekit::LeaveRequest_Action_RECONNECT:
+            return LeaveRequestAction::Reconnect;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return LeaveRequestAction::Disconnect;
+}
+
+RegionInfo SignalParser::from(const livekit::RegionInfo& in)
+{
+    RegionInfo out;
+    out._region = in.region();
+    out._url = in.url();
+    out._distance = in.distance();
+    return out;
+}
+
+RegionSettings SignalParser::from(const livekit::RegionSettings& in)
+{
+    RegionSettings out;
+    out._regions = from<RegionInfo, livekit::RegionInfo>(in.regions());
+    return out;
+}
+
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
 std::vector<TCppType> SignalParser::from(const TProtoBufRepeated& in)
 {
@@ -472,6 +514,20 @@ std::vector<TCppType> SignalParser::from(const TProtoBufRepeated& in)
         out.reserve(size_t(size));
         for (const auto& val : in) {
             out.push_back(from(TProtoBufType(val)));
+        }
+        return out;
+    }
+    return {};
+}
+
+template<typename K, typename V>
+std::unordered_map<K, V> SignalParser::from(const google::protobuf::Map<K, V>& in)
+{
+    if (const auto size = in.size()) {
+        std::unordered_map<K, V> out;
+        out.reserve(size);
+        for (auto it = in.begin(); it != in.end(); ++it) {
+            out[it->first] = it->second;
         }
         return out;
     }

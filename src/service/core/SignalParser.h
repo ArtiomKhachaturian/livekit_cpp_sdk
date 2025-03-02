@@ -13,12 +13,14 @@
 // limitations under the License.
 #pragma once // SignalParser.h
 #include "rtc/JoinResponse.h"
+#include "rtc/LeaveRequest.h"
 #include "rtc/TrickleRequest.h"
 #include "rtc/ParticipantUpdate.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
+#include <unordered_map>
 
 namespace LiveKitCpp
 {
@@ -42,6 +44,7 @@ public:
     static ParticipantUpdate from(const livekit::ParticipantUpdate& in);
     static TrackPublishedResponse from(const livekit::TrackPublishedResponse& in);
     static TrackUnpublishedResponse from(const livekit::TrackUnpublishedResponse& in);
+    static LeaveRequest from(const livekit::LeaveRequest& in);
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
     static TimedVersion from(const livekit::TimedVersion& in);
@@ -66,9 +69,14 @@ public:
     static ServerEdition from(livekit::ServerInfo_Edition in);
     static ServerInfo from(const livekit::ServerInfo& in);
     static SignalTarget from(livekit::SignalTarget in);
+    static LeaveRequestAction from(livekit::LeaveRequest_Action in);
+    static RegionInfo from(const livekit::RegionInfo& in);
+    static RegionSettings from(const livekit::RegionSettings& in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> from(const TProtoBufRepeated& in);
+    template<typename K, typename V>
+    static std::unordered_map<K, V> from(const google::protobuf::Map<K, V>& in);
 };
 
 } // namespace LiveKitCpp

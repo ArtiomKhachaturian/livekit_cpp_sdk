@@ -11,18 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // BackupCodecPolicy.h
+#pragma once // LeaveRequest.h
+#include "rtc/DisconnectReason.h"
+#include "rtc/LeaveRequestAction.h"
+#include "rtc/RegionSettings.h"
 
 namespace LiveKitCpp
 {
 
-// Policy for publisher to handle subscribers that are unable to support the primary codec of a track
-enum class BackupCodecPolicy
+struct LeaveRequest
 {
-  // default behavior, regress to backup codec and all subscribers will receive the backup codec
-  Regression = 0,
-  // Encoding/Send The Primary And Backup Codec Simultaneously
-  Simulcast = 1,
+    // sent when server initiates the disconnect due to server-restart
+    // indicates clients should attempt full-reconnect sequence
+    // NOTE: `_canReconnect` obsoleted by `action` starting in protocol version 13
+    bool _canReconnect = {};
+    DisconnectReason _reason = {};
+    LeaveRequestAction _action = {};
+    RegionSettings _regions = {};
 };
 
 } // namespace LiveKitCpp

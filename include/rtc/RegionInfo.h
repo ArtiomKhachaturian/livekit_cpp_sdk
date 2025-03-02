@@ -11,18 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // BackupCodecPolicy.h
+#pragma once // RegionInfo.h
+#include <string>
 
 namespace LiveKitCpp
 {
 
-// Policy for publisher to handle subscribers that are unable to support the primary codec of a track
-enum class BackupCodecPolicy
+struct RegionInfo
 {
-  // default behavior, regress to backup codec and all subscribers will receive the backup codec
-  Regression = 0,
-  // Encoding/Send The Primary And Backup Codec Simultaneously
-  Simulcast = 1,
+    std::string _region;
+    std::string _url;
+    int64_t _distance = {};
 };
 
 } // namespace LiveKitCpp

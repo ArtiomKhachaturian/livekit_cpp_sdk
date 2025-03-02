@@ -284,7 +284,7 @@ void SignalClient::Impl::handle(const livekit::TrackPublishedResponse& published
 
 void SignalClient::Impl::handle(const livekit::LeaveRequest& leave)
 {
-    
+    invokeListener(&SignalClientListener::onLeave, SignalParser::from(leave));
 }
 
 void SignalClient::Impl::handle(const livekit::MuteTrackRequest& muteTrack)

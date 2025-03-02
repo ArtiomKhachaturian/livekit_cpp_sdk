@@ -25,6 +25,7 @@ struct TrickleRequest;
 struct ParticipantUpdate;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
+struct LeaveRequest;
 
 class SignalClientListener
 {
@@ -40,6 +41,7 @@ public:
     virtual void onParticipantUpdate(uint64_t /*signalClientId*/, const ParticipantUpdate& /*update*/) {}
     virtual void onTrackPublished(uint64_t /*signalClientId*/, const TrackPublishedResponse& /*published*/) {}
     virtual void onTrackUnpublished(uint64_t /*signalClientId*/, const TrackUnpublishedResponse& /*unpublished*/) {}
+    virtual void onLeave(uint64_t /*signalClientId*/, const LeaveRequest& /*leave*/) {}
     virtual void onRefreshToken(uint64_t /*signalClientId*/,
                                 const std::string& /*authToken*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,

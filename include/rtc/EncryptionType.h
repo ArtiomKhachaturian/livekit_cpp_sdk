@@ -16,7 +16,7 @@
 namespace LiveKitCpp
 {
 
-enum EncryptionType
+enum class EncryptionType
 {
     None = 0,
     Gcm = 1,

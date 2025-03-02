@@ -16,7 +16,7 @@
 namespace LiveKitCpp
 {
 
-enum AudioTrackFeature
+enum class AudioTrackFeature
 {
   TFStereo = 0,
   TFNoDtx = 1,

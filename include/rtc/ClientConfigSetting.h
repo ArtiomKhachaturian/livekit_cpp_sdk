@@ -16,7 +16,7 @@
 namespace LiveKitCpp
 {
 
-enum ClientConfigSetting
+enum class ClientConfigSetting
 {
     Unset = 0,
     Disabled = 1,
