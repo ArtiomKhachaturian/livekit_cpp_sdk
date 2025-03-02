@@ -14,6 +14,7 @@
 #pragma once // SignalParser.h
 #include "rtc/JoinResponse.h"
 #include "rtc/TrickleRequest.h"
+#include "rtc/ParticipantUpdate.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 
@@ -36,6 +37,7 @@ public:
     static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
     static JoinResponse fromProto(const livekit::JoinResponse& in);
     static TrickleRequest fromProto(const livekit::TrickleRequest& in);
+    static ParticipantUpdate fromProto(const livekit::ParticipantUpdate& in);
     static Room fromProto(const livekit::Room& in);
     static Codec fromProto(const livekit::Codec& in);
     static TimedVersion fromProto(const livekit::TimedVersion& in);

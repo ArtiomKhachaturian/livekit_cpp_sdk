@@ -274,7 +274,7 @@ void SignalClient::Impl::handle(const livekit::TrickleRequest& trickle)
 
 void SignalClient::Impl::handle(const livekit::ParticipantUpdate& participantUpdate)
 {
-    
+    invokeListener(&SignalClientListener::onParticipantUpdate, SignalParser::fromProto(participantUpdate));
 }
 
 void SignalClient::Impl::handle(const livekit::TrackPublishedResponse& trackPublished)

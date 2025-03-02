@@ -58,6 +58,13 @@ TrickleRequest SignalParser::fromProto(const livekit::TrickleRequest& in)
     return out;
 }
 
+ParticipantUpdate SignalParser::fromProto(const livekit::ParticipantUpdate& in)
+{
+    ParticipantUpdate out;
+    out._participants = fromProto<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
+    return out;
+}
+
 Room SignalParser::fromProto(const livekit::Room& in)
 {
     Room out;
