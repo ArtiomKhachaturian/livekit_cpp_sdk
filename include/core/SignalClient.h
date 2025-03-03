@@ -23,6 +23,8 @@ class MemoryBlock;
 class SignalServerListener;
 class SignalTransportListener;
 class ResponseReceiver;
+class RequestSender;
+struct SessionDescription;
 
 class SignalClient
 {
@@ -38,6 +40,9 @@ public:
     virtual void disconnect();
     State transportState() const noexcept;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
+    // requests sending
+    bool sendOffer(const SessionDescription& offer);
+    bool sendAnswer(const SessionDescription& answer);
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
@@ -45,8 +50,10 @@ protected:
     void handleServerProtobufMessage(const void* message, size_t len);
 private:
     const std::unique_ptr<Impl> _impl;
-    // for handling of incoming messages from SFU
+    // for handling of incoming messages from the LiveKit SFU
     const std::unique_ptr<ResponseReceiver> _responseReceiver;
+    // for sending requests to the LiveKit SFU
+    const std::unique_ptr<RequestSender> _requestSender;
 };
 
 } // namespace LiveKitCpp

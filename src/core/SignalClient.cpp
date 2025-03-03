@@ -17,6 +17,7 @@
 #include "Listeners.h"
 #include "MemoryBlock.h"
 #include "core/ResponseReceiver.h"
+#include "core/RequestSender.h"
 
 namespace LiveKitCpp
 {
@@ -24,7 +25,7 @@ namespace LiveKitCpp
 class SignalClient::Impl
 {
 public:
-    Impl(uint64_t id, CommandSender* commandSender);
+    Impl(uint64_t id);
     State transportState() const noexcept;
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
@@ -32,14 +33,14 @@ public:
     void removeListener(SignalTransportListener* listener);
 private:
     const uint64_t _id;
-    CommandSender* const _commandSender;
     Listeners<SignalTransportListener*> _listeners;
     ProtectedObj<State> _transportState = State::Disconnected;
 };
 
 SignalClient::SignalClient(CommandSender* commandSender)
-    : _impl(std::make_unique<Impl>(id(), commandSender))
+    : _impl(std::make_unique<Impl>(id()))
     , _responseReceiver(std::make_unique<ResponseReceiver>(id()))
+    , _requestSender(std::make_unique<RequestSender>(commandSender))
 {
 }
 
@@ -82,6 +83,16 @@ State SignalClient::transportState() const noexcept
     return _impl->transportState();
 }
 
+bool SignalClient::sendOffer(const SessionDescription& offer)
+{
+    return _requestSender->sendOffer(offer);
+}
+
+bool SignalClient::sendAnswer(const SessionDescription& answer)
+{
+    return _requestSender->sendAnswer(answer);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
@@ -104,9 +115,8 @@ void SignalClient::notifyAboutTransportError(const std::string& error)
     _impl->notifyAboutTransportError(error);
 }
 
-SignalClient::Impl::Impl(uint64_t id, CommandSender* commandSender)
+SignalClient::Impl::Impl(uint64_t id)
     : _id(id)
-    , _commandSender(commandSender)
 {
 }
 
