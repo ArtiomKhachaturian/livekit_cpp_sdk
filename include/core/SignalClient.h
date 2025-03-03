@@ -19,9 +19,9 @@ namespace LiveKitCpp
 {
 
 class CommandSender;
-class SignalClientListener;
-class Websocket;
-class WebsocketFactory;
+class SignalServerListener;
+class SignalTransportListener;
+class SignalHandler;
 
 class SignalClient : public CommandReceiver
 {
@@ -29,19 +29,23 @@ class SignalClient : public CommandReceiver
 public:
     SignalClient(CommandSender* commandSender);
     ~SignalClient() override;
+    void addListener(SignalTransportListener* listener);
+    void addListener(SignalServerListener* listener);
+    void removeListener(SignalTransportListener* listener);
+    void removeListener(SignalServerListener* listener);
     virtual bool connect();
     virtual void disconnect();
     State transportState() const noexcept;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
-    void addListener(SignalClientListener* listener);
-    void removeListener(SignalClientListener* listener);
     // impl. of CommandReceiver
     void receiveBinary(const void* data, size_t dataLen) final;
     void receiveText(const std::string_view& text) final;
 protected:
     bool changeTransportState(State state);
+    void notifyAboutTransportError(const std::string& error);
 private:
     const std::unique_ptr<Impl> _impl;
+    const std::unique_ptr<SignalHandler> _signalHandler;
 };
 
 } // namespace LiveKitCpp

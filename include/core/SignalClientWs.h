@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
 #include "core/SignalClient.h"
-#include "core/SignalClientListener.h"
 #include "websocket/WebsocketListener.h"
 #include <memory>
 
@@ -23,8 +22,7 @@ class Websocket;
 class WebsocketFactory;
 
 class SignalClientWs : public SignalClient,
-                       private WebsocketListener,
-                       private SignalClientListener
+                       private WebsocketListener
 {
 public:
     SignalClientWs(std::unique_ptr<Websocket> socket);
@@ -43,6 +41,9 @@ public:
     void disconnect() final;
 private:
     // impl. of WebsocketListener
+    void onError(uint64_t socketId, uint64_t connectionId,
+                 const std::string_view& host,
+                 const WebsocketError& error) final;
     void onStateChanged(uint64_t socketId, uint64_t connectionId,
                         const std::string_view& host,
                         State state) final;
@@ -50,8 +51,6 @@ private:
                                const std::string_view& message) final;
     void onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
                                 const std::shared_ptr<const MemoryBlock>& message) final;
-    // impl. of SignalClientListener
-    void onServerSignalParseError(uint64_t signalClientId) final;
 private:
     const std::unique_ptr<Websocket> _socket;
     std::string _host;

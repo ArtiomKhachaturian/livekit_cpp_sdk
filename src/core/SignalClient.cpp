@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "SignalClient.h"
-#include "SignalClientListener.h"
-#include "ProtectedObjAliases.h"
+#include "SignalTransportListener.h"
+#include "ProtectedObj.h"
 #include "Listeners.h"
-#include "core/SignalParser.h"
+#include "core/SignalHandler.h"
 
 namespace LiveKitCpp
 {
@@ -26,47 +26,44 @@ public:
     Impl(uint64_t id, CommandSender* commandSender);
     State transportState() const noexcept;
     bool changeTransportState(State state);
-    void parseBinary(const void* data, size_t dataLen);
-    void addListener(SignalClientListener* listener);
-    void removeListener(SignalClientListener* listener);
-private:
-    template <class Method, typename... Args>
-    void notify(const Method& method, Args&&... args) const;
-    template <class Method, class TLiveKitType>
-    void signal(const Method& method, const TLiveKitType& sig) const;
-    void handle(const livekit::JoinResponse& response) const;
-    void handle(const livekit::SessionDescription& desc, bool offer) const;
-    void handle(const livekit::TrickleRequest& request) const;
-    void handle(const livekit::ParticipantUpdate& update) const;
-    void handle(const livekit::TrackPublishedResponse& response) const;
-    void handle(const livekit::LeaveRequest& request) const;
-    void handle(const livekit::MuteTrackRequest& request) const;
-    void handle(const livekit::SpeakersChanged& changed) const;
-    void handle(const livekit::RoomUpdate& update) const;
-    void handle(const livekit::ConnectionQualityUpdate& update) const;
-    void handle(const livekit::StreamStateUpdate& update) const;
-    void handle(const livekit::SubscribedQualityUpdate& update) const;
-    void handle(const livekit::SubscriptionPermissionUpdate& update) const;
-    void handle(const livekit::TrackUnpublishedResponse& response) const;
-    void handle(const livekit::ReconnectResponse& response) const;
-    void handle(const livekit::SubscriptionResponse& response) const;
-    void handle(const livekit::RequestResponse& response) const;
-    void handle(const livekit::TrackSubscribed& subscribed) const;
-    void handle(const livekit::Pong& pong) const;
+    void notifyAboutTransportError(const std::string& error);
+    void addListener(SignalTransportListener* listener);
+    void removeListener(SignalTransportListener* listener);
 private:
     const uint64_t _id;
     CommandSender* const _commandSender;
-    Listeners<SignalClientListener*> _listeners;
+    Listeners<SignalTransportListener*> _listeners;
     ProtectedObj<State> _transportState = State::Disconnected;
 };
 
 SignalClient::SignalClient(CommandSender* commandSender)
     : _impl(std::make_unique<Impl>(id(), commandSender))
+    , _signalHandler(std::make_unique<SignalHandler>(id()))
 {
 }
 
 SignalClient::~SignalClient()
 {
+}
+
+void SignalClient::addListener(SignalTransportListener* listener)
+{
+    _impl->addListener(listener);
+}
+
+void SignalClient::addListener(SignalServerListener* listener)
+{
+    _signalHandler->addListener(listener);
+}
+
+void SignalClient::removeListener(SignalTransportListener* listener)
+{
+    _impl->removeListener(listener);
+}
+
+void SignalClient::removeListener(SignalServerListener* listener)
+{
+    _signalHandler->removeListener(listener);
 }
 
 bool SignalClient::connect()
@@ -84,19 +81,9 @@ State SignalClient::transportState() const noexcept
     return _impl->transportState();
 }
 
-void SignalClient::addListener(SignalClientListener* listener)
-{
-    _impl->addListener(listener);
-}
-
-void SignalClient::removeListener(SignalClientListener* listener)
-{
-    _impl->removeListener(listener);
-}
-
 void SignalClient::receiveBinary(const void* data, size_t dataLen)
 {
-    _impl->parseBinary(data, dataLen);
+    _signalHandler->parseBinary(data, dataLen);
 }
 
 void SignalClient::receiveText(const std::string_view& /*text*/)
@@ -106,6 +93,11 @@ void SignalClient::receiveText(const std::string_view& /*text*/)
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
+}
+
+void SignalClient::notifyAboutTransportError(const std::string& error)
+{
+    _impl->notifyAboutTransportError(error);
 }
 
 SignalClient::Impl::Impl(uint64_t id, CommandSender* commandSender)
@@ -151,219 +143,24 @@ bool SignalClient::Impl::changeTransportState(State state)
         }
     }
     if (changed) {
-        notify(&SignalClientListener::onTransportStateChanged, state);
+        _listeners.invokeMethod(&SignalTransportListener::onTransportStateChanged, _id, state);
     }
     return accepted;
 }
 
-void SignalClient::Impl::parseBinary(const void* data, size_t dataLen)
+void SignalClient::Impl::notifyAboutTransportError(const std::string& error)
 {
-    if (auto response = SignalParser::parse(data, dataLen)) {
-        switch (response->message_case()) {
-            case livekit::SignalResponse::kJoin:
-                handle(response->join());
-                break;
-            case livekit::SignalResponse::kAnswer:
-                handle(response->answer(), false);
-                break;
-            case livekit::SignalResponse::kOffer:
-                handle(response->offer(), true);
-                break;
-            case livekit::SignalResponse::kTrickle:
-                handle(response->trickle());
-                break;
-            case livekit::SignalResponse::kUpdate:
-                handle(response->update());
-                break;
-            case livekit::SignalResponse::kTrackPublished:
-                handle(response->track_published());
-                break;
-            case livekit::SignalResponse::kLeave:
-                handle(response->leave());
-                break;
-            case livekit::SignalResponse::kMute:
-                handle(response->mute());
-                break;
-            case livekit::SignalResponse::kSpeakersChanged:
-                handle(response->speakers_changed());
-                break;
-            case livekit::SignalResponse::kRoomUpdate:
-                handle(response->room_update());
-                break;
-            case livekit::SignalResponse::kConnectionQuality:
-                handle(response->connection_quality());
-                break;
-            case livekit::SignalResponse::kStreamStateUpdate:
-                handle(response->stream_state_update());
-                break;
-            case livekit::SignalResponse::kSubscribedQualityUpdate:
-                handle(response->subscribed_quality_update());
-                break;
-            case livekit::SignalResponse::kSubscriptionPermissionUpdate:
-                handle(response->subscription_permission_update());
-                break;
-            case livekit::SignalResponse::kRefreshToken:
-                if (response->has_refresh_token()) {
-                    notify(&SignalClientListener::onRefreshToken, response->refresh_token());
-                }
-                break;
-            case livekit::SignalResponse::kTrackUnpublished:
-                handle(response->track_unpublished());
-                break;
-            case livekit::SignalResponse::kPong: // deprecated
-                if (response->has_pong()) {
-                    notify(&SignalClientListener::onPong,
-                           std::chrono::milliseconds{response->pong()},
-                           std::chrono::milliseconds{});
-                }
-                break;
-            case livekit::SignalResponse::kReconnect:
-                handle(response->reconnect());
-                break;
-            case livekit::SignalResponse::kPongResp:
-                handle(response->pong_resp());
-                break;
-            case livekit::SignalResponse::kSubscriptionResponse:
-                handle(response->subscription_response());
-                break;
-            case livekit::SignalResponse::kRequestResponse:
-                handle(response->request_response());
-                break;
-            case livekit::SignalResponse::kTrackSubscribed:
-                handle(response->track_subscribed());
-                break;
-            default:
-                // TODO: dump response to log
-                break;
-        }
-    }
-    else {
-        notify(&SignalClientListener::onServerSignalParseError);
-    }
+    _listeners.invokeMethod(&SignalTransportListener::onTransportError, _id, error);
 }
 
-void SignalClient::Impl::addListener(SignalClientListener* listener)
+void SignalClient::Impl::addListener(SignalTransportListener* listener)
 {
     _listeners.add(listener);
 }
 
-void SignalClient::Impl::removeListener(SignalClientListener* listener)
+void SignalClient::Impl::removeListener(SignalTransportListener* listener)
 {
     _listeners.remove(listener);
-}
-
-template <class Method, typename... Args>
-void SignalClient::Impl::notify(const Method& method, Args&&... args) const
-{
-    _listeners.invokeMethod(method, _id, std::forward<Args>(args)...);
-}
-
-template <class Method, class TLiveKitType>
-void SignalClient::Impl::signal(const Method& method, const TLiveKitType& sig) const
-{
-    notify(method, SignalParser::from(sig));
-}
-
-void SignalClient::Impl::handle(const livekit::JoinResponse& response) const
-{
-    signal(&SignalClientListener::onJoin, response);
-}
-
-void SignalClient::Impl::handle(const livekit::SessionDescription& desc, bool offer) const
-{
-    if (offer) {
-        notify(&SignalClientListener::onOffer, desc.type(), desc.sdp());
-    }
-    else {
-        notify(&SignalClientListener::onAnswer, desc.type(), desc.sdp());
-    }
-}
-
-void SignalClient::Impl::handle(const livekit::TrickleRequest& request) const
-{
-    signal(&SignalClientListener::onTrickle, request);
-}
-
-void SignalClient::Impl::handle(const livekit::ParticipantUpdate& update) const
-{
-    signal(&SignalClientListener::onParticipantUpdate, update);
-}
-
-void SignalClient::Impl::handle(const livekit::TrackPublishedResponse& response) const
-{
-    signal(&SignalClientListener::onTrackPublished, response);
-}
-
-void SignalClient::Impl::handle(const livekit::LeaveRequest& request) const
-{
-    signal(&SignalClientListener::onLeave, request);
-}
-
-void SignalClient::Impl::handle(const livekit::MuteTrackRequest& request) const
-{
-    signal(&SignalClientListener::onMuteTrack, request);
-}
-
-void SignalClient::Impl::handle(const livekit::SpeakersChanged& changed) const
-{
-    signal(&SignalClientListener::onSpeakersChanged, changed);
-}
-
-void SignalClient::Impl::handle(const livekit::RoomUpdate& update) const
-{
-    signal(&SignalClientListener::onRoomUpdate, update);
-}
-
-void SignalClient::Impl::handle(const livekit::ConnectionQualityUpdate& update) const
-{
-    signal(&SignalClientListener::onConnectionQualityUpdate, update);
-}
-
-void SignalClient::Impl::handle(const livekit::StreamStateUpdate& update) const
-{
-    signal(&SignalClientListener::onStreamStateUpdate, update);
-}
-
-void SignalClient::Impl::handle(const livekit::SubscribedQualityUpdate& update) const
-{
-    signal(&SignalClientListener::onSubscribedQualityUpdate, update);
-}
-
-void SignalClient::Impl::handle(const livekit::SubscriptionPermissionUpdate& update) const
-{
-    signal(&SignalClientListener::onSubscriptionPermission, update);
-}
-
-void SignalClient::Impl::handle(const livekit::TrackUnpublishedResponse& response) const
-{
-    signal(&SignalClientListener::onTrackUnpublished, response);
-}
-
-void SignalClient::Impl::handle(const livekit::ReconnectResponse& response) const
-{
-    signal(&SignalClientListener::onReconnect, response);
-}
-
-void SignalClient::Impl::handle(const livekit::SubscriptionResponse& response) const
-{
-    signal(&SignalClientListener::onSubscription, response);
-}
-
-void SignalClient::Impl::handle(const livekit::RequestResponse& response) const
-{
-    signal(&SignalClientListener::onRequest, response);
-}
-
-void SignalClient::Impl::handle(const livekit::TrackSubscribed& subscribed) const
-{
-    signal(&SignalClientListener::onTrackSubscribed, subscribed);
-}
-
-void SignalClient::Impl::handle(const livekit::Pong& pong) const
-{
-    notify(&SignalClientListener::onPong,
-           std::chrono::milliseconds{pong.timestamp()},
-           std::chrono::milliseconds{pong.last_ping_timestamp()});
 }
 
 } // namespace LiveKitCpp

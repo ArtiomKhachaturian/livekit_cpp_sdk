@@ -11,14 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SignalClientListener.h
+#pragma once // SignalServerListener.h
 #include <chrono>
 #include <string>
 
 namespace LiveKitCpp
 {
 
-enum class State;
 // these structs are defined in /include/rtc subfolder
 struct ConnectionQualityUpdate;
 struct JoinResponse;
@@ -38,11 +37,10 @@ struct RequestResponse;
 struct SubscriptionResponse;
 struct SubscriptionPermissionUpdate;
 
-class SignalClientListener
+class SignalServerListener
 {
 public:
-    virtual void onTransportStateChanged(uint64_t /*signalClientId*/, State /*state*/) {}
-    virtual void onServerSignalParseError(uint64_t /*signalClientId*/) {}
+    virtual void onSignalParseError(uint64_t /*signalClientId*/) {}
     virtual void onJoin(uint64_t /*signalClientId*/,
                         const JoinResponse& /*response*/) {}
     virtual void onOffer(uint64_t /*signalClientId*/, const std::string& /*type*/,
@@ -86,8 +84,6 @@ public:
     virtual void onPong(uint64_t /*signalClientId*/,
                         const std::chrono::milliseconds& /*timestamp*/,
                         const std::chrono::milliseconds& /*lastPingTimestamp*/ = {}) {}
-protected:
-    virtual ~SignalClientListener() = default;
 };
 
 } // namespace LiveKitCpp

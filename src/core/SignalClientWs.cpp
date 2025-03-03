@@ -15,6 +15,7 @@
 #include "WebsocketFactory.h"
 #include "MemoryBlock.h"
 #include "WebsocketOptions.h"
+#include "WebsocketFailure.h"
 
 namespace {
 
@@ -62,7 +63,6 @@ SignalClientWs::SignalClientWs(std::unique_ptr<Websocket> socket)
 {
     if (_socket) {
         _socket->addListener(this);
-        addListener(this);
     }
 }
 
@@ -74,7 +74,6 @@ SignalClientWs::SignalClientWs(const WebsocketFactory& socketFactory)
 SignalClientWs::~SignalClientWs()
 {
     if (_socket) {
-        removeListener(this);
         _socket->close();
         _socket->removeListener(this);
     }
@@ -142,6 +141,14 @@ void SignalClientWs::disconnect()
     }
 }
 
+void SignalClientWs::onError(uint64_t socketId, uint64_t connectionId,
+                             const std::string_view& host,
+                             const WebsocketError& error)
+{
+    WebsocketListener::onError(socketId, connectionId, host, error);
+    notifyAboutTransportError(toString(error));
+}
+
 void SignalClientWs::onStateChanged(uint64_t socketId, uint64_t connectionId,
                                     const std::string_view& host,
                                     State state)
@@ -166,12 +173,6 @@ void SignalClientWs::onBinaryMessageReceved(uint64_t socketId, uint64_t connecti
     if (message) {
         receiveBinary(message->data(), message->size());
     }
-}
-
-void SignalClientWs::onServerSignalParseError(uint64_t signalClientId)
-{
-    SignalClientWs::onServerSignalParseError(signalClientId);
-    disconnect();
 }
 
 } // namespace LiveKitCpp
