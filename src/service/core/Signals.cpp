@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Signals.h"
+#include "Utils.h"
 
 namespace LiveKitCpp
 {
@@ -19,7 +20,7 @@ namespace LiveKitCpp
 std::optional<livekit::SignalResponse> Signals::parseResponse(const void* data,
                                                               size_t dataLen)
 {
-    return fromBytes<livekit::SignalResponse>(data, dataLen);
+    return protofromBytes<livekit::SignalResponse>(data, dataLen);
 }
 
 JoinResponse Signals::map(const livekit::JoinResponse& in)
@@ -56,6 +57,14 @@ SessionDescription Signals::map(const livekit::SessionDescription& in)
     SessionDescription out;
     out._type = in.type();
     out._sdp = in.sdp();
+    return out;
+}
+
+livekit::SessionDescription Signals::map(const SessionDescription& in)
+{
+    livekit::SessionDescription out;
+    out.set_type(in._type);
+    out.set_sdp(in._sdp);
     return out;
 }
 

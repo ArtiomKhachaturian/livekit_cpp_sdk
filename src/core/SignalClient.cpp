@@ -16,7 +16,7 @@
 #include "ProtectedObj.h"
 #include "Listeners.h"
 #include "MemoryBlock.h"
-#include "core/SignalHandler.h"
+#include "core/ResponseReceiver.h"
 
 namespace LiveKitCpp
 {
@@ -39,7 +39,7 @@ private:
 
 SignalClient::SignalClient(CommandSender* commandSender)
     : _impl(std::make_unique<Impl>(id(), commandSender))
-    , _signalHandler(std::make_unique<SignalHandler>(id()))
+    , _responseReceiver(std::make_unique<ResponseReceiver>(id()))
 {
 }
 
@@ -54,7 +54,7 @@ void SignalClient::addListener(SignalTransportListener* listener)
 
 void SignalClient::addListener(SignalServerListener* listener)
 {
-    _signalHandler->addListener(listener);
+    _responseReceiver->addListener(listener);
 }
 
 void SignalClient::removeListener(SignalTransportListener* listener)
@@ -64,7 +64,7 @@ void SignalClient::removeListener(SignalTransportListener* listener)
 
 void SignalClient::removeListener(SignalServerListener* listener)
 {
-    _signalHandler->removeListener(listener);
+    _responseReceiver->removeListener(listener);
 }
 
 bool SignalClient::connect()
@@ -96,7 +96,7 @@ void SignalClient::handleServerProtobufMessage(const std::shared_ptr<const Memor
 
 void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
 {
-    _signalHandler->parseBinary(message, len);
+    _responseReceiver->parseBinary(message, len);
 }
 
 void SignalClient::notifyAboutTransportError(const std::string& error)

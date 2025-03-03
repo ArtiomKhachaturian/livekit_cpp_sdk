@@ -22,7 +22,7 @@ class CommandSender;
 class MemoryBlock;
 class SignalServerListener;
 class SignalTransportListener;
-class SignalHandler;
+class ResponseReceiver;
 
 class SignalClient
 {
@@ -45,7 +45,8 @@ protected:
     void handleServerProtobufMessage(const void* message, size_t len);
 private:
     const std::unique_ptr<Impl> _impl;
-    const std::unique_ptr<SignalHandler> _signalHandler;
+    // for handling of incoming messages from SFU
+    const std::unique_ptr<ResponseReceiver> _responseReceiver;
 };
 
 } // namespace LiveKitCpp

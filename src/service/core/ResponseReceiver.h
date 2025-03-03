@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SignalHandler.h
+#pragma once // ResponseReceiver.h
 #include "Listeners.h"
 #include "livekit_rtc.pb.h"
 #include <memory>
@@ -21,10 +21,10 @@ namespace LiveKitCpp
 
 class SignalServerListener;
 
-class SignalHandler
+class ResponseReceiver
 {
 public:
-    SignalHandler(uint64_t signalClientId);
+    ResponseReceiver(uint64_t signalClientId);
     void parseBinary(const void* data, size_t dataLen);
     void addListener(SignalServerListener* listener);
     void removeListener(SignalServerListener* listener);

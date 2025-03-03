@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Signals.h
-#include "MemoryBlock.h"
 #include "rtc/ConnectionQualityUpdate.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/SessionDescription.h"
@@ -42,15 +41,12 @@ class Signals
 {
 public:
     // generic helpers
-    template <typename TProtoBufType>
-    static std::optional<TProtoBufType> fromBytes(const void* data, size_t dataLen);
-    template <typename TProtoBufType>
-    static std::optional<TProtoBufType> fromBytes(const std::shared_ptr<const MemoryBlock>& bytes);
     static std::optional<livekit::SignalResponse> parseResponse(const void* data,
                                                                 size_t dataLen);
     // responses & requests
     static JoinResponse map(const livekit::JoinResponse& in);
     static SessionDescription map(const livekit::SessionDescription& in);
+    static livekit::SessionDescription map(const SessionDescription& in);
     static TrickleRequest map(const livekit::TrickleRequest& in);
     static ParticipantUpdate map(const livekit::ParticipantUpdate& in);
     static TrackPublishedResponse map(const livekit::TrackPublishedResponse& in);
@@ -111,25 +107,5 @@ private:
     template<typename K, typename V>
     static std::unordered_map<K, V> map(const google::protobuf::Map<K, V>& in);
 };
-
-template <typename TProtoBufType>
-std::optional<TProtoBufType> Signals::fromBytes(const void* data, size_t dataLen) {
-    if (data && dataLen) {
-        TProtoBufType instance;
-        if (instance.ParseFromArray(data, int(dataLen))) {
-            return instance;
-        }
-    }
-    return std::nullopt;
-}
-
-template <typename TProtoBufType>
-std::optional<TProtoBufType> Signals::fromBytes(const std::shared_ptr<const MemoryBlock>& bytes)
-{
-    if (bytes) {
-        return fromBytes<TProtoBufType>(bytes->data(), bytes->size());
-    }
-    return {};
-}
 
 } // namespace LiveKitCpp

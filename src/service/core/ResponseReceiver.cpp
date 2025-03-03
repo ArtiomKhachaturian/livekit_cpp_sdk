@@ -11,19 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "SignalHandler.h"
+#include "ResponseReceiver.h"
 #include "Signals.h"
 #include "SignalServerListener.h"
 
 namespace LiveKitCpp
 {
 
-SignalHandler::SignalHandler(uint64_t signalClientId)
+ResponseReceiver::ResponseReceiver(uint64_t signalClientId)
     : _signalClientId(signalClientId)
 {
 }
 
-void SignalHandler::parseBinary(const void* data, size_t dataLen)
+void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
 {
     if (auto response = Signals::parseResponse(data, dataLen)) {
         switch (response->message_case()) {
@@ -109,34 +109,34 @@ void SignalHandler::parseBinary(const void* data, size_t dataLen)
     }
 }
 
-void SignalHandler::addListener(SignalServerListener* listener)
+void ResponseReceiver::addListener(SignalServerListener* listener)
 {
     _listeners.add(listener);
 }
 
-void SignalHandler::removeListener(SignalServerListener* listener)
+void ResponseReceiver::removeListener(SignalServerListener* listener)
 {
     _listeners.remove(listener);
 }
 
 template <class Method, typename... Args>
-void SignalHandler::notify(const Method& method, Args&&... args) const
+void ResponseReceiver::notify(const Method& method, Args&&... args) const
 {
     _listeners.invokeMethod(method, _signalClientId, std::forward<Args>(args)...);
 }
 
 template <class Method, class TLiveKitType>
-void SignalHandler::signal(const Method& method, const TLiveKitType& sig) const
+void ResponseReceiver::signal(const Method& method, const TLiveKitType& sig) const
 {
     notify(method, Signals::map(sig));
 }
 
-void SignalHandler::handle(const livekit::JoinResponse& response) const
+void ResponseReceiver::handle(const livekit::JoinResponse& response) const
 {
     signal(&SignalServerListener::onJoin, response);
 }
 
-void SignalHandler::handle(const livekit::SessionDescription& desc, bool offer) const
+void ResponseReceiver::handle(const livekit::SessionDescription& desc, bool offer) const
 {
     if (offer) {
         signal(&SignalServerListener::onOffer, desc);
@@ -146,87 +146,87 @@ void SignalHandler::handle(const livekit::SessionDescription& desc, bool offer) 
     }
 }
 
-void SignalHandler::handle(const livekit::TrickleRequest& request) const
+void ResponseReceiver::handle(const livekit::TrickleRequest& request) const
 {
     signal(&SignalServerListener::onTrickle, request);
 }
 
-void SignalHandler::handle(const livekit::ParticipantUpdate& update) const
+void ResponseReceiver::handle(const livekit::ParticipantUpdate& update) const
 {
     signal(&SignalServerListener::onParticipantUpdate, update);
 }
 
-void SignalHandler::handle(const livekit::TrackPublishedResponse& response) const
+void ResponseReceiver::handle(const livekit::TrackPublishedResponse& response) const
 {
     signal(&SignalServerListener::onTrackPublished, response);
 }
 
-void SignalHandler::handle(const livekit::LeaveRequest& request) const
+void ResponseReceiver::handle(const livekit::LeaveRequest& request) const
 {
     signal(&SignalServerListener::onLeave, request);
 }
 
-void SignalHandler::handle(const livekit::MuteTrackRequest& request) const
+void ResponseReceiver::handle(const livekit::MuteTrackRequest& request) const
 {
     signal(&SignalServerListener::onMuteTrack, request);
 }
 
-void SignalHandler::handle(const livekit::SpeakersChanged& changed) const
+void ResponseReceiver::handle(const livekit::SpeakersChanged& changed) const
 {
     signal(&SignalServerListener::onSpeakersChanged, changed);
 }
 
-void SignalHandler::handle(const livekit::RoomUpdate& update) const
+void ResponseReceiver::handle(const livekit::RoomUpdate& update) const
 {
     signal(&SignalServerListener::onRoomUpdate, update);
 }
 
-void SignalHandler::handle(const livekit::ConnectionQualityUpdate& update) const
+void ResponseReceiver::handle(const livekit::ConnectionQualityUpdate& update) const
 {
     signal(&SignalServerListener::onConnectionQualityUpdate, update);
 }
 
-void SignalHandler::handle(const livekit::StreamStateUpdate& update) const
+void ResponseReceiver::handle(const livekit::StreamStateUpdate& update) const
 {
     signal(&SignalServerListener::onStreamStateUpdate, update);
 }
 
-void SignalHandler::handle(const livekit::SubscribedQualityUpdate& update) const
+void ResponseReceiver::handle(const livekit::SubscribedQualityUpdate& update) const
 {
     signal(&SignalServerListener::onSubscribedQualityUpdate, update);
 }
 
-void SignalHandler::handle(const livekit::SubscriptionPermissionUpdate& update) const
+void ResponseReceiver::handle(const livekit::SubscriptionPermissionUpdate& update) const
 {
     signal(&SignalServerListener::onSubscriptionPermission, update);
 }
 
-void SignalHandler::handle(const livekit::TrackUnpublishedResponse& response) const
+void ResponseReceiver::handle(const livekit::TrackUnpublishedResponse& response) const
 {
     signal(&SignalServerListener::onTrackUnpublished, response);
 }
 
-void SignalHandler::handle(const livekit::ReconnectResponse& response) const
+void ResponseReceiver::handle(const livekit::ReconnectResponse& response) const
 {
     signal(&SignalServerListener::onReconnect, response);
 }
 
-void SignalHandler::handle(const livekit::SubscriptionResponse& response) const
+void ResponseReceiver::handle(const livekit::SubscriptionResponse& response) const
 {
     signal(&SignalServerListener::onSubscription, response);
 }
 
-void SignalHandler::handle(const livekit::RequestResponse& response) const
+void ResponseReceiver::handle(const livekit::RequestResponse& response) const
 {
     signal(&SignalServerListener::onRequest, response);
 }
 
-void SignalHandler::handle(const livekit::TrackSubscribed& subscribed) const
+void ResponseReceiver::handle(const livekit::TrackSubscribed& subscribed) const
 {
     signal(&SignalServerListener::onTrackSubscribed, subscribed);
 }
 
-void SignalHandler::handle(const livekit::Pong& pong) const
+void ResponseReceiver::handle(const livekit::Pong& pong) const
 {
     notify(&SignalServerListener::onPong,
            std::chrono::milliseconds{pong.timestamp()},
