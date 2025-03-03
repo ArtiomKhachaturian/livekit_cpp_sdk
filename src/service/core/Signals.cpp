@@ -253,6 +253,24 @@ livekit::AddTrackRequest Signals::map(const AddTrackRequest& in)
     return out;
 }
 
+UpdateSubscription Signals::map(const livekit::UpdateSubscription& in)
+{
+    UpdateSubscription out;
+    out._trackSids = map<std::string>(in.track_sids());
+    out._subscribe = in.subscribe();
+    out._participantTracks = map<ParticipantTracks, livekit::ParticipantTracks>(in.participant_tracks());
+    return out;
+}
+
+livekit::UpdateSubscription Signals::map(const UpdateSubscription& in)
+{
+    livekit::UpdateSubscription out;
+    map(in._trackSids, out.mutable_track_sids());
+    out.set_subscribe(in._subscribe);
+    map(in._participantTracks, out.mutable_participant_tracks());
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;
@@ -856,10 +874,7 @@ SubscribedCodec Signals::map(const livekit::SubscribedCodec& in)
 ICEServer Signals::map(const livekit::ICEServer& in)
 {
     ICEServer out;
-    out._urls.reserve(in.urls_size());
-    for (const auto& url : in.urls()) {
-        out._urls.push_back(url);
-    }
+    out._urls = map<std::string>(in.urls());
     out._username = in.username();
     out._credential = in.credential();
     return out;
@@ -915,14 +930,30 @@ livekit::SimulcastCodec Signals::map(const SimulcastCodec& in)
     return out;
 }
 
-template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
-std::vector<TCppType> Signals::map(const TProtoBufRepeated& in)
+ParticipantTracks Signals::map(const livekit::ParticipantTracks& in)
+{
+    ParticipantTracks out;
+    out._participantSid = in.participant_sid();
+    out._trackSids = map<std::string>(in.track_sids());
+    return out;
+}
+
+livekit::ParticipantTracks Signals::map(const ParticipantTracks& in)
+{
+    livekit::ParticipantTracks out;
+    out.set_participant_sid(in._participantSid);
+    map(in._trackSids, out.mutable_track_sids());
+    return out;
+}
+
+template <typename TOut, typename TIn, class TProtoBufRepeated>
+std::vector<TOut> Signals::map(const TProtoBufRepeated& in)
 {
     if (const auto size = in.size()) {
-        std::vector<TCppType> out;
+        std::vector<TOut> out;
         out.reserve(size_t(size));
         for (const auto& val : in) {
-            out.push_back(map(TProtoBufType(val)));
+            out.push_back(map(TIn(val)));
         }
         return out;
     }

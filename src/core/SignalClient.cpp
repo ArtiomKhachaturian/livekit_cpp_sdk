@@ -108,6 +108,11 @@ bool SignalClient::sendMuteTrack(const MuteTrackRequest& request) const
     return _requestSender->muteTrack(request);
 }
 
+bool SignalClient::sendSubscription(const UpdateSubscription& update) const
+{
+    return _requestSender->subscription(update);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);

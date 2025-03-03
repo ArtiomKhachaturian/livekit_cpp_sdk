@@ -28,6 +28,7 @@ struct SessionDescription;
 struct TrickleRequest;
 struct AddTrackRequest;
 struct MuteTrackRequest;
+struct UpdateSubscription;
 
 class RequestSender
 {
@@ -38,6 +39,7 @@ public:
     bool trickle(const TrickleRequest& request) const;
     bool addTrack(const AddTrackRequest& request) const;
     bool muteTrack(const MuteTrackRequest& request) const;
+    bool subscription(const UpdateSubscription& update) const;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>

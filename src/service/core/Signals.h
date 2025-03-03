@@ -31,6 +31,7 @@
 #include "rtc/SubscriptionResponse.h"
 #include "rtc/SubscriptionPermissionUpdate.h"
 #include "rtc/AddTrackRequest.h"
+#include "rtc/UpdateSubscription.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -65,6 +66,8 @@ public:
     static SubscriptionPermissionUpdate map(const livekit::SubscriptionPermissionUpdate& in);
     static AddTrackRequest map(const livekit::AddTrackRequest& in);
     static livekit::AddTrackRequest map(const AddTrackRequest& in);
+    static UpdateSubscription map(const livekit::UpdateSubscription& in);
+    static livekit::UpdateSubscription map(const UpdateSubscription& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);
@@ -112,9 +115,13 @@ public:
     static SubscriptionError map(livekit::SubscriptionError in);
     static SimulcastCodec map(const livekit::SimulcastCodec& in);
     static livekit::SimulcastCodec map(const SimulcastCodec& in);
+    static ParticipantTracks map(const livekit::ParticipantTracks& in);
+    static livekit::ParticipantTracks map(const ParticipantTracks& in);
 private:
-    template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
-    static std::vector<TCppType> map(const TProtoBufRepeated& in);
+    template<typename T>
+    static const T& map(const T& in) { return in; }
+    template <typename TOut, typename TIn = TOut, class TProtoBufRepeated>
+    static std::vector<TOut> map(const TProtoBufRepeated& in);
     template <typename TCppRepeated, class TProtoBufRepeated>
     static void map(const TCppRepeated& from, TProtoBufRepeated* to);
     template<typename K, typename V>

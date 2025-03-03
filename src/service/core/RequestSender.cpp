@@ -50,6 +50,11 @@ bool RequestSender::muteTrack(const MuteTrackRequest& request) const
     return send(&livekit::SignalRequest::mutable_mute, request);
 }
 
+bool RequestSender::subscription(const UpdateSubscription& update) const
+{
+    return send(&livekit::SignalRequest::mutable_subscription, update);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;
