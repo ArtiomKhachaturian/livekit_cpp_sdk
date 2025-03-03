@@ -11,18 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "SignalParser.h"
+#include "Signals.h"
 
 namespace LiveKitCpp
 {
 
-std::optional<livekit::SignalResponse> SignalParser::parseResponse(const void* data,
-                                                                   size_t dataLen)
+std::optional<livekit::SignalResponse> Signals::parseResponse(const void* data,
+                                                              size_t dataLen)
 {
     return fromBytes<livekit::SignalResponse>(data, dataLen);
 }
 
-JoinResponse SignalParser::from(const livekit::JoinResponse& in)
+JoinResponse Signals::from(const livekit::JoinResponse& in)
 {
     JoinResponse out;
     if (in.has_room()) {
@@ -51,7 +51,7 @@ JoinResponse SignalParser::from(const livekit::JoinResponse& in)
     return out;
 }
 
-SessionDescription SignalParser::from(const livekit::SessionDescription& in)
+SessionDescription Signals::from(const livekit::SessionDescription& in)
 {
     SessionDescription out;
     out._type = in.type();
@@ -59,7 +59,7 @@ SessionDescription SignalParser::from(const livekit::SessionDescription& in)
     return out;
 }
 
-TrickleRequest SignalParser::from(const livekit::TrickleRequest& in)
+TrickleRequest Signals::from(const livekit::TrickleRequest& in)
 {
     TrickleRequest out;
     out._candidateInit = in.candidateinit();
@@ -68,14 +68,14 @@ TrickleRequest SignalParser::from(const livekit::TrickleRequest& in)
     return out;
 }
 
-ParticipantUpdate SignalParser::from(const livekit::ParticipantUpdate& in)
+ParticipantUpdate Signals::from(const livekit::ParticipantUpdate& in)
 {
     ParticipantUpdate out;
     out._participants = from<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
     return out;
 }
 
-TrackPublishedResponse SignalParser::from(const livekit::TrackPublishedResponse& in)
+TrackPublishedResponse Signals::from(const livekit::TrackPublishedResponse& in)
 {
     TrackPublishedResponse out;
     out._cid = in.cid();
@@ -83,14 +83,14 @@ TrackPublishedResponse SignalParser::from(const livekit::TrackPublishedResponse&
     return out;
 }
 
-TrackUnpublishedResponse SignalParser::from(const livekit::TrackUnpublishedResponse& in)
+TrackUnpublishedResponse Signals::from(const livekit::TrackUnpublishedResponse& in)
 {
     TrackUnpublishedResponse out;
     out._trackSid = in.track_sid();
     return out;
 }
 
-LeaveRequest SignalParser::from(const livekit::LeaveRequest& in)
+LeaveRequest Signals::from(const livekit::LeaveRequest& in)
 {
     LeaveRequest out;
     out._canReconnect = in.can_reconnect();
@@ -100,7 +100,7 @@ LeaveRequest SignalParser::from(const livekit::LeaveRequest& in)
     return out;
 }
 
-MuteTrackRequest SignalParser::from(const livekit::MuteTrackRequest& in)
+MuteTrackRequest Signals::from(const livekit::MuteTrackRequest& in)
 {
     MuteTrackRequest out;
     out._sid = in.sid();
@@ -108,14 +108,14 @@ MuteTrackRequest SignalParser::from(const livekit::MuteTrackRequest& in)
     return out;
 }
 
-SpeakersChanged SignalParser::from(const livekit::SpeakersChanged& in)
+SpeakersChanged Signals::from(const livekit::SpeakersChanged& in)
 {
     SpeakersChanged out;
     out._speakers = from<SpeakerInfo, livekit::SpeakerInfo>(in.speakers());
     return out;
 }
 
-RoomUpdate SignalParser::from(const livekit::RoomUpdate& in)
+RoomUpdate Signals::from(const livekit::RoomUpdate& in)
 {
     RoomUpdate out;
     if (in.has_room()) {
@@ -124,21 +124,21 @@ RoomUpdate SignalParser::from(const livekit::RoomUpdate& in)
     return out;
 }
 
-ConnectionQualityUpdate SignalParser::from(const livekit::ConnectionQualityUpdate& in)
+ConnectionQualityUpdate Signals::from(const livekit::ConnectionQualityUpdate& in)
 {
     ConnectionQualityUpdate out;
     out._updates = from<ConnectionQualityInfo, livekit::ConnectionQualityInfo>(in.updates());
     return out;
 }
 
-StreamStateUpdate SignalParser::from(const livekit::StreamStateUpdate& in)
+StreamStateUpdate Signals::from(const livekit::StreamStateUpdate& in)
 {
     StreamStateUpdate out;
     out._streamStates = from<StreamStateInfo, livekit::StreamStateInfo>(in.stream_states());
     return out;
 }
 
-SubscribedQualityUpdate SignalParser::from(const livekit::SubscribedQualityUpdate& in)
+SubscribedQualityUpdate Signals::from(const livekit::SubscribedQualityUpdate& in)
 {
     SubscribedQualityUpdate out;
     out._trackSid = in.track_sid();
@@ -147,7 +147,7 @@ SubscribedQualityUpdate SignalParser::from(const livekit::SubscribedQualityUpdat
     return out;
 }
 
-ReconnectResponse SignalParser::from(const livekit::ReconnectResponse& in)
+ReconnectResponse Signals::from(const livekit::ReconnectResponse& in)
 {
     ReconnectResponse out;
     out._iceServers = from<ICEServer, livekit::ICEServer>(in.ice_servers());
@@ -157,14 +157,14 @@ ReconnectResponse SignalParser::from(const livekit::ReconnectResponse& in)
     return out;
 }
 
-TrackSubscribed SignalParser::from(const livekit::TrackSubscribed& in)
+TrackSubscribed Signals::from(const livekit::TrackSubscribed& in)
 {
     TrackSubscribed out;
     out._trackSid = in.track_sid();
     return out;
 }
 
-RequestResponse SignalParser::from(const livekit::RequestResponse& in)
+RequestResponse Signals::from(const livekit::RequestResponse& in)
 {
     RequestResponse out;
     out._requestId = in.request_id();
@@ -173,7 +173,7 @@ RequestResponse SignalParser::from(const livekit::RequestResponse& in)
     return out;
 }
 
-SubscriptionResponse SignalParser::from(const livekit::SubscriptionResponse& in)
+SubscriptionResponse Signals::from(const livekit::SubscriptionResponse& in)
 {
     SubscriptionResponse out;
     out._trackSid = in.track_sid();
@@ -181,7 +181,7 @@ SubscriptionResponse SignalParser::from(const livekit::SubscriptionResponse& in)
     return out;
 }
 
-SubscriptionPermissionUpdate SignalParser::from(const livekit::SubscriptionPermissionUpdate& in)
+SubscriptionPermissionUpdate Signals::from(const livekit::SubscriptionPermissionUpdate& in)
 {
     SubscriptionPermissionUpdate out;
     out._participantSid = in.participant_sid();
@@ -190,7 +190,7 @@ SubscriptionPermissionUpdate SignalParser::from(const livekit::SubscriptionPermi
     return out;
 }
 
-Room SignalParser::from(const livekit::Room& in)
+Room Signals::from(const livekit::Room& in)
 {
     Room out;
     out._sid = in.sid();
@@ -212,17 +212,17 @@ Room SignalParser::from(const livekit::Room& in)
     return out;
 }
 
-Codec SignalParser::from(const livekit::Codec& in)
+Codec Signals::from(const livekit::Codec& in)
 {
     return {in.mime(), in.fmtp_line()};
 }
 
-TimedVersion SignalParser::from(const livekit::TimedVersion& in)
+TimedVersion Signals::from(const livekit::TimedVersion& in)
 {
     return {in.unix_micro(), in.ticks()};
 }
 
-ParticipantInfo SignalParser::from(const livekit::ParticipantInfo& in)
+ParticipantInfo Signals::from(const livekit::ParticipantInfo& in)
 {
     ParticipantInfo out;
     out._sid = in.sid();
@@ -245,7 +245,7 @@ ParticipantInfo SignalParser::from(const livekit::ParticipantInfo& in)
     return out;
 }
 
-ParticipantKind SignalParser::from(livekit::ParticipantInfo_Kind in)
+ParticipantKind Signals::from(livekit::ParticipantInfo_Kind in)
 {
     switch (in) {
         case livekit::ParticipantInfo_Kind_STANDARD:
@@ -265,7 +265,7 @@ ParticipantKind SignalParser::from(livekit::ParticipantInfo_Kind in)
     return ParticipantKind::Standard;
 }
 
-ParticipantState SignalParser::from(livekit::ParticipantInfo_State in)
+ParticipantState Signals::from(livekit::ParticipantInfo_State in)
 {
     switch (in) {
         case livekit::ParticipantInfo_State_JOINING:
@@ -283,7 +283,7 @@ ParticipantState SignalParser::from(livekit::ParticipantInfo_State in)
     return ParticipantState::Disconnected;
 }
 
-ParticipantPermission SignalParser::from(const livekit::ParticipantPermission& in)
+ParticipantPermission Signals::from(const livekit::ParticipantPermission& in)
 {
     ParticipantPermission out;
     out._canSubscribe = in.can_subscribe();
@@ -298,7 +298,7 @@ ParticipantPermission SignalParser::from(const livekit::ParticipantPermission& i
     return out;
 }
 
-DisconnectReason SignalParser::from(livekit::DisconnectReason in)
+DisconnectReason Signals::from(livekit::DisconnectReason in)
 {
     switch (in) {
         case livekit::UNKNOWN_REASON:
@@ -336,7 +336,7 @@ DisconnectReason SignalParser::from(livekit::DisconnectReason in)
     return DisconnectReason::UnknownReason;
 }
 
-TrackSource SignalParser::from(livekit::TrackSource in)
+TrackSource Signals::from(livekit::TrackSource in)
 {
     switch (in) {
         case livekit::UNKNOWN:
@@ -356,7 +356,7 @@ TrackSource SignalParser::from(livekit::TrackSource in)
     return TrackSource::Unknown;
 }
 
-TrackInfo SignalParser::from(const livekit::TrackInfo& in)
+TrackInfo Signals::from(const livekit::TrackInfo& in)
 {
     TrackInfo out;
     out._sid = in.sid();
@@ -384,7 +384,7 @@ TrackInfo SignalParser::from(const livekit::TrackInfo& in)
     return out;
 }
 
-VideoQuality SignalParser::from(livekit::VideoQuality in)
+VideoQuality Signals::from(livekit::VideoQuality in)
 {
     switch (in) {
         case livekit::LOW:
@@ -402,7 +402,7 @@ VideoQuality SignalParser::from(livekit::VideoQuality in)
     return VideoQuality::Low;
 }
 
-VideoLayer SignalParser::from(const livekit::VideoLayer& in)
+VideoLayer Signals::from(const livekit::VideoLayer& in)
 {
     VideoLayer out;
     out._quality = from(in.quality());
@@ -413,7 +413,7 @@ VideoLayer SignalParser::from(const livekit::VideoLayer& in)
     return out;
 }
 
-TrackType SignalParser::from(livekit::TrackType in)
+TrackType Signals::from(livekit::TrackType in)
 {
     switch (in) {
         case livekit::AUDIO:
@@ -429,7 +429,7 @@ TrackType SignalParser::from(livekit::TrackType in)
     return TrackType::Audio;
 }
 
-SimulcastCodecInfo SignalParser::from(const livekit::SimulcastCodecInfo& in)
+SimulcastCodecInfo Signals::from(const livekit::SimulcastCodecInfo& in)
 {
     SimulcastCodecInfo out;
     out._mimeType = in.mime_type();
@@ -439,7 +439,7 @@ SimulcastCodecInfo SignalParser::from(const livekit::SimulcastCodecInfo& in)
     return out;
 }
 
-BackupCodecPolicy SignalParser::from(livekit::BackupCodecPolicy in)
+BackupCodecPolicy Signals::from(livekit::BackupCodecPolicy in)
 {
     switch (in) {
         case livekit::REGRESSION:
@@ -453,7 +453,7 @@ BackupCodecPolicy SignalParser::from(livekit::BackupCodecPolicy in)
     return BackupCodecPolicy::Regression;
 }
 
-EncryptionType SignalParser::from(livekit::Encryption_Type in)
+EncryptionType Signals::from(livekit::Encryption_Type in)
 {
     switch (in) {
         case livekit::Encryption_Type_NONE:
@@ -469,7 +469,7 @@ EncryptionType SignalParser::from(livekit::Encryption_Type in)
     return EncryptionType::None;
 }
 
-AudioTrackFeature SignalParser::from(livekit::AudioTrackFeature in)
+AudioTrackFeature Signals::from(livekit::AudioTrackFeature in)
 {
     switch (in) {
         case livekit::TF_STEREO:
@@ -491,7 +491,7 @@ AudioTrackFeature SignalParser::from(livekit::AudioTrackFeature in)
     return AudioTrackFeature::TFStereo;
 }
 
-ClientConfigSetting SignalParser::from(livekit::ClientConfigSetting in)
+ClientConfigSetting Signals::from(livekit::ClientConfigSetting in)
 {
     switch (in) {
         case livekit::UNSET:
@@ -507,7 +507,7 @@ ClientConfigSetting SignalParser::from(livekit::ClientConfigSetting in)
     return ClientConfigSetting::Unset;
 }
 
-ClientConfiguration SignalParser::from(const livekit::ClientConfiguration& in)
+ClientConfiguration Signals::from(const livekit::ClientConfiguration& in)
 {
     ClientConfiguration out;
     out._video = from(in.video());
@@ -518,7 +518,7 @@ ClientConfiguration SignalParser::from(const livekit::ClientConfiguration& in)
     return out;
 }
 
-DisabledCodecs SignalParser::from(const livekit::DisabledCodecs& in)
+DisabledCodecs Signals::from(const livekit::DisabledCodecs& in)
 {
     DisabledCodecs out;
     out._codecs = from<Codec, livekit::Codec>(in.codecs());
@@ -526,14 +526,14 @@ DisabledCodecs SignalParser::from(const livekit::DisabledCodecs& in)
     return out;
 }
 
-VideoConfiguration SignalParser::from(const livekit::VideoConfiguration& in)
+VideoConfiguration Signals::from(const livekit::VideoConfiguration& in)
 {
     VideoConfiguration out;
     out._hardwareEncoder = from(in.hardware_encoder());
     return out;
 }
 
-ServerEdition SignalParser::from(livekit::ServerInfo_Edition in)
+ServerEdition Signals::from(livekit::ServerInfo_Edition in)
 {
     switch (in) {
         case livekit::ServerInfo_Edition_Standard:
@@ -547,7 +547,7 @@ ServerEdition SignalParser::from(livekit::ServerInfo_Edition in)
     return ServerEdition::Standard;
 }
 
-ServerInfo SignalParser::from(const livekit::ServerInfo& in)
+ServerInfo Signals::from(const livekit::ServerInfo& in)
 {
     ServerInfo out;
     out._edition = from(in.edition());
@@ -560,7 +560,7 @@ ServerInfo SignalParser::from(const livekit::ServerInfo& in)
     return out;
 }
 
-SignalTarget SignalParser::from(livekit::SignalTarget in)
+SignalTarget Signals::from(livekit::SignalTarget in)
 {
     switch (in) {
         case livekit::PUBLISHER:
@@ -574,7 +574,7 @@ SignalTarget SignalParser::from(livekit::SignalTarget in)
     return SignalTarget::Publisher;
 }
 
-LeaveRequestAction SignalParser::from(livekit::LeaveRequest_Action in)
+LeaveRequestAction Signals::from(livekit::LeaveRequest_Action in)
 {
     switch (in) {
         case livekit::LeaveRequest_Action_DISCONNECT:
@@ -590,7 +590,7 @@ LeaveRequestAction SignalParser::from(livekit::LeaveRequest_Action in)
     return LeaveRequestAction::Disconnect;
 }
 
-RegionInfo SignalParser::from(const livekit::RegionInfo& in)
+RegionInfo Signals::from(const livekit::RegionInfo& in)
 {
     RegionInfo out;
     out._region = in.region();
@@ -599,14 +599,14 @@ RegionInfo SignalParser::from(const livekit::RegionInfo& in)
     return out;
 }
 
-RegionSettings SignalParser::from(const livekit::RegionSettings& in)
+RegionSettings Signals::from(const livekit::RegionSettings& in)
 {
     RegionSettings out;
     out._regions = from<RegionInfo, livekit::RegionInfo>(in.regions());
     return out;
 }
 
-SpeakerInfo SignalParser::from(const livekit::SpeakerInfo& in)
+SpeakerInfo Signals::from(const livekit::SpeakerInfo& in)
 {
     SpeakerInfo out;
     out._sid = in.sid();
@@ -615,7 +615,7 @@ SpeakerInfo SignalParser::from(const livekit::SpeakerInfo& in)
     return out;
 }
 
-ConnectionQuality SignalParser::from(livekit::ConnectionQuality in)
+ConnectionQuality Signals::from(livekit::ConnectionQuality in)
 {
     switch (in) {
         case livekit::POOR:
@@ -633,7 +633,7 @@ ConnectionQuality SignalParser::from(livekit::ConnectionQuality in)
     return ConnectionQuality::Poor;
 }
 
-ConnectionQualityInfo SignalParser::from(const livekit::ConnectionQualityInfo& in)
+ConnectionQualityInfo Signals::from(const livekit::ConnectionQualityInfo& in)
 {
     ConnectionQualityInfo out;
     out._participantSid = in.participant_sid();
@@ -642,7 +642,7 @@ ConnectionQualityInfo SignalParser::from(const livekit::ConnectionQualityInfo& i
     return out;
 }
 
-StreamState SignalParser::from(livekit::StreamState in)
+StreamState Signals::from(livekit::StreamState in)
 {
     switch (in) {
         case livekit::ACTIVE:
@@ -656,7 +656,7 @@ StreamState SignalParser::from(livekit::StreamState in)
     return StreamState::Active;
 }
 
-StreamStateInfo SignalParser::from(const livekit::StreamStateInfo& in)
+StreamStateInfo Signals::from(const livekit::StreamStateInfo& in)
 {
     StreamStateInfo out;
     out._participantSid = in.participant_sid();
@@ -665,7 +665,7 @@ StreamStateInfo SignalParser::from(const livekit::StreamStateInfo& in)
     return out;
 }
 
-SubscribedQuality SignalParser::from(const livekit::SubscribedQuality& in)
+SubscribedQuality Signals::from(const livekit::SubscribedQuality& in)
 {
     SubscribedQuality out;
     out._quality = from(in.quality());
@@ -673,7 +673,7 @@ SubscribedQuality SignalParser::from(const livekit::SubscribedQuality& in)
     return out;
 }
 
-SubscribedCodec SignalParser::from(const livekit::SubscribedCodec& in)
+SubscribedCodec Signals::from(const livekit::SubscribedCodec& in)
 {
     SubscribedCodec out;
     out._codec = in.codec();
@@ -681,7 +681,7 @@ SubscribedCodec SignalParser::from(const livekit::SubscribedCodec& in)
     return out;
 }
 
-ICEServer SignalParser::from(const livekit::ICEServer& in)
+ICEServer Signals::from(const livekit::ICEServer& in)
 {
     ICEServer out;
     out._urls.reserve(in.urls_size());
@@ -693,7 +693,7 @@ ICEServer SignalParser::from(const livekit::ICEServer& in)
     return out;
 }
 
-RequestResponseReason SignalParser::from(livekit::RequestResponse_Reason in)
+RequestResponseReason Signals::from(livekit::RequestResponse_Reason in)
 {
     switch (in) {
         case livekit::RequestResponse_Reason_OK:
@@ -711,7 +711,7 @@ RequestResponseReason SignalParser::from(livekit::RequestResponse_Reason in)
     return RequestResponseReason::Ok;
 }
 
-SubscriptionError SignalParser::from(livekit::SubscriptionError in)
+SubscriptionError Signals::from(livekit::SubscriptionError in)
 {
     switch (in) {
         case livekit::SE_UNKNOWN:
@@ -728,7 +728,7 @@ SubscriptionError SignalParser::from(livekit::SubscriptionError in)
 }
 
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
-std::vector<TCppType> SignalParser::from(const TProtoBufRepeated& in)
+std::vector<TCppType> Signals::from(const TProtoBufRepeated& in)
 {
     if (const auto size = in.size()) {
         std::vector<TCppType> out;
@@ -742,7 +742,7 @@ std::vector<TCppType> SignalParser::from(const TProtoBufRepeated& in)
 }
 
 template<typename K, typename V>
-std::unordered_map<K, V> SignalParser::from(const google::protobuf::Map<K, V>& in)
+std::unordered_map<K, V> Signals::from(const google::protobuf::Map<K, V>& in)
 {
     if (const auto size = in.size()) {
         std::unordered_map<K, V> out;

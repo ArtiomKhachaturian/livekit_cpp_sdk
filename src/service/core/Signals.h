@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SignalParser.h
+#pragma once // Signals.h
 #include "MemoryBlock.h"
 #include "rtc/ConnectionQualityUpdate.h"
 #include "rtc/JoinResponse.h"
@@ -38,7 +38,7 @@
 namespace LiveKitCpp
 {
 
-class SignalParser
+class Signals
 {
 public:
     // generic helpers
@@ -113,7 +113,7 @@ private:
 };
 
 template <typename TProtoBufType>
-std::optional<TProtoBufType> SignalParser::fromBytes(const void* data, size_t dataLen) {
+std::optional<TProtoBufType> Signals::fromBytes(const void* data, size_t dataLen) {
     if (data && dataLen) {
         TProtoBufType instance;
         if (instance.ParseFromArray(data, int(dataLen))) {
@@ -124,7 +124,7 @@ std::optional<TProtoBufType> SignalParser::fromBytes(const void* data, size_t da
 }
 
 template <typename TProtoBufType>
-std::optional<TProtoBufType> SignalParser::fromBytes(const std::shared_ptr<const MemoryBlock>& bytes)
+std::optional<TProtoBufType> Signals::fromBytes(const std::shared_ptr<const MemoryBlock>& bytes)
 {
     if (bytes) {
         return fromBytes<TProtoBufType>(bytes->data(), bytes->size());

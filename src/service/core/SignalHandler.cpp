@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "SignalHandler.h"
-#include "SignalParser.h"
+#include "Signals.h"
 #include "SignalServerListener.h"
 
 namespace LiveKitCpp
@@ -25,7 +25,7 @@ SignalHandler::SignalHandler(uint64_t signalClientId)
 
 void SignalHandler::parseBinary(const void* data, size_t dataLen)
 {
-    if (auto response = SignalParser::parseResponse(data, dataLen)) {
+    if (auto response = Signals::parseResponse(data, dataLen)) {
         switch (response->message_case()) {
             case livekit::SignalResponse::kJoin:
                 handle(response->join());
@@ -128,7 +128,7 @@ void SignalHandler::notify(const Method& method, Args&&... args) const
 template <class Method, class TLiveKitType>
 void SignalHandler::signal(const Method& method, const TLiveKitType& sig) const
 {
-    notify(method, SignalParser::from(sig));
+    notify(method, Signals::from(sig));
 }
 
 void SignalHandler::handle(const livekit::JoinResponse& response) const
