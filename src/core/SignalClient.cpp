@@ -123,6 +123,11 @@ bool SignalClient::sendLeave(const LeaveRequest& request) const
     return _requestSender->leave(request);
 }
 
+bool SignalClient::sendUpdateVideoLayers(const UpdateVideoLayers& update)
+{
+    return _requestSender->updateVideoLayers(update);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);

@@ -307,6 +307,22 @@ livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in)
     return out;
 }
 
+UpdateVideoLayers Signals::map(const livekit::UpdateVideoLayers& in)
+{
+    UpdateVideoLayers out;
+    out._trackSid = in.track_sid();
+    out._layers = map<VideoLayer, livekit::VideoLayer>(in.layers());
+    return out;
+}
+
+livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in)
+{
+    livekit::UpdateVideoLayers out;
+    out.set_track_sid(in._trackSid);
+    map(in._layers, out.mutable_layers());
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;

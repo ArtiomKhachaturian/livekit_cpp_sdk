@@ -31,6 +31,7 @@ struct MuteTrackRequest;
 struct UpdateSubscription;
 struct UpdateTrackSettings;
 struct LeaveRequest;
+struct UpdateVideoLayers;
 
 class RequestSender
 {
@@ -44,6 +45,7 @@ public:
     bool subscription(const UpdateSubscription& update) const;
     bool trackSettings(const UpdateTrackSettings& update) const;
     bool leave(const LeaveRequest& request) const;
+    bool updateVideoLayers(const UpdateVideoLayers& update);
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>

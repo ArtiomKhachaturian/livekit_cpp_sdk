@@ -33,6 +33,7 @@
 #include "rtc/AddTrackRequest.h"
 #include "rtc/UpdateSubscription.h"
 #include "rtc/UpdateTrackSettings.h"
+#include "rtc/UpdateVideoLayers.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -72,6 +73,8 @@ public:
     static livekit::UpdateSubscription map(const UpdateSubscription& in);
     static UpdateTrackSettings map(const livekit::UpdateTrackSettings& in);
     static livekit::UpdateTrackSettings map(const UpdateTrackSettings& in);
+    static UpdateVideoLayers map(const livekit::UpdateVideoLayers& in);
+    static livekit::UpdateVideoLayers map(const UpdateVideoLayers& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);

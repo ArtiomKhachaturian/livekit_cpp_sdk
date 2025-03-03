@@ -66,6 +66,11 @@ bool RequestSender::leave(const LeaveRequest& request) const
     return send(&Request::mutable_leave, request);
 }
 
+bool RequestSender::updateVideoLayers(const UpdateVideoLayers& update)
+{
+    return send(&Request::mutable_update_layers, update);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;
