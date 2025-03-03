@@ -53,6 +53,7 @@ public:
     static TrackPublishedResponse map(const livekit::TrackPublishedResponse& in);
     static TrackUnpublishedResponse map(const livekit::TrackUnpublishedResponse& in);
     static LeaveRequest map(const livekit::LeaveRequest& in);
+    static livekit::LeaveRequest map(const LeaveRequest& in);
     static MuteTrackRequest map(const livekit::MuteTrackRequest& in);
     static livekit::MuteTrackRequest map(const MuteTrackRequest& in);
     static SpeakersChanged map(const livekit::SpeakersChanged& in);
@@ -80,6 +81,7 @@ public:
     static ParticipantState map(livekit::ParticipantInfo_State in);
     static ParticipantPermission map(const livekit::ParticipantPermission& in);
     static DisconnectReason map(livekit::DisconnectReason in);
+    static livekit::DisconnectReason map(DisconnectReason in);
     static TrackSource map(livekit::TrackSource in);
     static livekit::TrackSource map(TrackSource in);
     static TrackInfo map(const livekit::TrackInfo& in);
@@ -104,8 +106,11 @@ public:
     static SignalTarget map(livekit::SignalTarget in);
     static livekit::SignalTarget map(SignalTarget in);
     static LeaveRequestAction map(livekit::LeaveRequest_Action in);
+    static livekit::LeaveRequest_Action map(LeaveRequestAction in);
     static RegionInfo map(const livekit::RegionInfo& in);
+    static livekit::RegionInfo map(const RegionInfo& in);
     static RegionSettings map(const livekit::RegionSettings& in);
+    static livekit::RegionSettings map(const RegionSettings& in);
     static SpeakerInfo map(const livekit::SpeakerInfo& in);
     static ConnectionQuality map(livekit::ConnectionQuality in);
     static ConnectionQualityInfo map(const livekit::ConnectionQualityInfo& in);

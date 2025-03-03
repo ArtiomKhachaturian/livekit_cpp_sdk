@@ -111,6 +111,16 @@ LeaveRequest Signals::map(const livekit::LeaveRequest& in)
     return out;
 }
 
+livekit::LeaveRequest Signals::map(const LeaveRequest& in)
+{
+    livekit::LeaveRequest out;
+    out.set_can_reconnect(in._canReconnect);
+    out.set_reason(map(in._reason));
+    out.set_action(map(in._action));
+    *out.mutable_regions() = map(in._regions);
+    return out;
+}
+
 MuteTrackRequest Signals::map(const livekit::MuteTrackRequest& in)
 {
     MuteTrackRequest out;
@@ -441,6 +451,44 @@ DisconnectReason Signals::map(livekit::DisconnectReason in)
             break;
     }
     return DisconnectReason::UnknownReason;
+}
+
+livekit::DisconnectReason Signals::map(DisconnectReason in)
+{
+    switch (in) {
+        case DisconnectReason::UnknownReason:
+            break;
+        case DisconnectReason::ClientInitiated:
+            return livekit::CLIENT_INITIATED;
+        case DisconnectReason::DuplicateIdentity:
+            return livekit::DUPLICATE_IDENTITY;
+        case DisconnectReason::ServerShutdown:
+            return livekit::SERVER_SHUTDOWN;
+        case DisconnectReason::ParticipantRemoved:
+            return livekit::PARTICIPANT_REMOVED;
+        case DisconnectReason::RoomDeleted:
+            return livekit::ROOM_DELETED;
+        case DisconnectReason::StateMismatch:
+            return livekit::STATE_MISMATCH;
+        case DisconnectReason::JoinFailure:
+            return livekit::JOIN_FAILURE;
+        case DisconnectReason::Migration:
+            return livekit::MIGRATION;
+        case DisconnectReason::SignalClose:
+            return livekit::SIGNAL_CLOSE;
+        case DisconnectReason::RoomClosed:
+            return livekit::ROOM_CLOSED;
+        case DisconnectReason::UserUnavailable:
+            return livekit::USER_UNAVAILABLE;
+        case DisconnectReason::UserRejected:
+            return livekit::USER_REJECTED;
+        case DisconnectReason::SipTrunkFailure:
+            return livekit::SIP_TRUNK_FAILURE;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::UNKNOWN_REASON;
 }
 
 TrackSource Signals::map(livekit::TrackSource in)
@@ -806,6 +854,22 @@ LeaveRequestAction Signals::map(livekit::LeaveRequest_Action in)
     return LeaveRequestAction::Disconnect;
 }
 
+livekit::LeaveRequest_Action Signals::map(LeaveRequestAction in)
+{
+    switch (in) {
+        case LeaveRequestAction::Disconnect:
+            break;
+        case LeaveRequestAction::Resume:
+            return livekit::LeaveRequest_Action_RESUME;
+        case LeaveRequestAction::Reconnect:
+            return livekit::LeaveRequest_Action_RECONNECT;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::LeaveRequest_Action_DISCONNECT;
+}
+
 RegionInfo Signals::map(const livekit::RegionInfo& in)
 {
     RegionInfo out;
@@ -815,10 +879,26 @@ RegionInfo Signals::map(const livekit::RegionInfo& in)
     return out;
 }
 
+livekit::RegionInfo Signals::map(const RegionInfo& in)
+{
+    livekit::RegionInfo out;
+    out.set_region(in._region);
+    out.set_url(in._url);
+    out.set_distance(in._distance);
+    return out;
+}
+
 RegionSettings Signals::map(const livekit::RegionSettings& in)
 {
     RegionSettings out;
     out._regions = map<RegionInfo, livekit::RegionInfo>(in.regions());
+    return out;
+}
+
+livekit::RegionSettings Signals::map(const RegionSettings& in)
+{
+    livekit::RegionSettings out;
+    map(in._regions, out.mutable_regions());
     return out;
 }
 

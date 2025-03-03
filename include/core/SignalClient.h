@@ -30,6 +30,7 @@ struct AddTrackRequest;
 struct MuteTrackRequest;
 struct UpdateSubscription;
 struct UpdateTrackSettings;
+struct LeaveRequest;
 
 class SignalClient
 {
@@ -53,6 +54,7 @@ public:
     bool sendMuteTrack(const MuteTrackRequest& request) const;
     bool sendSubscription(const UpdateSubscription& update) const;
     bool sendTrackSettings(const UpdateTrackSettings& update) const;
+    bool sendLeave(const LeaveRequest& request) const;
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);

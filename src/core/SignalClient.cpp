@@ -118,6 +118,11 @@ bool SignalClient::sendTrackSettings(const UpdateTrackSettings& update) const
     return _requestSender->trackSettings(update);
 }
 
+bool SignalClient::sendLeave(const LeaveRequest& request) const
+{
+    return _requestSender->leave(request);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);

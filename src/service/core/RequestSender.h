@@ -30,6 +30,7 @@ struct AddTrackRequest;
 struct MuteTrackRequest;
 struct UpdateSubscription;
 struct UpdateTrackSettings;
+struct LeaveRequest;
 
 class RequestSender
 {
@@ -42,6 +43,7 @@ public:
     bool muteTrack(const MuteTrackRequest& request) const;
     bool subscription(const UpdateSubscription& update) const;
     bool trackSettings(const UpdateTrackSettings& update) const;
+    bool leave(const LeaveRequest& request) const;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>

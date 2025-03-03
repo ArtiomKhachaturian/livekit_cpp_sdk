@@ -61,6 +61,11 @@ bool RequestSender::trackSettings(const UpdateTrackSettings& update) const
     return send(&Request::mutable_track_setting, update);
 }
 
+bool RequestSender::leave(const LeaveRequest& request) const
+{
+    return send(&Request::mutable_leave, request);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;
