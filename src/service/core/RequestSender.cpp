@@ -71,6 +71,11 @@ bool RequestSender::updateVideoLayers(const UpdateVideoLayers& update)
     return send(&Request::mutable_update_layers, update);
 }
 
+bool RequestSender::subscriptionPermission(const SubscriptionPermission& permission)
+{
+    return send(&Request::mutable_subscription_permission, permission);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;

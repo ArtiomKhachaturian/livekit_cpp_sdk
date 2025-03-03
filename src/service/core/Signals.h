@@ -34,6 +34,7 @@
 #include "rtc/UpdateSubscription.h"
 #include "rtc/UpdateTrackSettings.h"
 #include "rtc/UpdateVideoLayers.h"
+#include "rtc/SubscriptionPermission.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -75,6 +76,8 @@ public:
     static livekit::UpdateTrackSettings map(const UpdateTrackSettings& in);
     static UpdateVideoLayers map(const livekit::UpdateVideoLayers& in);
     static livekit::UpdateVideoLayers map(const UpdateVideoLayers& in);
+    static SubscriptionPermission map(const livekit::SubscriptionPermission& in);
+    static livekit::SubscriptionPermission map(const SubscriptionPermission& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);
@@ -128,6 +131,8 @@ public:
     static livekit::SimulcastCodec map(const SimulcastCodec& in);
     static ParticipantTracks map(const livekit::ParticipantTracks& in);
     static livekit::ParticipantTracks map(const ParticipantTracks& in);
+    static TrackPermission map(const livekit::TrackPermission& in);
+    static livekit::TrackPermission map(const TrackPermission& in);
 private:
     template<typename T>
     static const T& map(const T& in) { return in; }

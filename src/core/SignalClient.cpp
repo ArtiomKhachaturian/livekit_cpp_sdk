@@ -128,6 +128,11 @@ bool SignalClient::sendUpdateVideoLayers(const UpdateVideoLayers& update)
     return _requestSender->updateVideoLayers(update);
 }
 
+bool SignalClient::sendSubscriptionPermission(const SubscriptionPermission& permission)
+{
+    return _requestSender->subscriptionPermission(permission);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);

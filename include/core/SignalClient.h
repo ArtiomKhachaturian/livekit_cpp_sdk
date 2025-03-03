@@ -32,6 +32,7 @@ struct UpdateSubscription;
 struct UpdateTrackSettings;
 struct LeaveRequest;
 struct UpdateVideoLayers;
+struct SubscriptionPermission;
 
 class SignalClient
 {
@@ -57,6 +58,7 @@ public:
     bool sendTrackSettings(const UpdateTrackSettings& update) const;
     bool sendLeave(const LeaveRequest& request) const;
     bool sendUpdateVideoLayers(const UpdateVideoLayers& update);
+    bool sendSubscriptionPermission(const SubscriptionPermission& permission);
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);

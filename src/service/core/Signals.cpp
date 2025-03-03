@@ -323,6 +323,22 @@ livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in)
     return out;
 }
 
+SubscriptionPermission Signals::map(const livekit::SubscriptionPermission& in)
+{
+    SubscriptionPermission out;
+    out._allParticipants = in.all_participants();
+    out._trackPermissions = map<TrackPermission, livekit::TrackPermission>(in.track_permissions());
+    return out;
+}
+
+livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in)
+{
+    livekit::SubscriptionPermission out;
+    out.set_all_participants(in._allParticipants);
+    map(in._trackPermissions, out.mutable_track_permissions());
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;
@@ -1065,6 +1081,26 @@ livekit::ParticipantTracks Signals::map(const ParticipantTracks& in)
     livekit::ParticipantTracks out;
     out.set_participant_sid(in._participantSid);
     map(in._trackSids, out.mutable_track_sids());
+    return out;
+}
+
+TrackPermission Signals::map(const livekit::TrackPermission& in)
+{
+    TrackPermission out;
+    out._participantSid = in.participant_sid();
+    out._allAracks = in.all_tracks();
+    out._trackSids = map<std::string>(in.track_sids());
+    out._participantIdentity = in.participant_identity();
+    return out;
+}
+
+livekit::TrackPermission Signals::map(const TrackPermission& in)
+{
+    livekit::TrackPermission out;
+    out.set_participant_sid(in._participantSid);
+    out.set_all_tracks(in._allAracks);
+    map(in._trackSids, out.mutable_track_sids());
+    out.set_participant_identity(in._participantIdentity);
     return out;
 }
 
