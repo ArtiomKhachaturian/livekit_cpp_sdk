@@ -14,6 +14,7 @@
 #pragma once // ReconnectResponse.h
 #include "rtc/ICEServer.h"
 #include "rtc/ClientConfiguration.h"
+#include <optional>
 #include <vector>
 
 namespace LiveKitCpp
@@ -23,7 +24,7 @@ namespace LiveKitCpp
 struct ReconnectResponse
 {
     std::vector<ICEServer> _iceServers;
-    ClientConfiguration _clientConfiguration = {};
+    std::optional<ClientConfiguration> _clientConfiguration;
 };
 
 } // namespace LiveKitCpp

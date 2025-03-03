@@ -17,6 +17,7 @@
 #include "rtc/ParticipantState.h"
 #include "rtc/TrackInfo.h"
 #include "rtc/DisconnectReason.h"
+#include <optional>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -37,7 +38,7 @@ struct ParticipantInfo
     int64_t joinedAtMs = {};
     std::string _name;
     uint32_t _version = {};
-    ParticipantPermission _permission = {};
+    std::optional<ParticipantPermission> _permission;
     std::string _region;
     // indicates the participant has an active publisher connection
     // and can publish to the server

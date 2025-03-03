@@ -18,6 +18,7 @@
 #include "rtc/Room.h"
 #include "rtc/ParticipantInfo.h"
 #include "rtc/ServerInfo.h"
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -27,8 +28,8 @@ namespace LiveKitCpp
 // sent when join is accepted
 struct JoinResponse
 {
-    Room _room = {};
-    ParticipantInfo _participant = {};
+    std::optional<Room> _room;
+    std::optional<ParticipantInfo> _participant;
     std::vector<ParticipantInfo> _otherParticipants;
      // deprecated. use server_info.version instead.
     [[deprecated("Use _serverInfo._version instead.")]] std::string _serverVersion;
@@ -38,12 +39,12 @@ struct JoinResponse
      // when the current server isn't available, return alternate url to retry connection
      // when this is set, the other fields will be largely empty
     std::string _alternativeUrl;
-    ClientConfiguration _clientConfiguration = {};
+    std::optional<ClientConfiguration> _clientConfiguration;
      // deprecated. use server_info.region instead.
     [[deprecated("Use _serverInfo._region instead.")]] std::string _serverRegion;
     int32_t _pingTimeout = {};
     int32_t _pingInterval = {};
-    ServerInfo _serverInfo = {};
+    std::optional<ServerInfo> _serverInfo;
     // Server-Injected-Frame byte trailer, used to identify unencrypted frames when e2ee is enabled
     std::string _sifTrailer;
     std::vector<Codec> _enabledPublishCodecs;
