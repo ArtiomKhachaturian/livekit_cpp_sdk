@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
-#include <vector>
-#import <sys/utsname.h>
 #import <Foundation/Foundation.h>
 
 namespace {
@@ -21,50 +19,6 @@ namespace {
 inline std::string NSStringToStdString(NSString* nsString) {
     if (nsString) {
         return std::string(nsString.UTF8String);
-    }
-    return {};
-}
-
-inline std::string CFStringRefToString(CFStringRef cfString) {
-    if (cfString) {
-        const auto str = CFStringGetCStringPtr(cfString, kCFStringEncodingUTF8);
-        if (str) {
-            return str;
-        }
-        const auto length = CFStringGetLength(cfString);
-        const auto maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
-        if (maxSize) {
-            std::string buffer;
-            buffer.resize(maxSize);
-            if (CFStringGetCString(cfString, buffer.data(), maxSize, kCFStringEncodingUTF8)) {
-                return buffer;
-            }
-        }
-    }
-    return {};
-}
-
-inline std::string CFDataRefToString(CFDataRef cfData) {
-    if (cfData) {
-        const auto data = CFDataGetBytePtr(cfData);
-        const auto length = CFDataGetLength(cfData);
-        return std::string(reinterpret_cast<const char*>(data), length);
-    }
-    return {};
-}
-
-inline std::string CFTypeRefToStdString(CFTypeRef ref) {
-    if (ref) {
-        const auto type = CFGetTypeID(ref);
-        if (type == CFStringGetTypeID()) {
-            return CFStringRefToString(static_cast<CFStringRef>(ref));
-        }
-        if (type == CFArrayGetTypeID()) {
-            // TODO: implement it
-        }
-        if (type == CFDataGetTypeID()) {
-            return CFDataRefToString(static_cast<CFDataRef>(ref));
-        }
     }
     return {};
 }
@@ -100,9 +54,9 @@ std::string modelIdentifier()
                                                          kCFAllocatorDefault, 0);
         if (ref) {
             NSData *modelData = (__bridge_transfer NSData *)ref;
-            NSString* modelIdentifier = [[NSString alloc] initWithData:modelData encoding:NSUTF8StringEncoding];
-            modelIdentifier = [modelIdentifier stringByTrimmingCharactersInSet:[NSCharacterSet controlCharacterSet]];
-            model = NSStringToStdString(modelIdentifier);
+            NSString* modelId = [[NSString alloc] initWithData:modelData encoding:NSUTF8StringEncoding];
+            modelId = [modelId stringByTrimmingCharactersInSet:[NSCharacterSet controlCharacterSet]];
+            model = NSStringToStdString(modelId);
         }
         IOObjectRelease(service);
     }
