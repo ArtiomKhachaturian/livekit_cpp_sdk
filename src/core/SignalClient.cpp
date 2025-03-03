@@ -346,7 +346,7 @@ void SignalClient::Impl::handle(const livekit::ReconnectResponse& response) cons
 
 void SignalClient::Impl::handle(const livekit::SubscriptionResponse& response) const
 {
-    
+    signal(&SignalClientListener::onSubscription, response);
 }
 
 void SignalClient::Impl::handle(const livekit::RequestResponse& response) const

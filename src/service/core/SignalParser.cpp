@@ -164,6 +164,14 @@ RequestResponse SignalParser::from(const livekit::RequestResponse& in)
     return out;
 }
 
+SubscriptionResponse SignalParser::from(const livekit::SubscriptionResponse& in)
+{
+    SubscriptionResponse out;
+    out._trackSid = in.track_sid();
+    out._err = from(in.err());
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
@@ -683,6 +691,22 @@ RequestResponseReason SignalParser::from(livekit::RequestResponse_Reason in)
             break;
     }
     return RequestResponseReason::Ok;
+}
+
+SubscriptionError SignalParser::from(livekit::SubscriptionError in)
+{
+    switch (in) {
+        case livekit::SE_UNKNOWN:
+            break;
+        case livekit::SE_CODEC_UNSUPPORTED:
+            return SubscriptionError::CodecUnsupported;
+        case livekit::SE_TRACK_NOTFOUND:
+            return SubscriptionError::TrackNotfound;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return SubscriptionError::Unknown;
 }
 
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>

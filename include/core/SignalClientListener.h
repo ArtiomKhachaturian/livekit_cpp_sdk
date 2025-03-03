@@ -35,6 +35,7 @@ struct SubscribedQualityUpdate;
 struct ReconnectResponse;
 struct TrackSubscribed;
 struct RequestResponse;
+struct SubscriptionResponse;
 
 class SignalClientListener
 {
@@ -77,6 +78,8 @@ public:
                                    const TrackSubscribed& /*subscribed*/) {}
     virtual void onRequest(uint64_t /*signalClientId*/,
                            const RequestResponse& /*response*/) {}
+    virtual void onSubscription(uint64_t /*signalClientId*/,
+                           const SubscriptionResponse& /*response*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,
                         const std::chrono::milliseconds& /*timestamp*/,
                         const std::chrono::milliseconds& /*lastPingTimestamp*/ = {}) {}

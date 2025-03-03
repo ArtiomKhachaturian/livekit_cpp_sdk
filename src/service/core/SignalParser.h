@@ -27,6 +27,7 @@
 #include "rtc/ReconnectResponse.h"
 #include "rtc/TrackSubscribed.h"
 #include "rtc/RequestResponse.h"
+#include "rtc/SubscriptionResponse.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -64,6 +65,7 @@ public:
     static ReconnectResponse from(const livekit::ReconnectResponse& in);
     static TrackSubscribed from(const livekit::TrackSubscribed& in);
     static RequestResponse from(const livekit::RequestResponse& in);
+    static SubscriptionResponse from(const livekit::SubscriptionResponse& in);
     // data
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);
@@ -101,6 +103,7 @@ public:
     static SubscribedCodec from(const livekit::SubscribedCodec& in);
     static ICEServer from(const livekit::ICEServer& in);
     static RequestResponseReason from(livekit::RequestResponse_Reason in);
+    static SubscriptionError from(livekit::SubscriptionError in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> from(const TProtoBufRepeated& in);
