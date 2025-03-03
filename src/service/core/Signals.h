@@ -45,6 +45,7 @@ public:
     static SessionDescription map(const livekit::SessionDescription& in);
     static livekit::SessionDescription* map(const SessionDescription& in);
     static TrickleRequest map(const livekit::TrickleRequest& in);
+    static livekit::TrickleRequest* map(const TrickleRequest& in);
     static ParticipantUpdate map(const livekit::ParticipantUpdate& in);
     static TrackPublishedResponse map(const livekit::TrackPublishedResponse& in);
     static TrackUnpublishedResponse map(const livekit::TrackUnpublishedResponse& in);
@@ -85,6 +86,7 @@ public:
     static ServerEdition map(livekit::ServerInfo_Edition in);
     static ServerInfo map(const livekit::ServerInfo& in);
     static SignalTarget map(livekit::SignalTarget in);
+    static livekit::SignalTarget map(SignalTarget in);
     static LeaveRequestAction map(livekit::LeaveRequest_Action in);
     static RegionInfo map(const livekit::RegionInfo& in);
     static RegionSettings map(const livekit::RegionSettings& in);

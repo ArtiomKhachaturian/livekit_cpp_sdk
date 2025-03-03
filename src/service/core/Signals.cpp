@@ -70,6 +70,15 @@ TrickleRequest Signals::map(const livekit::TrickleRequest& in)
     return out;
 }
 
+livekit::TrickleRequest* Signals::map(const TrickleRequest& in)
+{
+    auto out = new livekit::TrickleRequest;
+    out->set_candidateinit(in._candidateInit);
+    out->set_target(map(in._target));
+    out->set_final(in._final);
+    return out;
+}
+
 ParticipantUpdate Signals::map(const livekit::ParticipantUpdate& in)
 {
     ParticipantUpdate out;
@@ -574,6 +583,20 @@ SignalTarget Signals::map(livekit::SignalTarget in)
             break;
     }
     return SignalTarget::Publisher;
+}
+
+livekit::SignalTarget Signals::map(SignalTarget in)
+{
+    switch (in) {
+        case SignalTarget::Publisher:
+            break;
+        case SignalTarget::Subscriber:
+            return livekit::SUBSCRIBER;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::PUBLISHER;
 }
 
 LeaveRequestAction Signals::map(livekit::LeaveRequest_Action in)

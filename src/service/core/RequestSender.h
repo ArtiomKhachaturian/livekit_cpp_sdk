@@ -25,6 +25,7 @@ namespace LiveKitCpp
 class CommandSender;
 class MemoryBlock;
 struct SessionDescription;
+struct TrickleRequest;
 
 class RequestSender
 {
@@ -32,11 +33,11 @@ public:
     RequestSender(CommandSender* commandSender);
     bool sendOffer(const SessionDescription& offer) const;
     bool sendAnswer(const SessionDescription& answer) const;
+    bool sendTrickleRequest(const TrickleRequest& request);
 private:
     bool canSend() const;
-    bool sendSdp(const SessionDescription& sdp, bool offer) const;
     template <class TSetMethod, class TObject>
-    bool mapAndSendRequest(const TSetMethod& setMethod, const TObject& object) const;
+    bool send(const TSetMethod& setMethod, const TObject& object) const;
     static std::vector<uint8_t> toBytes(const google::protobuf::MessageLite& proto);
     static std::shared_ptr<MemoryBlock> toMemBlock(const google::protobuf::MessageLite& proto);
 private:

@@ -27,12 +27,17 @@ RequestSender::RequestSender(CommandSender* commandSender)
 
 bool RequestSender::sendOffer(const SessionDescription& offer) const
 {
-    return sendSdp(offer, true);
+    return send(&livekit::SignalRequest::set_allocated_offer, offer);
 }
 
 bool RequestSender::sendAnswer(const SessionDescription& answer) const
 {
-    return sendSdp(answer, false);
+    return send(&livekit::SignalRequest::set_allocated_answer, answer);
+}
+
+bool RequestSender::sendTrickleRequest(const TrickleRequest& request)
+{
+    return send(&livekit::SignalRequest::set_allocated_trickle, request);
 }
 
 bool RequestSender::canSend() const
@@ -40,16 +45,8 @@ bool RequestSender::canSend() const
     return nullptr != _commandSender;
 }
 
-bool RequestSender::sendSdp(const SessionDescription& sdp, bool offer) const
-{
-    if (offer) {
-        return mapAndSendRequest(&livekit::SignalRequest::set_allocated_offer, sdp);
-    }
-    return mapAndSendRequest(&livekit::SignalRequest::set_allocated_answer, sdp);
-}
-
 template <class TSetMethod, class TObject>
-bool RequestSender::mapAndSendRequest(const TSetMethod& setMethod, const TObject& object) const
+bool RequestSender::send(const TSetMethod& setMethod, const TObject& object) const
 {
     if (canSend()) {
         livekit::SignalRequest request;
