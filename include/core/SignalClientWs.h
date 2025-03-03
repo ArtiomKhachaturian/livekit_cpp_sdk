@@ -51,7 +51,7 @@ private:
     void onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
                                 const std::shared_ptr<const MemoryBlock>& message) final;
     // impl. of SignalClientListener
-    void onServerResponseParseError(uint64_t signalClientId) final;
+    void onServerSignalParseError(uint64_t signalClientId) final;
 private:
     const std::unique_ptr<Websocket> _socket;
     std::string _host;

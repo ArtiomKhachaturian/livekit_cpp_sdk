@@ -36,12 +36,13 @@ struct ReconnectResponse;
 struct TrackSubscribed;
 struct RequestResponse;
 struct SubscriptionResponse;
+struct SubscriptionPermissionUpdate;
 
 class SignalClientListener
 {
 public:
     virtual void onTransportStateChanged(uint64_t /*signalClientId*/, State /*state*/) {}
-    virtual void onServerResponseParseError(uint64_t /*signalClientId*/) {}
+    virtual void onServerSignalParseError(uint64_t /*signalClientId*/) {}
     virtual void onJoin(uint64_t /*signalClientId*/,
                         const JoinResponse& /*response*/) {}
     virtual void onOffer(uint64_t /*signalClientId*/, const std::string& /*type*/,
@@ -79,7 +80,9 @@ public:
     virtual void onRequest(uint64_t /*signalClientId*/,
                            const RequestResponse& /*response*/) {}
     virtual void onSubscription(uint64_t /*signalClientId*/,
-                           const SubscriptionResponse& /*response*/) {}
+                                const SubscriptionResponse& /*response*/) {}
+    virtual void onSubscriptionPermission(uint64_t /*signalClientId*/,
+                                          const SubscriptionPermissionUpdate& /*update*/) {}
     virtual void onPong(uint64_t /*signalClientId*/,
                         const std::chrono::milliseconds& /*timestamp*/,
                         const std::chrono::milliseconds& /*lastPingTimestamp*/ = {}) {}

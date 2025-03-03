@@ -168,9 +168,9 @@ void SignalClientWs::onBinaryMessageReceved(uint64_t socketId, uint64_t connecti
     }
 }
 
-void SignalClientWs::onServerResponseParseError(uint64_t signalClientId)
+void SignalClientWs::onServerSignalParseError(uint64_t signalClientId)
 {
-    SignalClientWs::onServerResponseParseError(signalClientId);
+    SignalClientWs::onServerSignalParseError(signalClientId);
     disconnect();
 }
 

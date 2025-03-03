@@ -238,7 +238,7 @@ void SignalClient::Impl::parseBinary(const void* data, size_t dataLen)
         }
     }
     else {
-        notify(&SignalClientListener::onServerResponseParseError);
+        notify(&SignalClientListener::onServerSignalParseError);
     }
 }
 
@@ -331,7 +331,7 @@ void SignalClient::Impl::handle(const livekit::SubscribedQualityUpdate& update) 
 
 void SignalClient::Impl::handle(const livekit::SubscriptionPermissionUpdate& update) const
 {
-    
+    signal(&SignalClientListener::onSubscriptionPermission, update);
 }
 
 void SignalClient::Impl::handle(const livekit::TrackUnpublishedResponse& response) const

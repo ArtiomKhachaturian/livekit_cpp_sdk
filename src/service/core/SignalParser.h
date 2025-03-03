@@ -28,6 +28,7 @@
 #include "rtc/TrackSubscribed.h"
 #include "rtc/RequestResponse.h"
 #include "rtc/SubscriptionResponse.h"
+#include "rtc/SubscriptionPermissionUpdate.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -66,6 +67,7 @@ public:
     static TrackSubscribed from(const livekit::TrackSubscribed& in);
     static RequestResponse from(const livekit::RequestResponse& in);
     static SubscriptionResponse from(const livekit::SubscriptionResponse& in);
+    static SubscriptionPermissionUpdate from(const livekit::SubscriptionPermissionUpdate& in);
     // data
     static Room from(const livekit::Room& in);
     static Codec from(const livekit::Codec& in);

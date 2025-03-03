@@ -172,6 +172,15 @@ SubscriptionResponse SignalParser::from(const livekit::SubscriptionResponse& in)
     return out;
 }
 
+SubscriptionPermissionUpdate SignalParser::from(const livekit::SubscriptionPermissionUpdate& in)
+{
+    SubscriptionPermissionUpdate out;
+    out._participantSid = in.participant_sid();
+    out._trackSid = in.track_sid();
+    out._allowed = in.allowed();
+    return out;
+}
+
 Room SignalParser::from(const livekit::Room& in)
 {
     Room out;
