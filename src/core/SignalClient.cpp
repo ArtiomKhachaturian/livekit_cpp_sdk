@@ -83,12 +83,12 @@ State SignalClient::transportState() const noexcept
     return _impl->transportState();
 }
 
-bool SignalClient::sendOffer(const SessionDescription& offer)
+bool SignalClient::sendOffer(const SessionDescription& offer) const
 {
     return _requestSender->sendOffer(offer);
 }
 
-bool SignalClient::sendAnswer(const SessionDescription& answer)
+bool SignalClient::sendAnswer(const SessionDescription& answer) const
 {
     return _requestSender->sendAnswer(answer);
 }

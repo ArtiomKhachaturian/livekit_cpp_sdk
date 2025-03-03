@@ -41,8 +41,8 @@ public:
     State transportState() const noexcept;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
     // requests sending
-    bool sendOffer(const SessionDescription& offer);
-    bool sendAnswer(const SessionDescription& answer);
+    bool sendOffer(const SessionDescription& offer) const;
+    bool sendAnswer(const SessionDescription& answer) const;
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);

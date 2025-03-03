@@ -40,13 +40,10 @@ namespace LiveKitCpp
 class Signals
 {
 public:
-    // generic helpers
-    static std::optional<livekit::SignalResponse> parseResponse(const void* data,
-                                                                size_t dataLen);
     // responses & requests
     static JoinResponse map(const livekit::JoinResponse& in);
     static SessionDescription map(const livekit::SessionDescription& in);
-    static livekit::SessionDescription map(const SessionDescription& in);
+    static livekit::SessionDescription* map(const SessionDescription& in);
     static TrickleRequest map(const livekit::TrickleRequest& in);
     static ParticipantUpdate map(const livekit::ParticipantUpdate& in);
     static TrackPublishedResponse map(const livekit::TrackPublishedResponse& in);

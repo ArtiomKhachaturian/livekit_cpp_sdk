@@ -29,6 +29,7 @@ public:
     void addListener(SignalServerListener* listener);
     void removeListener(SignalServerListener* listener);
 private:
+    static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
     template <class Method, class TLiveKitType>

@@ -13,6 +13,9 @@
 // limitations under the License.
 #include "RequestSender.h"
 #include "CommandSender.h"
+#include "MemoryBlock.h"
+#include "Signals.h"
+#include "google/protobuf/message_lite.h"
 
 namespace LiveKitCpp
 {
@@ -22,25 +25,56 @@ RequestSender::RequestSender(CommandSender* commandSender)
 {
 }
 
-bool RequestSender::sendOffer(const SessionDescription& offer)
+bool RequestSender::sendOffer(const SessionDescription& offer) const
 {
-    if (canSend()) {
-        
-    }
-    return false;
+    return sendSdp(offer, true);
 }
 
-bool RequestSender::sendAnswer(const SessionDescription& answer)
+bool RequestSender::sendAnswer(const SessionDescription& answer) const
 {
-    if (canSend()) {
-        
-    }
-    return false;
+    return sendSdp(answer, false);
 }
 
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;
+}
+
+bool RequestSender::sendSdp(const SessionDescription& sdp, bool offer) const
+{
+    if (offer) {
+        return mapAndSendRequest(&livekit::SignalRequest::set_allocated_offer, sdp);
+    }
+    return mapAndSendRequest(&livekit::SignalRequest::set_allocated_answer, sdp);
+}
+
+template <class TSetMethod, class TObject>
+bool RequestSender::mapAndSendRequest(const TSetMethod& setMethod, const TObject& object) const
+{
+    if (canSend()) {
+        livekit::SignalRequest request;
+        (request.*setMethod)(Signals::map(object));
+        if (const auto block = toMemBlock(request)) {
+            return _commandSender->sendBinary(block);
+        }
+    }
+    return false;
+}
+
+std::vector<uint8_t> RequestSender::toBytes(const google::protobuf::MessageLite& proto)
+{
+    if (const auto size = proto.ByteSizeLong()) {
+        std::vector<uint8_t> buffer(size);
+        if (proto.SerializeToArray(buffer.data(), int(size))) {
+            return buffer;
+        }
+    }
+    return {};
+}
+
+std::shared_ptr<MemoryBlock> RequestSender::toMemBlock(const google::protobuf::MessageLite& proto)
+{
+    return MemoryBlock::make(toBytes(proto));
 }
 
 } // namespace LiveKitCpp

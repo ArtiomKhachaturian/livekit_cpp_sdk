@@ -16,5 +16,4 @@
 namespace LiveKitCpp
 {
 
-
 } // namespace LiveKitCpp

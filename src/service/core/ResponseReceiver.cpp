@@ -14,6 +14,22 @@
 #include "ResponseReceiver.h"
 #include "Signals.h"
 #include "SignalServerListener.h"
+#include <optional>
+
+namespace {
+
+template <typename TProto>
+inline std::optional<TProto> fromBytes(const void* data, size_t dataLen) {
+    if (data && dataLen) {
+        TProto instance;
+        if (instance.ParseFromArray(data, int(dataLen))) {
+            return instance;
+        }
+    }
+    return std::nullopt;
+}
+
+}
 
 namespace LiveKitCpp
 {
@@ -25,7 +41,7 @@ ResponseReceiver::ResponseReceiver(uint64_t signalClientId)
 
 void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
 {
-    if (auto response = Signals::parseResponse(data, dataLen)) {
+    if (const auto response = parse(data, dataLen)) {
         switch (response->message_case()) {
             case livekit::SignalResponse::kJoin:
                 handle(response->join());
@@ -117,6 +133,12 @@ void ResponseReceiver::addListener(SignalServerListener* listener)
 void ResponseReceiver::removeListener(SignalServerListener* listener)
 {
     _listeners.remove(listener);
+}
+
+std::optional<livekit::SignalResponse> ResponseReceiver::parse(const void* data,
+                                                               size_t dataLen)
+{
+    return fromBytes<livekit::SignalResponse>(data, dataLen);
 }
 
 template <class Method, typename... Args>

@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Utils.h
-#include "MemoryBlock.h"
-#include <memory>
-#include <optional>
 #include <string>
 
 namespace LiveKitCpp
@@ -23,24 +20,5 @@ namespace LiveKitCpp
 std::string operatingSystemVersion();
 std::string operatingSystemName();
 std::string modelIdentifier();
-
-template <typename TProto>
-inline std::optional<TProto> protofromBytes(const void* data, size_t dataLen) {
-    if (data && dataLen) {
-        TProto instance;
-        if (instance.ParseFromArray(data, int(dataLen))) {
-            return instance;
-        }
-    }
-    return std::nullopt;
-}
-
-template <typename TProto>
-inline std::optional<TProto> protofromBytes(const std::shared_ptr<const MemoryBlock>& bytes) {
-    if (bytes) {
-        return protofromBytes<TProto>(bytes->data(), bytes->size());
-    }
-    return {};
-}
 
 } // namespace LiveKitCpp
