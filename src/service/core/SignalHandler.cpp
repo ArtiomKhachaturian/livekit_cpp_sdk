@@ -139,10 +139,10 @@ void SignalHandler::handle(const livekit::JoinResponse& response) const
 void SignalHandler::handle(const livekit::SessionDescription& desc, bool offer) const
 {
     if (offer) {
-        notify(&SignalServerListener::onOffer, desc.type(), desc.sdp());
+        notify(&SignalServerListener::onOffer, desc.sdp());
     }
     else {
-        notify(&SignalServerListener::onAnswer, desc.type(), desc.sdp());
+        notify(&SignalServerListener::onAnswer, desc.sdp());
     }
 }
 
