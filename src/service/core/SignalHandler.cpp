@@ -128,7 +128,7 @@ void SignalHandler::notify(const Method& method, Args&&... args) const
 template <class Method, class TLiveKitType>
 void SignalHandler::signal(const Method& method, const TLiveKitType& sig) const
 {
-    notify(method, Signals::from(sig));
+    notify(method, Signals::map(sig));
 }
 
 void SignalHandler::handle(const livekit::JoinResponse& response) const
