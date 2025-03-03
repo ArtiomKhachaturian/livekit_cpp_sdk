@@ -27,6 +27,7 @@ class MemoryBlock;
 struct SessionDescription;
 struct TrickleRequest;
 struct AddTrackRequest;
+struct MuteTrackRequest;
 
 class RequestSender
 {
@@ -34,8 +35,9 @@ public:
     RequestSender(CommandSender* commandSender);
     bool offer(const SessionDescription& sdp) const;
     bool answer(const SessionDescription& sdp) const;
-    bool trickleRequest(const TrickleRequest& request) const;
-    bool addTrackRequest(const AddTrackRequest& request) const;
+    bool trickle(const TrickleRequest& request) const;
+    bool addTrack(const AddTrackRequest& request) const;
+    bool muteTrack(const MuteTrackRequest& request) const;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>

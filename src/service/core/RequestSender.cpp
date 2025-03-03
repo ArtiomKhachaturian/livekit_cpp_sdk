@@ -27,22 +27,27 @@ RequestSender::RequestSender(CommandSender* commandSender)
 
 bool RequestSender::offer(const SessionDescription& sdp) const
 {
-    return send(&livekit::SignalRequest::set_allocated_offer, sdp);
+    return send(&livekit::SignalRequest::mutable_offer, sdp);
 }
 
 bool RequestSender::answer(const SessionDescription& sdp) const
 {
-    return send(&livekit::SignalRequest::set_allocated_answer, sdp);
+    return send(&livekit::SignalRequest::mutable_answer, sdp);
 }
 
-bool RequestSender::trickleRequest(const TrickleRequest& request) const
+bool RequestSender::trickle(const TrickleRequest& request) const
 {
-    return send(&livekit::SignalRequest::set_allocated_trickle, request);
+    return send(&livekit::SignalRequest::mutable_trickle, request);
 }
 
-bool RequestSender::addTrackRequest(const AddTrackRequest& request) const
+bool RequestSender::addTrack(const AddTrackRequest& request) const
 {
-    return send(&livekit::SignalRequest::set_allocated_add_track, request);
+    return send(&livekit::SignalRequest::mutable_add_track, request);
+}
+
+bool RequestSender::muteTrack(const MuteTrackRequest& request) const
+{
+    return send(&livekit::SignalRequest::mutable_mute, request);
 }
 
 bool RequestSender::canSend() const
@@ -55,9 +60,11 @@ bool RequestSender::send(const TSetMethod& setMethod, const TObject& object) con
 {
     if (canSend()) {
         livekit::SignalRequest request;
-        (request.*setMethod)(Signals::map(object));
-        if (const auto block = toMemBlock(request)) {
-            return _commandSender->sendBinary(block);
+        if (const auto target = (request.*setMethod)()) {
+            *target = Signals::map(object);
+            if (const auto block = toMemBlock(request)) {
+                return _commandSender->sendBinary(block);
+            }
         }
     }
     return false;

@@ -93,14 +93,19 @@ bool SignalClient::sendAnswer(const SessionDescription& sdp) const
     return _requestSender->answer(sdp);
 }
 
-bool SignalClient::sendTrickleRequest(const TrickleRequest& request) const
+bool SignalClient::sendTrickle(const TrickleRequest& request) const
 {
-    return _requestSender->trickleRequest(request);
+    return _requestSender->trickle(request);
 }
 
-bool SignalClient::sendAddTrackRequest(const AddTrackRequest& request) const
+bool SignalClient::sendAddTrack(const AddTrackRequest& request) const
 {
-    return _requestSender->addTrackRequest(request);
+    return _requestSender->addTrack(request);
+}
+
+bool SignalClient::sendMuteTrack(const MuteTrackRequest& request) const
+{
+    return _requestSender->muteTrack(request);
 }
 
 bool SignalClient::changeTransportState(State state)

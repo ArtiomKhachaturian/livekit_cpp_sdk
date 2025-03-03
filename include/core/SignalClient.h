@@ -27,6 +27,7 @@ class RequestSender;
 struct SessionDescription;
 struct TrickleRequest;
 struct AddTrackRequest;
+struct MuteTrackRequest;
 
 class SignalClient
 {
@@ -45,8 +46,9 @@ public:
     // requests sending
     bool sendOffer(const SessionDescription& sdp) const;
     bool sendAnswer(const SessionDescription& sdp) const;
-    bool sendTrickleRequest(const TrickleRequest& request) const;
-    bool sendAddTrackRequest(const AddTrackRequest& request) const;
+    bool sendTrickle(const TrickleRequest& request) const;
+    bool sendAddTrack(const AddTrackRequest& request) const;
+    bool sendMuteTrack(const MuteTrackRequest& request) const;
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);

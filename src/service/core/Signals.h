@@ -44,14 +44,15 @@ public:
     // responses & requests
     static JoinResponse map(const livekit::JoinResponse& in);
     static SessionDescription map(const livekit::SessionDescription& in);
-    static livekit::SessionDescription* map(const SessionDescription& in);
+    static livekit::SessionDescription map(const SessionDescription& in);
     static TrickleRequest map(const livekit::TrickleRequest& in);
-    static livekit::TrickleRequest* map(const TrickleRequest& in);
+    static livekit::TrickleRequest map(const TrickleRequest& in);
     static ParticipantUpdate map(const livekit::ParticipantUpdate& in);
     static TrackPublishedResponse map(const livekit::TrackPublishedResponse& in);
     static TrackUnpublishedResponse map(const livekit::TrackUnpublishedResponse& in);
     static LeaveRequest map(const livekit::LeaveRequest& in);
     static MuteTrackRequest map(const livekit::MuteTrackRequest& in);
+    static livekit::MuteTrackRequest map(const MuteTrackRequest& in);
     static SpeakersChanged map(const livekit::SpeakersChanged& in);
     static RoomUpdate map(const livekit::RoomUpdate& in);
     static ConnectionQualityUpdate map(const livekit::ConnectionQualityUpdate& in);
@@ -63,7 +64,7 @@ public:
     static SubscriptionResponse map(const livekit::SubscriptionResponse& in);
     static SubscriptionPermissionUpdate map(const livekit::SubscriptionPermissionUpdate& in);
     static AddTrackRequest map(const livekit::AddTrackRequest& in);
-    static livekit::AddTrackRequest* map(const AddTrackRequest& in);
+    static livekit::AddTrackRequest map(const AddTrackRequest& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);

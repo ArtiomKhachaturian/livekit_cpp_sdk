@@ -53,11 +53,11 @@ SessionDescription Signals::map(const livekit::SessionDescription& in)
     return out;
 }
 
-livekit::SessionDescription* Signals::map(const SessionDescription& in)
+livekit::SessionDescription Signals::map(const SessionDescription& in)
 {
-    auto out = new livekit::SessionDescription;
-    out->set_type(in._type);
-    out->set_sdp(in._sdp);
+    livekit::SessionDescription out;
+    out.set_type(in._type);
+    out.set_sdp(in._sdp);
     return out;
 }
 
@@ -70,12 +70,12 @@ TrickleRequest Signals::map(const livekit::TrickleRequest& in)
     return out;
 }
 
-livekit::TrickleRequest* Signals::map(const TrickleRequest& in)
+livekit::TrickleRequest Signals::map(const TrickleRequest& in)
 {
-    auto out = new livekit::TrickleRequest;
-    out->set_candidateinit(in._candidateInit);
-    out->set_target(map(in._target));
-    out->set_final(in._final);
+    livekit::TrickleRequest out;
+    out.set_candidateinit(in._candidateInit);
+    out.set_target(map(in._target));
+    out.set_final(in._final);
     return out;
 }
 
@@ -116,6 +116,14 @@ MuteTrackRequest Signals::map(const livekit::MuteTrackRequest& in)
     MuteTrackRequest out;
     out._sid = in.sid();
     out._muted = in.muted();
+    return out;
+}
+
+livekit::MuteTrackRequest Signals::map(const MuteTrackRequest& in)
+{
+    livekit::MuteTrackRequest out;
+    out.set_sid(in._sid);
+    out.set_muted(in._muted);
     return out;
 }
 
@@ -223,25 +231,25 @@ AddTrackRequest Signals::map(const livekit::AddTrackRequest& in)
     return out;
 }
 
-livekit::AddTrackRequest* Signals::map(const AddTrackRequest& in)
+livekit::AddTrackRequest Signals::map(const AddTrackRequest& in)
 {
-    auto out = new livekit::AddTrackRequest;
-    out->set_cid(in._cid);
-    out->set_name(in._name);
-    out->set_type(map(in._type));
-    out->set_width(in._width);
-    out->set_height(in._height);
-    out->set_muted(in._muted);
-    out->set_disable_dtx(in._disableDtx);
-    out->set_source(map(in._source));
-    map(in._layers, out->mutable_layers());
-    map(in._simulcastCodecs, out->mutable_simulcast_codecs());
-    out->set_sid(in._sid);
-    out->set_stereo(in._stereo);
-    out->set_disable_red(in._disableRed);
-    out->set_encryption(map(in._encryption));
-    out->set_stream(in._stream);
-    out->set_backup_codec_policy(map(in._backupCodecPolicy));
+    livekit::AddTrackRequest out;
+    out.set_cid(in._cid);
+    out.set_name(in._name);
+    out.set_type(map(in._type));
+    out.set_width(in._width);
+    out.set_height(in._height);
+    out.set_muted(in._muted);
+    out.set_disable_dtx(in._disableDtx);
+    out.set_source(map(in._source));
+    map(in._layers, out.mutable_layers());
+    map(in._simulcastCodecs, out.mutable_simulcast_codecs());
+    out.set_sid(in._sid);
+    out.set_stereo(in._stereo);
+    out.set_disable_red(in._disableRed);
+    out.set_encryption(map(in._encryption));
+    out.set_stream(in._stream);
+    out.set_backup_codec_policy(map(in._backupCodecPolicy));
     return out;
 }
 
