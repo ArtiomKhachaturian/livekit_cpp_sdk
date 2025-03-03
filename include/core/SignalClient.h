@@ -32,10 +32,10 @@ class SignalClient
 public:
     SignalClient(CommandSender* commandSender);
     virtual ~SignalClient();
-    void addListener(SignalTransportListener* listener);
-    void addListener(SignalServerListener* listener);
-    void removeListener(SignalTransportListener* listener);
-    void removeListener(SignalServerListener* listener);
+    void addTransportListener(SignalTransportListener* listener);
+    void addServerListener(SignalServerListener* listener);
+    void removeTransportListener(SignalTransportListener* listener);
+    void removeServerListener(SignalServerListener* listener);
     virtual bool connect();
     virtual void disconnect();
     State transportState() const noexcept;

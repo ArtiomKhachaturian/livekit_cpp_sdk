@@ -48,22 +48,22 @@ SignalClient::~SignalClient()
 {
 }
 
-void SignalClient::addListener(SignalTransportListener* listener)
+void SignalClient::addTransportListener(SignalTransportListener* listener)
 {
     _impl->addListener(listener);
 }
 
-void SignalClient::addListener(SignalServerListener* listener)
+void SignalClient::addServerListener(SignalServerListener* listener)
 {
     _responseReceiver->addListener(listener);
 }
 
-void SignalClient::removeListener(SignalTransportListener* listener)
+void SignalClient::removeTransportListener(SignalTransportListener* listener)
 {
     _impl->removeListener(listener);
 }
 
-void SignalClient::removeListener(SignalServerListener* listener)
+void SignalClient::removeServerListener(SignalServerListener* listener)
 {
     _responseReceiver->removeListener(listener);
 }
