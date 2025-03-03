@@ -14,6 +14,7 @@
 #include "core/SignalClient.h"
 #include "websocket/WebsocketListener.h"
 #include <memory>
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -47,8 +48,6 @@ private:
     void onStateChanged(uint64_t socketId, uint64_t connectionId,
                         const std::string_view& host,
                         State state) final;
-    void onTextMessageReceived(uint64_t socketId, uint64_t connectionId,
-                               const std::string_view& message) final;
     void onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
                                 const std::shared_ptr<const MemoryBlock>& message) final;
 private:

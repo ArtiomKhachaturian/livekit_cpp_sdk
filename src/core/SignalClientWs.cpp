@@ -166,20 +166,11 @@ void SignalClientWs::onStateChanged(uint64_t socketId, uint64_t connectionId,
     }
 }
 
-void SignalClientWs::onTextMessageReceived(uint64_t socketId, uint64_t connectionId,
-                                           const std::string_view& message)
-{
-    WebsocketListener::onTextMessageReceived(socketId, connectionId, message);
-    receiveText(message);
-}
-
 void SignalClientWs::onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
                                             const std::shared_ptr<const MemoryBlock>& message)
 {
     WebsocketListener::onBinaryMessageReceved(socketId, connectionId, message);
-    if (message) {
-        receiveBinary(message->data(), message->size());
-    }
+    handleServerProtobufMessage(message);
 }
 
 } // namespace LiveKitCpp

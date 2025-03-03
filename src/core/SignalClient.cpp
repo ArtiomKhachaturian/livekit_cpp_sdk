@@ -15,6 +15,7 @@
 #include "SignalTransportListener.h"
 #include "ProtectedObj.h"
 #include "Listeners.h"
+#include "MemoryBlock.h"
 #include "core/SignalHandler.h"
 
 namespace LiveKitCpp
@@ -81,18 +82,21 @@ State SignalClient::transportState() const noexcept
     return _impl->transportState();
 }
 
-void SignalClient::receiveBinary(const void* data, size_t dataLen)
-{
-    _signalHandler->parseBinary(data, dataLen);
-}
-
-void SignalClient::receiveText(const std::string_view& /*text*/)
-{
-}
-
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
+}
+
+void SignalClient::handleServerProtobufMessage(const std::shared_ptr<const MemoryBlock>& message)
+{
+    if (message) {
+        handleServerProtobufMessage(message->data(), message->size());
+    }
+}
+
+void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
+{
+    _signalHandler->parseBinary(message, len);
 }
 
 void SignalClient::notifyAboutTransportError(const std::string& error)

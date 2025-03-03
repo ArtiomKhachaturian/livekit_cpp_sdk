@@ -12,23 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalClient.h
-#include "CommandReceiver.h"
+#include <memory>
 #include "State.h"
 
 namespace LiveKitCpp
 {
 
 class CommandSender;
+class MemoryBlock;
 class SignalServerListener;
 class SignalTransportListener;
 class SignalHandler;
 
-class SignalClient : public CommandReceiver
+class SignalClient
 {
     class Impl;
 public:
     SignalClient(CommandSender* commandSender);
-    ~SignalClient() override;
+    virtual ~SignalClient();
     void addListener(SignalTransportListener* listener);
     void addListener(SignalServerListener* listener);
     void removeListener(SignalTransportListener* listener);
@@ -37,12 +38,11 @@ public:
     virtual void disconnect();
     State transportState() const noexcept;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
-    // impl. of CommandReceiver
-    void receiveBinary(const void* data, size_t dataLen) final;
-    void receiveText(const std::string_view& text) final;
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
+    void handleServerProtobufMessage(const std::shared_ptr<const MemoryBlock>& message);
+    void handleServerProtobufMessage(const void* message, size_t len);
 private:
     const std::unique_ptr<Impl> _impl;
     const std::unique_ptr<SignalHandler> _signalHandler;
