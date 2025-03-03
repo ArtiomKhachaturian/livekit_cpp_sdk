@@ -83,14 +83,24 @@ State SignalClient::transportState() const noexcept
     return _impl->transportState();
 }
 
-bool SignalClient::sendOffer(const SessionDescription& offer) const
+bool SignalClient::sendOffer(const SessionDescription& sdp) const
 {
-    return _requestSender->sendOffer(offer);
+    return _requestSender->offer(sdp);
 }
 
-bool SignalClient::sendAnswer(const SessionDescription& answer) const
+bool SignalClient::sendAnswer(const SessionDescription& sdp) const
 {
-    return _requestSender->sendAnswer(answer);
+    return _requestSender->answer(sdp);
+}
+
+bool SignalClient::sendTrickleRequest(const TrickleRequest& request) const
+{
+    return _requestSender->trickleRequest(request);
+}
+
+bool SignalClient::sendAddTrackRequest(const AddTrackRequest& request) const
+{
+    return _requestSender->addTrackRequest(request);
 }
 
 bool SignalClient::changeTransportState(State state)

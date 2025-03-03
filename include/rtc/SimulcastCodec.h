@@ -11,17 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // VideoQuality.h
+#pragma once // SimulcastCodec.h
+#include <string>
 
 namespace LiveKitCpp
 {
 
-enum class VideoQuality
+struct SimulcastCodec
 {
-    Low = 0,
-    Medium = 1,
-    High = 2,
-    Off = 3,
+    std::string _codec;
+    std::string _cid;
 };
 
 } // namespace LiveKitCpp

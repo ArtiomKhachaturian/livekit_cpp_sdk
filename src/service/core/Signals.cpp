@@ -201,6 +201,50 @@ SubscriptionPermissionUpdate Signals::map(const livekit::SubscriptionPermissionU
     return out;
 }
 
+AddTrackRequest Signals::map(const livekit::AddTrackRequest& in)
+{
+    AddTrackRequest out;
+    out._cid = in.cid();
+    out._name = in.name();
+    out._type = map(in.type());
+    out._width = in.width();
+    out._height = in.height();
+    out._muted = in.muted();
+    out._disableDtx = in.disable_dtx();
+    out._source = map(in.source());
+    out._layers = map<VideoLayer, livekit::VideoLayer>(in.layers());
+    out._simulcastCodecs = map<SimulcastCodec, livekit::SimulcastCodec>(in.simulcast_codecs());
+    out._sid = in.sid();
+    out._stereo = in.stereo();
+    out._disableRed = in.disable_red();
+    out._encryption = map(in.encryption());
+    out._stream = in.stream();
+    out._backupCodecPolicy = map(in.backup_codec_policy());
+    return out;
+}
+
+livekit::AddTrackRequest* Signals::map(const AddTrackRequest& in)
+{
+    auto out = new livekit::AddTrackRequest;
+    out->set_cid(in._cid);
+    out->set_name(in._name);
+    out->set_type(map(in._type));
+    out->set_width(in._width);
+    out->set_height(in._height);
+    out->set_muted(in._muted);
+    out->set_disable_dtx(in._disableDtx);
+    out->set_source(map(in._source));
+    map(in._layers, out->mutable_layers());
+    map(in._simulcastCodecs, out->mutable_simulcast_codecs());
+    out->set_sid(in._sid);
+    out->set_stereo(in._stereo);
+    out->set_disable_red(in._disableRed);
+    out->set_encryption(map(in._encryption));
+    out->set_stream(in._stream);
+    out->set_backup_codec_policy(map(in._backupCodecPolicy));
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;
@@ -367,6 +411,26 @@ TrackSource Signals::map(livekit::TrackSource in)
     return TrackSource::Unknown;
 }
 
+livekit::TrackSource Signals::map(TrackSource in)
+{
+    switch (in) {
+        case TrackSource::Unknown:
+            break;
+        case TrackSource::Camera:
+            return livekit::CAMERA;
+        case TrackSource::Microphone:
+            return livekit::MICROPHONE;
+        case TrackSource::ScreenShare:
+            return livekit::SCREEN_SHARE;
+        case TrackSource::ScreenShareAudio:
+            return livekit::SCREEN_SHARE_AUDIO;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::UNKNOWN;
+}
+
 TrackInfo Signals::map(const livekit::TrackInfo& in)
 {
     TrackInfo out;
@@ -413,6 +477,24 @@ VideoQuality Signals::map(livekit::VideoQuality in)
     return VideoQuality::Low;
 }
 
+livekit::VideoQuality Signals::map(VideoQuality in)
+{
+    switch (in) {
+        case VideoQuality::Low:
+            break;
+        case VideoQuality::Medium:
+            return livekit::MEDIUM;
+        case VideoQuality::High:
+            return livekit::HIGH;
+        case VideoQuality::Off:
+            return livekit::OFF;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::LOW;
+}
+
 VideoLayer Signals::map(const livekit::VideoLayer& in)
 {
     VideoLayer out;
@@ -421,6 +503,17 @@ VideoLayer Signals::map(const livekit::VideoLayer& in)
     out._height = in.height();
     out._bitrate = in.bitrate();
     out._ssrc = in.ssrc();
+    return out;
+}
+
+livekit::VideoLayer Signals::map(const VideoLayer& in)
+{
+    livekit::VideoLayer out;
+    out.set_quality(map(in._quality));
+    out.set_width(in._width);
+    out.set_height(in._height);
+    out.set_bitrate(in._bitrate);
+    out.set_ssrc(in._ssrc);
     return out;
 }
 
@@ -438,6 +531,22 @@ TrackType Signals::map(livekit::TrackType in)
             break;
     }
     return TrackType::Audio;
+}
+
+livekit::TrackType Signals::map(TrackType in)
+{
+    switch (in) {
+        case TrackType::Audio:
+            break;
+        case TrackType::Video:
+            return livekit::VIDEO;
+        case TrackType::Data:
+            return livekit::DATA;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::AUDIO;
 }
 
 SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in)
@@ -464,6 +573,20 @@ BackupCodecPolicy Signals::map(livekit::BackupCodecPolicy in)
     return BackupCodecPolicy::Regression;
 }
 
+livekit::BackupCodecPolicy Signals::map(BackupCodecPolicy in)
+{
+    switch (in) {
+        case BackupCodecPolicy::Regression:
+            break;
+        case BackupCodecPolicy::Simulcast:
+            return livekit::SIMULCAST;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::REGRESSION;
+}
+
 EncryptionType Signals::map(livekit::Encryption_Type in)
 {
     switch (in) {
@@ -478,6 +601,22 @@ EncryptionType Signals::map(livekit::Encryption_Type in)
             break;
     }
     return EncryptionType::None;
+}
+
+livekit::Encryption_Type Signals::map(EncryptionType in)
+{
+    switch (in) {
+        case EncryptionType::None:
+            break;
+        case EncryptionType::Gcm:
+            return livekit::Encryption_Type_GCM;
+        case EncryptionType::Custom:
+            return livekit::Encryption_Type_CUSTOM;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::Encryption_Type_NONE;
 }
 
 AudioTrackFeature Signals::map(livekit::AudioTrackFeature in)
@@ -752,6 +891,22 @@ SubscriptionError Signals::map(livekit::SubscriptionError in)
     return SubscriptionError::Unknown;
 }
 
+SimulcastCodec Signals::map(const livekit::SimulcastCodec& in)
+{
+    SimulcastCodec out;
+    out._cid = in.cid();
+    out._codec = in.codec();
+    return out;
+}
+
+livekit::SimulcastCodec Signals::map(const SimulcastCodec& in)
+{
+    livekit::SimulcastCodec out;
+    out.set_cid(in._cid);
+    out.set_codec(in._codec);
+    return out;
+}
+
 template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
 std::vector<TCppType> Signals::map(const TProtoBufRepeated& in)
 {
@@ -764,6 +919,17 @@ std::vector<TCppType> Signals::map(const TProtoBufRepeated& in)
         return out;
     }
     return {};
+}
+
+template <typename TCppRepeated, class TProtoBufRepeated>
+void Signals::map(const TCppRepeated& from, TProtoBufRepeated* to)
+{
+    if (to) {
+        to->Reserve(int(to->size() + from.size()));
+        for (const auto& val : from) {
+            *to->Add() = map(val);
+        }
+    }
 }
 
 template<typename K, typename V>

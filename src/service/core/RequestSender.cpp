@@ -25,19 +25,24 @@ RequestSender::RequestSender(CommandSender* commandSender)
 {
 }
 
-bool RequestSender::sendOffer(const SessionDescription& offer) const
+bool RequestSender::offer(const SessionDescription& sdp) const
 {
-    return send(&livekit::SignalRequest::set_allocated_offer, offer);
+    return send(&livekit::SignalRequest::set_allocated_offer, sdp);
 }
 
-bool RequestSender::sendAnswer(const SessionDescription& answer) const
+bool RequestSender::answer(const SessionDescription& sdp) const
 {
-    return send(&livekit::SignalRequest::set_allocated_answer, answer);
+    return send(&livekit::SignalRequest::set_allocated_answer, sdp);
 }
 
-bool RequestSender::sendTrickleRequest(const TrickleRequest& request)
+bool RequestSender::trickleRequest(const TrickleRequest& request) const
 {
     return send(&livekit::SignalRequest::set_allocated_trickle, request);
+}
+
+bool RequestSender::addTrackRequest(const AddTrackRequest& request) const
+{
+    return send(&livekit::SignalRequest::set_allocated_add_track, request);
 }
 
 bool RequestSender::canSend() const

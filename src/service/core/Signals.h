@@ -30,6 +30,7 @@
 #include "rtc/RequestResponse.h"
 #include "rtc/SubscriptionResponse.h"
 #include "rtc/SubscriptionPermissionUpdate.h"
+#include "rtc/AddTrackRequest.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -61,6 +62,8 @@ public:
     static RequestResponse map(const livekit::RequestResponse& in);
     static SubscriptionResponse map(const livekit::SubscriptionResponse& in);
     static SubscriptionPermissionUpdate map(const livekit::SubscriptionPermissionUpdate& in);
+    static AddTrackRequest map(const livekit::AddTrackRequest& in);
+    static livekit::AddTrackRequest* map(const AddTrackRequest& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);
@@ -71,13 +74,19 @@ public:
     static ParticipantPermission map(const livekit::ParticipantPermission& in);
     static DisconnectReason map(livekit::DisconnectReason in);
     static TrackSource map(livekit::TrackSource in);
+    static livekit::TrackSource map(TrackSource in);
     static TrackInfo map(const livekit::TrackInfo& in);
     static VideoQuality map(livekit::VideoQuality in);
+    static livekit::VideoQuality map(VideoQuality in);
     static VideoLayer map(const livekit::VideoLayer& in);
+    static livekit::VideoLayer map(const VideoLayer& in);
     static TrackType map(livekit::TrackType in);
+    static livekit::TrackType map(TrackType in);
     static SimulcastCodecInfo map(const livekit::SimulcastCodecInfo& in);
     static BackupCodecPolicy map(livekit::BackupCodecPolicy in);
+    static livekit::BackupCodecPolicy map(BackupCodecPolicy in);
     static EncryptionType map(livekit::Encryption_Type in);
+    static livekit::Encryption_Type map(EncryptionType in);
     static AudioTrackFeature map(livekit::AudioTrackFeature in);
     static ClientConfigSetting map(livekit::ClientConfigSetting in);
     static ClientConfiguration map(const livekit::ClientConfiguration& in);
@@ -100,9 +109,13 @@ public:
     static ICEServer map(const livekit::ICEServer& in);
     static RequestResponseReason map(livekit::RequestResponse_Reason in);
     static SubscriptionError map(livekit::SubscriptionError in);
+    static SimulcastCodec map(const livekit::SimulcastCodec& in);
+    static livekit::SimulcastCodec map(const SimulcastCodec& in);
 private:
     template <typename TCppType, typename TProtoBufType, class TProtoBufRepeated>
     static std::vector<TCppType> map(const TProtoBufRepeated& in);
+    template <typename TCppRepeated, class TProtoBufRepeated>
+    static void map(const TCppRepeated& from, TProtoBufRepeated* to);
     template<typename K, typename V>
     static std::unordered_map<K, V> map(const google::protobuf::Map<K, V>& in);
 };

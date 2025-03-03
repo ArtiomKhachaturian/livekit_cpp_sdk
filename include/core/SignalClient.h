@@ -25,6 +25,8 @@ class SignalTransportListener;
 class ResponseReceiver;
 class RequestSender;
 struct SessionDescription;
+struct TrickleRequest;
+struct AddTrackRequest;
 
 class SignalClient
 {
@@ -41,8 +43,10 @@ public:
     State transportState() const noexcept;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
     // requests sending
-    bool sendOffer(const SessionDescription& offer) const;
-    bool sendAnswer(const SessionDescription& answer) const;
+    bool sendOffer(const SessionDescription& sdp) const;
+    bool sendAnswer(const SessionDescription& sdp) const;
+    bool sendTrickleRequest(const TrickleRequest& request) const;
+    bool sendAddTrackRequest(const AddTrackRequest& request) const;
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
