@@ -16,11 +16,15 @@
 #include "MemoryBlock.h"
 #include "WebsocketOptions.h"
 #include "WebsocketFailure.h"
+#include "Utils.h"
 
 namespace {
 
 inline std::string urlQueryItem(const std::string& key, const std::string& val) {
-    return "&" + key + "=" + val;
+    if (!key.empty() && !val.empty()) {
+        return "&" + key + "=" + val;
+    }
+    return {};
 }
 
 inline std::string urlQueryItem(const std::string& key, int val) {
@@ -48,6 +52,9 @@ inline LiveKitCpp::WebsocketOptions formatWsOptions(const std::string& host,
         options._host += urlQueryItem("version", "2.9.5");
         options._host += urlQueryItem("protocol", 15);
         options._host += urlQueryItem("adaptive_stream", adaptiveStream);
+        options._host += urlQueryItem("os", LiveKitCpp::operatingSystemName());
+        options._host += urlQueryItem("os_version", LiveKitCpp::operatingSystemVersion());
+        options._host += urlQueryItem("device_model", LiveKitCpp::modelIdentifier());
     }
     return options;
 }

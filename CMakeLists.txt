@@ -13,6 +13,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 file(GLOB_RECURSE PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
 file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/src/*.h)
 file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+if (APPLE)
+    file(GLOB_RECURSE OBJC_SOURCES ${CMAKE_SOURCE_DIR}/src/*.mm)
+    list(APPEND CPP_SOURCES ${OBJC_SOURCES})
+endif(APPLE)
 
 # Generate C++ code from proto files
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
@@ -101,6 +105,11 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
 target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
 # Link abseil
 target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+if (APPLE)
+    set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
+    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
+endif()
+
 # Websockets
 if (USE_ZAPHOYD_TPP_SOCKETS)
     target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
