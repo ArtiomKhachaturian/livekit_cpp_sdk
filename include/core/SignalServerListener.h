@@ -21,6 +21,7 @@ namespace LiveKitCpp
 // these structs are defined in /include/rtc subfolder
 struct ConnectionQualityUpdate;
 struct JoinResponse;
+struct SessionDescription;
 struct TrickleRequest;
 struct ParticipantUpdate;
 struct TrackPublishedResponse;
@@ -43,8 +44,8 @@ public:
     virtual void onSignalParseError(uint64_t /*signalClientId*/) {}
     virtual void onJoin(uint64_t /*signalClientId*/,
                         const JoinResponse& /*response*/) {}
-    virtual void onOffer(uint64_t /*signalClientId*/, const std::string& /*sdp*/) {}
-    virtual void onAnswer(uint64_t /*signalClientId*/, const std::string& /*sdp*/) {}
+    virtual void onOffer(uint64_t /*signalClientId*/, const SessionDescription& /*sdp*/) {}
+    virtual void onAnswer(uint64_t /*signalClientId*/, const SessionDescription& /*sdp*/) {}
     virtual void onTrickle(uint64_t /*signalClientId*/,
                            const TrickleRequest& /*request*/) {}
     virtual void onParticipantUpdate(uint64_t /*signalClientId*/,

@@ -50,6 +50,14 @@ JoinResponse SignalParser::from(const livekit::JoinResponse& in)
     return out;
 }
 
+SessionDescription SignalParser::from(const livekit::SessionDescription& in)
+{
+    SessionDescription out;
+    out._type = in.type();
+    out._sdp = in.sdp();
+    return out;
+}
+
 TrickleRequest SignalParser::from(const livekit::TrickleRequest& in)
 {
     TrickleRequest out;
