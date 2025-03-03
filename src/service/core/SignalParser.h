@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalParser.h
+#include "MemoryBlock.h"
 #include "rtc/ConnectionQualityUpdate.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/SessionDescription.h"
@@ -40,18 +41,14 @@ namespace LiveKitCpp
 class SignalParser
 {
 public:
+    // generic helpers
     template <typename TProtoBufType>
-    static std::optional<TProtoBufType> toProto(const void* data, size_t dataLen) {
-        if (data && dataLen) {
-            TProtoBufType instance;
-            if (instance.ParseFromArray(data, int(dataLen))) {
-                return instance;
-            }
-        }
-        return std::nullopt;
-    }
+    static std::optional<TProtoBufType> fromBytes(const void* data, size_t dataLen);
+    template <typename TProtoBufType>
+    static std::optional<TProtoBufType> fromBytes(const std::shared_ptr<const MemoryBlock>& bytes);
+    static std::optional<livekit::SignalResponse> parseResponse(const void* data,
+                                                                size_t dataLen);
     // responses & requests
-    static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
     static JoinResponse from(const livekit::JoinResponse& in);
     static SessionDescription from(const livekit::SessionDescription& in);
     static TrickleRequest from(const livekit::TrickleRequest& in);
@@ -114,5 +111,25 @@ private:
     template<typename K, typename V>
     static std::unordered_map<K, V> from(const google::protobuf::Map<K, V>& in);
 };
+
+template <typename TProtoBufType>
+std::optional<TProtoBufType> SignalParser::fromBytes(const void* data, size_t dataLen) {
+    if (data && dataLen) {
+        TProtoBufType instance;
+        if (instance.ParseFromArray(data, int(dataLen))) {
+            return instance;
+        }
+    }
+    return std::nullopt;
+}
+
+template <typename TProtoBufType>
+std::optional<TProtoBufType> SignalParser::fromBytes(const std::shared_ptr<const MemoryBlock>& bytes)
+{
+    if (bytes) {
+        return fromBytes<TProtoBufType>(bytes->data(), bytes->size());
+    }
+    return {};
+}
 
 } // namespace LiveKitCpp

@@ -14,6 +14,7 @@
 #pragma once // SignalHandler.h
 #include "Listeners.h"
 #include "livekit_rtc.pb.h"
+#include <memory>
 
 namespace LiveKitCpp
 {

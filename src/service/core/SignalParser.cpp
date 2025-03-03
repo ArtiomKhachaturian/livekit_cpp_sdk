@@ -16,9 +16,10 @@
 namespace LiveKitCpp
 {
 
-std::optional<livekit::SignalResponse> SignalParser::parse(const void* data, size_t dataLen)
+std::optional<livekit::SignalResponse> SignalParser::parseResponse(const void* data,
+                                                                   size_t dataLen)
 {
-    return toProto<livekit::SignalResponse>(data, dataLen);
+    return fromBytes<livekit::SignalResponse>(data, dataLen);
 }
 
 JoinResponse SignalParser::from(const livekit::JoinResponse& in)

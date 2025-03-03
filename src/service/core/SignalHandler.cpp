@@ -25,7 +25,7 @@ SignalHandler::SignalHandler(uint64_t signalClientId)
 
 void SignalHandler::parseBinary(const void* data, size_t dataLen)
 {
-    if (auto response = SignalParser::parse(data, dataLen)) {
+    if (auto response = SignalParser::parseResponse(data, dataLen)) {
         switch (response->message_case()) {
             case livekit::SignalResponse::kJoin:
                 handle(response->join());
