@@ -113,6 +113,11 @@ bool SignalClient::sendSubscription(const UpdateSubscription& update) const
     return _requestSender->subscription(update);
 }
 
+bool SignalClient::sendTrackSettings(const UpdateTrackSettings& update) const
+{
+    return _requestSender->trackSettings(update);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);

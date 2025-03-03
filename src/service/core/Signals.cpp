@@ -271,6 +271,32 @@ livekit::UpdateSubscription Signals::map(const UpdateSubscription& in)
     return out;
 }
 
+UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in)
+{
+    UpdateTrackSettings out;
+    out._trackSids = map<std::string>(in.track_sids());
+    out._disabled = in.disabled();
+    out._quality = map(in.quality());
+    out._width = in.width();
+    out._height = in.height();
+    out._fps = in.fps();
+    out._priority = in.priority();
+    return out;
+}
+
+livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in)
+{
+    livekit::UpdateTrackSettings out;
+    map(in._trackSids, out.mutable_track_sids());
+    out.set_disabled(in._disabled);
+    out.set_quality(map(in._quality));
+    out.set_width(in._width);
+    out.set_height(in._height);
+    out.set_fps(in._fps);
+    out.set_priority(in._priority);
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;

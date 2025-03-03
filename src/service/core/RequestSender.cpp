@@ -15,7 +15,8 @@
 #include "CommandSender.h"
 #include "MemoryBlock.h"
 #include "Signals.h"
-#include "google/protobuf/message_lite.h"
+
+using Request = livekit::SignalRequest;
 
 namespace LiveKitCpp
 {
@@ -27,32 +28,37 @@ RequestSender::RequestSender(CommandSender* commandSender)
 
 bool RequestSender::offer(const SessionDescription& sdp) const
 {
-    return send(&livekit::SignalRequest::mutable_offer, sdp);
+    return send(&Request::mutable_offer, sdp);
 }
 
 bool RequestSender::answer(const SessionDescription& sdp) const
 {
-    return send(&livekit::SignalRequest::mutable_answer, sdp);
+    return send(&Request::mutable_answer, sdp);
 }
 
 bool RequestSender::trickle(const TrickleRequest& request) const
 {
-    return send(&livekit::SignalRequest::mutable_trickle, request);
+    return send(&Request::mutable_trickle, request);
 }
 
 bool RequestSender::addTrack(const AddTrackRequest& request) const
 {
-    return send(&livekit::SignalRequest::mutable_add_track, request);
+    return send(&Request::mutable_add_track, request);
 }
 
 bool RequestSender::muteTrack(const MuteTrackRequest& request) const
 {
-    return send(&livekit::SignalRequest::mutable_mute, request);
+    return send(&Request::mutable_mute, request);
 }
 
 bool RequestSender::subscription(const UpdateSubscription& update) const
 {
-    return send(&livekit::SignalRequest::mutable_subscription, update);
+    return send(&Request::mutable_subscription, update);
+}
+
+bool RequestSender::trackSettings(const UpdateTrackSettings& update) const
+{
+    return send(&Request::mutable_track_setting, update);
 }
 
 bool RequestSender::canSend() const
@@ -64,7 +70,7 @@ template <class TSetMethod, class TObject>
 bool RequestSender::send(const TSetMethod& setMethod, const TObject& object) const
 {
     if (canSend()) {
-        livekit::SignalRequest request;
+        Request request;
         if (const auto target = (request.*setMethod)()) {
             *target = Signals::map(object);
             if (const auto block = toMemBlock(request)) {
