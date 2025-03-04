@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // SignalClient.h
 #include <memory>
+#include <string>
 #include "State.h"
 
 namespace LiveKitCpp

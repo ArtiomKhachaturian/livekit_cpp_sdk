@@ -25,9 +25,9 @@ JoinResponse Signals::map(const livekit::JoinResponse& in)
     if (in.has_participant()) {
         out._participant = map(in.participant());
     }
-    out._otherParticipants = map<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
+    out._otherParticipants = rconv<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
     out._serverVersion = in.server_version();
-    out._iceServers = map<ICEServer, livekit::ICEServer>(in.ice_servers());
+    out._iceServers = rconv<ICEServer, livekit::ICEServer>(in.ice_servers());
     out._subscriberPrimary = in.subscriber_primary();
     out._alternativeUrl = in.alternative_url();
     if (in.has_client_configuration()) {
@@ -40,7 +40,7 @@ JoinResponse Signals::map(const livekit::JoinResponse& in)
         out._serverInfo = map(in.server_info());
     }
     out._sifTrailer = in.sif_trailer();
-    out._enabledPublishCodecs = map<Codec, livekit::Codec>(in.enabled_publish_codecs());
+    out._enabledPublishCodecs = rconv<Codec, livekit::Codec>(in.enabled_publish_codecs());
     out._fastPublish = in.fast_publish();
     return out;
 }
@@ -82,7 +82,7 @@ livekit::TrickleRequest Signals::map(const TrickleRequest& in)
 ParticipantUpdate Signals::map(const livekit::ParticipantUpdate& in)
 {
     ParticipantUpdate out;
-    out._participants = map<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
+    out._participants = rconv<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
     return out;
 }
 
@@ -148,7 +148,7 @@ livekit::MuteTrackRequest Signals::map(const MuteTrackRequest& in)
 SpeakersChanged Signals::map(const livekit::SpeakersChanged& in)
 {
     SpeakersChanged out;
-    out._speakers = map<SpeakerInfo, livekit::SpeakerInfo>(in.speakers());
+    out._speakers = rconv<SpeakerInfo, livekit::SpeakerInfo>(in.speakers());
     return out;
 }
 
@@ -164,14 +164,14 @@ RoomUpdate Signals::map(const livekit::RoomUpdate& in)
 ConnectionQualityUpdate Signals::map(const livekit::ConnectionQualityUpdate& in)
 {
     ConnectionQualityUpdate out;
-    out._updates = map<ConnectionQualityInfo, livekit::ConnectionQualityInfo>(in.updates());
+    out._updates = rconv<ConnectionQualityInfo, livekit::ConnectionQualityInfo>(in.updates());
     return out;
 }
 
 StreamStateUpdate Signals::map(const livekit::StreamStateUpdate& in)
 {
     StreamStateUpdate out;
-    out._streamStates = map<StreamStateInfo, livekit::StreamStateInfo>(in.stream_states());
+    out._streamStates = rconv<StreamStateInfo, livekit::StreamStateInfo>(in.stream_states());
     return out;
 }
 
@@ -179,15 +179,15 @@ SubscribedQualityUpdate Signals::map(const livekit::SubscribedQualityUpdate& in)
 {
     SubscribedQualityUpdate out;
     out._trackSid = in.track_sid();
-    out._subscribedQualities = map<SubscribedQuality, livekit::SubscribedQuality>(in.subscribed_qualities());
-    out._subscribedCodecs = map<SubscribedCodec, livekit::SubscribedCodec>(in.subscribed_codecs());
+    out._subscribedQualities = rconv<SubscribedQuality, livekit::SubscribedQuality>(in.subscribed_qualities());
+    out._subscribedCodecs = rconv<SubscribedCodec, livekit::SubscribedCodec>(in.subscribed_codecs());
     return out;
 }
 
 ReconnectResponse Signals::map(const livekit::ReconnectResponse& in)
 {
     ReconnectResponse out;
-    out._iceServers = map<ICEServer, livekit::ICEServer>(in.ice_servers());
+    out._iceServers = rconv<ICEServer, livekit::ICEServer>(in.ice_servers());
     if (in.has_client_configuration()) {
         out._clientConfiguration = map(in.client_configuration());
     }
@@ -238,8 +238,8 @@ AddTrackRequest Signals::map(const livekit::AddTrackRequest& in)
     out._muted = in.muted();
     out._disableDtx = in.disable_dtx();
     out._source = map(in.source());
-    out._layers = map<VideoLayer, livekit::VideoLayer>(in.layers());
-    out._simulcastCodecs = map<SimulcastCodec, livekit::SimulcastCodec>(in.simulcast_codecs());
+    out._layers = rconv<VideoLayer, livekit::VideoLayer>(in.layers());
+    out._simulcastCodecs = rconv<SimulcastCodec, livekit::SimulcastCodec>(in.simulcast_codecs());
     out._sid = in.sid();
     out._stereo = in.stereo();
     out._disableRed = in.disable_red();
@@ -260,8 +260,8 @@ livekit::AddTrackRequest Signals::map(const AddTrackRequest& in)
     out.set_muted(in._muted);
     out.set_disable_dtx(in._disableDtx);
     out.set_source(map(in._source));
-    map(in._layers, out.mutable_layers());
-    map(in._simulcastCodecs, out.mutable_simulcast_codecs());
+    rconv(in._layers, out.mutable_layers());
+    rconv(in._simulcastCodecs, out.mutable_simulcast_codecs());
     out.set_sid(in._sid);
     out.set_stereo(in._stereo);
     out.set_disable_red(in._disableRed);
@@ -274,25 +274,25 @@ livekit::AddTrackRequest Signals::map(const AddTrackRequest& in)
 UpdateSubscription Signals::map(const livekit::UpdateSubscription& in)
 {
     UpdateSubscription out;
-    out._trackSids = map<std::string>(in.track_sids());
+    out._trackSids = rconv<std::string>(in.track_sids());
     out._subscribe = in.subscribe();
-    out._participantTracks = map<ParticipantTracks, livekit::ParticipantTracks>(in.participant_tracks());
+    out._participantTracks = rconv<ParticipantTracks, livekit::ParticipantTracks>(in.participant_tracks());
     return out;
 }
 
 livekit::UpdateSubscription Signals::map(const UpdateSubscription& in)
 {
     livekit::UpdateSubscription out;
-    map(in._trackSids, out.mutable_track_sids());
+    rconv(in._trackSids, out.mutable_track_sids());
     out.set_subscribe(in._subscribe);
-    map(in._participantTracks, out.mutable_participant_tracks());
+    rconv(in._participantTracks, out.mutable_participant_tracks());
     return out;
 }
 
 UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in)
 {
     UpdateTrackSettings out;
-    out._trackSids = map<std::string>(in.track_sids());
+    out._trackSids = rconv<std::string>(in.track_sids());
     out._disabled = in.disabled();
     out._quality = map(in.quality());
     out._width = in.width();
@@ -305,7 +305,7 @@ UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in)
 livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in)
 {
     livekit::UpdateTrackSettings out;
-    map(in._trackSids, out.mutable_track_sids());
+    rconv(in._trackSids, out.mutable_track_sids());
     out.set_disabled(in._disabled);
     out.set_quality(map(in._quality));
     out.set_width(in._width);
@@ -319,7 +319,7 @@ UpdateVideoLayers Signals::map(const livekit::UpdateVideoLayers& in)
 {
     UpdateVideoLayers out;
     out._trackSid = in.track_sid();
-    out._layers = map<VideoLayer, livekit::VideoLayer>(in.layers());
+    out._layers = rconv<VideoLayer, livekit::VideoLayer>(in.layers());
     return out;
 }
 
@@ -327,7 +327,7 @@ livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in)
 {
     livekit::UpdateVideoLayers out;
     out.set_track_sid(in._trackSid);
-    map(in._layers, out.mutable_layers());
+    rconv(in._layers, out.mutable_layers());
     return out;
 }
 
@@ -335,7 +335,7 @@ SubscriptionPermission Signals::map(const livekit::SubscriptionPermission& in)
 {
     SubscriptionPermission out;
     out._allParticipants = in.all_participants();
-    out._trackPermissions = map<TrackPermission, livekit::TrackPermission>(in.track_permissions());
+    out._trackPermissions = rconv<TrackPermission, livekit::TrackPermission>(in.track_permissions());
     return out;
 }
 
@@ -343,7 +343,7 @@ livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in)
 {
     livekit::SubscriptionPermission out;
     out.set_all_participants(in._allParticipants);
-    map(in._trackPermissions, out.mutable_track_permissions());
+    rconv(in._trackPermissions, out.mutable_track_permissions());
     return out;
 }
 
@@ -352,10 +352,10 @@ SyncState Signals::map(const livekit::SyncState& in)
     SyncState out;
     out._answer = map(in.answer());
     out._subscription = map(in.subscription());
-    out._publishTracks = map<TrackPublishedResponse, livekit::TrackPublishedResponse>(in.publish_tracks());
-    out._dataChannels = map<DataChannelInfo, livekit::DataChannelInfo>(in.data_channels());
+    out._publishTracks = rconv<TrackPublishedResponse, livekit::TrackPublishedResponse>(in.publish_tracks());
+    out._dataChannels = rconv<DataChannelInfo, livekit::DataChannelInfo>(in.data_channels());
     out._offer = map(in.offer());
-    out._trackSidsDisabled = map<std::string>(in.track_sids_disabled());
+    out._trackSidsDisabled = rconv<std::string>(in.track_sids_disabled());
     return out;
 }
 
@@ -364,10 +364,10 @@ livekit::SyncState Signals::map(const SyncState& in)
     livekit::SyncState out;
     *out.mutable_answer() = map(in._answer);
     *out.mutable_subscription() = map(in._subscription);
-    map(in._publishTracks, out.mutable_publish_tracks());
-    map(in._dataChannels, out.mutable_data_channels());
+    rconv(in._publishTracks, out.mutable_publish_tracks());
+    rconv(in._dataChannels, out.mutable_data_channels());
     *out.mutable_offer() = map(in._offer);
-    map(in._trackSidsDisabled, out.mutable_track_sids_disabled());
+    rconv(in._trackSidsDisabled, out.mutable_track_sids_disabled());
     return out;
 }
 
@@ -465,7 +465,7 @@ UpdateParticipantMetadata Signals::map(const livekit::UpdateParticipantMetadata&
     UpdateParticipantMetadata out;
     out._metadata = in.metadata();
     out._name = in.name();
-    out._attributes = map(in.attributes());
+    out._attributes = mconv(in.attributes());
     out._requestId = in.request_id();
     return out;
 }
@@ -475,7 +475,7 @@ livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata&
     livekit::UpdateParticipantMetadata out;
     out.set_metadata(in._metadata);
     out.set_name(in._name);
-    map(in._attributes, out.mutable_attributes());
+    mconv(in._attributes, out.mutable_attributes());
     out.set_request_id(in._requestId);
     return out;
 }
@@ -500,7 +500,7 @@ UpdateLocalAudioTrack Signals::map(const livekit::UpdateLocalAudioTrack& in)
 {
     UpdateLocalAudioTrack out;
     out._trackSid = in.track_sid();
-    out._features = map<AudioTrackFeature, livekit::AudioTrackFeature>(in.features());
+    out._features = rconv<AudioTrackFeature, livekit::AudioTrackFeature>(in.features());
     return out;
 }
 
@@ -508,7 +508,7 @@ livekit::UpdateLocalAudioTrack Signals::map(const UpdateLocalAudioTrack& in)
 {
     livekit::UpdateLocalAudioTrack out;
     out.set_track_sid(in._trackSid);
-    map(in._features, out.mutable_features());
+    rconv(in._features, out.mutable_features());
     return out;
 }
 
@@ -541,7 +541,7 @@ Room Signals::map(const livekit::Room& in)
     out._creationTime = in.creation_time();
     out._creationTimeMs = in.creation_time_ms();
     out._turnPassword = in.turn_password();
-    out._enabledCodecs = map<Codec, livekit::Codec>(in.enabled_codecs());
+    out._enabledCodecs = rconv<Codec, livekit::Codec>(in.enabled_codecs());
     out._metadata = in.metadata();
     out._numParticipants = in.num_participants();
     out._numPublishers = in.num_publishers();
@@ -576,7 +576,7 @@ ParticipantInfo Signals::map(const livekit::ParticipantInfo& in)
     out._sid = in.sid();
     out._identity = in.identity();
     out._state = map(in.state());
-    out._tracks = map<TrackInfo, livekit::TrackInfo>(in.tracks());
+    out._tracks = rconv<TrackInfo, livekit::TrackInfo>(in.tracks());
     out._metadata = in.metadata();
     out._joinedAt = in.joined_at();
     out.joinedAtMs = in.joined_at_ms();
@@ -588,7 +588,7 @@ ParticipantInfo Signals::map(const livekit::ParticipantInfo& in)
     out._region = in.region();
     out._isPublisher = in.is_publisher();
     out._kind = map(in.kind());
-    out._attributes = map(in.attributes());
+    out._attributes = mconv(in.attributes());
     out._disconnectReason = map(in.disconnect_reason());
     return out;
 }
@@ -637,7 +637,7 @@ ParticipantPermission Signals::map(const livekit::ParticipantPermission& in)
     out._canSubscribe = in.can_subscribe();
     out._canPublish = in.can_publish();
     out._canPublish_data = in.can_publish_data();
-    out._canPublishSources = map<TrackSource, livekit::TrackSource>(in.can_publish_sources());
+    out._canPublishSources = rconv<TrackSource, livekit::TrackSource>(in.can_publish_sources());
     out._hidden = in.hidden();
     out._recorder = in.recorder();
     out._canUpdateMetadata = in.can_update_metadata();
@@ -774,10 +774,10 @@ TrackInfo Signals::map(const livekit::TrackInfo& in)
     out._simulcast = in.simulcast();
     out._disableDtx = in.disable_dtx();
     out._source = map(in.source());
-    out._layers = map<VideoLayer, livekit::VideoLayer>(in.layers());
+    out._layers = rconv<VideoLayer, livekit::VideoLayer>(in.layers());
     out._mimeType = in.mime_type();
     out._mid = in.mid();
-    out._codecs = map<SimulcastCodecInfo, livekit::SimulcastCodecInfo>(in.codecs());
+    out._codecs = rconv<SimulcastCodecInfo, livekit::SimulcastCodecInfo>(in.codecs());
     out._stereo = in.stereo();
     out._disableRed = in.disable_red();
     out._encryption = map(in.encryption());
@@ -785,7 +785,7 @@ TrackInfo Signals::map(const livekit::TrackInfo& in)
     if (in.has_version()) {
         out._version = map(in.version());
     }
-    out._audioFeatures = map<AudioTrackFeature, livekit::AudioTrackFeature>(in.audio_features());
+    out._audioFeatures = rconv<AudioTrackFeature, livekit::AudioTrackFeature>(in.audio_features());
     out._backupCodecPolicy = map(in.backup_codec_policy());
     return out;
 }
@@ -802,17 +802,17 @@ livekit::TrackInfo Signals::map(const TrackInfo& in)
     out.set_simulcast(in._simulcast);
     out.set_disable_dtx(in._disableDtx);
     out.set_source(map(in._source));
-    map(in._layers, out.mutable_layers());
+    rconv(in._layers, out.mutable_layers());
     out.set_mime_type(in._mimeType);
     out.set_mid(in._mid);
-    map(in._codecs, out.mutable_codecs());
+    rconv(in._codecs, out.mutable_codecs());
     out.set_disable_red(in._disableRed);
     out.set_encryption(map(in._encryption));
     out.set_stream(in._stream);
     if (in._version.has_value()) {
         *out.mutable_version() = map(in._version.value());
     }
-    map(in._audioFeatures, out.mutable_audio_features());
+    rconv(in._audioFeatures, out.mutable_audio_features());
     out.set_backup_codec_policy(map(in._backupCodecPolicy));
     return out;
 }
@@ -913,7 +913,7 @@ SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in)
     out._mimeType = in.mime_type();
     out._mid = in.mid();
     out._cid = in.cid();
-    out._layers = map<VideoLayer, livekit::VideoLayer>(in.layers());
+    out._layers = rconv<VideoLayer, livekit::VideoLayer>(in.layers());
     return out;
 }
 
@@ -923,7 +923,7 @@ livekit::SimulcastCodecInfo Signals::map(const SimulcastCodecInfo& in)
     out.set_mime_type(in._mimeType);
     out.set_mid(in._mid);
     out.set_cid(in._cid);
-    map(in._layers, out.mutable_layers());
+    rconv(in._layers, out.mutable_layers());
     return out;
 }
 
@@ -1061,8 +1061,8 @@ ClientConfiguration Signals::map(const livekit::ClientConfiguration& in)
 DisabledCodecs Signals::map(const livekit::DisabledCodecs& in)
 {
     DisabledCodecs out;
-    out._codecs = map<Codec, livekit::Codec>(in.codecs());
-    out._publish = map<Codec, livekit::Codec>(in.publish());
+    out._codecs = rconv<Codec, livekit::Codec>(in.codecs());
+    out._publish = rconv<Codec, livekit::Codec>(in.publish());
     return out;
 }
 
@@ -1181,14 +1181,14 @@ livekit::RegionInfo Signals::map(const RegionInfo& in)
 RegionSettings Signals::map(const livekit::RegionSettings& in)
 {
     RegionSettings out;
-    out._regions = map<RegionInfo, livekit::RegionInfo>(in.regions());
+    out._regions = rconv<RegionInfo, livekit::RegionInfo>(in.regions());
     return out;
 }
 
 livekit::RegionSettings Signals::map(const RegionSettings& in)
 {
     livekit::RegionSettings out;
-    map(in._regions, out.mutable_regions());
+    rconv(in._regions, out.mutable_regions());
     return out;
 }
 
@@ -1263,14 +1263,14 @@ SubscribedCodec Signals::map(const livekit::SubscribedCodec& in)
 {
     SubscribedCodec out;
     out._codec = in.codec();
-    out._qualities = map<SubscribedQuality, livekit::SubscribedQuality>(in.qualities());
+    out._qualities = rconv<SubscribedQuality, livekit::SubscribedQuality>(in.qualities());
     return out;
 }
 
 ICEServer Signals::map(const livekit::ICEServer& in)
 {
     ICEServer out;
-    out._urls = map<std::string>(in.urls());
+    out._urls = rconv<std::string>(in.urls());
     out._username = in.username();
     out._credential = in.credential();
     return out;
@@ -1330,7 +1330,7 @@ ParticipantTracks Signals::map(const livekit::ParticipantTracks& in)
 {
     ParticipantTracks out;
     out._participantSid = in.participant_sid();
-    out._trackSids = map<std::string>(in.track_sids());
+    out._trackSids = rconv<std::string>(in.track_sids());
     return out;
 }
 
@@ -1338,7 +1338,7 @@ livekit::ParticipantTracks Signals::map(const ParticipantTracks& in)
 {
     livekit::ParticipantTracks out;
     out.set_participant_sid(in._participantSid);
-    map(in._trackSids, out.mutable_track_sids());
+    rconv(in._trackSids, out.mutable_track_sids());
     return out;
 }
 
@@ -1347,7 +1347,7 @@ TrackPermission Signals::map(const livekit::TrackPermission& in)
     TrackPermission out;
     out._participantSid = in.participant_sid();
     out._allAracks = in.all_tracks();
-    out._trackSids = map<std::string>(in.track_sids());
+    out._trackSids = rconv<std::string>(in.track_sids());
     out._participantIdentity = in.participant_identity();
     return out;
 }
@@ -1357,7 +1357,7 @@ livekit::TrackPermission Signals::map(const TrackPermission& in)
     livekit::TrackPermission out;
     out.set_participant_sid(in._participantSid);
     out.set_all_tracks(in._allAracks);
-    map(in._trackSids, out.mutable_track_sids());
+    rconv(in._trackSids, out.mutable_track_sids());
     out.set_participant_identity(in._participantIdentity);
     return out;
 }
@@ -1413,7 +1413,7 @@ livekit::CandidateProtocol Signals::map(CandidateProtocol in)
 }
 
 template <typename TOut, typename TIn, class TProtoBufRepeated>
-std::vector<TOut> Signals::map(const TProtoBufRepeated& in)
+std::vector<TOut> Signals::rconv(const TProtoBufRepeated& in)
 {
     if (const auto size = in.size()) {
         std::vector<TOut> out;
@@ -1427,7 +1427,7 @@ std::vector<TOut> Signals::map(const TProtoBufRepeated& in)
 }
 
 template <typename TCppRepeated, class TProtoBufRepeated>
-void Signals::map(const TCppRepeated& from, TProtoBufRepeated* to)
+void Signals::rconv(const TCppRepeated& from, TProtoBufRepeated* to)
 {
     if (to) {
         to->Reserve(int(to->size() + from.size()));
@@ -1438,7 +1438,7 @@ void Signals::map(const TCppRepeated& from, TProtoBufRepeated* to)
 }
 
 template<typename K, typename V>
-std::unordered_map<K, V> Signals::map(const google::protobuf::Map<K, V>& in)
+std::unordered_map<K, V> Signals::mconv(const google::protobuf::Map<K, V>& in)
 {
     if (const auto size = in.size()) {
         std::unordered_map<K, V> out;
@@ -1452,7 +1452,7 @@ std::unordered_map<K, V> Signals::map(const google::protobuf::Map<K, V>& in)
 }
 
 template<typename K, typename V>
-void Signals::map(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to)
+void Signals::mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to)
 {
     if (to) {
         for (auto it = from.begin(); it != from.end(); ++it) {

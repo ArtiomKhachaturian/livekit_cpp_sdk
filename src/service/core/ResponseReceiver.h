@@ -15,6 +15,7 @@
 #include "Listeners.h"
 #include "livekit_rtc.pb.h"
 #include <memory>
+#include <optional>
 
 namespace LiveKitCpp
 {

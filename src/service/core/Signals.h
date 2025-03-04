@@ -165,13 +165,13 @@ private:
     template<typename T>
     static const T& map(const T& in) { return in; }
     template <typename TOut, typename TIn = TOut, class TProtoBufRepeated>
-    static std::vector<TOut> map(const TProtoBufRepeated& in);
+    static std::vector<TOut> rconv(const TProtoBufRepeated& in);
     template <typename TCppRepeated, class TProtoBufRepeated>
-    static void map(const TCppRepeated& from, TProtoBufRepeated* to);
+    static void rconv(const TCppRepeated& from, TProtoBufRepeated* to);
     template<typename K, typename V>
-    static std::unordered_map<K, V> map(const google::protobuf::Map<K, V>& in);
+    static std::unordered_map<K, V> mconv(const google::protobuf::Map<K, V>& in);
     template<typename K, typename V>
-    static void map(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to);
+    static void mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to);
 };
 
 } // namespace LiveKitCpp
