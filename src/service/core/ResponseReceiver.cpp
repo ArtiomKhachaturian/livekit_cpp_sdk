@@ -95,9 +95,7 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
                 break;
             case livekit::SignalResponse::kPong: // deprecated
                 if (response->has_pong()) {
-                    notify(&SignalServerListener::onPong,
-                           std::chrono::milliseconds{response->pong()},
-                           std::chrono::milliseconds{});
+                    notify(&SignalServerListener::onPong, response->pong(), int64_t{});
                 }
                 break;
             case livekit::SignalResponse::kReconnect:
@@ -175,7 +173,7 @@ void ResponseReceiver::handle(const livekit::TrickleRequest& request) const
 
 void ResponseReceiver::handle(const livekit::ParticipantUpdate& update) const
 {
-    signal(&SignalServerListener::onParticipantUpdate, update);
+    signal(&SignalServerListener::onUpdate, update);
 }
 
 void ResponseReceiver::handle(const livekit::TrackPublishedResponse& response) const
@@ -190,7 +188,7 @@ void ResponseReceiver::handle(const livekit::LeaveRequest& request) const
 
 void ResponseReceiver::handle(const livekit::MuteTrackRequest& request) const
 {
-    signal(&SignalServerListener::onMuteTrack, request);
+    signal(&SignalServerListener::onMute, request);
 }
 
 void ResponseReceiver::handle(const livekit::SpeakersChanged& changed) const
@@ -205,7 +203,7 @@ void ResponseReceiver::handle(const livekit::RoomUpdate& update) const
 
 void ResponseReceiver::handle(const livekit::ConnectionQualityUpdate& update) const
 {
-    signal(&SignalServerListener::onConnectionQualityUpdate, update);
+    signal(&SignalServerListener::onConnectionQuality, update);
 }
 
 void ResponseReceiver::handle(const livekit::StreamStateUpdate& update) const
@@ -235,12 +233,12 @@ void ResponseReceiver::handle(const livekit::ReconnectResponse& response) const
 
 void ResponseReceiver::handle(const livekit::SubscriptionResponse& response) const
 {
-    signal(&SignalServerListener::onSubscription, response);
+    signal(&SignalServerListener::onSubscriptionResponse, response);
 }
 
 void ResponseReceiver::handle(const livekit::RequestResponse& response) const
 {
-    signal(&SignalServerListener::onRequest, response);
+    signal(&SignalServerListener::onRequestResponse, response);
 }
 
 void ResponseReceiver::handle(const livekit::TrackSubscribed& subscribed) const
@@ -250,9 +248,7 @@ void ResponseReceiver::handle(const livekit::TrackSubscribed& subscribed) const
 
 void ResponseReceiver::handle(const livekit::Pong& pong) const
 {
-    notify(&SignalServerListener::onPong,
-           std::chrono::milliseconds{pong.timestamp()},
-           std::chrono::milliseconds{pong.last_ping_timestamp()});
+    notify(&SignalServerListener::onPong, pong.timestamp(), pong.last_ping_timestamp());
 }
 
 } // namespace LiveKitCpp
