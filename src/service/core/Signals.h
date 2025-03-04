@@ -37,6 +37,7 @@
 #include "rtc/SubscriptionPermission.h"
 #include "rtc/SyncState.h"
 #include "rtc/SimulateScenario.h"
+#include "rtc/UpdateParticipantMetadata.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -85,6 +86,8 @@ public:
     static livekit::SyncState map(const SyncState& in);
     static SimulateScenario map(const livekit::SimulateScenario& in);
     static livekit::SimulateScenario map(const SimulateScenario& in);
+    static UpdateParticipantMetadata map(const livekit::UpdateParticipantMetadata& in);
+    static livekit::UpdateParticipantMetadata map(const UpdateParticipantMetadata& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);
@@ -158,6 +161,8 @@ private:
     static void map(const TCppRepeated& from, TProtoBufRepeated* to);
     template<typename K, typename V>
     static std::unordered_map<K, V> map(const google::protobuf::Map<K, V>& in);
+    template<typename K, typename V>
+    static void map(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to);
 };
 
 } // namespace LiveKitCpp

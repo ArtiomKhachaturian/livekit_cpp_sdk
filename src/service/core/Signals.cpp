@@ -460,6 +460,26 @@ livekit::SimulateScenario Signals::map(const SimulateScenario& in)
     return out;
 }
 
+UpdateParticipantMetadata Signals::map(const livekit::UpdateParticipantMetadata& in)
+{
+    UpdateParticipantMetadata out;
+    out._metadata = in.metadata();
+    out._name = in.name();
+    out._attributes = map(in.attributes());
+    out._requestId = in.request_id();
+    return out;
+}
+
+livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata& in)
+{
+    livekit::UpdateParticipantMetadata out;
+    out.set_metadata(in._metadata);
+    out.set_name(in._name);
+    map(in._attributes, out.mutable_attributes());
+    out.set_request_id(in._requestId);
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;
@@ -1379,6 +1399,16 @@ std::unordered_map<K, V> Signals::map(const google::protobuf::Map<K, V>& in)
         return out;
     }
     return {};
+}
+
+template<typename K, typename V>
+void Signals::map(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to)
+{
+    if (to) {
+        for (auto it = from.begin(); it != from.end(); ++it) {
+            to->insert({it->first, it->second});
+        }
+    }
 }
 
 } // namespace LiveKitCpp

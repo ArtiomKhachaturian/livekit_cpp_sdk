@@ -123,24 +123,29 @@ bool SignalClient::sendLeave(const LeaveRequest& request) const
     return _requestSender->leave(request);
 }
 
-bool SignalClient::sendUpdateVideoLayers(const UpdateVideoLayers& update)
+bool SignalClient::sendUpdateVideoLayers(const UpdateVideoLayers& update) const
 {
     return _requestSender->updateVideoLayers(update);
 }
 
-bool SignalClient::sendSubscriptionPermission(const SubscriptionPermission& permission)
+bool SignalClient::sendSubscriptionPermission(const SubscriptionPermission& permission) const
 {
     return _requestSender->subscriptionPermission(permission);
 }
 
-bool SignalClient::sendSyncState(const SyncState& state)
+bool SignalClient::sendSyncState(const SyncState& state) const
 {
     return _requestSender->syncState(state);
 }
 
-bool SignalClient::sendSimulate(const SimulateScenario& scenario)
+bool SignalClient::sendSimulate(const SimulateScenario& scenario) const
 {
     return _requestSender->simulate(scenario);
+}
+
+bool SignalClient::sendUpdateMetadata(const UpdateParticipantMetadata& data) const
+{
+    return _requestSender->updateMetadata(data);
 }
 
 bool SignalClient::changeTransportState(State state)

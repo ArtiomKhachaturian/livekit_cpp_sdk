@@ -66,24 +66,29 @@ bool RequestSender::leave(const LeaveRequest& request) const
     return send(&Request::mutable_leave, request);
 }
 
-bool RequestSender::updateVideoLayers(const UpdateVideoLayers& update)
+bool RequestSender::updateVideoLayers(const UpdateVideoLayers& update) const
 {
     return send(&Request::mutable_update_layers, update);
 }
 
-bool RequestSender::subscriptionPermission(const SubscriptionPermission& permission)
+bool RequestSender::subscriptionPermission(const SubscriptionPermission& permission) const
 {
     return send(&Request::mutable_subscription_permission, permission);
 }
 
-bool RequestSender::syncState(const SyncState& state)
+bool RequestSender::syncState(const SyncState& state) const
 {
     return send(&Request::mutable_sync_state, state);
 }
 
-bool RequestSender::simulate(const SimulateScenario& scenario)
+bool RequestSender::simulate(const SimulateScenario& scenario) const
 {
     return send(&Request::mutable_simulate, scenario);
+}
+
+bool RequestSender::updateMetadata(const UpdateParticipantMetadata& data) const
+{
+    return send(&Request::mutable_update_metadata, data);
 }
 
 bool RequestSender::canSend() const

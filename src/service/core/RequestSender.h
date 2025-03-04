@@ -35,6 +35,7 @@ struct UpdateVideoLayers;
 struct SubscriptionPermission;
 struct SyncState;
 struct SimulateScenario;
+struct UpdateParticipantMetadata;
 
 class RequestSender
 {
@@ -48,10 +49,11 @@ public:
     bool subscription(const UpdateSubscription& update) const;
     bool trackSettings(const UpdateTrackSettings& update) const;
     bool leave(const LeaveRequest& request) const;
-    bool updateVideoLayers(const UpdateVideoLayers& update);
-    bool subscriptionPermission(const SubscriptionPermission& permission);
-    bool syncState(const SyncState& state);
-    bool simulate(const SimulateScenario& scenario);
+    bool updateVideoLayers(const UpdateVideoLayers& update) const;
+    bool subscriptionPermission(const SubscriptionPermission& permission) const;
+    bool syncState(const SyncState& state) const;
+    bool simulate(const SimulateScenario& scenario) const;
+    bool updateMetadata(const UpdateParticipantMetadata& data) const;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>
