@@ -480,6 +480,22 @@ livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata&
     return out;
 }
 
+Ping Signals::map(const livekit::Ping& in)
+{
+    Ping out;
+    out._timestamp = in.timestamp();
+    out._rtt = in.rtt();
+    return out;
+}
+
+livekit::Ping Signals::map(const Ping& in)
+{
+    livekit::Ping out;
+    out.set_timestamp(in._timestamp);
+    out.set_rtt(in._rtt);
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;

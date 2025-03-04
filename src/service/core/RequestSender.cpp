@@ -91,6 +91,11 @@ bool RequestSender::updateMetadata(const UpdateParticipantMetadata& data) const
     return send(&Request::mutable_update_metadata, data);
 }
 
+bool RequestSender::pingReq(const Ping& ping) const
+{
+    return send(&Request::mutable_ping_req, ping);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;

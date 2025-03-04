@@ -36,6 +36,7 @@ struct SubscriptionPermission;
 struct SyncState;
 struct SimulateScenario;
 struct UpdateParticipantMetadata;
+struct Ping;
 
 class RequestSender
 {
@@ -54,6 +55,7 @@ public:
     bool syncState(const SyncState& state) const;
     bool simulate(const SimulateScenario& scenario) const;
     bool updateMetadata(const UpdateParticipantMetadata& data) const;
+    bool pingReq(const Ping& ping) const;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>

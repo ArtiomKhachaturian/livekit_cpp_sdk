@@ -38,6 +38,7 @@
 #include "rtc/SyncState.h"
 #include "rtc/SimulateScenario.h"
 #include "rtc/UpdateParticipantMetadata.h"
+#include "rtc/Ping.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -88,6 +89,8 @@ public:
     static livekit::SimulateScenario map(const SimulateScenario& in);
     static UpdateParticipantMetadata map(const livekit::UpdateParticipantMetadata& in);
     static livekit::UpdateParticipantMetadata map(const UpdateParticipantMetadata& in);
+    static Ping map(const livekit::Ping& in);
+    static livekit::Ping map(const Ping& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);

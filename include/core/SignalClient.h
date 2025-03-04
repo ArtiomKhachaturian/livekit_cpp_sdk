@@ -37,6 +37,7 @@ struct SubscriptionPermission;
 struct SyncState;
 struct SimulateScenario;
 struct UpdateParticipantMetadata;
+struct Ping;
 
 class SignalClient
 {
@@ -66,6 +67,7 @@ public:
     bool sendSyncState(const SyncState& state) const;
     bool sendSimulate(const SimulateScenario& scenario) const;
     bool sendUpdateMetadata(const UpdateParticipantMetadata& data) const;
+    bool sendPingReq(const Ping& ping) const;
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
@@ -76,7 +78,7 @@ private:
     // for handling of incoming messages from the LiveKit SFU
     const std::unique_ptr<ResponseReceiver> _responseReceiver;
     // for sending requests to the LiveKit SFU
-    const std::unique_ptr<RequestSender> _requestSender;
+    const std::unique_ptr<const RequestSender> _requestSender;
 };
 
 } // namespace LiveKitCpp

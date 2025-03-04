@@ -148,6 +148,11 @@ bool SignalClient::sendUpdateMetadata(const UpdateParticipantMetadata& data) con
     return _requestSender->updateMetadata(data);
 }
 
+bool SignalClient::sendPingReq(const Ping& ping) const
+{
+    return _requestSender->pingReq(ping);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
