@@ -20,5 +20,6 @@ namespace LiveKitCpp
 std::string operatingSystemVersion();
 std::string operatingSystemName();
 std::string modelIdentifier();
+std::string fromWideChar(const std::wstring& w);
 
 } // namespace LiveKitCpp
