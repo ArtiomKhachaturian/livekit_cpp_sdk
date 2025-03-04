@@ -16,8 +16,8 @@
 #include "ProtectedObj.h"
 #include "Listeners.h"
 #include "MemoryBlock.h"
-#include "core/ResponseReceiver.h"
-#include "core/RequestSender.h"
+#include "ResponseReceiver.h"
+#include "RequestSender.h"
 
 namespace LiveKitCpp
 {

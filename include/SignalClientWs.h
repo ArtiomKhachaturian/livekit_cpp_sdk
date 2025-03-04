@@ -11,8 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
-#include "core/SignalClient.h"
-#include "core/ReconnectMode.h"
+#include "SignalClient.h"
+#include "ReconnectMode.h"
 #include "websocket/WebsocketListener.h"
 #include "websocket/WebsocketOptions.h"
 #include <memory>
