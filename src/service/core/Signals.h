@@ -39,6 +39,8 @@
 #include "rtc/SimulateScenario.h"
 #include "rtc/UpdateParticipantMetadata.h"
 #include "rtc/Ping.h"
+#include "rtc/UpdateLocalAudioTrack.h"
+#include "rtc/UpdateLocalVideoTrack.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -91,6 +93,10 @@ public:
     static livekit::UpdateParticipantMetadata map(const UpdateParticipantMetadata& in);
     static Ping map(const livekit::Ping& in);
     static livekit::Ping map(const Ping& in);
+    static UpdateLocalAudioTrack map(const livekit::UpdateLocalAudioTrack& in);
+    static livekit::UpdateLocalAudioTrack map(const UpdateLocalAudioTrack& in);
+    static UpdateLocalVideoTrack map(const livekit::UpdateLocalVideoTrack& in);
+    static livekit::UpdateLocalVideoTrack map(const UpdateLocalVideoTrack& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);

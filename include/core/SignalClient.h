@@ -38,6 +38,8 @@ struct SyncState;
 struct SimulateScenario;
 struct UpdateParticipantMetadata;
 struct Ping;
+struct UpdateLocalAudioTrack;
+struct UpdateLocalVideoTrack;
 
 class SignalClient
 {
@@ -68,6 +70,8 @@ public:
     bool sendSimulate(const SimulateScenario& scenario) const;
     bool sendUpdateMetadata(const UpdateParticipantMetadata& data) const;
     bool sendPingReq(const Ping& ping) const;
+    bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
+    bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);

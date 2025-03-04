@@ -37,6 +37,8 @@ struct SyncState;
 struct SimulateScenario;
 struct UpdateParticipantMetadata;
 struct Ping;
+struct UpdateLocalAudioTrack;
+struct UpdateLocalVideoTrack;
 
 class RequestSender
 {
@@ -56,6 +58,8 @@ public:
     bool simulate(const SimulateScenario& scenario) const;
     bool updateMetadata(const UpdateParticipantMetadata& data) const;
     bool pingReq(const Ping& ping) const;
+    bool updateAudioTrack(const UpdateLocalAudioTrack& track) const;
+    bool updateVideoTrack(const UpdateLocalVideoTrack& track) const;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>

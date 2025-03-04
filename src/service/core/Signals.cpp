@@ -496,6 +496,40 @@ livekit::Ping Signals::map(const Ping& in)
     return out;
 }
 
+UpdateLocalAudioTrack Signals::map(const livekit::UpdateLocalAudioTrack& in)
+{
+    UpdateLocalAudioTrack out;
+    out._trackSid = in.track_sid();
+    out._features = map<AudioTrackFeature, livekit::AudioTrackFeature>(in.features());
+    return out;
+}
+
+livekit::UpdateLocalAudioTrack Signals::map(const UpdateLocalAudioTrack& in)
+{
+    livekit::UpdateLocalAudioTrack out;
+    out.set_track_sid(in._trackSid);
+    map(in._features, out.mutable_features());
+    return out;
+}
+
+UpdateLocalVideoTrack Signals::map(const livekit::UpdateLocalVideoTrack& in)
+{
+    UpdateLocalVideoTrack out;
+    out._trackSid = in.track_sid();
+    out._width = in.width();
+    out._height = in.height();
+    return out;
+}
+
+livekit::UpdateLocalVideoTrack Signals::map(const UpdateLocalVideoTrack& in)
+{
+    livekit::UpdateLocalVideoTrack out;
+    out.set_track_sid(in._trackSid);
+    out.set_width(in._width);
+    out.set_height(in._height);
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;

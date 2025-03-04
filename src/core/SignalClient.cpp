@@ -153,6 +153,16 @@ bool SignalClient::sendPingReq(const Ping& ping) const
     return _requestSender->pingReq(ping);
 }
 
+bool SignalClient::sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const
+{
+    return _requestSender->updateAudioTrack(track);
+}
+
+bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const
+{
+    return _requestSender->updateVideoTrack(track);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);

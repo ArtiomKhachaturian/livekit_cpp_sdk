@@ -96,6 +96,16 @@ bool RequestSender::pingReq(const Ping& ping) const
     return send(&Request::mutable_ping_req, ping);
 }
 
+bool RequestSender::updateAudioTrack(const UpdateLocalAudioTrack& track) const
+{
+    return send(&Request::mutable_update_audio_track, track);
+}
+
+bool RequestSender::updateVideoTrack(const UpdateLocalVideoTrack& track) const
+{
+    return send(&Request::mutable_update_video_track, track);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;
