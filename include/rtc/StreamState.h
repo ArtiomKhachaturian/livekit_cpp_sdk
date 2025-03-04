@@ -16,7 +16,7 @@
 namespace LiveKitCpp
 {
 
-enum StreamState
+enum class StreamState
 {
     Active = 0,
     Paused = 1,

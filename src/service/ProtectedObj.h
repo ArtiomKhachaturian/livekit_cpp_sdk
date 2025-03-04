@@ -18,8 +18,8 @@
 #define PROTECTED_OBJ_NAME(prefix) PROTECTED_OBJ_JOIN(prefix, __LINE__)
 #define PROTECTED_OBJ_JOIN(symbol1, symbol2) DO_PROTECTED_OBJ_JOIN(symbol1, symbol2)
 #define DO_PROTECTED_OBJ_JOIN(symbol1, symbol2) symbol1##symbol2
-#define LOCK_READ_PROTECTED_OBJ(object) const auto PROTECTED_OBJ_NAME(rl)(object.readLock())
-#define LOCK_WRITE_PROTECTED_OBJ(object) const auto PROTECTED_OBJ_NAME(wl)(object.writeLock())
+#define LOCK_READ_PROTECTED_OBJ(object) const decltype(object)::ReadLock PROTECTED_OBJ_NAME(rl)(object.mutex())
+#define LOCK_WRITE_PROTECTED_OBJ(object) const decltype(object)::WriteLock PROTECTED_OBJ_NAME(wl)(object.mutex())
 
 // Performance tests for different kind of mutexes:
 //
@@ -52,8 +52,6 @@ public:
     template <typename U = T>
     ProtectedObj& operator = (U src) noexcept;
     auto& mutex() const noexcept { return _mtx; }
-    auto writeLock() const { return WriteLock(mutex()); }
-    auto readLock() const { return ReadLock(mutex()); }
     operator const T&() const noexcept { return constRef(); }
     operator T&() noexcept { return ref(); }
     const T& constRef() const noexcept { return _obj; }
