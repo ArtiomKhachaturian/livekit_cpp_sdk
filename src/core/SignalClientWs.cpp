@@ -14,11 +14,12 @@
 #include "Websocket.h"
 #include "WebsocketFactory.h"
 #include "MemoryBlock.h"
-#include "WebsocketOptions.h"
 #include "WebsocketFailure.h"
 #include "Utils.h"
 
 namespace {
+
+const std::string g_libraryVersion(PROJECT_VERSION);
 
 inline std::string urlQueryItem(const std::string& key, const std::string& val) {
     if (!key.empty() && !val.empty()) {
@@ -28,35 +29,17 @@ inline std::string urlQueryItem(const std::string& key, const std::string& val) 
 }
 
 inline std::string urlQueryItem(const std::string& key, int val) {
-    return urlQueryItem(key, std::to_string(val));
+    if (!key.empty()) {
+        return urlQueryItem(key, std::to_string(val));
+    }
+    return {};
 }
 
 inline std::string urlQueryItem(const std::string& key, bool val) {
-    return urlQueryItem(key, val ? 1 : 0);
-}
-
-inline LiveKitCpp::WebsocketOptions formatWsOptions(const std::string& host,
-                                                    const std::string& authToken,
-                                                    bool autoSubscribe,
-                                                    bool adaptiveStream) {
-    LiveKitCpp::WebsocketOptions options;
-    if (!host.empty() && !authToken.empty()) {
-        // see example in https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Support/Utils.swift#L138
-        options._host = host;
-        if ('/' != options._host.back()) {
-            options._host += '/';
-        }
-        options._host += "rtc?access_token=" + authToken;
-        options._host += urlQueryItem("auto_subscribe", autoSubscribe);
-        options._host += urlQueryItem("sdk", "cpp");
-        options._host += urlQueryItem("version", "2.9.5");
-        options._host += urlQueryItem("protocol", 15);
-        options._host += urlQueryItem("adaptive_stream", adaptiveStream);
-        options._host += urlQueryItem("os", LiveKitCpp::operatingSystemName());
-        options._host += urlQueryItem("os_version", LiveKitCpp::operatingSystemVersion());
-        options._host += urlQueryItem("device_model", LiveKitCpp::modelIdentifier());
+    if (!key.empty()) {
+        return urlQueryItem(key, val ? 1 : 0);
     }
-    return options;
+    return {};
 }
 
 }
@@ -96,6 +79,11 @@ const std::string& SignalClientWs::authToken() const noexcept
     return _authToken;
 }
 
+const std::string& SignalClientWs::participantSid() const noexcept
+{
+    return _participantSid;
+}
+
 bool SignalClientWs::autoSubscribe() const noexcept
 {
     return _autoSubscribe;
@@ -104,6 +92,11 @@ bool SignalClientWs::autoSubscribe() const noexcept
 bool SignalClientWs::adaptiveStream() const noexcept
 {
     return _adaptiveStream;
+}
+
+ReconnectMode SignalClientWs::reconnectMode() const noexcept
+{
+    return _reconnectMode;
 }
 
 void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
@@ -116,6 +109,11 @@ void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
     _adaptiveStream = adaptiveStream;
 }
 
+void SignalClientWs::setReconnectMode(ReconnectMode reconnectMode)
+{
+    _reconnectMode = reconnectMode;
+}
+
 void SignalClientWs::setHost(std::string host)
 {
     _host = std::move(host);
@@ -126,14 +124,16 @@ void SignalClientWs::setAuthToken(std::string authToken)
     _authToken = std::move(authToken);
 }
 
+void SignalClientWs::setParticipantSid(std::string participantSid)
+{
+    _participantSid = std::move(participantSid);
+}
+
 bool SignalClientWs::connect()
 {
     bool ok = false;
     if (_socket && changeTransportState(State::Connecting)) {
-        ok = _socket->open(formatWsOptions(_host,
-                                           _authToken,
-                                           _autoSubscribe,
-                                           _adaptiveStream));
+        ok = _socket->open(buildWebsocketOptions());
         if (!ok) {
             changeTransportState(State::Disconnected);
         }
@@ -146,6 +146,34 @@ void SignalClientWs::disconnect()
     if (_socket) {
         _socket->close();
     }
+}
+
+WebsocketOptions SignalClientWs::buildWebsocketOptions() const
+{
+    WebsocketOptions options;
+    if (!host().empty() && !authToken().empty()) {
+        // see example in https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Support/Utils.swift#L138
+        options._host = host();
+        if ('/' != options._host.back()) {
+            options._host += '/';
+        }
+        using namespace std::string_literals;
+        options._host += "rtc?access_token=" + authToken();
+        options._host += urlQueryItem("auto_subscribe", autoSubscribe());
+        options._host += urlQueryItem("sdk", "cpp"s);
+        options._host += urlQueryItem("version", g_libraryVersion);
+        options._host += urlQueryItem("protocol", 15);
+        options._host += urlQueryItem("adaptive_stream", adaptiveStream());
+        options._host += urlQueryItem("os", operatingSystemName());
+        options._host += urlQueryItem("os_version", operatingSystemVersion());
+        options._host += urlQueryItem("device_model", modelIdentifier());
+        // only for quick-reconnect
+        if (ReconnectMode::Quick == reconnectMode()) {
+            options._host += urlQueryItem("reconnect", 1);
+            options._host += urlQueryItem("sid", participantSid());
+        }
+    }
+    return options;
 }
 
 void SignalClientWs::onError(uint64_t socketId, uint64_t connectionId,

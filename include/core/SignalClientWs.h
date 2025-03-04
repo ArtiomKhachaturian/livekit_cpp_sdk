@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
 #include "core/SignalClient.h"
+#include "core/ReconnectMode.h"
 #include "websocket/WebsocketListener.h"
+#include "websocket/WebsocketOptions.h"
 #include <memory>
 #include <string>
 
@@ -31,16 +33,21 @@ public:
     ~SignalClientWs() final;
     const std::string& host() const noexcept;
     const std::string& authToken() const noexcept;
+    const std::string& participantSid() const noexcept;
     bool autoSubscribe() const noexcept;
     bool adaptiveStream() const noexcept;
-    void setHost(std::string host);
-    void setAuthToken(std::string authToken);
+    ReconnectMode reconnectMode() const noexcept;
     void setAutoSubscribe(bool autoSubscribe);
     void setAdaptiveStream(bool adaptiveStream);
+    void setReconnectMode(ReconnectMode reconnectMode);
+    void setHost(std::string host);
+    void setAuthToken(std::string authToken);
+    void setParticipantSid(std::string participantSid);
     // impl. of SignalClient
     bool connect() final;
     void disconnect() final;
 private:
+    WebsocketOptions buildWebsocketOptions() const;
     // impl. of WebsocketListener
     void onError(uint64_t socketId, uint64_t connectionId,
                  const std::string_view& host,
@@ -54,8 +61,10 @@ private:
     const std::unique_ptr<Websocket> _socket;
     std::string _host;
     std::string _authToken;
+    std::string _participantSid;
     bool _autoSubscribe = true;
     bool _adaptiveStream = true;
+    ReconnectMode _reconnectMode = ReconnectMode::None;
 };
 
 } // namespace LiveKitCpp
