@@ -14,6 +14,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
+option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
+
 # Specify source files
 file(GLOB_RECURSE PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
 file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/src/*.h)
@@ -27,6 +29,9 @@ endif(APPLE)
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
 find_package(absl REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
+
+set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
+set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
 
 function(recreateDir DIR)
     if (EXISTS ${DIR})
@@ -66,7 +71,6 @@ function(findOpenSSL)
                     message(FATAL_ERROR "OpenSSL library ${OPENSSL_LIB} was not found")
                 endif()
             endforeach()
-            #string(REPLACE ";" ";" OPENSSL_LIBRARIES "${OPENSSL_LIBRARIES}")
         else()
             message(FATAL_ERROR "Not found OpenSSL, try to set the path to OpenSSL lib folder in the system variable OPENSSL_LIB_DIR")
         endif()
@@ -96,8 +100,6 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 
 # Generate .cpp and .h files from proto
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
-
-option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
 
 if (USE_ZAPHOYD_TPP_SOCKETS)
     findOpenSSL()
@@ -137,20 +139,6 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )
 
-# Link Protobuf library
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
-# Link abseil
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
-# Generic attributes for the library
-set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
-if (APPLE)
-    set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
-    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
-elseif(WIN32)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
-endif()
-target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
-
 # Websockets
 if (USE_ZAPHOYD_TPP_SOCKETS)
     target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
@@ -166,6 +154,82 @@ if (USE_ZAPHOYD_TPP_SOCKETS)
     endif(WIN32)
     target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${OPENSSL_LIBRARIES})
 endif(USE_ZAPHOYD_TPP_SOCKETS)
+
+# Link Protobuf library
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
+# Link abseil
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+# Generic attributes for the library
+set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
+if (APPLE)
+    set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
+    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
+elseif(WIN32)
+    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+endif()
+target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
+# WebRTC -> TODO: split WEBRTC_LIB_DIR for all configurations (debug/release/...)
+if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
+    message(STATUS "Found WebRTC")
+    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR})
+    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWERTC_AVAILABLE)
+    if (APPLE)
+        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
+        target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
+    elseif(WIN32)
+        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -RTC_ENABLE_WIN_WGC)
+    endif()
+    set(WEBRTC_LIBS
+        "audio_decoder_g711"
+        "audio_decoder_g722"
+        "audio_decoder_L16"
+        "audio_decoder_opus"
+        "builtin_audio_decoder_factory"
+        "primitives"
+        "desktop_capture_differ_sse2"
+        "webrtc")
+    if (APPLE)
+        list(APPEND WEBRTC_LIBS
+            "base_native_additions_objc"
+            "base_objc"
+            "callback_logger_objc"
+            "default_codec_factory_objc"
+            "file_logger_objc"
+            "helpers_objc"
+            "mediaconstraints_objc"
+            "mediasource_objc"
+            "metal_objc"
+            "native_api"
+            "native_video"
+            "peerconnectionfactory_base_objc"
+            "video_toolbox_cc"
+            "videocapture_objc"
+            "videocodec_objc"
+            "videoframebuffer_objc"
+            "videorendereradapter_objc"
+            "videosource_objc"
+            "videotoolbox_objc"
+            "vp8"
+            "vp9"
+            "vpx_codec_constants"
+            "wrapped_native_codec_objc")
+    endif(APPLE)
+    foreach(WEBRTC_LIB ${WEBRTC_LIBS})
+    if (WIN32)
+        set(WEBRTC_LIB ${WEBRTC_LIB}.lib)
+    else()
+        set(WEBRTC_LIB lib${WEBRTC_LIB}.a)
+    endif()
+    file(GLOB_RECURSE WEBRTC_LIB_FILE "${WEBRTC_LIB_DIR}/${WEBRTC_LIB}")
+    if (WEBRTC_LIB_FILE)
+        message(STATUS "Static library ${WEBRTC_LIB} found")
+        list(APPEND WEBRTC_LIB_FILES ${WEBRTC_LIB_FILE})
+    else()
+        message(FATAL_ERROR "Static library ${WEBRTC_LIB} was not found")
+    endif()
+    endforeach()
+    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_LIB_FILES})
+endif()
 
 # test application
 if (USE_ZAPHOYD_TPP_SOCKETS)
