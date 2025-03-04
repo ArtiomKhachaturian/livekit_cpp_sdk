@@ -11,18 +11,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SubscriptionPermission.h
-#include "rtc/TrackPermission.h"
+#pragma once // SyncState.h
+#include "rtc/DataChannelInfo.h"
+#include "rtc/SessionDescription.h"
+#include "rtc/TrackPublishedResponse.h"
+#include "rtc/UpdateSubscription.h"
+#include <string>
 #include <vector>
 
 namespace LiveKitCpp
 {
 
-// Update subscriber permissions
-struct SubscriptionPermission
+// sync client's subscribe state to server during reconnect
+struct SyncState
 {
-    bool _allParticipants = {};
-    std::vector<TrackPermission> _trackPermissions;
+    // last subscribe answer before reconnecting
+    SessionDescription _answer;
+    UpdateSubscription _subscription;
+    std::vector<TrackPublishedResponse> _publishTracks;
+    std::vector<DataChannelInfo> _dataChannels;
+    // last received server side offer before reconnecting
+    SessionDescription _offer;
+    std::vector<std::string> _trackSidsDisabled;
 };
 
 } // namespace LiveKitCpp

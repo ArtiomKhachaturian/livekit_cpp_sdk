@@ -11,18 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SubscriptionPermission.h
-#include "rtc/TrackPermission.h"
-#include <vector>
+#pragma once // DataChannelInfo.h
+#include "rtc/SignalTarget.h"
+#include <string>
 
 namespace LiveKitCpp
 {
 
-// Update subscriber permissions
-struct SubscriptionPermission
+struct DataChannelInfo
 {
-    bool _allParticipants = {};
-    std::vector<TrackPermission> _trackPermissions;
+    std::string _label;
+    uint32_t _id = {};
+    SignalTarget _target = {};
 };
 
 } // namespace LiveKitCpp

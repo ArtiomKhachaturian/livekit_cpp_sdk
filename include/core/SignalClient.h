@@ -24,6 +24,7 @@ class SignalServerListener;
 class SignalTransportListener;
 class ResponseReceiver;
 class RequestSender;
+// these below structs are defined in /include/rtc subfolder
 struct SessionDescription;
 struct TrickleRequest;
 struct AddTrackRequest;
@@ -33,6 +34,7 @@ struct UpdateTrackSettings;
 struct LeaveRequest;
 struct UpdateVideoLayers;
 struct SubscriptionPermission;
+struct SyncState;
 
 class SignalClient
 {
@@ -59,6 +61,7 @@ public:
     bool sendLeave(const LeaveRequest& request) const;
     bool sendUpdateVideoLayers(const UpdateVideoLayers& update);
     bool sendSubscriptionPermission(const SubscriptionPermission& permission);
+    bool sendSyncState(const SyncState& state);
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);

@@ -35,6 +35,7 @@
 #include "rtc/UpdateTrackSettings.h"
 #include "rtc/UpdateVideoLayers.h"
 #include "rtc/SubscriptionPermission.h"
+#include "rtc/SyncState.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -53,6 +54,7 @@ public:
     static livekit::TrickleRequest map(const TrickleRequest& in);
     static ParticipantUpdate map(const livekit::ParticipantUpdate& in);
     static TrackPublishedResponse map(const livekit::TrackPublishedResponse& in);
+    static livekit::TrackPublishedResponse map(const TrackPublishedResponse& in);
     static TrackUnpublishedResponse map(const livekit::TrackUnpublishedResponse& in);
     static LeaveRequest map(const livekit::LeaveRequest& in);
     static livekit::LeaveRequest map(const LeaveRequest& in);
@@ -78,10 +80,13 @@ public:
     static livekit::UpdateVideoLayers map(const UpdateVideoLayers& in);
     static SubscriptionPermission map(const livekit::SubscriptionPermission& in);
     static livekit::SubscriptionPermission map(const SubscriptionPermission& in);
+    static SyncState map(const livekit::SyncState& in);
+    static livekit::SyncState map(const SyncState& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);
     static TimedVersion map(const livekit::TimedVersion& in);
+    static livekit::TimedVersion map(const TimedVersion& in);
     static ParticipantInfo map(const livekit::ParticipantInfo& in);
     static ParticipantKind map(livekit::ParticipantInfo_Kind in);
     static ParticipantState map(livekit::ParticipantInfo_State in);
@@ -91,6 +96,7 @@ public:
     static TrackSource map(livekit::TrackSource in);
     static livekit::TrackSource map(TrackSource in);
     static TrackInfo map(const livekit::TrackInfo& in);
+    static livekit::TrackInfo map(const TrackInfo& in);
     static VideoQuality map(livekit::VideoQuality in);
     static livekit::VideoQuality map(VideoQuality in);
     static VideoLayer map(const livekit::VideoLayer& in);
@@ -98,11 +104,13 @@ public:
     static TrackType map(livekit::TrackType in);
     static livekit::TrackType map(TrackType in);
     static SimulcastCodecInfo map(const livekit::SimulcastCodecInfo& in);
+    static livekit::SimulcastCodecInfo map(const SimulcastCodecInfo& in);
     static BackupCodecPolicy map(livekit::BackupCodecPolicy in);
     static livekit::BackupCodecPolicy map(BackupCodecPolicy in);
     static EncryptionType map(livekit::Encryption_Type in);
     static livekit::Encryption_Type map(EncryptionType in);
     static AudioTrackFeature map(livekit::AudioTrackFeature in);
+    static livekit::AudioTrackFeature map(AudioTrackFeature in);
     static ClientConfigSetting map(livekit::ClientConfigSetting in);
     static ClientConfiguration map(const livekit::ClientConfiguration& in);
     static DisabledCodecs map(const livekit::DisabledCodecs& in);
@@ -133,7 +141,10 @@ public:
     static livekit::ParticipantTracks map(const ParticipantTracks& in);
     static TrackPermission map(const livekit::TrackPermission& in);
     static livekit::TrackPermission map(const TrackPermission& in);
+    static DataChannelInfo map(const livekit::DataChannelInfo& in);
+    static livekit::DataChannelInfo map(const DataChannelInfo& in);
 private:
+    // helpers
     template<typename T>
     static const T& map(const T& in) { return in; }
     template <typename TOut, typename TIn = TOut, class TProtoBufRepeated>

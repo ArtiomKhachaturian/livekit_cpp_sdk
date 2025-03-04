@@ -33,6 +33,7 @@ struct UpdateTrackSettings;
 struct LeaveRequest;
 struct UpdateVideoLayers;
 struct SubscriptionPermission;
+struct SyncState;
 
 class RequestSender
 {
@@ -48,6 +49,7 @@ public:
     bool leave(const LeaveRequest& request) const;
     bool updateVideoLayers(const UpdateVideoLayers& update);
     bool subscriptionPermission(const SubscriptionPermission& permission);
+    bool syncState(const SyncState& state);
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>

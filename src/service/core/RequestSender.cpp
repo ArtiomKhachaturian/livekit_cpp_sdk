@@ -76,6 +76,11 @@ bool RequestSender::subscriptionPermission(const SubscriptionPermission& permiss
     return send(&Request::mutable_subscription_permission, permission);
 }
 
+bool RequestSender::syncState(const SyncState& state)
+{
+    return send(&Request::mutable_sync_state, state);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;

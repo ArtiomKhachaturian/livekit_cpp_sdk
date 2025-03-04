@@ -18,7 +18,7 @@
 namespace LiveKitCpp
 {
 
-// these structs are defined in /include/rtc subfolder
+// these below structs are defined in /include/rtc subfolder
 struct ConnectionQualityUpdate;
 struct JoinResponse;
 struct SessionDescription;

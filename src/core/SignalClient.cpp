@@ -133,6 +133,11 @@ bool SignalClient::sendSubscriptionPermission(const SubscriptionPermission& perm
     return _requestSender->subscriptionPermission(permission);
 }
 
+bool SignalClient::sendSyncState(const SyncState& state)
+{
+    return _requestSender->syncState(state);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);

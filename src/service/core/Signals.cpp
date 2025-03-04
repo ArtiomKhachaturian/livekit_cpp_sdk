@@ -94,6 +94,14 @@ TrackPublishedResponse Signals::map(const livekit::TrackPublishedResponse& in)
     return out;
 }
 
+livekit::TrackPublishedResponse Signals::map(const TrackPublishedResponse& in)
+{
+    livekit::TrackPublishedResponse out;
+    out.set_cid(in._cid);
+    *out.mutable_track() = map(in._track);
+    return out;
+}
+
 TrackUnpublishedResponse Signals::map(const livekit::TrackUnpublishedResponse& in)
 {
     TrackUnpublishedResponse out;
@@ -339,6 +347,30 @@ livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in)
     return out;
 }
 
+SyncState Signals::map(const livekit::SyncState& in)
+{
+    SyncState out;
+    out._answer = map(in.answer());
+    out._subscription = map(in.subscription());
+    out._publishTracks = map<TrackPublishedResponse, livekit::TrackPublishedResponse>(in.publish_tracks());
+    out._dataChannels = map<DataChannelInfo, livekit::DataChannelInfo>(in.data_channels());
+    out._offer = map(in.offer());
+    out._trackSidsDisabled = map<std::string>(in.track_sids_disabled());
+    return out;
+}
+
+livekit::SyncState Signals::map(const SyncState& in)
+{
+    livekit::SyncState out;
+    *out.mutable_answer() = map(in._answer);
+    *out.mutable_subscription() = map(in._subscription);
+    map(in._publishTracks, out.mutable_publish_tracks());
+    map(in._dataChannels, out.mutable_data_channels());
+    *out.mutable_offer() = map(in._offer);
+    map(in._trackSidsDisabled, out.mutable_track_sids_disabled());
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;
@@ -369,6 +401,14 @@ Codec Signals::map(const livekit::Codec& in)
 TimedVersion Signals::map(const livekit::TimedVersion& in)
 {
     return {in.unix_micro(), in.ticks()};
+}
+
+livekit::TimedVersion Signals::map(const TimedVersion& in)
+{
+    livekit::TimedVersion out;
+    out.set_unix_micro(in._unixMicro);
+    out.set_ticks(in._ticks);
+    return out;
 }
 
 ParticipantInfo Signals::map(const livekit::ParticipantInfo& in)
@@ -591,6 +631,33 @@ TrackInfo Signals::map(const livekit::TrackInfo& in)
     return out;
 }
 
+livekit::TrackInfo Signals::map(const TrackInfo& in)
+{
+    livekit::TrackInfo out;
+    out.set_sid(in._sid);
+    out.set_type(map(in._type));
+    out.set_name(in._name);
+    out.set_muted(in._muted);
+    out.set_width(in._width);
+    out.set_height(in._height);
+    out.set_simulcast(in._simulcast);
+    out.set_disable_dtx(in._disableDtx);
+    out.set_source(map(in._source));
+    map(in._layers, out.mutable_layers());
+    out.set_mime_type(in._mimeType);
+    out.set_mid(in._mid);
+    map(in._codecs, out.mutable_codecs());
+    out.set_disable_red(in._disableRed);
+    out.set_encryption(map(in._encryption));
+    out.set_stream(in._stream);
+    if (in._version.has_value()) {
+        *out.mutable_version() = map(in._version.value());
+    }
+    map(in._audioFeatures, out.mutable_audio_features());
+    out.set_backup_codec_policy(map(in._backupCodecPolicy));
+    return out;
+}
+
 VideoQuality Signals::map(livekit::VideoQuality in)
 {
     switch (in) {
@@ -691,6 +758,16 @@ SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in)
     return out;
 }
 
+livekit::SimulcastCodecInfo Signals::map(const SimulcastCodecInfo& in)
+{
+    livekit::SimulcastCodecInfo out;
+    out.set_mime_type(in._mimeType);
+    out.set_mid(in._mid);
+    out.set_cid(in._cid);
+    map(in._layers, out.mutable_layers());
+    return out;
+}
+
 BackupCodecPolicy Signals::map(livekit::BackupCodecPolicy in)
 {
     switch (in) {
@@ -771,6 +848,28 @@ AudioTrackFeature Signals::map(livekit::AudioTrackFeature in)
             break;
     }
     return AudioTrackFeature::TFStereo;
+}
+
+livekit::AudioTrackFeature Signals::map(AudioTrackFeature in)
+{
+    switch (in) {
+        case AudioTrackFeature::TFStereo:
+            break;
+        case AudioTrackFeature::TFNoDtx:
+            return livekit::TF_NO_DTX;
+        case AudioTrackFeature::TFAutoGainControl:
+            return livekit::TF_AUTO_GAIN_CONTROL;
+        case AudioTrackFeature::TFEchocancellation:
+            return livekit::TF_ECHO_CANCELLATION;
+        case AudioTrackFeature::TFNoiseSuppression:
+            return livekit::TF_NOISE_SUPPRESSION;
+        case AudioTrackFeature::TFEnhancedNoiseCancellation:
+            return livekit::TF_ENHANCED_NOISE_CANCELLATION;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::TF_STEREO;
 }
 
 ClientConfigSetting Signals::map(livekit::ClientConfigSetting in)
@@ -1101,6 +1200,24 @@ livekit::TrackPermission Signals::map(const TrackPermission& in)
     out.set_all_tracks(in._allAracks);
     map(in._trackSids, out.mutable_track_sids());
     out.set_participant_identity(in._participantIdentity);
+    return out;
+}
+
+DataChannelInfo Signals::map(const livekit::DataChannelInfo& in)
+{
+    DataChannelInfo out;
+    out._label = in.label();
+    out._id = in.id();
+    out._target = map(in.target());
+    return out;
+}
+
+livekit::DataChannelInfo Signals::map(const DataChannelInfo& in)
+{
+    livekit::DataChannelInfo out;
+    out.set_label(in._label);
+    out.set_id(in._id);
+    out.set_target(map(in._target));
     return out;
 }
 
