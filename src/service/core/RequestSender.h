@@ -44,6 +44,8 @@ class RequestSender
 {
 public:
     RequestSender(CommandSender* commandSender);
+    // all requests are defined in 'SignalRequest':
+    // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L24
     bool offer(const SessionDescription& sdp) const;
     bool answer(const SessionDescription& sdp) const;
     bool trickle(const TrickleRequest& request) const;

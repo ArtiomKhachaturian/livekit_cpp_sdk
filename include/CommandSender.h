@@ -15,10 +15,6 @@
 #include <memory>
 #include <string>
 
-namespace google::protobuf {
-class Message;
-}
-
 namespace LiveKitCpp
 {
 
@@ -31,7 +27,5 @@ public:
     virtual bool sendBinary(const std::shared_ptr<const MemoryBlock>& binary) = 0;
     virtual bool sendText(const std::string_view& text) = 0;
 };
-
-bool sendProtobuf(const google::protobuf::Message& message, CommandSender* to);
 
 } // namespace LiveKitCpp

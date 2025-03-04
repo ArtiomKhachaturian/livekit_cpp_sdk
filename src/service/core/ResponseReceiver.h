@@ -34,6 +34,8 @@ private:
     void notify(const Method& method, Args&&... args) const;
     template <class Method, class TLiveKitType>
     void signal(const Method& method, const TLiveKitType& sig) const;
+    // all responses are defined in 'SignalResponse':
+    // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L61
     void handle(const livekit::JoinResponse& response) const;
     void handle(const livekit::SessionDescription& desc, bool offer) const;
     void handle(const livekit::TrickleRequest& request) const;
