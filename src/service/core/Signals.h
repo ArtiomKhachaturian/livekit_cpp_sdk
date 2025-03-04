@@ -36,6 +36,7 @@
 #include "rtc/UpdateVideoLayers.h"
 #include "rtc/SubscriptionPermission.h"
 #include "rtc/SyncState.h"
+#include "rtc/SimulateScenario.h"
 #include "livekit_rtc.pb.h"
 #include <optional>
 #include <unordered_map>
@@ -82,6 +83,8 @@ public:
     static livekit::SubscriptionPermission map(const SubscriptionPermission& in);
     static SyncState map(const livekit::SyncState& in);
     static livekit::SyncState map(const SyncState& in);
+    static SimulateScenario map(const livekit::SimulateScenario& in);
+    static livekit::SimulateScenario map(const SimulateScenario& in);
     // data
     static Room map(const livekit::Room& in);
     static Codec map(const livekit::Codec& in);
@@ -143,6 +146,8 @@ public:
     static livekit::TrackPermission map(const TrackPermission& in);
     static DataChannelInfo map(const livekit::DataChannelInfo& in);
     static livekit::DataChannelInfo map(const DataChannelInfo& in);
+    static CandidateProtocol map(livekit::CandidateProtocol in);
+    static livekit::CandidateProtocol map(CandidateProtocol in);
 private:
     // helpers
     template<typename T>

@@ -81,6 +81,11 @@ bool RequestSender::syncState(const SyncState& state)
     return send(&Request::mutable_sync_state, state);
 }
 
+bool RequestSender::simulate(const SimulateScenario& scenario)
+{
+    return send(&Request::mutable_simulate, scenario);
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;

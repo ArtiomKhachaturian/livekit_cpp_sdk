@@ -371,6 +371,95 @@ livekit::SyncState Signals::map(const SyncState& in)
     return out;
 }
 
+SimulateScenario Signals::map(const livekit::SimulateScenario& in)
+{
+    SimulateScenario out;
+    switch (in.scenario_case()) {
+        case livekit::SimulateScenario::kSpeakerUpdate:
+            out._case = SimulateScenario::Case::SpeakerUpdate;
+            out._scenario._speakerUpdate = in.speaker_update();
+            break;
+        case livekit::SimulateScenario::kNodeFailure:
+            out._case = SimulateScenario::Case::NodeFailure;
+            out._scenario._nodeFailure = in.node_failure();
+            break;
+        case livekit::SimulateScenario::kMigration:
+            out._case = SimulateScenario::Case::Migration;
+            out._scenario._migration = in.migration();
+            break;
+        case livekit::SimulateScenario::kServerLeave:
+            out._case = SimulateScenario::Case::ServerLeave;
+            out._scenario._serverLeave = in.server_leave();
+            break;
+        case livekit::SimulateScenario::kSwitchCandidateProtocol:
+            out._case = SimulateScenario::Case::SwitchCandidateProtocol;
+            out._scenario._switchCandidateProtocol = map(in.switch_candidate_protocol());
+            break;
+        case livekit::SimulateScenario::kSubscriberBandwidth:
+            out._case = SimulateScenario::Case::SubscriberBandwidth;
+            out._scenario._subscriberBandwidth = in.subscriber_bandwidth();
+            break;
+        case livekit::SimulateScenario::kDisconnectSignalOnResume:
+            out._case = SimulateScenario::Case::DisconnectSignalOnResume;
+            out._scenario._disconnectSignalOnResume = in.disconnect_signal_on_resume();
+            break;
+        case livekit::SimulateScenario::kDisconnectSignalOnResumeNoMessages:
+            out._case = SimulateScenario::Case::DisconnectSignalOnResumeNoMessages;
+            out._scenario._disconnectSignalOnResumeNoMessages = in.disconnect_signal_on_resume_no_messages();
+            break;
+        case livekit::SimulateScenario::kLeaveRequestFullReconnect:
+            out._case = SimulateScenario::Case::LeaveRequestFullReconnect;
+            out._scenario._leaveRequestFullReconnect = in.leave_request_full_reconnect();
+            break;
+        case livekit::SimulateScenario::SCENARIO_NOT_SET:
+            break;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return out;
+}
+
+livekit::SimulateScenario Signals::map(const SimulateScenario& in)
+{
+    livekit::SimulateScenario out;
+    switch (in._case) {
+        case SimulateScenario::Case::NotSet:
+            break;
+        case SimulateScenario::Case::SpeakerUpdate:
+            out.set_speaker_update(in._scenario._speakerUpdate);
+            break;
+        case SimulateScenario::Case::NodeFailure:
+            out.set_node_failure(in._scenario._nodeFailure);
+            break;
+        case SimulateScenario::Case::Migration:
+            out.set_migration(in._scenario._migration);
+            break;
+        case SimulateScenario::Case::ServerLeave:
+            out.set_server_leave(in._scenario._serverLeave);
+            break;
+        case SimulateScenario::Case::SwitchCandidateProtocol:
+            out.set_switch_candidate_protocol(map(in._scenario._switchCandidateProtocol));
+            break;
+        case SimulateScenario::Case::SubscriberBandwidth:
+            out.set_subscriber_bandwidth(in._scenario._subscriberBandwidth);
+            break;
+        case SimulateScenario::Case::DisconnectSignalOnResume:
+            out.set_disconnect_signal_on_resume(in._scenario._disconnectSignalOnResume);
+            break;
+        case SimulateScenario::Case::DisconnectSignalOnResumeNoMessages:
+            out.set_disconnect_signal_on_resume_no_messages(in._scenario._disconnectSignalOnResumeNoMessages);
+            break;
+        case SimulateScenario::Case::LeaveRequestFullReconnect:
+            out.set_leave_request_full_reconnect(in._scenario._leaveRequestFullReconnect);
+            break;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return out;
+}
+
 Room Signals::map(const livekit::Room& in)
 {
     Room out;
@@ -1219,6 +1308,38 @@ livekit::DataChannelInfo Signals::map(const DataChannelInfo& in)
     out.set_id(in._id);
     out.set_target(map(in._target));
     return out;
+}
+
+CandidateProtocol Signals::map(livekit::CandidateProtocol in)
+{
+    switch (in) {
+        case livekit::UDP:
+            break;
+        case livekit::TCP:
+            return CandidateProtocol::Tcp;
+        case livekit::TLS:
+            return CandidateProtocol::Tls;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return CandidateProtocol::Udp;
+}
+
+livekit::CandidateProtocol Signals::map(CandidateProtocol in)
+{
+    switch (in) {
+        case CandidateProtocol::Udp:
+            break;
+        case CandidateProtocol::Tcp:
+            return livekit::TCP;
+        case CandidateProtocol::Tls:
+            return livekit::TLS;
+        default: // TODO: log error
+            assert(false);
+            break;
+    }
+    return livekit::UDP;
 }
 
 template <typename TOut, typename TIn, class TProtoBufRepeated>

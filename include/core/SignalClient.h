@@ -35,6 +35,7 @@ struct LeaveRequest;
 struct UpdateVideoLayers;
 struct SubscriptionPermission;
 struct SyncState;
+struct SimulateScenario;
 
 class SignalClient
 {
@@ -62,6 +63,7 @@ public:
     bool sendUpdateVideoLayers(const UpdateVideoLayers& update);
     bool sendSubscriptionPermission(const SubscriptionPermission& permission);
     bool sendSyncState(const SyncState& state);
+    bool sendSimulate(const SimulateScenario& scenario);
 protected:
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);

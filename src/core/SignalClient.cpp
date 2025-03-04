@@ -138,6 +138,11 @@ bool SignalClient::sendSyncState(const SyncState& state)
     return _requestSender->syncState(state);
 }
 
+bool SignalClient::sendSimulate(const SimulateScenario& scenario)
+{
+    return _requestSender->simulate(scenario);
+}
+
 bool SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
