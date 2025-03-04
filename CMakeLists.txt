@@ -3,11 +3,16 @@ cmake_minimum_required(VERSION 3.15)
 set(LIB_PROJECT_NAME LiveKitCppClient)
 
 # Project name
-project(${LIB_PROJECT_NAME} LANGUAGES CXX)
+project(${LIB_PROJECT_NAME} LANGUAGES CXX VERSION 0.0.1)
+
+include(CMakePackageConfigHelpers)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# -fvisibility=hidden
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 # Specify source files
 file(GLOB_RECURSE PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
@@ -137,6 +142,7 @@ target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
 # Link abseil
 target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
 # Generic attributes for the library
+set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (APPLE)
     set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
     target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
@@ -177,5 +183,27 @@ if (USE_ZAPHOYD_TPP_SOCKETS)
 endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # install steps
-install(TARGETS ${LIB_PROJECT_NAME} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
+if (EXISTS ${CMAKE_INSTALL_PREFIX})
+    install(TARGETS ${LIB_PROJECT_NAME} EXPORT ${LIB_PROJECT_NAME}-targets 
+            ARCHIVE DESTINATION lib 
+            LIBRARY DESTINATION lib 
+            RUNTIME DESTINATION bin)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
+    # generate LiveKitCppClient-config.cmake and LiveKitCppClient-config-version.cmake files
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+    configure_package_config_file("${LIB_PROJECT_NAME}Config.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config.cmake"
+        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_PROJECT_NAME}")
+    write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config-version.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion)
+    # install config and version file
+    install(
+        FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config-version.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_PROJECT_NAME}")
+    # install targets file
+    install(EXPORT "${LIB_PROJECT_NAME}-targets" 
+        NAMESPACE "${LIB_PROJECT_NAME}::"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_PROJECT_NAME}")
+endif()
