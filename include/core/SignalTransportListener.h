@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalTransportListener.h
+#include "LiveKitClientExport.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -19,7 +20,7 @@ namespace LiveKitCpp
 
 enum class State;
 
-class SignalTransportListener
+class LIVEKIT_CLIENT_API SignalTransportListener
 {
 public:
     virtual void onTransportStateChanged(uint64_t /*signalClientId*/, State /*state*/) {}

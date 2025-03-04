@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "LiveKitClientExport.h"
 #include "State.h"
 #include "WebsocketCloseCode.h"
 #include "WebsocketOptions.h"
@@ -23,7 +24,7 @@ namespace LiveKitCpp
 
 class WebsocketListener;
 
-class Websocket : public CommandSender
+class LIVEKIT_CLIENT_API Websocket : public CommandSender
 {
 public:
     ~Websocket() override = default;

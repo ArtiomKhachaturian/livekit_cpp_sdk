@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "LiveKitClientExport.h"
 #include <string_view>
 #include <memory>
 
@@ -22,7 +23,7 @@ class MemoryBlock;
 class WebsocketError;
 enum class State;
 
-class WebsocketListener
+class LIVEKIT_CLIENT_API WebsocketListener
 {
 public:
     virtual void onStateChanged(uint64_t /*socketId*/, uint64_t /*connectionId*/,

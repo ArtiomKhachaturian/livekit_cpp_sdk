@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalClient.h
+#include "LiveKitClientExport.h"
 #include <memory>
 #include <string>
 #include "State.h"
@@ -42,7 +43,7 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class SignalClient
+class LIVEKIT_CLIENT_API SignalClient
 {
     class Impl;
 public:

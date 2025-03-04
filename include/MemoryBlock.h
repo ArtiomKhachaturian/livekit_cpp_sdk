@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MemoryBlock.h
+#include "LiveKitClientExport.h"
 #include <memory>
 #include <vector>
 
@@ -19,7 +20,7 @@ namespace LiveKitCpp
 {
 
 // implementation maybe thread-safe (but not neccessary) & exceptions-free
-class MemoryBlock
+class LIVEKIT_CLIENT_API MemoryBlock
 {
 public:
     virtual ~MemoryBlock() = default;

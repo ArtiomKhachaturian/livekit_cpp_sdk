@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "LiveKitClientExport.h"
 #include <exception>
 #include <ostream>
 #include <string>
@@ -31,7 +32,7 @@ enum class WebsocketFailure
     TlsOptions
 };
 
-class WebsocketError
+class LIVEKIT_CLIENT_API WebsocketError
 {
 public:
     WebsocketError(WebsocketFailure type, std::error_code code,
@@ -48,9 +49,9 @@ private:
     std::string _details;
 };
 
-const char* toString(WebsocketFailure failure);
-std::string toString(const WebsocketError& error);
+LIVEKIT_CLIENT_API const char* toString(WebsocketFailure failure);
+LIVEKIT_CLIENT_API std::string toString(const WebsocketError& error);
 
 } // namespace LiveKitCpp
 
-std::ostream& operator << (std::ostream& os, const LiveKitCpp::WebsocketError& error);
+LIVEKIT_CLIENT_API std::ostream& operator << (std::ostream& os, const LiveKitCpp::WebsocketError& error);

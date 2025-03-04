@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "LiveKitClientExport.h"
 #include <memory>
 #include <string>
 
@@ -20,7 +21,7 @@ namespace LiveKitCpp
 
 class Websocket;
 
-class WebsocketFactory
+class LIVEKIT_CLIENT_API WebsocketFactory
 {
 public:
     virtual ~WebsocketFactory() = default;

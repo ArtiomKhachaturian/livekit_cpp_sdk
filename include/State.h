@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "LiveKitClientExport.h"
 
 namespace LiveKitCpp
 {
@@ -24,6 +25,6 @@ enum class State
     Disconnected,
 };
 
-const char* toString(State state);
+LIVEKIT_CLIENT_API const char* toString(State state);
 
 } // namespace LiveKitCpp

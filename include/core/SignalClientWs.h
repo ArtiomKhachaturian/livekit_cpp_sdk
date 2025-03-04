@@ -22,8 +22,8 @@ namespace LiveKitCpp
 class Websocket;
 class WebsocketFactory;
 
-class SignalClientWs : public SignalClient,
-                       private WebsocketListener
+class LIVEKIT_CLIENT_API SignalClientWs : public SignalClient,
+                                          private WebsocketListener
 {
 public:
     SignalClientWs(std::unique_ptr<Websocket> socket);

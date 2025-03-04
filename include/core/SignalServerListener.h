@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalServerListener.h
+#include "LiveKitClientExport.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -37,7 +38,7 @@ struct RequestResponse;
 struct SubscriptionResponse;
 struct SubscriptionPermissionUpdate;
 
-class SignalServerListener
+class LIVEKIT_CLIENT_API SignalServerListener
 {
 public:
     virtual void onJoin(uint64_t /*signalClientId*/, const JoinResponse& /*response*/) {}
