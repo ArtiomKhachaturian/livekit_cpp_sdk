@@ -14,7 +14,7 @@
 #include "Websocket.h"
 #include "WebsocketFailure.h"
 #ifdef USE_ZAPHOYD_TPP_SOCKETS
-#include "zaphoyd_tpp/WebsocketTppFactory.h"
+#include "WebsocketTppFactory.h"
 #else
 #include "WebsocketFactory.h"
 #endif
@@ -28,15 +28,6 @@ std::string base64Encode(const uint8_t* data, size_t len);
 inline std::string base64Encode(const std::string_view& str) {
     return base64Encode(reinterpret_cast<const uint8_t*>(str.data()), str.size());
 }
-
-#ifndef USE_ZAPHOYD_TPP_SOCKETS
-class NullFactory : public LiveKitCpp::WebsocketFactory
-{
-public:
-    NullFactory() = default;
-    std::unique_ptr<LiveKitCpp::Websocket> create() const final { return {}; }
-};
-#endif
 
 }
 
@@ -95,14 +86,13 @@ WebsocketError WebsocketError::fromSystemError(WebsocketFailure type,
     return WebsocketError(type, error.code(), error.what());
 }
 
-const WebsocketFactory& WebsocketFactory::defaultFactory()
+std::shared_ptr<WebsocketFactory> WebsocketFactory::defaultFactory()
 {
 #ifdef USE_ZAPHOYD_TPP_SOCKETS
-    static const WebsocketTppFactory factory;
-#else
-    static const NullFactory factory;
-#endif
+    static const auto factory = std::make_shared<WebsocketTppFactory>();
     return factory;
+#endif
+    return {};
 }
 
 const char* toString(WebsocketFailure failure) {

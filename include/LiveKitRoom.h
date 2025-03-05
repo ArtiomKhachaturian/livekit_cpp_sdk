@@ -25,12 +25,12 @@ class LIVEKIT_CLIENT_API LiveKitRoom
 {
     struct Impl;
 public:
-    LiveKitRoom();
+    /*LiveKitRoom();
     LiveKitRoom(const WebsocketFactory& factory);
     LiveKitRoom(std::unique_ptr<Websocket> socket);
-    ~LiveKitRoom();
+    ~LiveKitRoom();*/
 private:
-    const std::unique_ptr<Impl> _impl;
+   // const std::unique_ptr<Impl> _impl;
 };
 
 } // namespace LiveKitCpp

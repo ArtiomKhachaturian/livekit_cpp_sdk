@@ -11,23 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "LiveKitClientExport.h"
-#include <memory>
-#include <string>
+#pragma once // LiveKitServiceState.h
 
 namespace LiveKitCpp
 {
 
-class Websocket;
-
-class LIVEKIT_CLIENT_API WebsocketFactory
+enum class LiveKitServiceState
 {
-public:
-    virtual ~WebsocketFactory() = default;
-    virtual std::unique_ptr<Websocket> create() const = 0;
-    // valid factory only if [USE_ZAPHOYD_TPP_SOCKETS] was ON for the library
-    static std::shared_ptr<WebsocketFactory> defaultFactory();
+    OK,
+    WSAFailure, // Windows only
+    SSLInitError,
+    NoWebsoketsFactory,
+    NoWebRTC,
+    WebRTCInitError
 };
 
 } // namespace LiveKitCpp

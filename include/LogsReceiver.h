@@ -11,23 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "LiveKitClientExport.h"
-#include <memory>
-#include <string>
+#pragma once // LogsReceiver.h
+#include "LoggingSeverity.h"
+#include <string_view>
 
 namespace LiveKitCpp
 {
 
-class Websocket;
-
-class LIVEKIT_CLIENT_API WebsocketFactory
+class LogsReceiver
 {
 public:
-    virtual ~WebsocketFactory() = default;
-    virtual std::unique_ptr<Websocket> create() const = 0;
-    // valid factory only if [USE_ZAPHOYD_TPP_SOCKETS] was ON for the library
-    static std::shared_ptr<WebsocketFactory> defaultFactory();
+    virtual ~LogsReceiver() = default;
+    virtual void onLog(LoggingSeverity severity, std::string_view log) = 0;
+    void onVerbose(std::string_view log) { onLog(LoggingSeverity::Verbose, log); }
+    void onInfo(std::string_view log) { onLog(LoggingSeverity::Info, log); }
+    void onWarning(std::string_view log) { onLog(LoggingSeverity::Warning, log); }
+    void onError(std::string_view log) { onLog(LoggingSeverity::Error, log); }
 };
 
 } // namespace LiveKitCpp

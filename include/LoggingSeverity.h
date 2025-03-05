@@ -11,23 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "LiveKitClientExport.h"
-#include <memory>
-#include <string>
+#pragma once // LoggingSeverity.h
 
 namespace LiveKitCpp
 {
 
-class Websocket;
-
-class LIVEKIT_CLIENT_API WebsocketFactory
+// The meanings of the levels are:
+//  Verbose: This level is for data which we do not want to appear in the
+//   normal debug log, but should appear in diagnostic logs.
+//  Info: Chatty level used in debugging for all sorts of things, the default
+//   in debug builds.
+//  Warning: Something that may warrant investigation.
+//  Error: Something that should not have occurred.
+enum class LoggingSeverity
 {
-public:
-    virtual ~WebsocketFactory() = default;
-    virtual std::unique_ptr<Websocket> create() const = 0;
-    // valid factory only if [USE_ZAPHOYD_TPP_SOCKETS] was ON for the library
-    static std::shared_ptr<WebsocketFactory> defaultFactory();
+    Verbose,
+    Info,
+    Warning,
+    Error,
 };
 
 } // namespace LiveKitCpp

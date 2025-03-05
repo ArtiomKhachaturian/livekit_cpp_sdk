@@ -218,6 +218,7 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core
     ${CMAKE_CURRENT_SOURCE_DIR}/include/websocket
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service
+    ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )
@@ -231,7 +232,8 @@ if (USE_ZAPHOYD_TPP_SOCKETS)
     if (ZAPHOYD_SHARED_IO_SERVICE)
         target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
     endif(ZAPHOYD_SHARED_IO_SERVICE)
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} ${ASIO_HDRS_DIR} ${OPENSSL_INCLUDE_DIRS})
+    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} 
+        ${ASIO_HDRS_DIR} ${OPENSSL_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp)
     if (WIN32)
         target_link_libraries(${LIB_PROJECT_NAME} PUBLIC "ws2_32.lib")
     endif(WIN32)
@@ -240,7 +242,8 @@ endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # WebRTC
 if (WEBRTC_AVAILABLE)
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR})
+    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR}
+        ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
     target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
     if (APPLE)
         target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)

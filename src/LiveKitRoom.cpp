@@ -31,7 +31,7 @@ struct LiveKitRoom::Impl : public SignalServerListener, public SignalTransportLi
     const std::unique_ptr<SignalClientWs> _client;
 };
 
-LiveKitRoom::LiveKitRoom()
+/*LiveKitRoom::LiveKitRoom()
     : LiveKitRoom(WebsocketFactory::defaultFactory())
 {
 }
@@ -65,7 +65,7 @@ std::unique_ptr<LiveKitRoom::Impl> LiveKitRoom::Impl::create(std::unique_ptr<Web
         return std::make_unique<Impl>(std::move(socket));
     }
     return {};
-}
+}*/
 #else
 struct LiveKitRoom::Impl {};
     
