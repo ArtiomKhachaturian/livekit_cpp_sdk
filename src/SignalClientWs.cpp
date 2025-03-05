@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 #include "SignalClientWs.h"
-#include "MemoryBlock.h"
 #include "WebsocketBlob.h"
 #include "WebsocketEndPoint.h"
 #include "WebsocketFailure.h"
@@ -185,7 +184,7 @@ void SignalClientWs::updateState(Websocket::State state)
     }
 }
 
-bool SignalClientWs::sendBinary(const std::shared_ptr<MemoryBlock>& binary)
+bool SignalClientWs::sendBinary(const std::shared_ptr<Websocket::Blob>& binary)
 {
     if (_socket) {
         return _socket->sendBinary(binary);

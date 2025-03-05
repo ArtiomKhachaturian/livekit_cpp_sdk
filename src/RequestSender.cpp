@@ -13,9 +13,24 @@
 // limitations under the License.
 #include "RequestSender.h"
 #include "CommandSender.h"
-#include "MemoryBlock.h"
+#include "WebsocketBlob.h"
 
 using Request = livekit::SignalRequest;
+
+namespace {
+
+class VectorBlob : public Websocket::Blob
+{
+public:
+    VectorBlob(std::vector<uint8_t> data);
+    // impl. of Websocket::Blob
+    size_t size() const noexcept final { return _data.size(); }
+    const uint8_t* data() const noexcept final { return _data.data(); }
+private:
+    const std::vector<uint8_t> _data;
+};
+
+}
 
 namespace LiveKitCpp
 {
@@ -118,8 +133,8 @@ bool RequestSender::send(const TSetMethod& setMethod, const TObject& object) con
         Request request;
         if (const auto target = (request.*setMethod)()) {
             *target = _signals.map(object);
-            if (const auto block = toMemBlock(request)) {
-                return _commandSender->sendBinary(block);
+            if (const auto blob = toBlob(request)) {
+                return _commandSender->sendBinary(blob);
             }
         }
     }
@@ -137,9 +152,22 @@ std::vector<uint8_t> RequestSender::toBytes(const google::protobuf::MessageLite&
     return {};
 }
 
-std::shared_ptr<MemoryBlock> RequestSender::toMemBlock(const google::protobuf::MessageLite& proto)
+std::shared_ptr<Websocket::Blob> RequestSender::toBlob(const google::protobuf::MessageLite& proto)
 {
-    return MemoryBlock::make(toBytes(proto));
+    auto bytes = toBytes(proto);
+    if (!bytes.empty()) {
+        return std::make_shared<VectorBlob>(std::move(bytes));
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp
+
+namespace {
+
+VectorBlob::VectorBlob(std::vector<uint8_t> data)
+    : _data(std::move(data))
+{
+}
+
+}

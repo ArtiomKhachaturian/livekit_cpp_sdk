@@ -20,6 +20,10 @@ namespace google::protobuf {
 class MessageLite;
 }
 
+namespace Websocket {
+class Blob;
+}
+
 namespace LiveKitCpp
 {
 
@@ -68,7 +72,7 @@ private:
     template <class TSetMethod, class TObject>
     bool send(const TSetMethod& setMethod, const TObject& object) const;
     static std::vector<uint8_t> toBytes(const google::protobuf::MessageLite& proto);
-    static std::shared_ptr<MemoryBlock> toMemBlock(const google::protobuf::MessageLite& proto);
+    static std::shared_ptr<Websocket::Blob> toBlob(const google::protobuf::MessageLite& proto);
 private:
     CommandSender* const _commandSender;
     const Signals _signals;

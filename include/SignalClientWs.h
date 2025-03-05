@@ -49,7 +49,7 @@ public:
 private:
     void updateState(Websocket::State state);
     // impl. of CommandSender
-    bool sendBinary(const std::shared_ptr<MemoryBlock>& binary) final;
+    bool sendBinary(const std::shared_ptr<Websocket::Blob>& binary) final;
 private:
     const std::unique_ptr<Listener> _socketListener;
     const std::unique_ptr<Websocket::EndPoint> _socket;

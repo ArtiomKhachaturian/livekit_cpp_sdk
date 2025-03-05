@@ -15,15 +15,17 @@
 #include <memory>
 #include <string>
 
+namespace Websocket {
+class Blob;
+}
+
 namespace LiveKitCpp
 {
-
-class MemoryBlock;
 
 class CommandSender
 {
 public:
-    virtual bool sendBinary(const std::shared_ptr<MemoryBlock>& /*binary*/) {
+    virtual bool sendBinary(const std::shared_ptr<Websocket::Blob>& /*binary*/) {
         return false;
     }
     virtual bool sendText(const std::string_view& /*text*/) { return false; }
