@@ -22,7 +22,7 @@
 #include "LiveKitRoomOptions.h"
 #include "Transport.h"
 #include "PeerConnectionFactory.h"
-#include "websocket/WebsocketFactory.h"
+#include "WebsocketFactory.h"
 #include "rtc/JoinResponse.h"
 #endif
 #include "WebsocketEndPoint.h"
