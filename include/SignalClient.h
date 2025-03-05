@@ -47,6 +47,13 @@ struct UpdateLocalVideoTrack;
 class LIVEKIT_CLIENT_API SignalClient
 {
     class Impl;
+protected:
+    enum class ChangeTransportStateResult
+    {
+        Changed,
+        NotChanged,
+        Rejected
+    };
 public:
     SignalClient(CommandSender* commandSender, LogsReceiver* logger = nullptr);
     virtual ~SignalClient();
@@ -76,7 +83,7 @@ public:
     bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
 protected:
-    bool changeTransportState(State state);
+    ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
     void handleServerProtobufMessage(const std::shared_ptr<const MemoryBlock>& message);
     void handleServerProtobufMessage(const void* message, size_t len);

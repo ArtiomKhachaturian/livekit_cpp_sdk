@@ -28,19 +28,19 @@ public:
     bool canLogInfo() const { return canLog(LoggingSeverity::Info); }
     bool canLogWarning() const { return canLog(LoggingSeverity::Warning); }
     bool canLogError() const { return canLog(LoggingSeverity::Error); }
-    virtual void onLog(LoggingSeverity severity, std::string_view log,
-                       std::string_view category = {}) = 0;
-    void onVerbose(std::string_view log, std::string_view category = {}) {
-        onLog(LoggingSeverity::Verbose, log, category);
+    virtual void log(LoggingSeverity severity, std::string_view message,
+                     std::string_view category = {}) = 0;
+    void logVerbose(std::string_view message, std::string_view category = {}) {
+        log(LoggingSeverity::Verbose, message, category);
     }
-    void onInfo(std::string_view log, std::string_view category = {}) {
-        onLog(LoggingSeverity::Info, log, category);
+    void logInfo(std::string_view message, std::string_view category = {}) {
+        log(LoggingSeverity::Info, message, category);
     }
-    void onWarning(std::string_view log, std::string_view category = {}) {
-        onLog(LoggingSeverity::Warning, log, category);
+    void logWarning(std::string_view message, std::string_view category = {}) {
+        log(LoggingSeverity::Warning, message, category);
     }
-    void onError(std::string_view log, std::string_view category = {}) {
-        onLog(LoggingSeverity::Error, log, category);
+    void logError(std::string_view message, std::string_view category = {}) {
+        log(LoggingSeverity::Error, message, category);
     }
 };
 

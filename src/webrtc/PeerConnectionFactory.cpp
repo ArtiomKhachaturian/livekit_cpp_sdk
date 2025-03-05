@@ -51,13 +51,13 @@ inline std::unique_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
             return thread;
         }
         if (logger) {
-            logger->onError("Failed to start of '" + std::string(threadName)
-                            + "' thread", g_pcfInit);
+            logger->logError("Failed to start of '" + std::string(threadName)
+                             + "' thread", g_pcfInit);
         }
     }
     else if (logger) {
-        logger->onError("Failed to create of '" + std::string(threadName)
-                        + "' thread", g_pcfInit);
+        logger->logError("Failed to create of '" + std::string(threadName)
+                         + "' thread", g_pcfInit);
     }
     return nullptr;
 }
@@ -163,7 +163,7 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::Create(bool 
                                                                std::move(pcf));
     }
     if (logger) {
-        logger->onError("Failed to create modular peer connection factory", g_pcfInit);
+        logger->logError("Failed to create modular peer connection factory", g_pcfInit);
     }
     return {};
 }

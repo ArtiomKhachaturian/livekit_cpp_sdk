@@ -66,7 +66,7 @@ inline void Loggable<TLoggerPointerType, BaseInterfaces...>::
     log(LoggingSeverity severity, std::string_view message, std::string_view category) const
 {
     if (_logger) {
-        _logger->onLog(severity, message, category);
+        _logger->log(severity, message, category);
     }
 }
 

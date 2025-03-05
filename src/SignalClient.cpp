@@ -28,7 +28,7 @@ class SignalClient::Impl : public LoggableRaw<>
 public:
     Impl(uint64_t id, LogsReceiver* logger = nullptr);
     State transportState() const noexcept;
-    bool changeTransportState(State state);
+    ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
     void addListener(SignalTransportListener* listener);
     void removeListener(SignalTransportListener* listener);
@@ -71,7 +71,7 @@ void SignalClient::removeServerListener(SignalServerListener* listener)
 
 bool SignalClient::connect()
 {
-    return changeTransportState(State::Connected);
+    return ChangeTransportStateResult::Rejected != changeTransportState(State::Connected);
 }
 
 void SignalClient::disconnect()
@@ -164,7 +164,7 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
     return _requestSender->updateVideoTrack(track);
 }
 
-bool SignalClient::changeTransportState(State state)
+SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
 }
@@ -198,12 +198,13 @@ State SignalClient::Impl::transportState() const noexcept
     return _transportState.constRef();
 }
 
-bool SignalClient::Impl::changeTransportState(State state)
+SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportState(State state)
 {
-    bool accepted = false, changed = false;
+    ChangeTransportStateResult result = ChangeTransportStateResult::Rejected;
     {
         LOCK_WRITE_PROTECTED_OBJ(_transportState);
         if (_transportState != state) {
+            bool accepted = false;
             switch(_transportState.constRef()) {
                 case State::Connecting:
                     // any state is good
@@ -229,17 +230,17 @@ bool SignalClient::Impl::changeTransportState(State state)
                                "Transport_Level");
                 }
                 _transportState = state;
-                changed = true;
+                result = ChangeTransportStateResult::Changed;
             }
         }
         else {
-            accepted = true;
+            result = ChangeTransportStateResult::NotChanged;
         }
     }
-    if (changed) {
+    if (ChangeTransportStateResult::Changed == result) {
         _listeners.invokeMethod(&SignalTransportListener::onTransportStateChanged, _id, state);
     }
-    return accepted;
+    return result;
 }
 
 void SignalClient::Impl::notifyAboutTransportError(const std::string& error)

@@ -171,7 +171,7 @@ bool LiveKitService::Impl::sslInitialized(const std::shared_ptr<LogsReceiver>& l
 {
     static const SSLInitiallizer initializer;
     if (!initializer && logger && logger->canLogError()) {
-        logger->onError("Failed to SSL initialization", g_logCategory);
+        logger->logError("Failed to SSL initialization", g_logCategory);
     }
     return initializer.initialized();
 }
@@ -182,14 +182,14 @@ bool LiveKitService::Impl::wsaInitialized(const std::shared_ptr<LogsReceiver>& l
     static const WSAInitializer initializer;
     if (const auto error = initializer.GetError()) {
         if (logger && logger->canLogError()) {
-            logger->onError("Failed to WINSOCK initialization, error code: " + std::to_string(error), g_srvInit);
+            logger->logError("Failed to WINSOCK initialization, error code: " + std::to_string(error), g_srvInit);
         }
         return false;
     }
     if (logger && && logger->canLogVerbose()) {
         const auto& wsaVersion = initializer.GetSelectedVersion();
         if (wsaVersion.has_value()) {
-            logger->onVerbose("WINSOCK initialization is done, library version: " +
+            logger->logVerbose("WINSOCK initialization is done, library version: " +
                               WSAInitializer::ToString(wsaVersion.value()), g_srvInit);
         }
     }
@@ -220,18 +220,18 @@ void LiveKitService::Impl::logPlatformDefects(const std::shared_ptr<LogsReceiver
         std::string envErrorInfo;
         const auto status = checkAppEnivonment(AESNoProblems, &envErrorInfo);
         if (AESNoProblems != status) {
-            logger->onWarning("Some features of LiveKit SDK may be works incorrectly, see details below:", g_logCategory);
+            logger->logWarning("Some features of LiveKit SDK may be works incorrectly, see details below:", g_logCategory);
             if (testFlag<AESNoGuiThread>(status)) {
-                logger->onWarning(" - main thread is not available", g_logCategory);
+                logger->logWarning(" - main thread is not available", g_logCategory);
             }
             if (testFlag<AESNoInfoPlist>(status)) {
-                logger->onWarning(" - application bundle info dictionary doesn't exist", g_logCategory);
+                logger->logWarning(" - application bundle info dictionary doesn't exist", g_logCategory);
             }
             if (testFlag<AESIncompleteInfoPlist>(status)) {
-                logger->onWarning(" - application bundle info dictionary is incomplete", g_logCategory);
+                logger->logWarning(" - application bundle info dictionary is incomplete", g_logCategory);
             }
             if (!envErrorInfo.empty()) {
-                logger->onWarning(" - additional error info: " + envErrorInfo, g_logCategory);
+                logger->logWarning(" - additional error info: " + envErrorInfo, g_logCategory);
             }
         }
 #endif

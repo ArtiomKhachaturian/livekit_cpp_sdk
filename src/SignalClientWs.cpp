@@ -126,10 +126,13 @@ void SignalClientWs::setParticipantSid(std::string participantSid)
 bool SignalClientWs::connect()
 {
     bool ok = false;
-    if (_socket && changeTransportState(State::Connecting)) {
-        ok = _socket->open(buildWebsocketOptions());
-        if (!ok) {
-            changeTransportState(State::Disconnected);
+    if (_socket) {
+        const auto result = changeTransportState(State::Connecting);
+        if (ChangeTransportStateResult::Changed == result) {
+            ok = _socket->open(buildWebsocketOptions());
+            if (!ok) {
+                changeTransportState(State::Disconnected);
+            }
         }
     }
     return ok;
@@ -183,9 +186,7 @@ void SignalClientWs::onStateChanged(uint64_t socketId, uint64_t connectionId,
                                     State state)
 {
     WebsocketListener::onStateChanged(socketId, connectionId, host, state);
-    if (changeTransportState(state)) {
-        // TODO: primary logic
-    }
+    changeTransportState(state);
 }
 
 void SignalClientWs::onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
