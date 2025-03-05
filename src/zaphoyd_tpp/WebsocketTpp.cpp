@@ -417,11 +417,8 @@ void WebsocketTpp::Impl<TClientType>::destroy()
                     return;
                 }
                 catch (const std::exception& e) {
-                    _client.set_close_handler(nullptr);
                     // ignore of failures during closing
-                    if (_errorLogStream.canLogError()) {
-                        _errorLogStream.logError(e.what(), g_logCategory);
-                    }
+                    _client.set_close_handler(nullptr);
                 }
             }
         }
