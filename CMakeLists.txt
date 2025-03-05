@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 set(LIB_PROJECT_NAME LiveKitCppClient)
+set(ZAPHOYD_TPP_PROJ ZaphoydTppWebSockets)
 
 # Project name
 project(${LIB_PROJECT_NAME} LANGUAGES CXX VERSION 0.0.1)
@@ -234,19 +235,24 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
 
 # Websockets
 if (USE_ZAPHOYD_TPP_SOCKETS)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
+    add_library(${ZAPHOYD_TPP_PROJ} SHARED
+        ${ZAPHOYD_TPP_HEADERS}
+        ${ZAPHOYD_TPP_SOURCES}
+        ${WEBSOCKETS_API_HEADERS}
+    )
+    target_compile_definitions(${ZAPHOYD_TPP_PROJ} PRIVATE -DASIO_STANDALONE)
     if (WIN32)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -D_WEBSOCKETPP_CPP11_STL_)
+        target_compile_definitions(${ZAPHOYD_TPP_PROJ} PRIVATE -D_WEBSOCKETPP_CPP11_STL_)
     endif()
     if (ZAPHOYD_SHARED_IO_SERVICE)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
+        target_compile_definitions(${ZAPHOYD_TPP_PROJ} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
     endif(ZAPHOYD_SHARED_IO_SERVICE)
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} 
+    target_include_directories(${ZAPHOYD_TPP_PROJ} PRIVATE ${TPP_HDRS_DIR} 
         ${ASIO_HDRS_DIR} ${OPENSSL_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp)
     if (WIN32)
-        target_link_libraries(${LIB_PROJECT_NAME} PUBLIC "ws2_32.lib")
+        target_link_libraries(${ZAPHOYD_TPP_PROJ} PUBLIC "ws2_32.lib")
     endif(WIN32)
-    target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${OPENSSL_LIBRARIES})
+    target_link_libraries(${ZAPHOYD_TPP_PROJ} PUBLIC ${OPENSSL_LIBRARIES})
 endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # WebRTC
