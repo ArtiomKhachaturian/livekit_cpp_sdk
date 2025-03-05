@@ -14,12 +14,23 @@
 #pragma once // Utils.h
 #include <string>
 
+#ifdef __APPLE__
+#ifdef __OBJC__
+@class NSString;
+#else
+typedef struct objc_object NSString;
+#endif
+#endif // WEBRTC_MAC
+
 namespace LiveKitCpp
 {
 
+std::string NSStringToStdString(NSString* nsString);
 std::string operatingSystemVersion();
 std::string operatingSystemName();
 std::string modelIdentifier();
 std::string fromWideChar(const std::wstring& w);
+template <unsigned flag>
+inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }
 
 } // namespace LiveKitCpp

@@ -14,15 +14,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
-option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
 
-# Specify source files
-file(GLOB_RECURSE PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
-file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/src/*.h)
-file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+set(HEADER_FILE_EXT h)
+set(SOURCE_FILE_EXT cpp)
+
 if (APPLE)
-    file(GLOB_RECURSE OBJC_SOURCES ${CMAKE_SOURCE_DIR}/src/*.mm)
-    list(APPEND CPP_SOURCES ${OBJC_SOURCES})
+    set(PLATFORM_SRC_EXT mm)
+    set(PLATFORM_SRC_FOLDER mac)
+else()
+    set(PLATFORM_SRC_EXT ${SOURCE_FILE_EXT})
+    if (WIN32)
+        set(PLATFORM_SRC_FOLDER win)
+    else()
+        message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}")
+    endif(WIN32)
 endif(APPLE)
 
 # Generate C++ code from proto files
@@ -30,6 +35,16 @@ find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
 find_package(absl REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
 
+# Specify source files
+file(GLOB_RECURSE PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/*.${HEADER_FILE_EXT})
+file(GLOB COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/*.${SOURCE_FILE_EXT})
+file(GLOB_RECURSE SERVICE_HEADERS ${CMAKE_SOURCE_DIR}/src/service/*.${HEADER_FILE_EXT})
+file(GLOB_RECURSE SERVICE_SOURCES ${CMAKE_SOURCE_DIR}/src/service/*.${SOURCE_FILE_EXT})
+file(GLOB_RECURSE PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
+file(GLOB_RECURSE PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
+
+
+option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
 set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
 set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
 
@@ -112,73 +127,13 @@ if (USE_ZAPHOYD_TPP_SOCKETS)
     downloadAndExtract(${ASIO_ZIP_URL} ${CMAKE_BINARY_DIR}/asio.zip ${ASIO_SRC_DIR})
     set(TPP_HDRS_DIR ${TPP_SRC_DIR}/websocketpp-master)
     set(ASIO_HDRS_DIR ${ASIO_SRC_DIR}/asio-1.30.2/include)
+    file(GLOB_RECURSE ZAPHOYD_TPP_HEADERS ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp/*.${HEADER_FILE_EXT})
+    file(GLOB_RECURSE ZAPHOYD_TPP_SOURCES ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp/*.${SOURCE_FILE_EXT})
 endif(USE_ZAPHOYD_TPP_SOCKETS)
 
-# Create a static library
-add_library(${LIB_PROJECT_NAME} SHARED
-    ${PUBLIC_HEADERS}
-    ${CPP_HEADERS}
-    ${CPP_SOURCES}
-    ${PROTO_SOURCES} # Add generated .cpp files
-    ${PROTO_HEADERS}
-)
-
-source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_SOURCES})
-source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_HEADERS})
-source_group(TREE ${CMAKE_SOURCE_DIR}/include PREFIX "PublicHeaders" FILES ${PUBLIC_HEADERS})
-source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Headers" FILES ${CPP_HEADERS})
-source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Sources" FILES ${CPP_SOURCES})
-
-# Add include directories
-target_include_directories(${LIB_PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/websocket
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/service
-    ${CMAKE_BINARY_DIR}
-    ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
-)
-
-# Websockets
-if (USE_ZAPHOYD_TPP_SOCKETS)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
-    if (WIN32)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -D_WEBSOCKETPP_CPP11_STL_)
-    endif()
-    if (ZAPHOYD_SHARED_IO_SERVICE)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
-    endif(ZAPHOYD_SHARED_IO_SERVICE)
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} ${ASIO_HDRS_DIR} ${OPENSSL_INCLUDE_DIRS})
-    if (WIN32)
-        target_link_libraries(${LIB_PROJECT_NAME} PUBLIC "ws2_32.lib")
-    endif(WIN32)
-    target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${OPENSSL_LIBRARIES})
-endif(USE_ZAPHOYD_TPP_SOCKETS)
-
-# Link Protobuf library
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
-# Link abseil
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
-# Generic attributes for the library
-set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
-if (APPLE)
-    set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
-    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
-elseif(WIN32)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
-endif()
-target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
 # WebRTC -> TODO: split WEBRTC_LIB_DIR for all configurations (debug/release/...)
 if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
     message(STATUS "Found WebRTC")
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR})
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWERTC_AVAILABLE)
-    if (APPLE)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
-        target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
-    elseif(WIN32)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -RTC_ENABLE_WIN_WGC)
-    endif()
     set(WEBRTC_LIBS
         "audio_decoder_g711"
         "audio_decoder_g722"
@@ -228,8 +183,88 @@ if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
         message(FATAL_ERROR "Static library ${WEBRTC_LIB} was not found")
     endif()
     endforeach()
+    set(WEBRTC_AVAILABLE TRUE)
+    file(GLOB_RECURSE WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
+    file(GLOB_RECURSE WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
+endif()
+
+# Create a static library
+add_library(${LIB_PROJECT_NAME} SHARED
+    ${PUBLIC_HEADERS}
+    ${COMMON_SOURCES}
+    ${PLATFORM_HEADERS}
+    ${PLATFORM_SOURCES}
+    ${SERVICE_HEADERS}
+    ${SERVICE_SOURCES}
+    ${ZAPHOYD_TPP_HEADERS}
+    ${ZAPHOYD_TPP_SOURCES}
+    ${WEBRTC_HEADERS}
+    ${WEBRTC_SOURCES}
+    ${PROTO_SOURCES} # Add generated .cpp files
+    ${PROTO_HEADERS}
+)
+
+source_group(TREE ${CMAKE_SOURCE_DIR}/include PREFIX "PublicHeaders" FILES ${PUBLIC_HEADERS})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Sources" FILES ${COMMON_SOURCES})
+source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_HEADERS} ${PROTO_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER} PREFIX "Platform" FILES ${PLATFORM_HEADERS} ${PLATFORM_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/service PREFIX "Service" FILES ${SERVICE_HEADERS} ${SERVICE_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp PREFIX "ZaphoydTpp" FILES ${ZAPHOYD_TPP_HEADERS} ${ZAPHOYD_TPP_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_HEADERS} ${WEBRTC_SOURCES})
+
+# Add include directories
+target_include_directories(${LIB_PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/websocket
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/service
+    ${CMAKE_BINARY_DIR}
+    ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
+)
+
+# Websockets
+if (USE_ZAPHOYD_TPP_SOCKETS)
+    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
+    if (WIN32)
+        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -D_WEBSOCKETPP_CPP11_STL_)
+    endif()
+    if (ZAPHOYD_SHARED_IO_SERVICE)
+        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
+    endif(ZAPHOYD_SHARED_IO_SERVICE)
+    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} ${ASIO_HDRS_DIR} ${OPENSSL_INCLUDE_DIRS})
+    if (WIN32)
+        target_link_libraries(${LIB_PROJECT_NAME} PUBLIC "ws2_32.lib")
+    endif(WIN32)
+    target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${OPENSSL_LIBRARIES})
+endif(USE_ZAPHOYD_TPP_SOCKETS)
+
+# WebRTC
+if (WEBRTC_AVAILABLE)
+    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR})
+    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
+    if (APPLE)
+        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
+        target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
+    elseif(WIN32)
+        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -RTC_ENABLE_WIN_WGC)
+    endif()
     target_link_libraries(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_LIB_FILES})
 endif()
+
+# Link Protobuf library
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
+# Link abseil
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+# Generic attributes for the library
+set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
+if (APPLE)
+    set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
+    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
+elseif(WIN32)
+    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+endif()
+target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
+
 
 # test application
 if (USE_ZAPHOYD_TPP_SOCKETS)

@@ -11,26 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoom.h
-#include "LiveKitClientExport.h"
-#include <memory>
+#pragma once // AppEnvironment.h
+#ifdef __APPLE__
+#include <string>
 
 namespace LiveKitCpp
 {
 
-class Websocket;
-class WebsocketFactory;
+// constants for AppEnvironmentStatus
+inline constexpr unsigned AESNoProblems = 0x0000;
+inline constexpr unsigned AESNoGuiThread = 0x0001;
+inline constexpr unsigned AESNoInfoPlist = 0x0002;
+inline constexpr unsigned AESIncompleteInfoPlist = 0x0004;
 
-class LIVEKIT_CLIENT_API LiveKitRoom
-{
-    struct Impl;
-public:
-    LiveKitRoom();
-    LiveKitRoom(const WebsocketFactory& factory);
-    LiveKitRoom(std::unique_ptr<Websocket> socket);
-    ~LiveKitRoom();
-private:
-    const std::unique_ptr<Impl> _impl;
-};
+unsigned checkAppEnivonment(unsigned expectedStatus = AESNoProblems,
+                            std::string* additionalErrorInfo = nullptr);
+std::string formatStatusMessage(unsigned status, std::string additionalInfo = std::string());
 
 } // namespace LiveKitCpp
+#endif

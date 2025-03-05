@@ -11,26 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoom.h
-#include "LiveKitClientExport.h"
-#include <memory>
+#pragma once // WebRtcLogSink.h
+#include <rtc_base/logging.h>
+#include <optional>
 
 namespace LiveKitCpp
 {
 
-class Websocket;
-class WebsocketFactory;
-
-class LIVEKIT_CLIENT_API LiveKitRoom
+class WebRtcLogSink : public rtc::LogSink
 {
-    struct Impl;
 public:
-    LiveKitRoom();
-    LiveKitRoom(const WebsocketFactory& factory);
-    LiveKitRoom(std::unique_ptr<Websocket> socket);
-    ~LiveKitRoom();
+    WebRtcLogSink();
+    ~WebRtcLogSink() override;
 private:
-    const std::unique_ptr<Impl> _impl;
+    // impl. of rtc::LogSink
+    void OnLogMessage(const std::string& message,
+                      rtc::LoggingSeverity severity)  final;
+    void OnLogMessage(const std::string& message) final;
+    void OnLogMessage(absl::string_view message,
+                      rtc::LoggingSeverity severity) final;
+    void OnLogMessage(absl::string_view message) final;
 };
 
 } // namespace LiveKitCpp

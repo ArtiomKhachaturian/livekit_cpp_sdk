@@ -14,19 +14,26 @@
 #include "Utils.h"
 #import <Foundation/Foundation.h>
 
-namespace {
+namespace LiveKitCpp
+{
 
-inline std::string NSStringToStdString(NSString* nsString) {
-    if (nsString) {
+std::string NSStringToStdString(NSString* nsString)
+{
+    /*if (nsString) {
         return std::string(nsString.UTF8String);
+    }
+    return {};*/
+    if (nsString) {
+        @autoreleasepool {
+            NSData* charData = [nsString dataUsingEncoding:NSUTF8StringEncoding];
+            if (charData) {
+                return std::string(reinterpret_cast<const char *>(charData.bytes),
+                                   charData.length);
+            }
+        }
     }
     return {};
 }
-
-}
-
-namespace LiveKitCpp
-{
 
 std::string operatingSystemVersion()
 {
