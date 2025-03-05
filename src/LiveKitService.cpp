@@ -16,6 +16,7 @@
 #include "LogsReceiver.h"
 #include "Utils.h"
 #ifdef WEBRTC_AVAILABLE
+#include "PeerConnectionFactory.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
 #endif
@@ -84,6 +85,7 @@ public:
          std::shared_ptr<WebsocketFactory> websocketsFactory);
     const auto& logger() const noexcept { return _logger; }
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
+    const auto& peerConnectionFactory() const noexcept { return _pcf; }
     static bool sslInitialized(const std::shared_ptr<LogsReceiver>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<LogsReceiver>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<LogsReceiver>& logger,
@@ -93,6 +95,7 @@ private:
 private:
     const std::shared_ptr<LogsReceiver> _logger;
     const std::shared_ptr<WebsocketFactory> _websocketsFactory;
+    const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
 };
 
 LiveKitService::LiveKitService(const std::shared_ptr<LogsReceiver>& logger,
@@ -110,7 +113,10 @@ LiveKitServiceState LiveKitService::state() const
     if (Impl::sslInitialized()) {
         if (Impl::wsaInitialized()) {
             if (_impl) {
-                
+                if (_impl->peerConnectionFactory()) {
+                    return LiveKitServiceState::OK;
+                }
+                return LiveKitServiceState::WebRTCInitError;
             }
             return LiveKitServiceState::NoWebsoketsFactory;
         }
@@ -123,6 +129,7 @@ LiveKitService::Impl::Impl(const std::shared_ptr<LogsReceiver>& logger,
                            std::shared_ptr<WebsocketFactory> websocketsFactory)
     : _logger(logger)
     , _websocketsFactory(std::move(websocketsFactory))
+    , _pcf(PeerConnectionFactory::Create(true, true, _logger))
 {
 }
 

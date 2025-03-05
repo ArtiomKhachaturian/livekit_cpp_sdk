@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "WebRtcLogSink.h"
-//#include <QtLogging>
-//#include <QDebug>
+#include "LogsReceiver.h"
 #include <algorithm>
 
 namespace {
@@ -32,7 +31,10 @@ const char* g_ignoreWebRtcLogLabels[] = {
 #endif
 };
 
-inline bool ignoreWebRtcLogString(const std::string& string)
+static const std::string g_empty;
+
+template <class TString = std::string_view>
+inline bool ignoreWebRtcLogString(const TString& string)
 {
     if (string.size() > 1UL) {
         for (const auto& label : g_ignoreWebRtcLogLabels) {
@@ -45,7 +47,8 @@ inline bool ignoreWebRtcLogString(const std::string& string)
     return true;
 }
 
-inline const std::string& alignedWebRtcLogString(const std::string& string)
+template <class TString = std::string_view>
+inline const std::string& alignedLogString(const TString& string)
 {
     if (!string.empty()) {
         const auto hasLFAtTheEnd = '\n' == string.back();
@@ -65,7 +68,33 @@ inline const std::string& alignedWebRtcLogString(const std::string& string)
             return alignedString;
         }
     }
-    return string;
+    return g_empty;
+}
+
+inline std::optional<LiveKitCpp::LoggingSeverity> map(rtc::LoggingSeverity severity) {
+    switch (severity) {
+        case rtc::LS_VERBOSE:
+            return LiveKitCpp::LoggingSeverity::Verbose;
+        case rtc::LS_INFO:
+            return LiveKitCpp::LoggingSeverity::Info;
+        case rtc::LS_WARNING:
+            return LiveKitCpp::LoggingSeverity::Warning;
+        case rtc::LS_ERROR:
+            return LiveKitCpp::LoggingSeverity::Error;
+        default:
+            break;
+    }
+    return std::nullopt;
+}
+
+template <class TString = std::string_view>
+inline std::optional<LiveKitCpp::LoggingSeverity> canLog(const TString& string,
+                                                         rtc::LoggingSeverity severity) {
+    const auto sev = map(severity);
+    if (sev && !ignoreWebRtcLogString(string)) {
+        return sev;
+    }
+    return std::nullopt;
 }
 
 } // namespace
@@ -73,7 +102,8 @@ inline const std::string& alignedWebRtcLogString(const std::string& string)
 namespace LiveKitCpp
 {
 
-WebRtcLogSink::WebRtcLogSink()
+WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<LogsReceiver>& logger)
+    : _logger(logger)
 {
     rtc::LogMessage::AddLogToStream(this, rtc::LoggingSeverity::LS_VERBOSE);
 }
@@ -86,37 +116,35 @@ WebRtcLogSink::~WebRtcLogSink()
 void WebRtcLogSink::OnLogMessage(const std::string& message,
                                  rtc::LoggingSeverity severity)
 {
-    if (!ignoreWebRtcLogString(message)) {
-        switch (severity) {
-            case rtc::LS_VERBOSE:
-                //qDebug() << QString::fromStdString(alignedWebRtcLogString(message));
-                break;
-            case rtc::LS_INFO:
-                //qInfo() << QString::fromStdString(alignedWebRtcLogString(message));
-                break;
-            case rtc::LS_WARNING:
-                //qWarning() << QString::fromStdString(alignedWebRtcLogString(message));
-                break;
-            case rtc::LS_ERROR:
-                //qCritical() << QString::fromStdString(alignedWebRtcLogString(message));
-                break;
-            default:
-                break;
+    if (_logger) {
+        if (const auto sev = canLog(message, severity)) {
+            _logger->onLog(sev.value(), message);
         }
     }
 }
 
 void WebRtcLogSink::OnLogMessage(const std::string& message)
 {
+    if (_logger) {
+        _logger->onVerbose(message);
+    }
 }
 
 void WebRtcLogSink::OnLogMessage(absl::string_view message,
                                  rtc::LoggingSeverity severity)
 {
+    if (_logger) {
+        if (const auto sev = canLog(message, severity)) {
+            _logger->onLog(sev.value(), message);
+        }
+    }
 }
 
 void WebRtcLogSink::OnLogMessage(absl::string_view message)
 {
+    if (_logger) {
+        _logger->onVerbose(message);
+    }
 }
 
 } // namespace LiveKitCpp

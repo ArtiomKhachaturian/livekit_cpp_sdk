@@ -13,16 +13,19 @@
 // limitations under the License.
 #pragma once // WebRtcLogSink.h
 #include <rtc_base/logging.h>
-#include <optional>
+#include <memory>
 
 namespace LiveKitCpp
 {
 
+class LogsReceiver;
+
 class WebRtcLogSink : public rtc::LogSink
 {
 public:
-    WebRtcLogSink();
+    WebRtcLogSink(const std::shared_ptr<LogsReceiver>& logger = {});
     ~WebRtcLogSink() override;
+    const auto& logger() const noexcept { return _logger; }
 private:
     // impl. of rtc::LogSink
     void OnLogMessage(const std::string& message,
@@ -31,6 +34,8 @@ private:
     void OnLogMessage(absl::string_view message,
                       rtc::LoggingSeverity severity) final;
     void OnLogMessage(absl::string_view message) final;
+private:
+    const std::shared_ptr<LogsReceiver> _logger;
 };
 
 } // namespace LiveKitCpp

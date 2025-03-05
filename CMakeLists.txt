@@ -184,8 +184,10 @@ if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
     endif()
     endforeach()
     set(WEBRTC_AVAILABLE TRUE)
-    file(GLOB_RECURSE WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
-    file(GLOB_RECURSE WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
+    file(GLOB WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
+    file(GLOB WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
+    file(GLOB WEBRTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
+    file(GLOB WEBRTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 endif()
 
 # Create a static library
@@ -200,6 +202,8 @@ add_library(${LIB_PROJECT_NAME} SHARED
     ${ZAPHOYD_TPP_SOURCES}
     ${WEBRTC_HEADERS}
     ${WEBRTC_SOURCES}
+    ${WEBRTC_PLATFORM_HEADERS}
+    ${WEBRTC_PLATFORM_SOURCES}
     ${PROTO_SOURCES} # Add generated .cpp files
     ${PROTO_HEADERS}
 )
@@ -210,7 +214,8 @@ source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_H
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER} PREFIX "Platform" FILES ${PLATFORM_HEADERS} ${PLATFORM_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/service PREFIX "Service" FILES ${SERVICE_HEADERS} ${SERVICE_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp PREFIX "ZaphoydTpp" FILES ${ZAPHOYD_TPP_HEADERS} ${ZAPHOYD_TPP_SOURCES})
-source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_HEADERS} ${WEBRTC_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_HEADERS} ${WEBRTC_SOURCES} 
+    ${WEBRTC_PLATFORM_HEADERS} ${WEBRTC_PLATFORM_SOURCES})
 
 # Add include directories
 target_include_directories(${LIB_PROJECT_NAME} PRIVATE
@@ -242,7 +247,8 @@ endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # WebRTC
 if (WEBRTC_AVAILABLE)
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR}
+    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR} 
+        ${CMAKE_SOURCE_DIR}/src/webrtc ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
     target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
     if (APPLE)
