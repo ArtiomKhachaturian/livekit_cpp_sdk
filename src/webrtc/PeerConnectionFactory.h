@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "RefCountInterfaceStub.h"
 #include <api/peer_connection_interface.h>
 #include <rtc_base/thread.h>
 #include <memory>
@@ -38,7 +37,7 @@ namespace LiveKitCpp
 class LogsReceiver;
 class WebRtcLogSink;
 
-class PeerConnectionFactory : public RefCountInterfaceStub<webrtc::PeerConnectionFactoryInterface>
+class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 {
 public:
     ~PeerConnectionFactory() override;

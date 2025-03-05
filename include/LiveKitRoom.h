@@ -15,22 +15,29 @@
 #include "LiveKitClientExport.h"
 #include <memory>
 
+
 namespace LiveKitCpp
 {
 
+struct LiveKitRoomOptions;
 class Websocket;
 class WebsocketFactory;
+class PeerConnectionFactory;
 
 class LIVEKIT_CLIENT_API LiveKitRoom
 {
     struct Impl;
+    friend class LiveKitService;
 public:
-    /*LiveKitRoom();
-    LiveKitRoom(const WebsocketFactory& factory);
-    LiveKitRoom(std::unique_ptr<Websocket> socket);
-    ~LiveKitRoom();*/
+    ~LiveKitRoom();
 private:
-   // const std::unique_ptr<Impl> _impl;
+    LiveKitRoom(std::unique_ptr<Websocket> socket,
+                PeerConnectionFactory* pcf,
+                const LiveKitRoomOptions& options);
+    bool connect(std::string host, std::string authToken);
+    void disconnect();
+private:
+    const std::unique_ptr<Impl> _impl;
 };
 
 } // namespace LiveKitCpp

@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "LiveKitService.h"
-#include "WebsocketFactory.h"
+#include "LiveKitRoom.h"
 #include "LogsReceiver.h"
+#include "Websocket.h"
+#include "WebsocketFactory.h"
 #include "Utils.h"
 #ifdef WEBRTC_AVAILABLE
 #include "PeerConnectionFactory.h"
@@ -24,6 +26,7 @@
 #include <rtc_base/logging.h>
 #include <rtc_base/ssl_adapter.h>
 #include <rtc_base/crypto_random.h>
+#include <rtc_base/time_utils.h>
 #include <system_wrappers/include/field_trial.h>
 #include <libyuv/cpu_id.h>
 #ifdef _WIN32
@@ -89,6 +92,8 @@ public:
     const auto& logger() const noexcept { return _logger; }
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
+    template <typename TOutput>
+    TOutput makeRoom(const LiveKitRoomOptions& options) const;
     static bool sslInitialized(const std::shared_ptr<LogsReceiver>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<LogsReceiver>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<LogsReceiver>& logger,
@@ -128,12 +133,38 @@ LiveKitServiceState LiveKitService::state() const
     return LiveKitServiceState::SSLInitError;
 }
 
+LiveKitRoom* LiveKitService::makeRoom(const LiveKitRoomOptions& options) const
+{
+    return _impl->makeRoom<LiveKitRoom*>(options);
+}
+
+std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const LiveKitRoomOptions& options) const
+{
+    return _impl->makeRoom<std::shared_ptr<LiveKitRoom>>(options);
+}
+
+std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const LiveKitRoomOptions& options) const
+{
+    return _impl->makeRoom<std::unique_ptr<LiveKitRoom>>(options);
+}
+
 LiveKitService::Impl::Impl(const std::shared_ptr<LogsReceiver>& logger,
                            std::shared_ptr<WebsocketFactory> websocketsFactory)
     : _logger(logger)
     , _websocketsFactory(std::move(websocketsFactory))
     , _pcf(PeerConnectionFactory::Create(true, true, _logger))
 {
+}
+
+template <typename TOutput>
+TOutput LiveKitService::Impl::makeRoom(const LiveKitRoomOptions& options) const
+{
+    if (_pcf) {
+        if (auto socket = _websocketsFactory->create()) {
+            return TOutput(new LiveKitRoom(std::move(socket), _pcf.get(), options));
+        }
+    }
+    return TOutput(nullptr);
 }
 
 bool LiveKitService::Impl::sslInitialized(const std::shared_ptr<LogsReceiver>& logger)
@@ -220,6 +251,12 @@ LiveKitServiceState LiveKitService::state() const
     return LiveKitServiceState::NoWebRTC;
 }
 
+LiveKitRoom* LiveKitService::makeRoom(const LiveKitRoomOptions&) const { return nullptr; }
+
+std::shared_ptr<LiveKitRoom> makeRoomS(const LiveKitRoomOptions&) const { return {}; }
+
+std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const LiveKitRoomOptions&) const { return {}; }
+
 #endif
 
 } // namespace LiveKitCpp
@@ -235,7 +272,7 @@ SSLInitiallizer::SSLInitiallizer()
         rtc::LogMessage::LogTimestamps(false);
         rtc::LogMessage::SetLogToStderr(false);
         libyuv::MaskCpuFlags(-1); // to enable all cpu specific optimizations
-        //rtc::InitRandom(static_cast<int>(rtc::Time()));
+        rtc::InitRandom(static_cast<int>(rtc::Time()));
         webrtc::field_trial::InitFieldTrialsFromString("WebRTC-SupportVP9SVC/EnabledByFlag_3SL3TL/");
     }
 }

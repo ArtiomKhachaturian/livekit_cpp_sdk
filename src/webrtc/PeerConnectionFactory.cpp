@@ -156,12 +156,11 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::Create(bool 
         if (logger) {
             webrtcLogSink = std::make_unique<WebRtcLogSink>(logger);
         }
-        auto pcfw = new PeerConnectionFactory(std::move(webrtcLogSink),
-                                              std::move(networkThread),
-                                              std::move(workingThread),
-                                              std::move(signalingThread),
-                                              std::move(pcf));
-        return webrtc::scoped_refptr<PeerConnectionFactory>(pcfw);
+        return webrtc::make_ref_counted<PeerConnectionFactory>(std::move(webrtcLogSink),
+                                                               std::move(networkThread),
+                                                               std::move(workingThread),
+                                                               std::move(signalingThread),
+                                                               std::move(pcf));
     }
     if (logger) {
         logger->onError("Failed to create modular peer connection factory", g_pcfInit);

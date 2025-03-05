@@ -16,6 +16,8 @@
 #include "SignalClientWs.h"
 #include "SignalServerListener.h"
 #include "SignalTransportListener.h"
+#include "LiveKitRoomOptions.h"
+#include "PeerConnectionFactory.h"
 #include "websocket/WebsocketFactory.h"
 #endif
 #include "websocket/Websocket.h"
@@ -23,59 +25,65 @@
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-struct LiveKitRoom::Impl : public SignalServerListener, public SignalTransportListener
+struct LiveKitRoom::Impl : public SignalServerListener,
+                           public SignalTransportListener
 {
-    Impl(std::unique_ptr<Websocket> socket);
+    Impl(std::unique_ptr<Websocket> socket,
+         PeerConnectionFactory* pcf,
+         const LiveKitRoomOptions& options);
     ~Impl();
-    static std::unique_ptr<LiveKitRoom::Impl> create(std::unique_ptr<Websocket> socket);
-    const std::unique_ptr<SignalClientWs> _client;
+    const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
+    SignalClientWs _client;
 };
 
-/*LiveKitRoom::LiveKitRoom()
-    : LiveKitRoom(WebsocketFactory::defaultFactory())
+LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket> socket,
+                         PeerConnectionFactory* pcf,
+                         const LiveKitRoomOptions& options)
+    : _impl(std::make_unique<Impl>(std::move(socket), pcf, options))
 {
 }
 
-LiveKitRoom::LiveKitRoom(const WebsocketFactory& factory)
-    : LiveKitRoom(factory.create())
+LiveKitRoom::~LiveKitRoom()
 {
 }
 
-LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket> socket)
-    : _impl(Impl::create(std::move(socket)))
+bool LiveKitRoom::connect(std::string host, std::string authToken)
 {
+    // dummy
+    _impl->_client.setHost(std::move(host));
+    _impl->_client.setAuthToken(std::move(authToken));
+    return _impl->_client.connect();
 }
 
-LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket> socket)
-    : _client(std::make_unique<SignalClientWs>(std::move(socket)))
+void LiveKitRoom::disconnect()
 {
-    _client->addServerListener(this);
-    _client->addTransportListener(this);
+    _impl->_client.disconnect();
+}
+
+LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket> socket,
+                        PeerConnectionFactory* pcf,
+                        const LiveKitRoomOptions& options)
+    : _pcf(pcf)
+    , _client(std::move(socket), _pcf->logger().get())
+{
+    _client.setAdaptiveStream(options._adaptiveStream);
+    _client.addServerListener(this);
+    _client.addTransportListener(this);
 }
 
 LiveKitRoom::Impl::~Impl()
 {
-    _client->removeServerListener(this);
-    _client->removeTransportListener(this);
+    _client.removeServerListener(this);
+    _client.removeTransportListener(this);
 }
-
-std::unique_ptr<LiveKitRoom::Impl> LiveKitRoom::Impl::create(std::unique_ptr<Websocket> socket)
-{
-    if (socket) {
-        return std::make_unique<Impl>(std::move(socket));
-    }
-    return {};
-}*/
 #else
 struct LiveKitRoom::Impl {};
     
-LiveKitRoom::LiveKitRoom() {}
+LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket>, PeerConnectionFactory*,
+                         const LiveKitRoomOptions&) {}
 
 LiveKitRoom::~LiveKitRoom() {}
 
-LiveKitRoom::LiveKitRoom(const WebsocketFactory&) {}
-
-LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket>) {}
 #endif
 
 } // namespace LiveKitCpp
