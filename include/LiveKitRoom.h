@@ -30,12 +30,12 @@ class LIVEKIT_CLIENT_API LiveKitRoom
     friend class LiveKitService;
 public:
     ~LiveKitRoom();
+    bool connect(std::string host, std::string authToken);
+    void disconnect();
 private:
     LiveKitRoom(std::unique_ptr<Websocket> socket,
                 PeerConnectionFactory* pcf,
                 const LiveKitRoomOptions& options);
-    bool connect(std::string host, std::string authToken);
-    void disconnect();
 private:
     const std::unique_ptr<Impl> _impl;
 };

@@ -57,7 +57,7 @@ inline const std::string& alignedLogString(const TString& string)
         if (hasLFAtTheEnd || hasLfInMiddle) {
             static thread_local std::string alignedString;
             if (hasLFAtTheEnd) {
-                alignedString.assign(string.c_str(), string.size() - 1UL);
+                alignedString.assign(string.data(), string.size() - 1UL);
             }
             if (!hasLFAtTheEnd) {
                 alignedString = string;
@@ -93,7 +93,7 @@ namespace LiveKitCpp
 {
 
 WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<LogsReceiver>& logger)
-    : SharedLoggerLoggable<rtc::LogSink>(logger)
+    : LoggableShared<rtc::LogSink>(logger)
 {
     rtc::LogMessage::AddLogToStream(this, rtc::LoggingSeverity::LS_VERBOSE);
 }
@@ -108,14 +108,14 @@ void WebRtcLogSink::OnLogMessage(const std::string& message,
 {
     
     if (const auto sev = allowToLog(message, severity)) {
-        onLog(sev.value(), message, _logCategory);
+        log(sev.value(), alignedLogString(message), _logCategory);
     }
 }
 
 void WebRtcLogSink::OnLogMessage(const std::string& message)
 {
     if (const auto sev = allowToLog(message, rtc::LoggingSeverity::LS_VERBOSE)) {
-        onLog(sev.value(), message, _logCategory);
+        log(sev.value(), alignedLogString(message), _logCategory);
     }
 }
 
@@ -123,14 +123,14 @@ void WebRtcLogSink::OnLogMessage(absl::string_view message,
                                  rtc::LoggingSeverity severity)
 {
     if (const auto sev = allowToLog(message, severity)) {
-        onLog(sev.value(), message, _logCategory);
+        log(sev.value(), alignedLogString(message), _logCategory);
     }
 }
 
 void WebRtcLogSink::OnLogMessage(absl::string_view message)
 {
     if (const auto sev = allowToLog(message, rtc::LoggingSeverity::LS_VERBOSE)) {
-        onLog(sev.value(), message, _logCategory);
+        log(sev.value(), alignedLogString(message), _logCategory);
     }
 }
 

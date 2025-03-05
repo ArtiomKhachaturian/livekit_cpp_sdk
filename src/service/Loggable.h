@@ -23,28 +23,28 @@ class Loggable : public BaseInterfaces...
 {
 public:
     const auto& logger() const noexcept { return _logger; }
-protected:
-    template<typename... Args>
-    Loggable(TLoggerPointerType logger, Args&&... args);
     bool canLog(LoggingSeverity severity) const;
     bool canLogVerbose() const { return canLog(LoggingSeverity::Verbose); }
     bool canLogInfo() const { return canLog(LoggingSeverity::Info); }
     bool canLogWarning() const { return canLog(LoggingSeverity::Warning); }
     bool canLogError() const { return canLog(LoggingSeverity::Error); }
-    void onLog(LoggingSeverity severity, std::string_view log, std::string_view category = {}) const;
-    void onVerbose(std::string_view log, std::string_view category = {}) const;
-    void onInfo(std::string_view log, std::string_view category = {}) const;
-    void onWarning(std::string_view log, std::string_view category = {}) const;
-    void onError(std::string_view log, std::string_view category = {}) const;
+    void log(LoggingSeverity severity, std::string_view message, std::string_view category = {}) const;
+    void logVerbose(std::string_view message, std::string_view category = {}) const;
+    void logInfo(std::string_view message, std::string_view category = {}) const;
+    void logWarning(std::string_view message, std::string_view category = {}) const;
+    void logError(std::string_view message, std::string_view category = {}) const;
+protected:
+    template<typename... Args>
+    Loggable(TLoggerPointerType logger, Args&&... args);
 private:
     const TLoggerPointerType _logger;
 };
 
 template <class... BaseInterfaces>
-using SharedLoggerLoggable = Loggable<std::shared_ptr<LogsReceiver>, BaseInterfaces...>;
+using LoggableShared = Loggable<std::shared_ptr<LogsReceiver>, BaseInterfaces...>;
 
 template <class... BaseInterfaces>
-using RawLoggerLoggable = Loggable<LogsReceiver*, BaseInterfaces...>;
+using LoggableRaw = Loggable<LogsReceiver*, BaseInterfaces...>;
 
 template <class TLoggerPointerType, class... BaseInterfaces>
 template<typename... Args>
@@ -56,47 +56,46 @@ inline Loggable<TLoggerPointerType, BaseInterfaces...>::
 }
 
 template <class TLoggerPointerType, class... BaseInterfaces>
-inline void Loggable<TLoggerPointerType, BaseInterfaces...>::onLog(LoggingSeverity severity,
-                                                                   std::string_view log,
-                                                                   std::string_view category) const
-{
-    if (_logger) {
-        _logger->onLog(severity, log, category);
-    }
-}
-
-template <class TLoggerPointerType, class... BaseInterfaces>
 inline bool Loggable<TLoggerPointerType, BaseInterfaces...>::canLog(LoggingSeverity severity) const
 {
     return _logger && _logger->canLog(severity);
 }
 
 template <class TLoggerPointerType, class... BaseInterfaces>
-inline void Loggable<TLoggerPointerType, BaseInterfaces...>::onVerbose(std::string_view log,
-                                                                       std::string_view category) const
+inline void Loggable<TLoggerPointerType, BaseInterfaces...>::
+    log(LoggingSeverity severity, std::string_view message, std::string_view category) const
 {
-    onLog(LoggingSeverity::Verbose, log, category);
+    if (_logger) {
+        _logger->onLog(severity, message, category);
+    }
 }
 
 template <class TLoggerPointerType, class... BaseInterfaces>
-inline void Loggable<TLoggerPointerType, BaseInterfaces...>::onInfo(std::string_view log,
-                                                                    std::string_view category) const
+inline void Loggable<TLoggerPointerType, BaseInterfaces...>::
+    logVerbose(std::string_view message, std::string_view category) const
 {
-    onLog(LoggingSeverity::Info, log, category);
+    log(LoggingSeverity::Verbose, message, category);
 }
 
 template <class TLoggerPointerType, class... BaseInterfaces>
-inline void Loggable<TLoggerPointerType, BaseInterfaces...>::onWarning(std::string_view log,
-                                                                       std::string_view category) const
+inline void Loggable<TLoggerPointerType, BaseInterfaces...>::
+    logInfo(std::string_view message, std::string_view category) const
 {
-    onLog(LoggingSeverity::Warning, log, category);
+    log(LoggingSeverity::Info, message, category);
 }
 
 template <class TLoggerPointerType, class... BaseInterfaces>
-inline void Loggable<TLoggerPointerType, BaseInterfaces...>::onError(std::string_view log,
-                                                                     std::string_view category) const
+inline void Loggable<TLoggerPointerType, BaseInterfaces...>::
+    logWarning(std::string_view message, std::string_view category) const
 {
-    onLog(LoggingSeverity::Error, log, category);
+    log(LoggingSeverity::Warning, message, category);
+}
+
+template <class TLoggerPointerType, class... BaseInterfaces>
+inline void Loggable<TLoggerPointerType, BaseInterfaces...>::
+    logError(std::string_view message, std::string_view category) const
+{
+    log(LoggingSeverity::Error, message, category);
 }
 
 } // namespace LiveKitCpp

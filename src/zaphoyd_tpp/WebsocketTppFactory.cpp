@@ -72,7 +72,7 @@ private:
 };
 
 WebsocketTppFactory::WebsocketTppFactory(const std::shared_ptr<LogsReceiver>& logger)
-    : SharedLoggerLoggable<WebsocketFactory>(logger)
+    : LoggableShared<WebsocketFactory>(logger)
 #ifdef WEBSOCKETS_TPP_SHARED_IO_SERVICE
     , _serviceProvider(std::make_shared<ServiceProvider>(logger))
 #endif

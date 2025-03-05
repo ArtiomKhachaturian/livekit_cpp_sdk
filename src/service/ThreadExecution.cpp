@@ -59,7 +59,7 @@ namespace LiveKitCpp
 ThreadExecution::ThreadExecution(std::string threadName,
                                  ThreadPriority priority,
                                  const std::shared_ptr<LogsReceiver>& logger)
-    : SharedLoggerLoggable<>(logger)
+    : LoggableShared<>(logger)
     , _threadName(std::move(threadName))
     , _priority(priority)
 {
@@ -90,8 +90,8 @@ void ThreadExecution::startExecution(bool waitingUntilNotStarted)
     }
     catch(const std::system_error& e) {
         if (canLogError()) {
-            onError("Failed to start thread '" + GetThreadName() + "': " +
-                    toString(e), g_logCategory);
+            logError("Failed to start thread '" + GetThreadName() + "': " +
+                     toString(e), g_logCategory);
         }
     }
 }
@@ -132,8 +132,8 @@ void ThreadExecution::joinAndDestroyThread()
         }
         catch(const std::system_error& e) {
             if (canLogError()) {
-                onError("Failed to stop thread '" + GetThreadName() + "': " +
-                        toString(e), g_logCategory);
+                logError("Failed to stop thread '" + GetThreadName() + "': " +
+                         toString(e), g_logCategory);
             }
         }
     }
@@ -157,8 +157,8 @@ void ThreadExecution::execute()
 void ThreadExecution::onSetThreadPriorityError(const std::error_code& e)
 {
     if (canLogWarning()) {
-        onWarning("Failed to set thread '" + GetThreadName() + "' priority: " +
-                  toString(e), g_logCategory);
+        logWarning("Failed to set thread '" + GetThreadName() + "' priority: " +
+                   toString(e), g_logCategory);
     }
 }
 

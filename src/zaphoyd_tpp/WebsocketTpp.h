@@ -25,7 +25,7 @@ class WebsocketTppApi;
 struct WebsocketTls;
 enum class State;
 
-class WebsocketTpp : public SharedLoggerLoggable<Websocket>
+class WebsocketTpp : public LoggableShared<Websocket>
 {
     template<class TClientType> class Impl;
     class TlsOn;

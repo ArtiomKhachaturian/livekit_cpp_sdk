@@ -22,7 +22,7 @@ namespace LiveKitCpp
 
 class LogsReceiver;
 
-class WebRtcLogSink : public SharedLoggerLoggable<rtc::LogSink>
+class WebRtcLogSink : public LoggableShared<rtc::LogSink>
 {
 public:
     WebRtcLogSink(const std::shared_ptr<LogsReceiver>& logger = {});

@@ -25,7 +25,7 @@ inline std::string typeName() { return typeid(T).name(); }
 
 }
 
-#define LOG_ERROR(error) onError(error, "ProtobufTypesMapping");
+#define LOG_ERROR(error) logError(error, "ProtobufTypesMapping");
 #define TYPE_CONVERSION_ERROR(TypeFrom, TypeTo) LOG_ERROR("Failed convert from '" \
     + typeName<TypeFrom>() + "' to '" + typeName<TypeTo>() + "'") \
     assert(false); \
@@ -34,7 +34,7 @@ namespace LiveKitCpp
 {
 
 Signals::Signals(LogsReceiver* logger)
-    : RawLoggerLoggable<>(logger)
+    : LoggableRaw<>(logger)
 {
 }
 

@@ -35,7 +35,24 @@ inline WebsocketError makeError(const TException& e) {
     return WebsocketError(failure, e.code(), e.what());
 }
 
-static const std::string_view g_logCategory("WebsocketTPP");
+class LogStream : public LoggableShared<std::streambuf>
+{
+public:
+    LogStream(LoggingSeverity severity, const std::shared_ptr<LogsReceiver>& logger);
+    ~LogStream() final;
+    operator std::ostream* () { return &_output; }
+    // overrides of std::streambuf
+    std::streamsize xsputn(const char* s, std::streamsize count) final;
+    int sync() final;
+private:
+    void sendBufferToLog();
+private:
+    const LoggingSeverity _severity;
+    std::ostream _output;
+    ProtectedObj<std::string, std::mutex> _logBuffer;
+};
+
+const std::string_view g_logCategory("WebsocketTPP");
 
 }
 
@@ -49,13 +66,12 @@ using namespace websocketpp::config;
 using Hdl = websocketpp::connection_hdl;
 
 template<class TClientType>
-class WebsocketTpp::Impl : public SharedLoggerLoggable<WebsocketTppApi, std::ostream, std::streambuf>
+class WebsocketTpp::Impl : public WebsocketTppApi
 {
     using Client = websocketpp::client<ReadBufferExtension<_readBufferSize, TClientType>>;
     using Message = typename TClientType::message_type;
     using MessagePtr = typename Message::ptr;
     using MessageMemoryBlock = WebsocketTppMemoryBlock<MessagePtr>;
-    using Base = SharedLoggerLoggable<WebsocketTppApi, std::ostream, std::streambuf>;
 public:
     ~Impl() override;
     // impl. of WebsocketTppApi
@@ -106,11 +122,6 @@ private:
     void onOpen(const Hdl& hdl);
     void onMessage(const Hdl& hdl, MessagePtr message);
     void onClose(const Hdl& hdl);
-    // error logging
-    void sendErrorBufferToLog();
-    // overrides of std::streambuf
-    std::streamsize xsputn(const char* s, std::streamsize count) final;
-    int sync() final;
 private:
     static constexpr auto _text = websocketpp::frame::opcode::value::text;
     static constexpr auto _binary = websocketpp::frame::opcode::value::binary;
@@ -121,10 +132,10 @@ private:
     const std::shared_ptr<WebsocketListener> _listener;
     const std::shared_ptr<WebsocketTppServiceProvider> _serviceProvider;
     Client _client;
+    LogStream _errorLogStream;
     ProtectedObj<Hdl> _hdl;
     std::atomic<State> _state = State::Disconnected;
     std::atomic_bool _destroyed = false;
-    ProtectedObj<std::string, std::mutex> _errorLogBuffer;
 };
 
 class WebsocketTpp::TlsOn : public Impl<asio_tls_client>
@@ -171,7 +182,7 @@ private:
 
 WebsocketTpp::WebsocketTpp(std::shared_ptr<WebsocketTppServiceProvider> serviceProvider,
                            const std::shared_ptr<LogsReceiver>& logger)
-    : SharedLoggerLoggable<Websocket>(logger)
+    : LoggableShared<Websocket>(logger)
     , _serviceProvider(std::move(serviceProvider))
     , _listener(std::make_shared<Listener>())
 {
@@ -290,18 +301,17 @@ WebsocketTpp::Impl<TClientType>::Impl(uint64_t socketId, uint64_t connectionId,
                                       const std::shared_ptr<WebsocketListener>& listener,
                                       const std::shared_ptr<WebsocketTppServiceProvider>& serviceProvider,
                                       const std::shared_ptr<LogsReceiver>& logger) noexcept(false)
-    : Base(logger)
-    , _socketId(socketId)
+    : _socketId(socketId)
     , _connectionId(connectionId)
     , _config(std::move(config))
     , _listener(listener)
     , _serviceProvider(serviceProvider)
+    , _errorLogStream(LoggingSeverity::Error, logger)
 {
-    assert(_listener); // listener must not be null
     // Initialize ASIO
     _client.set_user_agent(options()._userAgent);
     _client.get_alog().set_channels(websocketpp::log::alevel::none);
-    _client.get_elog().set_ostream(this);
+    _client.get_elog().set_ostream(_errorLogStream);
     _client.init_asio(_serviceProvider->service());
     // Register our handlers
     _client.set_socket_init_handler(bind(&Impl::onInit, this, _1));
@@ -311,6 +321,7 @@ WebsocketTpp::Impl<TClientType>::Impl(uint64_t socketId, uint64_t connectionId,
     _client.set_fail_handler(bind(&Impl::onFail, this, _1));
     _client.start_perpetual();
     _serviceProvider->startService();
+    
 }
 
 template <class TClientType>
@@ -408,7 +419,9 @@ void WebsocketTpp::Impl<TClientType>::destroy()
                 catch (const std::exception& e) {
                     _client.set_close_handler(nullptr);
                     // ignore of failures during closing
-                    onError(e.what(), g_logCategory);
+                    if (_errorLogStream.canLogError()) {
+                        _errorLogStream.logError(e.what(), g_logCategory);
+                    }
                 }
             }
         }
@@ -420,8 +433,8 @@ void WebsocketTpp::Impl<TClientType>::destroy()
 template <class TClientType>
 void WebsocketTpp::Impl<TClientType>::notifyAboutError(const WebsocketError& error)
 {
-    if (canLogError()) {
-        onError(toString(error), g_logCategory);
+    if (_errorLogStream.canLogError()) {
+        _errorLogStream.logError(toString(error), g_logCategory);
     }
     _listener->onError(socketId(), connectionId(), hostRef(), error);
 }
@@ -648,42 +661,6 @@ void WebsocketTpp::Impl<TClientType>::onClose(const Hdl&)
     }
 }
 
-template <class TClientType>
-void WebsocketTpp::Impl<TClientType>::sendErrorBufferToLog()
-{
-    LOCK_WRITE_PROTECTED_OBJ(_errorLogBuffer);
-    if (!_errorLogBuffer->empty()) {
-        onError(_errorLogBuffer.constRef(), g_logCategory);
-        _errorLogBuffer->clear();
-    }
-}
-
-template <class TClientType>
-std::streamsize WebsocketTpp::Impl<TClientType>::xsputn(const char* s, std::streamsize count)
-{
-    if (s && count && canLogError()) {
-        std::string_view data(s, count);
-        if (data.front() == '\n') {
-            data = data.substr(1U, data.size() - 1U);
-        }
-        if (data.back() == '\n') {
-            data = data.substr(0U, data.size() - 1U);
-        }
-        if (!data.empty()) {
-            LOCK_WRITE_PROTECTED_OBJ(_errorLogBuffer);
-            _errorLogBuffer->append(data.data(), data.size());
-        }
-    }
-    return count;
-}
-
-template <class TClientType>
-int WebsocketTpp::Impl<TClientType>::sync()
-{
-    sendErrorBufferToLog();
-    return 0;
-}
-
 WebsocketTpp::TlsOn::TlsOn(uint64_t id, uint64_t connectionId,
                            WebsocketTppConfig config,
                            const std::shared_ptr<WebsocketListener>& listener,
@@ -757,4 +734,56 @@ void WebsocketTpp::Listener::onBinaryMessageReceved(uint64_t socketId,
 }
 
 } // namespace LiveKitCpp
+
+namespace {
+
+LogStream::LogStream(LoggingSeverity severity, const std::shared_ptr<LogsReceiver>& logger)
+    : LoggableShared<std::streambuf>(logger)
+    , _severity(severity)
+    , _output(this)
+{
+}
+
+std::streamsize LogStream::xsputn(const char* s, std::streamsize count)
+{
+    if (s && count && canLog(_severity)) {
+        std::string_view data(s, count);
+        if (data.front() == '\n') {
+            data = data.substr(1U, data.size() - 1U);
+        }
+        if (data.back() == '\n') {
+            data = data.substr(0U, data.size() - 1U);
+        }
+        if (!data.empty()) {
+            LOCK_WRITE_PROTECTED_OBJ(_logBuffer);
+            _logBuffer->append(data.data(), data.size());
+        }
+    }
+    return count;
+}
+
+int LogStream::sync()
+{
+    sendBufferToLog();
+    return 0;
+}
+
+LogStream::~LogStream()
+{
+    if (pbase() != pptr()) {
+        sendBufferToLog();
+    }
+}
+
+void LogStream::sendBufferToLog()
+{
+    LOCK_WRITE_PROTECTED_OBJ(_logBuffer);
+    if (!_logBuffer->empty()) {
+        log(_severity, _logBuffer.constRef(), g_logCategory);
+        _logBuffer->clear();
+    }
+}
+
+}
+
 #endif

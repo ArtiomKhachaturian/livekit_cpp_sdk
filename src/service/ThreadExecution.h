@@ -23,7 +23,7 @@
 namespace LiveKitCpp
 {
 
-class ThreadExecution : public SharedLoggerLoggable<>
+class ThreadExecution : public LoggableShared<>
 {
 public:
     virtual ~ThreadExecution();

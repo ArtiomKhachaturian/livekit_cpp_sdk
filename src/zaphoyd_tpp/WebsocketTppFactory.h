@@ -21,7 +21,7 @@ namespace LiveKitCpp
 
 class WebsocketTppServiceProvider;
 
-class WebsocketTppFactory : public SharedLoggerLoggable<WebsocketFactory>
+class WebsocketTppFactory : public LoggableShared<WebsocketFactory>
 {
     class ServiceProvider;
 public:

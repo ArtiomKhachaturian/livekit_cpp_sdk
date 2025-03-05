@@ -49,7 +49,7 @@
 namespace LiveKitCpp
 {
 
-class Signals : public RawLoggerLoggable<>
+class Signals : public LoggableRaw<>
 {
 public:
     Signals(LogsReceiver* logger = nullptr);

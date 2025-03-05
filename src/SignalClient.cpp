@@ -23,7 +23,7 @@
 namespace LiveKitCpp
 {
 
-class SignalClient::Impl : public RawLoggerLoggable<>
+class SignalClient::Impl : public LoggableRaw<>
 {
 public:
     Impl(uint64_t id, LogsReceiver* logger = nullptr);
@@ -187,7 +187,7 @@ void SignalClient::notifyAboutTransportError(const std::string& error)
 }
 
 SignalClient::Impl::Impl(uint64_t id, LogsReceiver* logger)
-    : RawLoggerLoggable<>(logger)
+    : LoggableRaw<>(logger)
     , _id(id)
 {
 }
@@ -222,11 +222,11 @@ bool SignalClient::Impl::changeTransportState(State state)
             if (accepted) {
                 if (canLog(LoggingSeverity::Verbose)) {
                     // TODO: add obj [ID] logging
-                    onVerbose("State changed from '" +
-                              std::string(toString(_transportState)) +
-                              "' to '" +
-                              std::string(toString(state)) + "'",
-                              "TransportLevel");
+                    logVerbose("State changed from '" +
+                               std::string(toString(_transportState)) +
+                               "' to '" +
+                               std::string(toString(state)) + "'",
+                               "Transport_Level");
                 }
                 _transportState = state;
                 changed = true;
