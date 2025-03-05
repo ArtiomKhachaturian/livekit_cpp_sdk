@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Signals.h
+#include "Loggable.h"
 #include "rtc/ConnectionQualityUpdate.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/SessionDescription.h"
@@ -48,130 +49,131 @@
 namespace LiveKitCpp
 {
 
-class Signals
+class Signals : public RawLoggerLoggable<>
 {
 public:
+    Signals(LogsReceiver* logger = nullptr);
     // responses & requests
-    static JoinResponse map(const livekit::JoinResponse& in);
-    static SessionDescription map(const livekit::SessionDescription& in);
-    static livekit::SessionDescription map(const SessionDescription& in);
-    static TrickleRequest map(const livekit::TrickleRequest& in);
-    static livekit::TrickleRequest map(const TrickleRequest& in);
-    static ParticipantUpdate map(const livekit::ParticipantUpdate& in);
-    static TrackPublishedResponse map(const livekit::TrackPublishedResponse& in);
-    static livekit::TrackPublishedResponse map(const TrackPublishedResponse& in);
-    static TrackUnpublishedResponse map(const livekit::TrackUnpublishedResponse& in);
-    static LeaveRequest map(const livekit::LeaveRequest& in);
-    static livekit::LeaveRequest map(const LeaveRequest& in);
-    static MuteTrackRequest map(const livekit::MuteTrackRequest& in);
-    static livekit::MuteTrackRequest map(const MuteTrackRequest& in);
-    static SpeakersChanged map(const livekit::SpeakersChanged& in);
-    static RoomUpdate map(const livekit::RoomUpdate& in);
-    static ConnectionQualityUpdate map(const livekit::ConnectionQualityUpdate& in);
-    static StreamStateUpdate map(const livekit::StreamStateUpdate& in);
-    static SubscribedQualityUpdate map(const livekit::SubscribedQualityUpdate& in);
-    static ReconnectResponse map(const livekit::ReconnectResponse& in);
-    static TrackSubscribed map(const livekit::TrackSubscribed& in);
-    static RequestResponse map(const livekit::RequestResponse& in);
-    static SubscriptionResponse map(const livekit::SubscriptionResponse& in);
-    static SubscriptionPermissionUpdate map(const livekit::SubscriptionPermissionUpdate& in);
-    static AddTrackRequest map(const livekit::AddTrackRequest& in);
-    static livekit::AddTrackRequest map(const AddTrackRequest& in);
-    static UpdateSubscription map(const livekit::UpdateSubscription& in);
-    static livekit::UpdateSubscription map(const UpdateSubscription& in);
-    static UpdateTrackSettings map(const livekit::UpdateTrackSettings& in);
-    static livekit::UpdateTrackSettings map(const UpdateTrackSettings& in);
-    static UpdateVideoLayers map(const livekit::UpdateVideoLayers& in);
-    static livekit::UpdateVideoLayers map(const UpdateVideoLayers& in);
-    static SubscriptionPermission map(const livekit::SubscriptionPermission& in);
-    static livekit::SubscriptionPermission map(const SubscriptionPermission& in);
-    static SyncState map(const livekit::SyncState& in);
-    static livekit::SyncState map(const SyncState& in);
-    static SimulateScenario map(const livekit::SimulateScenario& in);
-    static livekit::SimulateScenario map(const SimulateScenario& in);
-    static UpdateParticipantMetadata map(const livekit::UpdateParticipantMetadata& in);
-    static livekit::UpdateParticipantMetadata map(const UpdateParticipantMetadata& in);
-    static Ping map(const livekit::Ping& in);
-    static livekit::Ping map(const Ping& in);
-    static UpdateLocalAudioTrack map(const livekit::UpdateLocalAudioTrack& in);
-    static livekit::UpdateLocalAudioTrack map(const UpdateLocalAudioTrack& in);
-    static UpdateLocalVideoTrack map(const livekit::UpdateLocalVideoTrack& in);
-    static livekit::UpdateLocalVideoTrack map(const UpdateLocalVideoTrack& in);
+    JoinResponse map(const livekit::JoinResponse& in) const;
+    SessionDescription map(const livekit::SessionDescription& in) const;
+    livekit::SessionDescription map(const SessionDescription& in) const;
+    TrickleRequest map(const livekit::TrickleRequest& in) const;
+    livekit::TrickleRequest map(const TrickleRequest& in) const;
+    ParticipantUpdate map(const livekit::ParticipantUpdate& in) const;
+    TrackPublishedResponse map(const livekit::TrackPublishedResponse& in) const;
+    livekit::TrackPublishedResponse map(const TrackPublishedResponse& in) const;
+    TrackUnpublishedResponse map(const livekit::TrackUnpublishedResponse& in) const;
+    LeaveRequest map(const livekit::LeaveRequest& in) const;
+    livekit::LeaveRequest map(const LeaveRequest& in) const;
+    MuteTrackRequest map(const livekit::MuteTrackRequest& in) const;
+    livekit::MuteTrackRequest map(const MuteTrackRequest& in) const;
+    SpeakersChanged map(const livekit::SpeakersChanged& in) const;
+    RoomUpdate map(const livekit::RoomUpdate& in) const;
+    ConnectionQualityUpdate map(const livekit::ConnectionQualityUpdate& in) const;
+    StreamStateUpdate map(const livekit::StreamStateUpdate& in) const;
+    SubscribedQualityUpdate map(const livekit::SubscribedQualityUpdate& in) const;
+    ReconnectResponse map(const livekit::ReconnectResponse& in) const;
+    TrackSubscribed map(const livekit::TrackSubscribed& in) const;
+    RequestResponse map(const livekit::RequestResponse& in) const;
+    SubscriptionResponse map(const livekit::SubscriptionResponse& in) const;
+    SubscriptionPermissionUpdate map(const livekit::SubscriptionPermissionUpdate& in) const;
+    AddTrackRequest map(const livekit::AddTrackRequest& in) const;
+    livekit::AddTrackRequest map(const AddTrackRequest& in) const;
+    UpdateSubscription map(const livekit::UpdateSubscription& in) const;
+    livekit::UpdateSubscription map(const UpdateSubscription& in) const;
+    UpdateTrackSettings map(const livekit::UpdateTrackSettings& in) const;
+    livekit::UpdateTrackSettings map(const UpdateTrackSettings& in) const;
+    UpdateVideoLayers map(const livekit::UpdateVideoLayers& in) const;
+    livekit::UpdateVideoLayers map(const UpdateVideoLayers& in) const;
+    SubscriptionPermission map(const livekit::SubscriptionPermission& in) const;
+    livekit::SubscriptionPermission map(const SubscriptionPermission& in) const;
+    SyncState map(const livekit::SyncState& in) const;
+    livekit::SyncState map(const SyncState& in) const;
+    SimulateScenario map(const livekit::SimulateScenario& in) const;
+    livekit::SimulateScenario map(const SimulateScenario& in) const;
+    UpdateParticipantMetadata map(const livekit::UpdateParticipantMetadata& in) const;
+    livekit::UpdateParticipantMetadata map(const UpdateParticipantMetadata& in) const;
+    Ping map(const livekit::Ping& in) const;
+    livekit::Ping map(const Ping& in) const;
+    UpdateLocalAudioTrack map(const livekit::UpdateLocalAudioTrack& in) const;
+    livekit::UpdateLocalAudioTrack map(const UpdateLocalAudioTrack& in) const;
+    UpdateLocalVideoTrack map(const livekit::UpdateLocalVideoTrack& in) const;
+    livekit::UpdateLocalVideoTrack map(const UpdateLocalVideoTrack& in) const;
     // data
-    static Room map(const livekit::Room& in);
-    static Codec map(const livekit::Codec& in);
-    static TimedVersion map(const livekit::TimedVersion& in);
-    static livekit::TimedVersion map(const TimedVersion& in);
-    static ParticipantInfo map(const livekit::ParticipantInfo& in);
-    static ParticipantKind map(livekit::ParticipantInfo_Kind in);
-    static ParticipantState map(livekit::ParticipantInfo_State in);
-    static ParticipantPermission map(const livekit::ParticipantPermission& in);
-    static DisconnectReason map(livekit::DisconnectReason in);
-    static livekit::DisconnectReason map(DisconnectReason in);
-    static TrackSource map(livekit::TrackSource in);
-    static livekit::TrackSource map(TrackSource in);
-    static TrackInfo map(const livekit::TrackInfo& in);
-    static livekit::TrackInfo map(const TrackInfo& in);
-    static VideoQuality map(livekit::VideoQuality in);
-    static livekit::VideoQuality map(VideoQuality in);
-    static VideoLayer map(const livekit::VideoLayer& in);
-    static livekit::VideoLayer map(const VideoLayer& in);
-    static TrackType map(livekit::TrackType in);
-    static livekit::TrackType map(TrackType in);
-    static SimulcastCodecInfo map(const livekit::SimulcastCodecInfo& in);
-    static livekit::SimulcastCodecInfo map(const SimulcastCodecInfo& in);
-    static BackupCodecPolicy map(livekit::BackupCodecPolicy in);
-    static livekit::BackupCodecPolicy map(BackupCodecPolicy in);
-    static EncryptionType map(livekit::Encryption_Type in);
-    static livekit::Encryption_Type map(EncryptionType in);
-    static AudioTrackFeature map(livekit::AudioTrackFeature in);
-    static livekit::AudioTrackFeature map(AudioTrackFeature in);
-    static ClientConfigSetting map(livekit::ClientConfigSetting in);
-    static ClientConfiguration map(const livekit::ClientConfiguration& in);
-    static DisabledCodecs map(const livekit::DisabledCodecs& in);
-    static VideoConfiguration map(const livekit::VideoConfiguration& in);
-    static ServerEdition map(livekit::ServerInfo_Edition in);
-    static ServerInfo map(const livekit::ServerInfo& in);
-    static SignalTarget map(livekit::SignalTarget in);
-    static livekit::SignalTarget map(SignalTarget in);
-    static LeaveRequestAction map(livekit::LeaveRequest_Action in);
-    static livekit::LeaveRequest_Action map(LeaveRequestAction in);
-    static RegionInfo map(const livekit::RegionInfo& in);
-    static livekit::RegionInfo map(const RegionInfo& in);
-    static RegionSettings map(const livekit::RegionSettings& in);
-    static livekit::RegionSettings map(const RegionSettings& in);
-    static SpeakerInfo map(const livekit::SpeakerInfo& in);
-    static ConnectionQuality map(livekit::ConnectionQuality in);
-    static ConnectionQualityInfo map(const livekit::ConnectionQualityInfo& in);
-    static StreamState map(livekit::StreamState in);
-    static StreamStateInfo map(const livekit::StreamStateInfo& in);
-    static SubscribedQuality map(const livekit::SubscribedQuality& in);
-    static SubscribedCodec map(const livekit::SubscribedCodec& in);
-    static ICEServer map(const livekit::ICEServer& in);
-    static RequestResponseReason map(livekit::RequestResponse_Reason in);
-    static SubscriptionError map(livekit::SubscriptionError in);
-    static SimulcastCodec map(const livekit::SimulcastCodec& in);
-    static livekit::SimulcastCodec map(const SimulcastCodec& in);
-    static ParticipantTracks map(const livekit::ParticipantTracks& in);
-    static livekit::ParticipantTracks map(const ParticipantTracks& in);
-    static TrackPermission map(const livekit::TrackPermission& in);
-    static livekit::TrackPermission map(const TrackPermission& in);
-    static DataChannelInfo map(const livekit::DataChannelInfo& in);
-    static livekit::DataChannelInfo map(const DataChannelInfo& in);
-    static CandidateProtocol map(livekit::CandidateProtocol in);
-    static livekit::CandidateProtocol map(CandidateProtocol in);
+    Room map(const livekit::Room& in) const;
+    Codec map(const livekit::Codec& in) const;
+    TimedVersion map(const livekit::TimedVersion& in) const;
+    livekit::TimedVersion map(const TimedVersion& in) const;
+    ParticipantInfo map(const livekit::ParticipantInfo& in) const;
+    ParticipantKind map(livekit::ParticipantInfo_Kind in) const;
+    ParticipantState map(livekit::ParticipantInfo_State in) const;
+    ParticipantPermission map(const livekit::ParticipantPermission& in) const;
+    DisconnectReason map(livekit::DisconnectReason in) const;
+    livekit::DisconnectReason map(DisconnectReason in) const;
+    TrackSource map(livekit::TrackSource in) const;
+    livekit::TrackSource map(TrackSource in) const;
+    TrackInfo map(const livekit::TrackInfo& in) const;
+    livekit::TrackInfo map(const TrackInfo& in) const;
+    VideoQuality map(livekit::VideoQuality in) const;
+    livekit::VideoQuality map(VideoQuality in) const;
+    VideoLayer map(const livekit::VideoLayer& in) const;
+    livekit::VideoLayer map(const VideoLayer& in) const;
+    TrackType map(livekit::TrackType in) const;
+    livekit::TrackType map(TrackType in) const;
+    SimulcastCodecInfo map(const livekit::SimulcastCodecInfo& in) const;
+    livekit::SimulcastCodecInfo map(const SimulcastCodecInfo& in) const;
+    BackupCodecPolicy map(livekit::BackupCodecPolicy in) const;
+    livekit::BackupCodecPolicy map(BackupCodecPolicy in) const;
+    EncryptionType map(livekit::Encryption_Type in) const;
+    livekit::Encryption_Type map(EncryptionType in) const;
+    AudioTrackFeature map(livekit::AudioTrackFeature in) const;
+    livekit::AudioTrackFeature map(AudioTrackFeature in) const;
+    ClientConfigSetting map(livekit::ClientConfigSetting in) const;
+    ClientConfiguration map(const livekit::ClientConfiguration& in) const;
+    DisabledCodecs map(const livekit::DisabledCodecs& in) const;
+    VideoConfiguration map(const livekit::VideoConfiguration& in) const;
+    ServerEdition map(livekit::ServerInfo_Edition in) const;
+    ServerInfo map(const livekit::ServerInfo& in) const;
+    SignalTarget map(livekit::SignalTarget in) const;
+    livekit::SignalTarget map(SignalTarget in) const;
+    LeaveRequestAction map(livekit::LeaveRequest_Action in) const;
+    livekit::LeaveRequest_Action map(LeaveRequestAction in) const;
+    RegionInfo map(const livekit::RegionInfo& in) const;
+    livekit::RegionInfo map(const RegionInfo& in) const;
+    RegionSettings map(const livekit::RegionSettings& in) const;
+    livekit::RegionSettings map(const RegionSettings& in) const;
+    SpeakerInfo map(const livekit::SpeakerInfo& in) const;
+    ConnectionQuality map(livekit::ConnectionQuality in) const;
+    ConnectionQualityInfo map(const livekit::ConnectionQualityInfo& in) const;
+    StreamState map(livekit::StreamState in) const;
+    StreamStateInfo map(const livekit::StreamStateInfo& in) const;
+    SubscribedQuality map(const livekit::SubscribedQuality& in) const;
+    SubscribedCodec map(const livekit::SubscribedCodec& in) const;
+    ICEServer map(const livekit::ICEServer& in) const;
+    RequestResponseReason map(livekit::RequestResponse_Reason in) const;
+    SubscriptionError map(livekit::SubscriptionError in) const;
+    SimulcastCodec map(const livekit::SimulcastCodec& in) const;
+    livekit::SimulcastCodec map(const SimulcastCodec& in) const;
+    ParticipantTracks map(const livekit::ParticipantTracks& in) const;
+    livekit::ParticipantTracks map(const ParticipantTracks& in) const;
+    TrackPermission map(const livekit::TrackPermission& in) const;
+    livekit::TrackPermission map(const TrackPermission& in) const;
+    DataChannelInfo map(const livekit::DataChannelInfo& in) const;
+    livekit::DataChannelInfo map(const DataChannelInfo& in) const;
+    CandidateProtocol map(livekit::CandidateProtocol in) const;
+    livekit::CandidateProtocol map(CandidateProtocol in) const;
 private:
     // helpers
     template<typename T>
-    static const T& map(const T& in) { return in; }
+    const T& map(const T& in) const { return in; }
     template <typename TOut, typename TIn = TOut, class TProtoBufRepeated>
-    static std::vector<TOut> rconv(const TProtoBufRepeated& in);
+    std::vector<TOut> rconv(const TProtoBufRepeated& in) const;
     template <typename TCppRepeated, class TProtoBufRepeated>
-    static void rconv(const TCppRepeated& from, TProtoBufRepeated* to);
+    void rconv(const TCppRepeated& from, TProtoBufRepeated* to) const;
     template<typename K, typename V>
-    static std::unordered_map<K, V> mconv(const google::protobuf::Map<K, V>& in);
+    std::unordered_map<K, V> mconv(const google::protobuf::Map<K, V>& in) const;
     template<typename K, typename V>
-    static void mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to);
+    void mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to) const;
 };
 
 } // namespace LiveKitCpp

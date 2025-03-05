@@ -19,6 +19,7 @@
 namespace LiveKitCpp
 {
 
+class LogsReceiver;
 class Websocket;
 
 class LIVEKIT_CLIENT_API WebsocketFactory
@@ -27,7 +28,7 @@ public:
     virtual ~WebsocketFactory() = default;
     virtual std::unique_ptr<Websocket> create() const = 0;
     // valid factory only if [USE_ZAPHOYD_TPP_SOCKETS] was ON for the library
-    static std::shared_ptr<WebsocketFactory> defaultFactory();
+    static std::shared_ptr<WebsocketFactory> createDefaultFactory(const std::shared_ptr<LogsReceiver>& logger = {});
 };
 
 } // namespace LiveKitCpp

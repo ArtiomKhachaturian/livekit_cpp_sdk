@@ -18,14 +18,15 @@
 #include "MemoryBlock.h"
 #include "ResponseReceiver.h"
 #include "RequestSender.h"
+#include "Loggable.h"
 
 namespace LiveKitCpp
 {
 
-class SignalClient::Impl
+class SignalClient::Impl : public RawLoggerLoggable<>
 {
 public:
-    Impl(uint64_t id);
+    Impl(uint64_t id, LogsReceiver* logger = nullptr);
     State transportState() const noexcept;
     bool changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
@@ -37,10 +38,10 @@ private:
     ProtectedObj<State> _transportState = State::Disconnected;
 };
 
-SignalClient::SignalClient(CommandSender* commandSender)
-    : _impl(std::make_unique<Impl>(id()))
-    , _responseReceiver(std::make_unique<ResponseReceiver>(id()))
-    , _requestSender(std::make_unique<RequestSender>(commandSender))
+SignalClient::SignalClient(CommandSender* commandSender, LogsReceiver* logger)
+    : _impl(std::make_unique<Impl>(id(), logger))
+    , _responseReceiver(std::make_unique<ResponseReceiver>(id(), logger))
+    , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
 {
 }
 
@@ -185,8 +186,9 @@ void SignalClient::notifyAboutTransportError(const std::string& error)
     _impl->notifyAboutTransportError(error);
 }
 
-SignalClient::Impl::Impl(uint64_t id)
-    : _id(id)
+SignalClient::Impl::Impl(uint64_t id, LogsReceiver* logger)
+    : RawLoggerLoggable<>(logger)
+    , _id(id)
 {
 }
 
@@ -218,6 +220,14 @@ bool SignalClient::Impl::changeTransportState(State state)
                     break;
             }
             if (accepted) {
+                if (canLog(LoggingSeverity::Verbose)) {
+                    // TODO: add obj [ID] logging
+                    onVerbose("State changed from '" +
+                              std::string(toString(_transportState)) +
+                              "' to '" +
+                              std::string(toString(state)) + "'",
+                              "TransportLevel");
+                }
                 _transportState = state;
                 changed = true;
             }

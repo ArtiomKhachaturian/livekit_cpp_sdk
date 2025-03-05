@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "ResponseReceiver.h"
-#include "Signals.h"
 #include "SignalServerListener.h"
-#include <optional>
 
 namespace {
 
@@ -34,8 +32,9 @@ inline std::optional<TProto> fromBytes(const void* data, size_t dataLen) {
 namespace LiveKitCpp
 {
 
-ResponseReceiver::ResponseReceiver(uint64_t signalClientId)
+ResponseReceiver::ResponseReceiver(uint64_t signalClientId, LogsReceiver* logger)
     : _signalClientId(signalClientId)
+    , _signals(logger)
 {
 }
 
@@ -148,7 +147,7 @@ void ResponseReceiver::notify(const Method& method, Args&&... args) const
 template <class Method, class TLiveKitType>
 void ResponseReceiver::signal(const Method& method, const TLiveKitType& sig) const
 {
-    notify(method, Signals::map(sig));
+    notify(method, _signals.map(sig));
 }
 
 void ResponseReceiver::handle(const livekit::JoinResponse& response) const

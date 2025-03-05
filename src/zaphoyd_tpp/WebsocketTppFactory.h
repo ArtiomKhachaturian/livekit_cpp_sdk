@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // WebsocketTppFactory.h
 #ifdef USE_ZAPHOYD_TPP_SOCKETS
+#include "Loggable.h"
 #include "WebsocketFactory.h"
 
 namespace LiveKitCpp
@@ -20,11 +21,11 @@ namespace LiveKitCpp
 
 class WebsocketTppServiceProvider;
 
-class WebsocketTppFactory : public WebsocketFactory
+class WebsocketTppFactory : public SharedLoggerLoggable<WebsocketFactory>
 {
     class ServiceProvider;
 public:
-    WebsocketTppFactory();
+    WebsocketTppFactory(const std::shared_ptr<LogsReceiver>& logger = {});
     // impl. of WebsocketFactory
     ~WebsocketTppFactory() override;
     std::unique_ptr<Websocket> create() const override;

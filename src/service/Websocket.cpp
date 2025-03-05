@@ -86,11 +86,11 @@ WebsocketError WebsocketError::fromSystemError(WebsocketFailure type,
     return WebsocketError(type, error.code(), error.what());
 }
 
-std::shared_ptr<WebsocketFactory> WebsocketFactory::defaultFactory()
+std::shared_ptr<WebsocketFactory> WebsocketFactory::
+    createDefaultFactory(const std::shared_ptr<LogsReceiver>& logger)
 {
 #ifdef USE_ZAPHOYD_TPP_SOCKETS
-    static const auto factory = std::make_shared<WebsocketTppFactory>();
-    return factory;
+    return std::make_shared<WebsocketTppFactory>(logger);
 #endif
     return {};
 }

@@ -35,6 +35,8 @@ inline WebsocketError makeError(const TException& e) {
     return WebsocketError(failure, e.code(), e.what());
 }
 
+static const std::string_view g_logCategory("WebsocketTPP");
+
 }
 
 namespace LiveKitCpp
@@ -47,12 +49,13 @@ using namespace websocketpp::config;
 using Hdl = websocketpp::connection_hdl;
 
 template<class TClientType>
-class WebsocketTpp::Impl : public WebsocketTppApi
+class WebsocketTpp::Impl : public SharedLoggerLoggable<WebsocketTppApi, std::ostream, std::streambuf>
 {
     using Client = websocketpp::client<ReadBufferExtension<_readBufferSize, TClientType>>;
     using Message = typename TClientType::message_type;
     using MessagePtr = typename Message::ptr;
     using MessageMemoryBlock = WebsocketTppMemoryBlock<MessagePtr>;
+    using Base = SharedLoggerLoggable<WebsocketTppApi, std::ostream, std::streambuf>;
 public:
     ~Impl() override;
     // impl. of WebsocketTppApi
@@ -66,8 +69,9 @@ protected:
     Impl(uint64_t socketId, 
          uint64_t connectionId,
          WebsocketTppConfig config,
-         std::shared_ptr<WebsocketListener> listener,
-         std::shared_ptr<WebsocketTppServiceProvider> serviceProvider) noexcept(false);
+         const std::shared_ptr<WebsocketListener>& listener,
+         const std::shared_ptr<WebsocketTppServiceProvider>& serviceProvider,
+         const std::shared_ptr<LogsReceiver>& logger) noexcept(false);
     uint64_t socketId() const noexcept { return _socketId; }
     uint64_t connectionId() const noexcept { return _connectionId; }
     const auto& hostRef() const noexcept { return options()._host; }
@@ -102,6 +106,11 @@ private:
     void onOpen(const Hdl& hdl);
     void onMessage(const Hdl& hdl, MessagePtr message);
     void onClose(const Hdl& hdl);
+    // error logging
+    void sendErrorBufferToLog();
+    // overrides of std::streambuf
+    std::streamsize xsputn(const char* s, std::streamsize count) final;
+    int sync() final;
 private:
     static constexpr auto _text = websocketpp::frame::opcode::value::text;
     static constexpr auto _binary = websocketpp::frame::opcode::value::binary;
@@ -111,11 +120,11 @@ private:
     const WebsocketTppConfig _config;
     const std::shared_ptr<WebsocketListener> _listener;
     const std::shared_ptr<WebsocketTppServiceProvider> _serviceProvider;
-    //OStreamLogger _errorLogger;
     Client _client;
     ProtectedObj<Hdl> _hdl;
     std::atomic<State> _state = State::Disconnected;
     std::atomic_bool _destroyed = false;
+    ProtectedObj<std::string, std::mutex> _errorLogBuffer;
 };
 
 class WebsocketTpp::TlsOn : public Impl<asio_tls_client>
@@ -123,8 +132,9 @@ class WebsocketTpp::TlsOn : public Impl<asio_tls_client>
 public:
     TlsOn(uint64_t id, uint64_t connectionId,
           WebsocketTppConfig config,
-          std::shared_ptr<WebsocketListener> listener,
-          std::shared_ptr<WebsocketTppServiceProvider> serviceProvider) noexcept(false);
+          const std::shared_ptr<WebsocketListener>& listener,
+          const std::shared_ptr<WebsocketTppServiceProvider>& serviceProvider,
+          const std::shared_ptr<LogsReceiver>& logger) noexcept(false);
     ~TlsOn() final;
 private:
     std::shared_ptr<WebsocketTppSSLCtx> onInitTls(const Hdl&);
@@ -135,8 +145,9 @@ class WebsocketTpp::TlsOff : public Impl<asio_client>
 public:
     TlsOff(uint64_t id, uint64_t connectionId,
            WebsocketTppConfig config,
-           std::shared_ptr<WebsocketListener> listener,
-           std::shared_ptr<WebsocketTppServiceProvider> serviceProvider) noexcept(false);
+           const std::shared_ptr<WebsocketListener>& listener,
+           const std::shared_ptr<WebsocketTppServiceProvider>& serviceProvider,
+           const std::shared_ptr<LogsReceiver>& logger) noexcept(false);
 };
 
 class WebsocketTpp::Listener : public WebsocketListener
@@ -158,8 +169,10 @@ private:
     Listeners<WebsocketListener*> _listeners;
 };
 
-WebsocketTpp::WebsocketTpp(std::shared_ptr<WebsocketTppServiceProvider> serviceProvider)
-    : _serviceProvider(std::move(serviceProvider))
+WebsocketTpp::WebsocketTpp(std::shared_ptr<WebsocketTppServiceProvider> serviceProvider,
+                           const std::shared_ptr<LogsReceiver>& logger)
+    : SharedLoggerLoggable<Websocket>(logger)
+    , _serviceProvider(std::move(serviceProvider))
     , _listener(std::make_shared<Listener>())
 {
     assert(_serviceProvider); // service provider must not be null
@@ -253,11 +266,11 @@ std::shared_ptr<WebsocketTppApi> WebsocketTpp::createImpl(WebsocketOptions optio
             std::unique_ptr<WebsocketTppApi> impl;
             if (config.secure()) {
                 impl = std::make_unique<TlsOn>(id(), connectionId, std::move(config),
-                                               _listener, _serviceProvider);
+                                               _listener, _serviceProvider, logger());
             }
             else {
                 impl = std::make_unique<TlsOff>(id(), connectionId, std::move(config),
-                                                _listener, _serviceProvider);
+                                                _listener, _serviceProvider, logger());
             }
             return std::shared_ptr<WebsocketTppApi>(impl.release(), [](auto* impl) { impl->destroy(); });
         }
@@ -274,20 +287,21 @@ std::shared_ptr<WebsocketTppApi> WebsocketTpp::createImpl(WebsocketOptions optio
 template <class TClientType>
 WebsocketTpp::Impl<TClientType>::Impl(uint64_t socketId, uint64_t connectionId,
                                       WebsocketTppConfig config,
-                                      std::shared_ptr<WebsocketListener> listener,
-                                      std::shared_ptr<WebsocketTppServiceProvider> serviceProvider) noexcept(false)
-    : _socketId(socketId)
+                                      const std::shared_ptr<WebsocketListener>& listener,
+                                      const std::shared_ptr<WebsocketTppServiceProvider>& serviceProvider,
+                                      const std::shared_ptr<LogsReceiver>& logger) noexcept(false)
+    : Base(logger)
+    , _socketId(socketId)
     , _connectionId(connectionId)
     , _config(std::move(config))
-    , _listener(std::move(listener))
-    , _serviceProvider(std::move(serviceProvider))
-    //, _errorLogger(LogLevel::LOG_ERROR, FormatLoggerId(socketId))
+    , _listener(listener)
+    , _serviceProvider(serviceProvider)
 {
     assert(_listener); // listener must not be null
     // Initialize ASIO
     _client.set_user_agent(options()._userAgent);
     _client.get_alog().set_channels(websocketpp::log::alevel::none);
-    //_client.get_elog().set_ostream(&_errorLogger);
+    _client.get_elog().set_ostream(this);
     _client.init_asio(_serviceProvider->service());
     // Register our handlers
     _client.set_socket_init_handler(bind(&Impl::onInit, this, _1));
@@ -394,7 +408,7 @@ void WebsocketTpp::Impl<TClientType>::destroy()
                 catch (const std::exception& e) {
                     _client.set_close_handler(nullptr);
                     // ignore of failures during closing
-                   // _errorLogger << e.what() << std::endl;
+                    onError(e.what(), g_logCategory);
                 }
             }
         }
@@ -406,8 +420,9 @@ void WebsocketTpp::Impl<TClientType>::destroy()
 template <class TClientType>
 void WebsocketTpp::Impl<TClientType>::notifyAboutError(const WebsocketError& error)
 {
-    //_errorLogger << error;
-    //_errorLogger.flush();
+    if (canLogError()) {
+        onError(toString(error), g_logCategory);
+    }
     _listener->onError(socketId(), connectionId(), hostRef(), error);
 }
 
@@ -633,12 +648,48 @@ void WebsocketTpp::Impl<TClientType>::onClose(const Hdl&)
     }
 }
 
+template <class TClientType>
+void WebsocketTpp::Impl<TClientType>::sendErrorBufferToLog()
+{
+    LOCK_WRITE_PROTECTED_OBJ(_errorLogBuffer);
+    if (!_errorLogBuffer->empty()) {
+        onError(_errorLogBuffer.constRef(), g_logCategory);
+        _errorLogBuffer->clear();
+    }
+}
+
+template <class TClientType>
+std::streamsize WebsocketTpp::Impl<TClientType>::xsputn(const char* s, std::streamsize count)
+{
+    if (s && count && canLogError()) {
+        std::string_view data(s, count);
+        if (data.front() == '\n') {
+            data = data.substr(1U, data.size() - 1U);
+        }
+        if (data.back() == '\n') {
+            data = data.substr(0U, data.size() - 1U);
+        }
+        if (!data.empty()) {
+            LOCK_WRITE_PROTECTED_OBJ(_errorLogBuffer);
+            _errorLogBuffer->append(data.data(), data.size());
+        }
+    }
+    return count;
+}
+
+template <class TClientType>
+int WebsocketTpp::Impl<TClientType>::sync()
+{
+    sendErrorBufferToLog();
+    return 0;
+}
+
 WebsocketTpp::TlsOn::TlsOn(uint64_t id, uint64_t connectionId,
                            WebsocketTppConfig config,
-                           std::shared_ptr<WebsocketListener> listener,
-                           std::shared_ptr<WebsocketTppServiceProvider> serviceProvider) noexcept(false)
-    : Impl<asio_tls_client>(id, connectionId, std::move(config),
-                            std::move(listener), std::move(serviceProvider))
+                           const std::shared_ptr<WebsocketListener>& listener,
+                           const std::shared_ptr<WebsocketTppServiceProvider>& serviceProvider,
+                           const std::shared_ptr<LogsReceiver>& logger) noexcept(false)
+    : Impl<asio_tls_client>(id, connectionId, std::move(config), listener, serviceProvider, logger)
 {
     client().set_tls_init_handler(bind(&TlsOn::onInitTls, this, _1));
 }
@@ -660,10 +711,10 @@ std::shared_ptr<WebsocketTppSSLCtx> WebsocketTpp::TlsOn::onInitTls(const Hdl&)
 
 WebsocketTpp::TlsOff::TlsOff(uint64_t id, uint64_t connectionId,
                              WebsocketTppConfig config,
-                             std::shared_ptr<WebsocketListener> listener,
-                             std::shared_ptr<WebsocketTppServiceProvider> serviceProvider) noexcept(false)
-    : Impl<asio_client>(id, connectionId, std::move(config),
-                        std::move(listener), std::move(serviceProvider))
+                             const std::shared_ptr<WebsocketListener>& listener,
+                             const std::shared_ptr<WebsocketTppServiceProvider>& serviceProvider,
+                             const std::shared_ptr<LogsReceiver>& logger) noexcept(false)
+    : Impl<asio_client>(id, connectionId, std::move(config), listener, serviceProvider, logger)
 {
 }
 

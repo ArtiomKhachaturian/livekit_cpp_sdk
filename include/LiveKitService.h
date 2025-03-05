@@ -19,6 +19,7 @@
 namespace LiveKitCpp
 {
 
+class LiveKitRoom;
 class LogsReceiver;
 class WebsocketFactory;
 

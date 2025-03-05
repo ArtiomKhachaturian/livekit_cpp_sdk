@@ -38,6 +38,8 @@
 
 namespace {
 
+static const std::string_view g_pcfInit("PeerConnectionFactory_Init");
+
 inline std::unique_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
                                                         const absl::string_view& threadName,
                                                         const std::shared_ptr<LiveKitCpp::LogsReceiver>& logger = {})
@@ -49,14 +51,17 @@ inline std::unique_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
             return thread;
         }
         if (logger) {
-            logger->onError("Failed to start of '" + std::string(threadName) + "' thread");
+            logger->onError("Failed to start of '" + std::string(threadName)
+                            + "' thread", g_pcfInit);
         }
     }
     else if (logger) {
-        logger->onError("Failed to create of '" + std::string(threadName) + "' thread");
+        logger->onError("Failed to create of '" + std::string(threadName)
+                        + "' thread", g_pcfInit);
     }
     return nullptr;
 }
+
 
 }
 
@@ -159,7 +164,7 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::Create(bool 
         return webrtc::scoped_refptr<PeerConnectionFactory>(pcfw);
     }
     if (logger) {
-        logger->onError("Failed to create modular peer connection factory");
+        logger->onError("Failed to create modular peer connection factory", g_pcfInit);
     }
     return {};
 }

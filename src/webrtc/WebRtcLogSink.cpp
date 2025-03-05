@@ -87,23 +87,13 @@ inline std::optional<LiveKitCpp::LoggingSeverity> map(rtc::LoggingSeverity sever
     return std::nullopt;
 }
 
-template <class TString = std::string_view>
-inline std::optional<LiveKitCpp::LoggingSeverity> canLog(const TString& string,
-                                                         rtc::LoggingSeverity severity) {
-    const auto sev = map(severity);
-    if (sev && !ignoreWebRtcLogString(string)) {
-        return sev;
-    }
-    return std::nullopt;
-}
-
 } // namespace
 
 namespace LiveKitCpp
 {
 
 WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<LogsReceiver>& logger)
-    : _logger(logger)
+    : SharedLoggerLoggable<rtc::LogSink>(logger)
 {
     rtc::LogMessage::AddLogToStream(this, rtc::LoggingSeverity::LS_VERBOSE);
 }
@@ -116,35 +106,43 @@ WebRtcLogSink::~WebRtcLogSink()
 void WebRtcLogSink::OnLogMessage(const std::string& message,
                                  rtc::LoggingSeverity severity)
 {
-    if (_logger) {
-        if (const auto sev = canLog(message, severity)) {
-            _logger->onLog(sev.value(), message);
-        }
+    
+    if (const auto sev = allowToLog(message, severity)) {
+        onLog(sev.value(), message, _logCategory);
     }
 }
 
 void WebRtcLogSink::OnLogMessage(const std::string& message)
 {
-    if (_logger) {
-        _logger->onVerbose(message);
+    if (const auto sev = allowToLog(message, rtc::LoggingSeverity::LS_VERBOSE)) {
+        onLog(sev.value(), message, _logCategory);
     }
 }
 
 void WebRtcLogSink::OnLogMessage(absl::string_view message,
                                  rtc::LoggingSeverity severity)
 {
-    if (_logger) {
-        if (const auto sev = canLog(message, severity)) {
-            _logger->onLog(sev.value(), message);
-        }
+    if (const auto sev = allowToLog(message, severity)) {
+        onLog(sev.value(), message, _logCategory);
     }
 }
 
 void WebRtcLogSink::OnLogMessage(absl::string_view message)
 {
-    if (_logger) {
-        _logger->onVerbose(message);
+    if (const auto sev = allowToLog(message, rtc::LoggingSeverity::LS_VERBOSE)) {
+        onLog(sev.value(), message, _logCategory);
     }
+}
+
+template <class TString>
+std::optional<LoggingSeverity> WebRtcLogSink::allowToLog(const TString& string,
+                                                         rtc::LoggingSeverity severity) const
+{
+    const auto sev = map(severity);
+    if (sev && canLog(sev.value()) && !ignoreWebRtcLogString(string)) {
+        return sev;
+    }
+    return std::nullopt;
 }
 
 } // namespace LiveKitCpp

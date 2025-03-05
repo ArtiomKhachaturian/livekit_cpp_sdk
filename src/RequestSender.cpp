@@ -14,15 +14,15 @@
 #include "RequestSender.h"
 #include "CommandSender.h"
 #include "MemoryBlock.h"
-#include "Signals.h"
 
 using Request = livekit::SignalRequest;
 
 namespace LiveKitCpp
 {
 
-RequestSender::RequestSender(CommandSender* commandSender)
+RequestSender::RequestSender(CommandSender* commandSender, LogsReceiver* logger)
     : _commandSender(commandSender)
+    , _signals(logger)
 {
 }
 
@@ -117,7 +117,7 @@ bool RequestSender::send(const TSetMethod& setMethod, const TObject& object) con
     if (canSend()) {
         Request request;
         if (const auto target = (request.*setMethod)()) {
-            *target = Signals::map(object);
+            *target = _signals.map(object);
             if (const auto block = toMemBlock(request)) {
                 return _commandSender->sendBinary(block);
             }

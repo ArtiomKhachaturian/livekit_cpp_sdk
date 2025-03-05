@@ -35,6 +35,9 @@
 namespace {
 
 #ifdef WEBRTC_AVAILABLE
+
+static const std::string_view g_logCategory("LiveKitService_Init");
+
 class SSLInitiallizer
 {
 public:
@@ -91,7 +94,7 @@ public:
     static std::unique_ptr<Impl> create(const std::shared_ptr<LogsReceiver>& logger,
                                         std::shared_ptr<WebsocketFactory> websocketsFactory);
 private:
-    static void testPlatform(const std::shared_ptr<LogsReceiver>& logger = {});
+    static void logPlatformDefects(const std::shared_ptr<LogsReceiver>& logger = {});
 private:
     const std::shared_ptr<LogsReceiver> _logger;
     const std::shared_ptr<WebsocketFactory> _websocketsFactory;
@@ -136,8 +139,8 @@ LiveKitService::Impl::Impl(const std::shared_ptr<LogsReceiver>& logger,
 bool LiveKitService::Impl::sslInitialized(const std::shared_ptr<LogsReceiver>& logger)
 {
     static const SSLInitiallizer initializer;
-    if (logger && !initializer) {
-        logger->onError("Failed to SSL initialization");
+    if (!initializer && logger && logger->canLogError()) {
+        logger->onError("Failed to SSL initialization", g_logCategory);
     }
     return initializer.initialized();
 }
@@ -147,16 +150,16 @@ bool LiveKitService::Impl::wsaInitialized(const std::shared_ptr<LogsReceiver>& l
 #ifdef _WIN32
     static const WSAInitializer initializer;
     if (const auto error = initializer.GetError()) {
-        if (logger) {
-            logger->onError("Failed to WINSOCK initialization, error code: " + std::to_string(error));
+        if (logger && logger->canLogError()) {
+            logger->onError("Failed to WINSOCK initialization, error code: " + std::to_string(error), g_srvInit);
         }
         return false;
     }
-    if (logger) {
+    if (logger && && logger->canLogVerbose()) {
         const auto& wsaVersion = initializer.GetSelectedVersion();
         if (wsaVersion.has_value()) {
             logger->onVerbose("WINSOCK initialization is done, library version: " +
-                              WSAInitializer::ToString(wsaVersion.value()));
+                              WSAInitializer::ToString(wsaVersion.value()), g_srvInit);
         }
     }
 #endif
@@ -169,35 +172,35 @@ std::unique_ptr<LiveKitService::Impl> LiveKitService::Impl::
 {
     if (wsaInitialized(logger) && sslInitialized(logger)) {
         if (!websocketsFactory) {
-            websocketsFactory = WebsocketFactory::defaultFactory();
+            websocketsFactory = WebsocketFactory::createDefaultFactory(logger);
         }
         if (websocketsFactory) {
-            testPlatform(logger);
+            logPlatformDefects(logger);
             return std::make_unique<Impl>(logger, std::move(websocketsFactory));
         }
     }
     return {};
 }
 
-void LiveKitService::Impl::testPlatform(const std::shared_ptr<LogsReceiver>& logger)
+void LiveKitService::Impl::logPlatformDefects(const std::shared_ptr<LogsReceiver>& logger)
 {
-    if (logger) {
+    if (logger && logger->canLogWarning()) {
 #ifdef __APPLE__
         std::string envErrorInfo;
         const auto status = checkAppEnivonment(AESNoProblems, &envErrorInfo);
         if (AESNoProblems != status) {
-            logger->onWarning("Some features of LiveKit SDK may be works incorrectly, see details below:");
+            logger->onWarning("Some features of LiveKit SDK may be works incorrectly, see details below:", g_logCategory);
             if (testFlag<AESNoGuiThread>(status)) {
-                logger->onWarning(" - main thread is not available");
+                logger->onWarning(" - main thread is not available", g_logCategory);
             }
             if (testFlag<AESNoInfoPlist>(status)) {
-                logger->onWarning(" - application bundle info dictionary doesn't exist");
+                logger->onWarning(" - application bundle info dictionary doesn't exist", g_logCategory);
             }
             if (testFlag<AESIncompleteInfoPlist>(status)) {
-                logger->onWarning(" - application bundle info dictionary is incomplete");
+                logger->onWarning(" - application bundle info dictionary is incomplete", g_logCategory);
             }
             if (!envErrorInfo.empty()) {
-                logger->onWarning(" - additional error info: " + envErrorInfo);
+                logger->onWarning(" - additional error info: " + envErrorInfo, g_logCategory);
             }
         }
 #endif

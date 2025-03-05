@@ -45,7 +45,7 @@ class WebsocketTppFactory::ServiceProvider : public WebsocketTppServiceProvider,
                                              private ThreadExecution
 {
 public:
-    ServiceProvider();
+    ServiceProvider(const std::shared_ptr<LogsReceiver>& logger = {});
     ~ServiceProvider() final { stopExecution(); }
     // impl. of WebsocketTppServiceProvider
 #ifdef WEBSOCKETS_TPP_SHARED_IO_SERVICE
@@ -71,9 +71,10 @@ private:
 #endif
 };
 
-WebsocketTppFactory::WebsocketTppFactory()
+WebsocketTppFactory::WebsocketTppFactory(const std::shared_ptr<LogsReceiver>& logger)
+    : SharedLoggerLoggable<WebsocketFactory>(logger)
 #ifdef WEBSOCKETS_TPP_SHARED_IO_SERVICE
-    : _serviceProvider(std::make_shared<ServiceProvider>())
+    , _serviceProvider(std::make_shared<ServiceProvider>(logger))
 #endif
 {
 }
@@ -87,17 +88,17 @@ std::shared_ptr<WebsocketTppServiceProvider> WebsocketTppFactory::serviceProvide
 #ifdef WEBSOCKETS_TPP_SHARED_IO_SERVICE
     return _serviceProvider;
 #else
-    return std::make_shared<ServiceProvider>();
+    return std::make_shared<ServiceProvider>(logger());
 #endif
 }
 
 std::unique_ptr<Websocket> WebsocketTppFactory::create() const
 {
-    return std::make_unique<WebsocketTpp>(serviceProvider());
+    return std::make_unique<WebsocketTpp>(serviceProvider(), logger());
 }
 
-WebsocketTppFactory::ServiceProvider::ServiceProvider()
-    : ThreadExecution("WebsocketsTPP", ThreadPriority::Highest)
+WebsocketTppFactory::ServiceProvider::ServiceProvider(const std::shared_ptr<LogsReceiver>& logger)
+    : ThreadExecution("WebsocketsTPP", ThreadPriority::Highest, logger)
     , _service(std::make_shared<WebsocketTppIOSrv>())
 {
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "ThreadExecution.h"
+#include "Utils.h"
 #ifdef _WIN32
 #include <Windows.h>
 #else
@@ -24,9 +25,9 @@
 #endif
 #include <functional>
 
-#ifdef __APPLE__
 namespace {
 
+#ifdef __APPLE__
 inline auto GetNativeQOS(LiveKitCpp::ThreadPriority priority) {
     switch (priority)
     {
@@ -45,16 +46,21 @@ inline auto GetNativeQOS(LiveKitCpp::ThreadPriority priority) {
     }
     return QOS_CLASS_DEFAULT;
 }
+#endif
+
+const std::string_view g_logCategory("Thread execution");
 
 }
-#endif
 
 
 namespace LiveKitCpp
 {
 
-ThreadExecution::ThreadExecution(std::string threadName, ThreadPriority priority)
-    : _threadName(std::move(threadName))
+ThreadExecution::ThreadExecution(std::string threadName,
+                                 ThreadPriority priority,
+                                 const std::shared_ptr<LogsReceiver>& logger)
+    : SharedLoggerLoggable<>(logger)
+    , _threadName(std::move(threadName))
     , _priority(priority)
 {
 }
@@ -82,8 +88,11 @@ void ThreadExecution::startExecution(bool waitingUntilNotStarted)
             }
         }
     }
-    catch(const std::system_error& /*error*/) {
-        // TODO: log error
+    catch(const std::system_error& e) {
+        if (canLogError()) {
+            onError("Failed to start thread '" + GetThreadName() + "': " +
+                    toString(e), g_logCategory);
+        }
     }
 }
 
@@ -121,8 +130,11 @@ void ThreadExecution::joinAndDestroyThread()
             }
             _thread = std::thread();
         }
-        catch(const std::system_error& /*error*/) {
-            // TODO: log error
+        catch(const std::system_error& e) {
+            if (canLogError()) {
+                onError("Failed to stop thread '" + GetThreadName() + "': " +
+                        toString(e), g_logCategory);
+            }
         }
     }
 }
@@ -142,9 +154,12 @@ void ThreadExecution::execute()
     }
 }
 
-void ThreadExecution::onSetThreadPriorityError(const std::error_code& /*error*/)
+void ThreadExecution::onSetThreadPriorityError(const std::error_code& e)
 {
-    // TODO: add error logs
+    if (canLogWarning()) {
+        onWarning("Failed to set thread '" + GetThreadName() + "' priority: " +
+                  toString(e), g_logCategory);
+    }
 }
 
 std::error_code ThreadExecution::SetCurrentThreadName() const

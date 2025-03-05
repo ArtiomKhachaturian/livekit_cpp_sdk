@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #ifdef USE_ZAPHOYD_TPP_SOCKETS
+#include "Loggable.h"
 #include "Websocket.h"
 #include "ProtectedObjAliases.h"
 
@@ -24,14 +25,15 @@ class WebsocketTppApi;
 struct WebsocketTls;
 enum class State;
 
-class WebsocketTpp : public Websocket
+class WebsocketTpp : public SharedLoggerLoggable<Websocket>
 {
     template<class TClientType> class Impl;
     class TlsOn;
     class TlsOff;
     class Listener;
 public:
-    WebsocketTpp(std::shared_ptr<WebsocketTppServiceProvider> serviceProvider);
+    WebsocketTpp(std::shared_ptr<WebsocketTppServiceProvider> serviceProvider,
+                 const std::shared_ptr<LogsReceiver>& logger = {});
     ~WebsocketTpp() final;
     // impl. of Websocket
     void addListener(WebsocketListener* listener) final;

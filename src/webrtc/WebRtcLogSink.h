@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // WebRtcLogSink.h
+#include "Loggable.h"
 #include <rtc_base/logging.h>
+#include <optional>
 #include <memory>
 
 namespace LiveKitCpp
@@ -20,12 +22,11 @@ namespace LiveKitCpp
 
 class LogsReceiver;
 
-class WebRtcLogSink : public rtc::LogSink
+class WebRtcLogSink : public SharedLoggerLoggable<rtc::LogSink>
 {
 public:
     WebRtcLogSink(const std::shared_ptr<LogsReceiver>& logger = {});
     ~WebRtcLogSink() override;
-    const auto& logger() const noexcept { return _logger; }
 private:
     // impl. of rtc::LogSink
     void OnLogMessage(const std::string& message,
@@ -35,7 +36,10 @@ private:
                       rtc::LoggingSeverity severity) final;
     void OnLogMessage(absl::string_view message) final;
 private:
-    const std::shared_ptr<LogsReceiver> _logger;
+    static inline const std::string_view _logCategory = "WebRTC";
+    template <class TString = std::string_view>
+    std::optional<LoggingSeverity> allowToLog(const TString& string,
+                                              rtc::LoggingSeverity severity) const;
 };
 
 } // namespace LiveKitCpp

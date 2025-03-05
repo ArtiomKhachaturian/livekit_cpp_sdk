@@ -26,6 +26,7 @@ class SignalServerListener;
 class SignalTransportListener;
 class ResponseReceiver;
 class RequestSender;
+class LogsReceiver;
 // these below structs are defined in /include/rtc subfolder
 struct SessionDescription;
 struct TrickleRequest;
@@ -47,7 +48,7 @@ class LIVEKIT_CLIENT_API SignalClient
 {
     class Impl;
 public:
-    SignalClient(CommandSender* commandSender);
+    SignalClient(CommandSender* commandSender, LogsReceiver* logger = nullptr);
     virtual ~SignalClient();
     void addTransportListener(SignalTransportListener* listener);
     void addServerListener(SignalServerListener* listener);

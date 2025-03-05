@@ -139,6 +139,20 @@ std::string fromWideChar(const std::wstring& w)
     return {};
 }
 
+std::string toString(const std::system_error& e)
+{
+    const auto& code = e.code();
+    std::string desc("system error code #");
+    desc += std::to_string(code.value());
+    desc += "(" + code.message() + ")";
+    if (const auto what = e.what()) {
+        if (const auto len = std::strlen(what)) {
+            desc += ", " + std::string(what, len);
+        }
+    }
+    return desc;
+}
+
 } // namespace LiveKitCpp
 
 #ifdef WIN32

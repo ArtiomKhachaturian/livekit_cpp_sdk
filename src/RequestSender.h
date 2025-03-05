@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RequestSender.h
+#include "Signals.h"
 #include <memory>
 #include <vector>
 
@@ -43,7 +44,7 @@ struct UpdateLocalVideoTrack;
 class RequestSender
 {
 public:
-    RequestSender(CommandSender* commandSender);
+    RequestSender(CommandSender* commandSender, LogsReceiver* logger = nullptr);
     // all requests are defined in 'SignalRequest':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L24
     bool offer(const SessionDescription& sdp) const;
@@ -70,6 +71,7 @@ private:
     static std::shared_ptr<MemoryBlock> toMemBlock(const google::protobuf::MessageLite& proto);
 private:
     CommandSender* const _commandSender;
+    const Signals _signals;
 };
 
 } // namespace LiveKitCpp

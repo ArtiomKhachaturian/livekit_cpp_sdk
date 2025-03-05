@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // ResponseReceiver.h
 #include "Listeners.h"
+#include "Signals.h"
 #include "livekit_rtc.pb.h"
 #include <memory>
 #include <optional>
@@ -25,7 +26,7 @@ class SignalServerListener;
 class ResponseReceiver
 {
 public:
-    ResponseReceiver(uint64_t signalClientId);
+    ResponseReceiver(uint64_t signalClientId, LogsReceiver* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void addListener(SignalServerListener* listener);
     void removeListener(SignalServerListener* listener);
@@ -58,6 +59,7 @@ private:
     void handle(const livekit::Pong& pong) const;
 private:
     const uint64_t _signalClientId;
+    const Signals _signals;
     Listeners<SignalServerListener*> _listeners;
 };
 

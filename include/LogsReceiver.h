@@ -18,15 +18,30 @@
 namespace LiveKitCpp
 {
 
+// thread-safe implementation required
 class LogsReceiver
 {
 public:
     virtual ~LogsReceiver() = default;
-    virtual void onLog(LoggingSeverity severity, std::string_view log) = 0;
-    void onVerbose(std::string_view log) { onLog(LoggingSeverity::Verbose, log); }
-    void onInfo(std::string_view log) { onLog(LoggingSeverity::Info, log); }
-    void onWarning(std::string_view log) { onLog(LoggingSeverity::Warning, log); }
-    void onError(std::string_view log) { onLog(LoggingSeverity::Error, log); }
+    virtual bool canLog(LoggingSeverity /*severity*/) const { return true; }
+    bool canLogVerbose() const { return canLog(LoggingSeverity::Verbose); }
+    bool canLogInfo() const { return canLog(LoggingSeverity::Info); }
+    bool canLogWarning() const { return canLog(LoggingSeverity::Warning); }
+    bool canLogError() const { return canLog(LoggingSeverity::Error); }
+    virtual void onLog(LoggingSeverity severity, std::string_view log,
+                       std::string_view category = {}) = 0;
+    void onVerbose(std::string_view log, std::string_view category = {}) {
+        onLog(LoggingSeverity::Verbose, log, category);
+    }
+    void onInfo(std::string_view log, std::string_view category = {}) {
+        onLog(LoggingSeverity::Info, log, category);
+    }
+    void onWarning(std::string_view log, std::string_view category = {}) {
+        onLog(LoggingSeverity::Warning, log, category);
+    }
+    void onError(std::string_view log, std::string_view category = {}) {
+        onLog(LoggingSeverity::Error, log, category);
+    }
 };
 
 } // namespace LiveKitCpp

@@ -13,10 +13,32 @@
 // limitations under the License.
 #include "Signals.h"
 
+/*#if defined(_MSC_VER) && !defined(__PRETTY_FUNCTION__)
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif*/
+
+namespace  {
+
+// TODO: add type name demangling
+template <typename T>
+inline std::string typeName() { return typeid(T).name(); }
+
+}
+
+#define LOG_ERROR(error) onError(error, "ProtobufTypesMapping");
+#define TYPE_CONVERSION_ERROR(TypeFrom, TypeTo) LOG_ERROR("Failed convert from '" \
+    + typeName<TypeFrom>() + "' to '" + typeName<TypeTo>() + "'") \
+    assert(false); \
+
 namespace LiveKitCpp
 {
 
-JoinResponse Signals::map(const livekit::JoinResponse& in)
+Signals::Signals(LogsReceiver* logger)
+    : RawLoggerLoggable<>(logger)
+{
+}
+
+JoinResponse Signals::map(const livekit::JoinResponse& in) const
 {
     JoinResponse out;
     if (in.has_room()) {
@@ -45,7 +67,7 @@ JoinResponse Signals::map(const livekit::JoinResponse& in)
     return out;
 }
 
-SessionDescription Signals::map(const livekit::SessionDescription& in)
+SessionDescription Signals::map(const livekit::SessionDescription& in) const
 {
     SessionDescription out;
     out._type = in.type();
@@ -53,7 +75,7 @@ SessionDescription Signals::map(const livekit::SessionDescription& in)
     return out;
 }
 
-livekit::SessionDescription Signals::map(const SessionDescription& in)
+livekit::SessionDescription Signals::map(const SessionDescription& in) const
 {
     livekit::SessionDescription out;
     out.set_type(in._type);
@@ -61,7 +83,7 @@ livekit::SessionDescription Signals::map(const SessionDescription& in)
     return out;
 }
 
-TrickleRequest Signals::map(const livekit::TrickleRequest& in)
+TrickleRequest Signals::map(const livekit::TrickleRequest& in) const
 {
     TrickleRequest out;
     out._candidateInit = in.candidateinit();
@@ -70,7 +92,7 @@ TrickleRequest Signals::map(const livekit::TrickleRequest& in)
     return out;
 }
 
-livekit::TrickleRequest Signals::map(const TrickleRequest& in)
+livekit::TrickleRequest Signals::map(const TrickleRequest& in) const
 {
     livekit::TrickleRequest out;
     out.set_candidateinit(in._candidateInit);
@@ -79,14 +101,14 @@ livekit::TrickleRequest Signals::map(const TrickleRequest& in)
     return out;
 }
 
-ParticipantUpdate Signals::map(const livekit::ParticipantUpdate& in)
+ParticipantUpdate Signals::map(const livekit::ParticipantUpdate& in) const
 {
     ParticipantUpdate out;
     out._participants = rconv<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
     return out;
 }
 
-TrackPublishedResponse Signals::map(const livekit::TrackPublishedResponse& in)
+TrackPublishedResponse Signals::map(const livekit::TrackPublishedResponse& in) const
 {
     TrackPublishedResponse out;
     out._cid = in.cid();
@@ -94,7 +116,7 @@ TrackPublishedResponse Signals::map(const livekit::TrackPublishedResponse& in)
     return out;
 }
 
-livekit::TrackPublishedResponse Signals::map(const TrackPublishedResponse& in)
+livekit::TrackPublishedResponse Signals::map(const TrackPublishedResponse& in) const
 {
     livekit::TrackPublishedResponse out;
     out.set_cid(in._cid);
@@ -102,14 +124,14 @@ livekit::TrackPublishedResponse Signals::map(const TrackPublishedResponse& in)
     return out;
 }
 
-TrackUnpublishedResponse Signals::map(const livekit::TrackUnpublishedResponse& in)
+TrackUnpublishedResponse Signals::map(const livekit::TrackUnpublishedResponse& in) const
 {
     TrackUnpublishedResponse out;
     out._trackSid = in.track_sid();
     return out;
 }
 
-LeaveRequest Signals::map(const livekit::LeaveRequest& in)
+LeaveRequest Signals::map(const livekit::LeaveRequest& in) const
 {
     LeaveRequest out;
     out._canReconnect = in.can_reconnect();
@@ -119,7 +141,7 @@ LeaveRequest Signals::map(const livekit::LeaveRequest& in)
     return out;
 }
 
-livekit::LeaveRequest Signals::map(const LeaveRequest& in)
+livekit::LeaveRequest Signals::map(const LeaveRequest& in) const
 {
     livekit::LeaveRequest out;
     out.set_can_reconnect(in._canReconnect);
@@ -129,7 +151,7 @@ livekit::LeaveRequest Signals::map(const LeaveRequest& in)
     return out;
 }
 
-MuteTrackRequest Signals::map(const livekit::MuteTrackRequest& in)
+MuteTrackRequest Signals::map(const livekit::MuteTrackRequest& in) const
 {
     MuteTrackRequest out;
     out._sid = in.sid();
@@ -137,7 +159,7 @@ MuteTrackRequest Signals::map(const livekit::MuteTrackRequest& in)
     return out;
 }
 
-livekit::MuteTrackRequest Signals::map(const MuteTrackRequest& in)
+livekit::MuteTrackRequest Signals::map(const MuteTrackRequest& in) const
 {
     livekit::MuteTrackRequest out;
     out.set_sid(in._sid);
@@ -145,14 +167,14 @@ livekit::MuteTrackRequest Signals::map(const MuteTrackRequest& in)
     return out;
 }
 
-SpeakersChanged Signals::map(const livekit::SpeakersChanged& in)
+SpeakersChanged Signals::map(const livekit::SpeakersChanged& in) const
 {
     SpeakersChanged out;
     out._speakers = rconv<SpeakerInfo, livekit::SpeakerInfo>(in.speakers());
     return out;
 }
 
-RoomUpdate Signals::map(const livekit::RoomUpdate& in)
+RoomUpdate Signals::map(const livekit::RoomUpdate& in) const
 {
     RoomUpdate out;
     if (in.has_room()) {
@@ -161,21 +183,21 @@ RoomUpdate Signals::map(const livekit::RoomUpdate& in)
     return out;
 }
 
-ConnectionQualityUpdate Signals::map(const livekit::ConnectionQualityUpdate& in)
+ConnectionQualityUpdate Signals::map(const livekit::ConnectionQualityUpdate& in) const
 {
     ConnectionQualityUpdate out;
     out._updates = rconv<ConnectionQualityInfo, livekit::ConnectionQualityInfo>(in.updates());
     return out;
 }
 
-StreamStateUpdate Signals::map(const livekit::StreamStateUpdate& in)
+StreamStateUpdate Signals::map(const livekit::StreamStateUpdate& in) const
 {
     StreamStateUpdate out;
     out._streamStates = rconv<StreamStateInfo, livekit::StreamStateInfo>(in.stream_states());
     return out;
 }
 
-SubscribedQualityUpdate Signals::map(const livekit::SubscribedQualityUpdate& in)
+SubscribedQualityUpdate Signals::map(const livekit::SubscribedQualityUpdate& in) const
 {
     SubscribedQualityUpdate out;
     out._trackSid = in.track_sid();
@@ -184,7 +206,7 @@ SubscribedQualityUpdate Signals::map(const livekit::SubscribedQualityUpdate& in)
     return out;
 }
 
-ReconnectResponse Signals::map(const livekit::ReconnectResponse& in)
+ReconnectResponse Signals::map(const livekit::ReconnectResponse& in) const
 {
     ReconnectResponse out;
     out._iceServers = rconv<ICEServer, livekit::ICEServer>(in.ice_servers());
@@ -194,14 +216,14 @@ ReconnectResponse Signals::map(const livekit::ReconnectResponse& in)
     return out;
 }
 
-TrackSubscribed Signals::map(const livekit::TrackSubscribed& in)
+TrackSubscribed Signals::map(const livekit::TrackSubscribed& in) const
 {
     TrackSubscribed out;
     out._trackSid = in.track_sid();
     return out;
 }
 
-RequestResponse Signals::map(const livekit::RequestResponse& in)
+RequestResponse Signals::map(const livekit::RequestResponse& in) const
 {
     RequestResponse out;
     out._requestId = in.request_id();
@@ -210,7 +232,7 @@ RequestResponse Signals::map(const livekit::RequestResponse& in)
     return out;
 }
 
-SubscriptionResponse Signals::map(const livekit::SubscriptionResponse& in)
+SubscriptionResponse Signals::map(const livekit::SubscriptionResponse& in) const
 {
     SubscriptionResponse out;
     out._trackSid = in.track_sid();
@@ -218,7 +240,7 @@ SubscriptionResponse Signals::map(const livekit::SubscriptionResponse& in)
     return out;
 }
 
-SubscriptionPermissionUpdate Signals::map(const livekit::SubscriptionPermissionUpdate& in)
+SubscriptionPermissionUpdate Signals::map(const livekit::SubscriptionPermissionUpdate& in) const
 {
     SubscriptionPermissionUpdate out;
     out._participantSid = in.participant_sid();
@@ -227,7 +249,7 @@ SubscriptionPermissionUpdate Signals::map(const livekit::SubscriptionPermissionU
     return out;
 }
 
-AddTrackRequest Signals::map(const livekit::AddTrackRequest& in)
+AddTrackRequest Signals::map(const livekit::AddTrackRequest& in) const
 {
     AddTrackRequest out;
     out._cid = in.cid();
@@ -249,7 +271,7 @@ AddTrackRequest Signals::map(const livekit::AddTrackRequest& in)
     return out;
 }
 
-livekit::AddTrackRequest Signals::map(const AddTrackRequest& in)
+livekit::AddTrackRequest Signals::map(const AddTrackRequest& in) const
 {
     livekit::AddTrackRequest out;
     out.set_cid(in._cid);
@@ -271,7 +293,7 @@ livekit::AddTrackRequest Signals::map(const AddTrackRequest& in)
     return out;
 }
 
-UpdateSubscription Signals::map(const livekit::UpdateSubscription& in)
+UpdateSubscription Signals::map(const livekit::UpdateSubscription& in) const
 {
     UpdateSubscription out;
     out._trackSids = rconv<std::string>(in.track_sids());
@@ -280,7 +302,7 @@ UpdateSubscription Signals::map(const livekit::UpdateSubscription& in)
     return out;
 }
 
-livekit::UpdateSubscription Signals::map(const UpdateSubscription& in)
+livekit::UpdateSubscription Signals::map(const UpdateSubscription& in) const
 {
     livekit::UpdateSubscription out;
     rconv(in._trackSids, out.mutable_track_sids());
@@ -289,7 +311,7 @@ livekit::UpdateSubscription Signals::map(const UpdateSubscription& in)
     return out;
 }
 
-UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in)
+UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in) const
 {
     UpdateTrackSettings out;
     out._trackSids = rconv<std::string>(in.track_sids());
@@ -302,7 +324,7 @@ UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in)
     return out;
 }
 
-livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in)
+livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in) const
 {
     livekit::UpdateTrackSettings out;
     rconv(in._trackSids, out.mutable_track_sids());
@@ -315,7 +337,7 @@ livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in)
     return out;
 }
 
-UpdateVideoLayers Signals::map(const livekit::UpdateVideoLayers& in)
+UpdateVideoLayers Signals::map(const livekit::UpdateVideoLayers& in) const
 {
     UpdateVideoLayers out;
     out._trackSid = in.track_sid();
@@ -323,7 +345,7 @@ UpdateVideoLayers Signals::map(const livekit::UpdateVideoLayers& in)
     return out;
 }
 
-livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in)
+livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in) const
 {
     livekit::UpdateVideoLayers out;
     out.set_track_sid(in._trackSid);
@@ -331,7 +353,7 @@ livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in)
     return out;
 }
 
-SubscriptionPermission Signals::map(const livekit::SubscriptionPermission& in)
+SubscriptionPermission Signals::map(const livekit::SubscriptionPermission& in) const
 {
     SubscriptionPermission out;
     out._allParticipants = in.all_participants();
@@ -339,7 +361,7 @@ SubscriptionPermission Signals::map(const livekit::SubscriptionPermission& in)
     return out;
 }
 
-livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in)
+livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in) const
 {
     livekit::SubscriptionPermission out;
     out.set_all_participants(in._allParticipants);
@@ -347,7 +369,7 @@ livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in)
     return out;
 }
 
-SyncState Signals::map(const livekit::SyncState& in)
+SyncState Signals::map(const livekit::SyncState& in) const
 {
     SyncState out;
     out._answer = map(in.answer());
@@ -359,7 +381,7 @@ SyncState Signals::map(const livekit::SyncState& in)
     return out;
 }
 
-livekit::SyncState Signals::map(const SyncState& in)
+livekit::SyncState Signals::map(const SyncState& in) const
 {
     livekit::SyncState out;
     *out.mutable_answer() = map(in._answer);
@@ -371,7 +393,7 @@ livekit::SyncState Signals::map(const SyncState& in)
     return out;
 }
 
-SimulateScenario Signals::map(const livekit::SimulateScenario& in)
+SimulateScenario Signals::map(const livekit::SimulateScenario& in) const
 {
     SimulateScenario out;
     switch (in.scenario_case()) {
@@ -413,14 +435,14 @@ SimulateScenario Signals::map(const livekit::SimulateScenario& in)
             break;
         case livekit::SimulateScenario::SCENARIO_NOT_SET:
             break;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::SimulateScenario, SimulateScenario)
             break;
     }
     return out;
 }
 
-livekit::SimulateScenario Signals::map(const SimulateScenario& in)
+livekit::SimulateScenario Signals::map(const SimulateScenario& in) const
 {
     livekit::SimulateScenario out;
     switch (in._case) {
@@ -453,14 +475,14 @@ livekit::SimulateScenario Signals::map(const SimulateScenario& in)
         case SimulateScenario::Case::LeaveRequestFullReconnect:
             out.set_leave_request_full_reconnect(in._scenario._leaveRequestFullReconnect);
             break;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(SimulateScenario, livekit::SimulateScenario)
             break;
     }
     return out;
 }
 
-UpdateParticipantMetadata Signals::map(const livekit::UpdateParticipantMetadata& in)
+UpdateParticipantMetadata Signals::map(const livekit::UpdateParticipantMetadata& in) const
 {
     UpdateParticipantMetadata out;
     out._metadata = in.metadata();
@@ -470,7 +492,7 @@ UpdateParticipantMetadata Signals::map(const livekit::UpdateParticipantMetadata&
     return out;
 }
 
-livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata& in)
+livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata& in) const
 {
     livekit::UpdateParticipantMetadata out;
     out.set_metadata(in._metadata);
@@ -480,7 +502,7 @@ livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata&
     return out;
 }
 
-Ping Signals::map(const livekit::Ping& in)
+Ping Signals::map(const livekit::Ping& in) const
 {
     Ping out;
     out._timestamp = in.timestamp();
@@ -488,7 +510,7 @@ Ping Signals::map(const livekit::Ping& in)
     return out;
 }
 
-livekit::Ping Signals::map(const Ping& in)
+livekit::Ping Signals::map(const Ping& in) const
 {
     livekit::Ping out;
     out.set_timestamp(in._timestamp);
@@ -496,7 +518,7 @@ livekit::Ping Signals::map(const Ping& in)
     return out;
 }
 
-UpdateLocalAudioTrack Signals::map(const livekit::UpdateLocalAudioTrack& in)
+UpdateLocalAudioTrack Signals::map(const livekit::UpdateLocalAudioTrack& in) const
 {
     UpdateLocalAudioTrack out;
     out._trackSid = in.track_sid();
@@ -504,7 +526,7 @@ UpdateLocalAudioTrack Signals::map(const livekit::UpdateLocalAudioTrack& in)
     return out;
 }
 
-livekit::UpdateLocalAudioTrack Signals::map(const UpdateLocalAudioTrack& in)
+livekit::UpdateLocalAudioTrack Signals::map(const UpdateLocalAudioTrack& in) const
 {
     livekit::UpdateLocalAudioTrack out;
     out.set_track_sid(in._trackSid);
@@ -512,7 +534,7 @@ livekit::UpdateLocalAudioTrack Signals::map(const UpdateLocalAudioTrack& in)
     return out;
 }
 
-UpdateLocalVideoTrack Signals::map(const livekit::UpdateLocalVideoTrack& in)
+UpdateLocalVideoTrack Signals::map(const livekit::UpdateLocalVideoTrack& in) const
 {
     UpdateLocalVideoTrack out;
     out._trackSid = in.track_sid();
@@ -521,7 +543,7 @@ UpdateLocalVideoTrack Signals::map(const livekit::UpdateLocalVideoTrack& in)
     return out;
 }
 
-livekit::UpdateLocalVideoTrack Signals::map(const UpdateLocalVideoTrack& in)
+livekit::UpdateLocalVideoTrack Signals::map(const UpdateLocalVideoTrack& in) const
 {
     livekit::UpdateLocalVideoTrack out;
     out.set_track_sid(in._trackSid);
@@ -530,7 +552,7 @@ livekit::UpdateLocalVideoTrack Signals::map(const UpdateLocalVideoTrack& in)
     return out;
 }
 
-Room Signals::map(const livekit::Room& in)
+Room Signals::map(const livekit::Room& in) const
 {
     Room out;
     out._sid = in.sid();
@@ -552,17 +574,17 @@ Room Signals::map(const livekit::Room& in)
     return out;
 }
 
-Codec Signals::map(const livekit::Codec& in)
+Codec Signals::map(const livekit::Codec& in) const
 {
     return {in.mime(), in.fmtp_line()};
 }
 
-TimedVersion Signals::map(const livekit::TimedVersion& in)
+TimedVersion Signals::map(const livekit::TimedVersion& in) const
 {
     return {in.unix_micro(), in.ticks()};
 }
 
-livekit::TimedVersion Signals::map(const TimedVersion& in)
+livekit::TimedVersion Signals::map(const TimedVersion& in) const
 {
     livekit::TimedVersion out;
     out.set_unix_micro(in._unixMicro);
@@ -570,7 +592,7 @@ livekit::TimedVersion Signals::map(const TimedVersion& in)
     return out;
 }
 
-ParticipantInfo Signals::map(const livekit::ParticipantInfo& in)
+ParticipantInfo Signals::map(const livekit::ParticipantInfo& in) const
 {
     ParticipantInfo out;
     out._sid = in.sid();
@@ -593,7 +615,7 @@ ParticipantInfo Signals::map(const livekit::ParticipantInfo& in)
     return out;
 }
 
-ParticipantKind Signals::map(livekit::ParticipantInfo_Kind in)
+ParticipantKind Signals::map(livekit::ParticipantInfo_Kind in) const
 {
     switch (in) {
         case livekit::ParticipantInfo_Kind_STANDARD:
@@ -606,14 +628,14 @@ ParticipantKind Signals::map(livekit::ParticipantInfo_Kind in)
             return ParticipantKind::Sip;
         case livekit::ParticipantInfo_Kind_AGENT:
             return ParticipantKind::Agent;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::ParticipantInfo_Kind, ParticipantKind)
             break;
     }
     return ParticipantKind::Standard;
 }
 
-ParticipantState Signals::map(livekit::ParticipantInfo_State in)
+ParticipantState Signals::map(livekit::ParticipantInfo_State in) const
 {
     switch (in) {
         case livekit::ParticipantInfo_State_JOINING:
@@ -624,14 +646,14 @@ ParticipantState Signals::map(livekit::ParticipantInfo_State in)
             return ParticipantState::Active;
         case livekit::ParticipantInfo_State_DISCONNECTED:
             break;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::ParticipantInfo_State, ParticipantState)
             break;
     }
     return ParticipantState::Disconnected;
 }
 
-ParticipantPermission Signals::map(const livekit::ParticipantPermission& in)
+ParticipantPermission Signals::map(const livekit::ParticipantPermission& in) const
 {
     ParticipantPermission out;
     out._canSubscribe = in.can_subscribe();
@@ -646,7 +668,7 @@ ParticipantPermission Signals::map(const livekit::ParticipantPermission& in)
     return out;
 }
 
-DisconnectReason Signals::map(livekit::DisconnectReason in)
+DisconnectReason Signals::map(livekit::DisconnectReason in) const
 {
     switch (in) {
         case livekit::UNKNOWN_REASON:
@@ -677,14 +699,14 @@ DisconnectReason Signals::map(livekit::DisconnectReason in)
             return DisconnectReason::UserRejected;
         case livekit::SIP_TRUNK_FAILURE:
             return DisconnectReason::SipTrunkFailure;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::DisconnectReason, DisconnectReason)
             break;
     }
     return DisconnectReason::UnknownReason;
 }
 
-livekit::DisconnectReason Signals::map(DisconnectReason in)
+livekit::DisconnectReason Signals::map(DisconnectReason in) const
 {
     switch (in) {
         case DisconnectReason::UnknownReason:
@@ -715,14 +737,14 @@ livekit::DisconnectReason Signals::map(DisconnectReason in)
             return livekit::USER_REJECTED;
         case DisconnectReason::SipTrunkFailure:
             return livekit::SIP_TRUNK_FAILURE;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(DisconnectReason, livekit::DisconnectReason)
             break;
     }
     return livekit::UNKNOWN_REASON;
 }
 
-TrackSource Signals::map(livekit::TrackSource in)
+TrackSource Signals::map(livekit::TrackSource in) const
 {
     switch (in) {
         case livekit::UNKNOWN:
@@ -735,14 +757,14 @@ TrackSource Signals::map(livekit::TrackSource in)
             return TrackSource::ScreenShare;
         case livekit::SCREEN_SHARE_AUDIO:
             return TrackSource::ScreenShareAudio;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::TrackSource, TrackSource)
             break;
     }
     return TrackSource::Unknown;
 }
 
-livekit::TrackSource Signals::map(TrackSource in)
+livekit::TrackSource Signals::map(TrackSource in) const
 {
     switch (in) {
         case TrackSource::Unknown:
@@ -755,14 +777,14 @@ livekit::TrackSource Signals::map(TrackSource in)
             return livekit::SCREEN_SHARE;
         case TrackSource::ScreenShareAudio:
             return livekit::SCREEN_SHARE_AUDIO;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(TrackSource, livekit::TrackSource)
             break;
     }
     return livekit::UNKNOWN;
 }
 
-TrackInfo Signals::map(const livekit::TrackInfo& in)
+TrackInfo Signals::map(const livekit::TrackInfo& in) const
 {
     TrackInfo out;
     out._sid = in.sid();
@@ -790,7 +812,7 @@ TrackInfo Signals::map(const livekit::TrackInfo& in)
     return out;
 }
 
-livekit::TrackInfo Signals::map(const TrackInfo& in)
+livekit::TrackInfo Signals::map(const TrackInfo& in) const
 {
     livekit::TrackInfo out;
     out.set_sid(in._sid);
@@ -817,7 +839,7 @@ livekit::TrackInfo Signals::map(const TrackInfo& in)
     return out;
 }
 
-VideoQuality Signals::map(livekit::VideoQuality in)
+VideoQuality Signals::map(livekit::VideoQuality in) const
 {
     switch (in) {
         case livekit::LOW:
@@ -828,14 +850,14 @@ VideoQuality Signals::map(livekit::VideoQuality in)
             return VideoQuality::High;
         case livekit::OFF:
             return VideoQuality::Off;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::VideoQuality, VideoQuality)
             break;
     }
     return VideoQuality::Low;
 }
 
-livekit::VideoQuality Signals::map(VideoQuality in)
+livekit::VideoQuality Signals::map(VideoQuality in) const
 {
     switch (in) {
         case VideoQuality::Low:
@@ -846,14 +868,14 @@ livekit::VideoQuality Signals::map(VideoQuality in)
             return livekit::HIGH;
         case VideoQuality::Off:
             return livekit::OFF;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(VideoQuality, livekit::VideoQuality)
             break;
     }
     return livekit::LOW;
 }
 
-VideoLayer Signals::map(const livekit::VideoLayer& in)
+VideoLayer Signals::map(const livekit::VideoLayer& in) const
 {
     VideoLayer out;
     out._quality = map(in.quality());
@@ -864,7 +886,7 @@ VideoLayer Signals::map(const livekit::VideoLayer& in)
     return out;
 }
 
-livekit::VideoLayer Signals::map(const VideoLayer& in)
+livekit::VideoLayer Signals::map(const VideoLayer& in) const
 {
     livekit::VideoLayer out;
     out.set_quality(map(in._quality));
@@ -875,7 +897,7 @@ livekit::VideoLayer Signals::map(const VideoLayer& in)
     return out;
 }
 
-TrackType Signals::map(livekit::TrackType in)
+TrackType Signals::map(livekit::TrackType in) const
 {
     switch (in) {
         case livekit::AUDIO:
@@ -884,14 +906,14 @@ TrackType Signals::map(livekit::TrackType in)
             return TrackType::Video;
         case livekit::DATA:
             return TrackType::Data;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::TrackType, TrackType)
             break;
     }
     return TrackType::Audio;
 }
 
-livekit::TrackType Signals::map(TrackType in)
+livekit::TrackType Signals::map(TrackType in) const
 {
     switch (in) {
         case TrackType::Audio:
@@ -900,14 +922,14 @@ livekit::TrackType Signals::map(TrackType in)
             return livekit::VIDEO;
         case TrackType::Data:
             return livekit::DATA;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(TrackType, livekit::TrackType)
             break;
     }
     return livekit::AUDIO;
 }
 
-SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in)
+SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in) const
 {
     SimulcastCodecInfo out;
     out._mimeType = in.mime_type();
@@ -917,7 +939,7 @@ SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in)
     return out;
 }
 
-livekit::SimulcastCodecInfo Signals::map(const SimulcastCodecInfo& in)
+livekit::SimulcastCodecInfo Signals::map(const SimulcastCodecInfo& in) const
 {
     livekit::SimulcastCodecInfo out;
     out.set_mime_type(in._mimeType);
@@ -927,35 +949,35 @@ livekit::SimulcastCodecInfo Signals::map(const SimulcastCodecInfo& in)
     return out;
 }
 
-BackupCodecPolicy Signals::map(livekit::BackupCodecPolicy in)
+BackupCodecPolicy Signals::map(livekit::BackupCodecPolicy in) const
 {
     switch (in) {
         case livekit::REGRESSION:
             break;
         case livekit::SIMULCAST:
             return BackupCodecPolicy::Simulcast;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::BackupCodecPolicy, BackupCodecPolicy)
             break;
     }
     return BackupCodecPolicy::Regression;
 }
 
-livekit::BackupCodecPolicy Signals::map(BackupCodecPolicy in)
+livekit::BackupCodecPolicy Signals::map(BackupCodecPolicy in) const
 {
     switch (in) {
         case BackupCodecPolicy::Regression:
             break;
         case BackupCodecPolicy::Simulcast:
             return livekit::SIMULCAST;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(BackupCodecPolicy, livekit::BackupCodecPolicy)
             break;
     }
     return livekit::REGRESSION;
 }
 
-EncryptionType Signals::map(livekit::Encryption_Type in)
+EncryptionType Signals::map(livekit::Encryption_Type in) const
 {
     switch (in) {
         case livekit::Encryption_Type_NONE:
@@ -964,14 +986,14 @@ EncryptionType Signals::map(livekit::Encryption_Type in)
             return EncryptionType::Gcm;
         case livekit::Encryption_Type_CUSTOM:
             return EncryptionType::Custom;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::Encryption_Type, EncryptionType)
             break;
     }
     return EncryptionType::None;
 }
 
-livekit::Encryption_Type Signals::map(EncryptionType in)
+livekit::Encryption_Type Signals::map(EncryptionType in) const
 {
     switch (in) {
         case EncryptionType::None:
@@ -980,14 +1002,14 @@ livekit::Encryption_Type Signals::map(EncryptionType in)
             return livekit::Encryption_Type_GCM;
         case EncryptionType::Custom:
             return livekit::Encryption_Type_CUSTOM;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(EncryptionType, livekit::Encryption_Type)
             break;
     }
     return livekit::Encryption_Type_NONE;
 }
 
-AudioTrackFeature Signals::map(livekit::AudioTrackFeature in)
+AudioTrackFeature Signals::map(livekit::AudioTrackFeature in) const
 {
     switch (in) {
         case livekit::TF_STEREO:
@@ -1002,14 +1024,14 @@ AudioTrackFeature Signals::map(livekit::AudioTrackFeature in)
             return AudioTrackFeature::TFNoiseSuppression;
         case livekit::TF_ENHANCED_NOISE_CANCELLATION:
             return AudioTrackFeature::TFEnhancedNoiseCancellation;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::AudioTrackFeature, AudioTrackFeature)
             break;
     }
     return AudioTrackFeature::TFStereo;
 }
 
-livekit::AudioTrackFeature Signals::map(AudioTrackFeature in)
+livekit::AudioTrackFeature Signals::map(AudioTrackFeature in) const
 {
     switch (in) {
         case AudioTrackFeature::TFStereo:
@@ -1024,14 +1046,14 @@ livekit::AudioTrackFeature Signals::map(AudioTrackFeature in)
             return livekit::TF_NOISE_SUPPRESSION;
         case AudioTrackFeature::TFEnhancedNoiseCancellation:
             return livekit::TF_ENHANCED_NOISE_CANCELLATION;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(AudioTrackFeature, livekit::AudioTrackFeature)
             break;
     }
     return livekit::TF_STEREO;
 }
 
-ClientConfigSetting Signals::map(livekit::ClientConfigSetting in)
+ClientConfigSetting Signals::map(livekit::ClientConfigSetting in) const
 {
     switch (in) {
         case livekit::UNSET:
@@ -1040,14 +1062,14 @@ ClientConfigSetting Signals::map(livekit::ClientConfigSetting in)
             return ClientConfigSetting::Disabled;
         case livekit::ENABLED:
             return ClientConfigSetting::Enabled;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::ClientConfigSetting, ClientConfigSetting)
             break;
     }
     return ClientConfigSetting::Unset;
 }
 
-ClientConfiguration Signals::map(const livekit::ClientConfiguration& in)
+ClientConfiguration Signals::map(const livekit::ClientConfiguration& in) const
 {
     ClientConfiguration out;
     out._video = map(in.video());
@@ -1058,7 +1080,7 @@ ClientConfiguration Signals::map(const livekit::ClientConfiguration& in)
     return out;
 }
 
-DisabledCodecs Signals::map(const livekit::DisabledCodecs& in)
+DisabledCodecs Signals::map(const livekit::DisabledCodecs& in) const
 {
     DisabledCodecs out;
     out._codecs = rconv<Codec, livekit::Codec>(in.codecs());
@@ -1066,28 +1088,28 @@ DisabledCodecs Signals::map(const livekit::DisabledCodecs& in)
     return out;
 }
 
-VideoConfiguration Signals::map(const livekit::VideoConfiguration& in)
+VideoConfiguration Signals::map(const livekit::VideoConfiguration& in) const
 {
     VideoConfiguration out;
     out._hardwareEncoder = map(in.hardware_encoder());
     return out;
 }
 
-ServerEdition Signals::map(livekit::ServerInfo_Edition in)
+ServerEdition Signals::map(livekit::ServerInfo_Edition in) const
 {
     switch (in) {
         case livekit::ServerInfo_Edition_Standard:
             break;
         case livekit::ServerInfo_Edition_Cloud:
             return ServerEdition::Cloud;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::ServerInfo_Edition, ServerEdition)
             break;
     }
     return ServerEdition::Standard;
 }
 
-ServerInfo Signals::map(const livekit::ServerInfo& in)
+ServerInfo Signals::map(const livekit::ServerInfo& in) const
 {
     ServerInfo out;
     out._edition = map(in.edition());
@@ -1100,35 +1122,35 @@ ServerInfo Signals::map(const livekit::ServerInfo& in)
     return out;
 }
 
-SignalTarget Signals::map(livekit::SignalTarget in)
+SignalTarget Signals::map(livekit::SignalTarget in) const
 {
     switch (in) {
         case livekit::PUBLISHER:
             break;
         case livekit::SUBSCRIBER:
             return SignalTarget::Subscriber;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::SignalTarget, SignalTarget)
             break;
     }
     return SignalTarget::Publisher;
 }
 
-livekit::SignalTarget Signals::map(SignalTarget in)
+livekit::SignalTarget Signals::map(SignalTarget in) const
 {
     switch (in) {
         case SignalTarget::Publisher:
             break;
         case SignalTarget::Subscriber:
             return livekit::SUBSCRIBER;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(SignalTarget, livekit::SignalTarget)
             break;
     }
     return livekit::PUBLISHER;
 }
 
-LeaveRequestAction Signals::map(livekit::LeaveRequest_Action in)
+LeaveRequestAction Signals::map(livekit::LeaveRequest_Action in) const
 {
     switch (in) {
         case livekit::LeaveRequest_Action_DISCONNECT:
@@ -1137,14 +1159,14 @@ LeaveRequestAction Signals::map(livekit::LeaveRequest_Action in)
             return LeaveRequestAction::Resume;
         case livekit::LeaveRequest_Action_RECONNECT:
             return LeaveRequestAction::Reconnect;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::LeaveRequest_Action, LeaveRequestAction)
             break;
     }
     return LeaveRequestAction::Disconnect;
 }
 
-livekit::LeaveRequest_Action Signals::map(LeaveRequestAction in)
+livekit::LeaveRequest_Action Signals::map(LeaveRequestAction in) const
 {
     switch (in) {
         case LeaveRequestAction::Disconnect:
@@ -1153,14 +1175,14 @@ livekit::LeaveRequest_Action Signals::map(LeaveRequestAction in)
             return livekit::LeaveRequest_Action_RESUME;
         case LeaveRequestAction::Reconnect:
             return livekit::LeaveRequest_Action_RECONNECT;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(LeaveRequestAction, livekit::LeaveRequest_Action)
             break;
     }
     return livekit::LeaveRequest_Action_DISCONNECT;
 }
 
-RegionInfo Signals::map(const livekit::RegionInfo& in)
+RegionInfo Signals::map(const livekit::RegionInfo& in) const
 {
     RegionInfo out;
     out._region = in.region();
@@ -1169,7 +1191,7 @@ RegionInfo Signals::map(const livekit::RegionInfo& in)
     return out;
 }
 
-livekit::RegionInfo Signals::map(const RegionInfo& in)
+livekit::RegionInfo Signals::map(const RegionInfo& in) const
 {
     livekit::RegionInfo out;
     out.set_region(in._region);
@@ -1178,21 +1200,21 @@ livekit::RegionInfo Signals::map(const RegionInfo& in)
     return out;
 }
 
-RegionSettings Signals::map(const livekit::RegionSettings& in)
+RegionSettings Signals::map(const livekit::RegionSettings& in) const
 {
     RegionSettings out;
     out._regions = rconv<RegionInfo, livekit::RegionInfo>(in.regions());
     return out;
 }
 
-livekit::RegionSettings Signals::map(const RegionSettings& in)
+livekit::RegionSettings Signals::map(const RegionSettings& in) const
 {
     livekit::RegionSettings out;
     rconv(in._regions, out.mutable_regions());
     return out;
 }
 
-SpeakerInfo Signals::map(const livekit::SpeakerInfo& in)
+SpeakerInfo Signals::map(const livekit::SpeakerInfo& in) const
 {
     SpeakerInfo out;
     out._sid = in.sid();
@@ -1201,7 +1223,7 @@ SpeakerInfo Signals::map(const livekit::SpeakerInfo& in)
     return out;
 }
 
-ConnectionQuality Signals::map(livekit::ConnectionQuality in)
+ConnectionQuality Signals::map(livekit::ConnectionQuality in) const
 {
     switch (in) {
         case livekit::POOR:
@@ -1212,14 +1234,14 @@ ConnectionQuality Signals::map(livekit::ConnectionQuality in)
             return ConnectionQuality::Excellent;
         case livekit::LOST:
             return ConnectionQuality::Lost;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::ConnectionQuality, ConnectionQuality)
             break;
     }
     return ConnectionQuality::Poor;
 }
 
-ConnectionQualityInfo Signals::map(const livekit::ConnectionQualityInfo& in)
+ConnectionQualityInfo Signals::map(const livekit::ConnectionQualityInfo& in) const
 {
     ConnectionQualityInfo out;
     out._participantSid = in.participant_sid();
@@ -1228,21 +1250,21 @@ ConnectionQualityInfo Signals::map(const livekit::ConnectionQualityInfo& in)
     return out;
 }
 
-StreamState Signals::map(livekit::StreamState in)
+StreamState Signals::map(livekit::StreamState in) const
 {
     switch (in) {
         case livekit::ACTIVE:
             break;
         case livekit::PAUSED:
             return StreamState::Paused;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::StreamState, StreamState)
             break;
     }
     return StreamState::Active;
 }
 
-StreamStateInfo Signals::map(const livekit::StreamStateInfo& in)
+StreamStateInfo Signals::map(const livekit::StreamStateInfo& in) const
 {
     StreamStateInfo out;
     out._participantSid = in.participant_sid();
@@ -1251,7 +1273,7 @@ StreamStateInfo Signals::map(const livekit::StreamStateInfo& in)
     return out;
 }
 
-SubscribedQuality Signals::map(const livekit::SubscribedQuality& in)
+SubscribedQuality Signals::map(const livekit::SubscribedQuality& in) const
 {
     SubscribedQuality out;
     out._quality = map(in.quality());
@@ -1259,7 +1281,7 @@ SubscribedQuality Signals::map(const livekit::SubscribedQuality& in)
     return out;
 }
 
-SubscribedCodec Signals::map(const livekit::SubscribedCodec& in)
+SubscribedCodec Signals::map(const livekit::SubscribedCodec& in) const
 {
     SubscribedCodec out;
     out._codec = in.codec();
@@ -1267,7 +1289,7 @@ SubscribedCodec Signals::map(const livekit::SubscribedCodec& in)
     return out;
 }
 
-ICEServer Signals::map(const livekit::ICEServer& in)
+ICEServer Signals::map(const livekit::ICEServer& in) const
 {
     ICEServer out;
     out._urls = rconv<std::string>(in.urls());
@@ -1276,7 +1298,7 @@ ICEServer Signals::map(const livekit::ICEServer& in)
     return out;
 }
 
-RequestResponseReason Signals::map(livekit::RequestResponse_Reason in)
+RequestResponseReason Signals::map(livekit::RequestResponse_Reason in) const
 {
     switch (in) {
         case livekit::RequestResponse_Reason_OK:
@@ -1287,14 +1309,14 @@ RequestResponseReason Signals::map(livekit::RequestResponse_Reason in)
             return RequestResponseReason::NotAllowed;
         case livekit::RequestResponse_Reason_LIMIT_EXCEEDED:
             return RequestResponseReason::LimitExceeded;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::RequestResponse_Reason, RequestResponseReason)
             break;
     }
     return RequestResponseReason::Ok;
 }
 
-SubscriptionError Signals::map(livekit::SubscriptionError in)
+SubscriptionError Signals::map(livekit::SubscriptionError in) const
 {
     switch (in) {
         case livekit::SE_UNKNOWN:
@@ -1303,14 +1325,14 @@ SubscriptionError Signals::map(livekit::SubscriptionError in)
             return SubscriptionError::CodecUnsupported;
         case livekit::SE_TRACK_NOTFOUND:
             return SubscriptionError::TrackNotfound;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::SubscriptionError, SubscriptionError)
             break;
     }
     return SubscriptionError::Unknown;
 }
 
-SimulcastCodec Signals::map(const livekit::SimulcastCodec& in)
+SimulcastCodec Signals::map(const livekit::SimulcastCodec& in) const
 {
     SimulcastCodec out;
     out._cid = in.cid();
@@ -1318,7 +1340,7 @@ SimulcastCodec Signals::map(const livekit::SimulcastCodec& in)
     return out;
 }
 
-livekit::SimulcastCodec Signals::map(const SimulcastCodec& in)
+livekit::SimulcastCodec Signals::map(const SimulcastCodec& in) const
 {
     livekit::SimulcastCodec out;
     out.set_cid(in._cid);
@@ -1326,7 +1348,7 @@ livekit::SimulcastCodec Signals::map(const SimulcastCodec& in)
     return out;
 }
 
-ParticipantTracks Signals::map(const livekit::ParticipantTracks& in)
+ParticipantTracks Signals::map(const livekit::ParticipantTracks& in) const
 {
     ParticipantTracks out;
     out._participantSid = in.participant_sid();
@@ -1334,7 +1356,7 @@ ParticipantTracks Signals::map(const livekit::ParticipantTracks& in)
     return out;
 }
 
-livekit::ParticipantTracks Signals::map(const ParticipantTracks& in)
+livekit::ParticipantTracks Signals::map(const ParticipantTracks& in) const
 {
     livekit::ParticipantTracks out;
     out.set_participant_sid(in._participantSid);
@@ -1342,7 +1364,7 @@ livekit::ParticipantTracks Signals::map(const ParticipantTracks& in)
     return out;
 }
 
-TrackPermission Signals::map(const livekit::TrackPermission& in)
+TrackPermission Signals::map(const livekit::TrackPermission& in) const
 {
     TrackPermission out;
     out._participantSid = in.participant_sid();
@@ -1352,7 +1374,7 @@ TrackPermission Signals::map(const livekit::TrackPermission& in)
     return out;
 }
 
-livekit::TrackPermission Signals::map(const TrackPermission& in)
+livekit::TrackPermission Signals::map(const TrackPermission& in) const
 {
     livekit::TrackPermission out;
     out.set_participant_sid(in._participantSid);
@@ -1362,7 +1384,7 @@ livekit::TrackPermission Signals::map(const TrackPermission& in)
     return out;
 }
 
-DataChannelInfo Signals::map(const livekit::DataChannelInfo& in)
+DataChannelInfo Signals::map(const livekit::DataChannelInfo& in) const
 {
     DataChannelInfo out;
     out._label = in.label();
@@ -1371,7 +1393,7 @@ DataChannelInfo Signals::map(const livekit::DataChannelInfo& in)
     return out;
 }
 
-livekit::DataChannelInfo Signals::map(const DataChannelInfo& in)
+livekit::DataChannelInfo Signals::map(const DataChannelInfo& in) const
 {
     livekit::DataChannelInfo out;
     out.set_label(in._label);
@@ -1380,7 +1402,7 @@ livekit::DataChannelInfo Signals::map(const DataChannelInfo& in)
     return out;
 }
 
-CandidateProtocol Signals::map(livekit::CandidateProtocol in)
+CandidateProtocol Signals::map(livekit::CandidateProtocol in) const
 {
     switch (in) {
         case livekit::UDP:
@@ -1389,14 +1411,14 @@ CandidateProtocol Signals::map(livekit::CandidateProtocol in)
             return CandidateProtocol::Tcp;
         case livekit::TLS:
             return CandidateProtocol::Tls;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(livekit::CandidateProtocol, CandidateProtocol)
             break;
     }
     return CandidateProtocol::Udp;
 }
 
-livekit::CandidateProtocol Signals::map(CandidateProtocol in)
+livekit::CandidateProtocol Signals::map(CandidateProtocol in) const
 {
     switch (in) {
         case CandidateProtocol::Udp:
@@ -1405,15 +1427,15 @@ livekit::CandidateProtocol Signals::map(CandidateProtocol in)
             return livekit::TCP;
         case CandidateProtocol::Tls:
             return livekit::TLS;
-        default: // TODO: log error
-            assert(false);
+        default:
+            TYPE_CONVERSION_ERROR(CandidateProtocol, livekit::CandidateProtocol)
             break;
     }
     return livekit::UDP;
 }
 
 template <typename TOut, typename TIn, class TProtoBufRepeated>
-std::vector<TOut> Signals::rconv(const TProtoBufRepeated& in)
+std::vector<TOut> Signals::rconv(const TProtoBufRepeated& in) const
 {
     if (const auto size = in.size()) {
         std::vector<TOut> out;
@@ -1427,7 +1449,7 @@ std::vector<TOut> Signals::rconv(const TProtoBufRepeated& in)
 }
 
 template <typename TCppRepeated, class TProtoBufRepeated>
-void Signals::rconv(const TCppRepeated& from, TProtoBufRepeated* to)
+void Signals::rconv(const TCppRepeated& from, TProtoBufRepeated* to) const
 {
     if (to) {
         to->Reserve(int(to->size() + from.size()));
@@ -1438,7 +1460,7 @@ void Signals::rconv(const TCppRepeated& from, TProtoBufRepeated* to)
 }
 
 template<typename K, typename V>
-std::unordered_map<K, V> Signals::mconv(const google::protobuf::Map<K, V>& in)
+std::unordered_map<K, V> Signals::mconv(const google::protobuf::Map<K, V>& in) const
 {
     if (const auto size = in.size()) {
         std::unordered_map<K, V> out;
@@ -1452,7 +1474,8 @@ std::unordered_map<K, V> Signals::mconv(const google::protobuf::Map<K, V>& in)
 }
 
 template<typename K, typename V>
-void Signals::mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to)
+void Signals::mconv(const std::unordered_map<K, V>& from,
+                    google::protobuf::Map<K, V>* to) const
 {
     if (to) {
         for (auto it = from.begin(); it != from.end(); ++it) {

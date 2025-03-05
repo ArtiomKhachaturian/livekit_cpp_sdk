@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 #include "SignalClientWs.h"
 #include "Websocket.h"
-#include "WebsocketFactory.h"
 #include "MemoryBlock.h"
 #include "WebsocketFailure.h"
 #include "Utils.h"
@@ -47,18 +46,13 @@ inline std::string urlQueryItem(const std::string& key, bool val) {
 namespace LiveKitCpp
 {
 
-SignalClientWs::SignalClientWs(std::unique_ptr<Websocket> socket)
-    : SignalClient(socket.get())
+SignalClientWs::SignalClientWs(std::unique_ptr<Websocket> socket, LogsReceiver* logger)
+    : SignalClient(socket.get(), logger)
     , _socket(std::move(socket))
 {
     if (_socket) {
         _socket->addListener(this);
     }
-}
-
-SignalClientWs::SignalClientWs(const WebsocketFactory& socketFactory)
-    : SignalClientWs(socketFactory.create())
-{
 }
 
 SignalClientWs::~SignalClientWs()

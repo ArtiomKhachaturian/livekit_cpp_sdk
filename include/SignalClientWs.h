@@ -28,8 +28,7 @@ class LIVEKIT_CLIENT_API SignalClientWs : public SignalClient,
                                           private WebsocketListener
 {
 public:
-    SignalClientWs(std::unique_ptr<Websocket> socket);
-    SignalClientWs(const WebsocketFactory& socketFactory);
+    SignalClientWs(std::unique_ptr<Websocket> socket, LogsReceiver* logger = nullptr);
     ~SignalClientWs() final;
     const std::string& host() const noexcept;
     const std::string& authToken() const noexcept;

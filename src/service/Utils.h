@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // Utils.h
 #include <string>
+#include <system_error>
 
 #ifdef __APPLE__
 #ifdef __OBJC__
@@ -30,6 +31,8 @@ std::string operatingSystemVersion();
 std::string operatingSystemName();
 std::string modelIdentifier();
 std::string fromWideChar(const std::wstring& w);
+std::string toString(const std::system_error& e);
+
 template <unsigned flag>
 inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }
 
