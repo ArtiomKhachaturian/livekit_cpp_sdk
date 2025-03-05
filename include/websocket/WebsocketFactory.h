@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "LiveKitClientExport.h"
 #include <memory>
-#include <string>
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-class LogsReceiver;
-class Websocket;
+class EndPoint;
 
-class LIVEKIT_CLIENT_API WebsocketFactory
+class Factory
 {
 public:
-    virtual ~WebsocketFactory() = default;
-    virtual std::unique_ptr<Websocket> create() const = 0;
-    // valid factory only if [USE_ZAPHOYD_TPP_SOCKETS] was ON for the library
-    static std::shared_ptr<WebsocketFactory> createDefaultFactory(const std::shared_ptr<LogsReceiver>& logger = {});
+    virtual ~Factory() = default;
+    virtual std::unique_ptr<EndPoint> create() const = 0;
 };
 
-} // namespace LiveKitCpp
+} // namespace Websocket

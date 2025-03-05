@@ -11,18 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CommandReceiver.h
-#include <string>
+#pragma once
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-class CommandReceiver
+enum class State
 {
-public:
-    virtual ~CommandReceiver() = default;
-    virtual void receiveBinary(const void* data, size_t dataLen) = 0;
-    virtual void receiveText(const std::string_view& text) = 0;
+    Connecting,
+    Connected,
+    Disconnecting,
+    Disconnected,
 };
 
-} // namespace LiveKitCpp
+} // namespace Websocket

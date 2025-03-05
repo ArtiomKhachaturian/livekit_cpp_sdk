@@ -12,32 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "LiveKitClientExport.h"
 #include <string_view>
 #include <memory>
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-class MemoryBlock;
-class WebsocketError;
+class Blob;
+class Error;
 enum class State;
 
-class LIVEKIT_CLIENT_API WebsocketListener
+class Listener
 {
 public:
-    virtual void onStateChanged(uint64_t /*socketId*/, uint64_t /*connectionId*/,
-                                const std::string_view& /*host*/,
+    virtual void onStateChanged(uint64_t /*socketId*/,
+                                uint64_t /*connectionId*/,
                                 State /*state*/) {}
-    virtual void onError(uint64_t /*socketId*/, uint64_t /*connectionId*/,
-                         const std::string_view& /*host*/,
-                         const WebsocketError& /*error*/) {}
-    virtual void onTextMessageReceived(uint64_t /*socketId*/, uint64_t /*connectionId*/,
-                                       const std::string_view& /*message*/) {}
-    virtual void onBinaryMessageReceved(uint64_t /*socketId*/, uint64_t /*connectionId*/,
-                                        const std::shared_ptr<const MemoryBlock>& /*message*/) {}
+    virtual void onError(uint64_t /*socketId*/,
+                         uint64_t /*connectionId*/,
+                         const Error& /*error*/) {}
+    virtual void onTextMessage(uint64_t /*socketId*/,
+                               uint64_t /*connectionId*/,
+                               const std::string_view& /*message*/) {}
+    virtual void onBinaryMessage(uint64_t /*socketId*/,
+                                 uint64_t /*connectionId*/,
+                                 const std::shared_ptr<Blob>& /*message*/) {}
 protected:
-    virtual ~WebsocketListener() = default;
+    virtual ~Listener() = default;
 };
 
-} // namespace LiveKitCpp
+} // namespace Websocket

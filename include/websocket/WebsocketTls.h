@@ -16,13 +16,13 @@
 #include "WebsocketTlsMethod.h"
 #include <string>
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-struct WebsocketTls 
+struct Tls 
 {
-    WebsocketTlsMethod _method = WebsocketTlsMethod::sslv23;
-    WebsocketTlsPeerVerification _peerVerification = WebsocketTlsPeerVerification::No;
+    TlsMethod _method = TlsMethod::sslv23;
+    TlsPeerVerification _peerVerification = TlsPeerVerification::No;
     // PEM or ASN.1
     bool _certificateIsPem = true;
     // always create a new key when using _dh parameter

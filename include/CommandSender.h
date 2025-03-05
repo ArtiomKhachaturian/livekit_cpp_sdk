@@ -23,9 +23,12 @@ class MemoryBlock;
 class CommandSender
 {
 public:
+    virtual bool sendBinary(const std::shared_ptr<MemoryBlock>& /*binary*/) {
+        return false;
+    }
+    virtual bool sendText(const std::string_view& /*text*/) { return false; }
+protected:
     virtual ~CommandSender() = default;
-    virtual bool sendBinary(const std::shared_ptr<const MemoryBlock>& binary) = 0;
-    virtual bool sendText(const std::string_view& text) = 0;
 };
 
 } // namespace LiveKitCpp

@@ -11,32 +11,33 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "LiveKitClientExport.h"
+#pragma once // WebsocketEndPoint.h
 #include "State.h"
 #include "WebsocketCloseCode.h"
 #include "WebsocketOptions.h"
-#include "CommandSender.h"
 #include <string>
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-class WebsocketListener;
+class Listener;
+class Blob;
+enum class State;
 
-class LIVEKIT_CLIENT_API Websocket : public CommandSender
+class EndPoint
 {
 public:
-    ~Websocket() override = default;
-    virtual void addListener(WebsocketListener* listener) = 0;
-    virtual void removeListener(WebsocketListener* listener) = 0;
-    // [connectionId] will passed to all methods of WebsocketListener
-    virtual bool open(WebsocketOptions options, uint64_t connectionId = 0U) = 0;
+    virtual ~EndPoint() = default;
+    virtual void addListener(Listener* listener) = 0;
+    virtual void removeListener(Listener* listener) = 0;
+    // [connectionId] will passed to all methods of Listener
+    virtual bool open(Options options, uint64_t connectionId = 0U) = 0;
     virtual void close() = 0;
     virtual std::string host() const = 0;
     virtual State state() const = 0;
+    virtual bool sendBinary(const std::shared_ptr<Blob>& binary) = 0;
+    virtual bool sendText(std::string_view text) = 0;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
 };
 
-
-} // namespace LiveKitCpp
+} // namespace Websocket

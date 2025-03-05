@@ -12,27 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "LiveKitClientExport.h"
 #include "WebsocketTls.h"
 #include <optional>
 #include <unordered_map>
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-struct LIVEKIT_CLIENT_API WebsocketOptions
+struct Options
 {
     using Linger = std::pair<bool, uint16_t>;
 public:
-    WebsocketOptions() = default;
-    WebsocketOptions(std::string host);
-    WebsocketOptions(const WebsocketOptions&) = default;
-    WebsocketOptions(WebsocketOptions&&) noexcept = default;
-    WebsocketOptions& operator = (const WebsocketOptions&) = default;
-    WebsocketOptions& operator = (WebsocketOptions&&) noexcept = default;
-    void addBasicAuthHeader(const std::string& user, const std::string& password);
-    void addBearerAuthHeader(const std::string& token);
-    void addAuthHeader(std::string auth);
     // URL/URI
     std::string _host;
     // agent
@@ -61,7 +51,7 @@ public:
     // IPPROTO_TCP/TCP_NODELAY
     std::optional<bool> _tcpNoDelay;
     // SSL/TLS
-    WebsocketTls _tls;
+    Tls _tls;
 };
 
-} // namespace LiveKitCpp
+} // namespace Websocket

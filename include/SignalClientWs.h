@@ -12,23 +12,24 @@
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
 #include "SignalClient.h"
+#include "CommandSender.h"
 #include "ReconnectMode.h"
-#include "websocket/WebsocketListener.h"
-#include "websocket/WebsocketOptions.h"
 #include <memory>
 #include <string>
+
+namespace Websocket {
+class EndPoint;
+enum class State;
+}
 
 namespace LiveKitCpp
 {
 
-class Websocket;
-class WebsocketFactory;
-
-class LIVEKIT_CLIENT_API SignalClientWs : public SignalClient,
-                                          private WebsocketListener
+class LIVEKIT_CLIENT_API SignalClientWs : public SignalClient, private CommandSender
 {
+    class Listener;
 public:
-    SignalClientWs(std::unique_ptr<Websocket> socket, LogsReceiver* logger = nullptr);
+    SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, LogsReceiver* logger = nullptr);
     ~SignalClientWs() final;
     const std::string& host() const noexcept;
     const std::string& authToken() const noexcept;
@@ -46,18 +47,12 @@ public:
     bool connect() final;
     void disconnect() final;
 private:
-    WebsocketOptions buildWebsocketOptions() const;
-    // impl. of WebsocketListener
-    void onError(uint64_t socketId, uint64_t connectionId,
-                 const std::string_view& host,
-                 const WebsocketError& error) final;
-    void onStateChanged(uint64_t socketId, uint64_t connectionId,
-                        const std::string_view& host,
-                        State state) final;
-    void onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
-                                const std::shared_ptr<const MemoryBlock>& message) final;
+    void updateState(Websocket::State state);
+    // impl. of CommandSender
+    bool sendBinary(const std::shared_ptr<MemoryBlock>& binary) final;
 private:
-    const std::unique_ptr<Websocket> _socket;
+    const std::unique_ptr<Listener> _socketListener;
+    const std::unique_ptr<Websocket::EndPoint> _socket;
     std::string _host;
     std::string _authToken;
     std::string _participantSid;

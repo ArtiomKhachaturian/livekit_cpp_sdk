@@ -15,7 +15,6 @@
 #include "SignalTransportListener.h"
 #include "ProtectedObj.h"
 #include "Listeners.h"
-#include "MemoryBlock.h"
 #include "ResponseReceiver.h"
 #include "RequestSender.h"
 #include "Loggable.h"
@@ -167,13 +166,6 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
 SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
-}
-
-void SignalClient::handleServerProtobufMessage(const std::shared_ptr<const MemoryBlock>& message)
-{
-    if (message) {
-        handleServerProtobufMessage(message->data(), message->size());
-    }
 }
 
 void SignalClient::handleServerProtobufMessage(const void* message, size_t len)

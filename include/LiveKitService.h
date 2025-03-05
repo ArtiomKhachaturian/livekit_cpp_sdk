@@ -17,19 +17,22 @@
 #include "LiveKitRoomOptions.h"
 #include <memory>
 
+namespace Websocket {
+class Factory;
+}
+
 namespace LiveKitCpp
 {
 
 class LiveKitRoom;
 class LogsReceiver;
-class WebsocketFactory;
 
 class LIVEKIT_CLIENT_API LiveKitService
 {
     class Impl;
 public:
-    LiveKitService(const std::shared_ptr<LogsReceiver>& logger = {},
-                   const std::shared_ptr<WebsocketFactory>& websocketsFactory = {});
+    LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                   const std::shared_ptr<LogsReceiver>& logger = {});
     ~LiveKitService();
     LiveKitServiceState state() const;
     [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]

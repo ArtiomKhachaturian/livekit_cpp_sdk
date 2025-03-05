@@ -13,9 +13,9 @@
 // limitations under the License.
 #pragma once // SignalClient.h
 #include "LiveKitClientExport.h"
+#include "State.h"
 #include <memory>
 #include <string>
-#include "State.h"
 
 namespace LiveKitCpp
 {
@@ -85,7 +85,6 @@ public:
 protected:
     ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
-    void handleServerProtobufMessage(const std::shared_ptr<const MemoryBlock>& message);
     void handleServerProtobufMessage(const void* message, size_t len);
 private:
     const std::unique_ptr<Impl> _impl;

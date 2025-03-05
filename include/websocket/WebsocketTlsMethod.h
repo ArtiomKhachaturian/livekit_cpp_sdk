@@ -13,10 +13,10 @@
 // limitations under the License.
 #pragma once
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-enum class WebsocketTlsMethod {
+enum class TlsMethod {
     /// Generic SSL version 2.
     sslv2,
     /// SSL version 2 client.
@@ -67,4 +67,4 @@ enum class WebsocketTlsMethod {
     tls_server
 };
 
-} // namespace LiveKitCpp
+} // namespace Websocket

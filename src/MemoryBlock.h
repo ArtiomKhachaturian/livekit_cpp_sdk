@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MemoryBlock.h
 #include "LiveKitClientExport.h"
+#include "WebsocketBlob.h"
 #include <memory>
 #include <vector>
 
@@ -20,16 +21,17 @@ namespace LiveKitCpp
 {
 
 // implementation maybe thread-safe (but not neccessary) & exceptions-free
-class LIVEKIT_CLIENT_API MemoryBlock
+class MemoryBlock : public Websocket::Blob
 {
-public:
-    virtual ~MemoryBlock() = default;
-    size_t size() const noexcept { return _size; }
-    uint8_t* data() noexcept { return _data; }
-    const uint8_t* data() const noexcept { return _data; }
+public: // methods
+    MemoryBlock(uint8_t* data = nullptr, size_t size = 0U) noexcept;
+    ~MemoryBlock() override = default;
+    // impl. of Websocket::Blob
+    size_t size() const noexcept final { return _size; }
+    const uint8_t* data() const noexcept final { return _data; }
+public: // factory
     static std::shared_ptr<MemoryBlock> make(std::vector<uint8_t> data);
 protected:
-    MemoryBlock(uint8_t* data = nullptr, size_t size = 0U) noexcept;
     void setData(uint8_t* data, size_t size) noexcept;
 private:
     MemoryBlock(const MemoryBlock&) = delete;

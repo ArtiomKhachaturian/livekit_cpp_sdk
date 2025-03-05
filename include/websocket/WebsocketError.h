@@ -11,20 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // WebsocketFailure.h
+#pragma once // WebsocketError.h
+#include "WebsocketFailure.h"
+#include <string>
+#include <system_error>
 
 namespace Websocket
 {
 
-enum class Failure
+struct Error
 {
-    General,
-    NoConnection,
-    CustomHeader,
-    WriteText,
-    WriteBinary,
-    SocketOption,
-    TlsOptions
+    Failure _failure = {};
+    std::error_code _code;
+    std::string _details;
 };
 
-} // namespace Websocket
+} // Websocket

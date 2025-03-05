@@ -13,13 +13,13 @@
 // limitations under the License.
 #pragma once
 
-namespace LiveKitCpp
+namespace Websocket
 {
 
-enum class WebsocketTlsPeerVerification {
+enum class TlsPeerVerification {
     No,
     Yes,
     YesAndRejectIfNoCert
 };
 
-} // namespace LiveKitCpp
+} // namespace Websocket

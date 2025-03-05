@@ -15,13 +15,14 @@
 #include "LiveKitClientExport.h"
 #include <memory>
 
+namespace Websocket {
+class EndPoint;
+}
 
 namespace LiveKitCpp
 {
 
 struct LiveKitRoomOptions;
-class Websocket;
-class WebsocketFactory;
 class PeerConnectionFactory;
 
 class LIVEKIT_CLIENT_API LiveKitRoom
@@ -33,7 +34,7 @@ public:
     bool connect(std::string host, std::string authToken);
     void disconnect();
 private:
-    LiveKitRoom(std::unique_ptr<Websocket> socket,
+    LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                 PeerConnectionFactory* pcf,
                 const LiveKitRoomOptions& options);
 private:

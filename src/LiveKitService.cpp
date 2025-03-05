@@ -14,7 +14,7 @@
 #include "LiveKitService.h"
 #include "LiveKitRoom.h"
 #include "LogsReceiver.h"
-#include "Websocket.h"
+#include "WebsocketEndPoint.h"
 #include "WebsocketFactory.h"
 #include "Utils.h"
 #ifdef WEBRTC_AVAILABLE
@@ -87,28 +87,26 @@ namespace LiveKitCpp
 class LiveKitService::Impl
 {
 public:
-    Impl(const std::shared_ptr<LogsReceiver>& logger,
-         std::shared_ptr<WebsocketFactory> websocketsFactory);
-    const auto& logger() const noexcept { return _logger; }
+    Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+         const std::shared_ptr<LogsReceiver>& logger);
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     template <typename TOutput>
     TOutput makeRoom(const LiveKitRoomOptions& options) const;
     static bool sslInitialized(const std::shared_ptr<LogsReceiver>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<LogsReceiver>& logger = {});
-    static std::unique_ptr<Impl> create(const std::shared_ptr<LogsReceiver>& logger,
-                                        std::shared_ptr<WebsocketFactory> websocketsFactory);
+    static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                                        const std::shared_ptr<LogsReceiver>& logger);
 private:
     static void logPlatformDefects(const std::shared_ptr<LogsReceiver>& logger = {});
 private:
-    const std::shared_ptr<LogsReceiver> _logger;
-    const std::shared_ptr<WebsocketFactory> _websocketsFactory;
+    const std::shared_ptr<Websocket::Factory> _websocketsFactory;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
 };
 
-LiveKitService::LiveKitService(const std::shared_ptr<LogsReceiver>& logger,
-                               const std::shared_ptr<WebsocketFactory>& websocketsFactory)
-    : _impl(Impl::create(logger, websocketsFactory))
+LiveKitService::LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                               const std::shared_ptr<LogsReceiver>& logger)
+    : _impl(Impl::create(websocketsFactory, logger))
 {
 }
 
@@ -148,11 +146,10 @@ std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const LiveKitRoomOptions&
     return _impl->makeRoom<std::unique_ptr<LiveKitRoom>>(options);
 }
 
-LiveKitService::Impl::Impl(const std::shared_ptr<LogsReceiver>& logger,
-                           std::shared_ptr<WebsocketFactory> websocketsFactory)
-    : _logger(logger)
-    , _websocketsFactory(std::move(websocketsFactory))
-    , _pcf(PeerConnectionFactory::Create(true, true, _logger))
+LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                           const std::shared_ptr<LogsReceiver>& logger)
+    : _websocketsFactory(websocketsFactory)
+    , _pcf(PeerConnectionFactory::Create(true, true, logger))
 {
 }
 
@@ -198,17 +195,12 @@ bool LiveKitService::Impl::wsaInitialized(const std::shared_ptr<LogsReceiver>& l
 }
 
 std::unique_ptr<LiveKitService::Impl> LiveKitService::Impl::
-    create(const std::shared_ptr<LogsReceiver>& logger,
-           std::shared_ptr<WebsocketFactory> websocketsFactory)
+    create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+           const std::shared_ptr<LogsReceiver>& logger)
 {
-    if (wsaInitialized(logger) && sslInitialized(logger)) {
-        if (!websocketsFactory) {
-            websocketsFactory = WebsocketFactory::createDefaultFactory(logger);
-        }
-        if (websocketsFactory) {
-            logPlatformDefects(logger);
-            return std::make_unique<Impl>(logger, std::move(websocketsFactory));
-        }
+    if (wsaInitialized(logger) && sslInitialized(logger) && websocketsFactory) {
+        logPlatformDefects(logger);
+        return std::make_unique<Impl>(websocketsFactory, logger);
     }
     return {};
 }

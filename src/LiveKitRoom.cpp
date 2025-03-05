@@ -25,7 +25,7 @@
 #include "websocket/WebsocketFactory.h"
 #include "rtc/JoinResponse.h"
 #endif
-#include "websocket/Websocket.h"
+#include "WebsocketEndPoint.h"
 
 namespace LiveKitCpp
 {
@@ -35,7 +35,7 @@ using ImplBase = LoggableShared<SignalServerListener, SignalTransportListener, w
 
 struct LiveKitRoom::Impl : public ImplBase
 {
-    Impl(std::unique_ptr<Websocket> socket,
+    Impl(std::unique_ptr<Websocket::EndPoint> socket,
          PeerConnectionFactory* pcf,
          const LiveKitRoomOptions& options);
     ~Impl();
@@ -58,7 +58,7 @@ private:
     //std::vector<ICEServer>
 };
 
-LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket> socket,
+LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                          PeerConnectionFactory* pcf,
                          const LiveKitRoomOptions& options)
     : _impl(std::make_unique<Impl>(std::move(socket), pcf, options))
@@ -82,7 +82,7 @@ void LiveKitRoom::disconnect()
     _impl->_client.disconnect();
 }
 
-LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket> socket,
+LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
                         PeerConnectionFactory* pcf,
                         const LiveKitRoomOptions& options)
     : ImplBase(pcf->logger())

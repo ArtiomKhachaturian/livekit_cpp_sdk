@@ -11,9 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 #include "SignalClientWs.h"
-#include "Websocket.h"
 #include "MemoryBlock.h"
+#include "WebsocketBlob.h"
+#include "WebsocketEndPoint.h"
 #include "WebsocketFailure.h"
+#include "WebsocketState.h"
+#include "WebsocketListener.h"
+#include "WebsocketOptions.h"
 #include "Utils.h"
 
 namespace {
@@ -46,12 +50,30 @@ inline std::string urlQueryItem(const std::string& key, bool val) {
 namespace LiveKitCpp
 {
 
-SignalClientWs::SignalClientWs(std::unique_ptr<Websocket> socket, LogsReceiver* logger)
-    : SignalClient(socket.get(), logger)
+class SignalClientWs::Listener : public Websocket::Listener
+{
+public:
+    Listener(SignalClientWs* owner);
+    Websocket::Options buildOptions() const;
+private:
+    // impl. of WebsocketListener
+    void onError(uint64_t socketId, uint64_t connectionId,
+                 const Websocket::Error& error) final;
+    void onStateChanged(uint64_t socketId, uint64_t connectionId,
+                        Websocket::State state) final;
+    void onBinaryMessage(uint64_t socketId, uint64_t connectionId,
+                         const std::shared_ptr<Websocket::Blob>& message) final;
+private:
+    SignalClientWs* const _owner;
+};
+
+SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, LogsReceiver* logger)
+    : SignalClient(this, logger)
+    , _socketListener(std::make_unique<Listener>(this))
     , _socket(std::move(socket))
 {
     if (_socket) {
-        _socket->addListener(this);
+        _socket->addListener(_socketListener.get());
     }
 }
 
@@ -59,7 +81,7 @@ SignalClientWs::~SignalClientWs()
 {
     if (_socket) {
         _socket->close();
-        _socket->removeListener(this);
+        _socket->removeListener(_socketListener.get());
     }
 }
 
@@ -129,7 +151,7 @@ bool SignalClientWs::connect()
     if (_socket) {
         const auto result = changeTransportState(State::Connecting);
         if (ChangeTransportStateResult::Changed == result) {
-            ok = _socket->open(buildWebsocketOptions());
+            ok = _socket->open(_socketListener->buildOptions());
             if (!ok) {
                 changeTransportState(State::Disconnected);
             }
@@ -145,55 +167,89 @@ void SignalClientWs::disconnect()
     }
 }
 
-WebsocketOptions SignalClientWs::buildWebsocketOptions() const
+void SignalClientWs::updateState(Websocket::State state)
 {
-    WebsocketOptions options;
-    if (!host().empty() && !authToken().empty()) {
+    switch (state) {
+        case Websocket::State::Connecting:
+            changeTransportState(State::Connecting);
+            break;
+        case Websocket::State::Connected:
+            changeTransportState(State::Connected);
+            break;
+        case Websocket::State::Disconnecting:
+            changeTransportState(State::Disconnecting);
+            break;
+        case Websocket::State::Disconnected:
+            changeTransportState(State::Disconnected);
+            break;
+    }
+}
+
+bool SignalClientWs::sendBinary(const std::shared_ptr<MemoryBlock>& binary)
+{
+    if (_socket) {
+        return _socket->sendBinary(binary);
+    }
+    return CommandSender::sendBinary(binary);
+}
+
+SignalClientWs::Listener::Listener(SignalClientWs* owner)
+    : _owner(owner)
+{
+}
+
+Websocket::Options SignalClientWs::Listener::buildOptions() const
+{
+    Websocket::Options options;
+    if (!_owner->host().empty() && !_owner->authToken().empty()) {
         // see example in https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Support/Utils.swift#L138
-        options._host = host();
+        options._host = _owner->host();
         if ('/' != options._host.back()) {
             options._host += '/';
         }
         using namespace std::string_literals;
-        options._host += "rtc?access_token=" + authToken();
-        options._host += urlQueryItem("auto_subscribe", autoSubscribe());
+        options._host += "rtc?access_token=" + _owner->authToken();
+        options._host += urlQueryItem("auto_subscribe", _owner->autoSubscribe());
         options._host += urlQueryItem("sdk", "cpp"s);
         options._host += urlQueryItem("version", g_libraryVersion);
         options._host += urlQueryItem("protocol", 15);
-        options._host += urlQueryItem("adaptive_stream", adaptiveStream());
+        options._host += urlQueryItem("adaptive_stream", _owner->adaptiveStream());
         options._host += urlQueryItem("os", operatingSystemName());
         options._host += urlQueryItem("os_version", operatingSystemVersion());
         options._host += urlQueryItem("device_model", modelIdentifier());
         // only for quick-reconnect
-        if (ReconnectMode::Quick == reconnectMode()) {
+        if (ReconnectMode::Quick == _owner->reconnectMode()) {
             options._host += urlQueryItem("reconnect", 1);
-            options._host += urlQueryItem("sid", participantSid());
+            options._host += urlQueryItem("sid", _owner->participantSid());
         }
     }
     return options;
 }
 
-void SignalClientWs::onError(uint64_t socketId, uint64_t connectionId,
-                             const std::string_view& host,
-                             const WebsocketError& error)
+void SignalClientWs::Listener::onError(uint64_t socketId,
+                                       uint64_t connectionId,
+                                       const Websocket::Error& error)
 {
-    WebsocketListener::onError(socketId, connectionId, host, error);
-    notifyAboutTransportError(toString(error));
+    Listener::onError(socketId, connectionId, error);
+    //notifyAboutTransportError(toString(error));
 }
 
-void SignalClientWs::onStateChanged(uint64_t socketId, uint64_t connectionId,
-                                    const std::string_view& host,
-                                    State state)
+void SignalClientWs::Listener::onStateChanged(uint64_t socketId,
+                                              uint64_t connectionId,
+                                              Websocket::State state)
 {
-    WebsocketListener::onStateChanged(socketId, connectionId, host, state);
-    changeTransportState(state);
+    Listener::onStateChanged(socketId, connectionId, state);
+    _owner->updateState(state);
 }
 
-void SignalClientWs::onBinaryMessageReceved(uint64_t socketId, uint64_t connectionId,
-                                            const std::shared_ptr<const MemoryBlock>& message)
+void SignalClientWs::Listener::onBinaryMessage(uint64_t socketId,
+                                               uint64_t connectionId,
+                                               const std::shared_ptr<Websocket::Blob>& message)
 {
-    WebsocketListener::onBinaryMessageReceved(socketId, connectionId, message);
-    handleServerProtobufMessage(message);
+    Listener::onBinaryMessage(socketId, connectionId, message);
+    if (message) {
+        _owner->handleServerProtobufMessage(message->data(), message->size());
+    }
 }
 
 } // namespace LiveKitCpp

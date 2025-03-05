@@ -14,11 +14,11 @@
 #pragma once
 #include <cstdint>
     
-namespace LiveKitCpp
+namespace Websocket
 {
 
 // https://github.com/Luka967/websocket-close-codes
-namespace WebsocketCloseCode
+namespace CloseCode
 {
     static const uint16_t Normal                = 1000;
     static const uint16_t GoingAway             = 1001;
@@ -37,4 +37,4 @@ namespace WebsocketCloseCode
     static const uint16_t TlsHandshake          = 1015;
 };
 
-} // namespace LiveKitCpp
+} // namespace Websocket

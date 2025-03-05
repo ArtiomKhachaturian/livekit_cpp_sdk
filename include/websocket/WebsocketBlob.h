@@ -11,20 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // WebsocketFailure.h
+#pragma once // WebsocketBlob.h
+#include "WebsocketFailure.h"
+#include <cstdint>
+#include <system_error>
 
 namespace Websocket
 {
 
-enum class Failure
+class Blob
 {
-    General,
-    NoConnection,
-    CustomHeader,
-    WriteText,
-    WriteBinary,
-    SocketOption,
-    TlsOptions
+public:
+    virtual ~Blob() = default;
+    virtual size_t size() const noexcept = 0;
+    virtual const uint8_t* data() const noexcept = 0;
+    bool empty() const noexcept { return 0U == size() || nullptr == data(); }
 };
 
-} // namespace Websocket
+} // Websocket
