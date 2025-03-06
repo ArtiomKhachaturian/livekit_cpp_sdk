@@ -13,7 +13,7 @@
 #include "SignalClientWs.h"
 #include "Blob.h"
 #include "WebsocketEndPoint.h"
-#include "WebsocketFailure.h"
+#include "WebsocketError.h"
 #include "WebsocketState.h"
 #include "WebsocketListener.h"
 #include "WebsocketOptions.h"
@@ -230,7 +230,7 @@ void SignalClientWs::Listener::onError(uint64_t socketId,
                                        const Websocket::Error& error)
 {
     Listener::onError(socketId, connectionId, error);
-    //notifyAboutTransportError(toString(error));
+    _owner->notifyAboutTransportError(Websocket::toString(error));
 }
 
 void SignalClientWs::Listener::onStateChanged(uint64_t socketId,
