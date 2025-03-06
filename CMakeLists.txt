@@ -45,6 +45,7 @@ file(GLOB_RECURSE SERVICE_SOURCES ${CMAKE_SOURCE_DIR}/src/service/*.${SOURCE_FIL
 file(GLOB_RECURSE PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
 file(GLOB_RECURSE PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
+file(GLOB_RECURSE BRICKS_API_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/*.${HEADER_FILE_EXT})
 
 option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
 set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
@@ -200,6 +201,7 @@ add_library(${LIB_PROJECT_NAME} SHARED
     ${PLATFORM_HEADERS}
     ${PLATFORM_SOURCES}
     ${WEBSOCKETS_API_HEADERS}
+    ${BRICKS_API_HEADERS}
     ${SERVICE_HEADERS}
     ${SERVICE_SOURCES}
     ${ZAPHOYD_TPP_HEADERS}
@@ -217,6 +219,7 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Sources" FILES ${COMMON_HEADER
 source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_HEADERS} ${PROTO_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER} PREFIX "Platform" FILES ${PLATFORM_HEADERS} ${PLATFORM_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsAPI" FILES ${WEBSOCKETS_API_HEADERS})
+source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/service PREFIX "Service" FILES ${SERVICE_HEADERS} ${SERVICE_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp PREFIX "ZaphoydTpp" FILES ${ZAPHOYD_TPP_HEADERS} ${ZAPHOYD_TPP_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_HEADERS} ${WEBRTC_SOURCES} 
@@ -228,6 +231,9 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service
     ${CMAKE_SOURCE_DIR}/websockets_api/include
+    ${CMAKE_SOURCE_DIR}/bricks/include
+    ${CMAKE_SOURCE_DIR}/bricks/include/logger
+    ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
     ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths

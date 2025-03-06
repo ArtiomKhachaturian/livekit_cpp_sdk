@@ -31,10 +31,11 @@ class VideoEncoderFactory;
 class VideoDecoderFactory;
 } // namespace webrtc
 
+class Logger;
+
 namespace LiveKitCpp
 {
 
-class LogsReceiver;
 class WebRtcLogSink;
 
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
@@ -43,10 +44,10 @@ public:
     ~PeerConnectionFactory() override;
     static webrtc::scoped_refptr<PeerConnectionFactory> Create(bool audioProcessing,
                                                                bool customAdm,
-                                                               const std::shared_ptr<LogsReceiver>& logger = {});
+                                                               const std::shared_ptr<Logger>& logger = {});
     rtc::Thread* GetWorkingThread() const noexcept { return _workingThread.get(); }
     rtc::Thread* GetSignalingThread() const noexcept { return _signalingThread.get(); }
-    const std::shared_ptr<LogsReceiver>& logger() const noexcept;
+    const std::shared_ptr<Logger>& logger() const noexcept;
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>

@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "PeerConnectionFactory.h"
 #include "WebRtcLogSink.h"
-#include "LogsReceiver.h"
+#include "Logger.h"
 #ifdef __APPLE__
 #include "MacAudioDeviceModule.h"
 #endif
@@ -42,7 +42,7 @@ static const std::string_view g_pcfInit("PeerConnectionFactory_Init");
 
 inline std::unique_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
                                                         const absl::string_view& threadName,
-                                                        const std::shared_ptr<LiveKitCpp::LogsReceiver>& logger = {})
+                                                        const std::shared_ptr<Logger>& logger = {})
 {
     if (auto thread = withSocketServer ? rtc::Thread::CreateWithSocketServer() : rtc::Thread::Create()) {
         thread->SetName(threadName, thread.get());
@@ -104,14 +104,14 @@ PeerConnectionFactory::~PeerConnectionFactory()
 {
 }
 
-const std::shared_ptr<LogsReceiver>& PeerConnectionFactory::logger() const noexcept
+const std::shared_ptr<Logger>& PeerConnectionFactory::logger() const noexcept
 {
     return _webrtcLogSink->logger();
 }
 
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::Create(bool audioProcessing,
                                                                            bool customAdm,
-                                                                           const std::shared_ptr<LogsReceiver>& logger)
+                                                                           const std::shared_ptr<Logger>& logger)
 {
     //create threads for peer connection factory
     //See also https://webrtc.org/native-code/native-apis/#threading-model

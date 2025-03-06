@@ -17,6 +17,8 @@
 #include <memory>
 #include <string>
 
+class Logger;
+
 namespace LiveKitCpp
 {
 
@@ -26,7 +28,6 @@ class SignalServerListener;
 class SignalTransportListener;
 class ResponseReceiver;
 class RequestSender;
-class LogsReceiver;
 // these below structs are defined in /include/rtc subfolder
 struct SessionDescription;
 struct TrickleRequest;
@@ -55,7 +56,7 @@ protected:
         Rejected
     };
 public:
-    SignalClient(CommandSender* commandSender, LogsReceiver* logger = nullptr);
+    SignalClient(CommandSender* commandSender, Logger* logger = nullptr);
     virtual ~SignalClient();
     void addTransportListener(SignalTransportListener* listener);
     void addServerListener(SignalServerListener* listener);

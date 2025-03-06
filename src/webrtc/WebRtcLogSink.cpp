@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "WebRtcLogSink.h"
-#include "LogsReceiver.h"
+#include "Logger.h"
 #include <algorithm>
 
 namespace {
@@ -71,16 +71,16 @@ inline const std::string& alignedLogString(const TString& string)
     return g_empty;
 }
 
-inline std::optional<LiveKitCpp::LoggingSeverity> map(rtc::LoggingSeverity severity) {
+inline std::optional<LoggingSeverity> map(rtc::LoggingSeverity severity) {
     switch (severity) {
         case rtc::LS_VERBOSE:
-            return LiveKitCpp::LoggingSeverity::Verbose;
+            return LoggingSeverity::Verbose;
         case rtc::LS_INFO:
-            return LiveKitCpp::LoggingSeverity::Info;
+            return LoggingSeverity::Info;
         case rtc::LS_WARNING:
-            return LiveKitCpp::LoggingSeverity::Warning;
+            return LoggingSeverity::Warning;
         case rtc::LS_ERROR:
-            return LiveKitCpp::LoggingSeverity::Error;
+            return LoggingSeverity::Error;
         default:
             break;
     }
@@ -92,8 +92,8 @@ inline std::optional<LiveKitCpp::LoggingSeverity> map(rtc::LoggingSeverity sever
 namespace LiveKitCpp
 {
 
-WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<LogsReceiver>& logger)
-    : LoggableShared<rtc::LogSink>(logger)
+WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<Logger>& logger)
+    : LoggableS<rtc::LogSink>(logger)
 {
     rtc::LogMessage::AddLogToStream(this, rtc::LoggingSeverity::LS_VERBOSE);
 }

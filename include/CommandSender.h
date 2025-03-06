@@ -15,9 +15,9 @@
 #include <memory>
 #include <string>
 
-namespace Websocket {
+// prototype defined in 'Bricks' library,
+// see https://github.com/ArtiomKhachaturian/Bricks
 class Blob;
-}
 
 namespace LiveKitCpp
 {
@@ -25,9 +25,7 @@ namespace LiveKitCpp
 class CommandSender
 {
 public:
-    virtual bool sendBinary(const std::shared_ptr<Websocket::Blob>& /*binary*/) {
-        return false;
-    }
+    virtual bool sendBinary(const std::shared_ptr<Blob>& /*binary*/) { return false; }
     virtual bool sendText(const std::string_view& /*text*/) { return false; }
 protected:
     virtual ~CommandSender() = default;

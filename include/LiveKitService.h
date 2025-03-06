@@ -21,18 +21,19 @@ namespace Websocket {
 class Factory;
 }
 
+class Logger;
+
 namespace LiveKitCpp
 {
 
 class LiveKitRoom;
-class LogsReceiver;
 
 class LIVEKIT_CLIENT_API LiveKitService
 {
     class Impl;
 public:
     LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                   const std::shared_ptr<LogsReceiver>& logger = {});
+                   const std::shared_ptr<Logger>& logger = {});
     ~LiveKitService();
     LiveKitServiceState state() const;
     [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]

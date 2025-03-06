@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 #include "SignalClientWs.h"
-#include "WebsocketBlob.h"
+#include "Blob.h"
 #include "WebsocketEndPoint.h"
 #include "WebsocketFailure.h"
 #include "WebsocketState.h"
@@ -61,12 +61,12 @@ private:
     void onStateChanged(uint64_t socketId, uint64_t connectionId,
                         Websocket::State state) final;
     void onBinaryMessage(uint64_t socketId, uint64_t connectionId,
-                         const std::shared_ptr<Websocket::Blob>& message) final;
+                         const std::shared_ptr<Blob>& message) final;
 private:
     SignalClientWs* const _owner;
 };
 
-SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, LogsReceiver* logger)
+SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, Logger* logger)
     : SignalClient(this, logger)
     , _socketListener(std::make_unique<Listener>(this))
     , _socket(std::move(socket))
@@ -184,7 +184,7 @@ void SignalClientWs::updateState(Websocket::State state)
     }
 }
 
-bool SignalClientWs::sendBinary(const std::shared_ptr<Websocket::Blob>& binary)
+bool SignalClientWs::sendBinary(const std::shared_ptr<Blob>& binary)
 {
     if (_socket) {
         return _socket->sendBinary(binary);
@@ -243,7 +243,7 @@ void SignalClientWs::Listener::onStateChanged(uint64_t socketId,
 
 void SignalClientWs::Listener::onBinaryMessage(uint64_t socketId,
                                                uint64_t connectionId,
-                                               const std::shared_ptr<Websocket::Blob>& message)
+                                               const std::shared_ptr<Blob>& message)
 {
     Listener::onBinaryMessage(socketId, connectionId, message);
     if (message) {

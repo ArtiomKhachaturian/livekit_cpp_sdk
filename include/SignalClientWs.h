@@ -29,7 +29,7 @@ class LIVEKIT_CLIENT_API SignalClientWs : public SignalClient, private CommandSe
 {
     class Listener;
 public:
-    SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, LogsReceiver* logger = nullptr);
+    SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, Logger* logger = nullptr);
     ~SignalClientWs() final;
     const std::string& host() const noexcept;
     const std::string& authToken() const noexcept;
@@ -49,7 +49,7 @@ public:
 private:
     void updateState(Websocket::State state);
     // impl. of CommandSender
-    bool sendBinary(const std::shared_ptr<Websocket::Blob>& binary) final;
+    bool sendBinary(const std::shared_ptr<Blob>& binary) final;
 private:
     const std::unique_ptr<Listener> _socketListener;
     const std::unique_ptr<Websocket::EndPoint> _socket;

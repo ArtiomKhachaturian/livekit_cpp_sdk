@@ -31,7 +31,7 @@ namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
 
-using ImplBase = LoggableShared<SignalServerListener, SignalTransportListener, webrtc::PeerConnectionObserver>;
+using ImplBase = LoggableS<SignalServerListener, SignalTransportListener, webrtc::PeerConnectionObserver>;
 
 struct LiveKitRoom::Impl : public ImplBase
 {

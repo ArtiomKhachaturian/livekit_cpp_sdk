@@ -22,10 +22,10 @@
 namespace LiveKitCpp
 {
 
-class SignalClient::Impl : public LoggableRaw<>
+class SignalClient::Impl : public LoggableR<>
 {
 public:
-    Impl(uint64_t id, LogsReceiver* logger = nullptr);
+    Impl(uint64_t id, Logger* logger = nullptr);
     State transportState() const noexcept;
     ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
@@ -37,7 +37,7 @@ private:
     ProtectedObj<State> _transportState = State::Disconnected;
 };
 
-SignalClient::SignalClient(CommandSender* commandSender, LogsReceiver* logger)
+SignalClient::SignalClient(CommandSender* commandSender, Logger* logger)
     : _impl(std::make_unique<Impl>(id(), logger))
     , _responseReceiver(std::make_unique<ResponseReceiver>(id(), logger))
     , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
@@ -178,8 +178,8 @@ void SignalClient::notifyAboutTransportError(const std::string& error)
     _impl->notifyAboutTransportError(error);
 }
 
-SignalClient::Impl::Impl(uint64_t id, LogsReceiver* logger)
-    : LoggableRaw<>(logger)
+SignalClient::Impl::Impl(uint64_t id, Logger* logger)
+    : LoggableR<>(logger)
     , _id(id)
 {
 }

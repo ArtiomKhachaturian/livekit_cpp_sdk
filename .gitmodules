@@ -7,3 +7,6 @@
 [submodule "websockets_api"]
 	path = websockets_api
 	url = https://github.com/ArtiomKhachaturian/Websockets-API.git
+[submodule "bricks"]
+	path = bricks
+	url = https://github.com/ArtiomKhachaturian/Bricks.git

@@ -30,7 +30,7 @@ namespace LiveKitCpp
 
 class PeerConnectionFactory;
 
-class Transport : private LoggableShared<>
+class Transport : private LoggableS<>
 {
 public:
     static std::unique_ptr<Transport> create(bool primary, SignalTarget target,

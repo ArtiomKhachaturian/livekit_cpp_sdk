@@ -20,9 +20,7 @@ namespace google::protobuf {
 class MessageLite;
 }
 
-namespace Websocket {
 class Blob;
-}
 
 namespace LiveKitCpp
 {
@@ -48,7 +46,7 @@ struct UpdateLocalVideoTrack;
 class RequestSender
 {
 public:
-    RequestSender(CommandSender* commandSender, LogsReceiver* logger = nullptr);
+    RequestSender(CommandSender* commandSender, Logger* logger = nullptr);
     // all requests are defined in 'SignalRequest':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L24
     bool offer(const SessionDescription& sdp) const;
@@ -72,7 +70,7 @@ private:
     template <class TSetMethod, class TObject>
     bool send(const TSetMethod& setMethod, const TObject& object) const;
     static std::vector<uint8_t> toBytes(const google::protobuf::MessageLite& proto);
-    static std::shared_ptr<Websocket::Blob> toBlob(const google::protobuf::MessageLite& proto);
+    static std::shared_ptr<Blob> toBlob(const google::protobuf::MessageLite& proto);
 private:
     CommandSender* const _commandSender;
     const Signals _signals;

@@ -26,7 +26,7 @@ class SignalServerListener;
 class ResponseReceiver
 {
 public:
-    ResponseReceiver(uint64_t signalClientId, LogsReceiver* logger = nullptr);
+    ResponseReceiver(uint64_t signalClientId, Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void addListener(SignalServerListener* listener);
     void removeListener(SignalServerListener* listener);

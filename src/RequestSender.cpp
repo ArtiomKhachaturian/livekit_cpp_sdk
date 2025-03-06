@@ -13,17 +13,17 @@
 // limitations under the License.
 #include "RequestSender.h"
 #include "CommandSender.h"
-#include "WebsocketBlob.h"
+#include "Blob.h"
 
 using Request = livekit::SignalRequest;
 
 namespace {
 
-class VectorBlob : public Websocket::Blob
+class VectorBlob : public Blob
 {
 public:
     VectorBlob(std::vector<uint8_t> data);
-    // impl. of Websocket::Blob
+    // impl. of Blob
     size_t size() const noexcept final { return _data.size(); }
     const uint8_t* data() const noexcept final { return _data.data(); }
 private:
@@ -35,7 +35,7 @@ private:
 namespace LiveKitCpp
 {
 
-RequestSender::RequestSender(CommandSender* commandSender, LogsReceiver* logger)
+RequestSender::RequestSender(CommandSender* commandSender, Logger* logger)
     : _commandSender(commandSender)
     , _signals(logger)
 {
@@ -152,7 +152,7 @@ std::vector<uint8_t> RequestSender::toBytes(const google::protobuf::MessageLite&
     return {};
 }
 
-std::shared_ptr<Websocket::Blob> RequestSender::toBlob(const google::protobuf::MessageLite& proto)
+std::shared_ptr<Blob> RequestSender::toBlob(const google::protobuf::MessageLite& proto)
 {
     auto bytes = toBytes(proto);
     if (!bytes.empty()) {

@@ -20,7 +20,7 @@ namespace LiveKitCpp
 Transport::Transport(bool primary, SignalTarget target,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      webrtc::scoped_refptr<webrtc::PeerConnectionInterface> pc)
-    : LoggableShared<>(pcf->logger())
+    : LoggableS<>(pcf->logger())
     , _primary(primary)
     , _target(target)
     , _(pcf)

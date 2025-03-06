@@ -33,8 +33,8 @@ inline std::string typeName() { return typeid(T).name(); }
 namespace LiveKitCpp
 {
 
-Signals::Signals(LogsReceiver* logger)
-    : LoggableRaw<>(logger)
+Signals::Signals(Logger* logger)
+    : LoggableR<>(logger)
 {
 }
 
