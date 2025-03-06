@@ -48,7 +48,6 @@ file(GLOB_RECURSE BRICKS_API_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/*.${HEAD
 
 set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
 set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
-option(ENABLE_TEST_APPLICATION "Test application, required ZaphoydTppWebsockets library for websockets backend" ON)
 
 function(recreateDir DIR)
     if (EXISTS ${DIR})
@@ -251,20 +250,3 @@ install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
 install(EXPORT "${PROJECT_NAME}Targets" 
     NAMESPACE "${PROJECT_NAME}::"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
-
-if (ENABLE_TEST_APPLICATION)
-    include(FindPackageHandleStandardArgs)
-    find_package(ZaphoydTppWebsockets REQUIRED)
-
-    set(TEST_APP_NAME ${PROJECT_NAME}TestApp)
-    file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/test/*.${SOURCE_FILE_EXT})
-    file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/test/*.${HEADER_FILE_EXT})
-
-    add_executable(${TEST_APP_NAME} 
-        ${CPP_HEADERS}
-        ${CPP_SOURCES}
-    )
-    target_include_directories(${TEST_APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include 
-        ${CMAKE_SOURCE_DIR}/bricks/include/logger ZaphoydTppWebsockets::ZaphoydTppWebsockets)
-    target_link_libraries(${TEST_APP_NAME} PRIVATE ${PROJECT_NAME} ZaphoydTppWebsockets::ZaphoydTppWebsockets)
-endif()
