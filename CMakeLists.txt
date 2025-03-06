@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # -fvisibility=hidden
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
 
 set(HEADER_FILE_EXT h)
@@ -228,8 +230,7 @@ install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
 file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
 install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
 
-# generate [config.cmake] and [-config-version.cmake] files
-set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+# generate [config.cmake] and [config-version.cmake] files
 configure_package_config_file(./Config.cmake.in
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
     INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
@@ -252,6 +253,7 @@ install(EXPORT "${PROJECT_NAME}Targets"
 if (ENABLE_TEST_APPLICATION)
     include(FindPackageHandleStandardArgs)
     find_package(ZaphoydTppWebsockets REQUIRED)
+
     set(TEST_APP_NAME ${PROJECT_NAME}TestApp)
     file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/test/*.${SOURCE_FILE_EXT})
     file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/test/*.${HEADER_FILE_EXT})
@@ -260,8 +262,7 @@ if (ENABLE_TEST_APPLICATION)
         ${CPP_HEADERS}
         ${CPP_SOURCES}
     )
-    message(STATUS "ZaphoydTppWebsockets_INCLUDE_DIR = ${ZaphoydTppWebsockets_INCLUDE_DIR}")
     target_include_directories(${TEST_APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include 
-        ${CMAKE_SOURCE_DIR}/bricks/include/logger ${ZaphoydTppWebsockets_INCLUDE_DIR})
-    target_link_libraries(${TEST_APP_NAME} PRIVATE ${PROJECT_NAME} ${ZaphoydTppWebsockets_LIBRARIES})
+        ${CMAKE_SOURCE_DIR}/bricks/include/logger ZaphoydTppWebsockets::ZaphoydTppWebsockets)
+    target_link_libraries(${TEST_APP_NAME} PRIVATE ${PROJECT_NAME} ZaphoydTppWebsockets::ZaphoydTppWebsockets)
 endif()

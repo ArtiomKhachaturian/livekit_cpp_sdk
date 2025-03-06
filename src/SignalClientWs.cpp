@@ -229,7 +229,7 @@ void SignalClientWs::Listener::onError(uint64_t socketId,
                                        uint64_t connectionId,
                                        const Websocket::Error& error)
 {
-    Listener::onError(socketId, connectionId, error);
+    Websocket::Listener::onError(socketId, connectionId, error);
     _owner->notifyAboutTransportError(Websocket::toString(error));
 }
 
@@ -237,7 +237,7 @@ void SignalClientWs::Listener::onStateChanged(uint64_t socketId,
                                               uint64_t connectionId,
                                               Websocket::State state)
 {
-    Listener::onStateChanged(socketId, connectionId, state);
+    Websocket::Listener::onStateChanged(socketId, connectionId, state);
     _owner->updateState(state);
 }
 
@@ -245,7 +245,7 @@ void SignalClientWs::Listener::onBinaryMessage(uint64_t socketId,
                                                uint64_t connectionId,
                                                const std::shared_ptr<Blob>& message)
 {
-    Listener::onBinaryMessage(socketId, connectionId, message);
+    Websocket::Listener::onBinaryMessage(socketId, connectionId, message);
     if (message) {
         _owner->handleServerProtobufMessage(message->data(), message->size());
     }

@@ -32,7 +32,7 @@ public:
     }
 };
 
-const std::string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDEyNzM0NTEsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0MTE4NzA1MSwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.TN7WCf7_eOqxxdFYZGON7qHq13saslfXrH7cJyIBm3U";
+const std::string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDEzNDc1MDYsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0MTI2MTEwNiwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.19klgtLh8ku2Hn_cKoGD4m6IbKEW6RVdeS3KMVnHSqE";
 const std::string host = "ws://localhost:7880";
 
 int main(int argc, char** argv)
@@ -43,6 +43,7 @@ int main(int argc, char** argv)
     if (auto room = service.makeRoomU()) {
         room->connect(host, token);
         std::this_thread::sleep_for(15s);
+        std::cout << "that's the end!" << std::endl;
     }
     return 0;
 }
