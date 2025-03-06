@@ -245,7 +245,7 @@ LiveKitServiceState LiveKitService::state() const
 
 LiveKitRoom* LiveKitService::makeRoom(const LiveKitRoomOptions&) const { return nullptr; }
 
-std::shared_ptr<LiveKitRoom> makeRoomS(const LiveKitRoomOptions&) const { return {}; }
+std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const LiveKitRoomOptions&) const { return {}; }
 
 std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const LiveKitRoomOptions&) const { return {}; }
 

@@ -202,7 +202,8 @@ webrtc::PeerConnectionInterface::IceServers LiveKitRoom::Impl::map(const std::ve
 #else
 struct LiveKitRoom::Impl {};
     
-LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket>, PeerConnectionFactory*,
+LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint>,
+                         PeerConnectionFactory*,
                          const LiveKitRoomOptions&) {}
 
 LiveKitRoom::~LiveKitRoom() {}

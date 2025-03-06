@@ -47,7 +47,6 @@ file(GLOB_RECURSE PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
 file(GLOB_RECURSE BRICKS_API_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/*.${HEADER_FILE_EXT})
 
-option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
 set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
 set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
 
@@ -66,36 +65,6 @@ function(downloadAndExtract ZIP_URL ZIP_FILE EXTRACT_DIR)
         file(ARCHIVE_EXTRACT INPUT ${ZIP_FILE} DESTINATION ${EXTRACT_DIR})
     endif()
 endfunction(downloadAndExtract)
-
-function(findOpenSSL)
-    find_package(OpenSSL)
-    if (${OpenSSL_FOUND})
-        message(STATUS "Found OpenSSL")
-    else()
-        set(OPENSSL_INCLUDE_DIRS $ENV{OPENSSL_INCLUDE_DIRS} CACHE PATH "Path to folder with OpenSSL headers")
-        set(OPENSSL_LIB_DIR $ENV{OPENSSL_LIB_DIR} CACHE PATH "Path to folder with OpenSSL libraries")
-        if (EXISTS ${OPENSSL_LIB_DIR})
-            set(OPENSSL_LIBS ssl crypto)
-            set(OPENSSL_LIBRARIES "")
-            foreach(OPENSSL_LIB ${OPENSSL_LIBS})
-                if (WIN32)
-                    set(OPENSSL_LIB "${OPENSSL_LIB_DIR}\\lib${OPENSSL_LIB}.lib")
-                else()
-                    set(OPENSSL_LIB "${OPENSSL_LIB_DIR}/lib${OPENSSL_LIB}.dylib")
-                endif()
-                if (EXISTS ${OPENSSL_LIB})
-                    list(APPEND OPENSSL_LIBRARIES ${OPENSSL_LIB})
-                else()
-                    message(FATAL_ERROR "OpenSSL library ${OPENSSL_LIB} was not found")
-                endif()
-            endforeach()
-        else()
-            message(FATAL_ERROR "Not found OpenSSL, try to set the path to OpenSSL lib folder in the system variable OPENSSL_LIB_DIR")
-        endif()
-    endif()
-    set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES} PARENT_SCOPE)
-    set(OPENSSL_INCLUDE_DIRS ${OPENSSL_INCLUDE_DIRS} PARENT_SCOPE)
-endfunction(findOpenSSL)
 
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
 recreateDir(${GENERATED_DIR})
@@ -119,78 +88,71 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 # Generate .cpp and .h files from proto
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
-if (USE_ZAPHOYD_TPP_SOCKETS)
-    findOpenSSL()
-    option(ZAPHOYD_SHARED_IO_SERVICE "Common I/O worker thread for all websockets instances" ON)
-    set(TPP_ZIP_URL "https://github.com/zaphoyd/websocketpp/archive/refs/heads/master.zip")
-    set(TPP_SRC_DIR ${CMAKE_BINARY_DIR}/zaphoyd_tpp_src)
-    set(ASIO_ZIP_URL "https://sourceforge.net/projects/asio/files/asio/1.30.2%20%28Stable%29/asio-1.30.2.tar.gz/download")
-    set(ASIO_SRC_DIR ${CMAKE_BINARY_DIR}/asio_src)
-    downloadAndExtract(${TPP_ZIP_URL} ${CMAKE_BINARY_DIR}/zaphoyd_tpp.zip ${TPP_SRC_DIR})
-    downloadAndExtract(${ASIO_ZIP_URL} ${CMAKE_BINARY_DIR}/asio.zip ${ASIO_SRC_DIR})
-    set(TPP_HDRS_DIR ${TPP_SRC_DIR}/websocketpp-master)
-    set(ASIO_HDRS_DIR ${ASIO_SRC_DIR}/asio-1.30.2/include)
-    file(GLOB_RECURSE ZAPHOYD_TPP_HEADERS ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp/*.${HEADER_FILE_EXT})
-    file(GLOB_RECURSE ZAPHOYD_TPP_SOURCES ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp/*.${SOURCE_FILE_EXT})
-endif(USE_ZAPHOYD_TPP_SOCKETS)
-
 # WebRTC -> TODO: split WEBRTC_LIB_DIR for all configurations (debug/release/...)
-if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
-    message(STATUS "Found WebRTC")
-    set(WEBRTC_LIBS
-        "audio_decoder_g711"
-        "audio_decoder_g722"
-        "audio_decoder_L16"
-        "audio_decoder_opus"
-        "builtin_audio_decoder_factory"
-        "primitives"
-        "desktop_capture_differ_sse2"
-        "webrtc")
-    if (APPLE)
-        list(APPEND WEBRTC_LIBS
-            "base_native_additions_objc"
-            "base_objc"
-            "callback_logger_objc"
-            "default_codec_factory_objc"
-            "file_logger_objc"
-            "helpers_objc"
-            "mediaconstraints_objc"
-            "mediasource_objc"
-            "metal_objc"
-            "native_api"
-            "native_video"
-            "peerconnectionfactory_base_objc"
-            "video_toolbox_cc"
-            "videocapture_objc"
-            "videocodec_objc"
-            "videoframebuffer_objc"
-            "videorendereradapter_objc"
-            "videosource_objc"
-            "videotoolbox_objc"
-            "vp8"
-            "vp9"
-            "vpx_codec_constants"
-            "wrapped_native_codec_objc")
-    endif(APPLE)
-    foreach(WEBRTC_LIB ${WEBRTC_LIBS})
-    if (WIN32)
-        set(WEBRTC_LIB ${WEBRTC_LIB}.lib)
+if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
+    if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
+        message(STATUS "Found WebRTC")
+        set(WEBRTC_LIBS
+            "audio_decoder_g711"
+            "audio_decoder_g722"
+            "audio_decoder_L16"
+            "audio_decoder_opus"
+            "builtin_audio_decoder_factory"
+            "primitives"
+            "desktop_capture_differ_sse2"
+            "webrtc")
+        if (APPLE)
+            list(APPEND WEBRTC_LIBS
+                "base_native_additions_objc"
+                "base_objc"
+                "callback_logger_objc"
+                "default_codec_factory_objc"
+                "file_logger_objc"
+                "helpers_objc"
+                "mediaconstraints_objc"
+                "mediasource_objc"
+                "metal_objc"
+                "native_api"
+                "native_video"
+                "peerconnectionfactory_base_objc"
+                "video_toolbox_cc"
+                "videocapture_objc"
+                "videocodec_objc"
+                "videoframebuffer_objc"
+                "videorendereradapter_objc"
+                "videosource_objc"
+                "videotoolbox_objc"
+                "vp8"
+                "vp9"
+                "vpx_codec_constants"
+                "wrapped_native_codec_objc")
+        endif(APPLE)
+        foreach(WEBRTC_LIB ${WEBRTC_LIBS})
+        if (WIN32)
+            set(WEBRTC_LIB ${WEBRTC_LIB}.lib)
+        else()
+            set(WEBRTC_LIB lib${WEBRTC_LIB}.a)
+        endif()
+        file(GLOB_RECURSE WEBRTC_LIB_FILE "${WEBRTC_LIB_DIR}/${WEBRTC_LIB}")
+        if (WEBRTC_LIB_FILE)
+            message(STATUS "Found ${WEBRTC_LIB} static library")
+            list(APPEND WEBRTC_LIB_FILES ${WEBRTC_LIB_FILE})
+        else()
+            message(FATAL_ERROR "Static library ${WEBRTC_LIB} was not found")
+        endif()
+        endforeach()
+        set(WEBRTC_AVAILABLE TRUE)
+        file(GLOB WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
+        file(GLOB WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
+        file(GLOB WEBRTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
+        file(GLOB WEBRTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
     else()
-        set(WEBRTC_LIB lib${WEBRTC_LIB}.a)
+        if (NOT EXISTS ${WEBRTC_INCLUDE_DIR})
+            message(FATAL_ERROR "WebRTC include folders ${WEBRTC_INCLUDE_DIR} doesn't exists")
+        else()
+            message(FATAL_ERROR "WebRTC libraries folders ${WEBRTC_LIB_DIR} doesn't exists")
+        endif()
     endif()
-    file(GLOB_RECURSE WEBRTC_LIB_FILE "${WEBRTC_LIB_DIR}/${WEBRTC_LIB}")
-    if (WEBRTC_LIB_FILE)
-        message(STATUS "Found ${WEBRTC_LIB} static library")
-        list(APPEND WEBRTC_LIB_FILES ${WEBRTC_LIB_FILE})
-    else()
-        message(FATAL_ERROR "Static library ${WEBRTC_LIB} was not found")
-    endif()
-    endforeach()
-    set(WEBRTC_AVAILABLE TRUE)
-    file(GLOB WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
-    file(GLOB WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
-    file(GLOB WEBRTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
-    file(GLOB WEBRTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 endif()
 
 # Create a static library
@@ -204,8 +166,6 @@ add_library(${LIB_PROJECT_NAME} SHARED
     ${BRICKS_API_HEADERS}
     ${SERVICE_HEADERS}
     ${SERVICE_SOURCES}
-    ${ZAPHOYD_TPP_HEADERS}
-    ${ZAPHOYD_TPP_SOURCES}
     ${WEBRTC_HEADERS}
     ${WEBRTC_SOURCES}
     ${WEBRTC_PLATFORM_HEADERS}
@@ -221,7 +181,6 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER} PREFIX "Platfor
 source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsAPI" FILES ${WEBSOCKETS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/service PREFIX "Service" FILES ${SERVICE_HEADERS} ${SERVICE_SOURCES})
-source_group(TREE ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp PREFIX "ZaphoydTpp" FILES ${ZAPHOYD_TPP_HEADERS} ${ZAPHOYD_TPP_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_HEADERS} ${WEBRTC_SOURCES} 
     ${WEBRTC_PLATFORM_HEADERS} ${WEBRTC_PLATFORM_SOURCES})
 
@@ -238,28 +197,6 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )
-
-# Websockets
-if (USE_ZAPHOYD_TPP_SOCKETS)
-    add_library(${ZAPHOYD_TPP_PROJ} SHARED
-        ${ZAPHOYD_TPP_HEADERS}
-        ${ZAPHOYD_TPP_SOURCES}
-        ${WEBSOCKETS_API_HEADERS}
-    )
-    target_compile_definitions(${ZAPHOYD_TPP_PROJ} PRIVATE -DASIO_STANDALONE)
-    if (WIN32)
-        target_compile_definitions(${ZAPHOYD_TPP_PROJ} PRIVATE -D_WEBSOCKETPP_CPP11_STL_)
-    endif()
-    if (ZAPHOYD_SHARED_IO_SERVICE)
-        target_compile_definitions(${ZAPHOYD_TPP_PROJ} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
-    endif(ZAPHOYD_SHARED_IO_SERVICE)
-    target_include_directories(${ZAPHOYD_TPP_PROJ} PRIVATE ${TPP_HDRS_DIR} 
-        ${ASIO_HDRS_DIR} ${OPENSSL_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src/zaphoyd_tpp)
-    if (WIN32)
-        target_link_libraries(${ZAPHOYD_TPP_PROJ} PUBLIC "ws2_32.lib")
-    endif(WIN32)
-    target_link_libraries(${ZAPHOYD_TPP_PROJ} PUBLIC ${OPENSSL_LIBRARIES})
-endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # WebRTC
 if (WEBRTC_AVAILABLE)
@@ -290,29 +227,18 @@ elseif(WIN32)
 endif()
 target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
 
-
-# test application
-if (USE_ZAPHOYD_TPP_SOCKETS)
-    set(TEST_APP_NAME ${LIB_PROJECT_NAME}TestApp)
-    file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/test/*.${SOURCE_FILE_EXT})
-    file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/test/*.${HEADER_FILE_EXT})
-
-    add_executable(${TEST_APP_NAME} 
-        ${CPP_HEADERS}
-        ${CPP_SOURCES}
-    )
-
-    target_include_directories(${TEST_APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_link_libraries(${TEST_APP_NAME} PRIVATE ${LIB_PROJECT_NAME})
-endif(USE_ZAPHOYD_TPP_SOCKETS)
-
 # install steps
 if (EXISTS ${CMAKE_INSTALL_PREFIX})
-    install(TARGETS ${LIB_PROJECT_NAME} EXPORT ${LIB_PROJECT_NAME}-targets 
+    install(TARGETS ${LIB_PROJECT_NAME} EXPORT ${LIB_PROJECT_NAME}-targets
             ARCHIVE DESTINATION lib 
             LIBRARY DESTINATION lib 
             RUNTIME DESTINATION bin)
+    # public API installation
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
+    install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ./include/websockets)
+    install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
+    file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
+    install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
     # generate LiveKitCppClient-config.cmake and LiveKitCppClient-config-version.cmake files
     set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
     configure_package_config_file("${LIB_PROJECT_NAME}Config.cmake.in"
