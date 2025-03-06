@@ -11,36 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoom.h
-#include "LiveKitClientExport.h"
+#pragma once // TransportListener.h
+#include <api/jsep.h>
 #include <memory>
-
-namespace Websocket {
-class EndPoint;
-}
 
 namespace LiveKitCpp
 {
 
-struct ConnectOptions;
-struct RoomOptions;
-class PeerConnectionFactory;
+enum class SignalTarget;
 
-class LIVEKIT_CLIENT_API LiveKitRoom
+class TransportListener
 {
-    struct Impl;
-    friend class LiveKitService;
 public:
-    ~LiveKitRoom();
-    bool connect(std::string host, std::string authToken);
-    void disconnect();
-private:
-    LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
-                PeerConnectionFactory* pcf,
-                const ConnectOptions& connectOptions,
-                const RoomOptions& roomOptions);
-private:
-    const std::unique_ptr<Impl> _impl;
+    virtual void onSdpCreated(SignalTarget target, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) = 0;
+    virtual void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) = 0;
+    virtual void onSdpSet(SignalTarget target, bool local) = 0;
+    virtual void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) = 0;
+    virtual void onSetConfigurationError(SignalTarget target, webrtc::RTCError error) = 0;
+protected:
+    virtual ~TransportListener() = default;
 };
 
 } // namespace LiveKitCpp

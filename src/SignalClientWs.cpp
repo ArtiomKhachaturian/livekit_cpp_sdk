@@ -71,6 +71,7 @@ SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, Logg
     , _socketListener(std::make_unique<Listener>(this))
     , _socket(std::move(socket))
 {
+    _protocolVersion = LIVEKIT_PROTOCOL_VERSION;
     if (_socket) {
         _socket->addListener(_socketListener.get());
     }
@@ -114,19 +115,44 @@ ReconnectMode SignalClientWs::reconnectMode() const noexcept
     return _reconnectMode;
 }
 
+int SignalClientWs::protocolVersion() const noexcept
+{
+    return _protocolVersion;
+}
+
 void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
 {
-    _autoSubscribe = autoSubscribe;
+    if (_autoSubscribe != autoSubscribe) {
+        _autoSubscribe = autoSubscribe;
+        logVerbose("Auto subscribe policy has been changed", defaultLogCategory());
+    }
 }
 
 void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
 {
-    _adaptiveStream = adaptiveStream;
+    if (_adaptiveStream != adaptiveStream) {
+        _adaptiveStream = adaptiveStream;
+        logVerbose("Adaptive stream policy has been changed", defaultLogCategory());
+    }
 }
 
 void SignalClientWs::setReconnectMode(ReconnectMode reconnectMode)
 {
-    _reconnectMode = reconnectMode;
+    if (_reconnectMode != reconnectMode) {
+        _reconnectMode = reconnectMode;
+        logVerbose("Reconnect mode has been changed", defaultLogCategory());
+    }
+}
+
+void SignalClientWs::setProtocolVersion(int protocolVersion)
+{
+    if (_protocolVersion != protocolVersion) {
+        _protocolVersion = protocolVersion;
+        logVerbose("Protocol version has been changed", defaultLogCategory());
+        if (LIVEKIT_PROTOCOL_VERSION != _protocolVersion) {
+            logWarning("Protocol version is not matched to default", defaultLogCategory());
+        }
+    }
 }
 
 void SignalClientWs::setHost(std::string host)
@@ -211,7 +237,7 @@ Websocket::Options SignalClientWs::Listener::buildOptions() const
         options._host += urlQueryItem("auto_subscribe", _owner->autoSubscribe());
         options._host += urlQueryItem("sdk", "cpp"s);
         options._host += urlQueryItem("version", g_libraryVersion);
-        options._host += urlQueryItem("protocol", 15);
+        options._host += urlQueryItem("protocol", _owner->protocolVersion());
         options._host += urlQueryItem("adaptive_stream", _owner->adaptiveStream());
         options._host += urlQueryItem("os", operatingSystemName());
         options._host += urlQueryItem("os_version", operatingSystemVersion());

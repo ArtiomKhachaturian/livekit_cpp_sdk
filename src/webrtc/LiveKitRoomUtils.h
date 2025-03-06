@@ -11,36 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoom.h
-#include "LiveKitClientExport.h"
-#include <memory>
-
-namespace Websocket {
-class EndPoint;
-}
+#pragma once // LiveKitRoomUtils.h
+#include "rtc/ICEServer.h"
+#include <api/peer_connection_interface.h>
+#include <vector>
 
 namespace LiveKitCpp
 {
 
-struct ConnectOptions;
-struct RoomOptions;
-class PeerConnectionFactory;
+enum class IceTransportPolicy;
 
-class LIVEKIT_CLIENT_API LiveKitRoom
+class LiveKitRoomUtils
 {
-    struct Impl;
-    friend class LiveKitService;
 public:
-    ~LiveKitRoom();
-    bool connect(std::string host, std::string authToken);
-    void disconnect();
-private:
-    LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
-                PeerConnectionFactory* pcf,
-                const ConnectOptions& connectOptions,
-                const RoomOptions& roomOptions);
-private:
-    const std::unique_ptr<Impl> _impl;
+    static webrtc::PeerConnectionInterface::IceServer map(const ICEServer& server);
+    static webrtc::PeerConnectionInterface::IceServers map(const std::vector<ICEServer>& servers);
+    static webrtc::PeerConnectionInterface::IceTransportsType map(IceTransportPolicy policy);
 };
 
 } // namespace LiveKitCpp

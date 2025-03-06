@@ -163,6 +163,12 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
     return _requestSender->updateVideoTrack(track);
 }
 
+std::string_view SignalClient::defaultLogCategory()
+{
+    static const std::string_view category("SignalingClient");
+    return category;
+}
+
 SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
@@ -176,6 +182,17 @@ void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
 void SignalClient::notifyAboutTransportError(const std::string& error)
 {
     _impl->notifyAboutTransportError(error);
+}
+
+bool SignalClient::canLog(LoggingSeverity severity) const
+{
+    return _impl->canLog(severity);
+}
+
+void SignalClient::log(LoggingSeverity severity, std::string_view message,
+                       std::string_view category)
+{
+    _impl->log(severity, message, category);
 }
 
 SignalClient::Impl::Impl(uint64_t id, Logger* logger)
@@ -219,7 +236,7 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
                                std::string(toString(_transportState)) +
                                "' to '" +
                                std::string(toString(state)) + "'",
-                               "Transport_Level");
+                               defaultLogCategory());
                 }
                 _transportState = state;
                 result = ChangeTransportStateResult::Changed;
@@ -230,14 +247,14 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
         }
     }
     if (ChangeTransportStateResult::Changed == result) {
-        _listeners.invokeMethod(&SignalTransportListener::onTransportStateChanged, _id, state);
+        _listeners.invoke(&SignalTransportListener::onTransportStateChanged, _id, state);
     }
     return result;
 }
 
 void SignalClient::Impl::notifyAboutTransportError(const std::string& error)
 {
-    _listeners.invokeMethod(&SignalTransportListener::onTransportError, _id, error);
+    _listeners.invoke(&SignalTransportListener::onTransportError, _id, error);
 }
 
 void SignalClient::Impl::addListener(SignalTransportListener* listener)

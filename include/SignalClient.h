@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // SignalClient.h
 #include "LiveKitClientExport.h"
+#include "Logger.h"
 #include "State.h"
 #include <memory>
 #include <string>
@@ -45,7 +46,7 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class LIVEKIT_CLIENT_API SignalClient
+class LIVEKIT_CLIENT_API SignalClient : protected Logger
 {
     class Impl;
 protected:
@@ -84,9 +85,14 @@ public:
     bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
 protected:
+    static std::string_view defaultLogCategory();
     ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
     void handleServerProtobufMessage(const void* message, size_t len);
+    // impl. of Logger
+    bool canLog(LoggingSeverity severity) const final;
+    void log(LoggingSeverity severity, std::string_view message,
+             std::string_view category = {}) final;
 private:
     const std::unique_ptr<Impl> _impl;
     // for handling of incoming messages from the LiveKit SFU

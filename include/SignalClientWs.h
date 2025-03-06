@@ -37,9 +37,11 @@ public:
     bool autoSubscribe() const noexcept;
     bool adaptiveStream() const noexcept;
     ReconnectMode reconnectMode() const noexcept;
+    int protocolVersion() const noexcept;
     void setAutoSubscribe(bool autoSubscribe);
     void setAdaptiveStream(bool adaptiveStream);
     void setReconnectMode(ReconnectMode reconnectMode);
+    void setProtocolVersion(int protocolVersion);
     void setHost(std::string host);
     void setAuthToken(std::string authToken);
     void setParticipantSid(std::string participantSid);
@@ -59,6 +61,7 @@ private:
     bool _autoSubscribe = true;
     bool _adaptiveStream = true;
     ReconnectMode _reconnectMode = ReconnectMode::None;
+    int _protocolVersion = {};
 };
 
 } // namespace LiveKitCpp

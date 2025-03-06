@@ -14,7 +14,8 @@
 #pragma once // LiveKitService.h
 #include "LiveKitClientExport.h"
 #include "LiveKitServiceState.h"
-#include "LiveKitRoomOptions.h"
+#include "ConnectOptions.h"
+#include "RoomOptions.h"
 #include <memory>
 
 namespace Websocket {
@@ -37,9 +38,12 @@ public:
     ~LiveKitService();
     LiveKitServiceState state() const;
     [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]
-    LiveKitRoom* makeRoom(const LiveKitRoomOptions& options = {}) const;
-    std::shared_ptr<LiveKitRoom> makeRoomS(const LiveKitRoomOptions& options = {}) const;
-    std::unique_ptr<LiveKitRoom> makeRoomU(const LiveKitRoomOptions& options = {}) const;
+    LiveKitRoom* makeRoom(const ConnectOptions& connectOptions = {},
+                          const RoomOptions& roomOptions = {}) const;
+    std::shared_ptr<LiveKitRoom> makeRoomS(const ConnectOptions& connectOptions = {},
+                                           const RoomOptions& roomOptions = {}) const;
+    std::unique_ptr<LiveKitRoom> makeRoomU(const ConnectOptions& connectOptions = {},
+                                           const RoomOptions& roomOptions = {}) const;
 private:
     const std::unique_ptr<Impl> _impl;
 };

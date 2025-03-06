@@ -141,7 +141,7 @@ std::optional<livekit::SignalResponse> ResponseReceiver::parse(const void* data,
 template <class Method, typename... Args>
 void ResponseReceiver::notify(const Method& method, Args&&... args) const
 {
-    _listeners.invokeMethod(method, _signalClientId, std::forward<Args>(args)...);
+    _listeners.invoke(method, _signalClientId, std::forward<Args>(args)...);
 }
 
 template <class Method, class TLiveKitType>

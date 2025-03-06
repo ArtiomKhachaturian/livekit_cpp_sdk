@@ -11,18 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoomOptions.h
-#include <chrono>
+#pragma once // RoomOptions.h
+#include <optional>
 
 namespace LiveKitCpp
 {
 
-using namespace std::chrono_literals;
-
 // https://github.com/livekit/client-sdk-swift/blob/b7c2ebc7cde9af7018d475961d7e7957f69d310f/Sources/LiveKit/Types/Options/RoomOptions.swift
 // https://github.com/livekit/client-sdk-swift/blob/b7c2ebc7cde9af7018d475961d7e7957f69d310f/Sources/LiveKit/Types/Options/ConnectOptions.swift
-struct LiveKitRoomOptions
+struct RoomOptions
 {
+    // default options for capturing
+    /*CameraCaptureOptions _defaultCameraCaptureOptions;
+
+    ScreenShareCaptureOptions _defaultScreenShareCaptureOptions;
+
+    AudioCaptureOptions _defaultAudioCaptureOptions;
+
+    // default options for publishing
+    VideoPublishOptions _defaultVideoPublishOptions:
+
+    AudioPublishOptions _defaultAudioPublishOptions;
+
+    DataPublishOptions _defaultDataPublishOptions;*/
     /// AdaptiveStream lets LiveKit automatically manage quality of subscribed
     /// video tracks to optimize for bandwidth and CPU.
     /// When attached video elements are visible, it'll choose an appropriate
@@ -37,30 +48,16 @@ struct LiveKitRoomOptions
     /// significantly reducing publishing CPU and bandwidth usage.
     ///
     bool _dynacast = false;
-
     
     bool _stopLocalTrackOnUnpublish = true;
 
     bool _suspendLocalVideoTracksInBackground = true;
+    
+    /// E2EE Options
+    //std::optional<E2EEOptions> _e2eeOptions;
 
     bool _reportRemoteTrackStatistics = false;
-    
-    /// Automatically subscribe to ``RemoteParticipant``'s tracks.
-    /// Defaults to true.
-    bool _autoSubscribe = true;
 
-    /// The number of attempts to reconnect when the network disconnects.
-    unsigned _reconnectAttempts = 3U;
-
-    /// The delay between reconnect attempts.
-    std::chrono::milliseconds _reconnectAttemptDelay = 2s;
-
-    /// The timeout interval for the initial websocket connection.
-    std::chrono::milliseconds _websocketConnectTimeoutInterval = 10s;
-
-    std::chrono::milliseconds _primaryTransportConnectTimeout = 10s;
-
-    std::chrono::milliseconds _publisherTransportConnectTimeout = 10s;
 };
 
 } // namespace LiveKitCpp

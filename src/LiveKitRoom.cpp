@@ -16,11 +16,14 @@
 #include "SignalClientWs.h"
 #include "SignalServerListener.h"
 #include "SignalTransportListener.h"
+#include "TransportListener.h"
 #include "Listeners.h"
 #include "Loggable.h"
 #include "ProtectedObjAliases.h"
-#include "LiveKitRoomOptions.h"
+#include "RoomOptions.h"
 #include "Transport.h"
+#include "TransportListener.h"
+#include "LiveKitRoomState.h"
 #include "PeerConnectionFactory.h"
 #include "WebsocketFactory.h"
 #include "rtc/JoinResponse.h"
@@ -31,37 +34,42 @@ namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
 
-using ImplBase = LoggableS<SignalServerListener, SignalTransportListener, webrtc::PeerConnectionObserver>;
+using ImplBase = LoggableS<SignalServerListener,
+                           SignalTransportListener,
+                           TransportListener,
+                           webrtc::PeerConnectionObserver>;
 
 struct LiveKitRoom::Impl : public ImplBase
 {
     Impl(std::unique_ptr<Websocket::EndPoint> socket,
          PeerConnectionFactory* pcf,
-         const LiveKitRoomOptions& options);
+         const ConnectOptions& connectOptions,
+         const RoomOptions& roomOptions);
     ~Impl();
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    const LiveKitRoomOptions _options;
+    ProtectedObj<LiveKitRoomState> _state;
     SignalClientWs _client;
-    ProtectedUniquePtr<Transport> _publisher;
-    ProtectedUniquePtr<Transport> _subscriber;
-    webrtc::PeerConnectionInterface::RTCConfiguration makeConfig(const JoinResponse& response) const;
     // impl. of SignalServerListener
     void onJoin(uint64_t signalClientId, const JoinResponse& response) final;
+    void onReconnect(uint64_t signalClientId, const ReconnectResponse& response) final;
+    // impl. of TransportListener
+    void onSdpCreated(SignalTarget target, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
+    void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
+    void onSdpSet(SignalTarget target, bool local) final;
+    void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
+    void onSetConfigurationError(SignalTarget target, webrtc::RTCError error) final;
     // impl. of webrtc::PeerConnectionObserver
     void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState) final;
     void OnDataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> dataChannel) final;
     void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState newState) final;
     void OnIceCandidate(const webrtc::IceCandidateInterface* candidate) final;
-private:
-    static webrtc::PeerConnectionInterface::IceServer map(const ICEServer& server);
-    static webrtc::PeerConnectionInterface::IceServers map(const std::vector<ICEServer>& servers);
-    //std::vector<ICEServer>
 };
 
 LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                          PeerConnectionFactory* pcf,
-                         const LiveKitRoomOptions& options)
-    : _impl(std::make_unique<Impl>(std::move(socket), pcf, options))
+                         const ConnectOptions& connectOptions,
+                         const RoomOptions& roomOptions)
+    : _impl(std::make_unique<Impl>(std::move(socket), pcf, connectOptions, roomOptions))
 {
 }
 
@@ -84,13 +92,16 @@ void LiveKitRoom::disconnect()
 
 LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
                         PeerConnectionFactory* pcf,
-                        const LiveKitRoomOptions& options)
+                        const ConnectOptions& connectOptions,
+                        const RoomOptions& roomOptions)
     : ImplBase(pcf->logger())
     , _pcf(pcf)
+    , _state(connectOptions, roomOptions)
     , _client(std::move(socket), _pcf->logger().get())
-    , _options(options)
 {
-    _client.setAdaptiveStream(options._adaptiveStream);
+    _client.setAdaptiveStream(roomOptions._adaptiveStream);
+    _client.setAutoSubscribe(connectOptions._autoSubscribe);
+    _client.setProtocolVersion(connectOptions._protocolVersion);
     _client.addServerListener(this);
     _client.addTransportListener(this);
 }
@@ -101,63 +112,129 @@ LiveKitRoom::Impl::~Impl()
     _client.removeTransportListener(this);
 }
 
-webrtc::PeerConnectionInterface::RTCConfiguration LiveKitRoom::Impl::
-    makeConfig(const JoinResponse& response) const
-{
-    webrtc::PeerConnectionInterface::RTCConfiguration config;
-    config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
-    config.network_preference.emplace(::rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
-    // set some defaults
-    config.set_cpu_adaptation(true);
-    //config.enable_dtls_srtp.emplace(true);
-    // enable ICE renomination, like on Android ("a=ice-options:trickle renomination")
-    config.enable_ice_renomination = true;
-    // required for M86:
-    // the issue may because 1 byte rtp header id exahustion, check if you have enabled this option:
-    // https://source.chromium.org/chromium/chromium/src/+/master:third_party/webrtc/api/peer_connection_interface.h;l=625?q=RTCConfiguration%20webrtc&ss=chromium%2Fchromium%2Fsrc
-    config.offer_extmap_allow_mixed = true;
-    if (const auto& clientConf = response._clientConfiguration) {
-        if (ClientConfigSetting::Enabled == clientConf->_forceRelay) {
-            config.type = webrtc::PeerConnectionInterface::kRelay;
-        }
-        /*else {
-            config.type = connectOptions.iceTransportPolicy.toRTCType()
-        }*/
-    }
-    // Set iceServers provided by the server
-    config.servers = map(response._iceServers);
-    /*if !connectOptions.iceServers.isEmpty {
-       // Override with user provided iceServers
-       rtcConfiguration.iceServers = connectOptions.iceServers.map { $0.toRTCType() }
-    }*/
-    
-    // crypto options
-    /*{
-        webrtc::CryptoOptions crypto_options;
-        // enables GCM suites for DTLS-SRTP
-        crypto_options.srtp.enable_gcm_crypto_suites = true;
-        crypto_options.srtp.enable_aes128_sha1_32_crypto_cipher = false;
-        crypto_options.srtp.enable_aes128_sha1_80_crypto_cipher = false;
-        crypto_options.srtp.enable_encrypted_rtp_header_extensions = false;
-        // enforces frame encryption on RTP senders and receivers
-        //crypto_options.sframe.require_frame_encryption = requireFrameEncryption;
-        config.crypto_options.emplace(std::move(crypto_options));
-    }*/
-    return config;
-}
-
 void LiveKitRoom::Impl::onJoin(uint64_t signalClientId, const JoinResponse& response)
 {
+    // https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Core/Room%2BEngine.swift#L118
     SignalServerListener::onJoin(signalClientId, response);
-    LOCK_WRITE_PROTECTED_OBJ(_publisher);
-    LOCK_WRITE_PROTECTED_OBJ(_subscriber);
+    LOCK_WRITE_PROTECTED_OBJ(_state);
     // protocol v3
     // log("subscriberPrimary: \(joinResponse.subscriberPrimary)")
-    const auto config = makeConfig(response);
-    _publisher = Transport::create(response._subscriberPrimary, SignalTarget::Publisher,
-                                   this, _pcf, config);
-    _subscriber = Transport::create(!response._subscriberPrimary, SignalTarget::Subscriber,
-                                   this, _pcf, config);
+    const auto config = _state->makeConfiguration(response);
+    _state->_publisher = Transport::create(response._subscriberPrimary,
+                                           SignalTarget::Publisher,
+                                           this, _pcf, config);
+    if (!_state->_publisher) {
+        return;
+    }
+    _state->_subscriber = Transport::create(!response._subscriberPrimary,
+                                            SignalTarget::Subscriber,
+                                            this, _pcf, config);
+    if (!_state->_subscriber) {
+        _state->_publisher.reset();
+        return;
+    }
+    _state->_publisher->setListener(this);
+    _state->_publisher->setListener(this);
+    if (const auto& room = response._room) {
+        _state->_sid = room->_sid;
+        _state->_name = room->_name;
+        _state->_creationTime = std::chrono::system_clock::from_time_t(static_cast<time_t>(room->_creationTime));
+        _state->_maxParticipants = room->_maxParticipants;
+        _state->_metadata = room->_metadata;
+        _state->_isRecording = room->_activeRecording;
+        _state->_numParticipants = room->_numParticipants;
+        _state->_numPublishers = room->_numPublishers;
+    }
+    else {
+        _state->_sid = {};
+        _state->_name = {};
+        _state->_creationTime = {};
+        _state->_maxParticipants = {};
+        _state->_metadata = {};
+        _state->_isRecording = {};
+        _state->_numParticipants = {};
+        _state->_numPublishers = {};
+    }
+    /*if e2eeManager != nil, !joinResponse.sifTrailer.isEmpty {
+                    e2eeManager?.keyProvider.setSifTrailer(trailer: joinResponse.sifTrailer)
+                }*/
+    // localParticipant.set(info: joinResponse.participant, connectionState: $0.connectionState)
+    /*if !joinResponse.otherParticipants.isEmpty {
+                        for otherParticipant in joinResponse.otherParticipants {
+                            $0.updateRemoteParticipant(info: otherParticipant, room: self)
+                        }
+                    }*/
+    _state->_publisher->createOffer();
+    // data over pub channel for backwards compatibility
+
+    /*let reliableDataChannel = await publisher.dataChannel(for: LKRTCDataChannel.labels.reliable,
+                                                          configuration: RTC.createDataChannelConfiguration())
+
+    let lossyDataChannel = await publisher.dataChannel(for: LKRTCDataChannel.labels.lossy,
+                                                       configuration: RTC.createDataChannelConfiguration(maxRetransmits: 0))
+
+    publisherDataChannel.set(reliable: reliableDataChannel)
+    publisherDataChannel.set(lossy: lossyDataChannel)
+
+    log("dataChannel.\(String(describing: reliableDataChannel?.label)) : \(String(describing: reliableDataChannel?.channelId))")
+    log("dataChannel.\(String(describing: lossyDataChannel?.label)) : \(String(describing: lossyDataChannel?.channelId))")*/
+    _state->_isSubscriberPrimary = response._subscriberPrimary;
+    
+    /*if !isSubscriberPrimary {
+        // lazy negotiation for protocol v3+
+        try await publisherShouldNegotiate()
+    }*/
+}
+
+void LiveKitRoom::Impl::onReconnect(uint64_t signalClientId, const ReconnectResponse& response)
+{
+    SignalServerListener::onReconnect(signalClientId, response);
+    LOCK_READ_PROTECTED_OBJ(_state);
+    if (_state->_publisher && _state->_subscriber) {
+        const auto config = _state->makeConfiguration(response);
+        _state->_publisher->setConfiguration(config);
+        _state->_subscriber->setConfiguration(config);
+    }
+}
+
+void LiveKitRoom::Impl::onSdpCreated(SignalTarget target,
+                                     std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
+{
+    LOCK_READ_PROTECTED_OBJ(_state);
+    switch (target) {
+        case SignalTarget::Publisher:
+            if (const auto& publisher = _state->_publisher) {
+                publisher->setLocalDescription(std::move(desc));
+            }
+            break;
+        case SignalTarget::Subscriber:
+            if (const auto& subscriber = _state->_subscriber) {
+                subscriber->setLocalDescription(std::move(desc));
+            }
+            break;
+    }
+}
+
+void LiveKitRoom::Impl::onSdpCreationFailure(SignalTarget target, webrtc::SdpType type,
+                                             webrtc::RTCError error)
+{
+    
+}
+
+void LiveKitRoom::Impl::onSdpSet(SignalTarget target, bool local)
+{
+    
+}
+
+void LiveKitRoom::Impl::onSdpSetFailure(SignalTarget target, bool local,
+                                        webrtc::RTCError error)
+{
+    
+}
+
+void LiveKitRoom::Impl::onSetConfigurationError(SignalTarget target, webrtc::RTCError error)
+{
+    
 }
 
 void LiveKitRoom::Impl::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState)
@@ -180,31 +257,12 @@ void LiveKitRoom::Impl::OnIceCandidate(const webrtc::IceCandidateInterface* cand
     
 }
 
-webrtc::PeerConnectionInterface::IceServer LiveKitRoom::Impl::map(const ICEServer& server)
-{
-    webrtc::PeerConnectionInterface::IceServer webrtcIceSrv;
-    webrtcIceSrv.username = server._username;
-    webrtcIceSrv.password = server._credential;
-    webrtcIceSrv.urls = server._urls;
-    return webrtcIceSrv;
-}
-
-webrtc::PeerConnectionInterface::IceServers LiveKitRoom::Impl::map(const std::vector<ICEServer>& servers)
-{
-    webrtc::PeerConnectionInterface::IceServers webrtcIceSrvs;
-    webrtcIceSrvs.reserve(servers.size());
-    for (const auto& server : servers) {
-        webrtcIceSrvs.push_back(map(server));
-    }
-    return webrtcIceSrvs;
-}
-
 #else
 struct LiveKitRoom::Impl {};
     
 LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint>,
                          PeerConnectionFactory*,
-                         const LiveKitRoomOptions&) {}
+                         const RoomOptions&) {}
 
 LiveKitRoom::~LiveKitRoom() {}
 

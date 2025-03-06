@@ -92,7 +92,8 @@ public:
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     template <typename TOutput>
-    TOutput makeRoom(const LiveKitRoomOptions& options) const;
+    TOutput makeRoom(const ConnectOptions& connectOptions,
+                     const RoomOptions& roomOptions) const;
     static bool sslInitialized(const std::shared_ptr<Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -131,19 +132,22 @@ LiveKitServiceState LiveKitService::state() const
     return LiveKitServiceState::SSLInitError;
 }
 
-LiveKitRoom* LiveKitService::makeRoom(const LiveKitRoomOptions& options) const
+LiveKitRoom* LiveKitService::makeRoom(const ConnectOptions& connectOptions,
+                                      const RoomOptions& roomOptions) const
 {
-    return _impl->makeRoom<LiveKitRoom*>(options);
+    return _impl->makeRoom<LiveKitRoom*>(connectOptions, roomOptions);
 }
 
-std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const LiveKitRoomOptions& options) const
+std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const ConnectOptions& connectOptions,
+                                                       const RoomOptions& roomOptions) const
 {
-    return _impl->makeRoom<std::shared_ptr<LiveKitRoom>>(options);
+    return _impl->makeRoom<std::shared_ptr<LiveKitRoom>>(connectOptions, roomOptions);
 }
 
-std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const LiveKitRoomOptions& options) const
+std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const ConnectOptions& connectOptions,
+                                                       const RoomOptions& roomOptions) const
 {
-    return _impl->makeRoom<std::unique_ptr<LiveKitRoom>>(options);
+    return _impl->makeRoom<std::unique_ptr<LiveKitRoom>>(connectOptions, roomOptions);
 }
 
 LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -154,11 +158,13 @@ LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websockets
 }
 
 template <typename TOutput>
-TOutput LiveKitService::Impl::makeRoom(const LiveKitRoomOptions& options) const
+TOutput LiveKitService::Impl::makeRoom(const ConnectOptions& connectOptions,
+                                       const RoomOptions& roomOptions) const
 {
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
-            return TOutput(new LiveKitRoom(std::move(socket), _pcf.get(), options));
+            return TOutput(new LiveKitRoom(std::move(socket), _pcf.get(),
+                                           connectOptions, roomOptions));
         }
     }
     return TOutput(nullptr);
@@ -243,13 +249,18 @@ LiveKitServiceState LiveKitService::state() const
     return LiveKitServiceState::NoWebRTC;
 }
 
-LiveKitRoom* LiveKitService::makeRoom(const LiveKitRoomOptions&) const { return nullptr; }
+LiveKitRoom* LiveKitService::makeRoom(const RoomOptions&) const { return nullptr; }
 
-std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const LiveKitRoomOptions&) const { return {}; }
+std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const RoomOptions&) const { return {}; }
 
-std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const LiveKitRoomOptions&) const { return {}; }
+std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const RoomOptions&) const { return {}; }
 
 #endif
+
+ConnectOptions::ConnectOptions()
+{
+    _protocolVersion = LIVEKIT_PROTOCOL_VERSION;
+}
 
 } // namespace LiveKitCpp
 

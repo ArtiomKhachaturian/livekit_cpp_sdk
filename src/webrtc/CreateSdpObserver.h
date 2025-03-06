@@ -11,36 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoom.h
-#include "LiveKitClientExport.h"
-#include <memory>
-
-namespace Websocket {
-class EndPoint;
-}
+#pragma once // CreateSdpObserver.h
+#include "Listener.h"
+#include <api/jsep.h>
 
 namespace LiveKitCpp
 {
 
-struct ConnectOptions;
-struct RoomOptions;
-class PeerConnectionFactory;
+class CreateSdpListener;
 
-class LIVEKIT_CLIENT_API LiveKitRoom
+class CreateSdpObserver : public webrtc::CreateSessionDescriptionObserver
 {
-    struct Impl;
-    friend class LiveKitService;
 public:
-    ~LiveKitRoom();
-    bool connect(std::string host, std::string authToken);
-    void disconnect();
+    CreateSdpObserver(webrtc::SdpType type);
+    void setListener(CreateSdpListener* listener = nullptr);
+    // webrtc::CreateSessionDescriptionObserver implementation.
+    void OnSuccess(webrtc::SessionDescriptionInterface* desc) final;
+    void OnFailure(webrtc::RTCError error) final;
 private:
-    LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
-                PeerConnectionFactory* pcf,
-                const ConnectOptions& connectOptions,
-                const RoomOptions& roomOptions);
-private:
-    const std::unique_ptr<Impl> _impl;
+    const webrtc::SdpType _type;
+    Listener<CreateSdpListener*> _listener;
 };
 
 } // namespace LiveKitCpp
