@@ -208,6 +208,10 @@ LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint>,
 
 LiveKitRoom::~LiveKitRoom() {}
 
+bool LiveKitRoom::connect(std::string, std::string) { return false; }
+
+void LiveKitRoom::disconnect() {}
+
 #endif
 
 } // namespace LiveKitCpp

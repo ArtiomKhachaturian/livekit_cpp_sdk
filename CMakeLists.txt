@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(LIB_PROJECT_NAME LiveKitCppClient)
-
 # Project name
-project(${LIB_PROJECT_NAME} LANGUAGES CXX VERSION 0.0.1)
+project("LiveKitCppClient" LANGUAGES CXX VERSION 0.0.1)
 
 include(CMakePackageConfigHelpers)
 
@@ -48,6 +46,7 @@ file(GLOB_RECURSE BRICKS_API_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/*.${HEAD
 
 set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
 set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
+option(ENABLE_TEST_APPLICATION "Test application, required ZaphoydTppWebsockets library for websockets backend" ON)
 
 function(recreateDir DIR)
     if (EXISTS ${DIR})
@@ -146,7 +145,7 @@ if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
 endif()
 
 # Create a static library
-add_library(${LIB_PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}
     ${COMMON_HEADERS}
     ${COMMON_SOURCES}
@@ -175,7 +174,7 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_
     ${WEBRTC_PLATFORM_HEADERS} ${WEBRTC_PLATFORM_SOURCES})
 
 # Add include directories
-target_include_directories(${LIB_PROJECT_NAME} PRIVATE
+target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service
@@ -190,60 +189,79 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
 
 # WebRTC
 if (WEBRTC_AVAILABLE)
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR} 
+    target_include_directories(${PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR} 
         ${CMAKE_SOURCE_DIR}/src/webrtc ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
     if (APPLE)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
-        target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
+        target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
+        target_link_libraries(${PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
     elseif(WIN32)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -RTC_ENABLE_WIN_WGC)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -RTC_ENABLE_WIN_WGC)
     endif()
-    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE ${WEBRTC_LIB_FILES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${WEBRTC_LIB_FILES})
 endif()
 
 # Link Protobuf library
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
 # Link abseil
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_link_libraries(${PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
 # Generic attributes for the library
-set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
+set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (APPLE)
-    set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
-    target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
 elseif(WIN32)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 endif()
-target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
 
 # install steps
-if (EXISTS ${CMAKE_INSTALL_PREFIX})
-    install(TARGETS ${LIB_PROJECT_NAME} EXPORT ${LIB_PROJECT_NAME}-targets
-            ARCHIVE DESTINATION lib 
-            LIBRARY DESTINATION lib 
-            RUNTIME DESTINATION bin)
-    # public API installation
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
-    install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ./include/websockets)
-    install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
-    file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
-    install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
-    # generate LiveKitCppClient-config.cmake and LiveKitCppClient-config-version.cmake files
-    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
-    configure_package_config_file("${LIB_PROJECT_NAME}Config.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config.cmake"
-        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_PROJECT_NAME}")
-    write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config-version.cmake"
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY SameMajorVersion)
-    # install config and version file
-    install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_PROJECT_NAME}-config-version.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_PROJECT_NAME}")
-    # install targets file
-    install(EXPORT "${LIB_PROJECT_NAME}-targets" 
-        NAMESPACE "${LIB_PROJECT_NAME}::"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_PROJECT_NAME}")
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Targets
+        ARCHIVE DESTINATION lib 
+        LIBRARY DESTINATION lib 
+        RUNTIME DESTINATION bin)
+# public API installation
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
+install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ./include/websockets)
+install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
+file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
+install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
+
+# generate [config.cmake] and [-config-version.cmake] files
+set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+configure_package_config_file(./Config.cmake.in
+    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+  )
+install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    COMPATIBILITY SameMajorVersion)
+
+install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+# install targets file
+install(EXPORT "${PROJECT_NAME}Targets" 
+    NAMESPACE "${PROJECT_NAME}::"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+if (ENABLE_TEST_APPLICATION)
+    include(FindPackageHandleStandardArgs)
+    find_package(ZaphoydTppWebsockets REQUIRED)
+    set(TEST_APP_NAME ${PROJECT_NAME}TestApp)
+    file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/test/*.${SOURCE_FILE_EXT})
+    file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/test/*.${HEADER_FILE_EXT})
+
+    add_executable(${TEST_APP_NAME} 
+        ${CPP_HEADERS}
+        ${CPP_SOURCES}
+    )
+    message(STATUS "ZaphoydTppWebsockets_INCLUDE_DIR = ${ZaphoydTppWebsockets_INCLUDE_DIR}")
+    target_include_directories(${TEST_APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include 
+        ${CMAKE_SOURCE_DIR}/bricks/include/logger ${ZaphoydTppWebsockets_INCLUDE_DIR})
+    target_link_libraries(${TEST_APP_NAME} PRIVATE ${PROJECT_NAME} ${ZaphoydTppWebsockets_LIBRARIES})
 endif()

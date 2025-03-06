@@ -1,42 +1,48 @@
-#include "SignalClientWs.h"
-#include "SignalServerListener.h"
-#include "websocket/WebsocketFactory.h"
+#include "WebsocketFactory.h"
+#include "LiveKitService.h"
+#include "LiveKitRoom.h"
+#include "Logger.h"
+#include "ZaphoydTppFactory.h"
 #include <chrono>
 #include <thread>
+#include <iostream>
 
 using namespace LiveKitCpp;
 using namespace std::chrono_literals;
 
-class Listener : public SignalServerListener
+class LoggerIml : public Logger
 {
 public:
-    Listener(SignalClient* client);
-    void onOffer(uint64_t, const SessionDescription& sdp) final;
-private:
-    SignalClient* const _client;
+    void log(LoggingSeverity severity, std::string_view message,
+             std::string_view category) final {
+        switch (severity) {
+            case LoggingSeverity::Verbose:
+                std::cout << "V (" << category << "): " << message << std::endl;
+                break;
+            case LoggingSeverity::Info:
+                std::cout << "I (" << category << "): " << message << std::endl;
+                break;
+            case LoggingSeverity::Warning:
+                std::cout << "W (" << category << "): " << message << std::endl;
+                break;
+            case LoggingSeverity::Error:
+                std::cerr << "E (" << category << "): " << message << std::endl;
+                break;
+        }
+    }
 };
+
+const std::string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDEyNzM0NTEsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0MTE4NzA1MSwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.TN7WCf7_eOqxxdFYZGON7qHq13saslfXrH7cJyIBm3U";
+const std::string host = "ws://localhost:7880";
 
 int main(int argc, char** argv)
 {
-    SignalClientWs client(WebsocketFactory::defaultFactory());
-    Listener listener(&client);
-    client.setHost("ws://localhost:7880");
-    client.setAuthToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDExOTQ1MjQsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0MTEwODEyNCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.sgkNRr8Y9-KLbVLlYUUXQB6KCykdiF7-ft6itTw9vG8");
-    client.addServerListener(&listener);
-    client.connect();
-    std::this_thread::sleep_for(15000s);
-    const auto st = client.transportState();
-    client.removeServerListener(&listener);
+    const auto logger = std::make_shared<LoggerIml>();
+    const auto wsf =  std::make_shared<ZaphoydTppFactory>(logger);
+    LiveKitService service(wsf, logger);
+    if (auto room = service.makeRoomU()) {
+        room->connect(host, token);
+        std::this_thread::sleep_for(15s);
+    }
     return 0;
-}
-
-
-Listener::Listener(SignalClient* client)
-    : _client(client)
-{
-}
-
-void Listener::onOffer(uint64_t, const SessionDescription& sdp)
-{
-    _client->sendAnswer(sdp);
 }
