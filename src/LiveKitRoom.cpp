@@ -262,6 +262,7 @@ struct LiveKitRoom::Impl {};
     
 LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint>,
                          PeerConnectionFactory*,
+                         const ConnectOptions&,
                          const RoomOptions&) {}
 
 LiveKitRoom::~LiveKitRoom() {}

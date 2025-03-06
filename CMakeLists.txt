@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.15)
 project("LiveKitCppClient" LANGUAGES CXX VERSION 0.0.1)
 
 include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -31,6 +32,7 @@ else()
 endif(APPLE)
 
 # Generate C++ code from proto files
+# Specify search paths in CMAKE_PREFIX_PATH variable (if needed): "/path/to/module_a;/another/path/to/module_b"
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
 find_package(absl REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
@@ -204,9 +206,9 @@ if (WEBRTC_AVAILABLE)
 endif()
 
 # Link Protobuf library
-target_link_libraries(${PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Protobuf_LIBRARIES})
 # Link abseil
-target_link_libraries(${PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_link_libraries(${PROJECT_NAME} PRIVATE absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
 # Generic attributes for the library
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (APPLE)
@@ -220,33 +222,35 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS
     -DPROJECT_VERSION="${PROJECT_VERSION}")
 
 # install steps
-install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Targets
-        ARCHIVE DESTINATION lib 
-        LIBRARY DESTINATION lib 
-        RUNTIME DESTINATION bin)
-# public API installation
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
-install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ./include/websockets)
-install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
-file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
-install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
+if (CMAKE_INSTALL_PREFIX)
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+    install(TARGETS ${PROJECT_NAME} 
+            EXPORT ${PROJECT_NAME}Targets
+            ARCHIVE DESTINATION lib 
+            LIBRARY DESTINATION lib 
+            RUNTIME DESTINATION bin)
+    # public API installation
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
+    install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ./include/websockets)
+    install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
+    file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
+    install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
 
-# generate [config.cmake] and [config-version.cmake] files
-configure_package_config_file(./Config.cmake.in
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
-  )
-install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+    # generate [config.cmake] and [config-version.cmake] files
+    configure_package_config_file(./Config.cmake.in
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+      )
+    install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
-write_basic_package_version_file(
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    COMPATIBILITY SameMajorVersion)
+    write_basic_package_version_file(
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        COMPATIBILITY SameMajorVersion)
 
-install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+    install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
-# install targets file
-install(EXPORT "${PROJECT_NAME}Targets" 
-    NAMESPACE "${PROJECT_NAME}::"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+    # install targets file
+    install(EXPORT "${PROJECT_NAME}Targets" 
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+endif(CMAKE_INSTALL_PREFIX)

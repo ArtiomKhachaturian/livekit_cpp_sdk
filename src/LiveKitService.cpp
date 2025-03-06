@@ -240,7 +240,7 @@ void LiveKitService::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logg
 class LiveKitService::Impl {};
 
 LiveKitService::LiveKitService(const std::shared_ptr<Websocket::Factory>&,
-                               const std::shared_ptr<Logger>&) {}
+                               const std::shared_ptr<Bricks::Logger>&) {}
 
 LiveKitService::~LiveKitService() {}
 
@@ -249,11 +249,14 @@ LiveKitServiceState LiveKitService::state() const
     return LiveKitServiceState::NoWebRTC;
 }
 
-LiveKitRoom* LiveKitService::makeRoom(const RoomOptions&) const { return nullptr; }
+LiveKitRoom* LiveKitService::makeRoom(const ConnectOptions&,
+                                      const RoomOptions&) const { return nullptr; }
 
-std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const RoomOptions&) const { return {}; }
+std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const ConnectOptions&,
+                                                       const RoomOptions&) const { return {}; }
 
-std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const RoomOptions&) const { return {}; }
+std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const ConnectOptions&,
+                                                       const RoomOptions&) const { return {}; }
 
 #endif
 
