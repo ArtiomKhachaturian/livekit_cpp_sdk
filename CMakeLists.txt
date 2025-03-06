@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
 set(LIB_PROJECT_NAME LiveKitCppClient)
-set(ZAPHOYD_TPP_PROJ ZaphoydTppWebSockets)
 
 # Project name
 project(${LIB_PROJECT_NAME} LANGUAGES CXX VERSION 0.0.1)
@@ -56,15 +55,6 @@ function(recreateDir DIR)
     endif()
     file(MAKE_DIRECTORY ${DIR})
 endfunction(recreateDir)
-
-function(downloadAndExtract ZIP_URL ZIP_FILE EXTRACT_DIR)
-    if (NOT EXISTS ${ZIP_FILE})
-        message(STATUS "Downloading of ${ZIP_URL}")
-        file(DOWNLOAD ${ZIP_URL} ${ZIP_FILE} SHOW_PROGRESS)
-        recreateDir(${EXTRACT_DIR})
-        file(ARCHIVE_EXTRACT INPUT ${ZIP_FILE} DESTINATION ${EXTRACT_DIR})
-    endif()
-endfunction(downloadAndExtract)
 
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
 recreateDir(${GENERATED_DIR})
