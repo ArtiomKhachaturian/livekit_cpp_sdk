@@ -19,7 +19,7 @@
 #include "TransportListener.h"
 #include "Listeners.h"
 #include "Loggable.h"
-#include "ProtectedObjAliases.h"
+#include "SafeObjAliases.h"
 #include "RoomOptions.h"
 #include "Transport.h"
 #include "TransportListener.h"
@@ -34,10 +34,10 @@ namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
 
-using ImplBase = LoggableS<SignalServerListener,
-                           SignalTransportListener,
-                           TransportListener,
-                           webrtc::PeerConnectionObserver>;
+using ImplBase = Bricks::LoggableS<SignalServerListener,
+                                   SignalTransportListener,
+                                   TransportListener,
+                                   webrtc::PeerConnectionObserver>;
 
 struct LiveKitRoom::Impl : public ImplBase
 {
@@ -47,7 +47,7 @@ struct LiveKitRoom::Impl : public ImplBase
          const RoomOptions& roomOptions);
     ~Impl();
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    ProtectedObj<LiveKitRoomState> _state;
+    Bricks::SafeObj<LiveKitRoomState> _state;
     SignalClientWs _client;
     // impl. of SignalServerListener
     void onJoin(uint64_t signalClientId, const JoinResponse& response) final;
@@ -116,7 +116,7 @@ void LiveKitRoom::Impl::onJoin(uint64_t signalClientId, const JoinResponse& resp
 {
     // https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Core/Room%2BEngine.swift#L118
     SignalServerListener::onJoin(signalClientId, response);
-    LOCK_WRITE_PROTECTED_OBJ(_state);
+    LOCK_WRITE_SAFE_OBJ(_state);
     // protocol v3
     // log("subscriberPrimary: \(joinResponse.subscriberPrimary)")
     const auto config = _state->makeConfiguration(response);
@@ -189,7 +189,7 @@ void LiveKitRoom::Impl::onJoin(uint64_t signalClientId, const JoinResponse& resp
 void LiveKitRoom::Impl::onReconnect(uint64_t signalClientId, const ReconnectResponse& response)
 {
     SignalServerListener::onReconnect(signalClientId, response);
-    LOCK_READ_PROTECTED_OBJ(_state);
+    LOCK_READ_SAFE_OBJ(_state);
     if (_state->_publisher && _state->_subscriber) {
         const auto config = _state->makeConfiguration(response);
         _state->_publisher->setConfiguration(config);
@@ -200,7 +200,7 @@ void LiveKitRoom::Impl::onReconnect(uint64_t signalClientId, const ReconnectResp
 void LiveKitRoom::Impl::onSdpCreated(SignalTarget target,
                                      std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    LOCK_READ_PROTECTED_OBJ(_state);
+    LOCK_READ_SAFE_OBJ(_state);
     switch (target) {
         case SignalTarget::Publisher:
             if (const auto& publisher = _state->_publisher) {

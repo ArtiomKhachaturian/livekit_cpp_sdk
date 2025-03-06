@@ -49,10 +49,10 @@
 namespace LiveKitCpp
 {
 
-class Signals : public LoggableR<>
+class Signals : public Bricks::LoggableR<>
 {
 public:
-    Signals(Logger* logger = nullptr);
+    Signals(Bricks::Logger* logger = nullptr);
     // responses & requests
     JoinResponse map(const livekit::JoinResponse& in) const;
     SessionDescription map(const livekit::SessionDescription& in) const;

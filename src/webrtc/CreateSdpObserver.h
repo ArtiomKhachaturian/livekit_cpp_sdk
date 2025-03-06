@@ -30,7 +30,7 @@ public:
     void OnFailure(webrtc::RTCError error) final;
 private:
     const webrtc::SdpType _type;
-    Listener<CreateSdpListener*> _listener;
+    Bricks::Listener<CreateSdpListener*> _listener;
 };
 
 } // namespace LiveKitCpp

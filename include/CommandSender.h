@@ -17,7 +17,9 @@
 
 // prototype defined in 'Bricks' library,
 // see https://github.com/ArtiomKhachaturian/Bricks
+namespace Bricks {
 class Blob;
+}
 
 namespace LiveKitCpp
 {
@@ -25,8 +27,12 @@ namespace LiveKitCpp
 class CommandSender
 {
 public:
-    virtual bool sendBinary(const std::shared_ptr<Blob>& /*binary*/) { return false; }
-    virtual bool sendText(const std::string_view& /*text*/) { return false; }
+    virtual bool sendBinary(const std::shared_ptr<Bricks::Blob>& /*binary*/) {
+        return false;
+    }
+    virtual bool sendText(const std::string_view& /*text*/) {
+        return false;
+    }
 protected:
     virtual ~CommandSender() = default;
 };

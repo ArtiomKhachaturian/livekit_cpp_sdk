@@ -22,7 +22,9 @@ namespace Websocket {
 class Factory;
 }
 
+namespace Bricks {
 class Logger;
+}
 
 namespace LiveKitCpp
 {
@@ -34,7 +36,7 @@ class LIVEKIT_CLIENT_API LiveKitService
     class Impl;
 public:
     LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                   const std::shared_ptr<Logger>& logger = {});
+                   const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LiveKitService();
     LiveKitServiceState state() const;
     [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]

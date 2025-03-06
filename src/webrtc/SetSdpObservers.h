@@ -32,7 +32,7 @@ protected:
     void process(webrtc::RTCError error) const;
 private:
     static constexpr bool _local = std::is_same_v<TObserveInterface, webrtc::SetLocalDescriptionObserverInterface>;
-    Listener<SetSdpListener*> _listener;
+    Bricks::Listener<SetSdpListener*> _listener;
 };
 
 class SetLocalSdpObserver : public SetSdpObserver<webrtc::SetLocalDescriptionObserverInterface>

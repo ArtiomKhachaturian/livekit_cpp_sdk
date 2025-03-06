@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "SignalClient.h"
 #include "SignalTransportListener.h"
-#include "ProtectedObj.h"
+#include "SafeObj.h"
 #include "Listeners.h"
 #include "ResponseReceiver.h"
 #include "RequestSender.h"
@@ -22,10 +22,10 @@
 namespace LiveKitCpp
 {
 
-class SignalClient::Impl : public LoggableR<>
+class SignalClient::Impl : public Bricks::LoggableR<>
 {
 public:
-    Impl(uint64_t id, Logger* logger = nullptr);
+    Impl(uint64_t id, Bricks::Logger* logger = nullptr);
     State transportState() const noexcept;
     ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(const std::string& error);
@@ -33,11 +33,11 @@ public:
     void removeListener(SignalTransportListener* listener);
 private:
     const uint64_t _id;
-    Listeners<SignalTransportListener*> _listeners;
-    ProtectedObj<State> _transportState = State::Disconnected;
+    Bricks::Listeners<SignalTransportListener*> _listeners;
+    Bricks::SafeObj<State> _transportState = State::Disconnected;
 };
 
-SignalClient::SignalClient(CommandSender* commandSender, Logger* logger)
+SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
     : _impl(std::make_unique<Impl>(id(), logger))
     , _responseReceiver(std::make_unique<ResponseReceiver>(id(), logger))
     , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
@@ -184,26 +184,27 @@ void SignalClient::notifyAboutTransportError(const std::string& error)
     _impl->notifyAboutTransportError(error);
 }
 
-bool SignalClient::canLog(LoggingSeverity severity) const
+bool SignalClient::canLog(Bricks::LoggingSeverity severity) const
 {
     return _impl->canLog(severity);
 }
 
-void SignalClient::log(LoggingSeverity severity, std::string_view message,
+void SignalClient::log(Bricks::LoggingSeverity severity,
+                       std::string_view message,
                        std::string_view category)
 {
     _impl->log(severity, message, category);
 }
 
 SignalClient::Impl::Impl(uint64_t id, Logger* logger)
-    : LoggableR<>(logger)
+    : Bricks::LoggableR<>(logger)
     , _id(id)
 {
 }
 
 State SignalClient::Impl::transportState() const noexcept
 {
-    LOCK_READ_PROTECTED_OBJ(_transportState);
+    LOCK_READ_SAFE_OBJ(_transportState);
     return _transportState.constRef();
 }
 
@@ -211,7 +212,7 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
 {
     ChangeTransportStateResult result = ChangeTransportStateResult::Rejected;
     {
-        LOCK_WRITE_PROTECTED_OBJ(_transportState);
+        LOCK_WRITE_SAFE_OBJ(_transportState);
         if (_transportState != state) {
             bool accepted = false;
             switch(_transportState.constRef()) {
@@ -230,7 +231,7 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
                     break;
             }
             if (accepted) {
-                if (canLog(LoggingSeverity::Verbose)) {
+                if (canLogVerbose()) {
                     // TODO: add obj [ID] logging
                     logVerbose("State changed from '" +
                                std::string(toString(_transportState)) +

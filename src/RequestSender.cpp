@@ -19,11 +19,11 @@ using Request = livekit::SignalRequest;
 
 namespace {
 
-class VectorBlob : public Blob
+class VectorBlob : public Bricks::Blob
 {
 public:
     VectorBlob(std::vector<uint8_t> data);
-    // impl. of Blob
+    // impl. of Bricks::Blob
     size_t size() const noexcept final { return _data.size(); }
     const uint8_t* data() const noexcept final { return _data.data(); }
 private:
@@ -35,7 +35,7 @@ private:
 namespace LiveKitCpp
 {
 
-RequestSender::RequestSender(CommandSender* commandSender, Logger* logger)
+RequestSender::RequestSender(CommandSender* commandSender, Bricks::Logger* logger)
     : _commandSender(commandSender)
     , _signals(logger)
 {
@@ -152,7 +152,7 @@ std::vector<uint8_t> RequestSender::toBytes(const google::protobuf::MessageLite&
     return {};
 }
 
-std::shared_ptr<Blob> RequestSender::toBlob(const google::protobuf::MessageLite& proto)
+std::shared_ptr<Bricks::Blob> RequestSender::toBlob(const google::protobuf::MessageLite& proto)
 {
     auto bytes = toBytes(proto);
     if (!bytes.empty()) {

@@ -68,7 +68,7 @@ private:
     const webrtc::scoped_refptr<SetLocalSdpObserver> _setLocalSdpObserver;
     const webrtc::scoped_refptr<SetRemoteSdpObserver> _setRemoteSdpObserver;
     const webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
-    Listener<TransportListener*> _listener;
+    Bricks::Listener<TransportListener*> _listener;
 };
 
 } // namespace LiveKitCpp

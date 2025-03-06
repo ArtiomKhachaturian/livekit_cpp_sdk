@@ -61,12 +61,13 @@ private:
     void onStateChanged(uint64_t socketId, uint64_t connectionId,
                         Websocket::State state) final;
     void onBinaryMessage(uint64_t socketId, uint64_t connectionId,
-                         const std::shared_ptr<Blob>& message) final;
+                         const std::shared_ptr<Bricks::Blob>& message) final;
 private:
     SignalClientWs* const _owner;
 };
 
-SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket, Logger* logger)
+SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket,
+                               Bricks::Logger* logger)
     : SignalClient(this, logger)
     , _socketListener(std::make_unique<Listener>(this))
     , _socket(std::move(socket))
@@ -210,7 +211,7 @@ void SignalClientWs::updateState(Websocket::State state)
     }
 }
 
-bool SignalClientWs::sendBinary(const std::shared_ptr<Blob>& binary)
+bool SignalClientWs::sendBinary(const std::shared_ptr<Bricks::Blob>& binary)
 {
     if (_socket) {
         return _socket->sendBinary(binary);
@@ -269,7 +270,7 @@ void SignalClientWs::Listener::onStateChanged(uint64_t socketId,
 
 void SignalClientWs::Listener::onBinaryMessage(uint64_t socketId,
                                                uint64_t connectionId,
-                                               const std::shared_ptr<Blob>& message)
+                                               const std::shared_ptr<Bricks::Blob>& message)
 {
     Websocket::Listener::onBinaryMessage(socketId, connectionId, message);
     if (message) {

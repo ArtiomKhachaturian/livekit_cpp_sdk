@@ -18,7 +18,9 @@
 #include <memory>
 #include <string>
 
+namespace Bricks {
 class Logger;
+}
 
 namespace LiveKitCpp
 {
@@ -46,7 +48,7 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class LIVEKIT_CLIENT_API SignalClient : protected Logger
+class LIVEKIT_CLIENT_API SignalClient : protected Bricks::Logger
 {
     class Impl;
 protected:
@@ -57,7 +59,7 @@ protected:
         Rejected
     };
 public:
-    SignalClient(CommandSender* commandSender, Logger* logger = nullptr);
+    SignalClient(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     virtual ~SignalClient();
     void addTransportListener(SignalTransportListener* listener);
     void addServerListener(SignalServerListener* listener);
@@ -90,8 +92,8 @@ protected:
     void notifyAboutTransportError(const std::string& error);
     void handleServerProtobufMessage(const void* message, size_t len);
     // impl. of Logger
-    bool canLog(LoggingSeverity severity) const final;
-    void log(LoggingSeverity severity, std::string_view message,
+    bool canLog(Bricks::LoggingSeverity severity) const final;
+    void log(Bricks::LoggingSeverity severity, std::string_view message,
              std::string_view category = {}) final;
 private:
     const std::unique_ptr<Impl> _impl;

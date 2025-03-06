@@ -26,7 +26,7 @@ class SignalServerListener;
 class ResponseReceiver
 {
 public:
-    ResponseReceiver(uint64_t signalClientId, Logger* logger = nullptr);
+    ResponseReceiver(uint64_t signalClientId, Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void addListener(SignalServerListener* listener);
     void removeListener(SignalServerListener* listener);
@@ -60,7 +60,7 @@ private:
 private:
     const uint64_t _signalClientId;
     const Signals _signals;
-    Listeners<SignalServerListener*> _listeners;
+    Bricks::Listeners<SignalServerListener*> _listeners;
 };
 
 } // namespace LiveKitCpp

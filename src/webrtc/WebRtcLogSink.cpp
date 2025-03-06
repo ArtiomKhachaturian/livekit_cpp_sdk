@@ -71,16 +71,16 @@ inline const std::string& alignedLogString(const TString& string)
     return g_empty;
 }
 
-inline std::optional<LoggingSeverity> map(rtc::LoggingSeverity severity) {
+inline std::optional<Bricks::LoggingSeverity> map(rtc::LoggingSeverity severity) {
     switch (severity) {
         case rtc::LS_VERBOSE:
-            return LoggingSeverity::Verbose;
+            return Bricks::LoggingSeverity::Verbose;
         case rtc::LS_INFO:
-            return LoggingSeverity::Info;
+            return Bricks::LoggingSeverity::Info;
         case rtc::LS_WARNING:
-            return LoggingSeverity::Warning;
+            return Bricks::LoggingSeverity::Warning;
         case rtc::LS_ERROR:
-            return LoggingSeverity::Error;
+            return Bricks::LoggingSeverity::Error;
         default:
             break;
     }
@@ -92,8 +92,8 @@ inline std::optional<LoggingSeverity> map(rtc::LoggingSeverity severity) {
 namespace LiveKitCpp
 {
 
-WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<Logger>& logger)
-    : LoggableS<rtc::LogSink>(logger)
+WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<rtc::LogSink>(logger)
 {
     rtc::LogMessage::AddLogToStream(this, rtc::LoggingSeverity::LS_VERBOSE);
 }
@@ -135,8 +135,8 @@ void WebRtcLogSink::OnLogMessage(absl::string_view message)
 }
 
 template <class TString>
-std::optional<LoggingSeverity> WebRtcLogSink::allowToLog(const TString& string,
-                                                         rtc::LoggingSeverity severity) const
+std::optional<Bricks::LoggingSeverity> WebRtcLogSink::
+    allowToLog(const TString& string, rtc::LoggingSeverity severity) const
 {
     const auto sev = map(severity);
     if (sev && canLog(sev.value()) && !ignoreWebRtcLogString(string)) {

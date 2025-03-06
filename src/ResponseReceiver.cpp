@@ -32,7 +32,7 @@ inline std::optional<TProto> fromBytes(const void* data, size_t dataLen) {
 namespace LiveKitCpp
 {
 
-ResponseReceiver::ResponseReceiver(uint64_t signalClientId, Logger* logger)
+ResponseReceiver::ResponseReceiver(uint64_t signalClientId, Bricks::Logger* logger)
     : _signalClientId(signalClientId)
     , _signals(logger)
 {

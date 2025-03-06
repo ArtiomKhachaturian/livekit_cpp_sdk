@@ -10,22 +10,22 @@
 using namespace LiveKitCpp;
 using namespace std::chrono_literals;
 
-class LoggerIml : public Logger
+class LoggerIml : public Bricks::Logger
 {
 public:
-    void log(LoggingSeverity severity, std::string_view message,
+    void log(Bricks::LoggingSeverity severity, std::string_view message,
              std::string_view category) final {
         switch (severity) {
-            case LoggingSeverity::Verbose:
+            case Bricks::LoggingSeverity::Verbose:
                 std::cout << "V (" << category << "): " << message << std::endl;
                 break;
-            case LoggingSeverity::Info:
+            case Bricks::LoggingSeverity::Info:
                 std::cout << "I (" << category << "): " << message << std::endl;
                 break;
-            case LoggingSeverity::Warning:
+            case Bricks::LoggingSeverity::Warning:
                 std::cout << "W (" << category << "): " << message << std::endl;
                 break;
-            case LoggingSeverity::Error:
+            case Bricks::LoggingSeverity::Error:
                 std::cerr << "E (" << category << "): " << message << std::endl;
                 break;
         }
