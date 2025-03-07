@@ -74,14 +74,19 @@ public:
     void close();
     bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
     bool addIceCandidate(const webrtc::IceCandidateInterface* candidate);
-    rtc::scoped_refptr<webrtc::DataChannelInterface> createDataChannel(const std::string& label,
-                                                                       const webrtc::DataChannelInit* init);
-    rtc::scoped_refptr<webrtc::RtpTransceiverInterface> addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
-    rtc::scoped_refptr<webrtc::RtpTransceiverInterface> addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                                                                       const webrtc::RtpTransceiverInit& init);
-    rtc::scoped_refptr<webrtc::RtpSenderInterface> addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                                                            const std::vector<std::string>& streamIds,
-                                                            const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
+    rtc::scoped_refptr<webrtc::DataChannelInterface>
+        createDataChannel(const std::string& label,
+                          const webrtc::DataChannelInit& init = {},
+                          webrtc::DataChannelObserver* observer = nullptr);
+    rtc::scoped_refptr<webrtc::RtpTransceiverInterface>
+        addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
+    rtc::scoped_refptr<webrtc::RtpTransceiverInterface>
+        addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                       const webrtc::RtpTransceiverInit& init);
+    rtc::scoped_refptr<webrtc::RtpSenderInterface>
+        addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                 const std::vector<std::string>& streamIds,
+                 const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
 private:
     void logWebRTCError(const webrtc::RTCError& error) const;
     // impl. of CreateSdpObserver

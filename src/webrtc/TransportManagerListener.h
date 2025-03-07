@@ -36,6 +36,8 @@ public:
                                rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
     virtual void onPublisherOffer(TransportManager& /*manager*/,
                                   const webrtc::SessionDescriptionInterface* /*desc*/) {}
+    virtual void onSubscriberAnswer(TransportManager& /*manager*/,
+                                    const webrtc::SessionDescriptionInterface* /*desc*/) {}
 protected:
     virtual ~TransportManagerListener() = default;
 };

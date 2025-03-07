@@ -60,6 +60,12 @@ TransportManager::TransportManager(bool subscriberPrimary,
     _subscriberConnectionRequired = subscriberPrimary;
 }
 
+TransportManager::~TransportManager()
+{
+    _subscriber.close();
+    _publisher.close();
+}
+
 bool TransportManager::valid() const noexcept
 {
     return _subscriber.valid() && _publisher.valid();
@@ -104,7 +110,6 @@ void TransportManager::createSubscriberAnswerFromOffer(std::unique_ptr<webrtc::S
 {
     if (desc) {
         _subscriber.setRemoteDescription(std::move(desc));
-        _subscriber.createAnswer();
     }
 }
 
@@ -148,9 +153,11 @@ void TransportManager::triggerIceRestart()
 }
 
 rtc::scoped_refptr<webrtc::DataChannelInterface> TransportManager::
-    createPublisherDataChannel(const std::string& label, const webrtc::DataChannelInit* init)
+    createPublisherDataChannel(const std::string& label,
+                               const webrtc::DataChannelInit& init,
+                               webrtc::DataChannelObserver* observer)
 {
-    return _publisher.createDataChannel(label, init);
+    return _publisher.createDataChannel(label, init, observer);
 }
 
 rtc::scoped_refptr<webrtc::RtpTransceiverInterface> TransportManager::
@@ -235,8 +242,20 @@ void TransportManager::onSdpCreationFailure(Transport& transport, webrtc::SdpTyp
 void TransportManager::onSdpSet(Transport& transport, bool local,
                                 const webrtc::SessionDescriptionInterface* desc)
 {
-    if (local && _listener && SignalTarget::Publisher == transport.target()) {
-        _listener->onPublisherOffer(*this, desc);
+    if (SignalTarget::Publisher == transport.target()) {
+        if (local && _listener) {
+            _listener->onPublisherOffer(*this, desc);
+        }
+    }
+    else { // subscriber
+        if (local) {
+            if (_listener) {
+                _listener->onSubscriberAnswer(*this, desc);
+            }
+        }
+        else {
+            _subscriber.createAnswer();
+        }
     }
 }
 

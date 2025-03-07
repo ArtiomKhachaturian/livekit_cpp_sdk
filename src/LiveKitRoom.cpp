@@ -35,10 +35,7 @@ LiveKitRoom::~LiveKitRoom()
 
 bool LiveKitRoom::connect(std::string host, std::string authToken)
 {
-    // dummy
-    /*_impl->_client.setHost(std::move(host));
-    _impl->_client.setAuthToken(std::move(authToken));
-    return _impl->_client.connect();*/
+    return _engine->connect(std::move(host), std::move(authToken));
 }
 
 void LiveKitRoom::disconnect()

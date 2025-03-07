@@ -17,6 +17,7 @@
 #include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
 #include "rtc/ReconnectResponse.h"
+#include <thread>
 
 namespace {
 
@@ -27,6 +28,9 @@ inline std::shared_ptr<Bricks::Logger> getLogger(LiveKitCpp::PeerConnectionFacto
     return {};
 }
 
+const std::string _lossyDataChannel = "_lossy";
+const std::string _reliableDataChannel = "_reliable";
+
 }
 
 namespace LiveKitCpp
@@ -35,7 +39,9 @@ namespace LiveKitCpp
 RTCEngine::RTCEngine(const SignalOptions& signalOptions,
                      PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket)
-    : Bricks::LoggableS<TransportManagerListener, SignalServerListener>(getLogger(pcf))
+    : Bricks::LoggableS<TransportManagerListener,
+                        SignalTransportListener,
+                        SignalServerListener>(getLogger(pcf))
     , _signalOptions(signalOptions)
     , _pcf(pcf)
     , _client(std::move(socket), getLogger(pcf).get())
@@ -49,6 +55,27 @@ RTCEngine::RTCEngine(const SignalOptions& signalOptions,
 RTCEngine::~RTCEngine()
 {
     _client.setServerListener(nullptr);
+}
+
+bool RTCEngine::connect(std::string url, std::string authToken)
+{
+    bool ok = false;
+    if (!url.empty() && !authToken.empty()) {
+        _joinAttempts.fetch_add(1U);
+        _client.setHost(std::move(url));
+        _client.setAuthToken(std::move(authToken));
+        ok = _client.connect();
+        if (!ok) {
+            if (_joinAttempts < _signalOptions._reconnectAttempts) {
+                logWarning("Couldn't connect to server, attempt " +
+                           std::to_string(_joinAttempts) + " of " +
+                           std::to_string(_signalOptions._reconnectAttempts));
+                std::this_thread::sleep_for(_signalOptions._reconnectAttemptDelay);
+                ok = connect(_client.host(), _client.authToken());
+            }
+        }
+    }
+    return ok;
 }
 
 webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
@@ -96,6 +123,29 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return config;
 }
 
+void RTCEngine::negotiate()
+{
+    LOCK_READ_SAFE_OBJ(_pcManager);
+    if (auto& pcManager = _pcManager.ref()) {
+        pcManager->requirePublisher();
+        // don't negotiate without any transceivers or data channel,
+        // it will generate sdp without ice frag then negotiate failed
+        if (pcManager->publisher().transceivers().empty() && !_lossyDC() && !_reliableDC()) {
+            createDataChannels(pcManager.get());
+        }
+    }
+}
+
+void RTCEngine::createDataChannels(TransportManager* pcManager)
+{
+    if (pcManager) {
+        _lossyDC(pcManager->createPublisherDataChannel(_lossyDataChannel, {
+            .ordered = true, .maxRetransmits = 0 }));
+        _reliableDC(pcManager->createPublisherDataChannel(_lossyDataChannel,
+                                                          { .ordered = true }));
+    }
+}
+
 webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     makeConfiguration(const JoinResponse& response) const
 {
@@ -106,6 +156,62 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     makeConfiguration(const ReconnectResponse& response) const
 {
     return makeConfiguration(response._iceServers, response._clientConfiguration);
+}
+
+void RTCEngine::onPublisherOffer(TransportManager&,
+                                 const webrtc::SessionDescriptionInterface* desc)
+{
+    if (const auto sdp = RoomUtils::map(desc)) {
+        _client.sendOffer(sdp.value());
+    }
+}
+
+void RTCEngine::onSubscriberAnswer(TransportManager& manager,
+                                   const webrtc::SessionDescriptionInterface* desc)
+{
+    if (const auto sdp = RoomUtils::map(desc)) {
+        _client.sendAnswer(sdp.value());
+    }
+}
+
+void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
+{
+    _latestJoinResponse(response);
+    _subscriberPrimary = response._subscriberPrimary;
+    TransportManagerListener* listener = this;
+    LOCK_WRITE_SAFE_OBJ(_pcManager);
+    _pcManager = std::make_unique<TransportManager>(response._subscriberPrimary,
+                                                    listener, _pcf,
+                                                    makeConfiguration(response));
+    _pcManager.constRef()->createAndSetPublisherOffer();
+}
+
+void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
+{
+    webrtc::SdpParseError error;
+    if (auto desc = RoomUtils::map(sdp, &error)) {
+        LOCK_READ_SAFE_OBJ(_pcManager);
+        if (const auto& pcManager = _pcManager.constRef()) {
+            pcManager->createSubscriberAnswerFromOffer(std::move(desc));
+        }
+    }
+    else {
+        logError(error.description);
+    }
+}
+
+void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
+{
+    webrtc::SdpParseError error;
+    if (auto desc = RoomUtils::map(sdp, &error)) {
+        LOCK_READ_SAFE_OBJ(_pcManager);
+        if (const auto& pcManager = _pcManager.constRef()) {
+            pcManager->setPublisherAnswer(std::move(desc));
+        }
+    }
+    else {
+        logError(error.description);
+    }
 }
 
 std::string_view RTCEngine::logCategory() const

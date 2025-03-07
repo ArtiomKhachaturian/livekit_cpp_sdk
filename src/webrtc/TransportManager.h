@@ -32,7 +32,10 @@ public:
                      TransportManagerListener* listener,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
+    ~TransportManager() final;
     bool valid() const noexcept;
+    const Transport& publisher() const noexcept { return _publisher; }
+    const Transport& subscriber() const noexcept { return _subscriber; }
     explicit operator bool() const noexcept { return valid(); }
     auto state() const noexcept { return _state.load(); }
     bool needsPublisher() const noexcept { return _publisherConnectionRequired; }
@@ -46,14 +49,18 @@ public:
     bool updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config, bool iceRestart);
     void close();
     void triggerIceRestart();
-    rtc::scoped_refptr<webrtc::DataChannelInterface> createPublisherDataChannel(const std::string& label,
-                                                                                const webrtc::DataChannelInit* init);
+    rtc::scoped_refptr<webrtc::DataChannelInterface>
+        createPublisherDataChannel(const std::string& label,
+                                   const webrtc::DataChannelInit& init = {},
+                                   webrtc::DataChannelObserver* observer = nullptr);
     rtc::scoped_refptr<webrtc::RtpTransceiverInterface> addPublisherTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
-    rtc::scoped_refptr<webrtc::RtpTransceiverInterface> addPublisherTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                                                                                const webrtc::RtpTransceiverInit& init);
-    rtc::scoped_refptr<webrtc::RtpSenderInterface> addPublisherTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                                                                     const std::vector<std::string>& streamIds,
-                                                                     const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
+    rtc::scoped_refptr<webrtc::RtpTransceiverInterface>
+        addPublisherTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                                const webrtc::RtpTransceiverInit& init);
+    rtc::scoped_refptr<webrtc::RtpSenderInterface>
+        addPublisherTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                          const std::vector<std::string>& streamIds,
+                          const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
 private:
     void updateState();
     std::vector<const Transport*> requiredTransports() const;

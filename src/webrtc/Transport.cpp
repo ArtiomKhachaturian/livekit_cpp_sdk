@@ -64,7 +64,9 @@ Transport::~Transport()
     if (_setRemoteSdpObserver) {
         _setRemoteSdpObserver->setListener(nullptr);
     }
-    close();
+    if (_pc) {
+        _pc->Close();
+    }
 }
 
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
@@ -224,11 +226,16 @@ bool Transport::addIceCandidate(const webrtc::IceCandidateInterface* candidate)
 }
 
 rtc::scoped_refptr<webrtc::DataChannelInterface> Transport::
-    createDataChannel(const std::string& label, const webrtc::DataChannelInit* init)
+    createDataChannel(const std::string& label,
+                      const webrtc::DataChannelInit& init,
+                      webrtc::DataChannelObserver* observer)
 {
     if (_pc) {
-        auto result = _pc->CreateDataChannelOrError(label, init);
+        auto result = _pc->CreateDataChannelOrError(label, &init);
         if (result.ok()) {
+            if (observer) {
+                result.value()->RegisterObserver(observer);
+            }
             return result.MoveValue();
         }
         logWebRTCError(result.error());
