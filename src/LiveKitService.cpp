@@ -251,7 +251,7 @@ std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const SignalOptions&) con
 
 #endif
 
-ConnectOptions::ConnectOptions()
+SignalOptions::SignalOptions()
 {
     _protocolVersion = LIVEKIT_PROTOCOL_VERSION;
 }

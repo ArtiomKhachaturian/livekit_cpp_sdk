@@ -20,8 +20,7 @@
 
 namespace {
 
-inline std::shared_ptr<Bricks::Logger>
-    getLogger(const webrtc::scoped_refptr<LiveKitCpp::PeerConnectionFactory>& pcf) {
+inline std::shared_ptr<Bricks::Logger> getLogger(LiveKitCpp::PeerConnectionFactory* pcf) {
     if (pcf) {
         return pcf->logger();
     }
@@ -34,7 +33,7 @@ namespace LiveKitCpp
 {
 
 RTCEngine::RTCEngine(const SignalOptions& signalOptions,
-                     const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                     PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket)
     : Bricks::LoggableS<TransportManagerListener, SignalServerListener>(getLogger(pcf))
     , _signalOptions(signalOptions)

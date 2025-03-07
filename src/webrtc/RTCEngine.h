@@ -44,7 +44,7 @@ class RTCEngine : private Bricks::LoggableS<TransportManagerListener, SignalServ
 {
 public:
     RTCEngine(const SignalOptions& signalOptions,
-              const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+              PeerConnectionFactory* pcf,
               std::unique_ptr<Websocket::EndPoint> socket);
     ~RTCEngine() final;
 private:
