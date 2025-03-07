@@ -40,96 +40,93 @@ ResponseReceiver::ResponseReceiver(uint64_t signalClientId, Bricks::Logger* logg
 
 void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
 {
-    if (const auto response = parse(data, dataLen)) {
-        switch (response->message_case()) {
-            case livekit::SignalResponse::kJoin:
-                handle(response->join());
-                break;
-            case livekit::SignalResponse::kAnswer:
-                handle(response->answer(), false);
-                break;
-            case livekit::SignalResponse::kOffer:
-                handle(response->offer(), true);
-                break;
-            case livekit::SignalResponse::kTrickle:
-                handle(response->trickle());
-                break;
-            case livekit::SignalResponse::kUpdate:
-                handle(response->update());
-                break;
-            case livekit::SignalResponse::kTrackPublished:
-                handle(response->track_published());
-                break;
-            case livekit::SignalResponse::kLeave:
-                handle(response->leave());
-                break;
-            case livekit::SignalResponse::kMute:
-                handle(response->mute());
-                break;
-            case livekit::SignalResponse::kSpeakersChanged:
-                handle(response->speakers_changed());
-                break;
-            case livekit::SignalResponse::kRoomUpdate:
-                handle(response->room_update());
-                break;
-            case livekit::SignalResponse::kConnectionQuality:
-                handle(response->connection_quality());
-                break;
-            case livekit::SignalResponse::kStreamStateUpdate:
-                handle(response->stream_state_update());
-                break;
-            case livekit::SignalResponse::kSubscribedQualityUpdate:
-                handle(response->subscribed_quality_update());
-                break;
-            case livekit::SignalResponse::kSubscriptionPermissionUpdate:
-                handle(response->subscription_permission_update());
-                break;
-            case livekit::SignalResponse::kRefreshToken:
-                if (response->has_refresh_token()) {
-                    notify(&SignalServerListener::onRefreshToken, response->refresh_token());
-                }
-                break;
-            case livekit::SignalResponse::kTrackUnpublished:
-                handle(response->track_unpublished());
-                break;
-            case livekit::SignalResponse::kPong: // deprecated
-                if (response->has_pong()) {
-                    notify(&SignalServerListener::onPong, response->pong(), int64_t{});
-                }
-                break;
-            case livekit::SignalResponse::kReconnect:
-                handle(response->reconnect());
-                break;
-            case livekit::SignalResponse::kPongResp:
-                handle(response->pong_resp());
-                break;
-            case livekit::SignalResponse::kSubscriptionResponse:
-                handle(response->subscription_response());
-                break;
-            case livekit::SignalResponse::kRequestResponse:
-                handle(response->request_response());
-                break;
-            case livekit::SignalResponse::kTrackSubscribed:
-                handle(response->track_subscribed());
-                break;
-            default:
-                // TODO: dump response to log
-                break;
+    if (_listener) {
+        if (const auto response = parse(data, dataLen)) {
+            switch (response->message_case()) {
+                case livekit::SignalResponse::kJoin:
+                    handle(response->join());
+                    break;
+                case livekit::SignalResponse::kAnswer:
+                    handle(response->answer(), false);
+                    break;
+                case livekit::SignalResponse::kOffer:
+                    handle(response->offer(), true);
+                    break;
+                case livekit::SignalResponse::kTrickle:
+                    handle(response->trickle());
+                    break;
+                case livekit::SignalResponse::kUpdate:
+                    handle(response->update());
+                    break;
+                case livekit::SignalResponse::kTrackPublished:
+                    handle(response->track_published());
+                    break;
+                case livekit::SignalResponse::kLeave:
+                    handle(response->leave());
+                    break;
+                case livekit::SignalResponse::kMute:
+                    handle(response->mute());
+                    break;
+                case livekit::SignalResponse::kSpeakersChanged:
+                    handle(response->speakers_changed());
+                    break;
+                case livekit::SignalResponse::kRoomUpdate:
+                    handle(response->room_update());
+                    break;
+                case livekit::SignalResponse::kConnectionQuality:
+                    handle(response->connection_quality());
+                    break;
+                case livekit::SignalResponse::kStreamStateUpdate:
+                    handle(response->stream_state_update());
+                    break;
+                case livekit::SignalResponse::kSubscribedQualityUpdate:
+                    handle(response->subscribed_quality_update());
+                    break;
+                case livekit::SignalResponse::kSubscriptionPermissionUpdate:
+                    handle(response->subscription_permission_update());
+                    break;
+                case livekit::SignalResponse::kRefreshToken:
+                    if (response->has_refresh_token()) {
+                        notify(&SignalServerListener::onRefreshToken, response->refresh_token());
+                    }
+                    break;
+                case livekit::SignalResponse::kTrackUnpublished:
+                    handle(response->track_unpublished());
+                    break;
+                case livekit::SignalResponse::kPong: // deprecated
+                    if (response->has_pong()) {
+                        notify(&SignalServerListener::onPong, response->pong(), int64_t{});
+                    }
+                    break;
+                case livekit::SignalResponse::kReconnect:
+                    handle(response->reconnect());
+                    break;
+                case livekit::SignalResponse::kPongResp:
+                    handle(response->pong_resp());
+                    break;
+                case livekit::SignalResponse::kSubscriptionResponse:
+                    handle(response->subscription_response());
+                    break;
+                case livekit::SignalResponse::kRequestResponse:
+                    handle(response->request_response());
+                    break;
+                case livekit::SignalResponse::kTrackSubscribed:
+                    handle(response->track_subscribed());
+                    break;
+                default:
+                    // TODO: dump response to log
+                    break;
+            }
+        }
+        else {
+            notify(&SignalServerListener::onSignalParseError);
         }
     }
-    else {
-        notify(&SignalServerListener::onSignalParseError);
-    }
 }
 
-void ResponseReceiver::addListener(SignalServerListener* listener)
+void ResponseReceiver::setListener(SignalServerListener* listener)
 {
-    _listeners.add(listener);
-}
-
-void ResponseReceiver::removeListener(SignalServerListener* listener)
-{
-    _listeners.remove(listener);
+    _listener = listener;
 }
 
 std::optional<livekit::SignalResponse> ResponseReceiver::parse(const void* data,
@@ -141,7 +138,7 @@ std::optional<livekit::SignalResponse> ResponseReceiver::parse(const void* data,
 template <class Method, typename... Args>
 void ResponseReceiver::notify(const Method& method, Args&&... args) const
 {
-    _listeners.invoke(method, _signalClientId, std::forward<Args>(args)...);
+    _listener.invoke(method, _signalClientId, std::forward<Args>(args)...);
 }
 
 template <class Method, class TLiveKitType>

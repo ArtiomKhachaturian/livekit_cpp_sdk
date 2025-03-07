@@ -104,14 +104,14 @@ LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
     _client.setAdaptiveStream(roomOptions._adaptiveStream);
     _client.setAutoSubscribe(connectOptions._autoSubscribe);
     _client.setProtocolVersion(connectOptions._protocolVersion);
-    _client.addServerListener(this);
-    _client.addTransportListener(this);
+    _client.setServerListener(this);
+    _client.setTransportListener(this);
 }
 
 LiveKitRoom::Impl::~Impl()
 {
-    _client.removeServerListener(this);
-    _client.removeTransportListener(this);
+    _client.setServerListener(nullptr);
+    _client.setServerListener(nullptr);
 }
 
 void LiveKitRoom::Impl::onJoin(uint64_t signalClientId, const JoinResponse& response)

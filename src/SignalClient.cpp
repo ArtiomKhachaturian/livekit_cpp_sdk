@@ -14,7 +14,7 @@
 #include "SignalClient.h"
 #include "SignalTransportListener.h"
 #include "SafeObj.h"
-#include "Listeners.h"
+#include "Listener.h"
 #include "ResponseReceiver.h"
 #include "RequestSender.h"
 #include "Loggable.h"
@@ -28,12 +28,11 @@ public:
     Impl(uint64_t id, Bricks::Logger* logger = nullptr);
     State transportState() const noexcept;
     ChangeTransportStateResult changeTransportState(State state);
-    void notifyAboutTransportError(const std::string& error);
-    void addListener(SignalTransportListener* listener);
-    void removeListener(SignalTransportListener* listener);
+    void notifyAboutTransportError(std::string error);
+    void setListener(SignalTransportListener* listener) { _listener = listener; }
 private:
     const uint64_t _id;
-    Bricks::Listeners<SignalTransportListener*> _listeners;
+    Bricks::Listener<SignalTransportListener*> _listener;
     Bricks::SafeObj<State> _transportState = State::Disconnected;
 };
 
@@ -48,24 +47,14 @@ SignalClient::~SignalClient()
 {
 }
 
-void SignalClient::addTransportListener(SignalTransportListener* listener)
+void SignalClient::setTransportListener(SignalTransportListener* listener)
 {
-    _impl->addListener(listener);
+    _impl->setListener(listener);
 }
 
-void SignalClient::addServerListener(SignalServerListener* listener)
+void SignalClient::setServerListener(SignalServerListener* listener)
 {
-    _responseReceiver->addListener(listener);
-}
-
-void SignalClient::removeTransportListener(SignalTransportListener* listener)
-{
-    _impl->removeListener(listener);
-}
-
-void SignalClient::removeServerListener(SignalServerListener* listener)
-{
-    _responseReceiver->removeListener(listener);
+    _responseReceiver->setListener(listener);
 }
 
 bool SignalClient::connect()
@@ -179,9 +168,9 @@ void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
     _responseReceiver->parseBinary(message, len);
 }
 
-void SignalClient::notifyAboutTransportError(const std::string& error)
+void SignalClient::notifyAboutTransportError(std::string error)
 {
-    _impl->notifyAboutTransportError(error);
+    _impl->notifyAboutTransportError(std::move(error));
 }
 
 bool SignalClient::canLog(Bricks::LoggingSeverity severity) const
@@ -248,24 +237,14 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
         }
     }
     if (ChangeTransportStateResult::Changed == result) {
-        _listeners.invoke(&SignalTransportListener::onTransportStateChanged, _id, state);
+        _listener.invoke(&SignalTransportListener::onTransportStateChanged, _id, state);
     }
     return result;
 }
 
-void SignalClient::Impl::notifyAboutTransportError(const std::string& error)
+void SignalClient::Impl::notifyAboutTransportError(std::string error)
 {
-    _listeners.invoke(&SignalTransportListener::onTransportError, _id, error);
-}
-
-void SignalClient::Impl::addListener(SignalTransportListener* listener)
-{
-    _listeners.add(listener);
-}
-
-void SignalClient::Impl::removeListener(SignalTransportListener* listener)
-{
-    _listeners.remove(listener);
+    _listener.invoke(&SignalTransportListener::onTransportError, _id, std::move(error));
 }
 
 } // namespace LiveKitCpp

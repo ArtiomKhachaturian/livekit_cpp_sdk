@@ -61,10 +61,8 @@ protected:
 public:
     SignalClient(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     virtual ~SignalClient();
-    void addTransportListener(SignalTransportListener* listener);
-    void addServerListener(SignalServerListener* listener);
-    void removeTransportListener(SignalTransportListener* listener);
-    void removeServerListener(SignalServerListener* listener);
+    void setTransportListener(SignalTransportListener* listener = nullptr);
+    void setServerListener(SignalServerListener* listener = nullptr);
     virtual bool connect();
     virtual void disconnect();
     State transportState() const noexcept;
@@ -89,7 +87,7 @@ public:
 protected:
     static std::string_view defaultLogCategory();
     ChangeTransportStateResult changeTransportState(State state);
-    void notifyAboutTransportError(const std::string& error);
+    void notifyAboutTransportError(std::string error);
     void handleServerProtobufMessage(const void* message, size_t len);
     // impl. of Logger
     bool canLog(Bricks::LoggingSeverity severity) const final;

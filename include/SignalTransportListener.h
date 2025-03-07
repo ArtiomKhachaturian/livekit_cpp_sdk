@@ -24,7 +24,7 @@ class LIVEKIT_CLIENT_API SignalTransportListener
 {
 public:
     virtual void onTransportStateChanged(uint64_t /*signalClientId*/, State /*state*/) {}
-    virtual void onTransportError(uint64_t /*signalClientId*/, const std::string& /*error*/) {}
+    virtual void onTransportError(uint64_t /*signalClientId*/, std::string /*error*/) {}
 };
 
 } // namespace LiveKitCpp

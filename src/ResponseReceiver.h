@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ResponseReceiver.h
-#include "Listeners.h"
+#include "Listener.h"
 #include "Signals.h"
 #include "livekit_rtc.pb.h"
 #include <memory>
@@ -28,8 +28,7 @@ class ResponseReceiver
 public:
     ResponseReceiver(uint64_t signalClientId, Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
-    void addListener(SignalServerListener* listener);
-    void removeListener(SignalServerListener* listener);
+    void setListener(SignalServerListener* listener = nullptr);
 private:
     static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
     template <class Method, typename... Args>
@@ -60,7 +59,7 @@ private:
 private:
     const uint64_t _signalClientId;
     const Signals _signals;
-    Bricks::Listeners<SignalServerListener*> _listeners;
+    Bricks::Listener<SignalServerListener*> _listener;
 };
 
 } // namespace LiveKitCpp
