@@ -94,7 +94,6 @@ void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswe
                     return;
                 }
             }
-            _pc->CreateDataChannelOrError("", nullptr);
             _pc->CreateOffer(_offerCreationObserver.get(), options);
         }
     }
@@ -343,6 +342,9 @@ void Transport::onCompleted(bool local)
             _pendingCandidates->clear();
         }
         setRestartingIce(false);
+        if (_renegotiate.exchange(false)) {
+            createOffer();
+        }
     }
 }
 
