@@ -21,10 +21,11 @@
 namespace LiveKitCpp
 {
 
-Transport::Transport(bool primary, SignalTarget target,
+Transport::Transport(bool primary, SignalTarget target, TransportListener* listener,
                      webrtc::scoped_refptr<webrtc::PeerConnectionInterface> pc)
     : _primary(primary)
     , _target(target)
+    , _listener(listener)
     , _offerCreationObserver(webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kOffer))
     , _answerCreationObserver(webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kAnswer))
     , _setLocalSdpObserver(webrtc::make_ref_counted<SetLocalSdpObserver>())
@@ -46,15 +47,15 @@ Transport::~Transport()
 }
 
 std::unique_ptr<Transport> Transport::create(bool primary, SignalTarget target,
-                                             webrtc::PeerConnectionObserver* observer,
+                                             TransportListener* listener,
                                              const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                              const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
 {
     std::unique_ptr<Transport> transport;
-    if (observer && pcf) {
-        auto pc = pcf->CreatePeerConnectionOrError(conf, webrtc::PeerConnectionDependencies(observer));
+    if (listener && pcf) {
+        auto pc = pcf->CreatePeerConnectionOrError(conf, webrtc::PeerConnectionDependencies(listener));
         if (pc.ok()) {
-            transport.reset(new Transport(primary, target, std::move(pc.MoveValue())));
+            transport.reset(new Transport(primary, target, listener, std::move(pc.MoveValue())));
         }
         else if (const auto logger = pcf->logger()) {
             logger->logError(pc.error().message(), "CreatePeerConnection");
@@ -63,14 +64,14 @@ std::unique_ptr<Transport> Transport::create(bool primary, SignalTarget target,
     return transport;
 }
 
-void Transport::createOffer()
+void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
-    _pc->CreateOffer(_offerCreationObserver.get(), {});
+    _pc->CreateOffer(_offerCreationObserver.get(), options);
 }
 
-void Transport::createAnswer()
+void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
-    _pc->CreateAnswer(_answerCreationObserver.get(), {});
+    _pc->CreateAnswer(_answerCreationObserver.get(), options);
 }
 
 void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
@@ -91,32 +92,30 @@ bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfi
 {
     auto res = _pc->SetConfiguration(config);
     if (!res.ok()) {
-        _listener.invoke(&TransportListener::onSetConfigurationError, _target,
-                         std::move(res));
+        _listener->onSetConfigurationError(this, std::move(res));
     }
     return res.ok();
 }
 
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    _listener.invoke(&TransportListener::onSdpCreated, _target, std::move(desc));
+    _listener->onSdpCreated(this, std::move(desc));
 }
 
 void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
 {
-    _listener.invoke(&TransportListener::onSdpCreationFailure, _target,
-                     type, std::move(error));
+    _listener->onSdpCreationFailure(this, type, std::move(error));
 }
 
 void Transport::onCompleted(bool local)
 {
-    _listener.invoke(&TransportListener::onSdpSet, _target, local);
+    const auto desc = local ? _pc->local_description() : _pc->remote_description();
+    _listener->onSdpSet(this, local, desc);
 }
 
 void Transport::onFailure(bool local, webrtc::RTCError error)
 {
-    _listener.invoke(&TransportListener::onSdpSetFailure, _target,
-                     local, std::move(error));
+    _listener->onSdpSetFailure(this, local, std::move(error));
 }
 
 } // namespace LiveKitCpp

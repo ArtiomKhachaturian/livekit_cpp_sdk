@@ -11,13 +11,38 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LiveKitRoomUtils.h"
+#include "RoomUtils.h"
 #include "rtc/ICETransportPolicy.h"
 
 namespace LiveKitCpp
 {
 
-webrtc::PeerConnectionInterface::IceServer LiveKitRoomUtils::map(const ICEServer& server)
+std::optional<SessionDescription> RoomUtils::map(const webrtc::SessionDescriptionInterface* desc)
+{
+    if (desc) {
+        SessionDescription sdp;
+        if (desc->ToString(&sdp._sdp)) {
+            sdp._type = desc->type();
+            return sdp;
+        }
+    }
+    return std::nullopt;
+}
+
+std::unique_ptr<webrtc::SessionDescriptionInterface> RoomUtils::
+    map(const SessionDescription& desc, webrtc::SdpParseError* error)
+{
+    const auto type = webrtc::SdpTypeFromString(desc._type);
+    if (type) {
+        return webrtc::CreateSessionDescription(type.value(), desc._sdp, error);
+    }
+    if (error) {
+        error->description = "incorrect descrpition type: " + desc._type;
+    }
+    return {};
+}
+
+webrtc::PeerConnectionInterface::IceServer RoomUtils::map(const ICEServer& server)
 {
     webrtc::PeerConnectionInterface::IceServer webrtcIceSrv;
     webrtcIceSrv.username = server._username;
@@ -26,7 +51,7 @@ webrtc::PeerConnectionInterface::IceServer LiveKitRoomUtils::map(const ICEServer
     return webrtcIceSrv;
 }
 
-webrtc::PeerConnectionInterface::IceServers LiveKitRoomUtils::map(const std::vector<ICEServer>& servers)
+webrtc::PeerConnectionInterface::IceServers RoomUtils::map(const std::vector<ICEServer>& servers)
 {
     webrtc::PeerConnectionInterface::IceServers webrtcIceSrvs;
     webrtcIceSrvs.reserve(servers.size());
@@ -36,7 +61,7 @@ webrtc::PeerConnectionInterface::IceServers LiveKitRoomUtils::map(const std::vec
     return webrtcIceSrvs;
 }
 
-webrtc::PeerConnectionInterface::IceTransportsType LiveKitRoomUtils::map(IceTransportPolicy policy)
+webrtc::PeerConnectionInterface::IceTransportsType RoomUtils::map(IceTransportPolicy policy)
 {
     switch (policy) {
         case IceTransportPolicy::None:

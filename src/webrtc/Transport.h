@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once // Transport.h
 #include "CreateSdpListener.h"
-#include "Listener.h"
 #include "SetSdpListener.h"
 #include "rtc/ClientConfiguration.h"
 #include "rtc/SignalTarget.h"
@@ -42,17 +41,18 @@ class Transport : private CreateSdpListener,
 public:
     ~Transport() override;
     static std::unique_ptr<Transport> create(bool primary, SignalTarget target,
-                                             webrtc::PeerConnectionObserver* observer,
+                                             TransportListener* listener,
                                              const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                              const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
-    void setListener(TransportListener* listener = nullptr) { _listener = listener; }
+    bool primary() const noexcept { return _primary; }
+    SignalTarget target() const noexcept { return _target; }
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
-    void createOffer();
-    void createAnswer();
+    void createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
+    void createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     void setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
 private:
-    Transport(bool primary, SignalTarget target,
+    Transport(bool primary, SignalTarget target, TransportListener* listener,
               webrtc::scoped_refptr<webrtc::PeerConnectionInterface> pc);
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
@@ -63,12 +63,12 @@ private:
 private:
     const bool _primary;
     const SignalTarget _target;
+    TransportListener* const _listener;
     const webrtc::scoped_refptr<CreateSdpObserver> _offerCreationObserver;
     const webrtc::scoped_refptr<CreateSdpObserver> _answerCreationObserver;
     const webrtc::scoped_refptr<SetLocalSdpObserver> _setLocalSdpObserver;
     const webrtc::scoped_refptr<SetRemoteSdpObserver> _setRemoteSdpObserver;
     const webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
-    Bricks::Listener<TransportListener*> _listener;
 };
 
 } // namespace LiveKitCpp

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "LiveKitRoomState.h"
-#include "LiveKitRoomUtils.h"
+#include "RoomUtils.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/ReconnectResponse.h"
 
@@ -46,15 +46,15 @@ webrtc::PeerConnectionInterface::RTCConfiguration LiveKitRoomState::
         config.type = webrtc::PeerConnectionInterface::kRelay;
     }
     else {
-        config.type = LiveKitRoomUtils::map(_connectOptions._iceTransportPolicy);
+        config.type = RoomUtils::map(_connectOptions._iceTransportPolicy);
     }
     if (!_connectOptions._iceServers.empty()) {
         // Override with user provided iceServers
-        config.servers = LiveKitRoomUtils::map(_connectOptions._iceServers);
+        config.servers = RoomUtils::map(_connectOptions._iceServers);
     }
     else {
         //Set iceServers provided by the server
-        config.servers = LiveKitRoomUtils::map(iceServers);
+        config.servers = RoomUtils::map(iceServers);
     }
     // crypto options
     /*{

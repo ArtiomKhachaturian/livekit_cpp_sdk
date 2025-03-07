@@ -11,9 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoomUtils.h
+#pragma once // RoomUtils.h
 #include "rtc/ICEServer.h"
+#include "rtc/SessionDescription.h"
 #include <api/peer_connection_interface.h>
+#include <memory>
+#include <optional>
 #include <vector>
 
 namespace LiveKitCpp
@@ -21,9 +24,12 @@ namespace LiveKitCpp
 
 enum class IceTransportPolicy;
 
-class LiveKitRoomUtils
+class RoomUtils
 {
 public:
+    static std::optional<SessionDescription> map(const webrtc::SessionDescriptionInterface* desc);
+    static std::unique_ptr<webrtc::SessionDescriptionInterface> map(const SessionDescription& desc,
+                                                                    webrtc::SdpParseError* error = nullptr);
     static webrtc::PeerConnectionInterface::IceServer map(const ICEServer& server);
     static webrtc::PeerConnectionInterface::IceServers map(const std::vector<ICEServer>& servers);
     static webrtc::PeerConnectionInterface::IceTransportsType map(IceTransportPolicy policy);

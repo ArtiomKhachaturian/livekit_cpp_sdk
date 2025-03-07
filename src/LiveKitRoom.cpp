@@ -21,12 +21,14 @@
 #include "Loggable.h"
 #include "SafeObjAliases.h"
 #include "RoomOptions.h"
+#include "RoomUtils.h"
 #include "Transport.h"
 #include "TransportListener.h"
 #include "LiveKitRoomState.h"
 #include "PeerConnectionFactory.h"
 #include "WebsocketFactory.h"
 #include "rtc/JoinResponse.h"
+#include "rtc/SessionDescription.h"
 #endif
 #include "WebsocketEndPoint.h"
 
@@ -36,8 +38,7 @@ namespace LiveKitCpp
 
 using ImplBase = Bricks::LoggableS<SignalServerListener,
                                    SignalTransportListener,
-                                   TransportListener,
-                                   webrtc::PeerConnectionObserver>;
+                                   TransportListener>;
 
 struct LiveKitRoom::Impl : public ImplBase
 {
@@ -47,17 +48,18 @@ struct LiveKitRoom::Impl : public ImplBase
          const RoomOptions& roomOptions);
     ~Impl();
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    Bricks::SafeObj<LiveKitRoomState> _state;
     SignalClientWs _client;
+    Bricks::SafeObj<LiveKitRoomState> _state;
     // impl. of SignalServerListener
     void onJoin(uint64_t signalClientId, const JoinResponse& response) final;
     void onReconnect(uint64_t signalClientId, const ReconnectResponse& response) final;
+    void onOffer(uint64_t signalClientId, const SessionDescription& sdp) final;
     // impl. of TransportListener
-    void onSdpCreated(SignalTarget target, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
-    void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
-    void onSdpSet(SignalTarget target, bool local) final;
-    void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
-    void onSetConfigurationError(SignalTarget target, webrtc::RTCError error) final;
+    void onSdpCreated(Transport* transport, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
+    void onSdpCreationFailure(Transport* transport, webrtc::SdpType type, webrtc::RTCError error) final;
+    void onSdpSet(Transport* transport, bool local, const webrtc::SessionDescriptionInterface* desc) final;
+    void onSdpSetFailure(Transport* transport, bool local, webrtc::RTCError error) final;
+    void onSetConfigurationError(Transport* transport, webrtc::RTCError error) final;
     // impl. of webrtc::PeerConnectionObserver
     void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState) final;
     void OnDataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> dataChannel) final;
@@ -133,8 +135,6 @@ void LiveKitRoom::Impl::onJoin(uint64_t signalClientId, const JoinResponse& resp
         _state->_publisher.reset();
         return;
     }
-    _state->_publisher->setListener(this);
-    _state->_publisher->setListener(this);
     if (const auto& room = response._room) {
         _state->_sid = room->_sid;
         _state->_name = room->_name;
@@ -197,42 +197,61 @@ void LiveKitRoom::Impl::onReconnect(uint64_t signalClientId, const ReconnectResp
     }
 }
 
-void LiveKitRoom::Impl::onSdpCreated(SignalTarget target,
-                                     std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
+void LiveKitRoom::Impl::onOffer(uint64_t signalClientId, const SessionDescription& sdp)
 {
+    SignalServerListener::onOffer(signalClientId, sdp);
     LOCK_READ_SAFE_OBJ(_state);
-    switch (target) {
-        case SignalTarget::Publisher:
-            if (const auto& publisher = _state->_publisher) {
-                publisher->setLocalDescription(std::move(desc));
-            }
-            break;
-        case SignalTarget::Subscriber:
-            if (const auto& subscriber = _state->_subscriber) {
-                subscriber->setLocalDescription(std::move(desc));
-            }
-            break;
+    if (const auto& subscruber = _state->_subscriber) {
+        webrtc::SdpParseError error;
+        if (auto desc = RoomUtils::map(sdp, &error)) {
+            subscruber->setRemoteDescription(std::move(desc));
+            subscruber->createAnswer();
+        }
+        else {
+            // TODO: log error
+        }
     }
 }
 
-void LiveKitRoom::Impl::onSdpCreationFailure(SignalTarget target, webrtc::SdpType type,
+void LiveKitRoom::Impl::onSdpCreated(Transport* transport,
+                                     std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
+{
+    if (transport) {
+        transport->setLocalDescription(std::move(desc));
+    }
+}
+
+void LiveKitRoom::Impl::onSdpCreationFailure(Transport* transport, webrtc::SdpType type,
                                              webrtc::RTCError error)
 {
-    
 }
 
-void LiveKitRoom::Impl::onSdpSet(SignalTarget target, bool local)
+void LiveKitRoom::Impl::onSdpSet(Transport* transport, bool local,
+                                 const webrtc::SessionDescriptionInterface* desc)
 {
-    
+    if (local && transport) {
+        switch (transport->target()) {
+            case SignalTarget::Publisher:
+                if (const auto sdp = RoomUtils::map(desc)) {
+                    _client.sendOffer(sdp.value());
+                }
+                break;
+            case SignalTarget::Subscriber:
+                if (const auto sdp = RoomUtils::map(desc)) {
+                    _client.sendAnswer(sdp.value());
+                }
+                break;
+        }
+    }
 }
 
-void LiveKitRoom::Impl::onSdpSetFailure(SignalTarget target, bool local,
+void LiveKitRoom::Impl::onSdpSetFailure(Transport* transport, bool local,
                                         webrtc::RTCError error)
 {
     
 }
 
-void LiveKitRoom::Impl::onSetConfigurationError(SignalTarget target, webrtc::RTCError error)
+void LiveKitRoom::Impl::onSetConfigurationError(Transport* transport, webrtc::RTCError error)
 {
     
 }

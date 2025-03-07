@@ -13,21 +13,22 @@
 // limitations under the License.
 #pragma once // TransportListener.h
 #include <api/jsep.h>
+#include <api/peer_connection_interface.h>
 #include <memory>
 
 namespace LiveKitCpp
 {
 
-enum class SignalTarget;
+class Transport;
 
-class TransportListener
+class TransportListener : public webrtc::PeerConnectionObserver
 {
 public:
-    virtual void onSdpCreated(SignalTarget target, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) = 0;
-    virtual void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) = 0;
-    virtual void onSdpSet(SignalTarget target, bool local) = 0;
-    virtual void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) = 0;
-    virtual void onSetConfigurationError(SignalTarget target, webrtc::RTCError error) = 0;
+    virtual void onSdpCreated(Transport* transport, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) = 0;
+    virtual void onSdpCreationFailure(Transport* transport, webrtc::SdpType type, webrtc::RTCError error) = 0;
+    virtual void onSdpSet(Transport* transport, bool local, const webrtc::SessionDescriptionInterface* desc) = 0;
+    virtual void onSdpSetFailure(Transport* transport, bool local, webrtc::RTCError error) = 0;
+    virtual void onSetConfigurationError(Transport* transport, webrtc::RTCError error) = 0;
 protected:
     virtual ~TransportListener() = default;
 };
