@@ -17,27 +17,27 @@
 #include "Listener.h"
 #include "ResponseReceiver.h"
 #include "RequestSender.h"
-#include "Loggable.h"
 
 namespace LiveKitCpp
 {
 
-class SignalClient::Impl : public Bricks::LoggableR<>
+class SignalClient::Impl
 {
 public:
-    Impl(uint64_t id, Bricks::Logger* logger = nullptr);
+    Impl(const SignalClient* client);
     State transportState() const noexcept;
     ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(std::string error);
     void setListener(SignalTransportListener* listener) { _listener = listener; }
 private:
-    const uint64_t _id;
+    const SignalClient* _client;
     Bricks::Listener<SignalTransportListener*> _listener;
     Bricks::SafeObj<State> _transportState = State::Disconnected;
 };
 
 SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
-    : _impl(std::make_unique<Impl>(id(), logger))
+    :  Bricks::LoggableR<>(logger)
+    , _impl(std::make_unique<Impl>(this))
     , _responseReceiver(std::make_unique<ResponseReceiver>(id(), logger))
     , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
 {
@@ -152,20 +152,9 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
     return _requestSender->updateVideoTrack(track);
 }
 
-std::string_view SignalClient::defaultLogCategory()
-{
-    static const std::string_view category("SignalingClient");
-    return category;
-}
-
 SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(State state)
 {
     return _impl->changeTransportState(state);
-}
-
-void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
-{
-    _responseReceiver->parseBinary(message, len);
 }
 
 void SignalClient::notifyAboutTransportError(std::string error)
@@ -173,21 +162,19 @@ void SignalClient::notifyAboutTransportError(std::string error)
     _impl->notifyAboutTransportError(std::move(error));
 }
 
-bool SignalClient::canLog(Bricks::LoggingSeverity severity) const
+void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
 {
-    return _impl->canLog(severity);
+    _responseReceiver->parseBinary(message, len);
 }
 
-void SignalClient::log(Bricks::LoggingSeverity severity,
-                       std::string_view message,
-                       std::string_view category)
+std::string_view SignalClient::logCategory() const
 {
-    _impl->log(severity, message, category);
+    static const std::string_view category("SignalingClient");
+    return category;
 }
 
-SignalClient::Impl::Impl(uint64_t id, Logger* logger)
-    : Bricks::LoggableR<>(logger)
-    , _id(id)
+SignalClient::Impl::Impl(const SignalClient* client)
+    : _client(client)
 {
 }
 
@@ -220,13 +207,12 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
                     break;
             }
             if (accepted) {
-                if (canLogVerbose()) {
+                if (_client->canLogVerbose()) {
                     // TODO: add obj [ID] logging
-                    logVerbose("State changed from '" +
-                               std::string(toString(_transportState)) +
-                               "' to '" +
-                               std::string(toString(state)) + "'",
-                               defaultLogCategory());
+                    _client->logVerbose("State changed from '" +
+                                        std::string(toString(_transportState)) +
+                                        "' to '" +
+                                        std::string(toString(state)) + "'");
                 }
                 _transportState = state;
                 result = ChangeTransportStateResult::Changed;
@@ -237,14 +223,16 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
         }
     }
     if (ChangeTransportStateResult::Changed == result) {
-        _listener.invoke(&SignalTransportListener::onTransportStateChanged, _id, state);
+        _listener.invoke(&SignalTransportListener::onTransportStateChanged,
+                         _client->id(), state);
     }
     return result;
 }
 
 void SignalClient::Impl::notifyAboutTransportError(std::string error)
 {
-    _listener.invoke(&SignalTransportListener::onTransportError, _id, std::move(error));
+    _listener.invoke(&SignalTransportListener::onTransportError,
+                     _client->id(), std::move(error));
 }
 
 } // namespace LiveKitCpp

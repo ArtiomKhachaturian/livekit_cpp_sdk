@@ -16,6 +16,7 @@
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
 #include <chrono>
+#include <optional>
 #include <vector>
 
 namespace LiveKitCpp
@@ -25,12 +26,18 @@ using namespace std::chrono_literals;
 
 // https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Types/Options/RoomOptions.swift#L20
 /// Options used when establishing a connection.
-struct ConnectOptions
+struct SignalOptions
 {
-    LIVEKIT_CLIENT_API ConnectOptions();
+    LIVEKIT_CLIENT_API SignalOptions();
+    
+    bool _adaptiveStream = true; // maybe std::optional<>?
+    
     /// Automatically subscribe to ``RemoteParticipant``'s tracks.
     /// Defaults to true.
     bool _autoSubscribe = true;
+    
+    /// E2EE Options
+    //std::optional<E2EEOptions> _e2eeOptions;
     
     /// The number of attempts to reconnect when the network disconnects.
     int _reconnectAttempts = 3;
@@ -39,11 +46,11 @@ struct ConnectOptions
     std::chrono::milliseconds _reconnectAttemptDelay = 2s;
 
     /// The timeout interval for the initial websocket connection.
-    std::chrono::milliseconds _socketConnectTimeoutInterval = 10s;
+    /*std::chrono::milliseconds _socketConnectTimeoutInterval = 10s;
 
     std::chrono::milliseconds _primaryTransportConnectTimeout = 10s;
 
-    std::chrono::milliseconds _publisherTransportConnectTimeout = 10s;
+    std::chrono::milliseconds _publisherTransportConnectTimeout = 10s;*/
 
     std::vector<ICEServer> _iceServers;
 

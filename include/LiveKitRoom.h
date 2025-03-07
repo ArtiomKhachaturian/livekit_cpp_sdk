@@ -22,9 +22,9 @@ class EndPoint;
 namespace LiveKitCpp
 {
 
-struct ConnectOptions;
-struct RoomOptions;
+struct SignalOptions;
 class PeerConnectionFactory;
+class RTCEngine;
 
 class LIVEKIT_CLIENT_API LiveKitRoom
 {
@@ -37,10 +37,9 @@ public:
 private:
     LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                 PeerConnectionFactory* pcf,
-                const ConnectOptions& connectOptions,
-                const RoomOptions& roomOptions);
+                const SignalOptions& signalOptions);
 private:
-    const std::unique_ptr<Impl> _impl;
+    const std::unique_ptr<RTCEngine> _engine;
 };
 
 } // namespace LiveKitCpp

@@ -11,22 +11,48 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LiveKitRoomState.h"
+#include "RTCEngine.h"
+#include "TransportManager.h"
+#include "PeerConnectionFactory.h"
+#include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
-#include "rtc/JoinResponse.h"
 #include "rtc/ReconnectResponse.h"
+
+namespace {
+
+inline std::shared_ptr<Bricks::Logger>
+    getLogger(const webrtc::scoped_refptr<LiveKitCpp::PeerConnectionFactory>& pcf) {
+    if (pcf) {
+        return pcf->logger();
+    }
+    return {};
+}
+
+}
 
 namespace LiveKitCpp
 {
 
-LiveKitRoomState::LiveKitRoomState(const ConnectOptions& connectOptions,
-                                   const RoomOptions& roomOptions)
-    : _connectOptions(connectOptions)
-    , _roomOptions(roomOptions)
+RTCEngine::RTCEngine(const SignalOptions& signalOptions,
+                     const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                     std::unique_ptr<Websocket::EndPoint> socket)
+    : Bricks::LoggableS<TransportManagerListener, SignalServerListener>(getLogger(pcf))
+    , _signalOptions(signalOptions)
+    , _pcf(pcf)
+    , _client(std::move(socket), getLogger(pcf).get())
 {
+    _client.setAdaptiveStream(_signalOptions._adaptiveStream);
+    _client.setAutoSubscribe(_signalOptions._autoSubscribe);
+    _client.setProtocolVersion(_signalOptions._protocolVersion);
+    _client.setServerListener(this);
 }
 
-webrtc::PeerConnectionInterface::RTCConfiguration LiveKitRoomState::
+RTCEngine::~RTCEngine()
+{
+    _client.setServerListener(nullptr);
+}
+
+webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     makeConfiguration(const std::vector<ICEServer>& iceServers,
                       const std::optional<ClientConfiguration>& cc) const
 {
@@ -46,11 +72,11 @@ webrtc::PeerConnectionInterface::RTCConfiguration LiveKitRoomState::
         config.type = webrtc::PeerConnectionInterface::kRelay;
     }
     else {
-        config.type = RoomUtils::map(_connectOptions._iceTransportPolicy);
+        config.type = RoomUtils::map(_signalOptions._iceTransportPolicy);
     }
-    if (!_connectOptions._iceServers.empty()) {
+    if (!_signalOptions._iceServers.empty()) {
         // Override with user provided iceServers
-        config.servers = RoomUtils::map(_connectOptions._iceServers);
+        config.servers = RoomUtils::map(_signalOptions._iceServers);
     }
     else {
         //Set iceServers provided by the server
@@ -71,16 +97,26 @@ webrtc::PeerConnectionInterface::RTCConfiguration LiveKitRoomState::
     return config;
 }
 
-webrtc::PeerConnectionInterface::RTCConfiguration LiveKitRoomState::
+webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     makeConfiguration(const JoinResponse& response) const
 {
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
-webrtc::PeerConnectionInterface::RTCConfiguration LiveKitRoomState::
+webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     makeConfiguration(const ReconnectResponse& response) const
 {
     return makeConfiguration(response._iceServers, response._clientConfiguration);
+}
+
+std::string_view RTCEngine::logCategory() const
+{
+    static const std::string_view category("RTCEngine");
+    //LOCK_READ_SAFE_OBJ(_latestJoinResponse);
+    /*if (const auto& resp = _latestJoinResponse->value()) {
+        
+    }*/
+    return category;
 }
 
 } // namespace LiveKitCpp

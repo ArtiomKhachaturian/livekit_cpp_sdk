@@ -11,20 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // State.h
-#include "LiveKitClientExport.h"
+#pragma once // SafeScopedRefPtr.h
+#include "SafeObj.h"
+#include <api/scoped_refptr.h>
 
 namespace LiveKitCpp
 {
 
-enum class State
-{
-    Connecting,
-    Connected,
-    Disconnecting,
-    Disconnected,
-};
-
-LIVEKIT_CLIENT_API const char* toString(State state);
+template <typename T, class TMutexType = std::recursive_mutex>
+using SafeScopedRefPtr = Bricks::SafeObj<webrtc::scoped_refptr<T>, TMutexType>;
 
 } // namespace LiveKitCpp

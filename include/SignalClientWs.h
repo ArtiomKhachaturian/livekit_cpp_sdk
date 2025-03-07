@@ -29,13 +29,14 @@ class LIVEKIT_CLIENT_API SignalClientWs : public SignalClient,
                                           private CommandSender
 {
     class Listener;
+    struct Impl;
 public:
     SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket,
                    Bricks::Logger* logger = nullptr);
     ~SignalClientWs() final;
-    const std::string& host() const noexcept;
-    const std::string& authToken() const noexcept;
-    const std::string& participantSid() const noexcept;
+    std::string host() const noexcept;
+    std::string authToken() const noexcept;
+    std::string participantSid() const noexcept;
     bool autoSubscribe() const noexcept;
     bool adaptiveStream() const noexcept;
     ReconnectMode reconnectMode() const noexcept;
@@ -55,15 +56,7 @@ private:
     // impl. of CommandSender
     bool sendBinary(const std::shared_ptr<Bricks::Blob>& binary) final;
 private:
-    const std::unique_ptr<Listener> _socketListener;
-    const std::unique_ptr<Websocket::EndPoint> _socket;
-    std::string _host;
-    std::string _authToken;
-    std::string _participantSid;
-    bool _autoSubscribe = true;
-    bool _adaptiveStream = true;
-    ReconnectMode _reconnectMode = ReconnectMode::None;
-    int _protocolVersion = {};
+    const std::unique_ptr<Impl> _impl;
 };
 
 } // namespace LiveKitCpp

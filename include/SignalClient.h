@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // SignalClient.h
 #include "LiveKitClientExport.h"
-#include "Logger.h"
+#include "Loggable.h"
 #include "State.h"
 #include <memory>
 #include <string>
@@ -48,7 +48,7 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class LIVEKIT_CLIENT_API SignalClient : protected Bricks::Logger
+class LIVEKIT_CLIENT_API SignalClient : protected Bricks::LoggableR<>
 {
     class Impl;
 protected:
@@ -85,14 +85,11 @@ public:
     bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
 protected:
-    static std::string_view defaultLogCategory();
     ChangeTransportStateResult changeTransportState(State state);
     void notifyAboutTransportError(std::string error);
     void handleServerProtobufMessage(const void* message, size_t len);
-    // impl. of Logger
-    bool canLog(Bricks::LoggingSeverity severity) const final;
-    void log(Bricks::LoggingSeverity severity, std::string_view message,
-             std::string_view category = {}) final;
+    // impl. of Bricks::LoggableR<>
+    std::string_view logCategory() const override;
 private:
     const std::unique_ptr<Impl> _impl;
     // for handling of incoming messages from the LiveKit SFU
