@@ -15,6 +15,7 @@
 #include "Loggable.h"
 #include "Transport.h"
 #include "TransportListener.h"
+#include "DataChannelListener.h"
 #include <api/peer_connection_interface.h>
 #include <atomic>
 #include <memory>
@@ -24,9 +25,10 @@ namespace LiveKitCpp
 
 class TransportManagerListener;
 class PeerConnectionFactory;
+class DataChannelObserver;
 enum class SignalTarget;
 
-class TransportManager : private Bricks::LoggableS<TransportListener>
+class TransportManager : private Bricks::LoggableS<TransportListener, DataChannelListener>
 {
 public:
     TransportManager(bool subscriberPrimary,
@@ -58,6 +60,10 @@ private:
     void onDataChannel(Transport& transport, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
     void onIceCandidate(Transport& transport, const webrtc::IceCandidateInterface* candidate) final;
     void onTrack(Transport& transport, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    // impl. of DataChannelListener
+    void onStateChange(DataChannelType channelType) final;
+    void onMessage(DataChannelType channelType, const webrtc::DataBuffer& buffer) final;
+    void onBufferedAmountChange(DataChannelType channelType, uint64_t sentDataSize) final;
     // override of Bricks::LoggableS<>
     std::string_view logCategory() const;
 private:
@@ -65,6 +71,10 @@ private:
     const bool _subscriberPrimary;
     Transport _publisher;
     Transport _subscriber;
+    std::unique_ptr<DataChannelObserver> _lossyDCObserver;
+    std::unique_ptr<DataChannelObserver> _reliableDCObserver;
+    rtc::scoped_refptr<webrtc::DataChannelInterface> _lossyDC;
+    rtc::scoped_refptr<webrtc::DataChannelInterface> _reliableDC;
     std::atomic<webrtc::PeerConnectionInterface::PeerConnectionState> _state;
 };
 

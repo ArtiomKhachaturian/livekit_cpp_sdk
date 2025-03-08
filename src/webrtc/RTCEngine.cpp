@@ -19,13 +19,6 @@
 #include "rtc/ReconnectResponse.h"
 #include <thread>
 
-/*namespace {
-
-const std::string _lossyDataChannel = "_lossy";
-const std::string _reliableDataChannel = "_reliable";
-
-}*/
-
 namespace LiveKitCpp
 {
 
@@ -183,7 +176,7 @@ void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
                                                     listener, _pcf,
                                                     makeConfiguration(response),
                                                     logger());
-    _pcManager.constRef()->addTrack(_localAudioTrack);
+    //_pcManager.constRef()->addTrack(_localAudioTrack);
     _pcManager.constRef()->createPublisherOffer();
 }
 

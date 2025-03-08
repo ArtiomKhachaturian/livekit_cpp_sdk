@@ -14,6 +14,8 @@
 #include "TransportManager.h"
 #include "TransportManagerListener.h"
 #include "PeerConnectionFactory.h"
+#include "DataChannelObserver.h"
+#include "DataChannelType.h"
 #include "RoomUtils.h"
 #include "Utils.h"
 #include <list>
@@ -37,25 +39,52 @@ inline bool every(const T& required, const std::list<T>& vals) {
 
 namespace LiveKitCpp
 {
-
 TransportManager::TransportManager(bool subscriberPrimary,
                                    TransportManagerListener* listener,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                    const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<TransportListener>(logger)
+    : Bricks::LoggableS<TransportListener, DataChannelListener>(logger)
     , _listener(listener)
     , _subscriberPrimary(subscriberPrimary)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
+    if (_publisher) {
+        DataChannelListener* const listener = this;
+        auto observer = std::make_unique<DataChannelObserver>(DataChannelType::Lossy, listener);
+        _lossyDC = _publisher.createDataChannel(toString(DataChannelType::Lossy),
+                                                {.ordered = true, .maxRetransmits = 0},
+                                                observer.get());
+        if (_lossyDC) {
+            _lossyDCObserver = std::move(observer);
+            observer = std::make_unique<DataChannelObserver>(DataChannelType::Relaible, listener);
+            _reliableDC = _publisher.createDataChannel(toString(DataChannelType::Relaible),
+                                                    {.ordered = true}, observer.get());
+            if (_reliableDC) {
+                _reliableDCObserver = std::move(observer);
+            }
+            else {
+                // TODO: log error
+            }
+        }
+        else {
+            // TODO: log error
+        }
+    }
 }
 
 TransportManager::~TransportManager()
 {
     _subscriber.close();
     _publisher.close();
+    if (_lossyDC) {
+        _lossyDC->UnregisterObserver();
+    }
+    if (_reliableDC) {
+        _reliableDC->UnregisterObserver();
+    }
 }
 
 bool TransportManager::valid() const noexcept
@@ -277,6 +306,28 @@ void TransportManager::onTrack(Transport& transport, rtc::scoped_refptr<webrtc::
     if (_listener && SignalTarget::Subscriber == transport.target()) {
         _listener->onRemoteTrack(std::move(transceiver));
     }
+}
+
+void TransportManager::onStateChange(DataChannelType channelType)
+{
+    if (canLogInfo()) {
+        logInfo("the data channel '" + std::string(toString(channelType)) + "' state have changed");
+    }
+}
+
+void TransportManager::onMessage(DataChannelType channelType,
+                                 const webrtc::DataBuffer& /*buffer*/)
+{
+    if (canLogInfo()) {
+        logInfo("a message buffer was successfully received for '" +
+                std::string(toString(channelType)) + " data channel");
+    }
+}
+
+void TransportManager::onBufferedAmountChange(DataChannelType /*channelType*/,
+                                              uint64_t /*sentDataSize*/)
+{
+    
 }
 
 std::string_view TransportManager::logCategory() const
