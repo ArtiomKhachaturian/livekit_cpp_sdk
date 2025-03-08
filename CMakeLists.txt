@@ -215,7 +215,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE absl::base absl::strings absl::sta
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
-    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit")
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit -framework CoreWLAN")
 elseif(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 endif()

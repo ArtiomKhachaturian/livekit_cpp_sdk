@@ -42,6 +42,7 @@ public:
     void createSubscriberAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     bool setSubscriberRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
+    rtc::scoped_refptr<webrtc::RtpSenderInterface> addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
     void close();
 private:
     void updateState();

@@ -22,11 +22,20 @@ namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
 
+struct LiveKitRoom::Impl
+{
+    Impl(std::unique_ptr<Websocket::EndPoint> socket,
+         PeerConnectionFactory* pcf,
+         const SignalOptions& signalOptions,
+         const std::shared_ptr<Bricks::Logger>& logger);
+    RTCEngine _engine;
+};
+
 LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                          PeerConnectionFactory* pcf,
                          const SignalOptions& signalOptions,
                          const std::shared_ptr<Bricks::Logger>& logger)
-    : _engine(std::make_unique<RTCEngine>(signalOptions, pcf, std::move(socket), logger))
+    : _impl(std::make_unique<Impl>(std::move(socket), pcf, signalOptions, logger))
 {
 }
 
@@ -36,12 +45,20 @@ LiveKitRoom::~LiveKitRoom()
 
 bool LiveKitRoom::connect(std::string host, std::string authToken)
 {
-    return _engine->connect(std::move(host), std::move(authToken));
+    return _impl->_engine.connect(std::move(host), std::move(authToken));
 }
 
 void LiveKitRoom::disconnect()
 {
     //_impl->_client.disconnect();
+}
+
+LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
+                        PeerConnectionFactory* pcf,
+                        const SignalOptions& signalOptions,
+                        const std::shared_ptr<Bricks::Logger>& logger)
+    : _engine(signalOptions, pcf, std::move(socket), logger)
+{
 }
 
 #else

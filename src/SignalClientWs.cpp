@@ -13,6 +13,7 @@
 #include "SignalClientWs.h"
 #include "Blob.h"
 #include "SafeObj.h"
+#include "NetworkType.h"
 #include "WebsocketEndPoint.h"
 #include "WebsocketError.h"
 #include "WebsocketState.h"
@@ -339,6 +340,7 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
         options._host += urlQueryItem("os", operatingSystemName());
         options._host += urlQueryItem("os_version", operatingSystemVersion());
         options._host += urlQueryItem("device_model", modelIdentifier());
+        options._host += urlQueryItem("network", toString(activeNetworkType()));
         // only for quick-reconnect
         if (ReconnectMode::Quick == _urlData->_reconnectMode) {
             options._host += urlQueryItem("reconnect", 1);

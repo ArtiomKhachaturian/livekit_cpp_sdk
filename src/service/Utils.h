@@ -29,11 +29,14 @@ namespace LiveKitCpp
 {
 
 enum class TransportState;
+enum class NetworkType;
 
 std::string NSStringToStdString(NSString* nsString);
 std::string operatingSystemVersion();
 std::string operatingSystemName();
 std::string modelIdentifier();
+// wifi, wired, cellular, vpn, empty if not known
+NetworkType activeNetworkType();
 std::string fromWideChar(const std::wstring& w);
 
 template <unsigned flag>

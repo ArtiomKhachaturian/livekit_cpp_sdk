@@ -38,6 +38,7 @@ RTCEngine::RTCEngine(const SignalOptions& signalOptions,
                         SignalServerListener>(logger)
     , _signalOptions(signalOptions)
     , _pcf(pcf)
+    , _localAudioTrack(createLocalAudioTrack())
     , _client(std::move(socket), logger.get())
 {
     _client.setAdaptiveStream(_signalOptions._adaptiveStream);
@@ -74,6 +75,17 @@ bool RTCEngine::connect(std::string url, std::string authToken)
     return ok;
 }
 
+rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::createLocalAudioTrack() const
+{
+    if (_pcf) {
+        auto source = _pcf->CreateAudioSource({});
+        if (source) {
+            return _pcf->CreateAudioTrack("mic", source.get());
+        }
+    }
+    return {};
+}
+
 webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     makeConfiguration(const std::vector<ICEServer>& iceServers,
                       const std::optional<ClientConfiguration>& cc) const
@@ -85,7 +97,7 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     //config.set_cpu_adaptation(true);
     //config.enable_dtls_srtp.emplace(true);
     // enable ICE renomination, like on Android (   "a=ice-options:trickle renomination")
-    config.enable_ice_renomination = true;
+    //config.enable_ice_renomination = true;
     // required for M86:
     // the issue may because 1 byte rtp header id exahustion, check if you have enabled this option:
     // https://source.chromium.org/chromium/chromium/src/+/master:third_party/webrtc/api/peer_connection_interface.h;l=625?q=RTCConfiguration%20webrtc&ss=chromium%2Fchromium%2Fsrc
@@ -171,6 +183,7 @@ void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
                                                     listener, _pcf,
                                                     makeConfiguration(response),
                                                     logger());
+    _pcManager.constRef()->addTrack(_localAudioTrack);
     _pcManager.constRef()->createPublisherOffer();
 }
 

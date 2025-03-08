@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "Utils.h"
 #include "TransportState.h"
+#include "NetworkType.h"
 #ifdef _WIN32
 #include <atlbase.h>
 #include <Windows.h>
@@ -129,6 +130,13 @@ std::string modelIdentifier()
     }
     return fromWideChar(model);
 }
+
+NetworkType activeNetworkType()
+{
+    // TODO: implement it
+    return NetworkType::Unknown;
+}
+
 #endif
 
 std::string fromWideChar(const std::wstring& w)
@@ -235,6 +243,23 @@ std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGathering
 std::string makeStateChangesString(TransportState from, TransportState to)
 {
     return makeChangesString(from, to);
+}
+
+const char* toString(NetworkType state)
+{
+    switch (state) {
+        case NetworkType::WiFi:
+            return "wifi";
+        case NetworkType::Wired:
+            return "wired";
+        case NetworkType::Cellular:
+            return "cellular";
+        case NetworkType::Vpn:
+            return "vpn";
+        default:
+            break;
+    }
+    return "";
 }
 
 } // namespace LiveKitCpp

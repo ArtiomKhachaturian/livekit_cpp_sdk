@@ -29,6 +29,7 @@ namespace LiveKitCpp
 {
 
 class LiveKitRoom;
+enum class NetworkType;
 
 class LIVEKIT_CLIENT_API LiveKitService
 {
@@ -43,6 +44,7 @@ public:
     LiveKitRoom* makeRoom(const SignalOptions& signalOptions = {}) const;
     std::shared_ptr<LiveKitRoom> makeRoomS(const SignalOptions& signalOptions = {}) const;
     std::unique_ptr<LiveKitRoom> makeRoomU(const SignalOptions& signalOptions = {}) const;
+    static NetworkType activeNetworkType();
 private:
     const std::unique_ptr<Impl> _impl;
 };

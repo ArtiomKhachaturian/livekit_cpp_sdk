@@ -257,6 +257,11 @@ std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const SignalOptions&) con
 
 #endif
 
+NetworkType LiveKitService::activeNetworkType()
+{
+    return LiveKitCpp::activeNetworkType();
+}
+
 SignalOptions::SignalOptions()
 {
     _protocolVersion = LIVEKIT_PROTOCOL_VERSION;

@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
+#include "NetworkType.h"
 #import <Foundation/Foundation.h>
+#import <SystemConfiguration/SystemConfiguration.h>
+#import <CoreWLAN/CoreWLAN.h>
 
 namespace LiveKitCpp
 {
@@ -68,6 +71,38 @@ std::string modelIdentifier()
         IOObjectRelease(service);
     }
     return model;
+}
+
+NetworkType activeNetworkType()
+{
+    NetworkType type = NetworkType::Unknown;
+    @autoreleasepool {
+        if (const auto storeRef = SCDynamicStoreCreate(nullptr, CFSTR("GetActiveNetworkType"),
+                                                       nullptr, nullptr)) {
+            if (const auto global = SCDynamicStoreCopyValue(storeRef, CFSTR("State:/Network/Global/IPv4"))) {
+                
+                NSDictionary* dict = (__bridge NSDictionary *)global;
+                NSString *primaryInterface = dict[@"PrimaryInterface"];
+                // check network type
+                auto wifiInterface = [CWWiFiClient sharedWiFiClient].interface;
+                if ([primaryInterface isEqualToString:wifiInterface.interfaceName]) {
+                    type = NetworkType::WiFi;
+                } else if ([primaryInterface hasPrefix:@"en"]) {
+                    type = NetworkType::Wired;
+                } else if ([primaryInterface hasPrefix:@"pdp_ip"]) {
+                    type = NetworkType::Cellular;
+                } else if ([primaryInterface hasPrefix:@"utun"]) {
+                    type = NetworkType::Vpn;
+                }
+                CFRelease(global);
+            }
+            else {
+                type = NetworkType::NoNetwork;
+            }
+            CFRelease(storeRef);
+        }
+    }
+    return type;
 }
 
 } // namespace LiveKitCpp

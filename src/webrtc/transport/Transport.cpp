@@ -140,6 +140,11 @@ bool Transport::iceConnected() const noexcept
     return false;
 }
 
+bool Transport::closed() const noexcept
+{
+    return webrtc::PeerConnectionInterface::PeerConnectionState::kClosed == state();
+}
+
 std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transport::transceivers() const
 {
     if (_pc) {
@@ -176,7 +181,7 @@ const webrtc::SessionDescriptionInterface* Transport::remoteDescription() const
 
 void Transport::close()
 {
-    if (_pc && webrtc::PeerConnectionInterface::PeerConnectionState::kClosed != state()) {
+    if (_pc && !closed()) {
         if (canLogInfo()) {
             logInfo("close peer");
         }

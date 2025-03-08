@@ -54,6 +54,7 @@ public:
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
 private:
+    rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> createLocalAudioTrack() const;
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const std::vector<ICEServer>& iceServers = {},
                           const std::optional<ClientConfiguration>& cc = {}) const;
@@ -73,6 +74,7 @@ private:
 private:
     const SignalOptions _signalOptions;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
+    const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> _localAudioTrack;
     SignalClientWs _client;
     Bricks::SafeUniquePtr<TransportManager> _pcManager;
     std::shared_ptr<const JoinResponse> _latestJoinResponse;

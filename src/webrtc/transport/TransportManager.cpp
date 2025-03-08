@@ -138,6 +138,12 @@ bool TransportManager::setConfiguration(const webrtc::PeerConnectionInterface::R
     return _subscriber.setConfiguration(config) && _publisher.setConfiguration(config);
 }
 
+rtc::scoped_refptr<webrtc::RtpSenderInterface> TransportManager::
+    addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
+{
+    return _publisher.addTrack(std::move(track));
+}
+
 void TransportManager::close()
 {
     if (webrtc::PeerConnectionInterface::SignalingState::kClosed != _publisher.signalingState()) {

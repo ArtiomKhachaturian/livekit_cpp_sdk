@@ -56,6 +56,7 @@ public:
     webrtc::PeerConnectionInterface::SignalingState signalingState() const noexcept;
     webrtc::PeerConnectionInterface::IceGatheringState iceGatheringState() const noexcept;
     bool iceConnected() const noexcept;
+    bool closed() const noexcept;
     std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> transceivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> receivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> senders() const;
@@ -78,7 +79,7 @@ public:
                        const webrtc::RtpTransceiverInit& init);
     rtc::scoped_refptr<webrtc::RtpSenderInterface>
         addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                 const std::vector<std::string>& streamIds,
+                 const std::vector<std::string>& streamIds = {},
                  const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
 private:
     webrtc::scoped_refptr<webrtc::PeerConnectionInterface>
