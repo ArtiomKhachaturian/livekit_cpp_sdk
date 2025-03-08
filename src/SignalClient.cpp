@@ -18,6 +18,7 @@
 #include "ResponseReceiver.h"
 #include "RequestSender.h"
 #include "Utils.h"
+#include "Blob.h"
 
 namespace LiveKitCpp
 {
@@ -163,9 +164,11 @@ void SignalClient::notifyAboutTransportError(std::string error)
     _impl->notifyAboutTransportError(std::move(error));
 }
 
-void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
+void SignalClient::handleServerProtobufMessage(const Bricks::Blob& message)
 {
-    _responseReceiver->parseBinary(message, len);
+    if (message) {
+        _responseReceiver->parseBinary(message.data(), message.size());
+    }
 }
 
 std::string_view SignalClient::logCategory() const

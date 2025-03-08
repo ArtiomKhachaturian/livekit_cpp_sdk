@@ -20,10 +20,6 @@ namespace google::protobuf {
 class MessageLite;
 }
 
-namespace Bricks {
-class Blob;
-}
-
 namespace LiveKitCpp
 {
 
@@ -72,7 +68,6 @@ private:
     template <class TSetMethod, class TObject>
     bool send(const TSetMethod& setMethod, const TObject& object) const;
     static std::vector<uint8_t> toBytes(const google::protobuf::MessageLite& proto);
-    static std::shared_ptr<Bricks::Blob> toBlob(const google::protobuf::MessageLite& proto);
 private:
     CommandSender* const _commandSender;
     const Signals _signals;

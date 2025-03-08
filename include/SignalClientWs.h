@@ -51,10 +51,11 @@ public:
     // impl. of SignalClient
     bool connect() final;
     void disconnect() final;
+    bool ping();
 private:
     void updateState(Websocket::State state);
     // impl. of CommandSender
-    bool sendBinary(const std::shared_ptr<Bricks::Blob>& binary) final;
+    bool sendBinary(const Bricks::Blob& binary) final;
 private:
     const std::unique_ptr<Impl> _impl;
 };

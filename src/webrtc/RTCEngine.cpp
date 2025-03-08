@@ -38,11 +38,13 @@ RTCEngine::RTCEngine(const SignalOptions& signalOptions,
     _client.setAutoSubscribe(_signalOptions._autoSubscribe);
     _client.setProtocolVersion(_signalOptions._protocolVersion);
     _client.setServerListener(this);
+    _client.setTransportListener(this);
 }
 
 RTCEngine::~RTCEngine()
 {
     _client.setServerListener(nullptr);
+    _client.setTransportListener(nullptr);
 }
 
 bool RTCEngine::connect(std::string url, std::string authToken)

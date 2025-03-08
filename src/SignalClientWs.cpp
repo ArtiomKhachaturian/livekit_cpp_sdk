@@ -69,12 +69,9 @@ public:
     Listener(SignalClientWs* owner);
 private:
     // impl. of WebsocketListener
-    void onError(uint64_t socketId, uint64_t connectionId,
-                 const Websocket::Error& error) final;
-    void onStateChanged(uint64_t socketId, uint64_t connectionId,
-                        Websocket::State state) final;
-    void onBinaryMessage(uint64_t socketId, uint64_t connectionId,
-                         const std::shared_ptr<Bricks::Blob>& message) final;
+    void onError(uint64_t, uint64_t, const Websocket::Error& error) final;
+    void onStateChanged(uint64_t, uint64_t, Websocket::State state) final;
+    void onBinaryMessage(uint64_t, uint64_t, const Bricks::Blob& message) final;
 private:
     SignalClientWs* const _owner;
 };
@@ -246,6 +243,11 @@ void SignalClientWs::disconnect()
     }
 }
 
+bool SignalClientWs::ping()
+{
+    return _impl->_socket && _impl->_socket->ping();
+}
+
 void SignalClientWs::updateState(Websocket::State state)
 {
     switch (state) {
@@ -264,7 +266,7 @@ void SignalClientWs::updateState(Websocket::State state)
     }
 }
 
-bool SignalClientWs::sendBinary(const std::shared_ptr<Bricks::Blob>& binary)
+bool SignalClientWs::sendBinary(const Bricks::Blob& binary)
 {
     if (_impl->_socket) {
         return _impl->_socket->sendBinary(binary);
@@ -277,30 +279,20 @@ SignalClientWs::Listener::Listener(SignalClientWs* owner)
 {
 }
 
-void SignalClientWs::Listener::onError(uint64_t socketId,
-                                       uint64_t connectionId,
-                                       const Websocket::Error& error)
+void SignalClientWs::Listener::onError(uint64_t, uint64_t, const Websocket::Error& error)
 {
-    Websocket::Listener::onError(socketId, connectionId, error);
     _owner->notifyAboutTransportError(Websocket::toString(error));
 }
 
-void SignalClientWs::Listener::onStateChanged(uint64_t socketId,
-                                              uint64_t connectionId,
-                                              Websocket::State state)
+void SignalClientWs::Listener::onStateChanged(uint64_t, uint64_t, Websocket::State state)
 {
-    Websocket::Listener::onStateChanged(socketId, connectionId, state);
     _owner->updateState(state);
 }
 
-void SignalClientWs::Listener::onBinaryMessage(uint64_t socketId,
-                                               uint64_t connectionId,
-                                               const std::shared_ptr<Bricks::Blob>& message)
+void SignalClientWs::Listener::onBinaryMessage(uint64_t, uint64_t,
+                                               const Bricks::Blob& message)
 {
-    Websocket::Listener::onBinaryMessage(socketId, connectionId, message);
-    if (message) {
-        _owner->handleServerProtobufMessage(message->data(), message->size());
-    }
+    _owner->handleServerProtobufMessage(message);
 }
 
 SignalClientWs::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket, SignalClientWs* owner)

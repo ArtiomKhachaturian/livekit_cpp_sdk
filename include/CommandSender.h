@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CommandSender.h
-#include <memory>
 #include <string>
 
 // prototype defined in 'Bricks' library,
@@ -27,12 +26,8 @@ namespace LiveKitCpp
 class CommandSender
 {
 public:
-    virtual bool sendBinary(const std::shared_ptr<Bricks::Blob>& /*binary*/) {
-        return false;
-    }
-    virtual bool sendText(const std::string_view& /*text*/) {
-        return false;
-    }
+    virtual bool sendBinary(const Bricks::Blob& /*binary*/) { return false; }
+    virtual bool sendText(const std::string_view& /*text*/) { return false; }
 protected:
     virtual ~CommandSender() = default;
 };

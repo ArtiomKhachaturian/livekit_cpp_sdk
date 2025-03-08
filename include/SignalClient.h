@@ -20,6 +20,7 @@
 
 namespace Bricks {
 class Logger;
+class Blob;
 }
 
 namespace LiveKitCpp
@@ -87,7 +88,7 @@ public:
 protected:
     ChangeTransportStateResult changeTransportState(TransportState state);
     void notifyAboutTransportError(std::string error);
-    void handleServerProtobufMessage(const void* message, size_t len);
+    void handleServerProtobufMessage(const Bricks::Blob& message);
     // impl. of Bricks::LoggableR<>
     std::string_view logCategory() const override;
 private:
