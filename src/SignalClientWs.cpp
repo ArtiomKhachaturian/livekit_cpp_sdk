@@ -340,7 +340,7 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
         options._host += urlQueryItem("os", operatingSystemName());
         options._host += urlQueryItem("os_version", operatingSystemVersion());
         options._host += urlQueryItem("device_model", modelIdentifier());
-        options._host += urlQueryItem("network", toString(activeNetworkType()));
+        options._host += urlQueryItem("network", std::string(toString(activeNetworkType())));
         // only for quick-reconnect
         if (ReconnectMode::Quick == _urlData->_reconnectMode) {
             options._host += urlQueryItem("reconnect", 1);
