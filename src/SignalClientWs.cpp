@@ -13,6 +13,7 @@
 #include "SignalClientWs.h"
 #include "Blob.h"
 #include "SafeObj.h"
+#include "Listener.h"
 #include "NetworkType.h"
 #include "WebsocketEndPoint.h"
 #include "WebsocketError.h"
@@ -66,14 +67,15 @@ namespace LiveKitCpp
 class SignalClientWs::Listener : public Websocket::Listener
 {
 public:
-    Listener(SignalClientWs* owner);
+    Listener() = default;
+    void setOwner(SignalClientWs* owner) { _owner = owner; }
 private:
     // impl. of WebsocketListener
     void onError(uint64_t, uint64_t, const Websocket::Error& error) final;
     void onStateChanged(uint64_t, uint64_t, Websocket::State state) final;
     void onBinaryMessage(uint64_t, uint64_t, const Bricks::Blob& message) final;
 private:
-    SignalClientWs* const _owner;
+    Bricks::Listener<SignalClientWs*> _owner = nullptr;
 };
 
 struct SignalClientWs::Impl
@@ -82,8 +84,8 @@ struct SignalClientWs::Impl
     ~Impl();
     Websocket::Options buildOptions() const;
 public:
+    const std::shared_ptr<Listener> _listener;
     const std::unique_ptr<Websocket::EndPoint> _socket;
-    Listener _listener;
     Bricks::SafeObj<UrlData> _urlData;
 };
 
@@ -274,33 +276,29 @@ bool SignalClientWs::sendBinary(const Bricks::Blob& binary)
     return CommandSender::sendBinary(binary);
 }
 
-SignalClientWs::Listener::Listener(SignalClientWs* owner)
-    : _owner(owner)
-{
-}
-
 void SignalClientWs::Listener::onError(uint64_t, uint64_t, const Websocket::Error& error)
 {
-    _owner->notifyAboutTransportError(Websocket::toString(error));
+    _owner.invoke(&SignalClientWs::notifyAboutTransportError, Websocket::toString(error));
 }
 
 void SignalClientWs::Listener::onStateChanged(uint64_t, uint64_t, Websocket::State state)
 {
-    _owner->updateState(state);
+    _owner.invoke(&SignalClientWs::updateState, state);
 }
 
 void SignalClientWs::Listener::onBinaryMessage(uint64_t, uint64_t,
                                                const Bricks::Blob& message)
 {
-    _owner->handleServerProtobufMessage(message);
+    _owner.invoke(&SignalClientWs::handleServerProtobufMessage, message);
 }
 
 SignalClientWs::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket, SignalClientWs* owner)
-    : _socket(std::move(socket))
-    , _listener(owner)
+    : _listener(std::make_shared<Listener>())
+    , _socket(std::move(socket))
 {
     if (_socket) {
-        _socket->addListener(&_listener);
+        _listener->setOwner(owner);
+        _socket->setListener(_listener);
     }
 }
 
@@ -308,7 +306,8 @@ SignalClientWs::Impl::~Impl()
 {
     if (_socket) {
         _socket->close();
-        _socket->removeListener(&_listener);
+        _socket->resetListener();
+        _listener->setOwner(nullptr);
     }
 }
 

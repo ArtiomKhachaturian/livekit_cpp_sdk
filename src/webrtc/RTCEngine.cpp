@@ -274,6 +274,12 @@ void RTCEngine::onTransportStateChanged(uint64_t, TransportState state)
     }
 }
 
+void RTCEngine::onTransportError(uint64_t, std::string error)
+{
+    logError(error);
+    cleanup(true);
+}
+
 void RTCEngine::onTimeout(MediaTimer* timer)
 {
     if (&_pingIntervalTimer == timer) {

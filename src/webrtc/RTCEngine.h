@@ -77,6 +77,7 @@ private:
     void onPong(uint64_t, int64_t, int64_t) final;
     // SignalTransportListener
     void onTransportStateChanged(uint64_t, TransportState state) final;
+    void onTransportError(uint64_t, std::string error) final;
     // impl. of MediaTimerCallback
     void onTimeout(MediaTimer* timer) final;
     // impl. of Bricks::LoggableR<>
