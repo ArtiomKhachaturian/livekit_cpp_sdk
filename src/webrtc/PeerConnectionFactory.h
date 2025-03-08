@@ -47,8 +47,8 @@ public:
     static webrtc::scoped_refptr<PeerConnectionFactory> Create(bool audioProcessing,
                                                                bool customAdm,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
-    rtc::Thread* GetWorkingThread() const noexcept { return _workingThread.get(); }
-    rtc::Thread* GetSignalingThread() const noexcept { return _signalingThread.get(); }
+    rtc::Thread* workingThread() const noexcept { return _workingThread.get(); }
+    rtc::Thread* signalingThread() const noexcept { return _signalingThread.get(); }
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>

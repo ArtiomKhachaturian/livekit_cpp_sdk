@@ -18,6 +18,7 @@
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
 #include "SignalClientWs.h"
+#include "MediaTimer.h"
 #include "TransportManagerListener.h"
 #include "SignalTransportListener.h"
 #include "rtc/ClientConfiguration.h"
@@ -43,7 +44,8 @@ class JoinResponse;
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/RTCEngine.ts
 class RTCEngine : private Bricks::LoggableS<TransportManagerListener,
                                             SignalTransportListener,
-                                            SignalServerListener>
+                                            SignalServerListener,
+                                            MediaTimerCallback>
 {
     using SafeString = Bricks::SafeObj<std::string>;
 public:
@@ -54,6 +56,9 @@ public:
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
 private:
+    void restartPingTimer();
+    bool sendPing();
+    void cleanup(bool /*error*/ = false);
     rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> createLocalAudioTrack() const;
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const std::vector<ICEServer>& iceServers = {},
@@ -69,6 +74,11 @@ private:
     void onJoin(uint64_t, const JoinResponse& response) final;
     void onOffer(uint64_t, const SessionDescription& sdp) final;
     void onAnswer(uint64_t, const SessionDescription& sdp) final;
+    void onPong(uint64_t, int64_t, int64_t) final;
+    // SignalTransportListener
+    void onTransportStateChanged(uint64_t, TransportState state) final;
+    // impl. of MediaTimerCallback
+    void onTimeout(MediaTimer* timer) final;
     // impl. of Bricks::LoggableR<>
     std::string_view logCategory() const final;
 private:
@@ -80,6 +90,8 @@ private:
     std::shared_ptr<const JoinResponse> _latestJoinResponse;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _joinAttempts = 0U;
+    MediaTimer _pingIntervalTimer;
+    MediaTimer _pingTimeoutTimer;
 };
 
 } // namespace LiveKitCpp
