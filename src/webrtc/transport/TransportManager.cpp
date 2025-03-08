@@ -14,22 +14,14 @@
 #include "TransportManager.h"
 #include "TransportManagerListener.h"
 #include "PeerConnectionFactory.h"
+#include "RoomUtils.h"
+#include "Utils.h"
+#include <list>
 
 namespace {
 
-inline auto mapStates(const std::vector<const LiveKitCpp::Transport*>& transports) {
-    std::vector<webrtc::PeerConnectionInterface::PeerConnectionState> res;
-    res.reserve(transports.size());
-    for (const auto transport : transports) {
-        if (transport) {
-            res.push_back(transport->state());
-        }
-    }
-    return res;
-}
-
 template<typename T>
-inline bool every(const T& required, const std::vector<T>& vals) {
+inline bool every(const T& required, const std::list<T>& vals) {
     if (!vals.empty()) {
         for (const auto& val : vals) {
             if (val != required) {
@@ -49,15 +41,15 @@ namespace LiveKitCpp
 TransportManager::TransportManager(bool subscriberPrimary,
                                    TransportManagerListener* listener,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
-                                   const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
-    : Bricks::LoggableS<TransportListener>(pcf ? pcf->logger() : std::shared_ptr<Bricks::Logger>())
+                                   const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                                   const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<TransportListener>(logger)
     , _listener(listener)
-    , _publisher(!subscriberPrimary, SignalTarget::Publisher, this, pcf, conf)
-    , _subscriber(subscriberPrimary, SignalTarget::Subscriber, this, pcf, conf)
+    , _subscriberPrimary(subscriberPrimary)
+    , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
+    , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
-    _publisherConnectionRequired = !subscriberPrimary;
-    _subscriberConnectionRequired = subscriberPrimary;
 }
 
 TransportManager::~TransportManager()
@@ -71,21 +63,12 @@ bool TransportManager::valid() const noexcept
     return _subscriber.valid() && _publisher.valid();
 }
 
-void TransportManager::requirePublisher(bool require)
+webrtc::PeerConnectionInterface::PeerConnectionState TransportManager::state() const noexcept
 {
-    if (require != _publisherConnectionRequired.exchange(require)) {
-        updateState();
-    }
+    return _state;
 }
 
-void TransportManager::requireSubscriber(bool require)
-{
-    if (require != _subscriberConnectionRequired.exchange(require)) {
-        updateState();
-    }
-}
-
-bool TransportManager::addIceCandidate(const webrtc::IceCandidateInterface* candidate,
+/*bool TransportManager::addIceCandidate(const webrtc::IceCandidateInterface* candidate,
                                        SignalTarget target)
 {
     if (candidate) {
@@ -99,35 +82,60 @@ bool TransportManager::addIceCandidate(const webrtc::IceCandidateInterface* cand
         }
     }
     return false;
-}
+}*/
 
-void TransportManager::createAndSetPublisherOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
+void TransportManager::createPublisherOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     _publisher.createOffer(options);
 }
 
-void TransportManager::createSubscriberAnswerFromOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
+void TransportManager::createSubscriberAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
+{
+    _subscriber.createAnswer(options);
+}
+
+bool TransportManager::setSubscriberRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (desc) {
-        _subscriber.setRemoteDescription(std::move(desc));
-    }
-}
-
-void TransportManager::setPublisherAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
-{
-    _publisher.setRemoteDescription(std::move(desc));
-}
-
-bool TransportManager::updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config,
-                                           bool iceRestart)
-{
-    if (_subscriber.setConfiguration(config) && _publisher.setConfiguration(config)) {
-        if (iceRestart) {
-            triggerIceRestart();
+        const auto type = desc->GetType();
+        if (webrtc::SdpType::kOffer == type) {
+            _subscriber.setRemoteDescription(std::move(desc));
+            return true;
         }
-        return true;
+        if (canLogError()) {
+            logError("Incorrect remote SDP type for subscriber, actual is '" +
+                     sdpTypeToString(type) + "', but '" +
+                     sdpTypeToString(webrtc::SdpType::kOffer) + "'is expected");
+        }
     }
     return false;
+}
+
+bool TransportManager::setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
+{
+    if (desc) {
+        const auto type = desc->GetType();
+        switch (type) {
+            case webrtc::SdpType::kPrAnswer:
+            case webrtc::SdpType::kAnswer:
+                _publisher.setRemoteDescription(std::move(desc));
+                return true;
+            default:
+                break;
+        }
+        if (canLogError()) {
+            logError("Incorrect remote SDP type for publisher, actual is '" +
+                     sdpTypeToString(type) + "', but '" +
+                     sdpTypeToString(webrtc::SdpType::kAnswer) + "' or '" +
+                     sdpTypeToString(webrtc::SdpType::kPrAnswer) + "' are expected");
+        }
+    }
+    return false;
+}
+
+bool TransportManager::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
+{
+    return _subscriber.setConfiguration(config) && _publisher.setConfiguration(config);
 }
 
 void TransportManager::close()
@@ -142,49 +150,12 @@ void TransportManager::close()
     updateState();
 }
 
-void TransportManager::triggerIceRestart()
-{
-    _subscriber.setRestartingIce(true);
-    if (needsPublisher()) {
-        webrtc::PeerConnectionInterface::RTCOfferAnswerOptions options;
-        options.ice_restart = true;
-        createAndSetPublisherOffer(options);
-    }
-}
-
-rtc::scoped_refptr<webrtc::DataChannelInterface> TransportManager::
-    createPublisherDataChannel(const std::string& label,
-                               const webrtc::DataChannelInit& init,
-                               webrtc::DataChannelObserver* observer)
-{
-    return _publisher.createDataChannel(label, init, observer);
-}
-
-rtc::scoped_refptr<webrtc::RtpTransceiverInterface> TransportManager::
-    addPublisherTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
-{
-    return _publisher.addTransceiver(std::move(track));
-}
-
-rtc::scoped_refptr<webrtc::RtpTransceiverInterface> TransportManager::
-    addPublisherTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                            const webrtc::RtpTransceiverInit& init)
-{
-    return _publisher.addTransceiver(std::move(track), init);
-}
-
-rtc::scoped_refptr<webrtc::RtpSenderInterface> TransportManager::
-    addPublisherTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                      const std::vector<std::string>& streamIds,
-                      const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings)
-{
-    return _publisher.addTrack(std::move(track), streamIds, initSendEncodings);
-}
-
 void TransportManager::updateState()
 {
     auto newState = state();
-    const auto states = mapStates(requiredTransports());
+    const std::list<webrtc::PeerConnectionInterface::PeerConnectionState> states = {
+        _subscriber.state(), _publisher.state()
+    };
     if (every(webrtc::PeerConnectionInterface::PeerConnectionState::kConnected, states)) {
         newState = webrtc::PeerConnectionInterface::PeerConnectionState::kConnected;
     }
@@ -202,30 +173,13 @@ void TransportManager::updateState()
     }
     const auto oldState = _state.exchange(newState);
     if (oldState != newState) {
-        // TODO: log changes
-        /*this.log.debug(
-                `pc state change: from ${PCTransportState[previousState]} to ${
-                  PCTransportState[this.state]
-                }`,
-                this.logContext,
-              );*/
+        if (canLogInfo()) {
+            logInfo(makeStateChangesString(oldState, newState));
+        }
         if (_listener) {
-            _listener->onStateChange(*this, newState, _publisher.state(), _subscriber.state());
+            _listener->onStateChange(newState, _publisher.state(), _subscriber.state());
         }
     }
-}
-
-std::vector<const Transport*> TransportManager::requiredTransports() const
-{
-    std::vector<const Transport*> transports;
-    transports.reserve(2U);
-    if (_publisher.valid() && needsPublisher()) {
-        transports.push_back(&_publisher);
-    }
-    if (_subscriber.valid() && needsSubscriber()) {
-        transports.push_back(&_subscriber);
-    }
-    return transports;
 }
 
 void TransportManager::onSdpCreated(Transport& transport,
@@ -237,6 +191,11 @@ void TransportManager::onSdpCreated(Transport& transport,
 void TransportManager::onSdpCreationFailure(Transport& transport, webrtc::SdpType type,
                                             webrtc::RTCError error)
 {
+    if (canLogError()) {
+        logError("Failed to create of " + sdpTypeToString(type) +
+                 std::string(" SDP for ") + toString(transport.target()) +
+                 ": " + error.message());
+    }
 }
 
 void TransportManager::onSdpSet(Transport& transport, bool local,
@@ -244,13 +203,13 @@ void TransportManager::onSdpSet(Transport& transport, bool local,
 {
     if (SignalTarget::Publisher == transport.target()) {
         if (local && _listener) {
-            _listener->onPublisherOffer(*this, desc);
+            _listener->onPublisherOffer(desc);
         }
     }
     else { // subscriber
         if (local) {
             if (_listener) {
-                _listener->onSubscriberAnswer(*this, desc);
+                _listener->onSubscriberAnswer(desc);
             }
         }
         else {
@@ -261,12 +220,20 @@ void TransportManager::onSdpSet(Transport& transport, bool local,
 
 void TransportManager::onSdpSetFailure(Transport& transport, bool local, webrtc::RTCError error)
 {
-    
+    if (canLogError()) {
+        logError("Failed to set of " + std::string(local ? "local SDP for " : "remote SDP for ") +
+                 toString(transport.target()) + ": " +
+                 error.message());
+    }
 }
 
 void TransportManager::onSetConfigurationError(Transport& transport, webrtc::RTCError error)
 {
-    
+    if (canLogError()) {
+        logError("Failed to set configuration for " +
+                 std::string(toString(transport.target())) +
+                 ": " + error.message());
+    }
 }
 
 void TransportManager::onConnectionChange(Transport&, webrtc::PeerConnectionInterface::PeerConnectionState)
@@ -288,22 +255,28 @@ void TransportManager::onDataChannel(Transport& transport, rtc::scoped_refptr<we
 {
     if (_listener && SignalTarget::Subscriber == transport.target()) {
         // in subscriber primary mode, server side opens sub data channels
-        _listener->onDataChannel(*this, std::move(channel));
+        _listener->onDataChannel(std::move(channel));
     }
 }
 
 void TransportManager::onIceCandidate(Transport& transport, const webrtc::IceCandidateInterface* candidate)
 {
     if (candidate && _listener) {
-        _listener->onIceCandidate(*this, transport.target(), candidate);
+        _listener->onIceCandidate(transport.target(), candidate);
     }
 }
 
 void TransportManager::onTrack(Transport& transport, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (_listener && SignalTarget::Subscriber == transport.target()) {
-        _listener->onRemoteTrack(*this, std::move(transceiver));
+        _listener->onRemoteTrack(std::move(transceiver));
     }
+}
+
+std::string_view TransportManager::logCategory() const
+{
+    static const std::string_view category("TransportManager");
+    return category;
 }
 
 } // namespace LiveKitCpp

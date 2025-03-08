@@ -11,20 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // State.h
-#include "LiveKitClientExport.h"
+#include "TransportState.h"
 
 namespace LiveKitCpp
 {
 
-enum class State
-{
-    Connecting,
-    Connected,
-    Disconnecting,
-    Disconnected,
-};
-
-LIVEKIT_CLIENT_API const char* toString(State state);
+const char* toString(TransportState state) {
+    switch (state) {
+        case TransportState::Connecting:
+            return "connecting";
+        case TransportState::Connected:
+            return "connected";
+        case TransportState::Disconnecting:
+            return "disconnecting";
+        case TransportState::Disconnected:
+            return "disconnected";
+        default:
+            break;
+    }
+    return "unknown";
+}
 
 } // namespace LiveKitCpp

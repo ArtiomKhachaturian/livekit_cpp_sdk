@@ -17,6 +17,7 @@
 #include "Listener.h"
 #include "ResponseReceiver.h"
 #include "RequestSender.h"
+#include "Utils.h"
 
 namespace LiveKitCpp
 {
@@ -25,14 +26,14 @@ class SignalClient::Impl
 {
 public:
     Impl(const SignalClient* client);
-    State transportState() const noexcept;
-    ChangeTransportStateResult changeTransportState(State state);
+    TransportState transportState() const noexcept;
+    ChangeTransportStateResult changeTransportState(TransportState state);
     void notifyAboutTransportError(std::string error);
     void setListener(SignalTransportListener* listener) { _listener = listener; }
 private:
     const SignalClient* _client;
     Bricks::Listener<SignalTransportListener*> _listener;
-    Bricks::SafeObj<State> _transportState = State::Disconnected;
+    Bricks::SafeObj<TransportState> _transportState = TransportState::Disconnected;
 };
 
 SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
@@ -59,15 +60,15 @@ void SignalClient::setServerListener(SignalServerListener* listener)
 
 bool SignalClient::connect()
 {
-    return ChangeTransportStateResult::Rejected != changeTransportState(State::Connected);
+    return ChangeTransportStateResult::Rejected != changeTransportState(TransportState::Connected);
 }
 
 void SignalClient::disconnect()
 {
-    changeTransportState(State::Disconnected);
+    changeTransportState(TransportState::Disconnected);
 }
 
-State SignalClient::transportState() const noexcept
+TransportState SignalClient::transportState() const noexcept
 {
     return _impl->transportState();
 }
@@ -152,7 +153,7 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
     return _requestSender->updateVideoTrack(track);
 }
 
-SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(State state)
+SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(TransportState state)
 {
     return _impl->changeTransportState(state);
 }
@@ -178,13 +179,13 @@ SignalClient::Impl::Impl(const SignalClient* client)
 {
 }
 
-State SignalClient::Impl::transportState() const noexcept
+TransportState SignalClient::Impl::transportState() const noexcept
 {
     LOCK_READ_SAFE_OBJ(_transportState);
     return _transportState.constRef();
 }
 
-SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportState(State state)
+SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportState(TransportState state)
 {
     ChangeTransportStateResult result = ChangeTransportStateResult::Rejected;
     {
@@ -192,27 +193,23 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
         if (_transportState != state) {
             bool accepted = false;
             switch(_transportState.constRef()) {
-                case State::Connecting:
+                case TransportState::Connecting:
                     // any state is good
                     accepted = true;
                     break;
-                case State::Connected:
-                    accepted = State::Disconnecting == state || State::Disconnected == state;
+                case TransportState::Connected:
+                    accepted = TransportState::Disconnecting == state || TransportState::Disconnected == state;
                     break;
-                case State::Disconnecting:
-                    accepted = State::Disconnected == state;
+                case TransportState::Disconnecting:
+                    accepted = TransportState::Disconnected == state;
                     break;
-                case State::Disconnected:
-                    accepted = State::Connecting == state || State::Connected == state;
+                case TransportState::Disconnected:
+                    accepted = TransportState::Connecting == state || TransportState::Connected == state;
                     break;
             }
             if (accepted) {
                 if (_client->canLogVerbose()) {
-                    // TODO: add obj [ID] logging
-                    _client->logVerbose("State changed from '" +
-                                        std::string(toString(_transportState)) +
-                                        "' to '" +
-                                        std::string(toString(state)) + "'");
+                    _client->logVerbose(makeStateChangesString(_transportState, state));
                 }
                 _transportState = state;
                 result = ChangeTransportStateResult::Changed;

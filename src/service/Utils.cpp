@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
+#include "TransportState.h"
 #ifdef _WIN32
 #include <atlbase.h>
 #include <Windows.h>
@@ -137,6 +138,103 @@ std::string fromWideChar(const std::wstring& w)
         return converter.to_bytes(w);
     }
     return {};
+}
+
+template<typename TPCEnum>
+inline std::string stateToString(TPCEnum state) { return {}; }
+
+template<typename TPCEnum>
+inline std::string enumTypeToString() { return {}; }
+
+template<>
+inline std::string stateToString<TransportState>(TransportState state) {
+    return toString(state);
+}
+
+template<>
+inline std::string enumTypeToString<TransportState>() {
+    return "transport";
+}
+
+template<typename TPCEnum>
+inline std::string makeChangesString(TPCEnum from, TPCEnum to) {
+    return enumTypeToString<TPCEnum>() + " state changed from '" +
+           stateToString(from) + "' to '" + stateToString(to) + "'";
+}
+
+#ifdef WEBRTC_AVAILABLE
+template<>
+inline std::string enumTypeToString<webrtc::PeerConnectionInterface::PeerConnectionState>() {
+    return "peer connection";
+}
+
+template<>
+inline std::string enumTypeToString<webrtc::PeerConnectionInterface::IceConnectionState>() {
+    return "ICE connection";
+}
+
+template<>
+inline std::string enumTypeToString<webrtc::PeerConnectionInterface::SignalingState>() {
+    return "signaling";
+}
+
+template<>
+inline std::string enumTypeToString<webrtc::PeerConnectionInterface::IceGatheringState>() {
+    return "ICE gathering";
+}
+
+inline std::string fromAbsStringView(absl::string_view s) {
+    return std::string(s.data(), s.size());
+}
+
+template<>
+inline std::string stateToString<webrtc::PeerConnectionInterface::PeerConnectionState>(webrtc::PeerConnectionInterface::PeerConnectionState state) {
+    return fromAbsStringView(webrtc::PeerConnectionInterface::AsString(state));
+}
+
+template<>
+inline std::string stateToString<webrtc::PeerConnectionInterface::IceConnectionState>(webrtc::PeerConnectionInterface::IceConnectionState state) {
+    return fromAbsStringView(webrtc::PeerConnectionInterface::AsString(state));
+}
+
+template<>
+inline std::string stateToString<webrtc::PeerConnectionInterface::SignalingState>(webrtc::PeerConnectionInterface::SignalingState state) {
+    return fromAbsStringView(webrtc::PeerConnectionInterface::AsString(state));
+}
+
+template<>
+inline std::string stateToString<webrtc::PeerConnectionInterface::IceGatheringState>(webrtc::PeerConnectionInterface::IceGatheringState state) {
+    return fromAbsStringView(webrtc::PeerConnectionInterface::AsString(state));
+}
+
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,
+                                   webrtc::PeerConnectionInterface::PeerConnectionState to)
+{
+    return makeChangesString(from, to);
+}
+
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceConnectionState from,
+                                   webrtc::PeerConnectionInterface::IceConnectionState to)
+{
+    return makeChangesString(from, to);
+}
+
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::SignalingState from,
+                                   webrtc::PeerConnectionInterface::SignalingState to)
+{
+    return makeChangesString(from, to);
+}
+
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGatheringState from,
+                                      webrtc::PeerConnectionInterface::IceGatheringState to)
+{
+    return makeChangesString(from, to);
+}
+#endif
+
+std::string makeStateChangesString(TransportState from, TransportState to)
+{
+    return makeChangesString(from, to);
 }
 
 } // namespace LiveKitCpp

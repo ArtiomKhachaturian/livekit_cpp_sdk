@@ -19,32 +19,26 @@
 #include "rtc/ReconnectResponse.h"
 #include <thread>
 
-namespace {
-
-inline std::shared_ptr<Bricks::Logger> getLogger(LiveKitCpp::PeerConnectionFactory* pcf) {
-    if (pcf) {
-        return pcf->logger();
-    }
-    return {};
-}
+/*namespace {
 
 const std::string _lossyDataChannel = "_lossy";
 const std::string _reliableDataChannel = "_reliable";
 
-}
+}*/
 
 namespace LiveKitCpp
 {
 
 RTCEngine::RTCEngine(const SignalOptions& signalOptions,
                      PeerConnectionFactory* pcf,
-                     std::unique_ptr<Websocket::EndPoint> socket)
+                     std::unique_ptr<Websocket::EndPoint> socket,
+                     const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportManagerListener,
                         SignalTransportListener,
-                        SignalServerListener>(getLogger(pcf))
+                        SignalServerListener>(logger)
     , _signalOptions(signalOptions)
     , _pcf(pcf)
-    , _client(std::move(socket), getLogger(pcf).get())
+    , _client(std::move(socket), logger.get())
 {
     _client.setAdaptiveStream(_signalOptions._adaptiveStream);
     _client.setAutoSubscribe(_signalOptions._autoSubscribe);
@@ -67,9 +61,11 @@ bool RTCEngine::connect(std::string url, std::string authToken)
         ok = _client.connect();
         if (!ok) {
             if (_joinAttempts < _signalOptions._reconnectAttempts) {
-                logWarning("Couldn't connect to server, attempt " +
-                           std::to_string(_joinAttempts) + " of " +
-                           std::to_string(_signalOptions._reconnectAttempts));
+                if (canLogWarning()) {
+                    logWarning("Couldn't connect to server, attempt " +
+                               std::to_string(_joinAttempts) + " of " +
+                               std::to_string(_signalOptions._reconnectAttempts));
+                }
                 std::this_thread::sleep_for(_signalOptions._reconnectAttemptDelay);
                 ok = connect(_client.host(), _client.authToken());
             }
@@ -84,9 +80,9 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
 {
     webrtc::PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
-    config.network_preference.emplace(::rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
+    //config.network_preference.emplace(::rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
     // set some defaults
-    config.set_cpu_adaptation(true);
+    //config.set_cpu_adaptation(true);
     //config.enable_dtls_srtp.emplace(true);
     // enable ICE renomination, like on Android (   "a=ice-options:trickle renomination")
     config.enable_ice_renomination = true;
@@ -108,6 +104,7 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
         //Set iceServers provided by the server
         config.servers = RoomUtils::map(iceServers);
     }
+    config.continual_gathering_policy = webrtc::PeerConnectionInterface::ContinualGatheringPolicy::GATHER_CONTINUALLY;
     // crypto options
     /*{
         webrtc::CryptoOptions crypto_options;
@@ -123,29 +120,6 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return config;
 }
 
-void RTCEngine::negotiate()
-{
-    LOCK_READ_SAFE_OBJ(_pcManager);
-    if (auto& pcManager = _pcManager.ref()) {
-        pcManager->requirePublisher();
-        // don't negotiate without any transceivers or data channel,
-        // it will generate sdp without ice frag then negotiate failed
-        if (pcManager->publisher().transceivers().empty() && !_lossyDC() && !_reliableDC()) {
-            createDataChannels(pcManager.get());
-        }
-    }
-}
-
-void RTCEngine::createDataChannels(TransportManager* pcManager)
-{
-    if (pcManager) {
-        _lossyDC(pcManager->createPublisherDataChannel(_lossyDataChannel, {
-            .ordered = true, .maxRetransmits = 0 }));
-        _reliableDC(pcManager->createPublisherDataChannel(_lossyDataChannel,
-                                                          { .ordered = true }));
-    }
-}
-
 webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     makeConfiguration(const JoinResponse& response) const
 {
@@ -158,32 +132,46 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
-void RTCEngine::onPublisherOffer(TransportManager&,
-                                 const webrtc::SessionDescriptionInterface* desc)
+void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (const auto sdp = RoomUtils::map(desc)) {
-        _client.sendOffer(sdp.value());
+        if (_client.sendOffer(sdp.value())) {
+            logInfo("publisher offer already sent to the server");
+        }
+        else {
+            logError("failed to send publisher offer to the server");
+        }
+    }
+    else {
+        logError("failed to serialize publisher offer into a string");
     }
 }
 
-void RTCEngine::onSubscriberAnswer(TransportManager& manager,
-                                   const webrtc::SessionDescriptionInterface* desc)
+void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (const auto sdp = RoomUtils::map(desc)) {
-        _client.sendAnswer(sdp.value());
+        if (_client.sendAnswer(sdp.value())) {
+            logInfo("subscriber answer already sent to the server");
+        }
+        else {
+            logError("failed to send subscriber answer to the server");
+        }
+    }
+    else {
+        logError("failed to serialize subscriber answer into a string");
     }
 }
 
 void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 {
-    _latestJoinResponse(response);
-    _subscriberPrimary = response._subscriberPrimary;
+    std::atomic_store(&_latestJoinResponse, std::make_shared<const JoinResponse>(response));
     TransportManagerListener* listener = this;
     LOCK_WRITE_SAFE_OBJ(_pcManager);
     _pcManager = std::make_unique<TransportManager>(response._subscriberPrimary,
                                                     listener, _pcf,
-                                                    makeConfiguration(response));
-    _pcManager.constRef()->createAndSetPublisherOffer();
+                                                    makeConfiguration(response),
+                                                    logger());
+    _pcManager.constRef()->createPublisherOffer();
 }
 
 void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
@@ -192,11 +180,11 @@ void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
     if (auto desc = RoomUtils::map(sdp, &error)) {
         LOCK_READ_SAFE_OBJ(_pcManager);
         if (const auto& pcManager = _pcManager.constRef()) {
-            pcManager->createSubscriberAnswerFromOffer(std::move(desc));
+            pcManager->setSubscriberRemoteOffer(std::move(desc));
         }
     }
-    else {
-        logError(error.description);
+    else if (canLogError()) {
+        logError("failed to parse remote offer for subscriber: " + error.description);
     }
 }
 
@@ -206,11 +194,11 @@ void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
     if (auto desc = RoomUtils::map(sdp, &error)) {
         LOCK_READ_SAFE_OBJ(_pcManager);
         if (const auto& pcManager = _pcManager.constRef()) {
-            pcManager->setPublisherAnswer(std::move(desc));
+            pcManager->setPublisherRemoteAnswer(std::move(desc));
         }
     }
-    else {
-        logError(error.description);
+    else if (canLogError()) {
+        logError("failed to parse remote answer for publisher: " + error.description);
     }
 }
 

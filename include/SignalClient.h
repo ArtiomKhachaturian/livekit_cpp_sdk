@@ -14,7 +14,7 @@
 #pragma once // SignalClient.h
 #include "LiveKitClientExport.h"
 #include "Loggable.h"
-#include "State.h"
+#include "TransportState.h"
 #include <memory>
 #include <string>
 
@@ -65,7 +65,7 @@ public:
     void setServerListener(SignalServerListener* listener = nullptr);
     virtual bool connect();
     virtual void disconnect();
-    State transportState() const noexcept;
+    TransportState transportState() const noexcept;
     uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
     // requests sending
     bool sendOffer(const SessionDescription& sdp) const;
@@ -85,7 +85,7 @@ public:
     bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
 protected:
-    ChangeTransportStateResult changeTransportState(State state);
+    ChangeTransportStateResult changeTransportState(TransportState state);
     void notifyAboutTransportError(std::string error);
     void handleServerProtobufMessage(const void* message, size_t len);
     // impl. of Bricks::LoggableR<>

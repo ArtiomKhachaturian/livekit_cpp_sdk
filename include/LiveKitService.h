@@ -35,7 +35,8 @@ class LIVEKIT_CLIENT_API LiveKitService
     class Impl;
 public:
     LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                   const std::shared_ptr<Bricks::Logger>& logger = {});
+                   const std::shared_ptr<Bricks::Logger>& logger = {},
+                   bool logWebrtcEvents = false);
     ~LiveKitService();
     LiveKitServiceState state() const;
     [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]

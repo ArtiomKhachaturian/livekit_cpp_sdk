@@ -29,11 +29,9 @@ public:
     virtual void onSdpCreationFailure(Transport& /*transport*/,
                                       webrtc::SdpType /*type*/,
                                       webrtc::RTCError /*error*/) {}
-    virtual void onSdpSet(Transport& /*transport*/,
-                          bool /*local*/,
+    virtual void onSdpSet(Transport& /*transport*/, bool /*local*/,
                           const webrtc::SessionDescriptionInterface* /*desc*/) {}
-    virtual void onSdpSetFailure(Transport& /*transport*/,
-                                 bool /*local*/,
+    virtual void onSdpSetFailure(Transport& /*transport*/, bool /*local*/,
                                  webrtc::RTCError /*error*/) {}
     virtual void onSetConfigurationError(Transport& /*transport*/,
                                          webrtc::RTCError /*error*/) {}
@@ -47,12 +45,9 @@ public:
     virtual void onDataChannel(Transport& /*transport*/,
                                rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
     virtual void onRenegotiationNeeded(Transport& /*transport*/) {}
-    virtual void onNegotiationNeededEvent(Transport& /*transport*/,
-                                          uint32_t /*eventId*/) {}
+    virtual void onNegotiationNeededEvent(Transport& /*transport*/, uint32_t /*eventId*/) {}
     virtual void onIceConnectionChange(Transport& /*transport*/,
                                        webrtc::PeerConnectionInterface::IceConnectionState /*newState*/) {}
-    virtual void onStandardizedIceConnectionChange(Transport& /*transport*/,
-                                                   webrtc::PeerConnectionInterface::IceConnectionState /*newState*/) {}
     virtual void onConnectionChange(Transport& /*transport*/,
                                     webrtc::PeerConnectionInterface::PeerConnectionState /*newState*/) {}
     virtual void onIceGatheringChange(Transport& /*transport*/,

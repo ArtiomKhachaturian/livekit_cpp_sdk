@@ -49,7 +49,6 @@ public:
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     rtc::Thread* GetWorkingThread() const noexcept { return _workingThread.get(); }
     rtc::Thread* GetSignalingThread() const noexcept { return _signalingThread.get(); }
-    const std::shared_ptr<Bricks::Logger>& logger() const noexcept;
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>

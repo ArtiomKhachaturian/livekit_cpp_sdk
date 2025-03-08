@@ -35,4 +35,8 @@ public:
     static webrtc::PeerConnectionInterface::IceTransportsType map(IceTransportPolicy policy);
 };
 
+inline std::string sdpTypeToString(webrtc::SdpType type) { // for logging
+    return webrtc::SdpTypeToString(type);
+}
+
 } // namespace LiveKitCpp

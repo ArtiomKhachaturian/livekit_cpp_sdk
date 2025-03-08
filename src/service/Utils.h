@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Utils.h
+#ifdef WEBRTC_AVAILABLE
+#include <api/peer_connection_interface.h>
+#endif
 #include <string>
 
 #ifdef __APPLE__
@@ -25,6 +28,8 @@ typedef struct objc_object NSString;
 namespace LiveKitCpp
 {
 
+enum class TransportState;
+
 std::string NSStringToStdString(NSString* nsString);
 std::string operatingSystemVersion();
 std::string operatingSystemName();
@@ -33,5 +38,18 @@ std::string fromWideChar(const std::wstring& w);
 
 template <unsigned flag>
 inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }
+
+std::string makeStateChangesString(TransportState from, TransportState to);
+
+#ifdef WEBRTC_AVAILABLE
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,
+                                   webrtc::PeerConnectionInterface::PeerConnectionState to);
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceConnectionState from,
+                                   webrtc::PeerConnectionInterface::IceConnectionState to);
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::SignalingState from,
+                                   webrtc::PeerConnectionInterface::SignalingState to);
+std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGatheringState from,
+                                   webrtc::PeerConnectionInterface::IceGatheringState to);
+#endif
 
 } // namespace LiveKitCpp

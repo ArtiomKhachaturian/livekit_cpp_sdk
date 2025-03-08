@@ -227,11 +227,11 @@ bool SignalClientWs::connect()
 {
     bool ok = false;
     if (_impl->_socket) {
-        const auto result = changeTransportState(State::Connecting);
+        const auto result = changeTransportState(TransportState::Connecting);
         if (ChangeTransportStateResult::Changed == result) {
             ok = _impl->_socket->open(_impl->buildOptions());
             if (!ok) {
-                changeTransportState(State::Disconnected);
+                changeTransportState(TransportState::Disconnected);
             }
         }
     }
@@ -249,16 +249,16 @@ void SignalClientWs::updateState(Websocket::State state)
 {
     switch (state) {
         case Websocket::State::Connecting:
-            changeTransportState(State::Connecting);
+            changeTransportState(TransportState::Connecting);
             break;
         case Websocket::State::Connected:
-            changeTransportState(State::Connected);
+            changeTransportState(TransportState::Connected);
             break;
         case Websocket::State::Disconnecting:
-            changeTransportState(State::Disconnecting);
+            changeTransportState(TransportState::Disconnecting);
             break;
         case Websocket::State::Disconnected:
-            changeTransportState(State::Disconnected);
+            changeTransportState(TransportState::Disconnected);
             break;
     }
 }

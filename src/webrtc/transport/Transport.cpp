@@ -17,36 +17,37 @@
 #include "CreateSdpObserver.h"
 #include "SetSdpObservers.h"
 #include "PeerConnectionFactory.h"
+#include "RoomUtils.h"
+#include "Utils.h"
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/PCTransport.ts
 
 namespace LiveKitCpp
 {
 
-Transport::Transport(bool primary, SignalTarget target, TransportListener* listener,
+Transport::Transport(SignalTarget target, TransportListener* listener,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
-                     const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
-    : BaseTransport(pcf ? pcf->logger() : std::shared_ptr<Bricks::Logger>())
-    , _primary(primary)
+                     const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                     const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<CreateSdpListener, SetSdpListener, webrtc::PeerConnectionObserver>(logger)
+    , _logCategory("Transport/" + std::string(toString(target)))
     , _target(target)
     , _listener(listener)
+    , _pc(createPeerConnection(pcf, conf))
+    , _pcState(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
+    , _iceConnState(webrtc::PeerConnectionInterface::IceConnectionState::kIceConnectionNew)
+    , _signalingState(webrtc::PeerConnectionInterface::SignalingState::kStable)
+    , _iceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState::kIceGatheringNew)
 {
-    if (pcf) {
-        auto pc = pcf->CreatePeerConnectionOrError(conf, webrtc::PeerConnectionDependencies(this));
-        if (pc.ok()) {
-            _offerCreationObserver = webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kOffer);
-            _answerCreationObserver = webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kAnswer);
-            _setLocalSdpObserver = webrtc::make_ref_counted<SetLocalSdpObserver>();
-            _setRemoteSdpObserver = webrtc::make_ref_counted<SetRemoteSdpObserver>();
-            _offerCreationObserver->setListener(this);
-            _answerCreationObserver->setListener(this);
-            _setLocalSdpObserver->setListener(this);
-            _setRemoteSdpObserver->setListener(this);
-            _pc = std::move(pc.MoveValue());
-        }
-        else {
-            logWebRTCError(pc.error());
-        }
+    if (_pc) {
+        _offerCreationObserver = webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kOffer);
+        _answerCreationObserver = webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kAnswer);
+        _setLocalSdpObserver = webrtc::make_ref_counted<SetLocalSdpObserver>();
+        _setRemoteSdpObserver = webrtc::make_ref_counted<SetRemoteSdpObserver>();
+        _offerCreationObserver->setListener(this);
+        _answerCreationObserver->setListener(this);
+        _setLocalSdpObserver->setListener(this);
+        _setRemoteSdpObserver->setListener(this);
     }
 }
 
@@ -64,44 +65,25 @@ Transport::~Transport()
     if (_setRemoteSdpObserver) {
         _setRemoteSdpObserver->setListener(nullptr);
     }
-    if (_pc) {
-        _pc->Close();
-    }
+    close();
 }
 
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (_pc) {
-        const auto state = _pc->signaling_state();
-        if (webrtc::PeerConnectionInterface::SignalingState::kClosed == state) {
-            logWarning("could not createOffer with closed peer connection");
+        if (canLogInfo()) {
+            logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kOffer));
         }
-        else {
-            if (options.ice_restart) {
-                setRestartingIce(true);
-            }
-            if (webrtc::PeerConnectionInterface::SignalingState::kHaveLocalOffer == state) {
-                // we're waiting for the peer to accept our offer, so we'll just wait
-                // the only exception to this is when ICE restart is needed
-                const auto currentSD = _pc->remote_description();
-                if (options.ice_restart && currentSD) {
-                    // TODO: handle when ICE restart is needed but we don't have a remote description
-                    // the best thing to do is to recreate the peerconnection
-                    _pc->SetRemoteDescription(currentSD->Clone(), _setRemoteSdpObserver);
-                }
-                else {
-                    _renegotiate = true;
-                    return;
-                }
-            }
-            _pc->CreateOffer(_offerCreationObserver.get(), options);
-        }
+        _pc->CreateOffer(_offerCreationObserver.get(), options);
     }
 }
 
 void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (_pc) {
+        if (canLogInfo()) {
+            logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
+        }
         _pc->CreateAnswer(_answerCreationObserver.get(), options);
     }
 }
@@ -109,6 +91,9 @@ void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnsw
 void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (_pc && desc) {
+        if (canLogInfo()) {
+            logInfo("attempt to set local " + desc->type());
+        }
         _pc->SetLocalDescription(std::move(desc), _setLocalSdpObserver);
     }
 }
@@ -116,30 +101,43 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
 void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (_pc && desc) {
+        if (canLogInfo()) {
+            logInfo("attempt to set remote " + desc->type());
+        }
         _pc->SetRemoteDescription(std::move(desc), _setRemoteSdpObserver);
     }
 }
 
-void Transport::setRestartingIce(bool restartingIce)
+webrtc::PeerConnectionInterface::PeerConnectionState Transport::state() const noexcept
 {
-    if (valid() && restartingIce != _restartingIce.exchange(restartingIce)) {
-        logVerbose("restarting ICE is " + std::string(restartingIce ? "ON" : "OFF"));
+    return _pc ? _pcState.load() : webrtc::PeerConnectionInterface::PeerConnectionState::kClosed;
+}
+
+webrtc::PeerConnectionInterface::IceConnectionState Transport::iceConnectionState() const noexcept
+{
+    return _iceConnState;
+}
+
+webrtc::PeerConnectionInterface::SignalingState Transport::signalingState() const noexcept
+{
+    return _signalingState;
+}
+
+webrtc::PeerConnectionInterface::IceGatheringState Transport::iceGatheringState() const noexcept
+{
+    return _iceGatheringState;
+}
+
+bool Transport::iceConnected() const noexcept
+{
+    switch (iceConnectionState()) {
+        case webrtc::PeerConnectionInterface::kIceConnectionConnected:
+        case webrtc::PeerConnectionInterface::kIceConnectionCompleted:
+            return true;
+        default:
+            break;
     }
-}
-
-webrtc::PeerConnectionInterface::PeerConnectionState Transport::state() const
-{
-    return _pc ? _pc->peer_connection_state() : webrtc::PeerConnectionInterface::PeerConnectionState::kClosed;
-}
-
-webrtc::PeerConnectionInterface::IceConnectionState Transport::iceConnectionState() const
-{
-    return _pc ? _pc->ice_connection_state() : webrtc::PeerConnectionInterface::IceConnectionState::kIceConnectionClosed;
-}
-
-webrtc::PeerConnectionInterface::SignalingState Transport::signalingState() const
-{
-    return _pc ? _pc->signaling_state() : webrtc::PeerConnectionInterface::SignalingState::kClosed;
+    return false;
 }
 
 std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transport::transceivers() const
@@ -176,23 +174,12 @@ const webrtc::SessionDescriptionInterface* Transport::remoteDescription() const
     return _pc ? _pc->remote_description() : nullptr;
 }
 
-bool Transport::iceConnected() const
-{
-    if (_pc) {
-        switch (_pc->ice_connection_state()) {
-            case webrtc::PeerConnectionInterface::kIceConnectionConnected:
-            case webrtc::PeerConnectionInterface::kIceConnectionCompleted:
-                return true;
-            default:
-                break;
-        }
-    }
-    return false;
-}
-
 void Transport::close()
 {
-    if (_pc) {
+    if (_pc && webrtc::PeerConnectionInterface::PeerConnectionState::kClosed != state()) {
+        if (canLogInfo()) {
+            logInfo("close peer");
+        }
         _pc->Close();
     }
 }
@@ -211,17 +198,10 @@ bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sende
 
 bool Transport::addIceCandidate(const webrtc::IceCandidateInterface* candidate)
 {
-    bool added = false;
     if (candidate && _pc) {
-        if (_pc->remote_description() && !_restartingIce) {
-            added = _pc->AddIceCandidate(candidate);
-        }
-        else {
-            LOCK_WRITE_SAFE_OBJ(_pendingCandidates);
-            added = _pendingCandidates->insert(candidate).second;
-        }
+        return _pc->AddIceCandidate(candidate);
     }
-    return added;
+    return false;
 }
 
 rtc::scoped_refptr<webrtc::DataChannelInterface> Transport::
@@ -306,6 +286,20 @@ bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfi
     return false;
 }
 
+webrtc::scoped_refptr<webrtc::PeerConnectionInterface> Transport::
+    createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                         const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
+{
+    if (pcf) {
+        auto pc = pcf->CreatePeerConnectionOrError(conf, webrtc::PeerConnectionDependencies(this));
+        if (pc.ok()) {
+            return pc.MoveValue();
+        }
+        logWebRTCError(pc.error());
+    }
+    return {};
+}
+
 void Transport::logWebRTCError(const webrtc::RTCError& error) const
 {
     if (!error.ok()) {
@@ -313,8 +307,24 @@ void Transport::logWebRTCError(const webrtc::RTCError& error) const
     }
 }
 
+template<typename TState>
+bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) const
+{
+    const TState oldState = holder.exchange(newState);
+    if (oldState != newState) {
+        if (canLogVerbose()) {
+            logVerbose(makeStateChangesString(oldState, newState));
+        }
+        return true;
+    }
+    return false;
+}
+
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
+    if (desc && canLogInfo()) {
+        logInfo(desc->type() + " created successfully");
+    }
     if (_listener) {
         _listener->onSdpCreated(*this, std::move(desc));
     }
@@ -322,6 +332,9 @@ void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> d
 
 void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
 {
+    if (canLogError()) {
+        logError("failed to create " + sdpTypeToString(type) + ": " + error.message());
+    }
     if (_listener) {
         _listener->onSdpCreationFailure(*this, type, std::move(error));
     }
@@ -329,27 +342,24 @@ void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
 
 void Transport::onCompleted(bool local)
 {
-    if (_listener) {
-        const auto desc = local ? _pc->local_description() : _pc->remote_description();
-        _listener->onSdpSet(*this, local, desc);
-    }
-    if (!local) {
-        {
-            LOCK_WRITE_SAFE_OBJ(_pendingCandidates);
-            for (const auto candidate : _pendingCandidates.constRef()) {
-                _pc->AddIceCandidate(candidate);
-            }
-            _pendingCandidates->clear();
+    if (const auto desc = local ? _pc->local_description() : _pc->remote_description()) {
+        if (canLogInfo()) {
+            logInfo(std::string(local ? "local " : "remote ") +
+                    desc->type() + " has been set successfully");
         }
-        setRestartingIce(false);
-        if (_renegotiate.exchange(false)) {
-            createOffer();
+        if (_listener) {
+            _listener->onSdpSet(*this, local, desc);
         }
     }
 }
 
 void Transport::onFailure(bool local, webrtc::RTCError error)
 {
+    if (canLogError()) {
+        logError("failed to set " +
+                 std::string(local ? "local SDP " : "remote SDP" ) +
+                 ": " + error.message());
+    }
     if (_listener) {
         _listener->onSdpSetFailure(*this, local, std::move(error));
     }
@@ -357,7 +367,7 @@ void Transport::onFailure(bool local, webrtc::RTCError error)
 
 void Transport::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState)
 {
-    if (_listener) {
+    if (changeAndLogState(newState, _signalingState) && _listener) {
         _listener->onSignalingChange(*this, newState);
     }
 }
@@ -397,30 +407,23 @@ void Transport::OnNegotiationNeededEvent(uint32_t eventId)
     }
 }
 
-void Transport::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState)
-{
-    if (_listener) {
-        _listener->onIceConnectionChange(*this, newState);
-    }
-}
-
 void Transport::OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState)
 {
-    if (_listener) {
-        _listener->onStandardizedIceConnectionChange(*this, newState);
+    if (changeAndLogState(newState, _iceConnState) && _listener) {
+        _listener->onIceConnectionChange(*this, newState);
     }
 }
 
 void Transport::OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState newState)
 {
-    if (_listener) {
+    if (changeAndLogState(newState, _pcState) && _listener) {
         _listener->onConnectionChange(*this, newState);
     }
 }
 
 void Transport::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState newState)
 {
-    if (_listener) {
+    if (changeAndLogState(newState, _iceGatheringState) && _listener) {
         _listener->onIceGatheringChange(*this, newState);
     }
 }
@@ -489,12 +492,6 @@ void Transport::OnInterestingUsage(int usagePattern)
     if (_listener) {
         _listener->onInterestingUsage(*this, usagePattern);
     }
-}
-
-std::string_view Transport::logCategory() const
-{
-    static const std::string_view category("Transport");
-    return category;
 }
 
 } // namespace LiveKitCpp

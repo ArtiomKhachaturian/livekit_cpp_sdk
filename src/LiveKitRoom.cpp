@@ -24,8 +24,9 @@ namespace LiveKitCpp
 
 LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                          PeerConnectionFactory* pcf,
-                         const SignalOptions& signalOptions)
-    : _engine(std::make_unique<RTCEngine>(signalOptions, pcf, std::move(socket)))
+                         const SignalOptions& signalOptions,
+                         const std::shared_ptr<Bricks::Logger>& logger)
+    : _engine(std::make_unique<RTCEngine>(signalOptions, pcf, std::move(socket), logger))
 {
 }
 

@@ -134,9 +134,8 @@ if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
         endif()
         endforeach()
         set(WEBRTC_AVAILABLE TRUE)
-        file(GLOB WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
-        file(GLOB WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
-        file(GLOB WEBRTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
+        file(GLOB_RECURSE WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
+        file(GLOB_RECURSE WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
         file(GLOB WEBRTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
     else()
         if (NOT EXISTS ${WEBRTC_INCLUDE_DIR})
@@ -160,7 +159,6 @@ add_library(${PROJECT_NAME} SHARED
     ${SERVICE_SOURCES}
     ${WEBRTC_HEADERS}
     ${WEBRTC_SOURCES}
-    ${WEBRTC_PLATFORM_HEADERS}
     ${WEBRTC_PLATFORM_SOURCES}
     ${PROTO_SOURCES} # Add generated .cpp files
     ${PROTO_HEADERS}
@@ -174,7 +172,7 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsA
 source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/service PREFIX "Service" FILES ${SERVICE_HEADERS} ${SERVICE_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_HEADERS} ${WEBRTC_SOURCES} 
-    ${WEBRTC_PLATFORM_HEADERS} ${WEBRTC_PLATFORM_SOURCES})
+    ${WEBRTC_PLATFORM_SOURCES})
 
 # Add include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -192,9 +190,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # WebRTC
 if (WEBRTC_AVAILABLE)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${WEBRTC_INCLUDE_DIR} 
-        ${CMAKE_SOURCE_DIR}/src/webrtc ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
-        ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
+    target_include_directories(${PROJECT_NAME} PRIVATE 
+        ${WEBRTC_INCLUDE_DIR} 
+        ${CMAKE_SOURCE_DIR}/src/webrtc 
+        ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
+        ${CMAKE_SOURCE_DIR}/src/webrtc/transport
+        ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp 
+        ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
     if (APPLE)
         target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)

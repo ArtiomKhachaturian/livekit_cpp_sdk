@@ -88,7 +88,7 @@ class LiveKitService::Impl
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-         const std::shared_ptr<Bricks::Logger>& logger);
+         const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents);
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     template <typename TOutput>
@@ -96,17 +96,20 @@ public:
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                                        const std::shared_ptr<Bricks::Logger>& logger);
+                                        const std::shared_ptr<Bricks::Logger>& logger,
+                                        bool logWebrtcEvents);
 private:
     static void logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
+    const std::shared_ptr<Bricks::Logger> _logger;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
 };
 
 LiveKitService::LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                               const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(Impl::create(websocketsFactory, logger))
+                               const std::shared_ptr<Bricks::Logger>& logger,
+                               bool logWebrtcEvents)
+    : _impl(Impl::create(websocketsFactory, logger, logWebrtcEvents))
 {
 }
 
@@ -147,9 +150,10 @@ std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const SignalOptions& sign
 }
 
 LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                           const std::shared_ptr<Bricks::Logger>& logger)
+                           const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents)
     : _websocketsFactory(websocketsFactory)
-    , _pcf(PeerConnectionFactory::Create(true, true, logger))
+    , _pcf(PeerConnectionFactory::Create(true, true, logWebrtcEvents ? logger : std::shared_ptr<Bricks::Logger>() ))
+    , _logger(logger)
 {
 }
 
@@ -158,7 +162,8 @@ TOutput LiveKitService::Impl::makeRoom(const SignalOptions& signalOptions) const
 {
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
-            return TOutput(new LiveKitRoom(std::move(socket), _pcf.get(), signalOptions));
+            return TOutput(new LiveKitRoom(std::move(socket), _pcf.get(),
+                                           signalOptions, _logger));
         }
     }
     return TOutput(nullptr);
@@ -196,11 +201,12 @@ bool LiveKitService::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>&
 
 std::unique_ptr<LiveKitService::Impl> LiveKitService::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-           const std::shared_ptr<Bricks::Logger>& logger)
+           const std::shared_ptr<Bricks::Logger>& logger,
+           bool logWebrtcEvents)
 {
     if (wsaInitialized(logger) && sslInitialized(logger) && websocketsFactory) {
         logPlatformDefects(logger);
-        return std::make_unique<Impl>(websocketsFactory, logger);
+        return std::make_unique<Impl>(websocketsFactory, logger, logWebrtcEvents);
     }
     return {};
 }
@@ -234,7 +240,7 @@ void LiveKitService::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logg
 class LiveKitService::Impl {};
 
 LiveKitService::LiveKitService(const std::shared_ptr<Websocket::Factory>&,
-                               const std::shared_ptr<Bricks::Logger>&) {}
+                               const std::shared_ptr<Bricks::Logger>&, bool) {}
 
 LiveKitService::~LiveKitService() {}
 

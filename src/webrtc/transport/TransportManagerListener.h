@@ -18,26 +18,19 @@ namespace LiveKitCpp
 {
 
 enum class SignalTarget;
-class TransportManager;
 
 class TransportManagerListener
 {
 public:
-    virtual void onStateChange(TransportManager& /*manager*/,
-                               webrtc::PeerConnectionInterface::PeerConnectionState /*state*/,
+    virtual void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState /*state*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*publisherState*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*subscriberState*/) {}
-    virtual void onDataChannel(TransportManager& /*manager*/,
-                               rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
-    virtual void onIceCandidate(TransportManager& /*manager*/,
-                                SignalTarget /*target*/,
+    virtual void onDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
+    virtual void onIceCandidate(SignalTarget /*target*/,
                                 const webrtc::IceCandidateInterface* /*candidate*/) {}
-    virtual void onRemoteTrack(TransportManager& /*manager*/,
-                               rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
-    virtual void onPublisherOffer(TransportManager& /*manager*/,
-                                  const webrtc::SessionDescriptionInterface* /*desc*/) {}
-    virtual void onSubscriberAnswer(TransportManager& /*manager*/,
-                                    const webrtc::SessionDescriptionInterface* /*desc*/) {}
+    virtual void onRemoteTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+    virtual void onPublisherOffer(const webrtc::SessionDescriptionInterface* /*desc*/) {}
+    virtual void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* /*desc*/) {}
 protected:
     virtual ~TransportManagerListener() = default;
 };

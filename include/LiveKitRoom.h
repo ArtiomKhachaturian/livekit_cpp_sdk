@@ -19,6 +19,10 @@ namespace Websocket {
 class EndPoint;
 }
 
+namespace Bricks {
+class Logger;
+}
+
 namespace LiveKitCpp
 {
 
@@ -37,7 +41,8 @@ public:
 private:
     LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                 PeerConnectionFactory* pcf,
-                const SignalOptions& signalOptions);
+                const SignalOptions& signalOptions,
+                const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::unique_ptr<RTCEngine> _engine;
 };

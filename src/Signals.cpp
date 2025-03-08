@@ -1484,4 +1484,17 @@ void Signals::mconv(const std::unordered_map<K, V>& from,
     }
 }
 
+const char* toString(SignalTarget target)
+{
+    switch (target) {
+        case SignalTarget::Publisher:
+            return "publisher";
+        case SignalTarget::Subscriber:
+            return "subscriber";
+        default:
+            break;
+    }
+    return "";
+}
+
 } // namespace LiveKitCpp

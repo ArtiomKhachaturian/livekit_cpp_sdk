@@ -54,7 +54,7 @@ struct SignalOptions
 
     std::vector<ICEServer> _iceServers;
 
-    IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::All;
+    IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::Relay;
 
     /// LiveKit server protocol version to use. Generally, it's not recommended to change this.
     int _protocolVersion = {};

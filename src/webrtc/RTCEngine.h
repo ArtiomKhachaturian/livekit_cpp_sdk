@@ -49,12 +49,11 @@ class RTCEngine : private Bricks::LoggableS<TransportManagerListener,
 public:
     RTCEngine(const SignalOptions& signalOptions,
               PeerConnectionFactory* pcf,
-              std::unique_ptr<Websocket::EndPoint> socket);
+              std::unique_ptr<Websocket::EndPoint> socket,
+              const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
 private:
-    void negotiate();
-    void createDataChannels(TransportManager* pcManager);
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const std::vector<ICEServer>& iceServers = {},
                           const std::optional<ClientConfiguration>& cc = {}) const;
@@ -63,40 +62,22 @@ private:
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const ReconnectResponse& response) const;
     // impl. of TransportManagerListener
-    void onPublisherOffer(TransportManager&,
-                          const webrtc::SessionDescriptionInterface* desc) final;
-    void onSubscriberAnswer(TransportManager& manager,
-                            const webrtc::SessionDescriptionInterface* desc) final;
+    void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
+    void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
     // impl. of SignalServerListener
     void onJoin(uint64_t, const JoinResponse& response) final;
     void onOffer(uint64_t, const SessionDescription& sdp) final;
     void onAnswer(uint64_t, const SessionDescription& sdp) final;
-    
     // impl. of Bricks::LoggableR<>
     std::string_view logCategory() const final;
 private:
     const SignalOptions _signalOptions;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     SignalClientWs _client;
-    // peerConnectionTimeout: number = roomConnectOptionDefaults.peerConnectionTimeout;
-    std::atomic_bool _fullReconnectOnNext = false;
     Bricks::SafeUniquePtr<TransportManager> _pcManager;
-    Bricks::SafeOptional<JoinResponse> _latestJoinResponse;
-    SafeScopedRefPtr<webrtc::DataChannelInterface> _lossyDC;
-    SafeScopedRefPtr<webrtc::DataChannelInterface> _lossyDCSub;
-    SafeScopedRefPtr<webrtc::DataChannelInterface> _reliableDC;
-    // private dcBufferStatus: Map<DataPacket_Kind, boolean>;
-    SafeScopedRefPtr<webrtc::DataChannelInterface> _reliableDCSub;
-    std::atomic_bool _subscriberPrimary = false;
-    // private pcState: PCState = PCState.New;
-    std::atomic_uint _reconnectStart = 0U;
-    std::atomic_bool _attemptingReconnect = false;
-    // private reconnectPolicy: ReconnectPolicy;
-    // private reconnectTimeout?: ReturnType<typeof setTimeout>;
+    std::shared_ptr<const JoinResponse> _latestJoinResponse;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _joinAttempts = 0U;
-    /** specifies how often an initial join connection is allowed to retry */
-    std::atomic_uint _maxJoinAttempts = 1U;
 };
 
 } // namespace LiveKitCpp

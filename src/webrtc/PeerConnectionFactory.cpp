@@ -104,11 +104,6 @@ PeerConnectionFactory::~PeerConnectionFactory()
 {
 }
 
-const std::shared_ptr<Bricks::Logger>& PeerConnectionFactory::logger() const noexcept
-{
-    return _webrtcLogSink->logger();
-}
-
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     Create(bool audioProcessing, bool customAdm, const std::shared_ptr<Bricks::Logger>& logger)
 {

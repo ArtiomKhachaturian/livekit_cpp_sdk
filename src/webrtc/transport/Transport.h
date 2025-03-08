@@ -15,16 +15,12 @@
 #include "CreateSdpListener.h"
 #include "Loggable.h"
 #include "SetSdpListener.h"
-#include "SafeObj.h"
-#include "rtc/ClientConfiguration.h"
 #include "rtc/SignalTarget.h"
-#include "rtc/ICEServer.h"
 #include <api/peer_connection_interface.h>
 #include <atomic>
 #include <memory>
 #include <optional>
 #include <vector>
-#include <unordered_set>
 
 namespace webrtc {
 class PeerConnectionObserver;
@@ -39,29 +35,27 @@ class SetLocalSdpObserver;
 class SetRemoteSdpObserver;
 class TransportListener;
 
-using BaseTransport = Bricks::LoggableS<CreateSdpListener,
-                      SetSdpListener,
-                      webrtc::PeerConnectionObserver>;
-
-class Transport : private BaseTransport
+class Transport : private Bricks::LoggableS<CreateSdpListener,
+                                            SetSdpListener,
+                                            webrtc::PeerConnectionObserver>
 {
-    using PendingCandidates = std::unordered_set<const webrtc::IceCandidateInterface*>;
 public:
-    Transport(bool primary, SignalTarget target, TransportListener* listener,
+    Transport(SignalTarget target, TransportListener* listener,
               const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
-              const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
+              const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+              const std::shared_ptr<Bricks::Logger>& logger = {});
     ~Transport() override;
-    bool primary() const noexcept { return _primary; }
     SignalTarget target() const noexcept { return _target; }
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     void createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     void setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
-    void setRestartingIce(bool restartingIce);
-    webrtc::PeerConnectionInterface::PeerConnectionState state() const;
-    webrtc::PeerConnectionInterface::IceConnectionState iceConnectionState() const;
-    webrtc::PeerConnectionInterface::SignalingState signalingState() const;
+    webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
+    webrtc::PeerConnectionInterface::IceConnectionState iceConnectionState() const noexcept;
+    webrtc::PeerConnectionInterface::SignalingState signalingState() const noexcept;
+    webrtc::PeerConnectionInterface::IceGatheringState iceGatheringState() const noexcept;
+    bool iceConnected() const noexcept;
     std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> transceivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> receivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> senders() const;
@@ -70,7 +64,6 @@ public:
     // getStats()
     bool valid() const { return nullptr != _pc; }
     explicit operator bool() const { return valid(); }
-    bool iceConnected() const;
     void close();
     bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
     bool addIceCandidate(const webrtc::IceCandidateInterface* candidate);
@@ -88,7 +81,12 @@ public:
                  const std::vector<std::string>& streamIds,
                  const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
 private:
+    webrtc::scoped_refptr<webrtc::PeerConnectionInterface>
+        createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                             const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
     void logWebRTCError(const webrtc::RTCError& error) const;
+    template<typename TState>
+    bool changeAndLogState(TState newState, std::atomic<TState>& holder) const;
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onFailure(webrtc::SdpType type, webrtc::RTCError error) final;
@@ -102,7 +100,6 @@ private:
     void OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
     void OnRenegotiationNeeded() final;
     void OnNegotiationNeededEvent(uint32_t eventId) final;
-    void OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState) final;
     void OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState) final;
     void OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState newState) final;
     void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState newState) final;
@@ -118,19 +115,20 @@ private:
     void OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     void OnInterestingUsage(int usagePattern) final;
     // overrides of Bricks::LoggableS
-    std::string_view logCategory() const final;
+    std::string_view logCategory() const final { return _logCategory; }
 private:
-    const bool _primary;
+    const std::string _logCategory;
     const SignalTarget _target;
     TransportListener* const _listener;
+    const webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
     webrtc::scoped_refptr<CreateSdpObserver> _offerCreationObserver;
     webrtc::scoped_refptr<CreateSdpObserver> _answerCreationObserver;
     webrtc::scoped_refptr<SetLocalSdpObserver> _setLocalSdpObserver;
     webrtc::scoped_refptr<SetRemoteSdpObserver> _setRemoteSdpObserver;
-    webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
-    std::atomic_bool _restartingIce = false;
-    std::atomic_bool _renegotiate = false;
-    Bricks::SafeObj<PendingCandidates> _pendingCandidates;
+    std::atomic<webrtc::PeerConnectionInterface::PeerConnectionState> _pcState;
+    std::atomic<webrtc::PeerConnectionInterface::IceConnectionState> _iceConnState;
+    std::atomic<webrtc::PeerConnectionInterface::SignalingState> _signalingState;
+    std::atomic<webrtc::PeerConnectionInterface::IceGatheringState> _iceGatheringState;
 };
 
 } // namespace LiveKitCpp
