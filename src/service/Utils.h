@@ -15,6 +15,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include <api/peer_connection_interface.h>
 #include <api/task_queue/task_queue_base.h>
+#include <memory>
 #endif
 #include <string>
 
@@ -24,7 +25,7 @@
 #else
 typedef struct objc_object NSString;
 #endif
-#endif // WEBRTC_MAC
+#endif // __APPLE__
 
 namespace LiveKitCpp
 {
@@ -46,6 +47,7 @@ inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); 
 std::string makeStateChangesString(TransportState from, TransportState to);
 
 #ifdef WEBRTC_AVAILABLE
+// human readable string for reflect of changes for some types
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,
                                    webrtc::PeerConnectionInterface::PeerConnectionState to);
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceConnectionState from,
@@ -56,6 +58,10 @@ std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGathering
                                    webrtc::PeerConnectionInterface::IceGatheringState to);
 std::string makeStateChangesString(webrtc::TaskQueueBase::DelayPrecision from,
                                    webrtc::TaskQueueBase::DelayPrecision to);
+// task queue helpers
+std::shared_ptr<webrtc::TaskQueueBase> createTaskQueue(webrtc::TaskQueueFactory::Priority priority,
+                                                       absl::string_view queueName = {},
+                                                       const webrtc::FieldTrialsView* fieldTrials = nullptr);
 #endif
 
 } // namespace LiveKitCpp

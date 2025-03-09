@@ -39,7 +39,7 @@ namespace {
 
 #ifdef WEBRTC_AVAILABLE
 
-static const std::string_view g_logCategory("LiveKitService_Init");
+static const std::string_view g_logCategory("livekit_service");
 
 class SSLInitiallizer
 {
@@ -155,6 +155,14 @@ LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websockets
     , _pcf(PeerConnectionFactory::Create(true, true, logWebrtcEvents ? logger : std::shared_ptr<Bricks::Logger>() ))
     , _logger(logger)
 {
+    if (logger) {
+        if (!_pcf) {
+            logger->logError("failed to create of peer connection factory", g_logCategory);
+        }
+        else if (!_pcf->timersQueue()) {
+            logger->logError("failed to create of queue for media timers", g_logCategory);
+        }
+    }
 }
 
 template <typename TOutput>

@@ -29,6 +29,7 @@ class AudioMixer;
 class FieldTrialsView;
 class VideoEncoderFactory;
 class VideoDecoderFactory;
+class TaskQueueBase;
 } // namespace webrtc
 
 namespace Bricks {
@@ -47,6 +48,7 @@ public:
     static webrtc::scoped_refptr<PeerConnectionFactory> Create(bool audioProcessing,
                                                                bool customAdm,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
+    const auto& timersQueue() const noexcept { return _timersQueue; }
     rtc::Thread* workingThread() const noexcept { return _workingThread.get(); }
     rtc::Thread* signalingThread() const noexcept { return _signalingThread.get(); }
     // impl. of webrtc::PeerConnectionFactoryInterface
@@ -73,6 +75,7 @@ protected:
                           std::unique_ptr<rtc::Thread> signalingThread,
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl);
 private:
+    const std::shared_ptr<webrtc::TaskQueueBase> _timersQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;
     const std::unique_ptr<rtc::Thread> _networkThread;
     const std::unique_ptr<rtc::Thread> _workingThread;

@@ -14,6 +14,7 @@
 #include "PeerConnectionFactory.h"
 #include "WebRtcLogSink.h"
 #include "Logger.h"
+#include "Utils.h"
 #ifdef __APPLE__
 #include "MacAudioDeviceModule.h"
 #endif
@@ -85,7 +86,8 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              std::unique_ptr<rtc::Thread> workingThread,
                                              std::unique_ptr<rtc::Thread> signalingThread,
                                              webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl)
-    : _webrtcLogSink(std::move(webrtcLogSink))
+    : _timersQueue(createTaskQueue(webrtc::TaskQueueFactory::Priority::LOW, "timers_queue"))
+    , _webrtcLogSink(std::move(webrtcLogSink))
     , _networkThread(std::move(networkThread))
     , _workingThread(std::move(workingThread))
     , _signalingThread(std::move(signalingThread))
@@ -155,9 +157,6 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
                                                                std::move(workingThread),
                                                                std::move(signalingThread),
                                                                std::move(pcf));
-    }
-    if (logger) {
-        logger->logError("Failed to create modular peer connection factory", g_pcfInit);
     }
     return {};
 }

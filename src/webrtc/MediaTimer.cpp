@@ -30,10 +30,11 @@ namespace LiveKitCpp
 
 struct MediaTimer::Impl : public std::enable_shared_from_this<Impl>
 {
-    Impl(std::string timerName, MediaTimer* timer, webrtc::TaskQueueBase* queue,
+    Impl(std::string timerName, MediaTimer* timer,
+         const std::shared_ptr<webrtc::TaskQueueBase>& queue,
          MediaTimerCallback* callback);
     const std::string _timerName;
-    webrtc::TaskQueueBase* const _queue;
+    const std::weak_ptr<webrtc::TaskQueueBase> _queue;
     MediaTimer* const _timer;
     Bricks::Listener<MediaTimerCallback*> _callback;
     std::atomic<webrtc::TaskQueueBase::DelayPrecision> _precision = webrtc::TaskQueueBase::DelayPrecision::kLow;
@@ -42,7 +43,8 @@ struct MediaTimer::Impl : public std::enable_shared_from_this<Impl>
     void post(uint64_t intervalMs);
 };
 
-MediaTimer::MediaTimer(webrtc::TaskQueueBase* queue, MediaTimerCallback* callback,
+MediaTimer::MediaTimer(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
+                       MediaTimerCallback* callback,
                        const std::shared_ptr<Bricks::Logger>& logger,
                        std::string timerName)
     : Bricks::LoggableS<>(logger)
@@ -53,7 +55,7 @@ MediaTimer::MediaTimer(webrtc::TaskQueueBase* queue, MediaTimerCallback* callbac
 MediaTimer::MediaTimer(const PeerConnectionFactory* pcf, MediaTimerCallback* callback,
                        const std::shared_ptr<Bricks::Logger>& logger,
                        std::string timerName)
-    : MediaTimer(pcf ? pcf->workingThread() : nullptr, callback, logger, std::move(timerName))
+    : MediaTimer(pcf ? pcf->timersQueue() : nullptr, callback, logger, std::move(timerName))
 {
 }
 
@@ -71,6 +73,11 @@ MediaTimer::~MediaTimer()
     _impl->_callback.reset();
 }
 
+bool MediaTimer::valid() const noexcept
+{
+    return !_impl->_queue.expired();
+}
+
 webrtc::TaskQueueBase::DelayPrecision MediaTimer::precision() const
 {
     return _impl->_precision;
@@ -86,7 +93,7 @@ void MediaTimer::setPrecision(webrtc::TaskQueueBase::DelayPrecision precision)
 
 void MediaTimer::start(uint64_t intervalMs)
 {
-    if (_impl->_queue && _impl->_callback && !_impl->_started.exchange(true)) {
+    if ( _impl->_callback && valid() && !_impl->_started.exchange(true)) {
         logVerbose("start media timer with interval " + std::to_string(intervalMs) + " ms");
         _impl->post(intervalMs);
     }
@@ -101,14 +108,14 @@ void MediaTimer::stop()
 
 void MediaTimer::singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs)
 {
-    if (const auto q = _impl->_queue) {
+    if (const auto q = _impl->_queue.lock()) {
         q->PostDelayedTaskWithPrecision(precision(), std::move(task), toTimeDelta(delayMs));
     }
 }
 
 void MediaTimer::singleShot(MediaTimerCallback* callback, uint64_t delayMs)
 {
-    if (callback) {
+    if (callback && valid()) {
         singleShot([callback, weak = _impl->weak_from_this()]() {
             const auto self = weak.lock();
             if (self && self->valid()) {
@@ -120,7 +127,7 @@ void MediaTimer::singleShot(MediaTimerCallback* callback, uint64_t delayMs)
 
 void MediaTimer::singleShot(const std::shared_ptr<MediaTimerCallback>& callback, uint64_t delayMs)
 {
-    if (callback) {
+    if (callback && valid()) {
         singleShot([callback, weak = _impl->weak_from_this()]() {
             const auto self = weak.lock();
             if (self && self->valid()) {
@@ -132,7 +139,7 @@ void MediaTimer::singleShot(const std::shared_ptr<MediaTimerCallback>& callback,
 
 void MediaTimer::singleShot(std::unique_ptr<MediaTimerCallback> callback, uint64_t delayMs)
 {
-    if (callback) {
+    if (callback && valid()) {
         singleShot([callback = std::move(callback), weak = _impl->weak_from_this()]() {
             const auto self = weak.lock();
             if (self && self->valid()) {
@@ -152,7 +159,7 @@ std::string_view MediaTimer::logCategory() const
 }
 
 MediaTimer::Impl::Impl(std::string timerName, MediaTimer* timer,
-                       webrtc::TaskQueueBase* queue,
+                       const std::shared_ptr<webrtc::TaskQueueBase>& queue,
                        MediaTimerCallback* callback)
     : _timerName(std::move(timerName))
     , _queue(queue)
@@ -163,13 +170,15 @@ MediaTimer::Impl::Impl(std::string timerName, MediaTimer* timer,
 
 void MediaTimer::Impl::post(uint64_t intervalMs)
 {
-    _queue->PostDelayedTaskWithPrecision(_precision, [intervalMs, weak = weak_from_this()]() {
-        const auto self = weak.lock();
-        if (self && self->_started) {
-            self->_callback.invoke(&MediaTimerCallback::onTimeout, self->_timer);
-            self->post(intervalMs);
-        }
-    }, toTimeDelta(intervalMs));
+    if (const auto q = _queue.lock()) {
+        q->PostDelayedTaskWithPrecision(_precision, [intervalMs, weak = weak_from_this()]() {
+            const auto self = weak.lock();
+            if (self && self->_started) {
+                self->_callback.invoke(&MediaTimerCallback::onTimeout, self->_timer);
+                self->post(intervalMs);
+            }
+        }, toTimeDelta(intervalMs));
+    }
 }
 
 } // namespace LiveKitCpp

@@ -21,6 +21,10 @@
 #elif !defined(__APPLE__)
 #include <pthread.h>
 #endif
+#ifdef WEBRTC_AVAILABLE
+#include <api/task_queue/default_task_queue_factory.h>
+#include <thread>
+#endif
 #include <codecvt>
 #include <locale>
 
@@ -263,6 +267,37 @@ std::string makeStateChangesString(webrtc::TaskQueueBase::DelayPrecision from,
 {
     return makeChangesString(from, to);
 }
+
+std::shared_ptr<webrtc::TaskQueueBase> createTaskQueue(webrtc::TaskQueueFactory::Priority priority,
+                                                       absl::string_view queueName,
+                                                       const webrtc::FieldTrialsView* fieldTrials)
+{
+#ifdef WIN32
+    // Win32 has limitation for thread name - max 63 symbols
+    if (queueName.size() > 62U) {
+        queueName = queueName.substr(0, 62U);
+    }
+#endif
+    if (auto factory = webrtc::CreateDefaultTaskQueueFactory(fieldTrials)) {
+        using QueueUPtr = std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>;
+        if (QueueUPtr queue = factory->CreateTaskQueue(queueName, priority)) {
+            return std::shared_ptr<webrtc::TaskQueueBase>(queue.release(), [](webrtc::TaskQueueBase* q) {
+                if (q) {
+                    QueueUPtr owned(q);
+                    if (owned->IsCurrent()) {
+                        std::thread([owned = std::move(owned)]() mutable {
+                            owned.reset(); }).detach();
+                    }
+                    else {
+                        owned.reset();
+                    }
+                }
+            });
+        }
+    }
+    return {};
+}
+
 #endif
 
 std::string makeStateChangesString(TransportState from, TransportState to)

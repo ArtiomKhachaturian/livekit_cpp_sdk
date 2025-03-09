@@ -29,7 +29,9 @@ class MediaTimer : public Bricks::LoggableS<>
 {
     struct Impl;
 public:
-    MediaTimer(webrtc::TaskQueueBase* queue, MediaTimerCallback* callback,
+    // Note: MediaTimer keeps only weak reference to [queue]
+    MediaTimer(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
+               MediaTimerCallback* callback,
                const std::shared_ptr<Bricks::Logger>& logger = {},
                std::string timerName = {});
     MediaTimer(const PeerConnectionFactory* pcf, MediaTimerCallback* callback,
@@ -40,6 +42,9 @@ public:
                const std::shared_ptr<Bricks::Logger>& logger = {},
                std::string timerName = {});
     ~MediaTimer();
+    // means that timer's queue is valid, default callback (which already passed via constructor)
+    // maybe NULL but [singleShot] methods is available for work
+    bool valid() const noexcept;
     // Low by default
     webrtc::TaskQueueBase::DelayPrecision precision() const;
     void setPrecision(webrtc::TaskQueueBase::DelayPrecision precision);
