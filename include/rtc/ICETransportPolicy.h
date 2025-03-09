@@ -16,12 +16,34 @@
 namespace LiveKitCpp
 {
 
+/**
+ * @enum IceTransportPolicy
+ * @brief Defines the types of network transports that can be used for ICE (Interactive Connectivity Establishment) candidates in WebRTC.
+ *
+ * ICE (Interactive Connectivity Establishment) is a protocol that helps WebRTC find possible paths for connections using various network interfaces and NAT (Network Address Translation).
+ *
+ * @var IceTransportPolicy::kAll
+ * Uses all available network interfaces (Wi-Fi, Ethernet, mobile networks, etc.) to discover candidates.
+ * This option maximizes the chances of establishing a connection.
+ *
+ * @var IceTransportPolicy::kRelay
+ * Uses only relay candidates such as STUN/TURN servers.
+ * This option restricts connections to those that can be established through relay servers.
+ *
+ * @var IceTransportPolicy::kNoHost
+ * Excludes local candidates.
+ * This option is useful for preventing local IP address leaks.
+ *
+ * @var IceTransportPolicy::kNone
+ * No candidates are used.
+ * This option is typically not used, as it prevents the establishment of connections.
+ */
 enum class IceTransportPolicy
 {
-    None,
-    Relay,
-    NoHost,
-    All,
+    None,   ///< Uses all available network interfaces to discover candidates.
+    Relay,  ///< Uses only relay candidates such as STUN/TURN servers.
+    NoHost, ///< Excludes local candidates.
+    All,    ///< No candidates are used.
 };
 
 } // namespace LiveKitCpp

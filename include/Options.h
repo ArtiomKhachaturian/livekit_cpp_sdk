@@ -17,6 +17,7 @@
 #include "rtc/ClientInfo.h"
 #include <chrono>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace LiveKitCpp
@@ -32,6 +33,8 @@ struct Options
     bool _autoSubscribe = true;
     
     bool _adaptiveStream = true; // maybe std::optional<>?
+    
+    std::string _publish;
     
     std::optional<ClientInfo> _clientsInfo;
     
@@ -55,7 +58,8 @@ struct Options
 
     std::vector<ICEServer> _iceServers;
 
-    IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::Relay;
+    // generally, it's not recommended to change this
+    IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::All;
 };
 
 } // namespace LiveKitCpp

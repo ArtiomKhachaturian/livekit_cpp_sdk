@@ -42,6 +42,7 @@ RTCEngine::RTCEngine(const Options& signalOptions,
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
     _client.setAutoSubscribe(_options._autoSubscribe);
+    _client.setPublish(_options._publish);
     _client.setClientInfo(_options._clientsInfo);
     _client.setServerListener(this);
     _client.setTransportListener(this);

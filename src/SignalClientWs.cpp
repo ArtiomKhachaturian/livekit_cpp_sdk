@@ -53,6 +53,7 @@ struct UrlData
     std::string _host;
     std::string _authToken;
     std::string _participantSid;
+    std::string _publish;
     bool _autoSubscribe = true;
     bool _adaptiveStream = true;
     std::optional<LiveKitCpp::ClientInfo> _clientInfo;
@@ -116,6 +117,12 @@ std::string SignalClientWs::participantSid() const noexcept
 {
     LOCK_READ_SAFE_OBJ(_impl->_urlData);
     return _impl->_urlData->_participantSid;
+}
+
+std::string SignalClientWs::publish() const noexcept
+{
+    LOCK_READ_SAFE_OBJ(_impl->_urlData);
+    return _impl->_urlData->_publish;
 }
 
 bool SignalClientWs::autoSubscribe() const noexcept
@@ -206,6 +213,12 @@ void SignalClientWs::setParticipantSid(std::string participantSid)
 {
     LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
     _impl->_urlData->_participantSid = std::move(participantSid);
+}
+
+void SignalClientWs::setPublish(std::string publish)
+{
+    LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
+    _impl->_urlData->_publish = std::move(publish);
 }
 
 bool SignalClientWs::connect()
@@ -310,6 +323,7 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
         options._host += "rtc?access_token=" + _urlData->_authToken;
         options._host += urlQueryItem("auto_subscribe", _urlData->_autoSubscribe);
         options._host += urlQueryItem("adaptive_stream", _urlData->_adaptiveStream);
+        options._host += urlQueryItem("publish", _urlData->_publish);
         if (const auto& ci = _urlData->_clientInfo) {
             options._host += urlQueryItem("sdk", std::string(toString(ci->_sdk)));
             options._host += urlQueryItem("version", ci->_version);

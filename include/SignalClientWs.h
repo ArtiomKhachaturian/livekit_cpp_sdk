@@ -39,6 +39,7 @@ public:
     std::string host() const noexcept;
     std::string authToken() const noexcept;
     std::string participantSid() const noexcept;
+    std::string publish() const noexcept;
     bool autoSubscribe() const noexcept;
     bool adaptiveStream() const noexcept;
     ReconnectMode reconnectMode() const noexcept;
@@ -48,7 +49,8 @@ public:
     void setClientInfo(const std::optional<ClientInfo>& clientInfo = {});
     void setHost(std::string host);
     void setAuthToken(std::string authToken);
-    void setParticipantSid(std::string participantSid);
+    void setParticipantSid(std::string participantSid = {});
+    void setPublish(std::string publish = {});
     // impl. of SignalClient
     bool connect() final;
     void disconnect() final;
