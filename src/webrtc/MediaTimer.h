@@ -31,25 +31,28 @@ class MediaTimer : public Bricks::LoggableS<>
 public:
     // Note: MediaTimer keeps only weak reference to [queue]
     MediaTimer(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
-               MediaTimerCallback* callback,
+               MediaTimerCallback* callback = nullptr,
                const std::shared_ptr<Bricks::Logger>& logger = {},
                std::string timerName = {});
-    MediaTimer(const PeerConnectionFactory* pcf, MediaTimerCallback* callback,
+    MediaTimer(const PeerConnectionFactory* pcf,
+               MediaTimerCallback* callback = nullptr,
                const std::shared_ptr<Bricks::Logger>& logger = {},
                std::string timerName = {});
     MediaTimer(const webrtc::scoped_refptr<const PeerConnectionFactory>& pcf,
-               MediaTimerCallback* callback,
+               MediaTimerCallback* callback = nullptr,
                const std::shared_ptr<Bricks::Logger>& logger = {},
                std::string timerName = {});
     ~MediaTimer();
-    // means that timer's queue is valid, default callback (which already passed via constructor)
+    // means that timer's queue is valid, andl default callback (which already passed via constructor)
     // maybe NULL but [singleShot] methods is available for work
     bool valid() const noexcept;
+    bool started() const noexcept;
     // Low by default
     webrtc::TaskQueueBase::DelayPrecision precision() const;
     void setPrecision(webrtc::TaskQueueBase::DelayPrecision precision);
     void setLowPrecision() { setPrecision(webrtc::TaskQueueBase::DelayPrecision::kLow); }
     void setHighPrecision() { setPrecision(webrtc::TaskQueueBase::DelayPrecision::kHigh); }
+    void setCallback(MediaTimerCallback* callback = nullptr);
     void start(uint64_t intervalMs);
     void stop();
     void singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);

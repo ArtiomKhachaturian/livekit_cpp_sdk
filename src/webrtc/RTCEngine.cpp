@@ -322,10 +322,8 @@ void RTCEngine::onTimeout(MediaTimer* timer)
 {
     if (&_pingIntervalTimer == timer) {
         const auto ljr = std::atomic_load(&_latestJoinResponse);
-        if (ljr && sendPing()) {
-            if (ljr->_pingTimeout > 0) {
-                _pingTimeoutTimer.start(ljr->_pingTimeout * 1000);
-            }
+        if (sendPing() && ljr && ljr->_pingTimeout > 0) {
+            _pingTimeoutTimer.start(ljr->_pingTimeout * 1000);
         }
     }
     else if (&_pingTimeoutTimer == timer) {
