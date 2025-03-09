@@ -22,9 +22,8 @@ class MediaTimer;
 class MediaTimerCallback
 {
 public:
-    virtual void onTimeout(MediaTimer* /*timer*/) {}
-protected:
     virtual ~MediaTimerCallback() = default;
+    virtual void onTimeout(MediaTimer* /*timer*/) {}
 };
 
 } // namespace LiveKitCpp

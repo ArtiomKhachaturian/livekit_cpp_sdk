@@ -83,14 +83,14 @@ private:
     void onTransportError(uint64_t, std::string error) final;
     // impl. of MediaTimerCallback
     void onTimeout(MediaTimer* timer) final;
-    // impl. of Bricks::LoggableR<>
+    // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
     const SignalOptions _signalOptions;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> _localAudioTrack;
     SignalClientWs _client;
-    Bricks::SafeUniquePtr<TransportManager> _pcManager;
+    std::shared_ptr<TransportManager> _pcManager;
     std::shared_ptr<const JoinResponse> _latestJoinResponse;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _joinAttempts = 0U;

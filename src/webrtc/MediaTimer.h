@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MediaTimer.h
+#include "Loggable.h"
 #include "MediaTimerCallback.h"
 #include <api/media_types.h>
+#include <api/scoped_refptr.h>
 #include <api/task_queue/task_queue_base.h>
 #include <atomic>
 #include <memory>
@@ -21,11 +23,22 @@
 namespace LiveKitCpp
 {
 
-class MediaTimer
+class PeerConnectionFactory;
+
+class MediaTimer : public Bricks::LoggableS<>
 {
     struct Impl;
 public:
-    MediaTimer(webrtc::TaskQueueBase* queue, MediaTimerCallback* callback);
+    MediaTimer(webrtc::TaskQueueBase* queue, MediaTimerCallback* callback,
+               const std::shared_ptr<Bricks::Logger>& logger = {},
+               std::string timerName = {});
+    MediaTimer(const PeerConnectionFactory* pcf, MediaTimerCallback* callback,
+               const std::shared_ptr<Bricks::Logger>& logger = {},
+               std::string timerName = {});
+    MediaTimer(const webrtc::scoped_refptr<const PeerConnectionFactory>& pcf,
+               MediaTimerCallback* callback,
+               const std::shared_ptr<Bricks::Logger>& logger = {},
+               std::string timerName = {});
     ~MediaTimer();
     // Low by default
     webrtc::TaskQueueBase::DelayPrecision precision() const;
@@ -34,6 +47,14 @@ public:
     void setHighPrecision() { setPrecision(webrtc::TaskQueueBase::DelayPrecision::kHigh); }
     void start(uint64_t intervalMs);
     void stop();
+    void singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);
+    [[deprecated("use single shot methods with smart pointers for better safety")]]
+    void singleShot(MediaTimerCallback* callback, uint64_t delayMs = 0ULL);
+    void singleShot(const std::shared_ptr<MediaTimerCallback>& callback, uint64_t delayMs = 0ULL);
+    void singleShot(std::unique_ptr<MediaTimerCallback> callback, uint64_t delayMs = 0ULL);
+protected:
+    // impl. of Bricks::LoggableS<>
+    std::string_view logCategory() const final;
 private:
     const std::shared_ptr<Impl> _impl;
 };

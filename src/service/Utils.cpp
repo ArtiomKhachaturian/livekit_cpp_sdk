@@ -191,6 +191,11 @@ inline std::string enumTypeToString<webrtc::PeerConnectionInterface::IceGatherin
     return "ICE gathering";
 }
 
+template<>
+inline std::string enumTypeToString<webrtc::TaskQueueBase::DelayPrecision>() {
+    return "delay precision";
+}
+
 inline std::string fromAbsStringView(absl::string_view s) {
     return std::string(s.data(), s.size());
 }
@@ -215,6 +220,20 @@ inline std::string stateToString<webrtc::PeerConnectionInterface::IceGatheringSt
     return fromAbsStringView(webrtc::PeerConnectionInterface::AsString(state));
 }
 
+template<webrtc::TaskQueueBase::DelayPrecision>
+inline std::string stateToString(webrtc::TaskQueueBase::DelayPrecision precision) {
+    switch (precision) {
+        case webrtc::TaskQueueBase::DelayPrecision::kLow:
+            return "low";
+        case webrtc::TaskQueueBase::DelayPrecision::kHigh:
+            return "high";
+        default:
+            assert(false);
+            break;
+    }
+    return {};
+}
+
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,
                                    webrtc::PeerConnectionInterface::PeerConnectionState to)
 {
@@ -234,7 +253,13 @@ std::string makeStateChangesString(webrtc::PeerConnectionInterface::SignalingSta
 }
 
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGatheringState from,
-                                      webrtc::PeerConnectionInterface::IceGatheringState to)
+                                   webrtc::PeerConnectionInterface::IceGatheringState to)
+{
+    return makeChangesString(from, to);
+}
+
+std::string makeStateChangesString(webrtc::TaskQueueBase::DelayPrecision from,
+                                   webrtc::TaskQueueBase::DelayPrecision to)
 {
     return makeChangesString(from, to);
 }

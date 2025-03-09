@@ -37,8 +37,8 @@ RTCEngine::RTCEngine(const SignalOptions& signalOptions,
     , _pcf(pcf)
     , _localAudioTrack(createLocalAudioTrack())
     , _client(std::move(socket), logger.get())
-    , _pingIntervalTimer(_pcf ? _pcf->workingThread() : nullptr, this)
-    , _pingTimeoutTimer(_pcf ? _pcf->workingThread() : nullptr, this)
+    , _pingIntervalTimer(_pcf, this, logger, "ping_interval_timer")
+    , _pingTimeoutTimer(_pcf, this, logger, "ping_timeout_timer")
 {
     _client.setAdaptiveStream(_signalOptions._adaptiveStream);
     _client.setAutoSubscribe(_signalOptions._autoSubscribe);
@@ -113,10 +113,10 @@ bool RTCEngine::sendPing()
 void RTCEngine::cleanup(bool /*error*/)
 {
     std::atomic_store(&_latestJoinResponse, std::shared_ptr<const JoinResponse>());
+    std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
     _pingTimeoutTimer.stop();
     _pingTimeoutTimer.stop();
     _client.disconnect();
-    _pcManager({});
 }
 
 rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::createLocalAudioTrack() const
@@ -242,16 +242,13 @@ void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 {
     logVerbose("join response received from server");
     std::atomic_store(&_latestJoinResponse, std::make_shared<const JoinResponse>(response));
-    {
-        TransportManagerListener* listener = this;
-        LOCK_WRITE_SAFE_OBJ(_pcManager);
-        _pcManager = std::make_unique<TransportManager>(response._subscriberPrimary,
+    TransportManagerListener* listener = this;
+    auto pcManager = std::make_shared<TransportManager>(response._subscriberPrimary,
                                                         listener, _pcf,
                                                         makeConfiguration(response),
                                                         logger());
-        //_pcManager.constRef()->addTrack(_localAudioTrack);
-        _pcManager.constRef()->createPublisherOffer();
-    }
+    std::atomic_store(&_pcManager, pcManager);
+    pcManager->createPublisherOffer();
     restartPingTimer();
 }
 
@@ -260,8 +257,7 @@ void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
     logVerbose("remote offer SDP received from server");
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
-        LOCK_READ_SAFE_OBJ(_pcManager);
-        if (const auto& pcManager = _pcManager.constRef()) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->setSubscriberRemoteOffer(std::move(desc));
         }
     }
@@ -275,8 +271,7 @@ void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
     logVerbose("remote answer SDP received from server");
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
-        LOCK_READ_SAFE_OBJ(_pcManager);
-        if (const auto& pcManager = _pcManager.constRef()) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->setPublisherRemoteAnswer(std::move(desc));
         }
     }
@@ -296,11 +291,10 @@ void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
 {
     logVerbose("trickle ICE for " + std::string(toString(request._target)) +
                " received from server");
-    LOCK_READ_SAFE_OBJ(_pcManager);
-    if (const auto& pcm = _pcManager.constRef()) {
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
         webrtc::SdpParseError error;
         if (auto candidate = RoomUtils::map(request, &error)) {
-            pcm->addRemoteIceCandidate(request._target, std::move(candidate));
+            pcManager->addRemoteIceCandidate(request._target, std::move(candidate));
         }
         else {
             logError("failed to parse ICE candidate SDP for " +

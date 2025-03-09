@@ -14,6 +14,7 @@
 #pragma once // Utils.h
 #ifdef WEBRTC_AVAILABLE
 #include <api/peer_connection_interface.h>
+#include <api/task_queue/task_queue_base.h>
 #endif
 #include <string>
 
@@ -53,6 +54,8 @@ std::string makeStateChangesString(webrtc::PeerConnectionInterface::SignalingSta
                                    webrtc::PeerConnectionInterface::SignalingState to);
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGatheringState from,
                                    webrtc::PeerConnectionInterface::IceGatheringState to);
+std::string makeStateChangesString(webrtc::TaskQueueBase::DelayPrecision from,
+                                   webrtc::TaskQueueBase::DelayPrecision to);
 #endif
 
 } // namespace LiveKitCpp
