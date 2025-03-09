@@ -173,7 +173,7 @@ void SignalClient::handleServerProtobufMessage(const Bricks::Blob& message)
 
 std::string_view SignalClient::logCategory() const
 {
-    static const std::string_view category("SignalingClient");
+    static const std::string_view category("signaling_client");
     return category;
 }
 

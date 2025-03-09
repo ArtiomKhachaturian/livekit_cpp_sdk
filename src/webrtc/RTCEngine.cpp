@@ -35,8 +35,8 @@ RTCEngine::RTCEngine(const SignalOptions& signalOptions,
     , _pcf(pcf)
     , _localAudioTrack(createLocalAudioTrack())
     , _client(std::move(socket), logger.get())
-    , _pingIntervalTimer(_pcf ? _pcf->signalingThread() : nullptr, this)
-    , _pingTimeoutTimer(_pcf ? _pcf->signalingThread() : nullptr, this)
+    , _pingIntervalTimer(_pcf ? _pcf->workingThread() : nullptr, this)
+    , _pingTimeoutTimer(_pcf ? _pcf->workingThread() : nullptr, this)
 {
     _client.setAdaptiveStream(_signalOptions._adaptiveStream);
     _client.setAutoSubscribe(_signalOptions._autoSubscribe);
@@ -299,7 +299,7 @@ void RTCEngine::onTimeout(MediaTimer* timer)
 
 std::string_view RTCEngine::logCategory() const
 {
-    static const std::string_view category("RTCEngine");
+    static const std::string_view category("rtc_engine");
     //LOCK_READ_SAFE_OBJ(_latestJoinResponse);
     /*if (const auto& resp = _latestJoinResponse->value()) {
         

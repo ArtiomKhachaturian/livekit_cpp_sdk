@@ -332,7 +332,7 @@ void TransportManager::onBufferedAmountChange(DataChannelType /*channelType*/,
 
 std::string_view TransportManager::logCategory() const
 {
-    static const std::string_view category("TransportManager");
+    static const std::string_view category("transport_manager");
     return category;
 }
 
