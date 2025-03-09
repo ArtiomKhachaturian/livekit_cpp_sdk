@@ -305,7 +305,7 @@ std::string makeStateChangesString(TransportState from, TransportState to)
     return makeChangesString(from, to);
 }
 
-const char* toString(NetworkType state)
+std::string toString(NetworkType state)
 {
     switch (state) {
         case NetworkType::WiFi:

@@ -1608,7 +1608,7 @@ void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
     }
 }
 
-const char* toString(SignalTarget target)
+std::string toString(SignalTarget target)
 {
     switch (target) {
         case SignalTarget::Publisher:
@@ -1618,7 +1618,7 @@ const char* toString(SignalTarget target)
         default:
             break;
     }
-    return "";
+    return {};
 }
 
 } // namespace LiveKitCpp

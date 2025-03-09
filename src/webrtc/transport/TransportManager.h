@@ -40,14 +40,19 @@ public:
     bool valid() const noexcept;
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
-    void createPublisherOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
+    void negotiate(bool fastPublish);
+    bool setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
+    bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
+    /*void createPublisherOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void createSubscriberAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     bool setSubscriberRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
-    bool setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
+    bool setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);*/
     rtc::scoped_refptr<webrtc::RtpSenderInterface> addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
     void addRemoteIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
 private:
+    auto& primaryTransport() noexcept { return _subscriberPrimary ? _subscriber : _publisher; }
+    const auto& primaryTransport() const noexcept { return _subscriberPrimary ? _subscriber : _publisher; }
     void updateState();
     // impl. of TransportListener
     void onSdpCreated(Transport& transport, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;

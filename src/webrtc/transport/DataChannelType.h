@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DataChannelType.h
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -22,6 +23,6 @@ enum class DataChannelType
     Relaible
 };
 
-const char* toString(DataChannelType type);
+std::string toString(DataChannelType type);
 
 } // namespace LiveKitCpp

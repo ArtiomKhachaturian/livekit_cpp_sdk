@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // NetworkType.h
 #include "LiveKitClientExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -27,6 +28,6 @@ enum class NetworkType
     NoNetwork,
 };
 
-LIVEKIT_CLIENT_API const char* toString(NetworkType state);
+LIVEKIT_CLIENT_API std::string toString(NetworkType state);
 
 } // namespace LiveKitCpp

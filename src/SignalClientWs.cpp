@@ -325,7 +325,7 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
         options._host += urlQueryItem("adaptive_stream", _urlData->_adaptiveStream);
         options._host += urlQueryItem("publish", _urlData->_publish);
         if (const auto& ci = _urlData->_clientInfo) {
-            options._host += urlQueryItem("sdk", std::string(toString(ci->_sdk)));
+            options._host += urlQueryItem("sdk", toString(ci->_sdk));
             options._host += urlQueryItem("version", ci->_version);
             options._host += urlQueryItem("protocol", ci->_protocol > 0 ?
                                           ci->_protocol : LIVEKIT_PROTOCOL_VERSION);
@@ -342,13 +342,13 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
             options._host += urlQueryItem("network", network);
         }
         else {
-            options._host += urlQueryItem("sdk", std::string(toString(SDK::CPP)));
+            options._host += urlQueryItem("sdk", toString(SDK::CPP));
             options._host += urlQueryItem("version", g_libraryVersion);
             options._host += urlQueryItem("protocol", LIVEKIT_PROTOCOL_VERSION);
             options._host += urlQueryItem("os", operatingSystemName());
             options._host += urlQueryItem("os_version", operatingSystemVersion());
             options._host += urlQueryItem("device_model", modelIdentifier());
-            options._host += urlQueryItem("network", std::string(toString(activeNetworkType())));
+            options._host += urlQueryItem("network", toString(activeNetworkType()));
         }
         // only for quick-reconnect
         if (ReconnectMode::Quick == _urlData->_reconnectMode) {
@@ -359,7 +359,7 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
     return options;
 }
 
-const char* toString(SDK sdk)
+std::string toString(SDK sdk)
 {
     switch (sdk) {
         case SDK::Unknown:

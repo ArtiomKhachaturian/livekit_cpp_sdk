@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // SignalTarget.h
 #include "LiveKitClientExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -23,6 +24,6 @@ enum class SignalTarget
     Subscriber = 1,
 };
 
-const char* toString(SignalTarget target);
+std::string toString(SignalTarget target);
 
 } // namespace LiveKitCpp

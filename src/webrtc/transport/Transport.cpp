@@ -30,7 +30,7 @@ Transport::Transport(SignalTarget target, TransportListener* listener,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<CreateSdpListener, SetSdpListener, webrtc::PeerConnectionObserver>(logger)
-    , _logCategory(std::string(toString(target)))
+    , _logCategory(toString(target))
     , _target(target)
     , _listener(listener)
     , _pc(createPeerConnection(pcf, conf))

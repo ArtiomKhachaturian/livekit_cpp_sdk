@@ -16,7 +16,7 @@
 namespace LiveKitCpp
 {
 
-const char* toString(TransportState state) {
+std::string toString(TransportState state) {
     switch (state) {
         case TransportState::Connecting:
             return "connecting";

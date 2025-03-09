@@ -18,24 +18,6 @@
 #include "DataChannelType.h"
 #include "RoomUtils.h"
 #include "Utils.h"
-#include <list>
-
-namespace {
-
-template<typename T>
-inline bool every(const T& required, const std::list<T>& vals) {
-    if (!vals.empty()) {
-        for (const auto& val : vals) {
-            if (val != required) {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-}
 
 namespace LiveKitCpp
 {
@@ -65,12 +47,6 @@ TransportManager::TransportManager(bool subscriberPrimary,
             if (_reliableDC) {
                 _reliableDCObserver = std::move(observer);
             }
-            else {
-                // TODO: log error
-            }
-        }
-        else {
-            // TODO: log error
         }
     }
 }
@@ -97,34 +73,30 @@ webrtc::PeerConnectionInterface::PeerConnectionState TransportManager::state() c
     return _state;
 }
 
-void TransportManager::createPublisherOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
+void TransportManager::negotiate(bool fastPublish)
 {
-    _publisher.createOffer(options);
+    if (!_subscriberPrimary || fastPublish) {
+        _publisher.createOffer();
+    }
 }
 
-void TransportManager::createSubscriberAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
-{
-    _subscriber.createAnswer(options);
-}
-
-bool TransportManager::setSubscriberRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
+bool TransportManager::setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (desc) {
-        const auto type = desc->GetType();
-        if (webrtc::SdpType::kOffer == type) {
+        if (webrtc::SdpType::kOffer == desc->GetType()) {
             _subscriber.setRemoteDescription(std::move(desc));
             return true;
         }
         if (canLogError()) {
-            logError("Incorrect remote SDP type for subscriber, actual is '" +
-                     sdpTypeToString(type) + "', but '" +
+            logError("Incorrect remote SDP type for " + toString(_subscriber.target()) +
+                     " , actual is '" + desc->type() + "', but '" +
                      sdpTypeToString(webrtc::SdpType::kOffer) + "'is expected");
         }
     }
     return false;
 }
 
-bool TransportManager::setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
+bool TransportManager::setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (desc) {
         const auto type = desc->GetType();
@@ -137,7 +109,8 @@ bool TransportManager::setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionD
                 break;
         }
         if (canLogError()) {
-            logError("Incorrect remote SDP type for publisher, actual is '" +
+            logError("Incorrect remote SDP type for " +
+                     toString(_publisher.target()) + ", actual is '" +
                      sdpTypeToString(type) + "', but '" +
                      sdpTypeToString(webrtc::SdpType::kAnswer) + "' or '" +
                      sdpTypeToString(webrtc::SdpType::kPrAnswer) + "' are expected");
@@ -172,11 +145,11 @@ void TransportManager::addRemoteIceCandidate(SignalTarget target,
 
 void TransportManager::close()
 {
-    if (webrtc::PeerConnectionInterface::SignalingState::kClosed != _publisher.signalingState()) {
+    /*if (webrtc::PeerConnectionInterface::SignalingState::kClosed != _publisher.signalingState()) {
         for (auto&& sender : _publisher.senders()) {
             _publisher.removeTrack(sender);
         }
-    }
+    }*/
     _publisher.close();
     _subscriber.close();
     updateState();
@@ -184,25 +157,7 @@ void TransportManager::close()
 
 void TransportManager::updateState()
 {
-    auto newState = state();
-    const std::list<webrtc::PeerConnectionInterface::PeerConnectionState> states = {
-        _subscriber.state(), _publisher.state()
-    };
-    if (every(webrtc::PeerConnectionInterface::PeerConnectionState::kConnected, states)) {
-        newState = webrtc::PeerConnectionInterface::PeerConnectionState::kConnected;
-    }
-    else if (every(webrtc::PeerConnectionInterface::PeerConnectionState::kFailed, states)) {
-        newState = webrtc::PeerConnectionInterface::PeerConnectionState::kFailed;
-    }
-    else if (every(webrtc::PeerConnectionInterface::PeerConnectionState::kConnecting, states)) {
-        newState = webrtc::PeerConnectionInterface::PeerConnectionState::kConnecting;
-    }
-    else if (every(webrtc::PeerConnectionInterface::PeerConnectionState::kClosed, states)) {
-        newState = webrtc::PeerConnectionInterface::PeerConnectionState::kClosed;
-    }
-    else if (every(webrtc::PeerConnectionInterface::PeerConnectionState::kNew, states)) {
-        newState = webrtc::PeerConnectionInterface::PeerConnectionState::kNew;
-    }
+    const auto newState = primaryTransport().state();
     const auto oldState = _state.exchange(newState);
     if (oldState != newState) {
         logInfo(makeStateChangesString(oldState, newState));
@@ -231,19 +186,29 @@ void TransportManager::onSdpCreationFailure(Transport& transport, webrtc::SdpTyp
 void TransportManager::onSdpSet(Transport& transport, bool local,
                                 const webrtc::SessionDescriptionInterface* desc)
 {
-    if (SignalTarget::Publisher == transport.target()) {
-        if (local && _listener) {
-            _listener->onPublisherOffer(desc);
-        }
-    }
-    else { // subscriber
-        if (local) {
-            if (_listener) {
-                _listener->onSubscriberAnswer(desc);
+    if (local) {
+        // offer is always from publisher (see also [negotiate])
+        // answer from subscriber
+        if (_listener) {
+            switch (transport.target()) {
+                case SignalTarget::Publisher:
+                    _listener->onPublisherOffer(desc);
+                    break;
+                case SignalTarget::Subscriber:
+                    _listener->onSubscriberAnswer(desc);
+                    break;
             }
         }
-        else {
-            _subscriber.createAnswer();
+    }
+    else { // remote
+        switch (transport.target()) {
+            case SignalTarget::Publisher: // see [setRemoteAnswer]
+                transport.createOffer();
+                break;
+            case SignalTarget::Subscriber: // see [setRemoteOffer]
+                transport.createAnswer();
+                break;
+                
         }
     }
 }
@@ -260,25 +225,30 @@ void TransportManager::onSdpSetFailure(Transport& transport, bool local, webrtc:
 void TransportManager::onSetConfigurationError(Transport& transport, webrtc::RTCError error)
 {
     if (canLogError()) {
-        logError("Failed to set configuration for " +
-                 std::string(toString(transport.target())) +
+        logError("Failed to set configuration for " + toString(transport.target()) +
                  ": " + error.message());
     }
 }
 
-void TransportManager::onConnectionChange(Transport&, webrtc::PeerConnectionInterface::PeerConnectionState)
+void TransportManager::onConnectionChange(Transport& transport, webrtc::PeerConnectionInterface::PeerConnectionState)
 {
-    updateState();
+    if (&transport == &primaryTransport()) {
+        updateState();
+    }
 }
 
-void TransportManager::onIceConnectionChange(Transport&, webrtc::PeerConnectionInterface::IceConnectionState)
+void TransportManager::onIceConnectionChange(Transport& transport, webrtc::PeerConnectionInterface::IceConnectionState)
 {
-    updateState();
+    if (&transport == &primaryTransport()) {
+        updateState();
+    }
 }
 
-void TransportManager::onSignalingChange(Transport&, webrtc::PeerConnectionInterface::SignalingState)
+void TransportManager::onSignalingChange(Transport& transport, webrtc::PeerConnectionInterface::SignalingState)
 {
-    updateState();
+    if (&transport == &primaryTransport()) {
+        updateState();
+    }
 }
 
 void TransportManager::onDataChannel(Transport& transport, rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
@@ -306,7 +276,7 @@ void TransportManager::onTrack(Transport& transport, rtc::scoped_refptr<webrtc::
 void TransportManager::onStateChange(DataChannelType channelType)
 {
     if (canLogInfo()) {
-        logInfo("the data channel '" + std::string(toString(channelType)) + "' state have changed");
+        logInfo("the data channel '" + toString(channelType) + "' state have changed");
     }
 }
 
@@ -315,7 +285,7 @@ void TransportManager::onMessage(DataChannelType channelType,
 {
     if (canLogInfo()) {
         logInfo("a message buffer was successfully received for '" +
-                std::string(toString(channelType)) + " data channel");
+                toString(channelType) + " data channel");
     }
 }
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // Sdk.h
 #include "LiveKitClientExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -34,6 +35,6 @@ enum class SDK
     Node = 12,
 };
 
-LIVEKIT_CLIENT_API const char* toString(SDK sdk);
+LIVEKIT_CLIENT_API std::string toString(SDK sdk);
 
 } // namespace LiveKitCpp

@@ -56,7 +56,7 @@ bool DataChannelObserver::IsOkToCallOnTheNetworkThread()
     return webrtc::DataChannelObserver::IsOkToCallOnTheNetworkThread();
 }
 
-const char* toString(DataChannelType type)
+std::string toString(DataChannelType type)
 {
     switch (type) {
         case DataChannelType::Lossy:

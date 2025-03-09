@@ -229,12 +229,12 @@ void RTCEngine::onIceCandidate(SignalTarget target,
             request._final = false;
             if (!_client.sendTrickle(request)) {
                 logError("failed to send " + candidate->server_url() +
-                         " " + std::string(toString(target)) + " local ICE candidate");
+                         " " + toString(target) + " local ICE candidate");
             }
         }
         else {
             logError("failed to serialize " + candidate->server_url() +
-                     " " + std::string(toString(target)) + " local ICE candidate");
+                     " " + toString(target) + " local ICE candidate");
         }
     }
 }
@@ -249,7 +249,8 @@ void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
                                                         makeConfiguration(response),
                                                         logger());
     std::atomic_store(&_pcManager, pcManager);
-    pcManager->createPublisherOffer();
+    // if publish only, negotiate
+    pcManager->negotiate(response._fastPublish);
     restartPingTimer();
 }
 
@@ -259,11 +260,11 @@ void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->setSubscriberRemoteOffer(std::move(desc));
+            pcManager->setRemoteOffer(std::move(desc));
         }
     }
     else  {
-        logError("failed to parse remote offer for subscriber: " + error.description);
+        logError("failed to parse remote offer SDP: " + error.description);
     }
 }
 
@@ -273,11 +274,11 @@ void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->setPublisherRemoteAnswer(std::move(desc));
+            pcManager->setRemoteAnswer(std::move(desc));
         }
     }
     else {
-        logError("failed to parse remote answer for publisher: " + error.description);
+        logError("failed to parse remote answer SDP: " + error.description);
     }
 }
 
@@ -290,7 +291,7 @@ void RTCEngine::onPong(uint64_t, int64_t, int64_t)
 
 void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
 {
-    logVerbose("trickle ICE for " + std::string(toString(request._target)) +
+    logVerbose("trickle ICE for " + toString(request._target) +
                " received from server");
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         webrtc::SdpParseError error;
@@ -299,7 +300,7 @@ void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
         }
         else {
             logError("failed to parse ICE candidate SDP for " +
-                     std::string(toString(request._target)) + ": " + error.description);
+                     toString(request._target) + ": " + error.description);
         }
     }
 }
