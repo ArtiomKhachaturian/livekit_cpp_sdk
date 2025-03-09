@@ -30,8 +30,8 @@ class CommandSender;
 class MemoryBlock;
 class SignalServerListener;
 class SignalTransportListener;
-class ResponseReceiver;
-class RequestSender;
+class ResponseInterceptor;
+class RequestInterceptor;
 // these below structs are defined in /include/rtc subfolder
 struct SessionDescription;
 struct TrickleRequest;
@@ -94,9 +94,9 @@ protected:
 private:
     const std::unique_ptr<Impl> _impl;
     // for handling of incoming messages from the LiveKit SFU
-    const std::unique_ptr<ResponseReceiver> _responseReceiver;
+    const std::unique_ptr<ResponseInterceptor> _responseReceiver;
     // for sending requests to the LiveKit SFU
-    const std::unique_ptr<const RequestSender> _requestSender;
+    const std::unique_ptr<const RequestInterceptor> _requestSender;
 };
 
 } // namespace LiveKitCpp

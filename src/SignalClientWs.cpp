@@ -55,8 +55,8 @@ struct UrlData
     std::string _participantSid;
     bool _autoSubscribe = true;
     bool _adaptiveStream = true;
+    std::optional<LiveKitCpp::ClientInfo> _clientInfo;
     LiveKitCpp::ReconnectMode _reconnectMode = LiveKitCpp::ReconnectMode::None;
-    int _protocolVersion = LIVEKIT_PROTOCOL_VERSION;
 };
 
 }
@@ -136,12 +136,6 @@ ReconnectMode SignalClientWs::reconnectMode() const noexcept
     return _impl->_urlData->_reconnectMode;
 }
 
-int SignalClientWs::protocolVersion() const noexcept
-{
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_protocolVersion;
-}
-
 void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
 {
     bool changed = false;
@@ -187,21 +181,12 @@ void SignalClientWs::setReconnectMode(ReconnectMode reconnectMode)
     }
 }
 
-void SignalClientWs::setProtocolVersion(int protocolVersion)
+void SignalClientWs::setClientInfo(const std::optional<ClientInfo>& clientInfo)
 {
-    bool changed = false;
-    {
-        LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-        if (protocolVersion != _impl->_urlData->_protocolVersion) {
-            _impl->_urlData->_protocolVersion = protocolVersion;
-            changed = true;
-        }
-    }
-    if (changed) {
-        logVerbose("Protocol version has been changed");
-        if (LIVEKIT_PROTOCOL_VERSION != protocolVersion) {
-            logWarning("Protocol version is not matched to default");
-        }
+    LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
+    _impl->_urlData->_clientInfo = clientInfo;
+    if (clientInfo && LIVEKIT_PROTOCOL_VERSION != clientInfo->_protocol) {
+        logWarning("protocol version is not matched to default");
     }
 }
 
@@ -324,14 +309,33 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
         using namespace std::string_literals;
         options._host += "rtc?access_token=" + _urlData->_authToken;
         options._host += urlQueryItem("auto_subscribe", _urlData->_autoSubscribe);
-        options._host += urlQueryItem("sdk", "cpp"s);
-        options._host += urlQueryItem("version", g_libraryVersion);
-        options._host += urlQueryItem("protocol", _urlData->_protocolVersion);
         options._host += urlQueryItem("adaptive_stream", _urlData->_adaptiveStream);
-        options._host += urlQueryItem("os", operatingSystemName());
-        options._host += urlQueryItem("os_version", operatingSystemVersion());
-        options._host += urlQueryItem("device_model", modelIdentifier());
-        options._host += urlQueryItem("network", std::string(toString(activeNetworkType())));
+        if (const auto& ci = _urlData->_clientInfo) {
+            options._host += urlQueryItem("sdk", std::string(toString(ci->_sdk)));
+            options._host += urlQueryItem("version", ci->_version);
+            options._host += urlQueryItem("protocol", ci->_protocol > 0 ?
+                                          ci->_protocol : LIVEKIT_PROTOCOL_VERSION);
+            options._host += urlQueryItem("os", ci->_os.empty() ?
+                                          operatingSystemName() : ci->_os);
+            options._host += urlQueryItem("os_version", ci->_osVersion.empty() ?
+                                          operatingSystemVersion() : ci->_osVersion);
+            options._host += urlQueryItem("device_model", ci->_deviceModel.empty() ?
+                                          modelIdentifier() : ci->_deviceModel);
+            auto network = ci->_network;
+            if (network.empty()) {
+                network = toString(activeNetworkType());
+            }
+            options._host += urlQueryItem("network", network);
+        }
+        else {
+            options._host += urlQueryItem("sdk", std::string(toString(SDK::CPP)));
+            options._host += urlQueryItem("version", g_libraryVersion);
+            options._host += urlQueryItem("protocol", LIVEKIT_PROTOCOL_VERSION);
+            options._host += urlQueryItem("os", operatingSystemName());
+            options._host += urlQueryItem("os_version", operatingSystemVersion());
+            options._host += urlQueryItem("device_model", modelIdentifier());
+            options._host += urlQueryItem("network", std::string(toString(activeNetworkType())));
+        }
         // only for quick-reconnect
         if (ReconnectMode::Quick == _urlData->_reconnectMode) {
             options._host += urlQueryItem("reconnect", 1);
@@ -339,6 +343,41 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
         }
     }
     return options;
+}
+
+const char* toString(SDK sdk)
+{
+    switch (sdk) {
+        case SDK::Unknown:
+            break;
+        case SDK::JS:
+            return "JS";
+        case SDK::Swift:
+            return "SWIFT";
+        case SDK::Android:
+            return "ANDROID";
+        case SDK::Flutter:
+            return "FLUTTER";
+        case SDK::GO:
+            return "GO";
+        case SDK::Unity:
+            return "UNITY";
+        case SDK::ReactNative:
+            return "REACT_NATIVE";
+        case SDK::Rust:
+            return "RUST";
+        case SDK::Python:
+            return "PYTHON";
+        case SDK::CPP:
+            return "CPP";
+        case SDK::UnityWeb:
+            return "UNITY_WEB";
+        case SDK::Node:
+            return "NODE";
+        default:
+            break;
+    }
+    return "UNKNOWN";
 }
 
 } // namespace LiveKitCpp

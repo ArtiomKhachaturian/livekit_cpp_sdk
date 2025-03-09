@@ -11,39 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoom.h
+#pragma once // Sdk.h
 #include "LiveKitClientExport.h"
-#include <memory>
-
-namespace Websocket {
-class EndPoint;
-}
-
-namespace Bricks {
-class Logger;
-}
 
 namespace LiveKitCpp
 {
 
-struct Options;
-class PeerConnectionFactory;
-
-class LIVEKIT_CLIENT_API LiveKitRoom
+enum class SDK
 {
-    struct Impl;
-    friend class LiveKitService;
-public:
-    ~LiveKitRoom();
-    bool connect(std::string host, std::string authToken);
-    void disconnect();
-private:
-    LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
-                PeerConnectionFactory* pcf,
-                const Options& signalOptions,
-                const std::shared_ptr<Bricks::Logger>& logger = {});
-private:
-    const std::unique_ptr<Impl> _impl;
+    Unknown = 0,
+    JS = 1,
+    Swift = 2,
+    Android = 3,
+    Flutter = 4,
+    GO = 5,
+    Unity = 6,
+    ReactNative = 7,
+    Rust = 8,
+    Python = 9,
+    CPP = 10,
+    UnityWeb = 11,
+    Node = 12,
 };
+
+LIVEKIT_CLIENT_API const char* toString(SDK sdk);
 
 } // namespace LiveKitCpp

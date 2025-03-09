@@ -42,17 +42,22 @@
 #include "rtc/Ping.h"
 #include "rtc/UpdateLocalAudioTrack.h"
 #include "rtc/UpdateLocalVideoTrack.h"
+#include "rtc/ClientInfo.h"
 #include "livekit_rtc.pb.h"
+#include "livekit_models.pb.h"
 #include <optional>
 #include <unordered_map>
 
 namespace LiveKitCpp
 {
 
-class Signals : public Bricks::LoggableR<>
+class ProtoMarshaller : public Bricks::LoggableR<>
 {
 public:
-    Signals(Bricks::Logger* logger = nullptr);
+    ProtoMarshaller(Bricks::Logger* logger = nullptr);
+    std::vector<uint8_t> toBytes(const google::protobuf::Message& proto) const;
+    template <typename TProto>
+    std::optional<TProto> fromBytes(const void* data, size_t dataLen) const;
     // responses & requests
     JoinResponse map(const livekit::JoinResponse& in) const;
     SessionDescription map(const livekit::SessionDescription& in) const;
@@ -99,6 +104,8 @@ public:
     livekit::UpdateLocalAudioTrack map(const UpdateLocalAudioTrack& in) const;
     UpdateLocalVideoTrack map(const livekit::UpdateLocalVideoTrack& in) const;
     livekit::UpdateLocalVideoTrack map(const UpdateLocalVideoTrack& in) const;
+    ClientInfo map(const livekit::ClientInfo& in) const;
+    livekit::ClientInfo map(const ClientInfo& in) const;
     // data
     Room map(const livekit::Room& in) const;
     Codec map(const livekit::Codec& in) const;
@@ -162,6 +169,11 @@ public:
     livekit::DataChannelInfo map(const DataChannelInfo& in) const;
     CandidateProtocol map(livekit::CandidateProtocol in) const;
     livekit::CandidateProtocol map(CandidateProtocol in) const;
+    livekit::ClientInfo_SDK map(SDK sdk) const;
+    SDK map(livekit::ClientInfo_SDK sdk) const;
+protected:
+    // overrides of Bricks::LoggableR
+    std::string_view logCategory() const final;
 private:
     // helpers
     template<typename T>
@@ -175,5 +187,18 @@ private:
     template<typename K, typename V>
     void mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to) const;
 };
+
+template <typename TProto>
+inline std::optional<TProto> ProtoMarshaller::fromBytes(const void* data,
+                                                        size_t dataLen) const {
+    if (data && dataLen) {
+        TProto proto;
+        if (proto.ParseFromArray(data, int(dataLen))) {
+            return proto;
+        }
+        logError(std::string("failed parse of ") + proto.GetTypeName() + " from blob");
+    }
+    return std::nullopt;
+}
 
 } // namespace LiveKitCpp

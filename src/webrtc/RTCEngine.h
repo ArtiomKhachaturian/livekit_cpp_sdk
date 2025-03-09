@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // Engine.h
 #include "Loggable.h"
-#include "SignalOptions.h"
+#include "Options.h"
 #include "SafeObjAliases.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
@@ -49,7 +49,7 @@ class RTCEngine : private Bricks::LoggableS<TransportManagerListener,
 {
     using SafeString = Bricks::SafeObj<std::string>;
 public:
-    RTCEngine(const SignalOptions& signalOptions,
+    RTCEngine(const Options& signalOptions,
               PeerConnectionFactory* pcf,
               std::unique_ptr<Websocket::EndPoint> socket,
               const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -86,7 +86,7 @@ private:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
-    const SignalOptions _signalOptions;
+    const Options _options;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> _localAudioTrack;
     SignalClientWs _client;

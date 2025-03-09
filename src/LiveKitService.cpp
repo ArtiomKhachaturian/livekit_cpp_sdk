@@ -16,7 +16,9 @@
 #include "Logger.h"
 #include "WebsocketEndPoint.h"
 #include "WebsocketFactory.h"
+#include "NetworkType.h"
 #include "Utils.h"
+#include "rtc/ClientInfo.h"
 #ifdef WEBRTC_AVAILABLE
 #include "PeerConnectionFactory.h"
 #ifdef __APPLE__
@@ -92,7 +94,7 @@ public:
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     template <typename TOutput>
-    TOutput makeRoom(const SignalOptions& signalOptions) const;
+    TOutput makeRoom(const Options& signalOptions) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -134,17 +136,17 @@ LiveKitServiceState LiveKitService::state() const
     return LiveKitServiceState::SSLInitError;
 }
 
-LiveKitRoom* LiveKitService::makeRoom(const SignalOptions& signalOptions) const
+LiveKitRoom* LiveKitService::makeRoom(const Options& signalOptions) const
 {
     return _impl->makeRoom<LiveKitRoom*>(signalOptions);
 }
 
-std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const SignalOptions& signalOptions) const
+std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const Options& signalOptions) const
 {
     return _impl->makeRoom<std::shared_ptr<LiveKitRoom>>(signalOptions);
 }
 
-std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const SignalOptions& signalOptions) const
+std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options& signalOptions) const
 {
     return _impl->makeRoom<std::unique_ptr<LiveKitRoom>>(signalOptions);
 }
@@ -166,7 +168,7 @@ LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websockets
 }
 
 template <typename TOutput>
-TOutput LiveKitService::Impl::makeRoom(const SignalOptions& signalOptions) const
+TOutput LiveKitService::Impl::makeRoom(const Options& signalOptions) const
 {
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
@@ -270,9 +272,19 @@ NetworkType LiveKitService::activeNetworkType()
     return LiveKitCpp::activeNetworkType();
 }
 
-SignalOptions::SignalOptions()
+ClientInfo::ClientInfo()
 {
-    _protocolVersion = LIVEKIT_PROTOCOL_VERSION;
+    _protocol = LIVEKIT_PROTOCOL_VERSION;
+}
+
+ClientInfo ClientInfo::defaultClientInfo()
+{
+    ClientInfo ci;
+    ci._os = operatingSystemName();
+    ci._osVersion = operatingSystemVersion();
+    ci._deviceModel = modelIdentifier();
+    ci._network = toString(activeNetworkType());
+    return ci;
 }
 
 } // namespace LiveKitCpp

@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // ResponseReceiver.h
 #include "Listener.h"
-#include "Signals.h"
+#include "ProtoMarshaller.h"
 #include "livekit_rtc.pb.h"
 #include <memory>
 #include <optional>
@@ -23,14 +23,14 @@ namespace LiveKitCpp
 
 class SignalServerListener;
 
-class ResponseReceiver
+class ResponseInterceptor
 {
 public:
-    ResponseReceiver(uint64_t signalClientId, Bricks::Logger* logger = nullptr);
+    ResponseInterceptor(uint64_t signalClientId, Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
-    void setListener(SignalServerListener* listener = nullptr);
+    void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
 private:
-    static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
+    std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen) const;
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
     template <class Method, class TLiveKitType>
@@ -58,7 +58,7 @@ private:
     void handle(const livekit::Pong& pong) const;
 private:
     const uint64_t _signalClientId;
-    const Signals _signals;
+    const ProtoMarshaller _marshaller;
     Bricks::Listener<SignalServerListener*> _listener;
 };
 

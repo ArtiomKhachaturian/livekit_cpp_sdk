@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "Signals.h"
+#include "ProtoMarshaller.h"
 
 /*#if defined(_MSC_VER) && !defined(__PRETTY_FUNCTION__)
 #define __PRETTY_FUNCTION__ __FUNCSIG__
@@ -25,7 +25,7 @@ inline std::string typeName() { return typeid(T).name(); }
 
 }
 
-#define LOG_ERROR(error) logError(error, "ProtobufTypesMapping");
+#define LOG_ERROR(error) logError(error);
 #define TYPE_CONVERSION_ERROR(TypeFrom, TypeTo) LOG_ERROR("Failed convert from '" \
     + typeName<TypeFrom>() + "' to '" + typeName<TypeTo>() + "'") \
     assert(false); \
@@ -33,12 +33,24 @@ inline std::string typeName() { return typeid(T).name(); }
 namespace LiveKitCpp
 {
 
-Signals::Signals(Bricks::Logger* logger)
+ProtoMarshaller::ProtoMarshaller(Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
 {
 }
 
-JoinResponse Signals::map(const livekit::JoinResponse& in) const
+std::vector<uint8_t> ProtoMarshaller::toBytes(const google::protobuf::Message& proto) const
+{
+    if (const auto size = proto.ByteSizeLong()) {
+        std::vector<uint8_t> buffer(size);
+        if (proto.SerializeToArray(buffer.data(), int(size))) {
+            return buffer;
+        }
+        logError(std::string("failed serialize of ") + proto.GetTypeName() + " to blob");
+    }
+    return {};
+}
+
+JoinResponse ProtoMarshaller::map(const livekit::JoinResponse& in) const
 {
     JoinResponse out;
     if (in.has_room()) {
@@ -67,7 +79,7 @@ JoinResponse Signals::map(const livekit::JoinResponse& in) const
     return out;
 }
 
-SessionDescription Signals::map(const livekit::SessionDescription& in) const
+SessionDescription ProtoMarshaller::map(const livekit::SessionDescription& in) const
 {
     SessionDescription out;
     out._type = in.type();
@@ -75,7 +87,7 @@ SessionDescription Signals::map(const livekit::SessionDescription& in) const
     return out;
 }
 
-livekit::SessionDescription Signals::map(const SessionDescription& in) const
+livekit::SessionDescription ProtoMarshaller::map(const SessionDescription& in) const
 {
     livekit::SessionDescription out;
     out.set_type(in._type);
@@ -83,7 +95,7 @@ livekit::SessionDescription Signals::map(const SessionDescription& in) const
     return out;
 }
 
-TrickleRequest Signals::map(const livekit::TrickleRequest& in) const
+TrickleRequest ProtoMarshaller::map(const livekit::TrickleRequest& in) const
 {
     TrickleRequest out;
     out._candidateInit = in.candidateinit();
@@ -92,7 +104,7 @@ TrickleRequest Signals::map(const livekit::TrickleRequest& in) const
     return out;
 }
 
-livekit::TrickleRequest Signals::map(const TrickleRequest& in) const
+livekit::TrickleRequest ProtoMarshaller::map(const TrickleRequest& in) const
 {
     livekit::TrickleRequest out;
     out.set_candidateinit(in._candidateInit);
@@ -101,14 +113,14 @@ livekit::TrickleRequest Signals::map(const TrickleRequest& in) const
     return out;
 }
 
-ParticipantUpdate Signals::map(const livekit::ParticipantUpdate& in) const
+ParticipantUpdate ProtoMarshaller::map(const livekit::ParticipantUpdate& in) const
 {
     ParticipantUpdate out;
     out._participants = rconv<ParticipantInfo, livekit::ParticipantInfo>(in.participants());
     return out;
 }
 
-TrackPublishedResponse Signals::map(const livekit::TrackPublishedResponse& in) const
+TrackPublishedResponse ProtoMarshaller::map(const livekit::TrackPublishedResponse& in) const
 {
     TrackPublishedResponse out;
     out._cid = in.cid();
@@ -116,7 +128,7 @@ TrackPublishedResponse Signals::map(const livekit::TrackPublishedResponse& in) c
     return out;
 }
 
-livekit::TrackPublishedResponse Signals::map(const TrackPublishedResponse& in) const
+livekit::TrackPublishedResponse ProtoMarshaller::map(const TrackPublishedResponse& in) const
 {
     livekit::TrackPublishedResponse out;
     out.set_cid(in._cid);
@@ -124,14 +136,14 @@ livekit::TrackPublishedResponse Signals::map(const TrackPublishedResponse& in) c
     return out;
 }
 
-TrackUnpublishedResponse Signals::map(const livekit::TrackUnpublishedResponse& in) const
+TrackUnpublishedResponse ProtoMarshaller::map(const livekit::TrackUnpublishedResponse& in) const
 {
     TrackUnpublishedResponse out;
     out._trackSid = in.track_sid();
     return out;
 }
 
-LeaveRequest Signals::map(const livekit::LeaveRequest& in) const
+LeaveRequest ProtoMarshaller::map(const livekit::LeaveRequest& in) const
 {
     LeaveRequest out;
     out._canReconnect = in.can_reconnect();
@@ -141,7 +153,7 @@ LeaveRequest Signals::map(const livekit::LeaveRequest& in) const
     return out;
 }
 
-livekit::LeaveRequest Signals::map(const LeaveRequest& in) const
+livekit::LeaveRequest ProtoMarshaller::map(const LeaveRequest& in) const
 {
     livekit::LeaveRequest out;
     out.set_can_reconnect(in._canReconnect);
@@ -151,7 +163,7 @@ livekit::LeaveRequest Signals::map(const LeaveRequest& in) const
     return out;
 }
 
-MuteTrackRequest Signals::map(const livekit::MuteTrackRequest& in) const
+MuteTrackRequest ProtoMarshaller::map(const livekit::MuteTrackRequest& in) const
 {
     MuteTrackRequest out;
     out._sid = in.sid();
@@ -159,7 +171,7 @@ MuteTrackRequest Signals::map(const livekit::MuteTrackRequest& in) const
     return out;
 }
 
-livekit::MuteTrackRequest Signals::map(const MuteTrackRequest& in) const
+livekit::MuteTrackRequest ProtoMarshaller::map(const MuteTrackRequest& in) const
 {
     livekit::MuteTrackRequest out;
     out.set_sid(in._sid);
@@ -167,14 +179,14 @@ livekit::MuteTrackRequest Signals::map(const MuteTrackRequest& in) const
     return out;
 }
 
-SpeakersChanged Signals::map(const livekit::SpeakersChanged& in) const
+SpeakersChanged ProtoMarshaller::map(const livekit::SpeakersChanged& in) const
 {
     SpeakersChanged out;
     out._speakers = rconv<SpeakerInfo, livekit::SpeakerInfo>(in.speakers());
     return out;
 }
 
-RoomUpdate Signals::map(const livekit::RoomUpdate& in) const
+RoomUpdate ProtoMarshaller::map(const livekit::RoomUpdate& in) const
 {
     RoomUpdate out;
     if (in.has_room()) {
@@ -183,21 +195,21 @@ RoomUpdate Signals::map(const livekit::RoomUpdate& in) const
     return out;
 }
 
-ConnectionQualityUpdate Signals::map(const livekit::ConnectionQualityUpdate& in) const
+ConnectionQualityUpdate ProtoMarshaller::map(const livekit::ConnectionQualityUpdate& in) const
 {
     ConnectionQualityUpdate out;
     out._updates = rconv<ConnectionQualityInfo, livekit::ConnectionQualityInfo>(in.updates());
     return out;
 }
 
-StreamStateUpdate Signals::map(const livekit::StreamStateUpdate& in) const
+StreamStateUpdate ProtoMarshaller::map(const livekit::StreamStateUpdate& in) const
 {
     StreamStateUpdate out;
     out._streamStates = rconv<StreamStateInfo, livekit::StreamStateInfo>(in.stream_states());
     return out;
 }
 
-SubscribedQualityUpdate Signals::map(const livekit::SubscribedQualityUpdate& in) const
+SubscribedQualityUpdate ProtoMarshaller::map(const livekit::SubscribedQualityUpdate& in) const
 {
     SubscribedQualityUpdate out;
     out._trackSid = in.track_sid();
@@ -206,7 +218,7 @@ SubscribedQualityUpdate Signals::map(const livekit::SubscribedQualityUpdate& in)
     return out;
 }
 
-ReconnectResponse Signals::map(const livekit::ReconnectResponse& in) const
+ReconnectResponse ProtoMarshaller::map(const livekit::ReconnectResponse& in) const
 {
     ReconnectResponse out;
     out._iceServers = rconv<ICEServer, livekit::ICEServer>(in.ice_servers());
@@ -216,14 +228,14 @@ ReconnectResponse Signals::map(const livekit::ReconnectResponse& in) const
     return out;
 }
 
-TrackSubscribed Signals::map(const livekit::TrackSubscribed& in) const
+TrackSubscribed ProtoMarshaller::map(const livekit::TrackSubscribed& in) const
 {
     TrackSubscribed out;
     out._trackSid = in.track_sid();
     return out;
 }
 
-RequestResponse Signals::map(const livekit::RequestResponse& in) const
+RequestResponse ProtoMarshaller::map(const livekit::RequestResponse& in) const
 {
     RequestResponse out;
     out._requestId = in.request_id();
@@ -232,7 +244,7 @@ RequestResponse Signals::map(const livekit::RequestResponse& in) const
     return out;
 }
 
-SubscriptionResponse Signals::map(const livekit::SubscriptionResponse& in) const
+SubscriptionResponse ProtoMarshaller::map(const livekit::SubscriptionResponse& in) const
 {
     SubscriptionResponse out;
     out._trackSid = in.track_sid();
@@ -240,7 +252,7 @@ SubscriptionResponse Signals::map(const livekit::SubscriptionResponse& in) const
     return out;
 }
 
-SubscriptionPermissionUpdate Signals::map(const livekit::SubscriptionPermissionUpdate& in) const
+SubscriptionPermissionUpdate ProtoMarshaller::map(const livekit::SubscriptionPermissionUpdate& in) const
 {
     SubscriptionPermissionUpdate out;
     out._participantSid = in.participant_sid();
@@ -249,7 +261,7 @@ SubscriptionPermissionUpdate Signals::map(const livekit::SubscriptionPermissionU
     return out;
 }
 
-AddTrackRequest Signals::map(const livekit::AddTrackRequest& in) const
+AddTrackRequest ProtoMarshaller::map(const livekit::AddTrackRequest& in) const
 {
     AddTrackRequest out;
     out._cid = in.cid();
@@ -271,7 +283,7 @@ AddTrackRequest Signals::map(const livekit::AddTrackRequest& in) const
     return out;
 }
 
-livekit::AddTrackRequest Signals::map(const AddTrackRequest& in) const
+livekit::AddTrackRequest ProtoMarshaller::map(const AddTrackRequest& in) const
 {
     livekit::AddTrackRequest out;
     out.set_cid(in._cid);
@@ -293,7 +305,7 @@ livekit::AddTrackRequest Signals::map(const AddTrackRequest& in) const
     return out;
 }
 
-UpdateSubscription Signals::map(const livekit::UpdateSubscription& in) const
+UpdateSubscription ProtoMarshaller::map(const livekit::UpdateSubscription& in) const
 {
     UpdateSubscription out;
     out._trackSids = rconv<std::string>(in.track_sids());
@@ -302,7 +314,7 @@ UpdateSubscription Signals::map(const livekit::UpdateSubscription& in) const
     return out;
 }
 
-livekit::UpdateSubscription Signals::map(const UpdateSubscription& in) const
+livekit::UpdateSubscription ProtoMarshaller::map(const UpdateSubscription& in) const
 {
     livekit::UpdateSubscription out;
     rconv(in._trackSids, out.mutable_track_sids());
@@ -311,7 +323,7 @@ livekit::UpdateSubscription Signals::map(const UpdateSubscription& in) const
     return out;
 }
 
-UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in) const
+UpdateTrackSettings ProtoMarshaller::map(const livekit::UpdateTrackSettings& in) const
 {
     UpdateTrackSettings out;
     out._trackSids = rconv<std::string>(in.track_sids());
@@ -324,7 +336,7 @@ UpdateTrackSettings Signals::map(const livekit::UpdateTrackSettings& in) const
     return out;
 }
 
-livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in) const
+livekit::UpdateTrackSettings ProtoMarshaller::map(const UpdateTrackSettings& in) const
 {
     livekit::UpdateTrackSettings out;
     rconv(in._trackSids, out.mutable_track_sids());
@@ -337,7 +349,7 @@ livekit::UpdateTrackSettings Signals::map(const UpdateTrackSettings& in) const
     return out;
 }
 
-UpdateVideoLayers Signals::map(const livekit::UpdateVideoLayers& in) const
+UpdateVideoLayers ProtoMarshaller::map(const livekit::UpdateVideoLayers& in) const
 {
     UpdateVideoLayers out;
     out._trackSid = in.track_sid();
@@ -345,7 +357,7 @@ UpdateVideoLayers Signals::map(const livekit::UpdateVideoLayers& in) const
     return out;
 }
 
-livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in) const
+livekit::UpdateVideoLayers ProtoMarshaller::map(const UpdateVideoLayers& in) const
 {
     livekit::UpdateVideoLayers out;
     out.set_track_sid(in._trackSid);
@@ -353,7 +365,7 @@ livekit::UpdateVideoLayers Signals::map(const UpdateVideoLayers& in) const
     return out;
 }
 
-SubscriptionPermission Signals::map(const livekit::SubscriptionPermission& in) const
+SubscriptionPermission ProtoMarshaller::map(const livekit::SubscriptionPermission& in) const
 {
     SubscriptionPermission out;
     out._allParticipants = in.all_participants();
@@ -361,7 +373,7 @@ SubscriptionPermission Signals::map(const livekit::SubscriptionPermission& in) c
     return out;
 }
 
-livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in) const
+livekit::SubscriptionPermission ProtoMarshaller::map(const SubscriptionPermission& in) const
 {
     livekit::SubscriptionPermission out;
     out.set_all_participants(in._allParticipants);
@@ -369,7 +381,7 @@ livekit::SubscriptionPermission Signals::map(const SubscriptionPermission& in) c
     return out;
 }
 
-SyncState Signals::map(const livekit::SyncState& in) const
+SyncState ProtoMarshaller::map(const livekit::SyncState& in) const
 {
     SyncState out;
     out._answer = map(in.answer());
@@ -381,7 +393,7 @@ SyncState Signals::map(const livekit::SyncState& in) const
     return out;
 }
 
-livekit::SyncState Signals::map(const SyncState& in) const
+livekit::SyncState ProtoMarshaller::map(const SyncState& in) const
 {
     livekit::SyncState out;
     *out.mutable_answer() = map(in._answer);
@@ -393,7 +405,7 @@ livekit::SyncState Signals::map(const SyncState& in) const
     return out;
 }
 
-SimulateScenario Signals::map(const livekit::SimulateScenario& in) const
+SimulateScenario ProtoMarshaller::map(const livekit::SimulateScenario& in) const
 {
     SimulateScenario out;
     switch (in.scenario_case()) {
@@ -442,7 +454,7 @@ SimulateScenario Signals::map(const livekit::SimulateScenario& in) const
     return out;
 }
 
-livekit::SimulateScenario Signals::map(const SimulateScenario& in) const
+livekit::SimulateScenario ProtoMarshaller::map(const SimulateScenario& in) const
 {
     livekit::SimulateScenario out;
     switch (in._case) {
@@ -482,7 +494,7 @@ livekit::SimulateScenario Signals::map(const SimulateScenario& in) const
     return out;
 }
 
-UpdateParticipantMetadata Signals::map(const livekit::UpdateParticipantMetadata& in) const
+UpdateParticipantMetadata ProtoMarshaller::map(const livekit::UpdateParticipantMetadata& in) const
 {
     UpdateParticipantMetadata out;
     out._metadata = in.metadata();
@@ -492,7 +504,7 @@ UpdateParticipantMetadata Signals::map(const livekit::UpdateParticipantMetadata&
     return out;
 }
 
-livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata& in) const
+livekit::UpdateParticipantMetadata ProtoMarshaller::map(const UpdateParticipantMetadata& in) const
 {
     livekit::UpdateParticipantMetadata out;
     out.set_metadata(in._metadata);
@@ -502,7 +514,7 @@ livekit::UpdateParticipantMetadata Signals::map(const UpdateParticipantMetadata&
     return out;
 }
 
-Ping Signals::map(const livekit::Ping& in) const
+Ping ProtoMarshaller::map(const livekit::Ping& in) const
 {
     Ping out;
     out._timestamp = in.timestamp();
@@ -510,7 +522,7 @@ Ping Signals::map(const livekit::Ping& in) const
     return out;
 }
 
-livekit::Ping Signals::map(const Ping& in) const
+livekit::Ping ProtoMarshaller::map(const Ping& in) const
 {
     livekit::Ping out;
     out.set_timestamp(in._timestamp);
@@ -518,7 +530,7 @@ livekit::Ping Signals::map(const Ping& in) const
     return out;
 }
 
-UpdateLocalAudioTrack Signals::map(const livekit::UpdateLocalAudioTrack& in) const
+UpdateLocalAudioTrack ProtoMarshaller::map(const livekit::UpdateLocalAudioTrack& in) const
 {
     UpdateLocalAudioTrack out;
     out._trackSid = in.track_sid();
@@ -526,7 +538,7 @@ UpdateLocalAudioTrack Signals::map(const livekit::UpdateLocalAudioTrack& in) con
     return out;
 }
 
-livekit::UpdateLocalAudioTrack Signals::map(const UpdateLocalAudioTrack& in) const
+livekit::UpdateLocalAudioTrack ProtoMarshaller::map(const UpdateLocalAudioTrack& in) const
 {
     livekit::UpdateLocalAudioTrack out;
     out.set_track_sid(in._trackSid);
@@ -534,7 +546,7 @@ livekit::UpdateLocalAudioTrack Signals::map(const UpdateLocalAudioTrack& in) con
     return out;
 }
 
-UpdateLocalVideoTrack Signals::map(const livekit::UpdateLocalVideoTrack& in) const
+UpdateLocalVideoTrack ProtoMarshaller::map(const livekit::UpdateLocalVideoTrack& in) const
 {
     UpdateLocalVideoTrack out;
     out._trackSid = in.track_sid();
@@ -543,7 +555,7 @@ UpdateLocalVideoTrack Signals::map(const livekit::UpdateLocalVideoTrack& in) con
     return out;
 }
 
-livekit::UpdateLocalVideoTrack Signals::map(const UpdateLocalVideoTrack& in) const
+livekit::UpdateLocalVideoTrack ProtoMarshaller::map(const UpdateLocalVideoTrack& in) const
 {
     livekit::UpdateLocalVideoTrack out;
     out.set_track_sid(in._trackSid);
@@ -552,7 +564,41 @@ livekit::UpdateLocalVideoTrack Signals::map(const UpdateLocalVideoTrack& in) con
     return out;
 }
 
-Room Signals::map(const livekit::Room& in) const
+ClientInfo ProtoMarshaller::map(const livekit::ClientInfo& in) const
+{
+    ClientInfo out;
+    out._sdk = map(in.sdk());
+    out._version = in.version();
+    out._protocol = in.protocol();
+    out._os = in.os();
+    out._osVersion = in.os_version();
+    out._deviceModel = in.device_model();
+    out._browser = in.browser();
+    out._browserVersion = in.browser_version();
+    out._address = in.address();
+    out._network = in.network();
+    out._otherSdks = in.other_sdks();
+    return out;
+}
+
+livekit::ClientInfo ProtoMarshaller::map(const ClientInfo& in) const
+{
+    livekit::ClientInfo out;
+    out.set_sdk(map(in._sdk));
+    out.set_version(in._version);
+    out.set_protocol(in._protocol);
+    out.set_os(in._os);
+    out.set_os_version(in._osVersion);
+    out.set_device_model(in._deviceModel);
+    out.set_browser(in._browser);
+    out.set_browser_version(in._browserVersion);
+    out.set_address(in._address);
+    out.set_network(in._network);
+    out.set_other_sdks(in._otherSdks);
+    return out;
+}
+
+Room ProtoMarshaller::map(const livekit::Room& in) const
 {
     Room out;
     out._sid = in.sid();
@@ -574,17 +620,17 @@ Room Signals::map(const livekit::Room& in) const
     return out;
 }
 
-Codec Signals::map(const livekit::Codec& in) const
+Codec ProtoMarshaller::map(const livekit::Codec& in) const
 {
     return {in.mime(), in.fmtp_line()};
 }
 
-TimedVersion Signals::map(const livekit::TimedVersion& in) const
+TimedVersion ProtoMarshaller::map(const livekit::TimedVersion& in) const
 {
     return {in.unix_micro(), in.ticks()};
 }
 
-livekit::TimedVersion Signals::map(const TimedVersion& in) const
+livekit::TimedVersion ProtoMarshaller::map(const TimedVersion& in) const
 {
     livekit::TimedVersion out;
     out.set_unix_micro(in._unixMicro);
@@ -592,7 +638,7 @@ livekit::TimedVersion Signals::map(const TimedVersion& in) const
     return out;
 }
 
-ParticipantInfo Signals::map(const livekit::ParticipantInfo& in) const
+ParticipantInfo ProtoMarshaller::map(const livekit::ParticipantInfo& in) const
 {
     ParticipantInfo out;
     out._sid = in.sid();
@@ -615,7 +661,7 @@ ParticipantInfo Signals::map(const livekit::ParticipantInfo& in) const
     return out;
 }
 
-ParticipantKind Signals::map(livekit::ParticipantInfo_Kind in) const
+ParticipantKind ProtoMarshaller::map(livekit::ParticipantInfo_Kind in) const
 {
     switch (in) {
         case livekit::ParticipantInfo_Kind_STANDARD:
@@ -635,7 +681,7 @@ ParticipantKind Signals::map(livekit::ParticipantInfo_Kind in) const
     return ParticipantKind::Standard;
 }
 
-ParticipantState Signals::map(livekit::ParticipantInfo_State in) const
+ParticipantState ProtoMarshaller::map(livekit::ParticipantInfo_State in) const
 {
     switch (in) {
         case livekit::ParticipantInfo_State_JOINING:
@@ -653,7 +699,7 @@ ParticipantState Signals::map(livekit::ParticipantInfo_State in) const
     return ParticipantState::Disconnected;
 }
 
-ParticipantPermission Signals::map(const livekit::ParticipantPermission& in) const
+ParticipantPermission ProtoMarshaller::map(const livekit::ParticipantPermission& in) const
 {
     ParticipantPermission out;
     out._canSubscribe = in.can_subscribe();
@@ -668,7 +714,7 @@ ParticipantPermission Signals::map(const livekit::ParticipantPermission& in) con
     return out;
 }
 
-DisconnectReason Signals::map(livekit::DisconnectReason in) const
+DisconnectReason ProtoMarshaller::map(livekit::DisconnectReason in) const
 {
     switch (in) {
         case livekit::UNKNOWN_REASON:
@@ -706,7 +752,7 @@ DisconnectReason Signals::map(livekit::DisconnectReason in) const
     return DisconnectReason::UnknownReason;
 }
 
-livekit::DisconnectReason Signals::map(DisconnectReason in) const
+livekit::DisconnectReason ProtoMarshaller::map(DisconnectReason in) const
 {
     switch (in) {
         case DisconnectReason::UnknownReason:
@@ -744,7 +790,7 @@ livekit::DisconnectReason Signals::map(DisconnectReason in) const
     return livekit::UNKNOWN_REASON;
 }
 
-TrackSource Signals::map(livekit::TrackSource in) const
+TrackSource ProtoMarshaller::map(livekit::TrackSource in) const
 {
     switch (in) {
         case livekit::UNKNOWN:
@@ -764,7 +810,7 @@ TrackSource Signals::map(livekit::TrackSource in) const
     return TrackSource::Unknown;
 }
 
-livekit::TrackSource Signals::map(TrackSource in) const
+livekit::TrackSource ProtoMarshaller::map(TrackSource in) const
 {
     switch (in) {
         case TrackSource::Unknown:
@@ -784,7 +830,7 @@ livekit::TrackSource Signals::map(TrackSource in) const
     return livekit::UNKNOWN;
 }
 
-TrackInfo Signals::map(const livekit::TrackInfo& in) const
+TrackInfo ProtoMarshaller::map(const livekit::TrackInfo& in) const
 {
     TrackInfo out;
     out._sid = in.sid();
@@ -812,7 +858,7 @@ TrackInfo Signals::map(const livekit::TrackInfo& in) const
     return out;
 }
 
-livekit::TrackInfo Signals::map(const TrackInfo& in) const
+livekit::TrackInfo ProtoMarshaller::map(const TrackInfo& in) const
 {
     livekit::TrackInfo out;
     out.set_sid(in._sid);
@@ -839,7 +885,7 @@ livekit::TrackInfo Signals::map(const TrackInfo& in) const
     return out;
 }
 
-VideoQuality Signals::map(livekit::VideoQuality in) const
+VideoQuality ProtoMarshaller::map(livekit::VideoQuality in) const
 {
     switch (in) {
         case livekit::LOW:
@@ -857,7 +903,7 @@ VideoQuality Signals::map(livekit::VideoQuality in) const
     return VideoQuality::Low;
 }
 
-livekit::VideoQuality Signals::map(VideoQuality in) const
+livekit::VideoQuality ProtoMarshaller::map(VideoQuality in) const
 {
     switch (in) {
         case VideoQuality::Low:
@@ -875,7 +921,7 @@ livekit::VideoQuality Signals::map(VideoQuality in) const
     return livekit::LOW;
 }
 
-VideoLayer Signals::map(const livekit::VideoLayer& in) const
+VideoLayer ProtoMarshaller::map(const livekit::VideoLayer& in) const
 {
     VideoLayer out;
     out._quality = map(in.quality());
@@ -886,7 +932,7 @@ VideoLayer Signals::map(const livekit::VideoLayer& in) const
     return out;
 }
 
-livekit::VideoLayer Signals::map(const VideoLayer& in) const
+livekit::VideoLayer ProtoMarshaller::map(const VideoLayer& in) const
 {
     livekit::VideoLayer out;
     out.set_quality(map(in._quality));
@@ -897,7 +943,7 @@ livekit::VideoLayer Signals::map(const VideoLayer& in) const
     return out;
 }
 
-TrackType Signals::map(livekit::TrackType in) const
+TrackType ProtoMarshaller::map(livekit::TrackType in) const
 {
     switch (in) {
         case livekit::AUDIO:
@@ -913,7 +959,7 @@ TrackType Signals::map(livekit::TrackType in) const
     return TrackType::Audio;
 }
 
-livekit::TrackType Signals::map(TrackType in) const
+livekit::TrackType ProtoMarshaller::map(TrackType in) const
 {
     switch (in) {
         case TrackType::Audio:
@@ -929,7 +975,7 @@ livekit::TrackType Signals::map(TrackType in) const
     return livekit::AUDIO;
 }
 
-SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in) const
+SimulcastCodecInfo ProtoMarshaller::map(const livekit::SimulcastCodecInfo& in) const
 {
     SimulcastCodecInfo out;
     out._mimeType = in.mime_type();
@@ -939,7 +985,7 @@ SimulcastCodecInfo Signals::map(const livekit::SimulcastCodecInfo& in) const
     return out;
 }
 
-livekit::SimulcastCodecInfo Signals::map(const SimulcastCodecInfo& in) const
+livekit::SimulcastCodecInfo ProtoMarshaller::map(const SimulcastCodecInfo& in) const
 {
     livekit::SimulcastCodecInfo out;
     out.set_mime_type(in._mimeType);
@@ -949,7 +995,7 @@ livekit::SimulcastCodecInfo Signals::map(const SimulcastCodecInfo& in) const
     return out;
 }
 
-BackupCodecPolicy Signals::map(livekit::BackupCodecPolicy in) const
+BackupCodecPolicy ProtoMarshaller::map(livekit::BackupCodecPolicy in) const
 {
     switch (in) {
         case livekit::REGRESSION:
@@ -963,7 +1009,7 @@ BackupCodecPolicy Signals::map(livekit::BackupCodecPolicy in) const
     return BackupCodecPolicy::Regression;
 }
 
-livekit::BackupCodecPolicy Signals::map(BackupCodecPolicy in) const
+livekit::BackupCodecPolicy ProtoMarshaller::map(BackupCodecPolicy in) const
 {
     switch (in) {
         case BackupCodecPolicy::Regression:
@@ -977,7 +1023,7 @@ livekit::BackupCodecPolicy Signals::map(BackupCodecPolicy in) const
     return livekit::REGRESSION;
 }
 
-EncryptionType Signals::map(livekit::Encryption_Type in) const
+EncryptionType ProtoMarshaller::map(livekit::Encryption_Type in) const
 {
     switch (in) {
         case livekit::Encryption_Type_NONE:
@@ -993,7 +1039,7 @@ EncryptionType Signals::map(livekit::Encryption_Type in) const
     return EncryptionType::None;
 }
 
-livekit::Encryption_Type Signals::map(EncryptionType in) const
+livekit::Encryption_Type ProtoMarshaller::map(EncryptionType in) const
 {
     switch (in) {
         case EncryptionType::None:
@@ -1009,7 +1055,7 @@ livekit::Encryption_Type Signals::map(EncryptionType in) const
     return livekit::Encryption_Type_NONE;
 }
 
-AudioTrackFeature Signals::map(livekit::AudioTrackFeature in) const
+AudioTrackFeature ProtoMarshaller::map(livekit::AudioTrackFeature in) const
 {
     switch (in) {
         case livekit::TF_STEREO:
@@ -1031,7 +1077,7 @@ AudioTrackFeature Signals::map(livekit::AudioTrackFeature in) const
     return AudioTrackFeature::TFStereo;
 }
 
-livekit::AudioTrackFeature Signals::map(AudioTrackFeature in) const
+livekit::AudioTrackFeature ProtoMarshaller::map(AudioTrackFeature in) const
 {
     switch (in) {
         case AudioTrackFeature::TFStereo:
@@ -1053,7 +1099,7 @@ livekit::AudioTrackFeature Signals::map(AudioTrackFeature in) const
     return livekit::TF_STEREO;
 }
 
-ClientConfigSetting Signals::map(livekit::ClientConfigSetting in) const
+ClientConfigSetting ProtoMarshaller::map(livekit::ClientConfigSetting in) const
 {
     switch (in) {
         case livekit::UNSET:
@@ -1069,7 +1115,7 @@ ClientConfigSetting Signals::map(livekit::ClientConfigSetting in) const
     return ClientConfigSetting::Unset;
 }
 
-ClientConfiguration Signals::map(const livekit::ClientConfiguration& in) const
+ClientConfiguration ProtoMarshaller::map(const livekit::ClientConfiguration& in) const
 {
     ClientConfiguration out;
     out._video = map(in.video());
@@ -1080,7 +1126,7 @@ ClientConfiguration Signals::map(const livekit::ClientConfiguration& in) const
     return out;
 }
 
-DisabledCodecs Signals::map(const livekit::DisabledCodecs& in) const
+DisabledCodecs ProtoMarshaller::map(const livekit::DisabledCodecs& in) const
 {
     DisabledCodecs out;
     out._codecs = rconv<Codec, livekit::Codec>(in.codecs());
@@ -1088,14 +1134,14 @@ DisabledCodecs Signals::map(const livekit::DisabledCodecs& in) const
     return out;
 }
 
-VideoConfiguration Signals::map(const livekit::VideoConfiguration& in) const
+VideoConfiguration ProtoMarshaller::map(const livekit::VideoConfiguration& in) const
 {
     VideoConfiguration out;
     out._hardwareEncoder = map(in.hardware_encoder());
     return out;
 }
 
-ServerEdition Signals::map(livekit::ServerInfo_Edition in) const
+ServerEdition ProtoMarshaller::map(livekit::ServerInfo_Edition in) const
 {
     switch (in) {
         case livekit::ServerInfo_Edition_Standard:
@@ -1109,7 +1155,7 @@ ServerEdition Signals::map(livekit::ServerInfo_Edition in) const
     return ServerEdition::Standard;
 }
 
-ServerInfo Signals::map(const livekit::ServerInfo& in) const
+ServerInfo ProtoMarshaller::map(const livekit::ServerInfo& in) const
 {
     ServerInfo out;
     out._edition = map(in.edition());
@@ -1122,7 +1168,7 @@ ServerInfo Signals::map(const livekit::ServerInfo& in) const
     return out;
 }
 
-SignalTarget Signals::map(livekit::SignalTarget in) const
+SignalTarget ProtoMarshaller::map(livekit::SignalTarget in) const
 {
     switch (in) {
         case livekit::PUBLISHER:
@@ -1136,7 +1182,7 @@ SignalTarget Signals::map(livekit::SignalTarget in) const
     return SignalTarget::Publisher;
 }
 
-livekit::SignalTarget Signals::map(SignalTarget in) const
+livekit::SignalTarget ProtoMarshaller::map(SignalTarget in) const
 {
     switch (in) {
         case SignalTarget::Publisher:
@@ -1150,7 +1196,7 @@ livekit::SignalTarget Signals::map(SignalTarget in) const
     return livekit::PUBLISHER;
 }
 
-LeaveRequestAction Signals::map(livekit::LeaveRequest_Action in) const
+LeaveRequestAction ProtoMarshaller::map(livekit::LeaveRequest_Action in) const
 {
     switch (in) {
         case livekit::LeaveRequest_Action_DISCONNECT:
@@ -1166,7 +1212,7 @@ LeaveRequestAction Signals::map(livekit::LeaveRequest_Action in) const
     return LeaveRequestAction::Disconnect;
 }
 
-livekit::LeaveRequest_Action Signals::map(LeaveRequestAction in) const
+livekit::LeaveRequest_Action ProtoMarshaller::map(LeaveRequestAction in) const
 {
     switch (in) {
         case LeaveRequestAction::Disconnect:
@@ -1182,7 +1228,7 @@ livekit::LeaveRequest_Action Signals::map(LeaveRequestAction in) const
     return livekit::LeaveRequest_Action_DISCONNECT;
 }
 
-RegionInfo Signals::map(const livekit::RegionInfo& in) const
+RegionInfo ProtoMarshaller::map(const livekit::RegionInfo& in) const
 {
     RegionInfo out;
     out._region = in.region();
@@ -1191,7 +1237,7 @@ RegionInfo Signals::map(const livekit::RegionInfo& in) const
     return out;
 }
 
-livekit::RegionInfo Signals::map(const RegionInfo& in) const
+livekit::RegionInfo ProtoMarshaller::map(const RegionInfo& in) const
 {
     livekit::RegionInfo out;
     out.set_region(in._region);
@@ -1200,21 +1246,21 @@ livekit::RegionInfo Signals::map(const RegionInfo& in) const
     return out;
 }
 
-RegionSettings Signals::map(const livekit::RegionSettings& in) const
+RegionSettings ProtoMarshaller::map(const livekit::RegionSettings& in) const
 {
     RegionSettings out;
     out._regions = rconv<RegionInfo, livekit::RegionInfo>(in.regions());
     return out;
 }
 
-livekit::RegionSettings Signals::map(const RegionSettings& in) const
+livekit::RegionSettings ProtoMarshaller::map(const RegionSettings& in) const
 {
     livekit::RegionSettings out;
     rconv(in._regions, out.mutable_regions());
     return out;
 }
 
-SpeakerInfo Signals::map(const livekit::SpeakerInfo& in) const
+SpeakerInfo ProtoMarshaller::map(const livekit::SpeakerInfo& in) const
 {
     SpeakerInfo out;
     out._sid = in.sid();
@@ -1223,7 +1269,7 @@ SpeakerInfo Signals::map(const livekit::SpeakerInfo& in) const
     return out;
 }
 
-ConnectionQuality Signals::map(livekit::ConnectionQuality in) const
+ConnectionQuality ProtoMarshaller::map(livekit::ConnectionQuality in) const
 {
     switch (in) {
         case livekit::POOR:
@@ -1241,7 +1287,7 @@ ConnectionQuality Signals::map(livekit::ConnectionQuality in) const
     return ConnectionQuality::Poor;
 }
 
-ConnectionQualityInfo Signals::map(const livekit::ConnectionQualityInfo& in) const
+ConnectionQualityInfo ProtoMarshaller::map(const livekit::ConnectionQualityInfo& in) const
 {
     ConnectionQualityInfo out;
     out._participantSid = in.participant_sid();
@@ -1250,7 +1296,7 @@ ConnectionQualityInfo Signals::map(const livekit::ConnectionQualityInfo& in) con
     return out;
 }
 
-StreamState Signals::map(livekit::StreamState in) const
+StreamState ProtoMarshaller::map(livekit::StreamState in) const
 {
     switch (in) {
         case livekit::ACTIVE:
@@ -1264,7 +1310,7 @@ StreamState Signals::map(livekit::StreamState in) const
     return StreamState::Active;
 }
 
-StreamStateInfo Signals::map(const livekit::StreamStateInfo& in) const
+StreamStateInfo ProtoMarshaller::map(const livekit::StreamStateInfo& in) const
 {
     StreamStateInfo out;
     out._participantSid = in.participant_sid();
@@ -1273,7 +1319,7 @@ StreamStateInfo Signals::map(const livekit::StreamStateInfo& in) const
     return out;
 }
 
-SubscribedQuality Signals::map(const livekit::SubscribedQuality& in) const
+SubscribedQuality ProtoMarshaller::map(const livekit::SubscribedQuality& in) const
 {
     SubscribedQuality out;
     out._quality = map(in.quality());
@@ -1281,7 +1327,7 @@ SubscribedQuality Signals::map(const livekit::SubscribedQuality& in) const
     return out;
 }
 
-SubscribedCodec Signals::map(const livekit::SubscribedCodec& in) const
+SubscribedCodec ProtoMarshaller::map(const livekit::SubscribedCodec& in) const
 {
     SubscribedCodec out;
     out._codec = in.codec();
@@ -1289,7 +1335,7 @@ SubscribedCodec Signals::map(const livekit::SubscribedCodec& in) const
     return out;
 }
 
-ICEServer Signals::map(const livekit::ICEServer& in) const
+ICEServer ProtoMarshaller::map(const livekit::ICEServer& in) const
 {
     ICEServer out;
     out._urls = rconv<std::string>(in.urls());
@@ -1298,7 +1344,7 @@ ICEServer Signals::map(const livekit::ICEServer& in) const
     return out;
 }
 
-RequestResponseReason Signals::map(livekit::RequestResponse_Reason in) const
+RequestResponseReason ProtoMarshaller::map(livekit::RequestResponse_Reason in) const
 {
     switch (in) {
         case livekit::RequestResponse_Reason_OK:
@@ -1316,7 +1362,7 @@ RequestResponseReason Signals::map(livekit::RequestResponse_Reason in) const
     return RequestResponseReason::Ok;
 }
 
-SubscriptionError Signals::map(livekit::SubscriptionError in) const
+SubscriptionError ProtoMarshaller::map(livekit::SubscriptionError in) const
 {
     switch (in) {
         case livekit::SE_UNKNOWN:
@@ -1332,7 +1378,7 @@ SubscriptionError Signals::map(livekit::SubscriptionError in) const
     return SubscriptionError::Unknown;
 }
 
-SimulcastCodec Signals::map(const livekit::SimulcastCodec& in) const
+SimulcastCodec ProtoMarshaller::map(const livekit::SimulcastCodec& in) const
 {
     SimulcastCodec out;
     out._cid = in.cid();
@@ -1340,7 +1386,7 @@ SimulcastCodec Signals::map(const livekit::SimulcastCodec& in) const
     return out;
 }
 
-livekit::SimulcastCodec Signals::map(const SimulcastCodec& in) const
+livekit::SimulcastCodec ProtoMarshaller::map(const SimulcastCodec& in) const
 {
     livekit::SimulcastCodec out;
     out.set_cid(in._cid);
@@ -1348,7 +1394,7 @@ livekit::SimulcastCodec Signals::map(const SimulcastCodec& in) const
     return out;
 }
 
-ParticipantTracks Signals::map(const livekit::ParticipantTracks& in) const
+ParticipantTracks ProtoMarshaller::map(const livekit::ParticipantTracks& in) const
 {
     ParticipantTracks out;
     out._participantSid = in.participant_sid();
@@ -1356,7 +1402,7 @@ ParticipantTracks Signals::map(const livekit::ParticipantTracks& in) const
     return out;
 }
 
-livekit::ParticipantTracks Signals::map(const ParticipantTracks& in) const
+livekit::ParticipantTracks ProtoMarshaller::map(const ParticipantTracks& in) const
 {
     livekit::ParticipantTracks out;
     out.set_participant_sid(in._participantSid);
@@ -1364,7 +1410,7 @@ livekit::ParticipantTracks Signals::map(const ParticipantTracks& in) const
     return out;
 }
 
-TrackPermission Signals::map(const livekit::TrackPermission& in) const
+TrackPermission ProtoMarshaller::map(const livekit::TrackPermission& in) const
 {
     TrackPermission out;
     out._participantSid = in.participant_sid();
@@ -1374,7 +1420,7 @@ TrackPermission Signals::map(const livekit::TrackPermission& in) const
     return out;
 }
 
-livekit::TrackPermission Signals::map(const TrackPermission& in) const
+livekit::TrackPermission ProtoMarshaller::map(const TrackPermission& in) const
 {
     livekit::TrackPermission out;
     out.set_participant_sid(in._participantSid);
@@ -1384,7 +1430,7 @@ livekit::TrackPermission Signals::map(const TrackPermission& in) const
     return out;
 }
 
-DataChannelInfo Signals::map(const livekit::DataChannelInfo& in) const
+DataChannelInfo ProtoMarshaller::map(const livekit::DataChannelInfo& in) const
 {
     DataChannelInfo out;
     out._label = in.label();
@@ -1393,7 +1439,7 @@ DataChannelInfo Signals::map(const livekit::DataChannelInfo& in) const
     return out;
 }
 
-livekit::DataChannelInfo Signals::map(const DataChannelInfo& in) const
+livekit::DataChannelInfo ProtoMarshaller::map(const DataChannelInfo& in) const
 {
     livekit::DataChannelInfo out;
     out.set_label(in._label);
@@ -1402,7 +1448,7 @@ livekit::DataChannelInfo Signals::map(const DataChannelInfo& in) const
     return out;
 }
 
-CandidateProtocol Signals::map(livekit::CandidateProtocol in) const
+CandidateProtocol ProtoMarshaller::map(livekit::CandidateProtocol in) const
 {
     switch (in) {
         case livekit::UDP:
@@ -1418,7 +1464,7 @@ CandidateProtocol Signals::map(livekit::CandidateProtocol in) const
     return CandidateProtocol::Udp;
 }
 
-livekit::CandidateProtocol Signals::map(CandidateProtocol in) const
+livekit::CandidateProtocol ProtoMarshaller::map(CandidateProtocol in) const
 {
     switch (in) {
         case CandidateProtocol::Udp:
@@ -1434,8 +1480,86 @@ livekit::CandidateProtocol Signals::map(CandidateProtocol in) const
     return livekit::UDP;
 }
 
+livekit::ClientInfo_SDK ProtoMarshaller::map(SDK sdk) const
+{
+    switch (sdk) {
+        case SDK::Unknown:
+            break;
+        case SDK::JS:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_JS;
+        case SDK::Swift:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_SWIFT;
+        case SDK::Android:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_ANDROID;
+        case SDK::Flutter:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_FLUTTER;
+        case SDK::GO:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_GO;
+        case SDK::Unity:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_UNITY;
+        case SDK::ReactNative:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_REACT_NATIVE;
+        case SDK::Rust:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_RUST;
+        case SDK::Python:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_PYTHON;
+        case SDK::CPP:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_CPP;
+        case SDK::UnityWeb:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_UNITY_WEB;
+        case SDK::Node:
+            return livekit::ClientInfo_SDK::ClientInfo_SDK_NODE;
+        default:
+            TYPE_CONVERSION_ERROR(SDK, livekit::ClientInfo_SDK)
+            break;
+    }
+    return livekit::ClientInfo_SDK::ClientInfo_SDK_UNKNOWN;
+}
+
+SDK ProtoMarshaller::map(livekit::ClientInfo_SDK sdk) const
+{
+    switch (sdk) {
+        case livekit::ClientInfo_SDK_UNKNOWN:
+            break;
+        case livekit::ClientInfo_SDK_JS:
+            return SDK::JS;
+        case livekit::ClientInfo_SDK_SWIFT:
+            return SDK::Swift;
+        case livekit::ClientInfo_SDK_ANDROID:
+            return SDK::Android;
+        case livekit::ClientInfo_SDK_FLUTTER:
+            return SDK::Flutter;
+        case livekit::ClientInfo_SDK_GO:
+            return SDK::GO;
+        case livekit::ClientInfo_SDK_UNITY:
+            return SDK::Unity;
+        case livekit::ClientInfo_SDK_REACT_NATIVE:
+            return SDK::ReactNative;
+        case livekit::ClientInfo_SDK_RUST:
+            return SDK::Rust;
+        case livekit::ClientInfo_SDK_PYTHON:
+            return SDK::Python;
+        case livekit::ClientInfo_SDK_CPP:
+            return SDK::CPP;
+        case livekit::ClientInfo_SDK_UNITY_WEB:
+            return SDK::UnityWeb;
+        case livekit::ClientInfo_SDK_NODE:
+            return SDK::Node;
+        default:
+            TYPE_CONVERSION_ERROR(livekit::ClientInfo_SDK, SDK)
+            break;
+    }
+    return SDK::Unknown;
+}
+
+std::string_view ProtoMarshaller::logCategory() const
+{
+    static const std::string_view category("proto_marshaller");
+    return category;
+}
+
 template <typename TOut, typename TIn, class TProtoBufRepeated>
-std::vector<TOut> Signals::rconv(const TProtoBufRepeated& in) const
+std::vector<TOut> ProtoMarshaller::rconv(const TProtoBufRepeated& in) const
 {
     if (const auto size = in.size()) {
         std::vector<TOut> out;
@@ -1449,7 +1573,7 @@ std::vector<TOut> Signals::rconv(const TProtoBufRepeated& in) const
 }
 
 template <typename TCppRepeated, class TProtoBufRepeated>
-void Signals::rconv(const TCppRepeated& from, TProtoBufRepeated* to) const
+void ProtoMarshaller::rconv(const TCppRepeated& from, TProtoBufRepeated* to) const
 {
     if (to) {
         to->Reserve(int(to->size() + from.size()));
@@ -1460,7 +1584,7 @@ void Signals::rconv(const TCppRepeated& from, TProtoBufRepeated* to) const
 }
 
 template<typename K, typename V>
-std::unordered_map<K, V> Signals::mconv(const google::protobuf::Map<K, V>& in) const
+std::unordered_map<K, V> ProtoMarshaller::mconv(const google::protobuf::Map<K, V>& in) const
 {
     if (const auto size = in.size()) {
         std::unordered_map<K, V> out;
@@ -1474,7 +1598,7 @@ std::unordered_map<K, V> Signals::mconv(const google::protobuf::Map<K, V>& in) c
 }
 
 template<typename K, typename V>
-void Signals::mconv(const std::unordered_map<K, V>& from,
+void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
                     google::protobuf::Map<K, V>* to) const
 {
     if (to) {

@@ -25,7 +25,7 @@
 namespace LiveKitCpp
 {
 
-RTCEngine::RTCEngine(const SignalOptions& signalOptions,
+RTCEngine::RTCEngine(const Options& signalOptions,
                      PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
@@ -33,16 +33,16 @@ RTCEngine::RTCEngine(const SignalOptions& signalOptions,
                         SignalTransportListener,
                         SignalServerListener,
                         MediaTimerCallback>(logger)
-    , _signalOptions(signalOptions)
+    , _options(signalOptions)
     , _pcf(pcf)
     , _localAudioTrack(createLocalAudioTrack())
     , _client(std::move(socket), logger.get())
     , _pingIntervalTimer(_pcf, this, logger, "ping_interval_timer")
     , _pingTimeoutTimer(_pcf, this, logger, "ping_timeout_timer")
 {
-    _client.setAdaptiveStream(_signalOptions._adaptiveStream);
-    _client.setAutoSubscribe(_signalOptions._autoSubscribe);
-    _client.setProtocolVersion(_signalOptions._protocolVersion);
+    _client.setAdaptiveStream(_options._adaptiveStream);
+    _client.setAutoSubscribe(_options._autoSubscribe);
+    _client.setClientInfo(_options._clientsInfo);
     _client.setServerListener(this);
     _client.setTransportListener(this);
 }
@@ -63,13 +63,13 @@ bool RTCEngine::connect(std::string url, std::string authToken)
         _client.setAuthToken(std::move(authToken));
         ok = _client.connect();
         if (!ok) {
-            if (_joinAttempts < _signalOptions._reconnectAttempts) {
+            if (_joinAttempts < _options._reconnectAttempts) {
                 if (canLogWarning()) {
                     logWarning("Couldn't connect to server, attempt " +
                                std::to_string(_joinAttempts) + " of " +
-                               std::to_string(_signalOptions._reconnectAttempts));
+                               std::to_string(_options._reconnectAttempts));
                 }
-                std::this_thread::sleep_for(_signalOptions._reconnectAttemptDelay);
+                std::this_thread::sleep_for(_options._reconnectAttemptDelay);
                 ok = connect(_client.host(), _client.authToken());
             }
         }
@@ -150,11 +150,11 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
         config.type = webrtc::PeerConnectionInterface::kRelay;
     }
     else {
-        config.type = RoomUtils::map(_signalOptions._iceTransportPolicy);
+        config.type = RoomUtils::map(_options._iceTransportPolicy);
     }
-    if (!_signalOptions._iceServers.empty()) {
+    if (!_options._iceServers.empty()) {
         // Override with user provided iceServers
-        config.servers = RoomUtils::map(_signalOptions._iceServers);
+        config.servers = RoomUtils::map(_options._iceServers);
     }
     else {
         //Set iceServers provided by the server

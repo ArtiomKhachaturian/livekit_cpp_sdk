@@ -14,7 +14,9 @@
 #include "SignalClient.h"
 #include "CommandSender.h"
 #include "ReconnectMode.h"
+#include "rtc/ClientInfo.h"
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace Websocket {
@@ -40,11 +42,10 @@ public:
     bool autoSubscribe() const noexcept;
     bool adaptiveStream() const noexcept;
     ReconnectMode reconnectMode() const noexcept;
-    int protocolVersion() const noexcept;
     void setAutoSubscribe(bool autoSubscribe);
     void setAdaptiveStream(bool adaptiveStream);
     void setReconnectMode(ReconnectMode reconnectMode);
-    void setProtocolVersion(int protocolVersion);
+    void setClientInfo(const std::optional<ClientInfo>& clientInfo = {});
     void setHost(std::string host);
     void setAuthToken(std::string authToken);
     void setParticipantSid(std::string participantSid);

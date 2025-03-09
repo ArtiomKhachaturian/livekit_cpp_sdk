@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ConnectOptions.h
-#include "LiveKitClientExport.h"
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
+#include "rtc/ClientInfo.h"
 #include <chrono>
 #include <optional>
 #include <vector>
@@ -24,17 +24,18 @@ namespace LiveKitCpp
 
 using namespace std::chrono_literals;
 
-// https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Types/Options/RoomOptions.swift#L20
 /// Options used when establishing a connection.
-struct SignalOptions
+struct Options
 {
-    LIVEKIT_CLIENT_API SignalOptions();
-    
-    bool _adaptiveStream = true; // maybe std::optional<>?
-    
     /// Automatically subscribe to ``RemoteParticipant``'s tracks.
     /// Defaults to true.
     bool _autoSubscribe = true;
+    
+    bool _adaptiveStream = true; // maybe std::optional<>?
+    
+    std::optional<ClientInfo> _clientsInfo;
+    
+    // DisabledCodecs            []webrtc.RTPCodecCapability
     
     /// E2EE Options
     //std::optional<E2EEOptions> _e2eeOptions;
@@ -55,9 +56,6 @@ struct SignalOptions
     std::vector<ICEServer> _iceServers;
 
     IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::Relay;
-
-    /// LiveKit server protocol version to use. Generally, it's not recommended to change this.
-    int _protocolVersion = {};
 };
 
 } // namespace LiveKitCpp

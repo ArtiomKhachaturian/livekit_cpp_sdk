@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RequestSender.h
-#include "Signals.h"
+#include "ProtoMarshaller.h"
 #include <memory>
 #include <vector>
 
@@ -41,10 +41,10 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class RequestSender
+class RequestInterceptor
 {
 public:
-    RequestSender(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
+    RequestInterceptor(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     // all requests are defined in 'SignalRequest':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L24
     bool offer(const SessionDescription& sdp) const;
@@ -67,10 +67,9 @@ private:
     bool canSend() const;
     template <class TSetMethod, class TObject>
     bool send(const TSetMethod& setMethod, const TObject& object) const;
-    static std::vector<uint8_t> toBytes(const google::protobuf::MessageLite& proto);
 private:
     CommandSender* const _commandSender;
-    const Signals _signals;
+    const ProtoMarshaller _marshaller;
 };
 
 } // namespace LiveKitCpp

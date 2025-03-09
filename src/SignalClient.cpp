@@ -15,8 +15,8 @@
 #include "SignalTransportListener.h"
 #include "SafeObj.h"
 #include "Listener.h"
-#include "ResponseReceiver.h"
-#include "RequestSender.h"
+#include "ResponseInterceptor.h"
+#include "RequestInterceptor.h"
 #include "Utils.h"
 #include "Blob.h"
 
@@ -40,8 +40,8 @@ private:
 SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
     :  Bricks::LoggableR<>(logger)
     , _impl(std::make_unique<Impl>(this))
-    , _responseReceiver(std::make_unique<ResponseReceiver>(id(), logger))
-    , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
+    , _responseReceiver(std::make_unique<ResponseInterceptor>(id(), logger))
+    , _requestSender(std::make_unique<RequestInterceptor>(commandSender, logger))
 {
 }
 

@@ -26,14 +26,14 @@ struct LiveKitRoom::Impl
 {
     Impl(std::unique_ptr<Websocket::EndPoint> socket,
          PeerConnectionFactory* pcf,
-         const SignalOptions& signalOptions,
+         const Options& signalOptions,
          const std::shared_ptr<Bricks::Logger>& logger);
     RTCEngine _engine;
 };
 
 LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                          PeerConnectionFactory* pcf,
-                         const SignalOptions& signalOptions,
+                         const Options& signalOptions,
                          const std::shared_ptr<Bricks::Logger>& logger)
     : _impl(std::make_unique<Impl>(std::move(socket), pcf, signalOptions, logger))
 {
@@ -55,7 +55,7 @@ void LiveKitRoom::disconnect()
 
 LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
                         PeerConnectionFactory* pcf,
-                        const SignalOptions& signalOptions,
+                        const Options& signalOptions,
                         const std::shared_ptr<Bricks::Logger>& logger)
     : _engine(signalOptions, pcf, std::move(socket), logger)
 {

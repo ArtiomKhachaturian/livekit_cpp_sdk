@@ -19,6 +19,7 @@
 #include "RoomUtils.h"
 #include "Utils.h"
 #include <list>
+#include <iostream>
 
 namespace {
 
@@ -184,7 +185,9 @@ void TransportManager::close()
 
 void TransportManager::updateState()
 {
-    auto newState = state();
+    std::cout << "subscriber state = " << webrtc::PeerConnectionInterface::AsString(_subscriber.state()) << ", ";
+    std::cout << "publisher state = " << webrtc::PeerConnectionInterface::AsString(_publisher.state()) << std::endl;
+    /*auto newState = state();
     const std::list<webrtc::PeerConnectionInterface::PeerConnectionState> states = {
         _subscriber.state(), _publisher.state()
     };
@@ -211,7 +214,7 @@ void TransportManager::updateState()
         if (_listener) {
             _listener->onStateChange(newState, _publisher.state(), _subscriber.state());
         }
-    }
+    }*/
 }
 
 void TransportManager::onSdpCreated(Transport& transport,
