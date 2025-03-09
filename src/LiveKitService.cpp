@@ -154,7 +154,7 @@ std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options& signalOpti
 LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
                            const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents)
     : _websocketsFactory(websocketsFactory)
-    , _pcf(PeerConnectionFactory::Create(true, true, logWebrtcEvents ? logger : std::shared_ptr<Bricks::Logger>() ))
+    , _pcf(PeerConnectionFactory::Create(true, logWebrtcEvents ? logger : nullptr))
     , _logger(logger)
 {
     if (logger) {

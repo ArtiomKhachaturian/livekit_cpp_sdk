@@ -43,7 +43,7 @@ public:
     // instance.
     // TODO(webrtc:11547): Eventually all DataChannelObserver implementations
     // should be called on the network thread and this method removed.
-    virtual bool isOkToCallOnTheNetworkThread(DataChannelType /*channelType*/) { return false; }
+    virtual bool isOkToCallOnTheNetworkThread(DataChannelType /*channelType*/) { return true; }
 protected:
     virtual ~DataChannelListener() = default;
 };

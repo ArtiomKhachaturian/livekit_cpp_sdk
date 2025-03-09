@@ -15,9 +15,6 @@
 #include "WebRtcLogSink.h"
 #include "Logger.h"
 #include "Utils.h"
-#ifdef __APPLE__
-#include "MacAudioDeviceModule.h"
-#endif
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
 #include <api/audio/builtin_audio_processing_builder.h>
@@ -107,7 +104,7 @@ PeerConnectionFactory::~PeerConnectionFactory()
 }
 
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
-    Create(bool audioProcessing, bool customAdm, const std::shared_ptr<Bricks::Logger>& logger)
+    Create(bool audioProcessing, const std::shared_ptr<Bricks::Logger>& logger)
 {
     //create threads for peer connection factory
     //See also https://webrtc.org/native-code/native-apis/#threading-model
@@ -136,14 +133,6 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     if (audioProcessing) {
         dependencies.audio_processing_builder = std::make_unique<webrtc::BuiltinAudioProcessingBuilder>();
     }
-#ifdef __APPLE__
-    if (customAdm) {
-        workingThread->BlockingCall([&dependencies]() {
-            dependencies.task_queue_factory = webrtc::CreateDefaultTaskQueueFactory();
-            dependencies.adm = rtc::make_ref_counted<MacAudioDeviceModule>(dependencies.task_queue_factory.get());
-        });
-    }
-#endif
     dependencies.event_log_factory = nullptr; // should be NULL or customized and adapted to our log system
     webrtc::EnableMedia(dependencies);
     //create inner factory

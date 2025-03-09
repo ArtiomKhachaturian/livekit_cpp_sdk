@@ -46,7 +46,6 @@ class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 public:
     ~PeerConnectionFactory() override;
     static webrtc::scoped_refptr<PeerConnectionFactory> Create(bool audioProcessing,
-                                                               bool customAdm,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& timersQueue() const noexcept { return _timersQueue; }
     rtc::Thread* workingThread() const noexcept { return _workingThread.get(); }
