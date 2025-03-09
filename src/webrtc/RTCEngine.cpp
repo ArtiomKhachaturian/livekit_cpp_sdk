@@ -16,8 +16,10 @@
 #include "PeerConnectionFactory.h"
 #include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
+#include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
+#include "rtc/TrickleRequest.h"
 #include <thread>
 
 namespace LiveKitCpp
@@ -216,8 +218,29 @@ void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* de
     }
 }
 
+void RTCEngine::onIceCandidate(SignalTarget target,
+                               const webrtc::IceCandidateInterface* candidate)
+{
+    if (candidate) {
+        TrickleRequest request;
+        if (RoomUtils::map(candidate, request._candidateInit)) {
+            request._target = target;
+            request._final = false;
+            if (!_client.sendTrickle(request)) {
+                logError("failed to send " + candidate->server_url() +
+                         " " + std::string(toString(target)) + " local ICE candidate");
+            }
+        }
+        else {
+            logError("failed to serialize " + candidate->server_url() +
+                     " " + std::string(toString(target)) + " local ICE candidate");
+        }
+    }
+}
+
 void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 {
+    logVerbose("join response received from server");
     std::atomic_store(&_latestJoinResponse, std::make_shared<const JoinResponse>(response));
     {
         TransportManagerListener* listener = this;
@@ -234,6 +257,7 @@ void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 
 void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
 {
+    logVerbose("remote offer SDP received from server");
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         LOCK_READ_SAFE_OBJ(_pcManager);
@@ -241,13 +265,14 @@ void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
             pcManager->setSubscriberRemoteOffer(std::move(desc));
         }
     }
-    else if (canLogError()) {
+    else  {
         logError("failed to parse remote offer for subscriber: " + error.description);
     }
 }
 
 void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
 {
+    logVerbose("remote answer SDP received from server");
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         LOCK_READ_SAFE_OBJ(_pcManager);
@@ -255,7 +280,7 @@ void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
             pcManager->setPublisherRemoteAnswer(std::move(desc));
         }
     }
-    else if (canLogError()) {
+    else {
         logError("failed to parse remote answer for publisher: " + error.description);
     }
 }
@@ -265,6 +290,23 @@ void RTCEngine::onPong(uint64_t, int64_t, int64_t)
     logVerbose("ping/pong received pong from server");
     // Clear timeout timer
     _pingTimeoutTimer.stop();
+}
+
+void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
+{
+    logVerbose("trickle ICE for " + std::string(toString(request._target)) +
+               " received from server");
+    LOCK_READ_SAFE_OBJ(_pcManager);
+    if (const auto& pcm = _pcManager.constRef()) {
+        webrtc::SdpParseError error;
+        if (auto candidate = RoomUtils::map(request, &error)) {
+            pcm->addRemoteIceCandidate(request._target, std::move(candidate));
+        }
+        else {
+            logError("failed to parse ICE candidate SDP for " +
+                     std::string(toString(request._target)) + ": " + error.description);
+        }
+    }
 }
 
 void RTCEngine::onTransportStateChanged(uint64_t, TransportState state)

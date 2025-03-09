@@ -45,6 +45,7 @@ public:
     bool setSubscriberRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     rtc::scoped_refptr<webrtc::RtpSenderInterface> addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
+    void addRemoteIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
 private:
     void updateState();

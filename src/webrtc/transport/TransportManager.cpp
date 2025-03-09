@@ -97,22 +97,6 @@ webrtc::PeerConnectionInterface::PeerConnectionState TransportManager::state() c
     return _state;
 }
 
-/*bool TransportManager::addIceCandidate(const webrtc::IceCandidateInterface* candidate,
-                                       SignalTarget target)
-{
-    if (candidate) {
-        switch (target) {
-            case SignalTarget::Publisher:
-                return _publisher.addIceCandidate(candidate);
-            case SignalTarget::Subscriber:
-                return _subscriber.addIceCandidate(candidate);
-            default:
-                break;
-        }
-    }
-    return false;
-}*/
-
 void TransportManager::createPublisherOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     _publisher.createOffer(options);
@@ -171,6 +155,19 @@ rtc::scoped_refptr<webrtc::RtpSenderInterface> TransportManager::
     addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
 {
     return _publisher.addTrack(std::move(track));
+}
+
+void TransportManager::addRemoteIceCandidate(SignalTarget target,
+                                             std::unique_ptr<webrtc::IceCandidateInterface> candidate)
+{
+    switch (target) {
+        case SignalTarget::Publisher:
+            _publisher.addRemoteIceCandidate(std::move(candidate));
+            break;
+        case SignalTarget::Subscriber:
+            _subscriber.addRemoteIceCandidate(std::move(candidate));
+            break;
+    }
 }
 
 void TransportManager::close()

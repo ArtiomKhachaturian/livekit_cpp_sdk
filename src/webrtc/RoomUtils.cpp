@@ -13,9 +13,51 @@
 // limitations under the License.
 #include "RoomUtils.h"
 #include "rtc/ICETransportPolicy.h"
+#include <nlohmann/json.hpp>
 
 namespace LiveKitCpp
 {
+
+std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const TrickleRequest& trickle,
+                                                              webrtc::SdpParseError* error)
+{
+    return map(trickle._candidateInit, error);
+}
+
+std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const std::string& candidateInit,
+                                                              webrtc::SdpParseError* error)
+{
+    std::unique_ptr<webrtc::IceCandidateInterface> iceCandidate;
+    if (!candidateInit.empty()) {
+        try {
+            auto json = nlohmann::json::parse(candidateInit);
+            const auto candidate = json["candidate"].get<std::string>();
+            const auto sdpMid = json["sdpMid"].get<std::string>();
+            const auto sdpMLineIndex = json["sdpMLineIndex"].get<int>();
+            iceCandidate.reset(webrtc::CreateIceCandidate(sdpMid, sdpMLineIndex, candidate, error));
+        }
+        catch (const std::exception& e) {
+            if (error) {
+                error->description = e.what();
+            }
+        }
+    }
+    return iceCandidate;
+}
+
+bool RoomUtils::map(const webrtc::IceCandidateInterface* candidate, std::string& candidateInit)
+{
+    if (candidate && candidate->ToString(&candidateInit)) {
+        nlohmann::json iceCandidate;
+        iceCandidate["iceCandidate"] = std::move(candidateInit);
+        iceCandidate["sdpMid"] = candidate->sdp_mid();
+        iceCandidate["sdpMLineIndex"] = candidate->sdp_mline_index();
+        iceCandidate["usernameFragment"] = nullptr; // ??
+        candidateInit = nlohmann::to_string(iceCandidate);
+        return true;
+    }
+    return false;
+}
 
 std::optional<SessionDescription> RoomUtils::map(const webrtc::SessionDescriptionInterface* desc)
 {

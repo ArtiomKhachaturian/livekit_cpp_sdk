@@ -71,9 +71,7 @@ Transport::~Transport()
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (_pc) {
-        if (canLogInfo()) {
-            logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kOffer));
-        }
+        logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kOffer));
         _pc->CreateOffer(_offerCreationObserver.get(), options);
     }
 }
@@ -81,9 +79,7 @@ void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswe
 void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (_pc) {
-        if (canLogInfo()) {
-            logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
-        }
+        logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
         _pc->CreateAnswer(_answerCreationObserver.get(), options);
     }
 }
@@ -91,9 +87,7 @@ void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnsw
 void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (_pc && desc) {
-        if (canLogInfo()) {
-            logInfo("attempt to set local " + desc->type());
-        }
+        logInfo("attempt to set local " + desc->type());
         _pc->SetLocalDescription(std::move(desc), _setLocalSdpObserver);
     }
 }
@@ -101,9 +95,7 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
 void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (_pc && desc) {
-        if (canLogInfo()) {
-            logInfo("attempt to set remote " + desc->type());
-        }
+        logInfo("attempt to set remote " + desc->type());
         _pc->SetRemoteDescription(std::move(desc), _setRemoteSdpObserver);
     }
 }
@@ -193,20 +185,29 @@ bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sende
 {
     if (_pc) {
         const auto error = _pc->RemoveTrackOrError(std::move(sender));
-        if (error.ok()) {
-            return true;
+        if (!error.ok()) {
+            logWebRTCError(error, "failed to remove local media track");
         }
-        logWebRTCError(error);
+        return error.ok();
     }
     return false;
 }
 
-bool Transport::addIceCandidate(const webrtc::IceCandidateInterface* candidate)
+void Transport::addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate)
 {
     if (candidate && _pc) {
-        return _pc->AddIceCandidate(candidate);
+        _pc->AddIceCandidate(std::move(candidate), [this](webrtc::RTCError error) {
+            if (error.ok()) {
+                logVerbose("remote candidate for the ICE agent has been set successfully");
+            }
+            else {
+                logWebRTCError(error, "failed to add remote candidate for the ICE agent");
+                if (_listener) {
+                    _listener->onRemoteIceCandidateAddFailed(*this, std::move(error));
+                }
+            }
+        });
     }
-    return false;
 }
 
 rtc::scoped_refptr<webrtc::DataChannelInterface> Transport::
@@ -222,7 +223,7 @@ rtc::scoped_refptr<webrtc::DataChannelInterface> Transport::
             }
             return result.MoveValue();
         }
-        logWebRTCError(result.error());
+        logWebRTCError(result.error(), "unable to create data channel '" + label + "'");
     }
     return {};
 }
@@ -235,7 +236,7 @@ rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transport::
         if (result.ok()) {
             return result.MoveValue();
         }
-        logWebRTCError(result.error());
+        logWebRTCError(result.error(), "unable to add transceiver");
     }
     return {};
 }
@@ -249,7 +250,7 @@ rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transport::
         if (result.ok()) {
             return result.MoveValue();
         }
-        logWebRTCError(result.error());
+        logWebRTCError(result.error(), "unable to add transceiver");
     }
     return {};
 }
@@ -270,7 +271,7 @@ rtc::scoped_refptr<webrtc::RtpSenderInterface> Transport::
         if (result.ok()) {
             return result.MoveValue();
         }
-        logWebRTCError(result.error());
+        logWebRTCError(result.error(), "failed to add local media track");
     }
     return {};
 }
@@ -280,7 +281,7 @@ bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfi
     if (_pc) {
         auto res = _pc->SetConfiguration(config);
         if (!res.ok()) {
-            logWebRTCError(res);
+            logWebRTCError(res, "failed to set RTC configuration");
             if (_listener) {
                 _listener->onSetConfigurationError(*this, std::move(res));
             }
@@ -300,15 +301,21 @@ webrtc::scoped_refptr<webrtc::PeerConnectionInterface> Transport::
         if (pc.ok()) {
             return pc.MoveValue();
         }
-        logWebRTCError(pc.error());
+        logWebRTCError(pc.error(), "unable to create RTC peer connection");
     }
     return {};
 }
 
-void Transport::logWebRTCError(const webrtc::RTCError& error) const
+void Transport::logWebRTCError(const webrtc::RTCError& error,
+                               std::string_view prefix) const
 {
-    if (!error.ok()) {
-        logError(error.message());
+    if (!error.ok() && canLogError()) {
+        if (prefix.empty()) {
+            logError(error.message());
+        }
+        else {
+            logError(std::string(prefix) + std::string(": ") + error.message());
+        }
     }
 }
 
@@ -317,9 +324,7 @@ bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) 
 {
     const TState oldState = holder.exchange(newState);
     if (oldState != newState) {
-        if (canLogVerbose()) {
-            logVerbose(makeStateChangesString(oldState, newState));
-        }
+        logVerbose(makeStateChangesString(oldState, newState));
         return true;
     }
     return false;
@@ -327,7 +332,7 @@ bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) 
 
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    if (desc && canLogInfo()) {
+    if (desc) {
         logInfo(desc->type() + " created successfully");
     }
     if (_listener) {
@@ -337,9 +342,7 @@ void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> d
 
 void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
 {
-    if (canLogError()) {
-        logError("failed to create " + sdpTypeToString(type) + ": " + error.message());
-    }
+    logWebRTCError(error, "failed to create " + sdpTypeToString(type));
     if (_listener) {
         _listener->onSdpCreationFailure(*this, type, std::move(error));
     }
@@ -348,10 +351,8 @@ void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
 void Transport::onCompleted(bool local)
 {
     if (const auto desc = local ? _pc->local_description() : _pc->remote_description()) {
-        if (canLogInfo()) {
-            logInfo(std::string(local ? "local " : "remote ") +
-                    desc->type() + " has been set successfully");
-        }
+        logVerbose(std::string(local ? "local " : "remote ") +
+                   desc->type() + " has been set successfully");
         if (_listener) {
             _listener->onSdpSet(*this, local, desc);
         }
@@ -360,11 +361,7 @@ void Transport::onCompleted(bool local)
 
 void Transport::onFailure(bool local, webrtc::RTCError error)
 {
-    if (canLogError()) {
-        logError("failed to set " +
-                 std::string(local ? "local SDP " : "remote SDP" ) +
-                 ": " + error.message());
-    }
+    logWebRTCError(error, "failed to set " + std::string(local ? "local SDP" : "remote SDP"));
     if (_listener) {
         _listener->onSdpSetFailure(*this, local, std::move(error));
     }
@@ -444,6 +441,7 @@ void Transport::OnIceCandidateError(const std::string& address, int port,
                                     const std::string& url,
                                     int errorCode, const std::string& errorText)
 {
+    logError("a failure occured when gathering ICE candidates: " + errorText);
     if (_listener) {
         _listener->onIceCandidateError(*this, address, port, url, errorCode, errorText);
     }

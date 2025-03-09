@@ -67,7 +67,7 @@ public:
     explicit operator bool() const { return valid(); }
     void close();
     bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
-    bool addIceCandidate(const webrtc::IceCandidateInterface* candidate);
+    void addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     rtc::scoped_refptr<webrtc::DataChannelInterface>
         createDataChannel(const std::string& label,
                           const webrtc::DataChannelInit& init = {},
@@ -85,7 +85,7 @@ private:
     webrtc::scoped_refptr<webrtc::PeerConnectionInterface>
         createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                              const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
-    void logWebRTCError(const webrtc::RTCError& error) const;
+    void logWebRTCError(const webrtc::RTCError& error, std::string_view prefix = {}) const;
     template<typename TState>
     bool changeAndLogState(TState newState, std::atomic<TState>& holder) const;
     // impl. of CreateSdpObserver

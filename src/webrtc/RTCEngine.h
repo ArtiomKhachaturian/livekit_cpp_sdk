@@ -70,11 +70,14 @@ private:
     // impl. of TransportManagerListener
     void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
+    void onIceCandidate(SignalTarget target,
+                        const webrtc::IceCandidateInterface* candidate) final;
     // impl. of SignalServerListener
     void onJoin(uint64_t, const JoinResponse& response) final;
     void onOffer(uint64_t, const SessionDescription& sdp) final;
     void onAnswer(uint64_t, const SessionDescription& sdp) final;
     void onPong(uint64_t, int64_t, int64_t) final;
+    void onTrickle(uint64_t, const TrickleRequest& request) final;
     // SignalTransportListener
     void onTransportStateChanged(uint64_t, TransportState state) final;
     void onTransportError(uint64_t, std::string error) final;

@@ -58,6 +58,15 @@ function(recreateDir DIR)
     file(MAKE_DIRECTORY ${DIR})
 endfunction(recreateDir)
 
+function(downloadAndExtract ZIP_URL ZIP_FILE EXTRACT_DIR)
+    if (NOT EXISTS ${ZIP_FILE})
+        message(STATUS "Downloading of ${ZIP_URL}")
+        file(DOWNLOAD ${ZIP_URL} ${ZIP_FILE} SHOW_PROGRESS)
+        recreateDir(${EXTRACT_DIR})
+        file(ARCHIVE_EXTRACT INPUT ${ZIP_FILE} DESTINATION ${EXTRACT_DIR})
+    endif()
+endfunction(downloadAndExtract)
+
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
 recreateDir(${GENERATED_DIR})
 
@@ -133,10 +142,17 @@ if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
             message(FATAL_ERROR "Static library ${WEBRTC_LIB} was not found")
         endif()
         endforeach()
+
+        set(NLOHMANN_ZIP_URL "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip")
+        set(NLOHMANN_SRC_DIR ${CMAKE_BINARY_DIR}/nlohmann_json_src)
+        downloadAndExtract(${NLOHMANN_ZIP_URL} ${CMAKE_BINARY_DIR}/nlohmann_json.zip ${NLOHMANN_SRC_DIR})
+        set(NLOHMANN_HDRS_DIR ${NLOHMANN_SRC_DIR}/single_include)
+
         set(WEBRTC_AVAILABLE TRUE)
         file(GLOB_RECURSE WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
         file(GLOB_RECURSE WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
         file(GLOB WEBRTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
+
     else()
         if (NOT EXISTS ${WEBRTC_INCLUDE_DIR})
             message(FATAL_ERROR "WebRTC include folders ${WEBRTC_INCLUDE_DIR} doesn't exists")
@@ -192,6 +208,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 if (WEBRTC_AVAILABLE)
     target_include_directories(${PROJECT_NAME} PRIVATE 
         ${WEBRTC_INCLUDE_DIR} 
+        ${NLOHMANN_HDRS_DIR}
         ${CMAKE_SOURCE_DIR}/src/webrtc 
         ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
         ${CMAKE_SOURCE_DIR}/src/webrtc/transport

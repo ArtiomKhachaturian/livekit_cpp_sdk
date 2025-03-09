@@ -35,6 +35,8 @@ public:
                                  webrtc::RTCError /*error*/) {}
     virtual void onSetConfigurationError(Transport& /*transport*/,
                                          webrtc::RTCError /*error*/) {}
+    virtual void onRemoteIceCandidateAddFailed(Transport& /*transport*/,
+                                               webrtc::RTCError /*error*/) {}
     // extension of webrtc::PeerConnectionObserver interface
     virtual void onSignalingChange(Transport& /*transport*/,
                                    webrtc::PeerConnectionInterface::SignalingState /*newState*/) {}
