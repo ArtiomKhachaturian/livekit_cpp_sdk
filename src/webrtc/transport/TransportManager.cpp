@@ -38,38 +38,29 @@ TransportManager::TransportManager(const JoinResponse& joinResponse,
     : Bricks::LoggableS<TransportListener, DataChannelListener>(logger)
     , _listener(listener)
     , _joinResponse(joinResponse)
+    , _lossyDCObserver(new DataChannelObserver(DataChannelType::Lossy, this))
+    , _reliableDCObserver(new DataChannelObserver(DataChannelType::Relaible, this))
     , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
     , _pingPongKit(listener, positiveOrZero(joinResponse._pingInterval), positiveOrZero(joinResponse._pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
-    if (_publisher) {
-        DataChannelListener* const listener = this;
-        auto observer = std::make_unique<DataChannelObserver>(DataChannelType::Lossy, listener);
-        _lossyDC = _publisher.createDataChannel(toString(DataChannelType::Lossy),
-                                                {.ordered = true, .maxRetransmits = 0},
-                                                observer.get());
-        if (_lossyDC) {
-            _lossyDCObserver = std::move(observer);
-            observer = std::make_unique<DataChannelObserver>(DataChannelType::Relaible, listener);
-            _reliableDC = _publisher.createDataChannel(toString(DataChannelType::Relaible),
-                                                    {.ordered = true}, observer.get());
-            if (_reliableDC) {
-                _reliableDCObserver = std::move(observer);
-            }
-        }
-    }
+    _publisher.createDataChannel(toString(DataChannelType::Lossy),
+                                 {.ordered = true, .maxRetransmits = 0});
+    _publisher.createDataChannel(toString(DataChannelType::Relaible),
+                                 {.ordered = true});
 }
 
 TransportManager::~TransportManager()
 {
     _subscriber.close();
     _publisher.close();
-    if (_lossyDC) {
-        _lossyDC->UnregisterObserver();
+    LOCK_WRITE_SAFE_OBJ(_lossyDC);
+    if (auto lossyDC = _lossyDC.take()) {
+        lossyDC->UnregisterObserver();
     }
-    if (_reliableDC) {
-        _reliableDC->UnregisterObserver();
+    if (auto reliableDC = _reliableDC.take()) {
+        reliableDC->UnregisterObserver();
     }
 }
 
@@ -87,7 +78,7 @@ void TransportManager::negotiate(bool startPing)
 {
     // if publish only, negotiate
     if (canNegotiate()) {
-        _publisher.createOffer();
+        createPublisherOffer();
     }
     if (startPing) {
         this->startPing();
@@ -164,6 +155,22 @@ void TransportManager::close()
     _subscriber.close();
     stopPing();
     updateState();
+}
+
+void TransportManager::createPublisherOffer()
+{
+    if (_publisher) {
+        LOCK_READ_SAFE_OBJ(_lossyDC);
+        LOCK_READ_SAFE_OBJ(_reliableDC);
+        if (_lossyDC.constRef() && _reliableDC.constRef()) {
+            _pendingNegotiation = false;
+            _publisher.createOffer();
+        }
+        else {
+            // wait until DC are not created, and make offer ASAP in [onDataChannel] handler
+            _pendingNegotiation = true;
+        }
+    }
 }
 
 bool TransportManager::canNegotiate() const noexcept
@@ -248,7 +255,7 @@ void TransportManager::onSdpSet(SignalTarget target, bool local,
         switch (target) {
             case SignalTarget::Publisher: // see [setRemoteAnswer]
                 if (!canNegotiate()) {
-                    _publisher.createOffer();
+                    createPublisherOffer();
                 }
                 break;
             case SignalTarget::Subscriber: // see [setRemoteOffer]
@@ -300,12 +307,30 @@ void TransportManager::onSignalingChange(SignalTarget target,
     }
 }
 
-void TransportManager::onDataChannel(SignalTarget target,
+void TransportManager::onDataChannel(SignalTarget target, bool local,
                                      rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    if (SignalTarget::Subscriber == target) {
-        // in subscriber primary mode, server side opens sub data channels
-        invoke(&TransportManagerListener::onDataChannel, std::move(channel));
+    if (local) {
+        if (channel) {
+            const auto label = channel->label();
+            LOCK_WRITE_SAFE_OBJ(_lossyDC);
+            LOCK_WRITE_SAFE_OBJ(_reliableDC);
+            if (toString(DataChannelType::Lossy) == label) {
+                _lossyDC = std::move(channel);
+            }
+            else if (toString(DataChannelType::Relaible) == label) {
+                _reliableDC = std::move(channel);
+            }
+            if (_lossyDC.constRef() && _reliableDC.constRef() && _pendingNegotiation.exchange(false)) {
+                createPublisherOffer();
+            }
+        }
+    }
+    else {
+        if (SignalTarget::Subscriber == target) {
+            // in subscriber primary mode, server side opens sub data channels
+            invoke(&TransportManagerListener::onDataChannel, std::move(channel));
+        }
     }
 }
 

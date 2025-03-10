@@ -277,23 +277,28 @@ void Transport::addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterf
     }
 }
 
-rtc::scoped_refptr<webrtc::DataChannelInterface> Transport::
-    createDataChannel(const std::string& label,
-                      const webrtc::DataChannelInit& init,
-                      webrtc::DataChannelObserver* observer)
+bool Transport::createDataChannel(const std::string& label, const webrtc::DataChannelInit& init)
 {
     if (const auto& pc = _holder->peerConnection()) {
-        auto result = pc->CreateDataChannelOrError(label, &init);
-        if (result.ok()) {
-            if (observer) {
-                result.value()->RegisterObserver(observer);
-            }
-            return result.MoveValue();
+        if (const auto thread = _pcf->signalingThread()) {
+            _holder->logInfo("request to create '" + label + "' data channel");
+            thread->PostTask([label, init, ref = std::weak_ptr<Holder>(_holder)]() {
+                if (const auto holder = ref.lock()) {
+                    auto result = holder->peerConnection()->CreateDataChannelOrError(label, &init);
+                    if (result.ok()) {
+                        holder->logVerbose("data channel '" + label + "' has been created");
+                        holder->invoke(&TransportListener::onDataChannel, true, result.MoveValue());
+                    }
+                    else {
+                        holder->logWebRTCError(result.error(), "unable to create data channel '"
+                                               + label + "'");
+                    }
+                }
+            });
+            return true;
         }
-        _holder->logWebRTCError(result.error(), "unable to create data channel '"
-                                + label + "'");
     }
-    return {};
+    return false;
 }
 
 rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transport::
@@ -362,7 +367,7 @@ bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) 
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (desc) {
-        _holder->logInfo(desc->type() + " created successfully");
+        _holder->logVerbose(desc->type() + " created successfully");
     }
     _holder->invoke(&TransportListener::onSdpCreated, std::move(desc));
 }
@@ -409,7 +414,7 @@ void Transport::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> 
 
 void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    _holder->invoke(&TransportListener::onDataChannel, std::move(channel));
+    _holder->invoke(&TransportListener::onDataChannel, false, std::move(channel));
 }
 
 void Transport::OnNegotiationNeededEvent(uint32_t eventId)

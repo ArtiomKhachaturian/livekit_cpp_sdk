@@ -15,6 +15,7 @@
 #include "Loggable.h"
 #include "Transport.h"
 #include "PingPongKit.h"
+#include "SafeScopedRefPtr.h"
 #include "TransportListener.h"
 #include "DataChannelListener.h"
 #include "rtc/JoinResponse.h"
@@ -53,6 +54,7 @@ public:
     void addRemoteIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
 private:
+    void createPublisherOffer();
     bool canNegotiate() const noexcept;
     Transport& primaryTransport() noexcept;
     const Transport& primaryTransport() const noexcept;
@@ -69,7 +71,8 @@ private:
     void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
     void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
     void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
-    void onDataChannel(SignalTarget target, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+    void onDataChannel(SignalTarget target, bool local,
+                       rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
     void onIceCandidate(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
     void onTrack(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     // impl. of DataChannelListener
@@ -81,14 +84,15 @@ private:
 private:
     TransportManagerListener* const _listener;
     const JoinResponse _joinResponse;
+    const std::unique_ptr<DataChannelObserver> _lossyDCObserver;
+    const std::unique_ptr<DataChannelObserver> _reliableDCObserver;
     Transport _publisher;
     Transport _subscriber;
     PingPongKit _pingPongKit;
-    std::unique_ptr<DataChannelObserver> _lossyDCObserver;
-    std::unique_ptr<DataChannelObserver> _reliableDCObserver;
-    rtc::scoped_refptr<webrtc::DataChannelInterface> _lossyDC;
-    rtc::scoped_refptr<webrtc::DataChannelInterface> _reliableDC;
+    SafeScopedRefPtr<webrtc::DataChannelInterface> _lossyDC;
+    SafeScopedRefPtr<webrtc::DataChannelInterface> _reliableDC;
     std::atomic<webrtc::PeerConnectionInterface::PeerConnectionState> _state;
+    std::atomic_bool _pendingNegotiation = false;
 };
 
 } // namespace LiveKitCpp

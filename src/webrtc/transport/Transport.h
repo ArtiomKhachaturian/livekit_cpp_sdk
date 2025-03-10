@@ -76,10 +76,8 @@ public:
     void close();
     bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
     void addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
-    rtc::scoped_refptr<webrtc::DataChannelInterface>
-        createDataChannel(const std::string& label,
-                          const webrtc::DataChannelInit& init = {},
-                          webrtc::DataChannelObserver* observer = nullptr);
+    bool createDataChannel(const std::string& label,
+                           const webrtc::DataChannelInit& init = {});
     rtc::scoped_refptr<webrtc::RtpTransceiverInterface>
         addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
     rtc::scoped_refptr<webrtc::RtpTransceiverInterface>

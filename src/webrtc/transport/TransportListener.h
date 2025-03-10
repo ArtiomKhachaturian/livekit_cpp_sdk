@@ -45,7 +45,7 @@ public:
                              rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
     virtual void onRemoveStream(SignalTarget /*target*/,
                                 rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
-    virtual void onDataChannel(SignalTarget /*target*/,
+    virtual void onDataChannel(SignalTarget /*target*/, bool /*local*/,
                                rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
     virtual void onNegotiationNeededEvent(SignalTarget /*target*/, uint32_t /*eventId*/) {}
     virtual void onIceConnectionChange(SignalTarget /*target*/,
