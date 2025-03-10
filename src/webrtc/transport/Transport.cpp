@@ -21,7 +21,6 @@
 #include "Utils.h"
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/PCTransport.ts
-
 namespace LiveKitCpp
 {
 
@@ -71,7 +70,7 @@ Transport::~Transport()
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (_pc) {
-        logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kOffer));
+        logInfo("create " + sdpTypeToString(webrtc::SdpType::kOffer));
         _pc->CreateOffer(_offerCreationObserver.get(), options);
     }
 }
@@ -79,7 +78,7 @@ void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswe
 void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (_pc) {
-        logInfo("attempt to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
+        logInfo("create " + sdpTypeToString(webrtc::SdpType::kAnswer));
         _pc->CreateAnswer(_answerCreationObserver.get(), options);
     }
 }
@@ -87,7 +86,7 @@ void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnsw
 void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (_pc && desc) {
-        logInfo("attempt to set local " + desc->type());
+        logInfo("set local " + desc->type());
         _pc->SetLocalDescription(std::move(desc), _setLocalSdpObserver);
     }
 }
@@ -95,7 +94,7 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
 void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (_pc && desc) {
-        logInfo("attempt to set remote " + desc->type());
+        logInfo("set remote " + desc->type());
         _pc->SetRemoteDescription(std::move(desc), _setRemoteSdpObserver);
     }
 }
@@ -183,10 +182,12 @@ void Transport::close()
 
 bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
-    if (_pc) {
+    if (_pc && sender) {
+        const auto type = sender->media_type();
         const auto error = _pc->RemoveTrackOrError(std::move(sender));
         if (!error.ok()) {
-            logWebRTCError(error, "failed to remove local media track");
+            logWebRTCError(error, "failed to remove local " +
+                           cricket::MediaTypeToString(type) + " track");
         }
         return error.ok();
     }
@@ -392,13 +393,6 @@ void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> c
 {
     if (_listener) {
         _listener->onDataChannel(*this, std::move(channel));
-    }
-}
-
-void Transport::OnRenegotiationNeeded()
-{
-    if (_listener) {
-        _listener->onRenegotiationNeeded(*this);
     }
 }
 

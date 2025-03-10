@@ -99,7 +99,6 @@ private:
     void OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
     void OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
     void OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
-    void OnRenegotiationNeeded() final;
     void OnNegotiationNeededEvent(uint32_t eventId) final;
     void OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState) final;
     void OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState newState) final;

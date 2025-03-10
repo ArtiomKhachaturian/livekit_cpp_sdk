@@ -46,7 +46,6 @@ public:
                                 rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
     virtual void onDataChannel(Transport& /*transport*/,
                                rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
-    virtual void onRenegotiationNeeded(Transport& /*transport*/) {}
     virtual void onNegotiationNeededEvent(Transport& /*transport*/, uint32_t /*eventId*/) {}
     virtual void onIceConnectionChange(Transport& /*transport*/,
                                        webrtc::PeerConnectionInterface::IceConnectionState /*newState*/) {}
