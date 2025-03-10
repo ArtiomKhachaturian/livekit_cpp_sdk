@@ -42,7 +42,7 @@ public:
     ~TransportManager() final;
     const JoinResponse& joinResponse() const noexcept { return _joinResponse; }
     bool valid() const noexcept;
-    void updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
+    bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
     void negotiate(bool startPing = true);
     void startPing() { _pingPongKit.start(); }
@@ -50,8 +50,8 @@ public:
     void notifyThatPongReceived() { _pingPongKit.notifyThatPongReceived(); }
     bool setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
-    rtc::scoped_refptr<webrtc::RtpSenderInterface> addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
-    void addRemoteIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
+    bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
+    bool addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
 private:
     void createPublisherOffer();
@@ -67,12 +67,12 @@ private:
     void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
     void onSdpSet(SignalTarget target, bool local, const webrtc::SessionDescriptionInterface* desc) final;
     void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
-    void onSetConfigurationError(SignalTarget target, webrtc::RTCError error) final;
+    void onDataChannelCreated(SignalTarget target,
+                              rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
     void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
     void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
     void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
-    void onDataChannel(SignalTarget target, bool local,
-                       rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+    void onDataChannel(SignalTarget target, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
     void onIceCandidate(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
     void onTrack(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     // impl. of DataChannelListener

@@ -34,10 +34,42 @@ public:
                           const webrtc::SessionDescriptionInterface* /*desc*/) {}
     virtual void onSdpSetFailure(SignalTarget /*target*/, bool /*local*/,
                                  webrtc::RTCError /*error*/) {}
-    virtual void onSetConfigurationError(SignalTarget /*target*/,
+    virtual void onConfigurationSet(SignalTarget /*target*/,
+                                    const webrtc::PeerConnectionInterface::RTCConfiguration& /*config*/) {}
+    virtual void onConfigurationSetFailure(SignalTarget /*target*/,
+                                           webrtc::RTCError /*error*/) {}
+    virtual void onIceCandidateAdded(SignalTarget /*target*/) {}
+    virtual void onIceCandidateAddFailure(SignalTarget /*target*/,
+                                          webrtc::RTCError /*error*/) {}
+    virtual void onDataChannelCreated(SignalTarget /*target*/,
+                                      rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
+    virtual void onDataChannelCreationFailure(SignalTarget /*target*/,
+                                              const std::string& /*label*/,
+                                              const webrtc::DataChannelInit& /*init*/,
+                                              webrtc::RTCError /*error*/) {}
+    virtual void onLocalTrackAdded(SignalTarget /*target*/,
+                                   rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
+    virtual void onLocalTrackAddFailure(SignalTarget /*target*/,
+                                        const std::string& /*id*/,
+                                        const std::string& /*kind*/,
+                                        const std::vector<std::string>& /*streamIds*/,
+                                        webrtc::RTCError /*error*/) {}
+    virtual void onLocalTrackRemoved(SignalTarget /*target*/,
+                                     const std::string& /*id*/,
+                                     const std::string& /*kind*/,
+                                     const std::vector<std::string>& /*streamIds*/) {}
+    virtual void onLocalTrackRemoveFailure(SignalTarget /*target*/,
+                                           const std::string& /*id*/,
+                                           const std::string& /*kind*/,
+                                           const std::vector<std::string>& /*streamIds*/,
+                                           webrtc::RTCError /*error*/) {}
+    virtual void onTransceiverAdded(SignalTarget /*target*/,
+                                    rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+    virtual void onTransceiverAddFailure(SignalTarget /*target*/,
+                                         const std::string& /*id*/,
+                                         const std::string& /*kind*/,
+                                         const webrtc::RtpTransceiverInit& /*init*/,
                                          webrtc::RTCError /*error*/) {}
-    virtual void onRemoteIceCandidateAddFailed(SignalTarget /*target*/,
-                                               webrtc::RTCError /*error*/) {}
     // extension of webrtc::PeerConnectionObserver interface
     virtual void onSignalingChange(SignalTarget /*target*/,
                                    webrtc::PeerConnectionInterface::SignalingState /*newState*/) {}
@@ -45,7 +77,7 @@ public:
                              rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
     virtual void onRemoveStream(SignalTarget /*target*/,
                                 rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
-    virtual void onDataChannel(SignalTarget /*target*/, bool /*local*/,
+    virtual void onDataChannel(SignalTarget /*target*/,
                                rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
     virtual void onNegotiationNeededEvent(SignalTarget /*target*/, uint32_t /*eventId*/) {}
     virtual void onIceConnectionChange(SignalTarget /*target*/,

@@ -48,22 +48,35 @@ public:
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~Transport() override;
     SignalTarget target() const noexcept;
-    void updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
+    // config & media (fully async)
+    bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
+    bool createDataChannel(const std::string& label,
+                           const webrtc::DataChannelInit& init = {});
+    bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                  const std::vector<std::string>& streamIds = {},
+                  const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
+    bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
+    bool addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
+    bool addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                        const webrtc::RtpTransceiverInit& init = {});
+    // SDP manipulations
     void createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     void setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
+    const webrtc::SessionDescriptionInterface* localDescription() const;
+    const webrtc::SessionDescriptionInterface* remoteDescription() const;
+    // state
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
     webrtc::PeerConnectionInterface::IceConnectionState iceConnectionState() const noexcept;
     webrtc::PeerConnectionInterface::SignalingState signalingState() const noexcept;
     webrtc::PeerConnectionInterface::IceGatheringState iceGatheringState() const noexcept;
     bool iceConnected() const noexcept;
     bool closed() const noexcept;
+    // sync getters
     std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> transceivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> receivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> senders() const;
-    const webrtc::SessionDescriptionInterface* localDescription() const;
-    const webrtc::SessionDescriptionInterface* remoteDescription() const;
     // getStats()
     bool valid() const;
     explicit operator bool() const { return valid(); }
@@ -74,22 +87,11 @@ public:
     // use the TransportListener interface passed in on construction, and
     // thus the listener object can be safely destroyed.
     void close();
-    bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
-    void addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
-    bool createDataChannel(const std::string& label,
-                           const webrtc::DataChannelInit& init = {});
-    rtc::scoped_refptr<webrtc::RtpTransceiverInterface>
-        addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
-    rtc::scoped_refptr<webrtc::RtpTransceiverInterface>
-        addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                       const webrtc::RtpTransceiverInit& init);
-    rtc::scoped_refptr<webrtc::RtpSenderInterface>
-        addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                 const std::vector<std::string>& streamIds = {},
-                 const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
 private:
     template<typename TState>
     bool changeAndLogState(TState newState, std::atomic<TState>& holder) const;
+    // return NULL if there are not peer connection or peer connection factory
+    rtc::Thread* signalingThread() const noexcept;
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onFailure(webrtc::SdpType type, webrtc::RTCError error) final;

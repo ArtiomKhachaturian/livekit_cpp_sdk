@@ -22,6 +22,15 @@
 #include "Listener.h"
 #include "Utils.h"
 
+namespace {
+
+template<typename T>
+inline auto weak(const std::shared_ptr<T>& strong) {
+    return std::weak_ptr<T>(strong);
+}
+
+}
+
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/PCTransport.ts
 namespace LiveKitCpp
 {
@@ -89,36 +98,194 @@ SignalTarget Transport::target() const noexcept
     return _holder->target();
 }
 
-void Transport::updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
+bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
 {
-    if (const auto& pc = _holder->peerConnection()) {
-        if (const auto thread = _pcf->signalingThread()) {
-            thread->PostTask([config, ref = std::weak_ptr<Holder>(_holder)]() {
+    if (const auto thread = signalingThread()) {
+        _holder->logInfo("request to set peer connection configuration");
+        thread->PostTask([config, ref = weak(_holder)]() {
+            if (const auto holder = ref.lock()) {
+                auto res = holder->peerConnection()->SetConfiguration(config);
+                if (res.ok()) {
+                    holder->logVerbose("set of peer connection configuration successfully completed");
+                    holder->invoke(&TransportListener::onConfigurationSet, config);
+                }
+                else {
+                    holder->logWebRTCError(res, "failed to set connection configuration configuration");
+                    holder->invoke(&TransportListener::onConfigurationSetFailure, std::move(res));
+                }
+            }
+        });
+        return true;
+    }
+    return false;
+}
+
+bool Transport::createDataChannel(const std::string& label, const webrtc::DataChannelInit& init)
+{
+    if (const auto thread = signalingThread()) {
+        _holder->logInfo("request to create '" + label + "' data channel");
+        thread->PostTask([label, init, ref = weak(_holder)]() {
+            if (const auto holder = ref.lock()) {
+                auto result = holder->peerConnection()->CreateDataChannelOrError(label, &init);
+                if (result.ok()) {
+                    holder->logVerbose("data channel '" + label + "' has been created");
+                    holder->invoke(&TransportListener::onDataChannelCreated, result.MoveValue());
+                }
+                else {
+                    holder->logWebRTCError(result.error(), "unable to create data channel '"
+                                           + label + "'");
+                    holder->invoke(&TransportListener::onDataChannelCreationFailure,
+                                   label, init, result.MoveError());
+                }
+            }
+        });
+        return true;
+    }
+    return false;
+}
+
+bool Transport::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                         const std::vector<std::string>& streamIds,
+                         const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings)
+{
+    if (track) {
+        if (const auto thread = signalingThread()) {
+            _holder->logInfo("request to adding local '" + track->id() + "' " + track->kind() + " track");
+            thread->PostTask([track = std::move(track), streamIds,
+                              initSendEncodings, ref = weak(_holder)]() {
                 if (const auto holder = ref.lock()) {
-                    auto res = holder->peerConnection()->SetConfiguration(config);
-                    if (!res.ok()) {
-                        holder->logWebRTCError(res, "failed to set RTC configuration");
-                        holder->invoke(&TransportListener::onSetConfigurationError, std::move(res));
+                    const auto id = track->id();
+                    const auto kind = track->kind();
+                    webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpSenderInterface>> result;
+                    if (initSendEncodings.empty()) {
+                        result = holder->peerConnection()->AddTrack(std::move(track),
+                                                                    streamIds);
+                    }
+                    else {
+                        result = holder->peerConnection()->AddTrack(std::move(track),
+                                                                    streamIds,
+                                                                    initSendEncodings);
+                    }
+                    if (result.ok()) {
+                        holder->logVerbose("local " + kind + " track '" + id + "' was added");
+                        holder->invoke(&TransportListener::onLocalTrackAdded, result.MoveValue());
+                    }
+                    else {
+                        holder->logWebRTCError(result.error(), "failed to add '" +
+                                               id + "' local " + kind + " track");
+                        holder->invoke(&TransportListener::onLocalTrackAddFailure,
+                                       id, kind, streamIds, result.MoveError());
                     }
                 }
             });
+            return true;
         }
     }
+    return false;
 }
+
+bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+{
+    if (sender) {
+        if (const auto thread = signalingThread()) {
+            _holder->logInfo("request to removal '" + sender->id() + "' local " +
+                             cricket::MediaTypeToString(sender->media_type()) + " track");
+            thread->PostTask([sender = std::move(sender), ref = weak(_holder)]() {
+                if (const auto holder = ref.lock()) {
+                    const auto kind = cricket::MediaTypeToString(sender->media_type());
+                    const auto id = sender->id();
+                    const auto streamIds = sender->stream_ids();
+                    const auto res = holder->peerConnection()->RemoveTrackOrError(std::move(sender));
+                    if (res.ok()) {
+                        holder->logVerbose("local " + kind + " track '" + id + "' track was removed");
+                        holder->invoke(&TransportListener::onLocalTrackRemoved, id, kind, streamIds);
+                    }
+                    else {
+                        holder->logWebRTCError(res, "failed to remove '" +
+                                               id + "' local " + kind + " track");
+                        holder->invoke(&TransportListener::onLocalTrackRemoveFailure,
+                                       id, kind, streamIds, std::move(res));
+                    }
+                }
+            });
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Transport::addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate)
+{
+    if (candidate) {
+        if (const auto& pc = _holder->peerConnection()) {
+            const auto info = candidate->candidate().ToSensitiveString();
+            _holder->logInfo("request to add (" + info + ") ICE candidate");
+            auto handler = [info, ref = weak(_holder)](webrtc::RTCError error) {
+                if (const auto holder = ref.lock()) {
+                    if (error.ok()) {
+                        holder->logVerbose("ICE candidate (" + info +
+                                           ") has been added successfully");
+                        holder->invoke(&TransportListener::onIceCandidateAdded);
+                    }
+                    else {
+                        holder->logWebRTCError(error, "failed to add ICE candidate (" +
+                                               info + ")");
+                        holder->invoke(&TransportListener::onIceCandidateAddFailure,
+                                       std::move(error));
+                    }
+                }
+            };
+            pc->AddIceCandidate(std::move(candidate), std::move(handler));
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Transport::addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
+                               const webrtc::RtpTransceiverInit& init)
+{
+    if (track) {
+        if (const auto thread = signalingThread()) {
+            _holder->logInfo("request to adding '" + track->id() + "' " +
+                             track->kind() + " transceiver");
+            thread->PostTask([track = std::move(track), init, ref = weak(_holder)]() {
+                if (const auto holder = ref.lock()) {
+                    const auto id = track->id();
+                    const auto kind = track->kind();
+                    auto result = holder->peerConnection()->AddTransceiver(std::move(track), init);
+                    if (result.ok()) {
+                        holder->logVerbose(kind + " transceiver '" + id + "' was added");
+                        holder->invoke(&TransportListener::onTransceiverAdded, result.MoveValue());
+                    }
+                    else {
+                        holder->logWebRTCError(result.error(), "failed to add '" +
+                                               id + "' " + kind + " transceiver");
+                        holder->invoke(&TransportListener::onTransceiverAddFailure,
+                                       id, kind, init, result.MoveError());
+                    }
+                }
+            });
+            return true;
+        }
+    }
+    return false;
+}
+
 
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (const auto& pc = _holder->peerConnection()) {
-        _holder->logInfo("create " + sdpTypeToString(webrtc::SdpType::kOffer));
-        pc->CreateOffer(_offerCreationObserver.get(), options);
+        _holder->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kOffer));
+        pc->CreateOffer(_offerCreationObserver.get(), options); // non-blocking call
     }
 }
 
 void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
     if (const auto& pc = _holder->peerConnection()) {
-        _holder->logInfo("create " + sdpTypeToString(webrtc::SdpType::kAnswer));
-        pc->CreateAnswer(_answerCreationObserver.get(), options);
+        _holder->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
+        pc->CreateAnswer(_answerCreationObserver.get(), options); // non-blocking call
     }
 }
 
@@ -126,7 +293,7 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
 {
     if (desc) {
         if (const auto& pc = _holder->peerConnection()) {
-            _holder->logInfo("set local " + desc->type());
+            _holder->logInfo("request to set local " + desc->type());
             pc->SetLocalDescription(std::move(desc), _setLocalSdpObserver);
         }
     }
@@ -136,10 +303,26 @@ void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionI
 {
     if (desc) {
         if (const auto& pc = _holder->peerConnection()) {
-            _holder->logInfo("set remote " + desc->type());
+            _holder->logInfo("request to set remote " + desc->type());
             pc->SetRemoteDescription(std::move(desc), _setRemoteSdpObserver);
         }
     }
+}
+
+const webrtc::SessionDescriptionInterface* Transport::localDescription() const
+{
+    if (const auto& pc = _holder->peerConnection()) {
+        return pc->local_description();
+    }
+    return nullptr;
+}
+
+const webrtc::SessionDescriptionInterface* Transport::remoteDescription() const
+{
+    if (const auto& pc = _holder->peerConnection()) {
+        return pc->remote_description();
+    }
+    return nullptr;
 }
 
 webrtc::PeerConnectionInterface::PeerConnectionState Transport::state() const noexcept
@@ -206,22 +389,6 @@ std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> Transport::senders()
     return {};
 }
 
-const webrtc::SessionDescriptionInterface* Transport::localDescription() const
-{
-    if (const auto& pc = _holder->peerConnection()) {
-        return pc->local_description();
-    }
-    return nullptr;
-}
-
-const webrtc::SessionDescriptionInterface* Transport::remoteDescription() const
-{
-    if (const auto& pc = _holder->peerConnection()) {
-        return pc->remote_description();
-    }
-    return nullptr;
-}
-
 bool Transport::valid() const
 {
     return nullptr != _holder->peerConnection();
@@ -240,119 +407,6 @@ void Transport::close()
     }
 }
 
-bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
-{
-    if (sender) {
-        if (const auto& pc = _holder->peerConnection()) {
-            const auto type = sender->media_type();
-            const auto error = pc->RemoveTrackOrError(std::move(sender));
-            if (!error.ok()) {
-                _holder->logWebRTCError(error, "failed to remove local " +
-                                        cricket::MediaTypeToString(type) + " track");
-            }
-            return error.ok();
-        }
-    }
-    return false;
-}
-
-void Transport::addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate)
-{
-    if (candidate) {
-        if (const auto& pc = _holder->peerConnection()) {
-            auto handler = [ref = std::weak_ptr<Holder>(_holder)](webrtc::RTCError error) {
-                if (const auto holder = ref.lock()) {
-                    if (error.ok()) {
-                        holder->logVerbose("remote candidate for the ICE agent has been set successfully");
-                    }
-                    else {
-                        holder->logWebRTCError(error, "failed to add remote candidate for the ICE agent");
-                        holder->invoke(&TransportListener::onRemoteIceCandidateAddFailed,
-                                       std::move(error));
-                    }
-                }
-            };
-            pc->AddIceCandidate(std::move(candidate), std::move(handler));
-        }
-    }
-}
-
-bool Transport::createDataChannel(const std::string& label, const webrtc::DataChannelInit& init)
-{
-    if (const auto& pc = _holder->peerConnection()) {
-        if (const auto thread = _pcf->signalingThread()) {
-            _holder->logInfo("request to create '" + label + "' data channel");
-            thread->PostTask([label, init, ref = std::weak_ptr<Holder>(_holder)]() {
-                if (const auto holder = ref.lock()) {
-                    auto result = holder->peerConnection()->CreateDataChannelOrError(label, &init);
-                    if (result.ok()) {
-                        holder->logVerbose("data channel '" + label + "' has been created");
-                        holder->invoke(&TransportListener::onDataChannel, true, result.MoveValue());
-                    }
-                    else {
-                        holder->logWebRTCError(result.error(), "unable to create data channel '"
-                                               + label + "'");
-                    }
-                }
-            });
-            return true;
-        }
-    }
-    return false;
-}
-
-rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transport::
-    addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
-{
-    if (track) {
-        if (const auto& pc = _holder->peerConnection()) {
-            auto result = pc->AddTransceiver(std::move(track));
-            if (result.ok()) {
-                return result.MoveValue();
-            }
-            _holder->logWebRTCError(result.error(), "unable to add transceiver");
-        }
-    }
-    return {};
-}
-
-rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transport::
-    addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                   const webrtc::RtpTransceiverInit& init)
-{
-    if (track) {
-        if (const auto& pc = _holder->peerConnection()) {
-            auto result = pc->AddTransceiver(std::move(track), init);
-            if (result.ok()) {
-                return result.MoveValue();
-            }
-            _holder->logWebRTCError(result.error(), "unable to add transceiver");
-        }
-    }
-    return {};
-}
-
-rtc::scoped_refptr<webrtc::RtpSenderInterface> Transport::
-    addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-             const std::vector<std::string>& streamIds,
-             const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings)
-{
-    if (const auto& pc = _holder->peerConnection()) {
-        webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpSenderInterface>> result;
-        if (initSendEncodings.empty()) {
-            result = pc->AddTrack(std::move(track), streamIds);
-        }
-        else {
-            result = pc->AddTrack(std::move(track), streamIds, initSendEncodings);
-        }
-        if (result.ok()) {
-            return result.MoveValue();
-        }
-        _holder->logWebRTCError(result.error(), "failed to add local media track");
-    }
-    return {};
-}
-
 template<typename TState>
 bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) const
 {
@@ -362,6 +416,14 @@ bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) 
         return true;
     }
     return false;
+}
+
+rtc::Thread* Transport::signalingThread() const noexcept
+{
+    if (_pcf && _holder->peerConnection()) {
+        return _pcf->signalingThread();
+    }
+    return nullptr;
 }
 
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
@@ -414,7 +476,7 @@ void Transport::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> 
 
 void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    _holder->invoke(&TransportListener::onDataChannel, false, std::move(channel));
+    _holder->invoke(&TransportListener::onDataChannel, std::move(channel));
 }
 
 void Transport::OnNegotiationNeededEvent(uint32_t eventId)

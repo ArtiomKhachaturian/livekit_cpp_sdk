@@ -124,29 +124,27 @@ bool TransportManager::setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptio
     return false;
 }
 
-void TransportManager::updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
+bool TransportManager::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
 {
-    _subscriber.updateConfiguration(config);
-    _publisher.updateConfiguration(config);
+    return _subscriber.setConfiguration(config) && _publisher.setConfiguration(config);
 }
 
-rtc::scoped_refptr<webrtc::RtpSenderInterface> TransportManager::
-    addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
+bool TransportManager::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
 {
     return _publisher.addTrack(std::move(track));
 }
 
-void TransportManager::addRemoteIceCandidate(SignalTarget target,
-                                             std::unique_ptr<webrtc::IceCandidateInterface> candidate)
+bool TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate)
 {
     switch (target) {
         case SignalTarget::Publisher:
-            _publisher.addRemoteIceCandidate(std::move(candidate));
+            return _publisher.addIceCandidate(std::move(candidate));
             break;
         case SignalTarget::Subscriber:
-            _subscriber.addRemoteIceCandidate(std::move(candidate));
+            return _subscriber.addIceCandidate(std::move(candidate));
             break;
     }
+    return false;
 }
 
 void TransportManager::close()
@@ -275,11 +273,22 @@ void TransportManager::onSdpSetFailure(SignalTarget target, bool local, webrtc::
     }
 }
 
-void TransportManager::onSetConfigurationError(SignalTarget target, webrtc::RTCError error)
+void TransportManager::onDataChannelCreated(SignalTarget target,
+                                            rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    if (canLogError()) {
-        logError("Failed to set configuration for " + toString(target) +
-                 ": " + error.message());
+    if (SignalTarget::Publisher == target && channel) {
+        const auto label = channel->label();
+        LOCK_WRITE_SAFE_OBJ(_lossyDC);
+        LOCK_WRITE_SAFE_OBJ(_reliableDC);
+        if (toString(DataChannelType::Lossy) == label) {
+            _lossyDC = std::move(channel);
+        }
+        else if (toString(DataChannelType::Relaible) == label) {
+            _reliableDC = std::move(channel);
+        }
+        if (_lossyDC.constRef() && _reliableDC.constRef() && _pendingNegotiation.exchange(false)) {
+            createPublisherOffer();
+        }
     }
 }
 
@@ -307,30 +316,12 @@ void TransportManager::onSignalingChange(SignalTarget target,
     }
 }
 
-void TransportManager::onDataChannel(SignalTarget target, bool local,
+void TransportManager::onDataChannel(SignalTarget target,
                                      rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    if (local) {
-        if (channel) {
-            const auto label = channel->label();
-            LOCK_WRITE_SAFE_OBJ(_lossyDC);
-            LOCK_WRITE_SAFE_OBJ(_reliableDC);
-            if (toString(DataChannelType::Lossy) == label) {
-                _lossyDC = std::move(channel);
-            }
-            else if (toString(DataChannelType::Relaible) == label) {
-                _reliableDC = std::move(channel);
-            }
-            if (_lossyDC.constRef() && _reliableDC.constRef() && _pendingNegotiation.exchange(false)) {
-                createPublisherOffer();
-            }
-        }
-    }
-    else {
-        if (SignalTarget::Subscriber == target) {
-            // in subscriber primary mode, server side opens sub data channels
-            invoke(&TransportManagerListener::onDataChannel, std::move(channel));
-        }
+    if (SignalTarget::Subscriber == target) {
+        // in subscriber primary mode, server side opens sub data channels
+        invoke(&TransportManagerListener::onDataChannel, std::move(channel));
     }
 }
 

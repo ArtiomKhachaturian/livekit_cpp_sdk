@@ -31,6 +31,7 @@ class EndPoint;
 
 namespace webrtc {
 class DataChannelInterface;
+class RtpSenderInterface;
 }
 
 namespace LiveKitCpp
@@ -53,6 +54,7 @@ public:
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
+    void setMicrophoneEnabled(bool enable);
 private:
     void cleanup(bool /*error*/ = false);
     rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> createLocalAudioTrack() const;
@@ -85,9 +87,9 @@ private:
 private:
     const Options _options;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> _localAudioTrack;
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
+    SafeScopedRefPtr<webrtc::RtpSenderInterface> _micTrack;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _joinAttempts = 0U;
 };

@@ -34,7 +34,6 @@ RTCEngine::RTCEngine(const Options& signalOptions,
                         SignalServerListener>(logger)
     , _options(signalOptions)
     , _pcf(pcf)
-    , _localAudioTrack(createLocalAudioTrack())
     , _client(std::move(socket), logger.get())
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
@@ -73,6 +72,27 @@ bool RTCEngine::connect(std::string url, std::string authToken)
         }
     }
     return ok;
+}
+
+void RTCEngine::setMicrophoneEnabled(bool enable)
+{
+    /*if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        LOCK_WRITE_SAFE_OBJ(_micTrack);
+        const auto alreadyEnabled = nullptr != _micTrack->get();
+        if (alreadyEnabled != enable) {
+            if (enable) {
+                if (auto track = createLocalAudioTrack()) {
+                    _micTrack = pcManager->addTrack(std::move(track));
+                }
+                else {
+                    // TODO: log error
+                }
+            }
+            else {
+                pcManager->removeTrack(_micTrack.take());
+            }
+        }
+    }*/
 }
 
 void RTCEngine::cleanup(bool /*error*/)
@@ -255,7 +275,9 @@ void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         webrtc::SdpParseError error;
         if (auto candidate = RoomUtils::map(request, &error)) {
-            pcManager->addRemoteIceCandidate(request._target, std::move(candidate));
+            if (!pcManager->addIceCandidate(request._target, std::move(candidate))) {
+                // TODO: log error
+            }
         }
         else {
             logError("failed to parse ICE candidate SDP for " +
