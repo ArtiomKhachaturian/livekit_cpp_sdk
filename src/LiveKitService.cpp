@@ -259,11 +259,11 @@ LiveKitServiceState LiveKitService::state() const
     return LiveKitServiceState::NoWebRTC;
 }
 
-LiveKitRoom* LiveKitService::makeRoom(const SignalOptions&) const { return nullptr; }
+LiveKitRoom* LiveKitService::makeRoom(const Options&) const { return nullptr; }
 
-std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const SignalOptions&) const { return {}; }
+std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const Options&) const { return {}; }
 
-std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const SignalOptions&) const { return {}; }
+std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options&) const { return {}; }
 
 #endif
 

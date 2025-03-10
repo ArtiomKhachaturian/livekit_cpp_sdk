@@ -66,8 +66,8 @@ struct LiveKitRoom::Impl {};
     
 LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint>,
                          PeerConnectionFactory*,
-                         const ConnectOptions&,
-                         const RoomOptions&) {}
+                         const Options&,
+                         const std::shared_ptr<Bricks::Logger>&) {}
 
 LiveKitRoom::~LiveKitRoom() {}
 
