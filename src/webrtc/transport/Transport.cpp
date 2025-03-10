@@ -29,6 +29,19 @@ inline auto weak(const std::shared_ptr<T>& strong) {
     return std::weak_ptr<T>(strong);
 }
 
+inline cricket::MediaType fromString(const std::string& type) {
+    if (type == cricket::MediaTypeToString(cricket::MEDIA_TYPE_AUDIO)) {
+        return cricket::MEDIA_TYPE_AUDIO;
+    }
+    if (type == cricket::MediaTypeToString(cricket::MEDIA_TYPE_VIDEO)) {
+        return cricket::MEDIA_TYPE_VIDEO;
+    }
+    if (type == cricket::MediaTypeToString(cricket::MEDIA_TYPE_DATA)) {
+        return cricket::MEDIA_TYPE_DATA;
+    }
+    return cricket::MEDIA_TYPE_UNSUPPORTED;
+}
+
 }
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/PCTransport.ts
@@ -129,12 +142,12 @@ bool Transport::createDataChannel(const std::string& label, const webrtc::DataCh
                 auto result = holder->peerConnection()->CreateDataChannelOrError(label, &init);
                 if (result.ok()) {
                     holder->logVerbose("data channel '" + label + "' has been created");
-                    holder->invoke(&TransportListener::onDataChannelCreated, result.MoveValue());
+                    holder->invoke(&TransportListener::onLocalDataChannelCreated, result.MoveValue());
                 }
                 else {
                     holder->logWebRTCError(result.error(), "unable to create data channel '"
                                            + label + "'");
-                    holder->invoke(&TransportListener::onDataChannelCreationFailure,
+                    holder->invoke(&TransportListener::onLocalDataChannelCreationFailure,
                                    label, init, result.MoveError());
                 }
             }
@@ -150,12 +163,12 @@ bool Transport::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> t
 {
     if (track) {
         if (const auto thread = signalingThread()) {
-            _holder->logInfo("request to adding local '" + track->id() + "' " + track->kind() + " track");
-            thread->PostTask([track = std::move(track), streamIds,
+            const auto id = track->id();
+            const auto kind = track->kind();
+            _holder->logInfo("request to adding local '" + id + "' " + kind + " track");
+            thread->PostTask([id, kind, track = std::move(track), streamIds,
                               initSendEncodings, ref = weak(_holder)]() {
                 if (const auto holder = ref.lock()) {
-                    const auto id = track->id();
-                    const auto kind = track->kind();
                     webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpSenderInterface>> result;
                     if (initSendEncodings.empty()) {
                         result = holder->peerConnection()->AddTrack(std::move(track),
@@ -174,7 +187,7 @@ bool Transport::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> t
                         holder->logWebRTCError(result.error(), "failed to add '" +
                                                id + "' local " + kind + " track");
                         holder->invoke(&TransportListener::onLocalTrackAddFailure,
-                                       id, kind, streamIds, result.MoveError());
+                                       id, fromString(kind), streamIds, result.MoveError());
                     }
                 }
             });
@@ -188,23 +201,23 @@ bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sende
 {
     if (sender) {
         if (const auto thread = signalingThread()) {
-            _holder->logInfo("request to removal '" + sender->id() + "' local " +
-                             cricket::MediaTypeToString(sender->media_type()) + " track");
-            thread->PostTask([sender = std::move(sender), ref = weak(_holder)]() {
+            const auto id = sender->id();
+            const auto type = sender->media_type();
+            const auto kind = cricket::MediaTypeToString(type);
+            _holder->logInfo("request to removal '" + id + "' local " + kind + " track");
+            thread->PostTask([id, type, kind, sender = std::move(sender), ref = weak(_holder)]() {
                 if (const auto holder = ref.lock()) {
-                    const auto kind = cricket::MediaTypeToString(sender->media_type());
-                    const auto id = sender->id();
                     const auto streamIds = sender->stream_ids();
                     const auto res = holder->peerConnection()->RemoveTrackOrError(std::move(sender));
                     if (res.ok()) {
                         holder->logVerbose("local " + kind + " track '" + id + "' track was removed");
-                        holder->invoke(&TransportListener::onLocalTrackRemoved, id, kind, streamIds);
+                        holder->invoke(&TransportListener::onLocalTrackRemoved, id, type, streamIds);
                     }
                     else {
                         holder->logWebRTCError(res, "failed to remove '" +
                                                id + "' local " + kind + " track");
                         holder->invoke(&TransportListener::onLocalTrackRemoveFailure,
-                                       id, kind, streamIds, std::move(res));
+                                       id, type, streamIds, std::move(res));
                     }
                 }
             });
@@ -247,12 +260,11 @@ bool Transport::addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterf
 {
     if (track) {
         if (const auto thread = signalingThread()) {
-            _holder->logInfo("request to adding '" + track->id() + "' " +
-                             track->kind() + " transceiver");
-            thread->PostTask([track = std::move(track), init, ref = weak(_holder)]() {
+            const auto id = track->id();
+            const auto kind = track->kind();
+            _holder->logInfo("request to adding '" + id + "' " + kind + " transceiver");
+            thread->PostTask([id, kind, track = std::move(track), init, ref = weak(_holder)]() {
                 if (const auto holder = ref.lock()) {
-                    const auto id = track->id();
-                    const auto kind = track->kind();
                     auto result = holder->peerConnection()->AddTransceiver(std::move(track), init);
                     if (result.ok()) {
                         holder->logVerbose(kind + " transceiver '" + id + "' was added");
@@ -262,7 +274,7 @@ bool Transport::addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterf
                         holder->logWebRTCError(result.error(), "failed to add '" +
                                                id + "' " + kind + " transceiver");
                         holder->invoke(&TransportListener::onTransceiverAddFailure,
-                                       id, kind, init, result.MoveError());
+                                       id, fromString(kind), init, result.MoveError());
                     }
                 }
             });
@@ -466,17 +478,17 @@ void Transport::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingStat
 
 void Transport::OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
 {
-    _holder->invoke(&TransportListener::onAddStream, std::move(stream));
+    _holder->invoke(&TransportListener::onRemoteStreamAdded, std::move(stream));
 }
 
 void Transport::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
 {
-    _holder->invoke(&TransportListener::onRemoveStream, std::move(stream));
+    _holder->invoke(&TransportListener::onRemoteStreamRemoved, std::move(stream));
 }
 
 void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    _holder->invoke(&TransportListener::onDataChannel, std::move(channel));
+    _holder->invoke(&TransportListener::onRemoteDataChannelOpened, std::move(channel));
 }
 
 void Transport::OnNegotiationNeededEvent(uint32_t eventId)
@@ -507,7 +519,7 @@ void Transport::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheri
 
 void Transport::OnIceCandidate(const webrtc::IceCandidateInterface* candidate)
 {
-    _holder->invoke(&TransportListener::onIceCandidate, candidate);
+    _holder->invoke(&TransportListener::onIceCandidateGathered, candidate);
 }
 
 void Transport::OnIceCandidateError(const std::string& address, int port,
@@ -515,7 +527,7 @@ void Transport::OnIceCandidateError(const std::string& address, int port,
                                     int errorCode, const std::string& errorText)
 {
     _holder->logError("a failure occured when gathering ICE candidates: " + errorText);
-    _holder->invoke(&TransportListener::onIceCandidateError, address, port,
+    _holder->invoke(&TransportListener::onIceCandidateGatheringError, address, port,
                     url, errorCode, errorText);
 }
 
@@ -537,17 +549,17 @@ void Transport::OnIceSelectedCandidatePairChanged(const cricket::CandidatePairCh
 void Transport::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                            const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
 {
-    _holder->invoke(&TransportListener::onAddTrack, std::move(receiver), streams);
+    _holder->invoke(&TransportListener::onTrackAdded, std::move(receiver), streams);
 }
 
 void Transport::OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    _holder->invoke(&TransportListener::onTrack, std::move(transceiver));
+    _holder->invoke(&TransportListener::onRemoteTrackAdded, std::move(transceiver));
 }
 
 void Transport::OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
-    _holder->invoke(&TransportListener::onRemoveTrack, std::move(receiver));
+    _holder->invoke(&TransportListener::onRemotedTrackRemoved, std::move(receiver));
 }
 
 void Transport::OnInterestingUsage(int usagePattern)

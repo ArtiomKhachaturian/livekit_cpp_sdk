@@ -26,10 +26,13 @@ public:
     virtual void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState /*state*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*publisherState*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*subscriberState*/) {}
-    virtual void onDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
-    virtual void onIceCandidate(SignalTarget /*target*/,
-                                const webrtc::IceCandidateInterface* /*candidate*/) {}
-    virtual void onRemoteTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+    virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
+    virtual void onIceCandidateGathered(SignalTarget /*target*/,
+                                        const webrtc::IceCandidateInterface* /*candidate*/) {}
+    virtual void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
+    virtual void onLocalTrackRemoved(const std::string& /*id*/, cricket::MediaType /*type*/) {}
+    virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+    virtual void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
     virtual void onPublisherOffer(const webrtc::SessionDescriptionInterface* /*desc*/) {}
     virtual void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* /*desc*/) {}
 protected:

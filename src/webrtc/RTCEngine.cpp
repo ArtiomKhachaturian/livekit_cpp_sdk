@@ -200,8 +200,8 @@ void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* de
     }
 }
 
-void RTCEngine::onIceCandidate(SignalTarget target,
-                               const webrtc::IceCandidateInterface* candidate)
+void RTCEngine::onIceCandidateGathered(SignalTarget target,
+                                       const webrtc::IceCandidateInterface* candidate)
 {
     if (candidate) {
         TrickleRequest request;

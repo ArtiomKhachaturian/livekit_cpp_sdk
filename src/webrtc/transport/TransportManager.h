@@ -67,14 +67,21 @@ private:
     void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
     void onSdpSet(SignalTarget target, bool local, const webrtc::SessionDescriptionInterface* desc) final;
     void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
-    void onDataChannelCreated(SignalTarget target,
-                              rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+    void onLocalTrackAdded(SignalTarget target,
+                           rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
+    void onLocalTrackRemoved(SignalTarget target, const std::string& id, cricket::MediaType type,
+                             const std::vector<std::string>&) final;
+    void onLocalDataChannelCreated(SignalTarget target,
+                                   rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
     void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
     void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
     void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
-    void onDataChannel(SignalTarget target, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
-    void onIceCandidate(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
-    void onTrack(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void onRemoteDataChannelOpened(SignalTarget target,
+                                   rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+    void onIceCandidateGathered(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
+    void onRemoteTrackAdded(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void onRemotedTrackRemoved(SignalTarget target,
+                               rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     // impl. of DataChannelListener
     void onStateChange(DataChannelType channelType) final;
     void onMessage(DataChannelType channelType, const webrtc::DataBuffer& buffer) final;

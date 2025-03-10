@@ -68,8 +68,8 @@ private:
     // impl. of TransportManagerListener
     void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
-    void onIceCandidate(SignalTarget target,
-                        const webrtc::IceCandidateInterface* candidate) final;
+    void onIceCandidateGathered(SignalTarget target,
+                                const webrtc::IceCandidateInterface* candidate) final;
     // impl. of SignalServerListener
     void onJoin(uint64_t, const JoinResponse& response) final;
     void onOffer(uint64_t, const SessionDescription& sdp) final;

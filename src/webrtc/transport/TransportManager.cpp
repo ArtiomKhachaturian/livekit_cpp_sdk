@@ -273,8 +273,26 @@ void TransportManager::onSdpSetFailure(SignalTarget target, bool local, webrtc::
     }
 }
 
-void TransportManager::onDataChannelCreated(SignalTarget target,
-                                            rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+void TransportManager::onLocalTrackAdded(SignalTarget target,
+                                         rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+{
+    if (SignalTarget::Subscriber == target) {
+        invoke(&TransportManagerListener::onLocalTrackAdded, std::move(sender));
+    }
+}
+
+void TransportManager::onLocalTrackRemoved(SignalTarget target,
+                                           const std::string& id,
+                                           cricket::MediaType type,
+                                           const std::vector<std::string>&)
+{
+    if (SignalTarget::Subscriber == target) {
+        invoke(&TransportManagerListener::onLocalTrackRemoved, id, type);
+    }
+}
+
+void TransportManager::onLocalDataChannelCreated(SignalTarget target,
+                                                 rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
     if (SignalTarget::Publisher == target && channel) {
         const auto label = channel->label();
@@ -316,28 +334,36 @@ void TransportManager::onSignalingChange(SignalTarget target,
     }
 }
 
-void TransportManager::onDataChannel(SignalTarget target,
-                                     rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+void TransportManager::onRemoteDataChannelOpened(SignalTarget target,
+                                                 rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
     if (SignalTarget::Subscriber == target) {
         // in subscriber primary mode, server side opens sub data channels
-        invoke(&TransportManagerListener::onDataChannel, std::move(channel));
+        invoke(&TransportManagerListener::onRemoteDataChannelOpened, std::move(channel));
     }
 }
 
-void TransportManager::onIceCandidate(SignalTarget target,
-                                      const webrtc::IceCandidateInterface* candidate)
+void TransportManager::onIceCandidateGathered(SignalTarget target,
+                                              const webrtc::IceCandidateInterface* candidate)
 {
     if (candidate) {
-        invoke(&TransportManagerListener::onIceCandidate, target, candidate);
+        invoke(&TransportManagerListener::onIceCandidateGathered, target, candidate);
     }
 }
 
-void TransportManager::onTrack(SignalTarget target,
-                               rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+void TransportManager::onRemoteTrackAdded(SignalTarget target,
+                                          rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (SignalTarget::Subscriber == target) {
-        invoke(&TransportManagerListener::onRemoteTrack, std::move(transceiver));
+        invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(transceiver));
+    }
+}
+
+void TransportManager::onRemotedTrackRemoved(SignalTarget target,
+                                             rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+{
+    if (SignalTarget::Subscriber == target) {
+        invoke(&TransportManagerListener::onRemotedTrackRemoved, std::move(receiver));
     }
 }
 
