@@ -37,6 +37,7 @@ public:
     ~LiveKitRoom();
     bool connect(std::string host, std::string authToken);
     void disconnect();
+    void setMicrophoneEnabled(bool enable);
 private:
     LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                 PeerConnectionFactory* pcf,

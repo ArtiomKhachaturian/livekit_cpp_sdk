@@ -133,9 +133,10 @@ bool TransportManager::setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptio
     return false;
 }
 
-bool TransportManager::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
+void TransportManager::updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
 {
-    return _subscriber.setConfiguration(config) && _publisher.setConfiguration(config);
+    _subscriber.updateConfiguration(config);
+    _publisher.updateConfiguration(config);
 }
 
 rtc::scoped_refptr<webrtc::RtpSenderInterface> TransportManager::
@@ -180,6 +181,11 @@ const Transport& TransportManager::primaryTransport() const noexcept
     return _joinResponse._subscriberPrimary ? _subscriber : _publisher;
 }
 
+bool TransportManager::isPrimary(SignalTarget target) const noexcept
+{
+    return target == primaryTransport().target();;
+}
+
 void TransportManager::updateState()
 {
     const auto newState = primaryTransport().state();
@@ -200,29 +206,36 @@ void TransportManager::invoke(const Method& method, Args&&... args) const
     }
 }
 
-void TransportManager::onSdpCreated(Transport& transport,
+void TransportManager::onSdpCreated(SignalTarget target,
                                     std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    transport.setLocalDescription(std::move(desc));
+    switch (target) {
+        case SignalTarget::Publisher:
+            _publisher.setLocalDescription(std::move(desc));
+            break;
+        case SignalTarget::Subscriber:
+            _subscriber.setLocalDescription(std::move(desc));
+            break;
+    }
 }
 
-void TransportManager::onSdpCreationFailure(Transport& transport, webrtc::SdpType type,
+void TransportManager::onSdpCreationFailure(SignalTarget target, webrtc::SdpType type,
                                             webrtc::RTCError error)
 {
     if (canLogError()) {
         logError("Failed to create of " + sdpTypeToString(type) +
-                 std::string(" SDP for ") + toString(transport.target()) +
+                 std::string(" SDP for ") + toString(target) +
                  ": " + error.message());
     }
 }
 
-void TransportManager::onSdpSet(Transport& transport, bool local,
+void TransportManager::onSdpSet(SignalTarget target, bool local,
                                 const webrtc::SessionDescriptionInterface* desc)
 {
     if (local) {
         // offer is always from publisher (see also [negotiate])
         // answer from subscriber
-        switch (transport.target()) {
+        switch (target) {
             case SignalTarget::Publisher:
                 invoke(&TransportManagerListener::onPublisherOffer, desc);
                 break;
@@ -232,76 +245,82 @@ void TransportManager::onSdpSet(Transport& transport, bool local,
         }
     }
     else { // remote
-        switch (transport.target()) {
+        switch (target) {
             case SignalTarget::Publisher: // see [setRemoteAnswer]
                 if (!canNegotiate()) {
-                    transport.createOffer();
+                    _publisher.createOffer();
                 }
                 break;
             case SignalTarget::Subscriber: // see [setRemoteOffer]
-                transport.createAnswer();
+                _subscriber.createAnswer();
                 break;
                 
         }
     }
 }
 
-void TransportManager::onSdpSetFailure(Transport& transport, bool local, webrtc::RTCError error)
+void TransportManager::onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error)
 {
     if (canLogError()) {
         logError("Failed to set of " + std::string(local ? "local SDP for " : "remote SDP for ") +
-                 toString(transport.target()) + ": " +
+                 toString(target) + ": " +
                  error.message());
     }
 }
 
-void TransportManager::onSetConfigurationError(Transport& transport, webrtc::RTCError error)
+void TransportManager::onSetConfigurationError(SignalTarget target, webrtc::RTCError error)
 {
     if (canLogError()) {
-        logError("Failed to set configuration for " + toString(transport.target()) +
+        logError("Failed to set configuration for " + toString(target) +
                  ": " + error.message());
     }
 }
 
-void TransportManager::onConnectionChange(Transport& transport, webrtc::PeerConnectionInterface::PeerConnectionState)
+void TransportManager::onConnectionChange(SignalTarget target,
+                                          webrtc::PeerConnectionInterface::PeerConnectionState)
 {
-    if (&transport == &primaryTransport()) {
+    if (isPrimary(target)) {
         updateState();
     }
 }
 
-void TransportManager::onIceConnectionChange(Transport& transport, webrtc::PeerConnectionInterface::IceConnectionState)
+void TransportManager::onIceConnectionChange(SignalTarget target,
+                                             webrtc::PeerConnectionInterface::IceConnectionState)
 {
-    if (&transport == &primaryTransport()) {
+    if (isPrimary(target)) {
         updateState();
     }
 }
 
-void TransportManager::onSignalingChange(Transport& transport, webrtc::PeerConnectionInterface::SignalingState)
+void TransportManager::onSignalingChange(SignalTarget target,
+                                         webrtc::PeerConnectionInterface::SignalingState)
 {
-    if (&transport == &primaryTransport()) {
+    if (isPrimary(target)) {
         updateState();
     }
 }
 
-void TransportManager::onDataChannel(Transport& transport, rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+void TransportManager::onDataChannel(SignalTarget target,
+                                     rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    if (SignalTarget::Subscriber == transport.target()) {
+    if (SignalTarget::Subscriber == target) {
         // in subscriber primary mode, server side opens sub data channels
         invoke(&TransportManagerListener::onDataChannel, std::move(channel));
     }
 }
 
-void TransportManager::onIceCandidate(Transport& transport, const webrtc::IceCandidateInterface* candidate)
+void TransportManager::onIceCandidate(SignalTarget target,
+                                      const webrtc::IceCandidateInterface* candidate)
 {
     if (candidate) {
-        invoke(&TransportManagerListener::onIceCandidate, transport.target(), candidate);
+        invoke(&TransportManagerListener::onIceCandidate, target, candidate);
     }
 }
 
-void TransportManager::onTrack(Transport& transport, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+void TransportManager::onTrack(SignalTarget target,
+                               rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    if (SignalTarget::Subscriber == transport.target()) {
+    if (SignalTarget::Subscriber == target) {
         invoke(&TransportManagerListener::onRemoteTrack, std::move(transceiver));
     }
 }

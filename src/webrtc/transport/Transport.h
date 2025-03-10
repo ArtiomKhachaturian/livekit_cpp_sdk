@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once // Transport.h
 #include "CreateSdpListener.h"
-#include "Loggable.h"
 #include "SetSdpListener.h"
 #include "rtc/SignalTarget.h"
 #include <api/peer_connection_interface.h>
@@ -26,6 +25,10 @@ namespace webrtc {
 class PeerConnectionObserver;
 }
 
+namespace Bricks {
+class Logger;
+}
+
 namespace LiveKitCpp
 {
 
@@ -35,18 +38,17 @@ class SetLocalSdpObserver;
 class SetRemoteSdpObserver;
 class TransportListener;
 
-class Transport : private Bricks::LoggableS<CreateSdpListener,
-                                            SetSdpListener,
-                                            webrtc::PeerConnectionObserver>
+class Transport : private CreateSdpListener, SetSdpListener, webrtc::PeerConnectionObserver
 {
+    class Holder;
 public:
     Transport(SignalTarget target, TransportListener* listener,
               const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
               const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~Transport() override;
-    SignalTarget target() const noexcept { return _target; }
-    bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
+    SignalTarget target() const noexcept;
+    void updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     void createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
@@ -63,8 +65,14 @@ public:
     const webrtc::SessionDescriptionInterface* localDescription() const;
     const webrtc::SessionDescriptionInterface* remoteDescription() const;
     // getStats()
-    bool valid() const { return nullptr != _pc; }
+    bool valid() const;
     explicit operator bool() const { return valid(); }
+    // Terminates all media, closes the transports, and in general releases any
+    // resources used by the Transport. This is an irreversible operation.
+    //
+    // Note that after this method completes, the Transport will no longer
+    // use the TransportListener interface passed in on construction, and
+    // thus the listener object can be safely destroyed.
     void close();
     bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
     void addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
@@ -82,10 +90,6 @@ public:
                  const std::vector<std::string>& streamIds = {},
                  const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
 private:
-    webrtc::scoped_refptr<webrtc::PeerConnectionInterface>
-        createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
-                             const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
-    void logWebRTCError(const webrtc::RTCError& error, std::string_view prefix = {}) const;
     template<typename TState>
     bool changeAndLogState(TState newState, std::atomic<TState>& holder) const;
     // impl. of CreateSdpObserver
@@ -114,13 +118,9 @@ private:
     void OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     void OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     void OnInterestingUsage(int usagePattern) final;
-    // overrides of Bricks::LoggableS
-    std::string_view logCategory() const final { return _logCategory; }
 private:
-    const std::string _logCategory;
-    const SignalTarget _target;
-    TransportListener* const _listener;
-    const webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
+    const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
+    const std::shared_ptr<Holder> _holder;
     webrtc::scoped_refptr<CreateSdpObserver> _offerCreationObserver;
     webrtc::scoped_refptr<CreateSdpObserver> _answerCreationObserver;
     webrtc::scoped_refptr<SetLocalSdpObserver> _setLocalSdpObserver;

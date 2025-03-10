@@ -13,32 +13,61 @@
 // limitations under the License.
 #include "Transport.h"
 #include "Logger.h"
+#include "Loggable.h"
 #include "TransportListener.h"
 #include "CreateSdpObserver.h"
 #include "SetSdpObservers.h"
 #include "PeerConnectionFactory.h"
 #include "RoomUtils.h"
+#include "Listener.h"
 #include "Utils.h"
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/PCTransport.ts
 namespace LiveKitCpp
 {
 
+class Transport::Holder : public Bricks::LoggableS<>
+{
+public:
+    Holder(SignalTarget target,
+           const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+           const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+           webrtc::PeerConnectionObserver* observer,
+           TransportListener* listener,
+           const std::shared_ptr<Bricks::Logger>& logger);
+    SignalTarget target() const { return _target; }
+    const auto& peerConnection() const noexcept { return _pc; }
+    template <class Method, typename... Args>
+    void invoke(const Method& method, Args&&... args) const;
+    void reset() { _listener.reset(); }
+    void logWebRTCError(const webrtc::RTCError& error, std::string_view prefix = {}) const;
+protected:
+    // overrides of Bricks::LoggableS
+    std::string_view logCategory() const final { return _logCategory; }
+private:
+    webrtc::scoped_refptr<webrtc::PeerConnectionInterface>
+    createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                         const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                         webrtc::PeerConnectionObserver* observer) const;
+private:
+    const SignalTarget _target;
+    const std::string _logCategory;
+    const webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
+    Bricks::Listener<TransportListener*> _listener;
+};
+
 Transport::Transport(SignalTarget target, TransportListener* listener,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<CreateSdpListener, SetSdpListener, webrtc::PeerConnectionObserver>(logger)
-    , _logCategory(toString(target))
-    , _target(target)
-    , _listener(listener)
-    , _pc(createPeerConnection(pcf, conf))
+    : _pcf(pcf)
+    , _holder(new Holder(target, _pcf, conf, this, listener, logger))
     , _pcState(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
     , _iceConnState(webrtc::PeerConnectionInterface::IceConnectionState::kIceConnectionNew)
     , _signalingState(webrtc::PeerConnectionInterface::SignalingState::kStable)
     , _iceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState::kIceGatheringNew)
 {
-    if (_pc) {
+    if (_holder->peerConnection()) {
         _offerCreationObserver = webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kOffer);
         _answerCreationObserver = webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kAnswer);
         _setLocalSdpObserver = webrtc::make_ref_counted<SetLocalSdpObserver>();
@@ -52,56 +81,73 @@ Transport::Transport(SignalTarget target, TransportListener* listener,
 
 Transport::~Transport()
 {
-    if (_offerCreationObserver) {
-        _offerCreationObserver->setListener(nullptr);
-    }
-    if (_answerCreationObserver) {
-        _answerCreationObserver->setListener(nullptr);
-    }
-    if (_setLocalSdpObserver) {
-        _setLocalSdpObserver->setListener(nullptr);
-    }
-    if (_setRemoteSdpObserver) {
-        _setRemoteSdpObserver->setListener(nullptr);
-    }
     close();
+}
+
+SignalTarget Transport::target() const noexcept
+{
+    return _holder->target();
+}
+
+void Transport::updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
+{
+    if (const auto& pc = _holder->peerConnection()) {
+        if (const auto thread = _pcf->signalingThread()) {
+            thread->PostTask([config, ref = std::weak_ptr<Holder>(_holder)]() {
+                if (const auto holder = ref.lock()) {
+                    auto res = holder->peerConnection()->SetConfiguration(config);
+                    if (!res.ok()) {
+                        holder->logWebRTCError(res, "failed to set RTC configuration");
+                        holder->invoke(&TransportListener::onSetConfigurationError, std::move(res));
+                    }
+                }
+            });
+        }
+    }
 }
 
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
-    if (_pc) {
-        logInfo("create " + sdpTypeToString(webrtc::SdpType::kOffer));
-        _pc->CreateOffer(_offerCreationObserver.get(), options);
+    if (const auto& pc = _holder->peerConnection()) {
+        _holder->logInfo("create " + sdpTypeToString(webrtc::SdpType::kOffer));
+        pc->CreateOffer(_offerCreationObserver.get(), options);
     }
 }
 
 void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
-    if (_pc) {
-        logInfo("create " + sdpTypeToString(webrtc::SdpType::kAnswer));
-        _pc->CreateAnswer(_answerCreationObserver.get(), options);
+    if (const auto& pc = _holder->peerConnection()) {
+        _holder->logInfo("create " + sdpTypeToString(webrtc::SdpType::kAnswer));
+        pc->CreateAnswer(_answerCreationObserver.get(), options);
     }
 }
 
 void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    if (_pc && desc) {
-        logInfo("set local " + desc->type());
-        _pc->SetLocalDescription(std::move(desc), _setLocalSdpObserver);
+    if (desc) {
+        if (const auto& pc = _holder->peerConnection()) {
+            _holder->logInfo("set local " + desc->type());
+            pc->SetLocalDescription(std::move(desc), _setLocalSdpObserver);
+        }
     }
 }
 
 void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    if (_pc && desc) {
-        logInfo("set remote " + desc->type());
-        _pc->SetRemoteDescription(std::move(desc), _setRemoteSdpObserver);
+    if (desc) {
+        if (const auto& pc = _holder->peerConnection()) {
+            _holder->logInfo("set remote " + desc->type());
+            pc->SetRemoteDescription(std::move(desc), _setRemoteSdpObserver);
+        }
     }
 }
 
 webrtc::PeerConnectionInterface::PeerConnectionState Transport::state() const noexcept
 {
-    return _pc ? _pcState.load() : webrtc::PeerConnectionInterface::PeerConnectionState::kClosed;
+    if (_holder->peerConnection()) {
+        return _pcState.load();
+    }
+    return webrtc::PeerConnectionInterface::PeerConnectionState::kClosed;
 }
 
 webrtc::PeerConnectionInterface::IceConnectionState Transport::iceConnectionState() const noexcept
@@ -138,76 +184,96 @@ bool Transport::closed() const noexcept
 
 std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transport::transceivers() const
 {
-    if (_pc) {
-        return _pc->GetTransceivers();
+    if (const auto& pc = _holder->peerConnection()) {
+        return pc->GetTransceivers();
     }
     return {};
 }
 
 std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> Transport::receivers() const
 {
-    if (_pc) {
-        return _pc->GetReceivers();
+    if (const auto& pc = _holder->peerConnection()) {
+        return pc->GetReceivers();
     }
     return {};
 }
 
 std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> Transport::senders() const
 {
-    if (_pc) {
-        return _pc->GetSenders();
+    if (const auto& pc = _holder->peerConnection()) {
+        return pc->GetSenders();
     }
     return {};
 }
 
 const webrtc::SessionDescriptionInterface* Transport::localDescription() const
 {
-    return _pc ? _pc->local_description() : nullptr;
+    if (const auto& pc = _holder->peerConnection()) {
+        return pc->local_description();
+    }
+    return nullptr;
 }
 
 const webrtc::SessionDescriptionInterface* Transport::remoteDescription() const
 {
-    return _pc ? _pc->remote_description() : nullptr;
+    if (const auto& pc = _holder->peerConnection()) {
+        return pc->remote_description();
+    }
+    return nullptr;
+}
+
+bool Transport::valid() const
+{
+    return nullptr != _holder->peerConnection();
 }
 
 void Transport::close()
 {
-    if (_pc && !closed()) {
-        if (canLogInfo()) {
-            logInfo("close peer");
-        }
-        _pc->Close();
+    if (const auto& pc = _holder->peerConnection()) {
+        _holder->logInfo("close peer connection");
+        pc->Close();
+        _offerCreationObserver->setListener(nullptr);
+        _answerCreationObserver->setListener(nullptr);
+        _setLocalSdpObserver->setListener(nullptr);
+        _setRemoteSdpObserver->setListener(nullptr);
+        _holder->reset();
     }
 }
 
 bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
-    if (_pc && sender) {
-        const auto type = sender->media_type();
-        const auto error = _pc->RemoveTrackOrError(std::move(sender));
-        if (!error.ok()) {
-            logWebRTCError(error, "failed to remove local " +
-                           cricket::MediaTypeToString(type) + " track");
+    if (sender) {
+        if (const auto& pc = _holder->peerConnection()) {
+            const auto type = sender->media_type();
+            const auto error = pc->RemoveTrackOrError(std::move(sender));
+            if (!error.ok()) {
+                _holder->logWebRTCError(error, "failed to remove local " +
+                                        cricket::MediaTypeToString(type) + " track");
+            }
+            return error.ok();
         }
-        return error.ok();
     }
     return false;
 }
 
 void Transport::addRemoteIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate)
 {
-    if (candidate && _pc) {
-        _pc->AddIceCandidate(std::move(candidate), [this](webrtc::RTCError error) {
-            if (error.ok()) {
-                logVerbose("remote candidate for the ICE agent has been set successfully");
-            }
-            else {
-                logWebRTCError(error, "failed to add remote candidate for the ICE agent");
-                if (_listener) {
-                    _listener->onRemoteIceCandidateAddFailed(*this, std::move(error));
+    if (candidate) {
+        if (const auto& pc = _holder->peerConnection()) {
+            auto handler = [ref = std::weak_ptr<Holder>(_holder)](webrtc::RTCError error) {
+                if (const auto holder = ref.lock()) {
+                    if (error.ok()) {
+                        holder->logVerbose("remote candidate for the ICE agent has been set successfully");
+                    }
+                    else {
+                        holder->logWebRTCError(error, "failed to add remote candidate for the ICE agent");
+                        holder->invoke(&TransportListener::onRemoteIceCandidateAddFailed,
+                                       std::move(error));
+                    }
                 }
-            }
-        });
+            };
+            pc->AddIceCandidate(std::move(candidate), std::move(handler));
+        }
     }
 }
 
@@ -216,15 +282,16 @@ rtc::scoped_refptr<webrtc::DataChannelInterface> Transport::
                       const webrtc::DataChannelInit& init,
                       webrtc::DataChannelObserver* observer)
 {
-    if (_pc) {
-        auto result = _pc->CreateDataChannelOrError(label, &init);
+    if (const auto& pc = _holder->peerConnection()) {
+        auto result = pc->CreateDataChannelOrError(label, &init);
         if (result.ok()) {
             if (observer) {
                 result.value()->RegisterObserver(observer);
             }
             return result.MoveValue();
         }
-        logWebRTCError(result.error(), "unable to create data channel '" + label + "'");
+        _holder->logWebRTCError(result.error(), "unable to create data channel '"
+                                + label + "'");
     }
     return {};
 }
@@ -232,12 +299,14 @@ rtc::scoped_refptr<webrtc::DataChannelInterface> Transport::
 rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transport::
     addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
 {
-    if (_pc && track) {
-        auto result = _pc->AddTransceiver(std::move(track));
-        if (result.ok()) {
-            return result.MoveValue();
+    if (track) {
+        if (const auto& pc = _holder->peerConnection()) {
+            auto result = pc->AddTransceiver(std::move(track));
+            if (result.ok()) {
+                return result.MoveValue();
+            }
+            _holder->logWebRTCError(result.error(), "unable to add transceiver");
         }
-        logWebRTCError(result.error(), "unable to add transceiver");
     }
     return {};
 }
@@ -246,12 +315,14 @@ rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transport::
     addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
                    const webrtc::RtpTransceiverInit& init)
 {
-    if (_pc && track) {
-        auto result = _pc->AddTransceiver(std::move(track), init);
-        if (result.ok()) {
-            return result.MoveValue();
+    if (track) {
+        if (const auto& pc = _holder->peerConnection()) {
+            auto result = pc->AddTransceiver(std::move(track), init);
+            if (result.ok()) {
+                return result.MoveValue();
+            }
+            _holder->logWebRTCError(result.error(), "unable to add transceiver");
         }
-        logWebRTCError(result.error(), "unable to add transceiver");
     }
     return {};
 }
@@ -261,54 +332,184 @@ rtc::scoped_refptr<webrtc::RtpSenderInterface> Transport::
              const std::vector<std::string>& streamIds,
              const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings)
 {
-    if (_pc) {
+    if (const auto& pc = _holder->peerConnection()) {
         webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpSenderInterface>> result;
         if (initSendEncodings.empty()) {
-            result = _pc->AddTrack(std::move(track), streamIds);
+            result = pc->AddTrack(std::move(track), streamIds);
         }
         else {
-            result = _pc->AddTrack(std::move(track), streamIds, initSendEncodings);
+            result = pc->AddTrack(std::move(track), streamIds, initSendEncodings);
         }
         if (result.ok()) {
             return result.MoveValue();
         }
-        logWebRTCError(result.error(), "failed to add local media track");
+        _holder->logWebRTCError(result.error(), "failed to add local media track");
     }
     return {};
 }
 
-bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config)
+template<typename TState>
+bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) const
 {
-    if (_pc) {
-        auto res = _pc->SetConfiguration(config);
-        if (!res.ok()) {
-            logWebRTCError(res, "failed to set RTC configuration");
-            if (_listener) {
-                _listener->onSetConfigurationError(*this, std::move(res));
-            }
-            return false;
-        }
+    const TState oldState = holder.exchange(newState);
+    if (oldState != newState) {
+        _holder->logVerbose(makeStateChangesString(oldState, newState));
         return true;
     }
     return false;
 }
 
-webrtc::scoped_refptr<webrtc::PeerConnectionInterface> Transport::
-    createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
-                         const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
+void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    if (pcf) {
-        auto pc = pcf->CreatePeerConnectionOrError(conf, webrtc::PeerConnectionDependencies(this));
-        if (pc.ok()) {
-            return pc.MoveValue();
-        }
-        logWebRTCError(pc.error(), "unable to create RTC peer connection");
+    if (desc) {
+        _holder->logInfo(desc->type() + " created successfully");
     }
-    return {};
+    _holder->invoke(&TransportListener::onSdpCreated, std::move(desc));
 }
 
-void Transport::logWebRTCError(const webrtc::RTCError& error,
-                               std::string_view prefix) const
+void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
+{
+    _holder->logWebRTCError(error, "failed to create " + sdpTypeToString(type));
+    _holder->invoke(&TransportListener::onSdpCreationFailure, type, std::move(error));
+}
+
+void Transport::onCompleted(bool local)
+{
+    if (const auto& pc = _holder->peerConnection()) {
+        if (const auto desc = local ? pc->local_description() : pc->remote_description()) {
+            _holder->logVerbose(std::string(local ? "local " : "remote ") +
+                                desc->type() + " has been set successfully");
+            _holder->invoke(&TransportListener::onSdpSet, local, desc);
+        }
+    }
+}
+
+void Transport::onFailure(bool local, webrtc::RTCError error)
+{
+    _holder->logWebRTCError(error, "failed to set " + std::string(local ? "local SDP" : "remote SDP"));
+    _holder->invoke(&TransportListener::onSdpSetFailure, local, std::move(error));
+}
+
+void Transport::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState)
+{
+    if (changeAndLogState(newState, _signalingState)) {
+        _holder->invoke(&TransportListener::onSignalingChange, newState);
+    }
+}
+
+void Transport::OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
+{
+    _holder->invoke(&TransportListener::onAddStream, std::move(stream));
+}
+
+void Transport::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
+{
+    _holder->invoke(&TransportListener::onRemoveStream, std::move(stream));
+}
+
+void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+{
+    _holder->invoke(&TransportListener::onDataChannel, std::move(channel));
+}
+
+void Transport::OnNegotiationNeededEvent(uint32_t eventId)
+{
+    _holder->invoke(&TransportListener::onNegotiationNeededEvent, eventId);
+}
+
+void Transport::OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState)
+{
+    if (changeAndLogState(newState, _iceConnState)) {
+        _holder->invoke(&TransportListener::onIceConnectionChange, newState);
+    }
+}
+
+void Transport::OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState newState)
+{
+    if (changeAndLogState(newState, _pcState)) {
+        _holder->invoke(&TransportListener::onConnectionChange, newState);
+    }
+}
+
+void Transport::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState newState)
+{
+    if (changeAndLogState(newState, _iceGatheringState)) {
+        _holder->invoke(&TransportListener::onIceGatheringChange, newState);
+    }
+}
+
+void Transport::OnIceCandidate(const webrtc::IceCandidateInterface* candidate)
+{
+    _holder->invoke(&TransportListener::onIceCandidate, candidate);
+}
+
+void Transport::OnIceCandidateError(const std::string& address, int port,
+                                    const std::string& url,
+                                    int errorCode, const std::string& errorText)
+{
+    _holder->logError("a failure occured when gathering ICE candidates: " + errorText);
+    _holder->invoke(&TransportListener::onIceCandidateError, address, port,
+                    url, errorCode, errorText);
+}
+
+void Transport::OnIceCandidatesRemoved(const std::vector<cricket::Candidate>& candidates)
+{
+    _holder->invoke(&TransportListener::onIceCandidatesRemoved, candidates);
+}
+
+void Transport::OnIceConnectionReceivingChange(bool receiving)
+{
+    _holder->invoke(&TransportListener::onIceConnectionReceivingChange, receiving);
+}
+
+void Transport::OnIceSelectedCandidatePairChanged(const cricket::CandidatePairChangeEvent& event)
+{
+    _holder->invoke(&TransportListener::onIceSelectedCandidatePairChanged, event);
+}
+
+void Transport::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                           const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
+{
+    _holder->invoke(&TransportListener::onAddTrack, std::move(receiver), streams);
+}
+
+void Transport::OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+{
+    _holder->invoke(&TransportListener::onTrack, std::move(transceiver));
+}
+
+void Transport::OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+{
+    _holder->invoke(&TransportListener::onRemoveTrack, std::move(receiver));
+}
+
+void Transport::OnInterestingUsage(int usagePattern)
+{
+    _holder->invoke(&TransportListener::onInterestingUsage, usagePattern);
+}
+
+Transport::Holder::Holder(SignalTarget target,
+                          const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                          const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                          webrtc::PeerConnectionObserver* observer,
+                          TransportListener* listener,
+                          const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<>(logger)
+    , _target(target)
+    , _logCategory(toString(target))
+    , _pc(createPeerConnection(pcf, conf, observer))
+    , _listener(listener)
+{
+}
+
+template <class Method, typename... Args>
+void Transport::Holder::invoke(const Method& method, Args&&... args) const
+{
+    _listener.invoke(method, _target, std::forward<Args>(args)...);
+}
+
+void Transport::Holder::logWebRTCError(const webrtc::RTCError& error,
+                                       std::string_view prefix) const
 {
     if (!error.ok() && canLogError()) {
         if (prefix.empty()) {
@@ -320,175 +521,17 @@ void Transport::logWebRTCError(const webrtc::RTCError& error,
     }
 }
 
-template<typename TState>
-bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) const
+webrtc::scoped_refptr<webrtc::PeerConnectionInterface> Transport::Holder::
+    createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                         const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                         webrtc::PeerConnectionObserver* observer) const
 {
-    const TState oldState = holder.exchange(newState);
-    if (oldState != newState) {
-        logVerbose(makeStateChangesString(oldState, newState));
-        return true;
+    auto pc = pcf->CreatePeerConnectionOrError(conf, webrtc::PeerConnectionDependencies(observer));
+    if (pc.ok()) {
+        return pc.MoveValue();
     }
-    return false;
-}
-
-void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
-{
-    if (desc) {
-        logInfo(desc->type() + " created successfully");
-    }
-    if (_listener) {
-        _listener->onSdpCreated(*this, std::move(desc));
-    }
-}
-
-void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
-{
-    logWebRTCError(error, "failed to create " + sdpTypeToString(type));
-    if (_listener) {
-        _listener->onSdpCreationFailure(*this, type, std::move(error));
-    }
-}
-
-void Transport::onCompleted(bool local)
-{
-    if (const auto desc = local ? _pc->local_description() : _pc->remote_description()) {
-        logVerbose(std::string(local ? "local " : "remote ") +
-                   desc->type() + " has been set successfully");
-        if (_listener) {
-            _listener->onSdpSet(*this, local, desc);
-        }
-    }
-}
-
-void Transport::onFailure(bool local, webrtc::RTCError error)
-{
-    logWebRTCError(error, "failed to set " + std::string(local ? "local SDP" : "remote SDP"));
-    if (_listener) {
-        _listener->onSdpSetFailure(*this, local, std::move(error));
-    }
-}
-
-void Transport::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState)
-{
-    if (changeAndLogState(newState, _signalingState) && _listener) {
-        _listener->onSignalingChange(*this, newState);
-    }
-}
-
-void Transport::OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
-{
-    if (_listener) {
-        _listener->onAddStream(*this, std::move(stream));
-    }
-}
-
-void Transport::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
-{
-    if (_listener) {
-        _listener->onRemoveStream(*this, std::move(stream));
-    }
-}
-
-void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
-{
-    if (_listener) {
-        _listener->onDataChannel(*this, std::move(channel));
-    }
-}
-
-void Transport::OnNegotiationNeededEvent(uint32_t eventId)
-{
-    if (_listener) {
-        _listener->onNegotiationNeededEvent(*this, eventId);
-    }
-}
-
-void Transport::OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState)
-{
-    if (changeAndLogState(newState, _iceConnState) && _listener) {
-        _listener->onIceConnectionChange(*this, newState);
-    }
-}
-
-void Transport::OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState newState)
-{
-    if (changeAndLogState(newState, _pcState) && _listener) {
-        _listener->onConnectionChange(*this, newState);
-    }
-}
-
-void Transport::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState newState)
-{
-    if (changeAndLogState(newState, _iceGatheringState) && _listener) {
-        _listener->onIceGatheringChange(*this, newState);
-    }
-}
-
-void Transport::OnIceCandidate(const webrtc::IceCandidateInterface* candidate)
-{
-    if (_listener) {
-        _listener->onIceCandidate(*this, candidate);
-    }
-}
-
-void Transport::OnIceCandidateError(const std::string& address, int port,
-                                    const std::string& url,
-                                    int errorCode, const std::string& errorText)
-{
-    logError("a failure occured when gathering ICE candidates: " + errorText);
-    if (_listener) {
-        _listener->onIceCandidateError(*this, address, port, url, errorCode, errorText);
-    }
-}
-
-void Transport::OnIceCandidatesRemoved(const std::vector<cricket::Candidate>& candidates)
-{
-    if (_listener) {
-        _listener->onIceCandidatesRemoved(*this, candidates);
-    }
-}
-
-void Transport::OnIceConnectionReceivingChange(bool receiving)
-{
-    if (_listener) {
-        _listener->onIceConnectionReceivingChange(*this, receiving);
-    }
-}
-
-void Transport::OnIceSelectedCandidatePairChanged(const cricket::CandidatePairChangeEvent& event)
-{
-    if (_listener) {
-        _listener->onIceSelectedCandidatePairChanged(*this, event);
-    }
-}
-
-void Transport::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                           const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
-{
-    if (_listener) {
-        _listener->onAddTrack(*this, std::move(receiver), streams);
-    }
-}
-
-void Transport::OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
-{
-    if (_listener) {
-        _listener->onTrack(*this, std::move(transceiver));
-    }
-}
-
-void Transport::OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
-{
-    if (_listener) {
-        _listener->onRemoveTrack(*this, std::move(receiver));
-    }
-}
-
-void Transport::OnInterestingUsage(int usagePattern)
-{
-    if (_listener) {
-        _listener->onInterestingUsage(*this, usagePattern);
-    }
+    logWebRTCError(pc.error(), "unable to create RTC peer connection");
+    return {};
 }
 
 } // namespace LiveKitCpp

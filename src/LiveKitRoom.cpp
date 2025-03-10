@@ -53,6 +53,11 @@ void LiveKitRoom::disconnect()
     //_impl->_client.disconnect();
 }
 
+void LiveKitRoom::setMicrophoneEnabled(bool enable)
+{
+    _impl->_engine.setMicrophoneEnabled(enable);
+}
+
 LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
                         PeerConnectionFactory* pcf,
                         const Options& signalOptions,
@@ -75,6 +80,7 @@ bool LiveKitRoom::connect(std::string, std::string) { return false; }
 
 void LiveKitRoom::disconnect() {}
 
+void LiveKitRoom::setMicrophoneEnabled(bool) {}
 #endif
 
 } // namespace LiveKitCpp

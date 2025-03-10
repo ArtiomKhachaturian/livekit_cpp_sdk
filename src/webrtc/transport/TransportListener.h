@@ -20,59 +20,60 @@ namespace LiveKitCpp
 {
 
 class Transport;
+enum class SignalTarget;
 
 class TransportListener
 {
 public:
-    virtual void onSdpCreated(Transport& /*transport*/,
+    virtual void onSdpCreated(SignalTarget /*target*/,
                               std::unique_ptr<webrtc::SessionDescriptionInterface> /*desc*/) {}
-    virtual void onSdpCreationFailure(Transport& /*transport*/,
+    virtual void onSdpCreationFailure(SignalTarget /*target*/,
                                       webrtc::SdpType /*type*/,
                                       webrtc::RTCError /*error*/) {}
-    virtual void onSdpSet(Transport& /*transport*/, bool /*local*/,
+    virtual void onSdpSet(SignalTarget /*target*/, bool /*local*/,
                           const webrtc::SessionDescriptionInterface* /*desc*/) {}
-    virtual void onSdpSetFailure(Transport& /*transport*/, bool /*local*/,
+    virtual void onSdpSetFailure(SignalTarget /*target*/, bool /*local*/,
                                  webrtc::RTCError /*error*/) {}
-    virtual void onSetConfigurationError(Transport& /*transport*/,
+    virtual void onSetConfigurationError(SignalTarget /*target*/,
                                          webrtc::RTCError /*error*/) {}
-    virtual void onRemoteIceCandidateAddFailed(Transport& /*transport*/,
+    virtual void onRemoteIceCandidateAddFailed(SignalTarget /*target*/,
                                                webrtc::RTCError /*error*/) {}
     // extension of webrtc::PeerConnectionObserver interface
-    virtual void onSignalingChange(Transport& /*transport*/,
+    virtual void onSignalingChange(SignalTarget /*target*/,
                                    webrtc::PeerConnectionInterface::SignalingState /*newState*/) {}
-    virtual void onAddStream(Transport& /*transport*/,
+    virtual void onAddStream(SignalTarget /*target*/,
                              rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
-    virtual void onRemoveStream(Transport& /*transport*/,
+    virtual void onRemoveStream(SignalTarget /*target*/,
                                 rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
-    virtual void onDataChannel(Transport& /*transport*/,
+    virtual void onDataChannel(SignalTarget /*target*/,
                                rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
-    virtual void onNegotiationNeededEvent(Transport& /*transport*/, uint32_t /*eventId*/) {}
-    virtual void onIceConnectionChange(Transport& /*transport*/,
+    virtual void onNegotiationNeededEvent(SignalTarget /*target*/, uint32_t /*eventId*/) {}
+    virtual void onIceConnectionChange(SignalTarget /*target*/,
                                        webrtc::PeerConnectionInterface::IceConnectionState /*newState*/) {}
-    virtual void onConnectionChange(Transport& /*transport*/,
+    virtual void onConnectionChange(SignalTarget /*target*/,
                                     webrtc::PeerConnectionInterface::PeerConnectionState /*newState*/) {}
-    virtual void onIceGatheringChange(Transport& /*transport*/,
+    virtual void onIceGatheringChange(SignalTarget /*target*/,
                                       webrtc::PeerConnectionInterface::IceGatheringState /*newState*/) {}
-    virtual void onIceCandidate(Transport& /*transport*/,
+    virtual void onIceCandidate(SignalTarget /*target*/,
                                 const webrtc::IceCandidateInterface* /*candidate*/) {}
-    virtual void onIceCandidateError(Transport& /*transport*/,
+    virtual void onIceCandidateError(SignalTarget /*target*/,
                                      const std::string& /*address*/, int /*port*/,
                                      const std::string& /*url*/,
                                      int /*errorCode*/, const std::string& /*errorText*/) {}
-    virtual void onIceCandidatesRemoved(Transport& /*transport*/,
+    virtual void onIceCandidatesRemoved(SignalTarget /*target*/,
                                         const std::vector<cricket::Candidate>& /*candidates*/) {}
-    virtual void onIceConnectionReceivingChange(Transport& /*transport*/,
+    virtual void onIceConnectionReceivingChange(SignalTarget /*target*/,
                                                 bool /*receiving*/) {}
-    virtual void onIceSelectedCandidatePairChanged(Transport& /*transport*/,
+    virtual void onIceSelectedCandidatePairChanged(SignalTarget /*target*/,
                                                    const cricket::CandidatePairChangeEvent& /*event*/) {}
-    virtual void onAddTrack(Transport& /*transport*/,
+    virtual void onAddTrack(SignalTarget /*target*/,
                             rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
                             const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& /*streams*/) {}
-    virtual void onTrack(Transport& /*transport*/,
+    virtual void onTrack(SignalTarget /*target*/,
                          rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
-    virtual void onRemoveTrack(Transport& /*transport*/,
+    virtual void onRemoveTrack(SignalTarget /*target*/,
                                rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
-    virtual void onInterestingUsage(Transport& /*transport*/,
+    virtual void onInterestingUsage(SignalTarget /*target*/,
                                     int /*usagePattern*/) {}
 protected:
     virtual ~TransportListener() = default;

@@ -41,7 +41,7 @@ public:
     ~TransportManager() final;
     const JoinResponse& joinResponse() const noexcept { return _joinResponse; }
     bool valid() const noexcept;
-    bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
+    void updateConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
     void negotiate(bool startPing = true);
     void startPing() { _pingPongKit.start(); }
@@ -56,21 +56,22 @@ private:
     bool canNegotiate() const noexcept;
     Transport& primaryTransport() noexcept;
     const Transport& primaryTransport() const noexcept;
+    bool isPrimary(SignalTarget target) const noexcept;
     void updateState();
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const; // listener callbacks
     // impl. of TransportListener
-    void onSdpCreated(Transport& transport, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
-    void onSdpCreationFailure(Transport& transport, webrtc::SdpType type, webrtc::RTCError error) final;
-    void onSdpSet(Transport& transport, bool local, const webrtc::SessionDescriptionInterface* desc) final;
-    void onSdpSetFailure(Transport& transport, bool local, webrtc::RTCError error) final;
-    void onSetConfigurationError(Transport& transport, webrtc::RTCError error) final;
-    void onConnectionChange(Transport&, webrtc::PeerConnectionInterface::PeerConnectionState) final;
-    void onIceConnectionChange(Transport&, webrtc::PeerConnectionInterface::IceConnectionState) final;
-    void onSignalingChange(Transport&, webrtc::PeerConnectionInterface::SignalingState) final;
-    void onDataChannel(Transport& transport, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
-    void onIceCandidate(Transport& transport, const webrtc::IceCandidateInterface* candidate) final;
-    void onTrack(Transport& transport, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void onSdpCreated(SignalTarget target, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
+    void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
+    void onSdpSet(SignalTarget target, bool local, const webrtc::SessionDescriptionInterface* desc) final;
+    void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
+    void onSetConfigurationError(SignalTarget target, webrtc::RTCError error) final;
+    void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
+    void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
+    void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
+    void onDataChannel(SignalTarget target, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+    void onIceCandidate(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
+    void onTrack(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     // impl. of DataChannelListener
     void onStateChange(DataChannelType channelType) final;
     void onMessage(DataChannelType channelType, const webrtc::DataBuffer& buffer) final;
