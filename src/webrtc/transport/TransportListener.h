@@ -20,6 +20,7 @@ namespace LiveKitCpp
 {
 
 class Transport;
+class DataChannel;
 enum class SignalTarget;
 
 /**
@@ -118,7 +119,7 @@ public:
      * @param channel The data channel that was created.
      */
     virtual void onLocalDataChannelCreated(SignalTarget /*target*/,
-                                           rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
+                                           rtc::scoped_refptr<DataChannel> /*channel*/) {}
 
     /**
      * @brief Called when creating a local data channel fails.
@@ -254,7 +255,7 @@ public:
      * @param channel The data channel interface.
      */
     virtual void onRemoteDataChannelOpened(SignalTarget /*target*/,
-                                           rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
+                                           rtc::scoped_refptr<DataChannel> /*channel*/) {}
 
     /**
      * @brief Called any time the standards-compliant IceConnectionState changes.

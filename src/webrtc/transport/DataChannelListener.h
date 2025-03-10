@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // DataChannelListener.h
 #include <cstdint>
+#include <api/rtc_error.h>
 
 namespace webrtc {
 struct DataBuffer;
@@ -21,29 +22,20 @@ struct DataBuffer;
 namespace LiveKitCpp
 {
 
-enum class DataChannelType;
+class DataChannel;
 
 class DataChannelListener
 {
 public:
     // The data channel state have changed.
-    virtual void onStateChange(DataChannelType channelType) = 0;
+    virtual void onStateChange(DataChannel* channel) = 0;
     //  A data buffer was successfully received.
-    virtual void onMessage(DataChannelType channelType,
+    virtual void onMessage(DataChannel* channel,
                            const webrtc::DataBuffer& buffer) = 0;
     // The data channel's buffered_amount has changed.
-    virtual void onBufferedAmountChange(DataChannelType /*channelType*/,
+    virtual void onBufferedAmountChange(DataChannel* /*channel*/,
                                         uint64_t /*sentDataSize*/) {}
-    // Override this to get callbacks directly on the network thread.
-    // An implementation that does that must not block the network thread
-    // but rather only use the callback to trigger asynchronous processing
-    // elsewhere as a result of the notification.
-    // The default return value, `false`, means that notifications will be
-    // delivered on the signaling thread associated with the peerconnection
-    // instance.
-    // TODO(webrtc:11547): Eventually all DataChannelObserver implementations
-    // should be called on the network thread and this method removed.
-    virtual bool isOkToCallOnTheNetworkThread(DataChannelType /*channelType*/) { return true; }
+    virtual void onSendError(DataChannel* /*channel*/, webrtc::RTCError /*error*/) {}
 protected:
     virtual ~DataChannelListener() = default;
 };

@@ -14,6 +14,7 @@
 #include "Transport.h"
 #include "Logger.h"
 #include "Loggable.h"
+#include "DataChannel.h"
 #include "TransportListener.h"
 #include "CreateSdpObserver.h"
 #include "SetSdpObservers.h"
@@ -142,7 +143,8 @@ bool Transport::createDataChannel(const std::string& label, const webrtc::DataCh
                 auto result = holder->peerConnection()->CreateDataChannelOrError(label, &init);
                 if (result.ok()) {
                     holder->logVerbose("data channel '" + label + "' has been created");
-                    holder->invoke(&TransportListener::onLocalDataChannelCreated, result.MoveValue());
+                    holder->invoke(&TransportListener::onLocalDataChannelCreated,
+                                   DataChannel::create(result.MoveValue()));
                 }
                 else {
                     holder->logWebRTCError(result.error(), "unable to create data channel '"
@@ -488,7 +490,8 @@ void Transport::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> 
 
 void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    _holder->invoke(&TransportListener::onRemoteDataChannelOpened, std::move(channel));
+    _holder->invoke(&TransportListener::onRemoteDataChannelOpened,
+                    DataChannel::create(std::move(channel)));
 }
 
 void Transport::OnNegotiationNeededEvent(uint32_t eventId)

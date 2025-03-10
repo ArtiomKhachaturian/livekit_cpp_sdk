@@ -14,8 +14,7 @@
 #include "TransportManager.h"
 #include "TransportManagerListener.h"
 #include "PeerConnectionFactory.h"
-#include "DataChannelObserver.h"
-#include "DataChannelType.h"
+#include "DataChannel.h"
 #include "RoomUtils.h"
 #include "Utils.h"
 
@@ -38,17 +37,13 @@ TransportManager::TransportManager(const JoinResponse& joinResponse,
     : Bricks::LoggableS<TransportListener, DataChannelListener>(logger)
     , _listener(listener)
     , _joinResponse(joinResponse)
-    , _lossyDCObserver(new DataChannelObserver(DataChannelType::Lossy, this))
-    , _reliableDCObserver(new DataChannelObserver(DataChannelType::Relaible, this))
     , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
     , _pingPongKit(listener, positiveOrZero(joinResponse._pingInterval), positiveOrZero(joinResponse._pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
-    _publisher.createDataChannel(toString(DataChannelType::Lossy),
-                                 {.ordered = true, .maxRetransmits = 0});
-    _publisher.createDataChannel(toString(DataChannelType::Relaible),
-                                 {.ordered = true});
+    _publisher.createDataChannel(_lossyDCLabel, {.ordered = true, .maxRetransmits = 0});
+    _publisher.createDataChannel(_reliableDCLabel, {.ordered = true});
 }
 
 TransportManager::~TransportManager()
@@ -57,10 +52,10 @@ TransportManager::~TransportManager()
     _publisher.close();
     LOCK_WRITE_SAFE_OBJ(_lossyDC);
     if (auto lossyDC = _lossyDC.take()) {
-        lossyDC->UnregisterObserver();
+        lossyDC->setListener(nullptr);
     }
     if (auto reliableDC = _reliableDC.take()) {
-        reliableDC->UnregisterObserver();
+        reliableDC->setListener(nullptr);
     }
 }
 
@@ -292,16 +287,18 @@ void TransportManager::onLocalTrackRemoved(SignalTarget target,
 }
 
 void TransportManager::onLocalDataChannelCreated(SignalTarget target,
-                                                 rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+                                                 rtc::scoped_refptr<DataChannel> channel)
 {
     if (SignalTarget::Publisher == target && channel) {
         const auto label = channel->label();
         LOCK_WRITE_SAFE_OBJ(_lossyDC);
         LOCK_WRITE_SAFE_OBJ(_reliableDC);
-        if (toString(DataChannelType::Lossy) == label) {
+        if (_lossyDCLabel == label) {
+            channel->setListener(this);
             _lossyDC = std::move(channel);
         }
-        else if (toString(DataChannelType::Relaible) == label) {
+        else if (_reliableDCLabel == label) {
+            channel->setListener(this);
             _reliableDC = std::move(channel);
         }
         if (_lossyDC.constRef() && _reliableDC.constRef() && _pendingNegotiation.exchange(false)) {
@@ -335,7 +332,7 @@ void TransportManager::onSignalingChange(SignalTarget target,
 }
 
 void TransportManager::onRemoteDataChannelOpened(SignalTarget target,
-                                                 rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+                                                 rtc::scoped_refptr<DataChannel> channel)
 {
     if (SignalTarget::Subscriber == target) {
         // in subscriber primary mode, server side opens sub data channels
@@ -367,26 +364,25 @@ void TransportManager::onRemotedTrackRemoved(SignalTarget target,
     }
 }
 
-void TransportManager::onStateChange(DataChannelType channelType)
+void TransportManager::onStateChange(DataChannel* channel)
 {
-    if (canLogInfo()) {
-        logInfo("the data channel '" + toString(channelType) + "' state have changed");
+    if (channel && canLogInfo()) {
+        logInfo("the data channel '" + channel->label() + "' state have changed");
     }
 }
 
-void TransportManager::onMessage(DataChannelType channelType,
+void TransportManager::onMessage(DataChannel* channel,
                                  const webrtc::DataBuffer& /*buffer*/)
 {
-    if (canLogInfo()) {
+    if (channel && canLogInfo()) {
         logInfo("a message buffer was successfully received for '" +
-                toString(channelType) + " data channel");
+                channel->label() + " data channel");
     }
 }
 
-void TransportManager::onBufferedAmountChange(DataChannelType /*channelType*/,
+void TransportManager::onBufferedAmountChange(DataChannel* /*channelType*/,
                                               uint64_t /*sentDataSize*/)
 {
-    
 }
 
 std::string_view TransportManager::logCategory() const

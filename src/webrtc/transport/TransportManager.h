@@ -72,32 +72,32 @@ private:
     void onLocalTrackRemoved(SignalTarget target, const std::string& id, cricket::MediaType type,
                              const std::vector<std::string>&) final;
     void onLocalDataChannelCreated(SignalTarget target,
-                                   rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+                                   rtc::scoped_refptr<DataChannel> channel) final;
     void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
     void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
     void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
     void onRemoteDataChannelOpened(SignalTarget target,
-                                   rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+                                   rtc::scoped_refptr<DataChannel> channel) final;
     void onIceCandidateGathered(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
     void onRemoteTrackAdded(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     void onRemotedTrackRemoved(SignalTarget target,
                                rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     // impl. of DataChannelListener
-    void onStateChange(DataChannelType channelType) final;
-    void onMessage(DataChannelType channelType, const webrtc::DataBuffer& buffer) final;
-    void onBufferedAmountChange(DataChannelType channelType, uint64_t sentDataSize) final;
+    void onStateChange(DataChannel* channel) final;
+    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
+    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
     // override of Bricks::LoggableS<>
     std::string_view logCategory() const;
 private:
+    static inline const std::string _lossyDCLabel = "_lossy";
+    static inline const std::string _reliableDCLabel = "_reliable";
     TransportManagerListener* const _listener;
     const JoinResponse _joinResponse;
-    const std::unique_ptr<DataChannelObserver> _lossyDCObserver;
-    const std::unique_ptr<DataChannelObserver> _reliableDCObserver;
     Transport _publisher;
     Transport _subscriber;
     PingPongKit _pingPongKit;
-    SafeScopedRefPtr<webrtc::DataChannelInterface> _lossyDC;
-    SafeScopedRefPtr<webrtc::DataChannelInterface> _reliableDC;
+    SafeScopedRefPtr<DataChannel> _lossyDC;
+    SafeScopedRefPtr<DataChannel> _reliableDC;
     std::atomic<webrtc::PeerConnectionInterface::PeerConnectionState> _state;
     std::atomic_bool _pendingNegotiation = false;
 };

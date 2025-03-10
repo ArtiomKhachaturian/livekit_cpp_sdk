@@ -19,6 +19,7 @@ namespace LiveKitCpp
 {
 
 enum class SignalTarget;
+class DataChannel;
 
 class TransportManagerListener : public PingPongKitListener
 {
@@ -26,7 +27,7 @@ public:
     virtual void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState /*state*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*publisherState*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*subscriberState*/) {}
-    virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<webrtc::DataChannelInterface> /*channel*/) {}
+    virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> /*channel*/) {}
     virtual void onIceCandidateGathered(SignalTarget /*target*/,
                                         const webrtc::IceCandidateInterface* /*candidate*/) {}
     virtual void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
