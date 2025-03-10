@@ -53,9 +53,12 @@ public:
     void addRemoteIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
 private:
+    bool canNegotiate() const noexcept;
     Transport& primaryTransport() noexcept;
     const Transport& primaryTransport() const noexcept;
     void updateState();
+    template <class Method, typename... Args>
+    void invoke(const Method& method, Args&&... args) const; // listener callbacks
     // impl. of TransportListener
     void onSdpCreated(Transport& transport, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onSdpCreationFailure(Transport& transport, webrtc::SdpType type, webrtc::RTCError error) final;

@@ -86,7 +86,7 @@ webrtc::PeerConnectionInterface::PeerConnectionState TransportManager::state() c
 void TransportManager::negotiate(bool startPing)
 {
     // if publish only, negotiate
-    if (!_joinResponse._subscriberPrimary || _joinResponse._fastPublish) {
+    if (canNegotiate()) {
         _publisher.createOffer();
     }
     if (startPing) {
@@ -165,6 +165,11 @@ void TransportManager::close()
     updateState();
 }
 
+bool TransportManager::canNegotiate() const noexcept
+{
+    return !_joinResponse._subscriberPrimary || _joinResponse._fastPublish;
+}
+
 Transport& TransportManager::primaryTransport() noexcept
 {
     return _joinResponse._subscriberPrimary ? _subscriber : _publisher;
@@ -181,9 +186,17 @@ void TransportManager::updateState()
     const auto oldState = _state.exchange(newState);
     if (oldState != newState) {
         logInfo(makeStateChangesString(oldState, newState));
-        if (_listener) {
-            _listener->onStateChange(newState, _publisher.state(), _subscriber.state());
-        }
+        invoke(&TransportManagerListener::onStateChange, newState,
+               _publisher.state(), _subscriber.state());
+    }
+}
+
+
+template <class Method, typename... Args>
+void TransportManager::invoke(const Method& method, Args&&... args) const
+{
+    if (_listener) {
+        ((*_listener).*method)(std::forward<Args>(args)...);
     }
 }
 
@@ -209,21 +222,21 @@ void TransportManager::onSdpSet(Transport& transport, bool local,
     if (local) {
         // offer is always from publisher (see also [negotiate])
         // answer from subscriber
-        if (_listener) {
-            switch (transport.target()) {
-                case SignalTarget::Publisher:
-                    _listener->onPublisherOffer(desc);
-                    break;
-                case SignalTarget::Subscriber:
-                    _listener->onSubscriberAnswer(desc);
-                    break;
-            }
+        switch (transport.target()) {
+            case SignalTarget::Publisher:
+                invoke(&TransportManagerListener::onPublisherOffer, desc);
+                break;
+            case SignalTarget::Subscriber:
+                invoke(&TransportManagerListener::onSubscriberAnswer, desc);
+                break;
         }
     }
     else { // remote
         switch (transport.target()) {
             case SignalTarget::Publisher: // see [setRemoteAnswer]
-                transport.createOffer();
+                if (!canNegotiate()) {
+                    transport.createOffer();
+                }
                 break;
             case SignalTarget::Subscriber: // see [setRemoteOffer]
                 transport.createAnswer();
@@ -273,23 +286,23 @@ void TransportManager::onSignalingChange(Transport& transport, webrtc::PeerConne
 
 void TransportManager::onDataChannel(Transport& transport, rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
-    if (_listener && SignalTarget::Subscriber == transport.target()) {
+    if (SignalTarget::Subscriber == transport.target()) {
         // in subscriber primary mode, server side opens sub data channels
-        _listener->onDataChannel(std::move(channel));
+        invoke(&TransportManagerListener::onDataChannel, std::move(channel));
     }
 }
 
 void TransportManager::onIceCandidate(Transport& transport, const webrtc::IceCandidateInterface* candidate)
 {
-    if (candidate && _listener) {
-        _listener->onIceCandidate(transport.target(), candidate);
+    if (candidate) {
+        invoke(&TransportManagerListener::onIceCandidate, transport.target(), candidate);
     }
 }
 
 void TransportManager::onTrack(Transport& transport, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    if (_listener && SignalTarget::Subscriber == transport.target()) {
-        _listener->onRemoteTrack(std::move(transceiver));
+    if (SignalTarget::Subscriber == transport.target()) {
+        invoke(&TransportManagerListener::onRemoteTrack, std::move(transceiver));
     }
 }
 
