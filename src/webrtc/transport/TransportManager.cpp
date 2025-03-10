@@ -19,18 +19,28 @@
 #include "RoomUtils.h"
 #include "Utils.h"
 
+namespace {
+
+template<typename T>
+inline uint32_t positiveOrZero(T value) {
+    return value > 0 ? static_cast<uint32_t>(value) : 0U;
+}
+
+}
+
 namespace LiveKitCpp
 {
-TransportManager::TransportManager(bool subscriberPrimary,
+TransportManager::TransportManager(const JoinResponse& joinResponse,
                                    TransportManagerListener* listener,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                    const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportListener, DataChannelListener>(logger)
     , _listener(listener)
-    , _subscriberPrimary(subscriberPrimary)
+    , _joinResponse(joinResponse)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
+    , _pingPongKit(listener, positiveOrZero(joinResponse._pingInterval), positiveOrZero(joinResponse._pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
     if (_publisher) {
@@ -73,10 +83,14 @@ webrtc::PeerConnectionInterface::PeerConnectionState TransportManager::state() c
     return _state;
 }
 
-void TransportManager::negotiate(bool fastPublish)
+void TransportManager::negotiate(bool startPing)
 {
-    if (!_subscriberPrimary || fastPublish) {
+    // if publish only, negotiate
+    if (!_joinResponse._subscriberPrimary || _joinResponse._fastPublish) {
         _publisher.createOffer();
+    }
+    if (startPing) {
+        this->startPing();
     }
 }
 
@@ -145,14 +159,20 @@ void TransportManager::addRemoteIceCandidate(SignalTarget target,
 
 void TransportManager::close()
 {
-    /*if (webrtc::PeerConnectionInterface::SignalingState::kClosed != _publisher.signalingState()) {
-        for (auto&& sender : _publisher.senders()) {
-            _publisher.removeTrack(sender);
-        }
-    }*/
     _publisher.close();
     _subscriber.close();
+    stopPing();
     updateState();
+}
+
+Transport& TransportManager::primaryTransport() noexcept
+{
+    return _joinResponse._subscriberPrimary ? _subscriber : _publisher;
+}
+
+const Transport& TransportManager::primaryTransport() const noexcept
+{
+    return _joinResponse._subscriberPrimary ? _subscriber : _publisher;
 }
 
 void TransportManager::updateState()

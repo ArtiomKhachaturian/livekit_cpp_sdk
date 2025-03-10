@@ -31,14 +31,11 @@ RTCEngine::RTCEngine(const Options& signalOptions,
                      const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportManagerListener,
                         SignalTransportListener,
-                        SignalServerListener,
-                        MediaTimerCallback>(logger)
+                        SignalServerListener>(logger)
     , _options(signalOptions)
     , _pcf(pcf)
     , _localAudioTrack(createLocalAudioTrack())
     , _client(std::move(socket), logger.get())
-    , _pingIntervalTimer(_pcf, this, logger, "ping_interval_timer")
-    , _pingTimeoutTimer(_pcf, this, logger, "ping_timeout_timer")
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
     _client.setAutoSubscribe(_options._autoSubscribe);
@@ -78,45 +75,9 @@ bool RTCEngine::connect(std::string url, std::string authToken)
     return ok;
 }
 
-void RTCEngine::restartPingTimer()
-{
-    // Always cancel first...
-    _pingTimeoutTimer.stop();
-    _pingIntervalTimer.stop();
-    // Check previously received joinResponse
-    const auto ljr = std::atomic_load(&_latestJoinResponse);
-    if (ljr && ljr->_pingTimeout > 0 && ljr->_pingInterval > 0) {
-        if (canLogVerbose()) {
-            logVerbose("ping/pong starting with interval: " +
-                       std::to_string(ljr->_pingInterval) +
-                       "s, timeout: " + std::to_string(ljr->_pingTimeout) + "s");
-        }
-        // Update interval...
-        _pingIntervalTimer.start(ljr->_pingInterval * 1000);
-    }
-}
-
-bool RTCEngine::sendPing()
-{
-    Ping ping;
-    const auto epochTime = std::chrono::system_clock::now().time_since_epoch();
-    ping._timestamp = static_cast<int64_t>(epochTime / std::chrono::seconds(1));
-    const auto done = _client.sendPingReq(ping);
-    if (done) {
-        logVerbose("ping/pong sending ping...");
-    }
-    else {
-        logError("ping/pong sending failed");
-    }
-    return done;
-}
-
 void RTCEngine::cleanup(bool /*error*/)
 {
-    std::atomic_store(&_latestJoinResponse, std::shared_ptr<const JoinResponse>());
     std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
-    _pingTimeoutTimer.stop();
-    _pingTimeoutTimer.stop();
     _client.disconnect();
 }
 
@@ -242,16 +203,12 @@ void RTCEngine::onIceCandidate(SignalTarget target,
 void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 {
     logVerbose("join response received from server");
-    std::atomic_store(&_latestJoinResponse, std::make_shared<const JoinResponse>(response));
     TransportManagerListener* listener = this;
-    auto pcManager = std::make_shared<TransportManager>(response._subscriberPrimary,
-                                                        listener, _pcf,
+    auto pcManager = std::make_shared<TransportManager>(response, listener, _pcf,
                                                         makeConfiguration(response),
                                                         logger());
     std::atomic_store(&_pcManager, pcManager);
-    // if publish only, negotiate
-    pcManager->negotiate(response._fastPublish);
-    restartPingTimer();
+    pcManager->negotiate(true);
 }
 
 void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
@@ -285,8 +242,10 @@ void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
 void RTCEngine::onPong(uint64_t, int64_t, int64_t)
 {
     logVerbose("ping/pong received pong from server");
-    // Clear timeout timer
-    _pingTimeoutTimer.stop();
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        // Clear timeout timer
+        pcManager->notifyThatPongReceived();
+    }
 }
 
 void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
@@ -318,19 +277,26 @@ void RTCEngine::onTransportError(uint64_t, std::string error)
     cleanup(true);
 }
 
-void RTCEngine::onTimeout(MediaTimer* timer)
+bool RTCEngine::onPingRequested()
 {
-    if (&_pingIntervalTimer == timer) {
-        const auto ljr = std::atomic_load(&_latestJoinResponse);
-        if (sendPing() && ljr && ljr->_pingTimeout > 0) {
-            _pingTimeoutTimer.start(ljr->_pingTimeout * 1000);
-        }
+    Ping ping;
+    const auto epochTime = std::chrono::system_clock::now().time_since_epoch();
+    ping._timestamp = static_cast<int64_t>(epochTime / std::chrono::seconds(1));
+    const auto done = _client.sendPingReq(ping);
+    if (done) {
+        logVerbose("ping/pong sending ping...");
     }
-    else if (&_pingTimeoutTimer == timer) {
-        logError("ping/pong timed out");
-        cleanup(true);
-        //await self.cleanUp(withError: LiveKitError(.serverPingTimedOut))
+    else {
+        logError("ping/pong sending failed");
     }
+    return done;
+}
+
+void RTCEngine::onPongTimeout()
+{
+    logError("ping/pong timed out");
+    cleanup(true);
+    //await self.cleanUp(withError: LiveKitError(.serverPingTimedOut))
 }
 
 std::string_view RTCEngine::logCategory() const

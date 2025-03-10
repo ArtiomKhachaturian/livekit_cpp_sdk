@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MediaTimer.h
-#include "Loggable.h"
 #include "MediaTimerCallback.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
@@ -25,25 +24,19 @@ namespace LiveKitCpp
 
 class PeerConnectionFactory;
 
-class MediaTimer : public Bricks::LoggableS<>
+class MediaTimer
 {
     struct Impl;
 public:
     // Note: MediaTimer keeps only weak reference to [queue]
     MediaTimer(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
-               MediaTimerCallback* callback = nullptr,
-               const std::shared_ptr<Bricks::Logger>& logger = {},
-               std::string timerName = {});
+               MediaTimerCallback* callback = nullptr);
     MediaTimer(const PeerConnectionFactory* pcf,
-               MediaTimerCallback* callback = nullptr,
-               const std::shared_ptr<Bricks::Logger>& logger = {},
-               std::string timerName = {});
+               MediaTimerCallback* callback = nullptr);
     MediaTimer(const webrtc::scoped_refptr<const PeerConnectionFactory>& pcf,
-               MediaTimerCallback* callback = nullptr,
-               const std::shared_ptr<Bricks::Logger>& logger = {},
-               std::string timerName = {});
+               MediaTimerCallback* callback = nullptr);
     ~MediaTimer();
-    // means that timer's queue is valid, andl default callback (which already passed via constructor)
+    // means that timer's queue is valid, and default callback (which already passed via constructor)
     // maybe NULL but [singleShot] methods is available for work
     bool valid() const noexcept;
     bool started() const noexcept;
@@ -53,6 +46,7 @@ public:
     void setLowPrecision() { setPrecision(webrtc::TaskQueueBase::DelayPrecision::kLow); }
     void setHighPrecision() { setPrecision(webrtc::TaskQueueBase::DelayPrecision::kHigh); }
     void setCallback(MediaTimerCallback* callback = nullptr);
+    // ignored if already started
     void start(uint64_t intervalMs);
     void stop();
     void singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);
@@ -60,9 +54,6 @@ public:
     void singleShot(MediaTimerCallback* callback, uint64_t delayMs = 0ULL);
     void singleShot(const std::shared_ptr<MediaTimerCallback>& callback, uint64_t delayMs = 0ULL);
     void singleShot(std::unique_ptr<MediaTimerCallback> callback, uint64_t delayMs = 0ULL);
-protected:
-    // impl. of Bricks::LoggableS<>
-    std::string_view logCategory() const final;
 private:
     const std::shared_ptr<Impl> _impl;
 };

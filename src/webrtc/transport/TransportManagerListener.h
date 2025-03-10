@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TransportManagerListener.h
+#include "PingPongKitListener.h"
 #include <api/peer_connection_interface.h>
 
 namespace LiveKitCpp
@@ -19,7 +20,7 @@ namespace LiveKitCpp
 
 enum class SignalTarget;
 
-class TransportManagerListener
+class TransportManagerListener : public PingPongKitListener
 {
 public:
     virtual void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState /*state*/,

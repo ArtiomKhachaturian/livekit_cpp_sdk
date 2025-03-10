@@ -14,8 +14,10 @@
 #pragma once // TransportManager.h
 #include "Loggable.h"
 #include "Transport.h"
+#include "PingPongKit.h"
 #include "TransportListener.h"
 #include "DataChannelListener.h"
+#include "rtc/JoinResponse.h"
 #include <api/peer_connection_interface.h>
 #include <atomic>
 #include <memory>
@@ -31,28 +33,28 @@ enum class SignalTarget;
 class TransportManager : private Bricks::LoggableS<TransportListener, DataChannelListener>
 {
 public:
-    TransportManager(bool subscriberPrimary,
+    TransportManager(const JoinResponse& joinResponse,
                      TransportManagerListener* listener,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~TransportManager() final;
+    const JoinResponse& joinResponse() const noexcept { return _joinResponse; }
     bool valid() const noexcept;
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
-    void negotiate(bool fastPublish);
+    void negotiate(bool startPing = true);
+    void startPing() { _pingPongKit.start(); }
+    void stopPing() { _pingPongKit.stop(); }
+    void notifyThatPongReceived() { _pingPongKit.notifyThatPongReceived(); }
     bool setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
-    /*void createPublisherOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
-    void createSubscriberAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
-    bool setSubscriberRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
-    bool setPublisherRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);*/
     rtc::scoped_refptr<webrtc::RtpSenderInterface> addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
     void addRemoteIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
 private:
-    auto& primaryTransport() noexcept { return _subscriberPrimary ? _subscriber : _publisher; }
-    const auto& primaryTransport() const noexcept { return _subscriberPrimary ? _subscriber : _publisher; }
+    Transport& primaryTransport() noexcept;
+    const Transport& primaryTransport() const noexcept;
     void updateState();
     // impl. of TransportListener
     void onSdpCreated(Transport& transport, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
@@ -74,9 +76,10 @@ private:
     std::string_view logCategory() const;
 private:
     TransportManagerListener* const _listener;
-    const bool _subscriberPrimary;
+    const JoinResponse _joinResponse;
     Transport _publisher;
     Transport _subscriber;
+    PingPongKit _pingPongKit;
     std::unique_ptr<DataChannelObserver> _lossyDCObserver;
     std::unique_ptr<DataChannelObserver> _reliableDCObserver;
     rtc::scoped_refptr<webrtc::DataChannelInterface> _lossyDC;

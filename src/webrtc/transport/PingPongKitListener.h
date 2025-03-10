@@ -11,18 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaTimerCallback.h
+#pragma once // PingPongKitListener.h
 
 namespace LiveKitCpp
 {
 
-class MediaTimer;
-
-class MediaTimerCallback
+class PingPongKitListener
 {
 public:
-    virtual ~MediaTimerCallback() = default;
-    virtual void onTimeout(MediaTimer* timer) = 0;
+    // should return true to continue of ping ticks
+    virtual bool onPingRequested() { return false; }
+    virtual void onPongTimeout() {}
+protected:
+    virtual ~PingPongKitListener() = default;
 };
 
 } // namespace LiveKitCpp
