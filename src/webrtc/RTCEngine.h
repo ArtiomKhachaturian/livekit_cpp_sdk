@@ -14,12 +14,12 @@
 #pragma once // Engine.h
 #include "Loggable.h"
 #include "Options.h"
-#include "LocalAudioTrackPromise.h"
+#include "LocalAudioTrack.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
 #include "DataChannelListener.h"
 #include "SignalClientWs.h"
-#include "LocalTrackFactory.h"
+#include "LocalTrackManager.h"
 #include "TransportManagerListener.h"
 #include "SignalTransportListener.h"
 #include "rtc/ClientConfiguration.h"
@@ -48,7 +48,7 @@ class RTCEngine : private Bricks::LoggableS<TransportManagerListener,
                                             SignalTransportListener,
                                             SignalServerListener,
                                             DataChannelListener,
-                                            LocalTrackFactory>
+                                            LocalTrackManager>
 {
     using SafeString = Bricks::SafeObj<std::string>;
 public:
@@ -69,7 +69,6 @@ private:
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const ReconnectResponse& response) const;
     // impl. of TransportManagerListener
-    void onNegotiationNeeded() final;
     void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
     void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
@@ -84,7 +83,7 @@ private:
     void onJoin(uint64_t, const JoinResponse& response) final;
     void onOffer(uint64_t, const SessionDescription& sdp) final;
     void onAnswer(uint64_t, const SessionDescription& sdp) final;
-    void onPong(uint64_t, int64_t, int64_t) final;
+    void onPong(uint64_t, const Pong&) final;
     void onTrickle(uint64_t, const TrickleRequest& request) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(uint64_t, TransportState state) final;
@@ -101,6 +100,7 @@ private:
     bool remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label,
                                                                    const cricket::AudioOptions& options) final;
+    void notifyAboutEnabledChanges(const LocalTrack& track) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
@@ -110,7 +110,7 @@ private:
     std::shared_ptr<TransportManager> _pcManager;
     SafeScopedRefPtr<DataChannel> _lossyDC;
     SafeScopedRefPtr<DataChannel> _reliableDC;
-    LocalAudioTrackPromise _microphone;
+    LocalAudioTrack _microphone;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _joinAttempts = 0U;
 };

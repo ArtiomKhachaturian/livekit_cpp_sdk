@@ -23,18 +23,21 @@ namespace LiveKitCpp
 
 class SignalServerListener;
 
-class ResponseInterceptor
+class ResponseInterceptor : private Bricks::LoggableR<>
 {
 public:
     ResponseInterceptor(uint64_t signalClientId, Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
+protected:
+    // overrides of Bricks::LoggableR
+    std::string_view logCategory() const final;
 private:
     std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen) const;
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
     template <class Method, class TLiveKitType>
-    void signal(const Method& method, const TLiveKitType& sig) const;
+    void signal(const Method& method, const TLiveKitType& sig, std::string typeName = {}) const;
     // all responses are defined in 'SignalResponse':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L61
     void handle(const livekit::JoinResponse& response) const;

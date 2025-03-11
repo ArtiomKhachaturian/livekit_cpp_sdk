@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "RequestInterceptor.h"
 #include "CommandSender.h"
+#include "MarshalledTypesFwd.h"
 #include "Blob.h"
 
 using Request = livekit::SignalRequest;
@@ -30,25 +31,47 @@ private:
     const std::vector<uint8_t>& _data;
 };
 
+template<typename T>
+inline std::string requestTypeName() { static_assert(false, "type name not evaluated"); }
+
 }
 
 namespace LiveKitCpp
 {
 
+MARSHALLED_TYPE_NAME_DECL(SessionDescription)
+MARSHALLED_TYPE_NAME_DECL(TrickleRequest)
+MARSHALLED_TYPE_NAME_DECL(AddTrackRequest)
+MARSHALLED_TYPE_NAME_DECL(MuteTrackRequest)
+MARSHALLED_TYPE_NAME_DECL(UpdateSubscription)
+MARSHALLED_TYPE_NAME_DECL(UpdateTrackSettings)
+MARSHALLED_TYPE_NAME_DECL(LeaveRequest)
+MARSHALLED_TYPE_NAME_DECL(UpdateVideoLayers)
+MARSHALLED_TYPE_NAME_DECL(SubscriptionPermission)
+MARSHALLED_TYPE_NAME_DECL(SyncState)
+MARSHALLED_TYPE_NAME_DECL(SimulateScenario)
+MARSHALLED_TYPE_NAME_DECL(UpdateParticipantMetadata)
+MARSHALLED_TYPE_NAME_DECL(Ping)
+MARSHALLED_TYPE_NAME_DECL(UpdateLocalAudioTrack)
+MARSHALLED_TYPE_NAME_DECL(UpdateLocalVideoTrack)
+
 RequestInterceptor::RequestInterceptor(CommandSender* commandSender, Bricks::Logger* logger)
-    : _commandSender(commandSender)
+    : Bricks::LoggableR<>(logger)
+    , _commandSender(commandSender)
     , _marshaller(logger)
 {
 }
 
 bool RequestInterceptor::offer(const SessionDescription& sdp) const
 {
-    return send(&Request::mutable_offer, sdp);
+    return send(&Request::mutable_offer, sdp,
+                marshalledTypeName<SessionDescription>() + "/offer");
 }
 
 bool RequestInterceptor::answer(const SessionDescription& sdp) const
 {
-    return send(&Request::mutable_answer, sdp);
+    return send(&Request::mutable_answer, sdp,
+                marshalledTypeName<SessionDescription>() + "/answer");
 }
 
 bool RequestInterceptor::trickle(const TrickleRequest& request) const
@@ -126,20 +149,43 @@ bool RequestInterceptor::canSend() const
     return nullptr != _commandSender;
 }
 
-template <class TSetMethod, class TObject>
-bool RequestInterceptor::send(const TSetMethod& setMethod, const TObject& object) const
+std::string_view RequestInterceptor::logCategory() const
 {
+    static const std::string_view category("request_interceptor");
+    return category;
+}
+
+template <class TSetMethod, class TObject>
+bool RequestInterceptor::send(const TSetMethod& setMethod, const TObject& object,
+                              std::string typeName) const
+{
+    bool ok = false;
     if (canSend()) {
         Request request;
+        if (typeName.empty()) {
+            typeName = marshalledTypeName<TObject>();
+        }
         if (const auto target = (request.*setMethod)()) {
             *target = _marshaller.map(object);
             const auto bytes = _marshaller.toBytes(request);
             if (!bytes.empty()) {
-                return _commandSender->sendBinary(VectorBlob(bytes));
+                ok = _commandSender->sendBinary(VectorBlob(bytes));
+                if (ok) {
+                    logVerbose("sending '" + typeName + "' signal to server");
+                }
+                else {
+                    logError("send of '" + typeName + "' signal has been failed");
+                }
+            }
+            else {
+                logError("failed to serialize of '" + typeName + "' into a bytes array");
             }
         }
+        else {
+            logError("proto method not available for set of '" + typeName + "'");
+        }
     }
-    return false;
+    return ok;
 }
 
 } // namespace LiveKitCpp

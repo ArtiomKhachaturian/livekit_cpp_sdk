@@ -40,6 +40,7 @@ std::string modelIdentifier();
 // wifi, wired, cellular, vpn, empty if not known
 NetworkType activeNetworkType();
 std::string fromWideChar(const std::wstring& w);
+std::string makeUuid();
 
 template <unsigned flag>
 inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }

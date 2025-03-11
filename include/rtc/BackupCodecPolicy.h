@@ -19,10 +19,10 @@ namespace LiveKitCpp
 // Policy for publisher to handle subscribers that are unable to support the primary codec of a track
 enum class BackupCodecPolicy
 {
-  // default behavior, regress to backup codec and all subscribers will receive the backup codec
-  Regression = 0,
-  // Encoding/Send The Primary And Backup Codec Simultaneously
-  Simulcast = 1,
+    // default behavior, regress to backup codec and all subscribers will receive the backup codec
+    Regression = 0,
+    // Encoding/Send The Primary And Backup Codec Simultaneously
+    Simulcast = 1,
 };
 
 } // namespace LiveKitCpp

@@ -13,12 +13,50 @@
 // limitations under the License.
 #include "ResponseInterceptor.h"
 #include "SignalServerListener.h"
+#include "MarshalledTypesFwd.h"
+
+namespace {
+
+inline std::string formatVerboseMsg(const std::string& typeName) {
+    if (!typeName.empty()) {
+        return  "signal '" + typeName + "' received from server";
+    }
+    return {};
+}
+
+template<typename T>
+inline std::string formatVerboseMsg() {
+    return formatVerboseMsg(LiveKitCpp::marshalledTypeName<T>());
+}
+
+}
 
 namespace LiveKitCpp
 {
 
+MARSHALLED_TYPE_NAME_DECL(livekit::JoinResponse)
+MARSHALLED_TYPE_NAME_DECL(livekit::SessionDescription)
+MARSHALLED_TYPE_NAME_DECL(livekit::TrickleRequest)
+MARSHALLED_TYPE_NAME_DECL(livekit::ParticipantUpdate)
+MARSHALLED_TYPE_NAME_DECL(livekit::TrackPublishedResponse)
+MARSHALLED_TYPE_NAME_DECL(livekit::LeaveRequest)
+MARSHALLED_TYPE_NAME_DECL(livekit::MuteTrackRequest)
+MARSHALLED_TYPE_NAME_DECL(livekit::SpeakersChanged)
+MARSHALLED_TYPE_NAME_DECL(livekit::RoomUpdate)
+MARSHALLED_TYPE_NAME_DECL(livekit::ConnectionQualityUpdate)
+MARSHALLED_TYPE_NAME_DECL(livekit::StreamStateUpdate)
+MARSHALLED_TYPE_NAME_DECL(livekit::SubscribedQualityUpdate)
+MARSHALLED_TYPE_NAME_DECL(livekit::SubscriptionPermissionUpdate)
+MARSHALLED_TYPE_NAME_DECL(livekit::TrackUnpublishedResponse)
+MARSHALLED_TYPE_NAME_DECL(livekit::ReconnectResponse)
+MARSHALLED_TYPE_NAME_DECL(livekit::SubscriptionResponse)
+MARSHALLED_TYPE_NAME_DECL(livekit::RequestResponse)
+MARSHALLED_TYPE_NAME_DECL(livekit::TrackSubscribed)
+MARSHALLED_TYPE_NAME_DECL(livekit::Pong)
+
 ResponseInterceptor::ResponseInterceptor(uint64_t signalClientId, Bricks::Logger* logger)
-    : _signalClientId(signalClientId)
+    : Bricks::LoggableR<>(logger)
+    , _signalClientId(signalClientId)
     , _marshaller(logger)
 {
 }
@@ -72,6 +110,7 @@ void ResponseInterceptor::parseBinary(const void* data, size_t dataLen)
                     break;
                 case livekit::SignalResponse::kRefreshToken:
                     if (response->has_refresh_token()) {
+                        logVerbose(formatVerboseMsg("RefreshToken"));
                         notify(&SignalServerListener::onRefreshToken, response->refresh_token());
                     }
                     break;
@@ -80,7 +119,8 @@ void ResponseInterceptor::parseBinary(const void* data, size_t dataLen)
                     break;
                 case livekit::SignalResponse::kPong: // deprecated
                     if (response->has_pong()) {
-                        notify(&SignalServerListener::onPong, response->pong(), int64_t{});
+                        logVerbose(formatVerboseMsg<livekit::Pong>());
+                        notify(&SignalServerListener::onPong, Pong{._timestamp = response->pong()});
                     }
                     break;
                 case livekit::SignalResponse::kReconnect:
@@ -109,6 +149,12 @@ void ResponseInterceptor::parseBinary(const void* data, size_t dataLen)
     }
 }
 
+std::string_view ResponseInterceptor::logCategory() const
+{
+    static const std::string_view category("response_interceptor");
+    return category;
+}
+
 std::optional<livekit::SignalResponse> ResponseInterceptor::
     parse(const void* data, size_t dataLen) const
 {
@@ -122,8 +168,13 @@ void ResponseInterceptor::notify(const Method& method, Args&&... args) const
 }
 
 template <class Method, class TLiveKitType>
-void ResponseInterceptor::signal(const Method& method, const TLiveKitType& sig) const
+void ResponseInterceptor::signal(const Method& method, const TLiveKitType& sig,
+                                 std::string typeName) const
 {
+    if (typeName.empty()) {
+        typeName = marshalledTypeName<TLiveKitType>();
+    }
+    logVerbose(formatVerboseMsg(typeName));
     notify(method, _marshaller.map(sig));
 }
 
@@ -134,11 +185,12 @@ void ResponseInterceptor::handle(const livekit::JoinResponse& response) const
 
 void ResponseInterceptor::handle(const livekit::SessionDescription& desc, bool offer) const
 {
+    auto typeName = marshalledTypeName<livekit::SessionDescription>();
     if (offer) {
-        signal(&SignalServerListener::onOffer, desc);
+        signal(&SignalServerListener::onOffer, desc, typeName + "/offer");
     }
     else {
-        signal(&SignalServerListener::onAnswer, desc);
+        signal(&SignalServerListener::onAnswer, desc, typeName + "/answer");
     }
 }
 
@@ -224,7 +276,7 @@ void ResponseInterceptor::handle(const livekit::TrackSubscribed& subscribed) con
 
 void ResponseInterceptor::handle(const livekit::Pong& pong) const
 {
-    notify(&SignalServerListener::onPong, pong.timestamp(), pong.last_ping_timestamp());
+    signal(&SignalServerListener::onPong, pong);
 }
 
 } // namespace LiveKitCpp

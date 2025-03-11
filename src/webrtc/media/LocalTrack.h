@@ -11,24 +11,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalTrackFactory.h
-#include <api/media_stream_interface.h>
+#pragma once // LocalTrack.h
 #include <api/rtp_sender_interface.h>
-#include <api/audio_options.h>
-#include <string>
 
 namespace LiveKitCpp
 {
 
-class LocalTrackFactory
+struct AddTrackRequest;
+
+enum class SetSenderResult
+{
+    Accepted,
+    Rejected,
+    NotMatchedToRequest
+};
+
+class LocalTrack
 {
 public:
-    virtual bool add(webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track) = 0;
-    virtual bool remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender) = 0;
-    virtual webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label,
-                                                                           const cricket::AudioOptions& options = {}) = 0;
-protected:
-    virtual ~LocalTrackFactory() = default;
+    virtual ~LocalTrack() = default;
+    virtual cricket::MediaType mediaType() const noexcept = 0;
+    virtual bool enabled() const noexcept = 0;
+    virtual void setEnabled(bool enable) = 0;
+    virtual SetSenderResult setRequested(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) = 0;
+    virtual bool fillRequest(AddTrackRequest& request) const = 0;
 };
 
 } // namespace LiveKitCpp

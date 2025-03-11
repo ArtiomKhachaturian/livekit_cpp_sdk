@@ -37,6 +37,7 @@ struct TrackSubscribed;
 struct RequestResponse;
 struct SubscriptionResponse;
 struct SubscriptionPermissionUpdate;
+struct Pong;
 
 class LIVEKIT_CLIENT_API SignalServerListener
 {
@@ -61,8 +62,7 @@ public:
     virtual void onTrackSubscribed(uint64_t /*signalClientId*/, const TrackSubscribed& /*subscribed*/) {}
     virtual void onRequestResponse(uint64_t /*signalClientId*/, const RequestResponse& /*response*/) {}
     virtual void onSubscriptionResponse(uint64_t /*signalClientId*/, const SubscriptionResponse& /*response*/) {}
-    // UNIX time (since 1st Jan 1970) in millis
-    virtual void onPong(uint64_t /*signalClientId*/, int64_t /*timestamp*/, int64_t /*lastPingTimestamp*/ = {}) {}
+    virtual void onPong(uint64_t /*signalClientId*/, const Pong& /*pong*/) {}
     // error handling
     virtual void onSignalParseError(uint64_t /*signalClientId*/) {}
 };

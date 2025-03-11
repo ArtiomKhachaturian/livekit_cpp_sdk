@@ -34,11 +34,11 @@ RTCEngine::RTCEngine(const Options& signalOptions,
                         SignalTransportListener,
                         SignalServerListener,
                         DataChannelListener,
-                        LocalTrackFactory>(logger)
+                        LocalTrackManager>(logger)
     , _options(signalOptions)
     , _pcf(pcf)
     , _client(std::move(socket), logger.get())
-    , _microphone("microphone", this)
+    , _microphone(this, true)
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
     _client.setAutoSubscribe(_options._autoSubscribe);
@@ -147,13 +147,6 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
-void RTCEngine::onNegotiationNeeded()
-{
-    if (const auto pcManager = std::atomic_load(&_pcManager)) {
-        pcManager->negotiate(true);
-    }
-}
-
 void RTCEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
 {
     if (channel) {
@@ -171,10 +164,7 @@ void RTCEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channe
 void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (const auto sdp = RoomUtils::map(desc)) {
-        if (_client.sendOffer(sdp.value())) {
-            logInfo("publisher offer already sent to the server");
-        }
-        else {
+        if (!_client.sendOffer(sdp.value())) {
             logError("failed to send publisher offer to the server");
         }
     }
@@ -186,10 +176,7 @@ void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc
 void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (const auto sdp = RoomUtils::map(desc)) {
-        if (_client.sendAnswer(sdp.value())) {
-            logInfo("subscriber answer already sent to the server");
-        }
-        else {
+        if (!_client.sendAnswer(sdp.value())) {
             logError("failed to send subscriber answer to the server");
         }
     }
@@ -201,18 +188,35 @@ void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* de
 void RTCEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (sender) {
-        bool accepted = false;
-        switch (sender->media_type()) {
-            case cricket::MEDIA_TYPE_AUDIO:
-                accepted = _microphone.setRequestedSender(std::move(sender));
-                break;
-            /*case cricket::MEDIA_TYPE_VIDEO:
-                break;*/
-            default:
-                break;
-        }
-        if (accepted) {
-            
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            const LocalTrack* accepted = nullptr;
+            SetSenderResult result = SetSenderResult::Rejected;
+            switch (sender->media_type()) {
+                case cricket::MEDIA_TYPE_AUDIO:
+                    result = _microphone.setRequested(sender);
+                    if (SetSenderResult::Accepted == result) {
+                        accepted = &_microphone;
+                    }
+                    break;
+                case cricket::MEDIA_TYPE_VIDEO:
+                     break;
+                default:
+                    break;
+            }
+            if (accepted) {
+                AddTrackRequest request;
+                if (accepted->fillRequest(request)) {
+                    if (_client.sendAddTrack(request)) {
+                        pcManager->negotiate(true);
+                    }
+                }
+                else {
+                    // TODO: log error
+                }
+            }
+            else if (SetSenderResult::Rejected == result) {
+                pcManager->removeTrack(std::move(sender));
+            }
         }
     }
 }
@@ -255,7 +259,6 @@ void RTCEngine::onIceCandidateGathered(SignalTarget target,
 
 void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 {
-    logVerbose("join response received from server");
     TransportManagerListener* listener = this;
     auto pcManager = std::make_shared<TransportManager>(response, listener, _pcf,
                                                         makeConfiguration(response),
@@ -267,7 +270,6 @@ void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 
 void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
 {
-    logVerbose("remote offer SDP received from server");
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -281,7 +283,6 @@ void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
 
 void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
 {
-    logVerbose("remote answer SDP received from server");
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -293,9 +294,8 @@ void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
     }
 }
 
-void RTCEngine::onPong(uint64_t, int64_t, int64_t)
+void RTCEngine::onPong(uint64_t, const Pong&)
 {
-    logVerbose("ping/pong received pong from server");
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         // Clear timeout timer
         pcManager->notifyThatPongReceived();
@@ -304,8 +304,6 @@ void RTCEngine::onPong(uint64_t, int64_t, int64_t)
 
 void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
 {
-    logVerbose("trickle ICE for " + toString(request._target) +
-               " received from server");
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         webrtc::SdpParseError error;
         if (auto candidate = RoomUtils::map(request, &error)) {
@@ -338,14 +336,7 @@ bool RTCEngine::onPingRequested()
     Ping ping;
     const auto epochTime = std::chrono::system_clock::now().time_since_epoch();
     ping._timestamp = static_cast<int64_t>(epochTime / std::chrono::seconds(1));
-    const auto done = _client.sendPingReq(ping);
-    if (done) {
-        logVerbose("ping/pong sending ping...");
-    }
-    else {
-        logError("ping/pong sending failed");
-    }
-    return done;
+    return _client.sendPingReq(ping);
 }
 
 void RTCEngine::onPongTimeout()
@@ -405,6 +396,11 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createAudio(const 
         }
     }
     return {};
+}
+
+void RTCEngine::notifyAboutEnabledChanges(const LocalTrack& track)
+{
+    
 }
 
 std::string_view RTCEngine::logCategory() const

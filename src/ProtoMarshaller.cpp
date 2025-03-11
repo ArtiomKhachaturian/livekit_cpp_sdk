@@ -530,6 +530,22 @@ livekit::Ping ProtoMarshaller::map(const Ping& in) const
     return out;
 }
 
+Pong ProtoMarshaller::map(const livekit::Pong& in) const
+{
+    Pong out;
+    out._lastPingTimestamp = in.last_ping_timestamp();
+    out._timestamp = in.timestamp();
+    return out;
+}
+
+livekit::Pong ProtoMarshaller::map(const Pong& in) const
+{
+    livekit::Pong out;
+    out.set_last_ping_timestamp(in._lastPingTimestamp);
+    out.set_timestamp(in._timestamp);
+    return out;
+}
+
 UpdateLocalAudioTrack ProtoMarshaller::map(const livekit::UpdateLocalAudioTrack& in) const
 {
     UpdateLocalAudioTrack out;

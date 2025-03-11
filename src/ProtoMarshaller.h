@@ -40,6 +40,7 @@
 #include "rtc/SimulateScenario.h"
 #include "rtc/UpdateParticipantMetadata.h"
 #include "rtc/Ping.h"
+#include "rtc/Pong.h"
 #include "rtc/UpdateLocalAudioTrack.h"
 #include "rtc/UpdateLocalVideoTrack.h"
 #include "rtc/ClientInfo.h"
@@ -100,6 +101,8 @@ public:
     livekit::UpdateParticipantMetadata map(const UpdateParticipantMetadata& in) const;
     Ping map(const livekit::Ping& in) const;
     livekit::Ping map(const Ping& in) const;
+    Pong map(const livekit::Pong& in) const;
+    livekit::Pong map(const Pong& in) const;
     UpdateLocalAudioTrack map(const livekit::UpdateLocalAudioTrack& in) const;
     livekit::UpdateLocalAudioTrack map(const UpdateLocalAudioTrack& in) const;
     UpdateLocalVideoTrack map(const livekit::UpdateLocalVideoTrack& in) const;

@@ -11,24 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalAudioTrackPromise.h"
+#pragma once // Pong.h
+#include <cstdint>
 
 namespace LiveKitCpp
 {
 
-LocalAudioTrackPromise::LocalAudioTrackPromise(std::string label, LocalTrackFactory* factory,
-                                               const cricket::AudioOptions& options)
-    : LocalTrackPromise<webrtc::AudioTrackInterface>(std::move(label), factory)
-    , _options(options)
+struct Pong
 {
-}
-
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrackPromise::createMediaTrack()
-{
-    if (const auto f = factory()) {
-        return f->createAudio(label(), _options);
-    }
-    return {};
-}
+    // timestamp field of last received ping request
+    int64_t _lastPingTimestamp = {};
+    int64_t _timestamp = {};
+};
 
 } // namespace LiveKitCpp

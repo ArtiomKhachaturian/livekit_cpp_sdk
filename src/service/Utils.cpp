@@ -18,8 +18,12 @@
 #include <atlbase.h>
 #include <Windows.h>
 #include <wbemidl.h>
-#elif !defined(__APPLE__)
+#else
+#include <uuid/uuid.h>
 #include <pthread.h>
+#ifndef __APPLE__
+#include <sys/prctl.h>
+#endif
 #endif
 #ifdef WEBRTC_AVAILABLE
 #include <api/task_queue/default_task_queue_factory.h>
@@ -28,12 +32,21 @@
 #include <codecvt>
 #include <locale>
 
+#ifdef WIN32 // for UUID
+extern "C" {
+    #include <Rpc.h>
+}
+#pragma comment(lib, "Rpcrt4.lib")
+#endif
+
 #ifdef WIN32
 typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOEXW);
 #pragma comment(lib, "wbemuuid.lib")
+#endif
 
 namespace {
 
+#ifdef WIN32
 class ScopedComInitializer
 {
 public:
@@ -44,10 +57,9 @@ public:
 private:
     const HRESULT _hr;
 };
+#endif
 
 }
-
-#endif
 
 using ConvertType = std::codecvt_utf8<wchar_t>;
 
@@ -150,6 +162,27 @@ std::string fromWideChar(const std::wstring& w)
         return converter.to_bytes(w);
     }
     return {};
+}
+
+std::string makeUuid()
+{
+    std::string res;
+#ifdef WIN32
+    UUID uuid;
+    if (RPC_S_UUID_NO_ADDRESS != ::UuidCreate(&uuid)) {
+        unsigned char* str = nullptr;
+        if (RPC_S_UUID_NO_ADDRESS != ::UuidToStringA(&uuid, &str)) {
+            res = std::string((char*)str);
+            ::RpcStringFreeA(&str);
+        }
+    }
+#else //linux way
+    uuid_t uuid;
+    uuid_generate_random(uuid);
+    res.resize(36U);
+    uuid_unparse(uuid, res.data());
+#endif
+    return res;
 }
 
 template<typename TPCEnum>

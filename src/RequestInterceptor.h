@@ -41,7 +41,7 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class RequestInterceptor
+class RequestInterceptor : private Bricks::LoggableR<>
 {
 public:
     RequestInterceptor(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
@@ -63,10 +63,14 @@ public:
     bool pingReq(const Ping& ping) const;
     bool updateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool updateVideoTrack(const UpdateLocalVideoTrack& track) const;
+protected:
+    // overrides of Bricks::LoggableR
+    std::string_view logCategory() const final;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>
-    bool send(const TSetMethod& setMethod, const TObject& object) const;
+    bool send(const TSetMethod& setMethod, const TObject& object,
+              std::string typeName = {}) const;
 private:
     CommandSender* const _commandSender;
     const ProtoMarshaller _marshaller;
