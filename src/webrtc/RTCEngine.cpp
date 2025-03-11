@@ -21,6 +21,8 @@
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
 #include "rtc/TrickleRequest.h"
+#include "rtc/TrackPublishedResponse.h"
+#include "rtc/MuteTrackRequest.h"
 #include <thread>
 
 namespace LiveKitCpp
@@ -318,6 +320,29 @@ void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
     }
 }
 
+void RTCEngine::onTrackPublished(uint64_t, const TrackPublishedResponse& published)
+{
+    const LocalTrack* track = nullptr;
+    switch (published._track._type) {
+        case TrackType::Audio:
+            if (published._cid == _microphone.cid()) {
+                _microphone.setSid(published._track._sid);
+                track = &_microphone;
+            }
+            break;
+        case TrackType::Video:
+            break;
+        default:
+            break;
+    }
+    // reconcile track mute status.
+    // if server's track mute status doesn't match actual, we'll have to update
+    // the server's copy
+    if (track && track->muted() != published._track._muted) {
+        notifyAboutEnabledChanges(*track);
+    }
+}
+
 void RTCEngine::onTransportStateChanged(uint64_t, TransportState state)
 {
     if (TransportState::Disconnected == state) {
@@ -400,7 +425,7 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createAudio(const 
 
 void RTCEngine::notifyAboutEnabledChanges(const LocalTrack& track)
 {
-    
+    _client.sendMuteTrack({._sid = track.sid(), ._muted = track.muted()});
 }
 
 std::string_view RTCEngine::logCategory() const

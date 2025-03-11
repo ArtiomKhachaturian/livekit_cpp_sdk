@@ -19,21 +19,17 @@ namespace LiveKitCpp
 
 struct AddTrackRequest;
 
-enum class SetSenderResult
-{
-    Accepted,
-    Rejected,
-    NotMatchedToRequest
-};
-
 class LocalTrack
 {
 public:
     virtual ~LocalTrack() = default;
+    // client track ID, equal to WebRTC track ID
+    virtual std::string cid() const = 0;
+    // server track ID, received from TrackPublishedResponse
+    virtual std::string sid() const = 0;
     virtual cricket::MediaType mediaType() const noexcept = 0;
+    bool muted() const noexcept { return !enabled(); }
     virtual bool enabled() const noexcept = 0;
-    virtual void setEnabled(bool enable) = 0;
-    virtual SetSenderResult setRequested(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) = 0;
     virtual bool fillRequest(AddTrackRequest& request) const = 0;
 };
 

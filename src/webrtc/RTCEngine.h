@@ -85,6 +85,7 @@ private:
     void onAnswer(uint64_t, const SessionDescription& sdp) final;
     void onPong(uint64_t, const Pong&) final;
     void onTrickle(uint64_t, const TrickleRequest& request) final;
+    void onTrackPublished(uint64_t, const TrackPublishedResponse& published) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(uint64_t, TransportState state) final;
     void onTransportError(uint64_t, std::string error) final;

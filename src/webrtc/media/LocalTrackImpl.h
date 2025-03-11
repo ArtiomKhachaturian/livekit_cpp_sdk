@@ -26,16 +26,26 @@
 namespace LiveKitCpp
 {
 
+enum class SetSenderResult
+{
+    Accepted,
+    Rejected,
+    NotMatchedToRequest
+};
+
 template<class TMediaTrackInterface>
 class LocalTrackImpl : public LocalTrack
 {
 public:
     LocalTrackImpl(std::string label, LocalTrackManager* manager);
+    void setEnabled(bool enable);
+    void setSid(const std::string& sid) { _sid(sid); }
+    SetSenderResult setRequested(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
     void notifyAboutRequestFailure(const std::string& id);
     // impl. of LocalTrack
+    std::string cid() const final { return _cid; }
+    std::string sid() const final { return _sid(); }
     bool enabled() const noexcept final { return _enabled; }
-    void setEnabled(bool enable) final;
-    SetSenderResult setRequested(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) final;
     bool fillRequest(AddTrackRequest& request) const override;
 protected:
     LocalTrackManager* manager() const noexcept { return _manager; }
@@ -43,11 +53,12 @@ protected:
 private:
     void changeEnabled(bool enabled, bool notify = true) const;
     bool accept(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
-    bool accept(const std::string& id) const { return !id.empty() && id == _id; }
+    bool accept(const std::string& id) const { return !id.empty() && id == _cid; }
 private:
-    const std::string _id;
+    const std::string _cid;
     const std::string _label;
     LocalTrackManager* const _manager;
+    Bricks::SafeObj<std::string> _sid;
     std::atomic_bool _enabled = false;
     SafeScopedRefPtr<webrtc::RtpSenderInterface> _sender;
     bool _requested = false; // united protection with [_sender]
@@ -56,7 +67,7 @@ private:
 template<class TMediaTrackInterface>
 LocalTrackImpl<TMediaTrackInterface>::LocalTrackImpl(std::string label,
                                                      LocalTrackManager* manager)
-    : _id(makeUuid())
+    : _cid(makeUuid())
     , _label(std::move(label))
     , _manager(manager)
 {
@@ -72,7 +83,7 @@ inline void LocalTrackImpl<TMediaTrackInterface>::setEnabled(bool enabled)
                 changeEnabled(true);
             }
             else if (!_requested && _manager) {
-                if (auto track = createMediaTrack(_id)) {
+                if (auto track = createMediaTrack(_cid)) {
                     _requested = _manager->add(std::move(track));
                 }
             }
@@ -102,6 +113,15 @@ inline SetSenderResult LocalTrackImpl<TMediaTrackInterface>::
 }
 
 template<class TMediaTrackInterface>
+inline void LocalTrackImpl<TMediaTrackInterface>::notifyAboutRequestFailure(const std::string& id)
+{
+    LOCK_WRITE_SAFE_OBJ(_sender);
+    if (_requested && accept(id)) {
+        _requested = false;
+    }
+}
+
+template<class TMediaTrackInterface>
 inline bool LocalTrackImpl<TMediaTrackInterface>::fillRequest(AddTrackRequest& request) const
 {
     LOCK_READ_SAFE_OBJ(_sender);
@@ -119,21 +139,13 @@ inline bool LocalTrackImpl<TMediaTrackInterface>::fillRequest(AddTrackRequest& r
             default:
                 break;
         }
-        request._cid = _id;
+        request._cid = _cid;
         request._name = _label;
-        request._muted = !enabled();
+        request._muted = muted();
+        request._sid = sid();
         return true;
     }
     return false;
-}
-
-template<class TMediaTrackInterface>
-inline void LocalTrackImpl<TMediaTrackInterface>::notifyAboutRequestFailure(const std::string& id)
-{
-    LOCK_WRITE_SAFE_OBJ(_sender);
-    if (_requested && accept(id)) {
-        _requested = false;
-    }
 }
 
 template<class TMediaTrackInterface>
