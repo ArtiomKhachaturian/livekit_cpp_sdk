@@ -22,8 +22,10 @@ struct DataChannel::Impl : public webrtc::DataChannelObserver
 {
     DataChannel* const _self;
     const webrtc::scoped_refptr<webrtc::DataChannelInterface> _channel;
+    const bool _local;
     Bricks::Listener<DataChannelListener*> _listener;
-    Impl(DataChannel* self, webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
+    Impl(DataChannel* self, bool local,
+         webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
     // impl. of webrtc::DataChannelObserver
     void OnStateChange() final;
     void OnMessage(const webrtc::DataBuffer& buffer) final;
@@ -31,8 +33,8 @@ struct DataChannel::Impl : public webrtc::DataChannelObserver
     bool IsOkToCallOnTheNetworkThread() final { return true; }
 };
 
-DataChannel::DataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> channel)
-    : _impl(std::make_shared<Impl>(this, std::move(channel)))
+DataChannel::DataChannel(bool local, webrtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+    : _impl(std::make_shared<Impl>(this, local, std::move(channel)))
 {
 }
 
@@ -42,11 +44,16 @@ DataChannel::~DataChannel()
     setListener(nullptr);
 }
 
+bool DataChannel::local() const noexcept
+{
+    return _impl->_local;
+}
+
 webrtc::scoped_refptr<DataChannel> DataChannel::
-    create(webrtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+    create(bool local, webrtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
     if (channel) {
-        return webrtc::make_ref_counted<DataChannel>(std::move(channel));
+        return webrtc::make_ref_counted<DataChannel>(local, std::move(channel));
     }
     return {};
 }
@@ -165,9 +172,10 @@ void DataChannel::Send(const webrtc::DataBuffer& buffer)
     });
 }
 
-DataChannel::Impl::Impl(DataChannel* self,
+DataChannel::Impl::Impl(DataChannel* self, bool local,
                         webrtc::scoped_refptr<webrtc::DataChannelInterface> channel)
     : _self(self)
+    , _local(local)
     , _channel(std::move(channel))
 {
 }

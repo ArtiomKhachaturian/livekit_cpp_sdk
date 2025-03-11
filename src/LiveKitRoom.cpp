@@ -55,7 +55,7 @@ void LiveKitRoom::disconnect()
 
 void LiveKitRoom::setMicrophoneEnabled(bool enable)
 {
-    _impl->_engine.setMicrophoneEnabled(enable);
+    _impl->_engine.unmuteMicrophone(enable);
 }
 
 LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,

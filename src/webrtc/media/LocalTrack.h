@@ -12,25 +12,66 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalTrack.h
-#include <api/rtp_sender_interface.h>
+#include "SafeScopedRefPtr.h"
+#include <api/media_types.h>
+#include <atomic>
+#include <string>
+
+namespace webrtc {
+class MediaStreamTrackInterface;
+class RtpSenderInterface;
+}
 
 namespace LiveKitCpp
 {
 
+class LocalTrackManager;
 struct AddTrackRequest;
+
+enum class SetSenderResult
+{
+    Accepted,
+    Rejected,
+    NotMatchedToRequest
+};
 
 class LocalTrack
 {
 public:
-    virtual ~LocalTrack() = default;
+    virtual ~LocalTrack();
     // client track ID, equal to WebRTC track ID
-    virtual std::string cid() const = 0;
+    const std::string& cid() const noexcept { return _cid; }
+    // track name
+    const std::string& name() const noexcept { return _name; }
     // server track ID, received from TrackPublishedResponse
-    virtual std::string sid() const = 0;
+    std::string sid() const noexcept { return _sid; }
+    void setSid(const std::string& sid) { _sid(sid); }
+    // request media track creation if needed
+    void mute(bool mute);
+    bool muted() const noexcept { return _muted; }
+    SetSenderResult setTrackSender(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
+    bool resetTrackSender(bool full = false);
+    // type
     virtual cricket::MediaType mediaType() const noexcept = 0;
-    bool muted() const noexcept { return !enabled(); }
-    virtual bool enabled() const noexcept = 0;
-    virtual bool fillRequest(AddTrackRequest& request) const = 0;
+    // for publishing
+    virtual bool fillRequest(AddTrackRequest& request) const;
+protected:
+    LocalTrack(std::string name, LocalTrackManager* manager);
+    LocalTrackManager* manager() const noexcept { return _manager; }
+    virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
+        createMediaTrack(const std::string& id) = 0;
+private:
+    void muteSender(bool mute, bool notify) const;
+    bool accept(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
+    bool accept(const std::string& id) const { return !id.empty() && id == _cid; }
+private:
+    const std::string _cid;
+    const std::string _name;
+    LocalTrackManager* const _manager;
+    Bricks::SafeObj<std::string> _sid;
+    std::atomic_bool _muted = true;
+    SafeScopedRefPtr<webrtc::RtpSenderInterface> _sender;
+    bool _requested = false; // united protection with [_sender]
 };
 
 } // namespace LiveKitCpp

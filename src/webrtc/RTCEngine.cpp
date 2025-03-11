@@ -16,13 +16,11 @@
 #include "PeerConnectionFactory.h"
 #include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
-#include "DataChannel.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
 #include "rtc/TrickleRequest.h"
 #include "rtc/TrackPublishedResponse.h"
-#include "rtc/MuteTrackRequest.h"
 #include <thread>
 
 namespace LiveKitCpp
@@ -32,15 +30,9 @@ RTCEngine::RTCEngine(const Options& signalOptions,
                      PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<TransportManagerListener,
-                        SignalTransportListener,
-                        SignalServerListener,
-                        DataChannelListener,
-                        LocalTrackManager>(logger)
+    : RTCMediaEngine(pcf, logger)
     , _options(signalOptions)
-    , _pcf(pcf)
     , _client(std::move(socket), logger.get())
-    , _microphone(this, true)
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
     _client.setAutoSubscribe(_options._autoSubscribe);
@@ -80,15 +72,44 @@ bool RTCEngine::connect(std::string url, std::string authToken)
     return ok;
 }
 
-void RTCEngine::setMicrophoneEnabled(bool enable)
-{
-    _microphone.setEnabled(enable);
-}
-
-void RTCEngine::cleanup(bool /*error*/)
+void RTCEngine::cleanup(bool error)
 {
     std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
     _client.disconnect();
+    RTCMediaEngine::cleanup(error);
+}
+
+RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const
+{
+    if (!closed()) {
+        if (_client.sendAddTrack(request)) {
+            return SendResult::Ok;
+        }
+        return SendResult::TransportError;
+    }
+    return SendResult::TransportClosed;
+}
+
+RTCEngine::SendResult RTCEngine::sendMuteTrack(const MuteTrackRequest& request) const
+{
+    if (!closed()) {
+        if (_client.sendMuteTrack(request)) {
+            return SendResult::Ok;
+        }
+        return SendResult::TransportError;
+    }
+    return SendResult::TransportClosed;
+}
+
+bool RTCEngine::closed() const
+{
+    if (TransportState::Connected != _client.transportState()) {
+        return true;
+    }
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        return pcManager->closed();
+    }
+    return true;
 }
 
 webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
@@ -149,20 +170,6 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
-void RTCEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
-{
-    if (channel) {
-        if (DataChannel::lossyDCLabel() == channel->label()) {
-            channel->setListener(this);
-            _lossyDC(std::move(channel));
-        }
-        else if (DataChannel::reliableDCLabel() == channel->label()) {
-            channel->setListener(this);
-            _reliableDC(std::move(channel));
-        }
-    }
-}
-
 void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (const auto sdp = RoomUtils::map(desc)) {
@@ -184,58 +191,6 @@ void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* de
     }
     else {
         logError("failed to serialize subscriber answer into a string");
-    }
-}
-
-void RTCEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
-{
-    if (sender) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            const LocalTrack* accepted = nullptr;
-            SetSenderResult result = SetSenderResult::Rejected;
-            switch (sender->media_type()) {
-                case cricket::MEDIA_TYPE_AUDIO:
-                    result = _microphone.setRequested(sender);
-                    if (SetSenderResult::Accepted == result) {
-                        accepted = &_microphone;
-                    }
-                    break;
-                case cricket::MEDIA_TYPE_VIDEO:
-                     break;
-                default:
-                    break;
-            }
-            if (accepted) {
-                AddTrackRequest request;
-                if (accepted->fillRequest(request)) {
-                    if (_client.sendAddTrack(request)) {
-                        pcManager->negotiate(true);
-                    }
-                }
-                else {
-                    // TODO: log error
-                }
-            }
-            else if (SetSenderResult::Rejected == result) {
-                pcManager->removeTrack(std::move(sender));
-            }
-        }
-    }
-}
-
-void RTCEngine::onLocalTrackAddFailure(const std::string& id,
-                                       cricket::MediaType type,
-                                       const std::vector<std::string>&,
-                                       webrtc::RTCError)
-{
-    switch (type) {
-        case cricket::MEDIA_TYPE_AUDIO:
-            _microphone.notifyAboutRequestFailure(id);
-            break;
-        /*case cricket::MEDIA_TYPE_VIDEO:
-            break;*/
-        default:
-            break;
     }
 }
 
@@ -262,7 +217,9 @@ void RTCEngine::onIceCandidateGathered(SignalTarget target,
 void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
 {
     TransportManagerListener* listener = this;
-    auto pcManager = std::make_shared<TransportManager>(response, listener, _pcf,
+    auto pcManager = std::make_shared<TransportManager>(response,
+                                                        listener,
+                                                        peerConnectionFactory(),
                                                         makeConfiguration(response),
                                                         logger());
     std::atomic_store(&_pcManager, pcManager);
@@ -320,29 +277,6 @@ void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
     }
 }
 
-void RTCEngine::onTrackPublished(uint64_t, const TrackPublishedResponse& published)
-{
-    const LocalTrack* track = nullptr;
-    switch (published._track._type) {
-        case TrackType::Audio:
-            if (published._cid == _microphone.cid()) {
-                _microphone.setSid(published._track._sid);
-                track = &_microphone;
-            }
-            break;
-        case TrackType::Video:
-            break;
-        default:
-            break;
-    }
-    // reconcile track mute status.
-    // if server's track mute status doesn't match actual, we'll have to update
-    // the server's copy
-    if (track && track->muted() != published._track._muted) {
-        notifyAboutEnabledChanges(*track);
-    }
-}
-
 void RTCEngine::onTransportStateChanged(uint64_t, TransportState state)
 {
     if (TransportState::Disconnected == state) {
@@ -371,27 +305,6 @@ void RTCEngine::onPongTimeout()
     //await self.cleanUp(withError: LiveKitError(.serverPingTimedOut))
 }
 
-void RTCEngine::onStateChange(DataChannel* channel)
-{
-    if (channel && canLogInfo()) {
-        logInfo("the data channel '" + channel->label() + "' state have changed");
-    }
-}
-
-void RTCEngine::onMessage(DataChannel* channel,
-                                 const webrtc::DataBuffer& /*buffer*/)
-{
-    if (channel && canLogInfo()) {
-        logInfo("a message buffer was successfully received for '" +
-                channel->label() + " data channel");
-    }
-}
-
-void RTCEngine::onBufferedAmountChange(DataChannel* /*channelType*/,
-                                       uint64_t /*sentDataSize*/)
-{
-}
-
 bool RTCEngine::add(webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
 {
     if (track) {
@@ -410,22 +323,6 @@ bool RTCEngine::remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
         }
     }
     return false;
-}
-
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createAudio(const std::string& label,
-                                                                          const cricket::AudioOptions& options)
-{
-    if (_pcf) {
-        if (const auto source = _pcf->CreateAudioSource(options)) {
-            return _pcf->CreateAudioTrack(label, source.get());
-        }
-    }
-    return {};
-}
-
-void RTCEngine::notifyAboutEnabledChanges(const LocalTrack& track)
-{
-    _client.sendMuteTrack({._sid = track.sid(), ._muted = track.muted()});
 }
 
 std::string_view RTCEngine::logCategory() const

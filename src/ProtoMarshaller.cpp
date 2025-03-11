@@ -40,39 +40,32 @@ ProtoMarshaller::ProtoMarshaller(Bricks::Logger* logger)
 
 std::vector<uint8_t> ProtoMarshaller::toBytes(const google::protobuf::Message& proto) const
 {
+    std::vector<uint8_t> buffer;
     if (const auto size = proto.ByteSizeLong()) {
-        std::vector<uint8_t> buffer(size);
-        if (proto.SerializeToArray(buffer.data(), int(size))) {
-            return buffer;
+        buffer.resize(size);
+        if (!proto.SerializeToArray(buffer.data(), int(size))) {
+            logError(std::string("failed serialize of ") + proto.GetTypeName() + " to blob");
+            buffer.clear();
         }
-        logError(std::string("failed serialize of ") + proto.GetTypeName() + " to blob");
     }
-    return {};
+    return buffer;
 }
 
 JoinResponse ProtoMarshaller::map(const livekit::JoinResponse& in) const
 {
     JoinResponse out;
-    if (in.has_room()) {
-        out._room = map(in.room());
-    }
-    if (in.has_participant()) {
-        out._participant = map(in.participant());
-    }
+    out._room = map(in.room());
+    out._participant = map(in.participant());
     out._otherParticipants = rconv<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
     out._serverVersion = in.server_version();
     out._iceServers = rconv<ICEServer, livekit::ICEServer>(in.ice_servers());
     out._subscriberPrimary = in.subscriber_primary();
     out._alternativeUrl = in.alternative_url();
-    if (in.has_client_configuration()) {
-        out._clientConfiguration = map(in.client_configuration());
-    }
+    out._clientConfiguration = map(in.client_configuration());
     out._serverRegion = in.server_region();
     out._pingTimeout = in.ping_timeout();
     out._pingInterval = in.ping_interval();
-    if (in.has_server_info()) {
-        out._serverInfo = map(in.server_info());
-    }
+    out._serverInfo = map(in.server_info());
     out._sifTrailer = in.sif_trailer();
     out._enabledPublishCodecs = rconv<Codec, livekit::Codec>(in.enabled_publish_codecs());
     out._fastPublish = in.fast_publish();

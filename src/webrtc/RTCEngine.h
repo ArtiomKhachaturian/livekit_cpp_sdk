@@ -12,19 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Engine.h
-#include "Loggable.h"
+#include "RTCMediaEngine.h"
 #include "Options.h"
-#include "LocalAudioTrack.h"
-#include "SafeScopedRefPtr.h"
-#include "SignalServerListener.h"
-#include "DataChannelListener.h"
 #include "SignalClientWs.h"
-#include "LocalTrackManager.h"
-#include "TransportManagerListener.h"
 #include "SignalTransportListener.h"
 #include "rtc/ClientConfiguration.h"
-#include "rtc/JoinResponse.h"
-#include <api/scoped_refptr.h>
 #include <atomic>
 
 namespace Websocket {
@@ -41,16 +33,10 @@ namespace LiveKitCpp
 
 class PeerConnectionFactory;
 class TransportManager;
-class JoinResponse;
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/RTCEngine.ts
-class RTCEngine : private Bricks::LoggableS<TransportManagerListener,
-                                            SignalTransportListener,
-                                            SignalServerListener,
-                                            DataChannelListener,
-                                            LocalTrackManager>
+class RTCEngine : public RTCMediaEngine, private SignalTransportListener
 {
-    using SafeString = Bricks::SafeObj<std::string>;
 public:
     RTCEngine(const Options& signalOptions,
               PeerConnectionFactory* pcf,
@@ -58,9 +44,13 @@ public:
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
-    void setMicrophoneEnabled(bool enable);
+protected:
+    // impl. or overrides of RTCMediaEngine
+    void cleanup(bool error = false) final;
+    SendResult sendAddTrack(const AddTrackRequest& request) const final;
+    SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
+    bool closed() const final;
 private:
-    void cleanup(bool /*error*/ = false);
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const std::vector<ICEServer>& iceServers = {},
                           const std::optional<ClientConfiguration>& cc = {}) const;
@@ -69,14 +59,8 @@ private:
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const ReconnectResponse& response) const;
     // impl. of TransportManagerListener
-    void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
     void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
-    void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
-    void onLocalTrackAddFailure(const std::string& id,
-                                cricket::MediaType type,
-                                const std::vector<std::string>&,
-                                webrtc::RTCError) final;
     void onIceCandidateGathered(SignalTarget target,
                                 const webrtc::IceCandidateInterface* candidate) final;
     // impl. of SignalServerListener
@@ -85,33 +69,21 @@ private:
     void onAnswer(uint64_t, const SessionDescription& sdp) final;
     void onPong(uint64_t, const Pong&) final;
     void onTrickle(uint64_t, const TrickleRequest& request) final;
-    void onTrackPublished(uint64_t, const TrackPublishedResponse& published) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(uint64_t, TransportState state) final;
     void onTransportError(uint64_t, std::string error) final;
     // impl. of PingPongKitListener
     bool onPingRequested() final;
     void onPongTimeout() final;
-    // impl. of DataChannelListener
-    void onStateChange(DataChannel* channel) final;
-    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
-    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
     // impl. LocalTrackFactory
     bool add(webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track) final;
     bool remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label,
-                                                                   const cricket::AudioOptions& options) final;
-    void notifyAboutEnabledChanges(const LocalTrack& track) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
     const Options _options;
-    const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
-    SafeScopedRefPtr<DataChannel> _lossyDC;
-    SafeScopedRefPtr<DataChannel> _reliableDC;
-    LocalAudioTrack _microphone;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _joinAttempts = 0U;
 };

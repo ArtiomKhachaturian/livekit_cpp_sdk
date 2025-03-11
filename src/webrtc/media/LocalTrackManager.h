@@ -20,8 +20,6 @@
 namespace LiveKitCpp
 {
 
-class LocalTrack;
-
 class LocalTrackManager
 {
 public:
@@ -29,7 +27,7 @@ public:
     virtual bool remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender) = 0;
     virtual webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label,
                                                                            const cricket::AudioOptions& options = {}) = 0;
-    virtual void notifyAboutEnabledChanges(const LocalTrack& track) = 0;
+    virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
 protected:
     virtual ~LocalTrackManager() = default;
 };

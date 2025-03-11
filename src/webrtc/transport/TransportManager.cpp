@@ -62,6 +62,11 @@ webrtc::PeerConnectionInterface::PeerConnectionState TransportManager::state() c
     return _state;
 }
 
+bool TransportManager::closed() const noexcept
+{
+    return webrtc::PeerConnectionInterface::PeerConnectionState::kClosed == state();
+}
+
 void TransportManager::negotiate(bool force)
 {
     // if publish only, negotiate

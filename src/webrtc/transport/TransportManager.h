@@ -43,6 +43,7 @@ public:
     bool valid() const noexcept;
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
+    bool closed() const noexcept;
     void negotiate(bool force = false);
     void startPing() { _pingPongKit.start(); }
     void stopPing() { _pingPongKit.stop(); }

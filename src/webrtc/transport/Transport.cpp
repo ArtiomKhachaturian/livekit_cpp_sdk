@@ -144,7 +144,7 @@ bool Transport::createDataChannel(const std::string& label, const webrtc::DataCh
                 if (result.ok()) {
                     holder->logVerbose("data channel '" + label + "' has been created");
                     holder->invoke(&TransportListener::onLocalDataChannelCreated,
-                                   DataChannel::create(result.MoveValue()));
+                                   DataChannel::create(true, result.MoveValue()));
                 }
                 else {
                     holder->logWebRTCError(result.error(), "unable to create data channel '"
@@ -491,7 +491,7 @@ void Transport::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> 
 void Transport::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
     _holder->invoke(&TransportListener::onRemoteDataChannelOpened,
-                    DataChannel::create(std::move(channel)));
+                    DataChannel::create(false, std::move(channel)));
 }
 
 void Transport::OnNegotiationNeededEvent(uint32_t eventId)

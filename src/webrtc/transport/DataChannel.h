@@ -27,7 +27,8 @@ class DataChannel : public webrtc::RefCountInterface
 {
     struct Impl;
 public:
-    static webrtc::scoped_refptr<DataChannel> create(webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
+    static webrtc::scoped_refptr<DataChannel> create(bool local,
+                                                     webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
     // Amount of bytes that can be queued for sending on the data channel.
     // Those are bytes that have not yet been processed at the SCTP level.
     static uint64_t maxSendQueueSize();
@@ -37,6 +38,8 @@ public:
     static std::string reliableDCLabel() { return "_reliable"; }
     
     ~DataChannel() override;
+    
+    bool local() const noexcept;
     // Used to receive events from the data channel. Only one listener can be
     // registered at a time. Unregister listener should be called before the
     // listener object is destroyed.
@@ -88,7 +91,7 @@ public:
     // post any expensive operations to other worker threads.
     void Send(const webrtc::DataBuffer& buffer);
 protected:
-    DataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
+    DataChannel(bool local, webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
 private:
     const std::shared_ptr<Impl> _impl;
 };

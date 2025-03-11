@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "LocalAudioTrack.h"
+#include "LocalTrackManager.h"
+#include "rtc/AddTrackRequest.h"
+#include <api/media_stream_interface.h>
 
 namespace {
 
@@ -26,7 +29,7 @@ namespace LiveKitCpp
 
 LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
                                  const cricket::AudioOptions& options)
-    : Base(audioLabel(microphone), manager)
+    : LocalTrack(audioLabel(microphone), manager)
     , _microphone(microphone)
     , _options(options)
 {
@@ -34,14 +37,14 @@ LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
 
 bool LocalAudioTrack::fillRequest(AddTrackRequest& request) const
 {
-    if (Base::fillRequest(request)) {
+    if (LocalTrack::fillRequest(request)) {
         request._source = _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
         return true;
     }
     return false;
 }
 
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrack::createMediaTrack(const std::string& id)
+webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalAudioTrack::createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
         return m->createAudio(id, _options);
