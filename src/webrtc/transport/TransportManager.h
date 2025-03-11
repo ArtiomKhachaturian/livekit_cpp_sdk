@@ -17,7 +17,6 @@
 #include "PingPongKit.h"
 #include "SafeScopedRefPtr.h"
 #include "TransportListener.h"
-#include "DataChannelListener.h"
 #include "rtc/JoinResponse.h"
 #include <api/peer_connection_interface.h>
 #include <atomic>
@@ -31,7 +30,7 @@ class PeerConnectionFactory;
 class DataChannelObserver;
 enum class SignalTarget;
 
-class TransportManager : private Bricks::LoggableS<TransportListener, DataChannelListener>
+class TransportManager : private Bricks::LoggableS<TransportListener>
 {
 public:
     TransportManager(const JoinResponse& joinResponse,
@@ -44,7 +43,7 @@ public:
     bool valid() const noexcept;
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
-    void negotiate(bool startPing = true);
+    void negotiate(bool force = false);
     void startPing() { _pingPongKit.start(); }
     void stopPing() { _pingPongKit.stop(); }
     void notifyThatPongReceived() { _pingPongKit.notifyThatPongReceived(); }
@@ -56,6 +55,7 @@ public:
 private:
     void createPublisherOffer();
     bool canNegotiate() const noexcept;
+    bool localDataChannelsAreCreated() const noexcept { return _embeddedDCMaxCount == _embeddedDCCount; }
     Transport& primaryTransport() noexcept;
     const Transport& primaryTransport() const noexcept;
     bool isPrimary(SignalTarget target) const noexcept;
@@ -76,29 +76,24 @@ private:
     void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
     void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
     void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
+    void onNegotiationNeededEvent(SignalTarget target, uint32_t eventId) final;
     void onRemoteDataChannelOpened(SignalTarget target,
                                    rtc::scoped_refptr<DataChannel> channel) final;
     void onIceCandidateGathered(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
     void onRemoteTrackAdded(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     void onRemotedTrackRemoved(SignalTarget target,
                                rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
-    // impl. of DataChannelListener
-    void onStateChange(DataChannel* channel) final;
-    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
-    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
     // override of Bricks::LoggableS<>
     std::string_view logCategory() const;
 private:
-    static inline const std::string _lossyDCLabel = "_lossy";
-    static inline const std::string _reliableDCLabel = "_reliable";
+    static constexpr uint8_t _embeddedDCMaxCount = 2U;
     TransportManagerListener* const _listener;
     const JoinResponse _joinResponse;
     Transport _publisher;
     Transport _subscriber;
     PingPongKit _pingPongKit;
-    SafeScopedRefPtr<DataChannel> _lossyDC;
-    SafeScopedRefPtr<DataChannel> _reliableDC;
     std::atomic<webrtc::PeerConnectionInterface::PeerConnectionState> _state;
+    std::atomic<uint8_t> _embeddedDCCount = 0U;
     std::atomic_bool _pendingNegotiation = false;
 };
 

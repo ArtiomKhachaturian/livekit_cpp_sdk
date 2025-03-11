@@ -38,6 +38,7 @@ DataChannel::DataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> cha
 
 DataChannel::~DataChannel()
 {
+    close();
     setListener(nullptr);
 }
 

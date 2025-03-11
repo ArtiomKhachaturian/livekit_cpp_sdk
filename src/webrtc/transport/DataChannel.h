@@ -32,6 +32,10 @@ public:
     // Those are bytes that have not yet been processed at the SCTP level.
     static uint64_t maxSendQueueSize();
     
+    static std::string lossyDCLabel() { return "_lossy"; }
+    
+    static std::string reliableDCLabel() { return "_reliable"; }
+    
     ~DataChannel() override;
     // Used to receive events from the data channel. Only one listener can be
     // registered at a time. Unregister listener should be called before the

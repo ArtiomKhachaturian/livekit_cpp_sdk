@@ -14,8 +14,8 @@
 #include "TransportManager.h"
 #include "TransportManagerListener.h"
 #include "PeerConnectionFactory.h"
-#include "DataChannel.h"
 #include "RoomUtils.h"
+#include "DataChannel.h"
 #include "Utils.h"
 
 namespace {
@@ -34,7 +34,7 @@ TransportManager::TransportManager(const JoinResponse& joinResponse,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                    const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<TransportListener, DataChannelListener>(logger)
+    : Bricks::LoggableS<TransportListener>(logger)
     , _listener(listener)
     , _joinResponse(joinResponse)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
@@ -42,21 +42,14 @@ TransportManager::TransportManager(const JoinResponse& joinResponse,
     , _pingPongKit(listener, positiveOrZero(joinResponse._pingInterval), positiveOrZero(joinResponse._pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
-    _publisher.createDataChannel(_lossyDCLabel, {.ordered = true, .maxRetransmits = 0});
-    _publisher.createDataChannel(_reliableDCLabel, {.ordered = true});
+    _publisher.createDataChannel(DataChannel::lossyDCLabel(), {.ordered = true, .maxRetransmits = 0});
+    _publisher.createDataChannel(DataChannel::reliableDCLabel(), {.ordered = true});
 }
 
 TransportManager::~TransportManager()
 {
     _subscriber.close();
     _publisher.close();
-    LOCK_WRITE_SAFE_OBJ(_lossyDC);
-    if (auto lossyDC = _lossyDC.take()) {
-        lossyDC->setListener(nullptr);
-    }
-    if (auto reliableDC = _reliableDC.take()) {
-        reliableDC->setListener(nullptr);
-    }
 }
 
 bool TransportManager::valid() const noexcept
@@ -69,14 +62,11 @@ webrtc::PeerConnectionInterface::PeerConnectionState TransportManager::state() c
     return _state;
 }
 
-void TransportManager::negotiate(bool startPing)
+void TransportManager::negotiate(bool force)
 {
     // if publish only, negotiate
-    if (canNegotiate()) {
+    if (force || canNegotiate()) {
         createPublisherOffer();
-    }
-    if (startPing) {
-        this->startPing();
     }
 }
 
@@ -153,13 +143,12 @@ void TransportManager::close()
 void TransportManager::createPublisherOffer()
 {
     if (_publisher) {
-        LOCK_READ_SAFE_OBJ(_lossyDC);
-        LOCK_READ_SAFE_OBJ(_reliableDC);
-        if (_lossyDC.constRef() && _reliableDC.constRef()) {
+        if (localDataChannelsAreCreated()) {
             _pendingNegotiation = false;
             _publisher.createOffer();
         }
         else {
+            logVerbose("publisher's offer creation is postponed until all DCs aren't created");
             // wait until DC are not created, and make offer ASAP in [onDataChannel] handler
             _pendingNegotiation = true;
         }
@@ -192,6 +181,9 @@ void TransportManager::updateState()
     const auto oldState = _state.exchange(newState);
     if (oldState != newState) {
         logInfo(makeStateChangesString(oldState, newState));
+        if (webrtc::PeerConnectionInterface::PeerConnectionState::kClosed == newState) {
+            _embeddedDCCount = 0U;
+        }
         invoke(&TransportManagerListener::onStateChange, newState,
                _publisher.state(), _subscriber.state());
     }
@@ -291,19 +283,14 @@ void TransportManager::onLocalDataChannelCreated(SignalTarget target,
 {
     if (SignalTarget::Publisher == target && channel) {
         const auto label = channel->label();
-        LOCK_WRITE_SAFE_OBJ(_lossyDC);
-        LOCK_WRITE_SAFE_OBJ(_reliableDC);
-        if (_lossyDCLabel == label) {
-            channel->setListener(this);
-            _lossyDC = std::move(channel);
+        if (DataChannel::lossyDCLabel() == label || DataChannel::reliableDCLabel() == label) {
+            const auto embeddedDCCount = 1U + _embeddedDCCount.fetch_add(1U);
+            if (localDataChannelsAreCreated() && _pendingNegotiation.exchange(false)) {
+                logVerbose("all DCs have been create, we have a pending offer - let's try to create it");
+                createPublisherOffer();
+            }
         }
-        else if (_reliableDCLabel == label) {
-            channel->setListener(this);
-            _reliableDC = std::move(channel);
-        }
-        if (_lossyDC.constRef() && _reliableDC.constRef() && _pendingNegotiation.exchange(false)) {
-            createPublisherOffer();
-        }
+        invoke(&TransportManagerListener::onLocalDataChannelCreated, std::move(channel));
     }
 }
 
@@ -328,6 +315,13 @@ void TransportManager::onSignalingChange(SignalTarget target,
 {
     if (isPrimary(target)) {
         updateState();
+    }
+}
+
+void TransportManager::onNegotiationNeededEvent(SignalTarget target, uint32_t /*eventId*/)
+{
+    if (SignalTarget::Publisher == target && localDataChannelsAreCreated()) {
+        invoke(&TransportManagerListener::onNegotiationNeeded);
     }
 }
 
@@ -362,27 +356,6 @@ void TransportManager::onRemotedTrackRemoved(SignalTarget target,
     if (SignalTarget::Subscriber == target) {
         invoke(&TransportManagerListener::onRemotedTrackRemoved, std::move(receiver));
     }
-}
-
-void TransportManager::onStateChange(DataChannel* channel)
-{
-    if (channel && canLogInfo()) {
-        logInfo("the data channel '" + channel->label() + "' state have changed");
-    }
-}
-
-void TransportManager::onMessage(DataChannel* channel,
-                                 const webrtc::DataBuffer& /*buffer*/)
-{
-    if (channel && canLogInfo()) {
-        logInfo("a message buffer was successfully received for '" +
-                channel->label() + " data channel");
-    }
-}
-
-void TransportManager::onBufferedAmountChange(DataChannel* /*channelType*/,
-                                              uint64_t /*sentDataSize*/)
-{
 }
 
 std::string_view TransportManager::logCategory() const

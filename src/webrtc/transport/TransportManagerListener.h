@@ -27,6 +27,8 @@ public:
     virtual void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState /*state*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*publisherState*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*subscriberState*/) {}
+    virtual void onNegotiationNeeded() {}
+    virtual void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> /*channel*/) {}
     virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> /*channel*/) {}
     virtual void onIceCandidateGathered(SignalTarget /*target*/,
                                         const webrtc::IceCandidateInterface* /*candidate*/) {}

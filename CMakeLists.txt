@@ -212,6 +212,7 @@ if (WEBRTC_AVAILABLE)
         ${CMAKE_SOURCE_DIR}/src/webrtc 
         ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
         ${CMAKE_SOURCE_DIR}/src/webrtc/transport
+        ${CMAKE_SOURCE_DIR}/src/webrtc/media
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp 
         ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)

@@ -16,6 +16,7 @@
 #include "PeerConnectionFactory.h"
 #include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
+#include "DataChannel.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
@@ -31,7 +32,8 @@ RTCEngine::RTCEngine(const Options& signalOptions,
                      const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportManagerListener,
                         SignalTransportListener,
-                        SignalServerListener>(logger)
+                        SignalServerListener,
+                        DataChannelListener>(logger)
     , _options(signalOptions)
     , _pcf(pcf)
     , _client(std::move(socket), logger.get())
@@ -170,6 +172,27 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
+void RTCEngine::onNegotiationNeeded()
+{
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        pcManager->negotiate(true);
+    }
+}
+
+void RTCEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
+{
+    if (channel) {
+        if (DataChannel::lossyDCLabel() == channel->label()) {
+            channel->setListener(this);
+            _lossyDC(std::move(channel));
+        }
+        else if (DataChannel::reliableDCLabel() == channel->label()) {
+            channel->setListener(this);
+            _reliableDC(std::move(channel));
+        }
+    }
+}
+
 void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (const auto sdp = RoomUtils::map(desc)) {
@@ -228,7 +251,8 @@ void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
                                                         makeConfiguration(response),
                                                         logger());
     std::atomic_store(&_pcManager, pcManager);
-    pcManager->negotiate(true);
+    pcManager->negotiate(false);
+    pcManager->startPing();
 }
 
 void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
@@ -319,6 +343,27 @@ void RTCEngine::onPongTimeout()
     logError("ping/pong timed out");
     cleanup(true);
     //await self.cleanUp(withError: LiveKitError(.serverPingTimedOut))
+}
+
+void RTCEngine::onStateChange(DataChannel* channel)
+{
+    if (channel && canLogInfo()) {
+        logInfo("the data channel '" + channel->label() + "' state have changed");
+    }
+}
+
+void RTCEngine::onMessage(DataChannel* channel,
+                                 const webrtc::DataBuffer& /*buffer*/)
+{
+    if (channel && canLogInfo()) {
+        logInfo("a message buffer was successfully received for '" +
+                channel->label() + " data channel");
+    }
+}
+
+void RTCEngine::onBufferedAmountChange(DataChannel* /*channelType*/,
+                                       uint64_t /*sentDataSize*/)
+{
 }
 
 std::string_view RTCEngine::logCategory() const

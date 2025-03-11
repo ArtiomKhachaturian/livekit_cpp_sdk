@@ -17,6 +17,7 @@
 #include "SafeObjAliases.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
+#include "DataChannelListener.h"
 #include "SignalClientWs.h"
 #include "TransportManagerListener.h"
 #include "SignalTransportListener.h"
@@ -44,7 +45,8 @@ class JoinResponse;
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/RTCEngine.ts
 class RTCEngine : private Bricks::LoggableS<TransportManagerListener,
                                             SignalTransportListener,
-                                            SignalServerListener>
+                                            SignalServerListener,
+                                            DataChannelListener>
 {
     using SafeString = Bricks::SafeObj<std::string>;
 public:
@@ -66,6 +68,8 @@ private:
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const ReconnectResponse& response) const;
     // impl. of TransportManagerListener
+    void onNegotiationNeeded() final;
+    void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
     void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
     void onIceCandidateGathered(SignalTarget target,
@@ -82,6 +86,10 @@ private:
     // impl. of PingPongKitListener
     bool onPingRequested() final;
     void onPongTimeout() final;
+    // impl. of DataChannelListener
+    void onStateChange(DataChannel* channel) final;
+    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
+    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
@@ -89,7 +97,9 @@ private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
-    SafeScopedRefPtr<webrtc::RtpSenderInterface> _micTrack;
+    SafeScopedRefPtr<DataChannel> _lossyDC;
+    SafeScopedRefPtr<DataChannel> _reliableDC;
+    SafeScopedRefPtr<webrtc::RtpSenderInterface> _microphoneSender;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _joinAttempts = 0U;
 };
