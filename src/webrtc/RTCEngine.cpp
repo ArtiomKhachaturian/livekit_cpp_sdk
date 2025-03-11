@@ -33,10 +33,12 @@ RTCEngine::RTCEngine(const Options& signalOptions,
     : Bricks::LoggableS<TransportManagerListener,
                         SignalTransportListener,
                         SignalServerListener,
-                        DataChannelListener>(logger)
+                        DataChannelListener,
+                        LocalTrackFactory>(logger)
     , _options(signalOptions)
     , _pcf(pcf)
     , _client(std::move(socket), logger.get())
+    , _microphone("microphone", this)
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
     _client.setAutoSubscribe(_options._autoSubscribe);
@@ -78,40 +80,13 @@ bool RTCEngine::connect(std::string url, std::string authToken)
 
 void RTCEngine::setMicrophoneEnabled(bool enable)
 {
-    /*if (const auto pcManager = std::atomic_load(&_pcManager)) {
-        LOCK_WRITE_SAFE_OBJ(_micTrack);
-        const auto alreadyEnabled = nullptr != _micTrack->get();
-        if (alreadyEnabled != enable) {
-            if (enable) {
-                if (auto track = createLocalAudioTrack()) {
-                    _micTrack = pcManager->addTrack(std::move(track));
-                }
-                else {
-                    // TODO: log error
-                }
-            }
-            else {
-                pcManager->removeTrack(_micTrack.take());
-            }
-        }
-    }*/
+    _microphone.setEnabled(enable);
 }
 
 void RTCEngine::cleanup(bool /*error*/)
 {
     std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
     _client.disconnect();
-}
-
-rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::createLocalAudioTrack() const
-{
-    if (_pcf) {
-        auto source = _pcf->CreateAudioSource({});
-        if (source) {
-            return _pcf->CreateAudioTrack("mic", source.get());
-        }
-    }
-    return {};
 }
 
 webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
@@ -220,6 +195,41 @@ void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* de
     }
     else {
         logError("failed to serialize subscriber answer into a string");
+    }
+}
+
+void RTCEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+{
+    if (sender) {
+        bool accepted = false;
+        switch (sender->media_type()) {
+            case cricket::MEDIA_TYPE_AUDIO:
+                accepted = _microphone.setRequestedSender(std::move(sender));
+                break;
+            /*case cricket::MEDIA_TYPE_VIDEO:
+                break;*/
+            default:
+                break;
+        }
+        if (accepted) {
+            
+        }
+    }
+}
+
+void RTCEngine::onLocalTrackAddFailure(const std::string& id,
+                                       cricket::MediaType type,
+                                       const std::vector<std::string>&,
+                                       webrtc::RTCError)
+{
+    switch (type) {
+        case cricket::MEDIA_TYPE_AUDIO:
+            _microphone.notifyAboutRequestFailure(id);
+            break;
+        /*case cricket::MEDIA_TYPE_VIDEO:
+            break;*/
+        default:
+            break;
     }
 }
 
@@ -364,6 +374,37 @@ void RTCEngine::onMessage(DataChannel* channel,
 void RTCEngine::onBufferedAmountChange(DataChannel* /*channelType*/,
                                        uint64_t /*sentDataSize*/)
 {
+}
+
+bool RTCEngine::add(webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
+{
+    if (track) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            return pcManager->addTrack(std::move(track));
+        }
+    }
+    return false;
+}
+
+bool RTCEngine::remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+{
+    if (sender) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            return pcManager->removeTrack(std::move(sender));
+        }
+    }
+    return false;
+}
+
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createAudio(const std::string& label,
+                                                                          const cricket::AudioOptions& options)
+{
+    if (_pcf) {
+        if (const auto source = _pcf->CreateAudioSource(options)) {
+            return _pcf->CreateAudioTrack(label, source.get());
+        }
+    }
+    return {};
 }
 
 std::string_view RTCEngine::logCategory() const

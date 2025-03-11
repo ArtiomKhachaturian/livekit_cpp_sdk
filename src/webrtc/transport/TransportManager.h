@@ -50,6 +50,7 @@ public:
     bool setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
+    bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
     bool addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
 private:
@@ -69,6 +70,11 @@ private:
     void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
     void onLocalTrackAdded(SignalTarget target,
                            rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
+    void onLocalTrackAddFailure(SignalTarget target,
+                                const std::string& id,
+                                cricket::MediaType type,
+                                const std::vector<std::string>& streamIds,
+                                webrtc::RTCError error) final;
     void onLocalTrackRemoved(SignalTarget target, const std::string& id, cricket::MediaType type,
                              const std::vector<std::string>&) final;
     void onLocalDataChannelCreated(SignalTarget target,

@@ -119,6 +119,11 @@ bool TransportManager::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInter
     return _publisher.addTrack(std::move(track));
 }
 
+bool TransportManager::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+{
+    return _publisher.removeTrack(std::move(sender));
+}
+
 bool TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate)
 {
     switch (target) {
@@ -263,8 +268,20 @@ void TransportManager::onSdpSetFailure(SignalTarget target, bool local, webrtc::
 void TransportManager::onLocalTrackAdded(SignalTarget target,
                                          rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
-    if (SignalTarget::Subscriber == target) {
+    if (SignalTarget::Publisher == target) {
         invoke(&TransportManagerListener::onLocalTrackAdded, std::move(sender));
+    }
+}
+
+void TransportManager::onLocalTrackAddFailure(SignalTarget target,
+                                              const std::string& id,
+                                              cricket::MediaType type,
+                                              const std::vector<std::string>& streamIds,
+                                              webrtc::RTCError error)
+{
+    if (SignalTarget::Publisher == target) {
+        invoke(&TransportManagerListener::onLocalTrackAddFailure, id, type,
+               streamIds, std::move(error));
     }
 }
 
@@ -273,7 +290,7 @@ void TransportManager::onLocalTrackRemoved(SignalTarget target,
                                            cricket::MediaType type,
                                            const std::vector<std::string>&)
 {
-    if (SignalTarget::Subscriber == target) {
+    if (SignalTarget::Publisher == target) {
         invoke(&TransportManagerListener::onLocalTrackRemoved, id, type);
     }
 }

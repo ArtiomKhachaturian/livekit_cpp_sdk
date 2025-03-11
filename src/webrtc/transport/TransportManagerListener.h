@@ -33,6 +33,10 @@ public:
     virtual void onIceCandidateGathered(SignalTarget /*target*/,
                                         const webrtc::IceCandidateInterface* /*candidate*/) {}
     virtual void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
+    virtual void onLocalTrackAddFailure(const std::string& /*id*/,
+                                        cricket::MediaType /*type*/,
+                                        const std::vector<std::string>& /*streamIds*/,
+                                        webrtc::RTCError /*error*/) {}
     virtual void onLocalTrackRemoved(const std::string& /*id*/, cricket::MediaType /*type*/) {}
     virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
     virtual void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
