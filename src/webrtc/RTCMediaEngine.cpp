@@ -44,7 +44,7 @@ RTCMediaEngine::~RTCMediaEngine()
 
 void RTCMediaEngine::cleanupLocalResources()
 {
-    _microphone.reset();
+    _microphone.resetMedia();
     _pendingLocalMedias({});
 }
 
@@ -115,7 +115,7 @@ void RTCMediaEngine::sendAddTrack(const LocalTrack* track)
 {
     if (track && track->live() && !closed()) {
         AddTrackRequest request;
-        track->fillRequest(request);
+        track->fillRequest(&request);
         if (SendResult::TransportError == sendAddTrack(request)) {
             // TODO: log error
         }
@@ -165,7 +165,7 @@ void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
 void RTCMediaEngine::onTrackUnpublished(const TrackUnpublishedResponse& unpublished)
 {
     if (const auto track = localTrack(unpublished._trackSid, false)) {
-        track->reset();
+        track->resetMedia();
     }
 }
 
@@ -196,7 +196,7 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = localTrack(sender)) {
-        track->setPublished(false);
+        track->notifyThaMediaAddedToTransport();
         sendAddTrack(track);
     }
 }
@@ -207,14 +207,14 @@ void RTCMediaEngine::onLocalTrackAddFailure(const std::string& id,
                                             webrtc::RTCError)
 {
     if (const auto track = localTrack(id, true)) {
-        track->setPublished(true);
+        track->resetMedia();
     }
 }
 
 void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
 {
     if (const auto track = localTrack(id, true)) {
-        track->setPublished(false);
+        track->resetMedia(false);
     }
 }
 

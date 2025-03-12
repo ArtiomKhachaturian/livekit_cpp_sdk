@@ -150,6 +150,56 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     return {};
 }
 
+MediaDevice PeerConnectionFactory::defaultRecordingCameraDevice() const
+{
+    return {};
+}
+
+MediaDevice PeerConnectionFactory::defaultRecordingAudioDevice() const
+{
+    return {};
+}
+
+MediaDevice PeerConnectionFactory::defaultPlayoutAudioDevice() const
+{
+    return {};
+}
+
+bool PeerConnectionFactory::setRecordingAudioDevice(const MediaDevice& /*device*/)
+{
+    return false;
+}
+
+MediaDevice PeerConnectionFactory::recordingAudioDevice() const
+{
+    return {};
+}
+
+bool PeerConnectionFactory::setPlayoutAudioDevice(const MediaDevice& /*device*/)
+{
+    return false;
+}
+
+MediaDevice PeerConnectionFactory::playoutAudioDevice() const
+{
+    return {};
+}
+
+std::vector<MediaDevice> PeerConnectionFactory::recordingAudioDevices() const
+{
+    return {};
+}
+
+std::vector<MediaDevice> PeerConnectionFactory::playoutAudioDevices() const
+{
+    return {};
+}
+
+std::vector<MediaDevice> PeerConnectionFactory::recordingCameraDevices() const
+{
+    return {};
+}
+
 void PeerConnectionFactory::SetOptions(const Options& options)
 {
     _innerImpl->SetOptions(options);

@@ -11,15 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalTrack.h"
-#include "Utils.h"
+#pragma once // LocalVideoTrack.h
+#include "LocalTrackImpl.h"
 
 namespace LiveKitCpp
 {
 
-LocalTrack::LocalTrack(std::string name)
-    : _cid(makeUuid())
-    , _name(std::move(name))
+template<class TMediaTrack = webrtc::VideoTrackInterface>
+class LocalVideoTrack : public LocalTrackImpl<TMediaTrack>
+{
+public:
+    // impl. of LocalTrack
+    cricket::MediaType mediaType() const noexcept { return cricket::MEDIA_TYPE_VIDEO; }
+protected:
+    LocalVideoTrack(std::string name, LocalTrackManager* manager);
+};
+
+template<class TMediaTrack>
+inline LocalVideoTrack<TMediaTrack>::LocalVideoTrack(std::string name,
+                                                     LocalTrackManager* manager)
+    : LocalTrackImpl<TMediaTrack>(std::move(name), manager)
 {
 }
 

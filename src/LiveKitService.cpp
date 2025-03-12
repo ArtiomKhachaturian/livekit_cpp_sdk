@@ -93,6 +93,16 @@ public:
          const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents);
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
+    MediaDevice defaultRecordingCameraDevice() const;
+    MediaDevice defaultRecordingAudioDevice() const;
+    MediaDevice defaultPlayoutAudioDevice() const;
+    bool setRecordingAudioDevice(const MediaDevice& device);
+    MediaDevice recordingAudioDevice() const;
+    bool setPlayoutAudioDevice(const MediaDevice& deviceId);
+    MediaDevice playoutAudioDevice() const;
+    std::vector<MediaDevice> recordingAudioDevices() const;
+    std::vector<MediaDevice> playoutAudioDevices() const;
+    std::vector<MediaDevice> recordingCameraDevices() const;
     template <typename TOutput>
     TOutput makeRoom(const Options& signalOptions) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -151,6 +161,56 @@ std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options& signalOpti
     return _impl->makeRoom<std::unique_ptr<LiveKitRoom>>(signalOptions);
 }
 
+MediaDevice LiveKitService::defaultRecordingCameraDevice() const
+{
+    return _impl->defaultRecordingCameraDevice();
+}
+
+MediaDevice LiveKitService::defaultRecordingAudioDevice() const
+{
+    return _impl->defaultRecordingAudioDevice();
+}
+
+MediaDevice LiveKitService::defaultPlayoutAudioDevice() const
+{
+    return _impl->defaultPlayoutAudioDevice();
+}
+
+bool LiveKitService::setRecordingAudioDevice(const MediaDevice& device)
+{
+    return _impl->setRecordingAudioDevice(device);
+}
+
+MediaDevice LiveKitService::recordingAudioDevice() const
+{
+    return _impl->recordingAudioDevice();
+}
+
+bool LiveKitService::setPlayoutAudioDevice(const MediaDevice& device)
+{
+    return _impl->setPlayoutAudioDevice(device);
+}
+
+MediaDevice LiveKitService::playoutAudioDevice() const
+{
+    return _impl->playoutAudioDevice();
+}
+
+std::vector<MediaDevice> LiveKitService::recordingAudioDevices() const
+{
+    return _impl->recordingAudioDevices();
+}
+
+std::vector<MediaDevice> LiveKitService::playoutAudioDevices() const
+{
+    return _impl->playoutAudioDevices();
+}
+
+std::vector<MediaDevice> LiveKitService::recordingCameraDevices() const
+{
+    return _impl->recordingCameraDevices();
+}
+
 LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
                            const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents)
     : _websocketsFactory(websocketsFactory)
@@ -165,6 +225,80 @@ LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websockets
             logger->logError("failed to create of queue for media timers", g_logCategory);
         }
     }
+}
+
+MediaDevice LiveKitService::Impl::defaultRecordingCameraDevice() const
+{
+    if (_pcf) {
+        return _pcf->defaultRecordingCameraDevice();
+    }
+    return {};
+}
+
+MediaDevice LiveKitService::Impl::defaultRecordingAudioDevice() const
+{
+    if (_pcf) {
+        return _pcf->defaultRecordingAudioDevice();
+    }
+    return {};
+}
+
+MediaDevice LiveKitService::Impl::defaultPlayoutAudioDevice() const
+{
+    if (_pcf) {
+        return _pcf->defaultPlayoutAudioDevice();
+    }
+    return {};
+}
+
+bool LiveKitService::Impl::setRecordingAudioDevice(const MediaDevice& device)
+{
+    return _pcf && _pcf->setRecordingAudioDevice(device);
+}
+
+MediaDevice LiveKitService::Impl::recordingAudioDevice() const
+{
+    if (_pcf) {
+        return _pcf->recordingAudioDevice();
+    }
+    return {};
+}
+
+bool LiveKitService::Impl::setPlayoutAudioDevice(const MediaDevice& device)
+{
+    return _pcf && _pcf->setPlayoutAudioDevice(device);
+}
+
+MediaDevice LiveKitService::Impl::playoutAudioDevice() const
+{
+    if (_pcf) {
+        return _pcf->playoutAudioDevice();
+    }
+    return {};
+}
+
+std::vector<MediaDevice> LiveKitService::Impl::recordingAudioDevices() const
+{
+    if (_pcf) {
+        return _pcf->recordingAudioDevices();
+    }
+    return {};
+}
+
+std::vector<MediaDevice> LiveKitService::Impl::playoutAudioDevices() const
+{
+    if (_pcf) {
+        return _pcf->playoutAudioDevices();
+    }
+    return {};
+}
+
+std::vector<MediaDevice> LiveKitService::Impl::recordingCameraDevices() const
+{
+    if (_pcf) {
+        return _pcf->recordingCameraDevices();
+    }
+    return {};
 }
 
 template <typename TOutput>
@@ -265,6 +399,27 @@ std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const Options&) const { r
 
 std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options&) const { return {}; }
 
+MediaDevice LiveKitService::defaultRecordingCameraDevice() const { return {}; }
+
+MediaDevice LiveKitService::defaultRecordingAudioDevice() const { return {}; }
+
+MediaDevice LiveKitService::defaultPlayoutAudioDevice() const { return {}; }
+
+bool LiveKitService::setRecordingAudioDevice(const MediaDevice&) { return false; }
+
+MediaDevice LiveKitService::recordingAudioDevice() const { return {}; }
+
+MediaDevice LiveKitService::defaultRecordingAudioDevice() const { return {}; }
+
+bool LiveKitService::setPlayoutAudioDevice(const MediaDevice&) { return false; }
+
+MediaDevice LiveKitService::playoutAudioDevice() const { return {}; }
+
+std::vector<MediaDevice> LiveKitService::recordingAudioDevices() const { return {}; }
+
+std::vector<MediaDevice> LiveKitService::playoutAudioDevices() const { return {}; }
+
+std::vector<MediaDevice> LiveKitService::recordingCameraDevices() const { return {}; }
 #endif
 
 NetworkType LiveKitService::activeNetworkType()

@@ -13,12 +13,13 @@
 // limitations under the License.
 #pragma once // LocalTrackManager.h
 #include "TrackManager.h"
-#include <api/audio_options.h>
+#include <modules/video_capture/video_capture_defines.h>
 #include <api/scoped_refptr.h>
 
 namespace webrtc {
 class MediaStreamTrackInterface;
 class AudioTrackInterface;
+class VideoTrackInterface;
 }
 
 namespace LiveKitCpp
@@ -29,8 +30,10 @@ class LocalTrackManager : public TrackManager
 public:
     virtual bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) = 0;
     virtual bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) = 0;
-    virtual webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label,
-                                                                           const cricket::AudioOptions& options = {}) = 0;
+    virtual webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label) = 0;
+    virtual webrtc::scoped_refptr<webrtc::VideoTrackInterface>
+        createVideo(const std::string& label, const std::string& deviceId = {},
+                    const webrtc::VideoCaptureCapability& capability = {}) = 0;
 protected:
     ~LocalTrackManager() override = default;
 };

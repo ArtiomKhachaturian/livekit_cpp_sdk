@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "MediaDevice.h"
 #include <api/peer_connection_interface.h>
 #include <rtc_base/thread.h>
 #include <memory>
+#include <vector>
 
 namespace rtc {
 class SocketServer;
@@ -50,6 +52,16 @@ public:
     const auto& timersQueue() const noexcept { return _timersQueue; }
     rtc::Thread* workingThread() const noexcept { return _workingThread.get(); }
     rtc::Thread* signalingThread() const noexcept { return _signalingThread.get(); }
+    MediaDevice defaultRecordingCameraDevice() const;
+    MediaDevice defaultRecordingAudioDevice() const;
+    MediaDevice defaultPlayoutAudioDevice() const;
+    bool setRecordingAudioDevice(const MediaDevice& device);
+    MediaDevice recordingAudioDevice() const;
+    bool setPlayoutAudioDevice(const MediaDevice& device);
+    MediaDevice playoutAudioDevice() const;
+    std::vector<MediaDevice> recordingAudioDevices() const;
+    std::vector<MediaDevice> playoutAudioDevices() const;
+    std::vector<MediaDevice> recordingCameraDevices() const;
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>

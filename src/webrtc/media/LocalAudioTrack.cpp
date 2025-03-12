@@ -26,24 +26,24 @@ inline std::string audioLabel(bool microphone) {
 namespace LiveKitCpp
 {
 
-LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
-                                 const cricket::AudioOptions& options)
-    : LocalTrack(audioLabel(microphone), manager)
+LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone)
+    : LocalTrackImpl<webrtc::AudioTrackInterface>(audioLabel(microphone), manager)
     , _microphone(microphone)
-    , _options(options)
 {
 }
 
-void LocalAudioTrack::fillRequest(AddTrackRequest& request) const
+void LocalAudioTrack::fillRequest(AddTrackRequest* request) const
 {
-    LocalTrack::fillRequest(request);
-    request._source = _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
+    LocalTrackImpl<webrtc::AudioTrackInterface>::fillRequest(request);
+    if (request) {
+        request->_source = _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
+    }
 }
 
-webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalAudioTrack::createMediaTrack(const std::string& id)
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrack::createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
-        return m->createAudio(id, _options);
+        return m->createAudio(id);
     }
     return {};
 }

@@ -22,6 +22,7 @@
 #include "rtc/TrickleRequest.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/LeaveRequest.h"
+#include <modules/video_capture/video_capture_factory.h>
 #include <thread>
 
 namespace LiveKitCpp
@@ -110,15 +111,37 @@ bool RTCEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStream
     return RTCMediaEngine::removeLocalMedia(track);
 }
 
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::
-    createAudio(const std::string& label, const cricket::AudioOptions& options)
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createAudio(const std::string& label)
 {
+    webrtc::scoped_refptr<webrtc::AudioTrackInterface> track;
     if (_pcf) {
+        cricket::AudioOptions options; // TODO: should be a part of room config
+        logInfo("request to create '" + label + "' audio track (" + options.ToString() + ")");
         if (const auto source = _pcf->CreateAudioSource(options)) {
-            return _pcf->CreateAudioTrack(label, source.get());
+            track = _pcf->CreateAudioTrack(label, source.get());
+            if (track) {
+                logVerbose("audio track '" + label + "' has been created");
+            }
+            else {
+                logError("unable to create audio track '" + label + "'");
+            }
+        }
+        else {
+            logError("unable to create source for audio track '" + label + "'");
         }
     }
-    return {};
+    return track;
+}
+
+webrtc::scoped_refptr<webrtc::VideoTrackInterface> RTCEngine::
+    createVideo(const std::string& label, const std::string& deviceId,
+                const webrtc::VideoCaptureCapability& capability)
+{
+    webrtc::scoped_refptr<webrtc::VideoTrackInterface> track;
+    if (_pcf) {
+        logInfo("request to create '" + label + "' video track");
+    }
+    return track;
 }
 
 RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const

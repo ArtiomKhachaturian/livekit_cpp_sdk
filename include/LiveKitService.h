@@ -14,8 +14,10 @@
 #pragma once // LiveKitService.h
 #include "LiveKitClientExport.h"
 #include "LiveKitServiceState.h"
+#include "MediaDevice.h"
 #include "Options.h"
 #include <memory>
+#include <vector>
 
 namespace Websocket {
 class Factory;
@@ -44,7 +46,21 @@ public:
     LiveKitRoom* makeRoom(const Options& signalOptions = {}) const;
     std::shared_ptr<LiveKitRoom> makeRoomS(const Options& signalOptions = {}) const;
     std::unique_ptr<LiveKitRoom> makeRoomU(const Options& signalOptions = {}) const;
+    // devices
     static NetworkType activeNetworkType();
+    MediaDevice defaultRecordingCameraDevice() const;
+    MediaDevice defaultRecordingAudioDevice() const;
+    MediaDevice defaultPlayoutAudioDevice() const;
+    // device for input from micrpohone, pass empty for selection of default
+    bool setRecordingAudioDevice(const MediaDevice& device = {});
+    MediaDevice recordingAudioDevice() const;
+    // device for output from speakers, pass empty for selection of default
+    bool setPlayoutAudioDevice(const MediaDevice& device = {});
+    MediaDevice playoutAudioDevice() const;
+    // enumeration
+    std::vector<MediaDevice> recordingAudioDevices() const;
+    std::vector<MediaDevice> playoutAudioDevices() const;
+    std::vector<MediaDevice> recordingCameraDevices() const;
 private:
     const std::unique_ptr<Impl> _impl;
 };

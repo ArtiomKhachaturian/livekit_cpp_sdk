@@ -16,10 +16,6 @@
 #include <api/scoped_refptr.h>
 #include <string>
 
-namespace webrtc {
-class MediaStreamTrackInterface;
-}
-
 namespace LiveKitCpp
 {
 
@@ -27,8 +23,7 @@ class Track
 {
 public:
     virtual ~Track() = default;
-    // underlying track if any
-    virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> raw() const = 0;
+    virtual bool remote() const noexcept = 0;
     // type
     virtual cricket::MediaType mediaType() const = 0;
     // server track ID

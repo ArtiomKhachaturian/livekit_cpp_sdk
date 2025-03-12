@@ -25,11 +25,13 @@ class RemoteTrack : public Track
 public:
     RemoteTrack(TrackManager* manager, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver);
     // impl. of Track
-    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> raw() const final;
+    bool remote() const noexcept final { return true; }
     cricket::MediaType mediaType() const final;
     std::string sid() const final;
     void mute(bool mute) final;
     bool muted() const final;
+private:
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> raw() const;
 private:
     TrackManager* const _manager;
     const rtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;

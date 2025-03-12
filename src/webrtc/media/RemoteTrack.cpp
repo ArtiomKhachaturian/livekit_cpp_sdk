@@ -25,14 +25,6 @@ RemoteTrack::RemoteTrack(TrackManager* manager,
 {
 }
 
-webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RemoteTrack::raw() const
-{
-    if (_receiver) {
-        return _receiver->track();
-    }
-    return {};
-}
-
 cricket::MediaType RemoteTrack::mediaType() const
 {
     if (_receiver) {
@@ -65,6 +57,14 @@ bool RemoteTrack::muted() const
         return !track->enabled();
     }
     return true;
+}
+
+webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RemoteTrack::raw() const
+{
+    if (_receiver) {
+        return _receiver->track();
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp
