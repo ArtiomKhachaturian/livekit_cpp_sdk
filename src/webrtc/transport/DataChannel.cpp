@@ -195,4 +195,9 @@ void DataChannel::Impl::OnBufferedAmountChange(uint64_t sentDataSize)
     _listener.invoke(&DataChannelListener::onBufferedAmountChange, _self, sentDataSize);
 }
 
+std::string dataStateToString(webrtc::DataChannelInterface::DataState state)
+{
+    return webrtc::DataChannelInterface::DataStateString(state);
+}
+
 } // namespace LiveKitCpp

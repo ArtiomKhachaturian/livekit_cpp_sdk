@@ -96,4 +96,6 @@ private:
     const std::shared_ptr<Impl> _impl;
 };
 
+std::string dataStateToString(webrtc::DataChannelInterface::DataState state);
+
 } // namespace LiveKitCpp

@@ -41,6 +41,7 @@ LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
 
 LiveKitRoom::~LiveKitRoom()
 {
+    disconnect();
 }
 
 bool LiveKitRoom::connect(std::string host, std::string authToken)
@@ -50,7 +51,7 @@ bool LiveKitRoom::connect(std::string host, std::string authToken)
 
 void LiveKitRoom::disconnect()
 {
-    //_impl->_client.disconnect();
+    _impl->_engine.disconnect();
 }
 
 void LiveKitRoom::setMicrophoneEnabled(bool enable)

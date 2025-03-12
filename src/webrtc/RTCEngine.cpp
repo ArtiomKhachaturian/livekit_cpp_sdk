@@ -21,6 +21,7 @@
 #include "rtc/Ping.h"
 #include "rtc/TrickleRequest.h"
 #include "rtc/TrackPublishedResponse.h"
+#include "rtc/LeaveRequest.h"
 #include <thread>
 
 namespace LiveKitCpp
@@ -65,12 +66,24 @@ bool RTCEngine::connect(std::string url, std::string authToken)
                                std::to_string(_joinAttempts) + " of " +
                                std::to_string(_options._reconnectAttempts));
                 }
+                // TODO: replace to media timer
                 std::this_thread::sleep_for(_options._reconnectAttemptDelay);
                 ok = connect(_client.host(), _client.authToken());
             }
         }
     }
     return ok;
+}
+
+void RTCEngine::disconnect()
+{
+    if (auto pcManager = std::atomic_exchange(&_pcManager, std::shared_ptr<TransportManager>())) {
+        pcManager->stopPing();
+        // send leave event
+        sendLeave();
+        _client.disconnect();
+        pcManager->close();
+    }
 }
 
 void RTCEngine::cleanup(bool /*error*/)
@@ -128,6 +141,14 @@ RTCEngine::SendResult RTCEngine::sendMuteTrack(const MuteTrackRequest& request) 
         return SendResult::TransportError;
     }
     return SendResult::TransportClosed;
+}
+
+bool RTCEngine::sendLeave(DisconnectReason reason, LeaveRequestAction action) const
+{
+    LeaveRequest request;
+    request._reason = reason;
+    request._action = action;
+    return _client.sendLeave(request);
 }
 
 bool RTCEngine::closed() const

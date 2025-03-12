@@ -50,6 +50,7 @@ TransportManager::~TransportManager()
 {
     _subscriber.close();
     _publisher.close();
+    stopPing();
 }
 
 bool TransportManager::valid() const noexcept

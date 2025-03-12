@@ -266,19 +266,25 @@ void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool mu
 
 void RTCMediaEngine::onStateChange(DataChannel* channel)
 {
-    if (channel && canLogInfo()) {
-        logVerbose(dcType(channel->local()) + " data channel '" +
-                   channel->label() + "' state have changed");
+    if (channel) {
+        if (canLogVerbose()) {
+            logVerbose(dcType(channel->local()) + " data channel '" +
+                       channel->label() + "' state has been changed to " +
+                       dataStateToString(channel->state()));
+        }
+        
     }
 }
 
 void RTCMediaEngine::onMessage(DataChannel* channel,
                                const webrtc::DataBuffer& /*buffer*/)
 {
-    if (channel && canLogInfo()) {
-        logVerbose("a message buffer was successfully received for '" +
-                   channel->label() + "' " + dcType(channel->local()) +
-                   " data channel");
+    if (channel) {
+        if (canLogVerbose()) {
+            logVerbose("a message buffer was successfully received for '" +
+                       channel->label() + "' " + dcType(channel->local()) +
+                       " data channel");
+        }
     }
 }
 

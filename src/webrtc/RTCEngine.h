@@ -17,6 +17,8 @@
 #include "SignalClientWs.h"
 #include "SignalTransportListener.h"
 #include "rtc/ClientConfiguration.h"
+#include "rtc/DisconnectReason.h"
+#include "rtc/LeaveRequestAction.h"
 #include <atomic>
 
 namespace Websocket {
@@ -44,6 +46,7 @@ public:
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
+    void disconnect();
 protected:
     void cleanup(bool error = false);
     // impl. or overrides of RTCMediaEngine
@@ -55,6 +58,8 @@ protected:
     SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
     bool closed() const final;
 private:
+    bool sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
+                   LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const std::vector<ICEServer>& iceServers = {},
                           const std::optional<ClientConfiguration>& cc = {}) const;
