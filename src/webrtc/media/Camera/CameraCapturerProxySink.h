@@ -11,17 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaDevice.h
-#include <string>
+#pragma once
+#include "CameraObserver.h"
+#include <api/video/video_sink_interface.h>
 
-namespace LiveKitCpp
-{
+namespace LiveKitCpp {
 
-struct MediaDevice
+class CameraCapturerProxySink : public CameraObserver,
+                                public rtc::VideoSinkInterface<webrtc::VideoFrame>
 {
-    std::string _id;
-    std::string _name;
-    bool empty() const noexcept { return _id.empty() && _name.empty(); }
+protected:
+    CameraCapturerProxySink() = default;
 };
 
 } // namespace LiveKitCpp

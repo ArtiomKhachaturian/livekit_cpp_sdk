@@ -11,17 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaDevice.h
-#include <string>
+#pragma once
+#include "CameraState.h"
 
 namespace LiveKitCpp
 {
 
-struct MediaDevice
+class CameraObserver
 {
-    std::string _id;
-    std::string _name;
-    bool empty() const noexcept { return _id.empty() && _name.empty(); }
+public:
+    virtual void onStateChanged(CameraState state) = 0;
+
+protected:
+    ~CameraObserver() = default;
 };
 
 } // namespace LiveKitCpp

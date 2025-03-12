@@ -11,17 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaDevice.h
-#include <string>
+#pragma once
+#include <ostream>
 
 namespace LiveKitCpp
 {
 
-struct MediaDevice
+enum class CameraState
 {
-    std::string _id;
-    std::string _name;
-    bool empty() const noexcept { return _id.empty() && _name.empty(); }
+    Stopping,
+    Stopped,
+    Starting,
+    Started
 };
 
 } // namespace LiveKitCpp
+
+namespace std {
+
+ostream& operator<<(ostream& os, LiveKitCpp::CameraState state);
+
+}

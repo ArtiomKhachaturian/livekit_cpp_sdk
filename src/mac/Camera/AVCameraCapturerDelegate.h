@@ -11,17 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaDevice.h
-#include <string>
+#pragma once
+#include <CoreMedia/CMSampleBuffer.h>
+#import <Foundation/Foundation.h>
 
-namespace LiveKitCpp
-{
+@class AVCameraCapturer;
 
-struct MediaDevice
-{
-    std::string _id;
-    std::string _name;
-    bool empty() const noexcept { return _id.empty() && _name.empty(); }
-};
-
-} // namespace LiveKitCpp
+@protocol AVCameraCapturerDelegate <NSObject>
+// use CVBufferRetain for keep reference to |videoFrame|
+- (void) didCapture:(CMSampleBufferRef) sampleBuffer
+     timestampMicro:(int64_t) timeStamp
+           capturer:(AVCameraCapturer*) capturer;
+- (void) didError:(BOOL) fatal error:(NSError*) error capturer:(AVCameraCapturer*) capturer;
+- (void) didStarted:(AVCameraCapturer*) capturer;
+- (void) didStopped:(AVCameraCapturer*) capturer;
+@end

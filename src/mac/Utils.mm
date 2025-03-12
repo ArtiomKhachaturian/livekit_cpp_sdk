@@ -13,19 +13,30 @@
 // limitations under the License.
 #include "Utils.h"
 #include "NetworkType.h"
+#include <rtc_base/time_utils.h>
+#include <api/units/timestamp.h>
+#include <optional>
 #import <Foundation/Foundation.h>
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <CoreWLAN/CoreWLAN.h>
 
+namespace {
+
+inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
+{
+    if (0 != CMTimeCompare(kCMTimeInvalid, time) && (time.flags & kCMTimeFlags_Valid)) {
+        return webrtc::Timestamp::Seconds(CMTimeGetSeconds(time));
+    }
+    return std::nullopt;
+}
+
+}
+
 namespace LiveKitCpp
 {
 
-std::string NSStringToStdString(NSString* nsString)
+std::string fromNSString(NSString* nsString)
 {
-    /*if (nsString) {
-        return std::string(nsString.UTF8String);
-    }
-    return {};*/
     if (nsString) {
         @autoreleasepool {
             NSData* charData = [nsString dataUsingEncoding:NSUTF8StringEncoding];
@@ -36,6 +47,43 @@ std::string NSStringToStdString(NSString* nsString)
         }
     }
     return {};
+}
+
+NSString* toNSString(std::string_view string)
+{
+    if (!string.empty()) {
+        // std::string_view may contain null termination character so we construct using length
+        return [[NSString alloc] initWithBytes:string.data()
+                                        length:string.length()
+                                      encoding:NSUTF8StringEncoding];
+    }
+    return [NSString string]; // empty
+}
+
+std::string toString(NSError* error)
+{
+    if (error) {
+        return fromNSString(error.localizedDescription);
+    }
+    return std::string();
+}
+
+int64_t cmTimeToMicro(const CMTime& time)
+{
+    const auto ts = toTimestamp(time);
+    if (ts.has_value()) {
+        return ts->us<int64_t>();
+    }
+    return 0LL;
+}
+
+int32_t cmTimeToMilli(const CMTime& time)
+{
+    const auto ts = toTimestamp(time);
+    if (ts.has_value()) {
+        return ts->ms<int32_t>();
+    }
+    return 0;
 }
 
 std::string operatingSystemVersion()
@@ -66,7 +114,7 @@ std::string modelIdentifier()
             NSData *modelData = (__bridge_transfer NSData *)ref;
             NSString* modelId = [[NSString alloc] initWithData:modelData encoding:NSUTF8StringEncoding];
             modelId = [modelId stringByTrimmingCharactersInSet:[NSCharacterSet controlCharacterSet]];
-            model = NSStringToStdString(modelId);
+            model = fromNSString(modelId);
         }
         IOObjectRelease(service);
     }

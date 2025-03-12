@@ -191,7 +191,7 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
 {
     webrtc::PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
-    //config.network_preference.emplace(::rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
+    //config.network_preference.emplace(rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
     // set some defaults
     //config.set_cpu_adaptation(true);
     //config.enable_dtls_srtp.emplace(true);

@@ -11,17 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaDevice.h
-#include <string>
+#pragma once
+#include <CoreMedia/CMSampleBuffer.h>
+#include <CoreVideo/CoreVideo.h>
+#include <api/video/i420_buffer.h>
+#include <memory>
+#include <optional>
 
 namespace LiveKitCpp
 {
 
-struct MediaDevice
+class CoreVideoPixelBuffer
 {
-    std::string _id;
-    std::string _name;
-    bool empty() const noexcept { return _id.empty() && _name.empty(); }
+public:
+    static bool supported(CVPixelBufferRef buffer);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+        create(CVPixelBufferRef buffer, bool retain = true);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+        createFromSampleBuffer(CMSampleBufferRef buffer);
+    static CVPixelBufferRef pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
+                                        bool retain = true);
 };
 
 } // namespace LiveKitCpp

@@ -17,13 +17,18 @@
 #include <api/task_queue/task_queue_base.h>
 #include <memory>
 #endif
+#ifdef __APPLE__
+#include <CoreMedia/CMTime.h>
+#endif // __APPLE__
 #include <string>
 
 #ifdef __APPLE__
 #ifdef __OBJC__
 @class NSString;
+@class NSError;
 #else
 typedef struct objc_object NSString;
+typedef struct objc_object NSError;
 #endif
 #endif // __APPLE__
 
@@ -33,7 +38,15 @@ namespace LiveKitCpp
 enum class TransportState;
 enum class NetworkType;
 
-std::string NSStringToStdString(NSString* nsString);
+#ifdef __APPLE__
+std::string fromNSString(NSString* nsString);
+NSString* toNSString(std::string_view string);
+std::string toString(NSError* error);
+// timestamps
+// return zero if failed
+int64_t cmTimeToMicro(const CMTime& time);
+int32_t cmTimeToMilli(const CMTime& time);
+#endif // __APPLE__
 std::string operatingSystemVersion();
 std::string operatingSystemName();
 std::string modelIdentifier();

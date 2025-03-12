@@ -42,6 +42,7 @@ namespace LiveKitCpp
 {
 
 class WebRtcLogSink;
+class CameraCaptureModule;
 
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 {
@@ -92,6 +93,7 @@ private:
     const std::unique_ptr<rtc::Thread> _workingThread;
     const std::unique_ptr<rtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
+    const std::shared_ptr<CameraCaptureModule> _cameraCaptureModule;
 };
 
 } // namespace LiveKitCpp

@@ -118,7 +118,7 @@ bool requiredKeysIsPresent(NSDictionary* infoPlist, std::string* additionalError
                 if (nil == [infoPlist valueForKey:key]) {
                     if (additionalErrorInfo) {
                         *additionalErrorInfo = "Application bundle info dictionary doesn't contain '" +
-                            LiveKitCpp::NSStringToStdString(key) + "' key, some features of LiveKit SDK may be works incorrectly";
+                            LiveKitCpp::fromNSString(key) + "' key, some features of LiveKit SDK may be works incorrectly";
                     }
                     return false;
                 }

@@ -17,6 +17,7 @@
 #include "Utils.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
+#include "./Camera/CameraCaptureModule.h"
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
 #include <api/audio_codecs/builtin_audio_encoder_factory.h>
@@ -89,6 +90,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     , _workingThread(std::move(workingThread))
     , _signalingThread(std::move(signalingThread))
     , _innerImpl(std::move(innerImpl))
+    , _cameraCaptureModule(CameraCaptureModule::create())
 {
     // check GCM suites for DTLS-SRTP are enabled
     webrtc::PeerConnectionFactoryInterface::Options peerConnectionFactoryOptions;
@@ -152,6 +154,12 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
 
 MediaDevice PeerConnectionFactory::defaultRecordingCameraDevice() const
 {
+    if (_cameraCaptureModule) {
+        MediaDevice info;
+        if (_cameraCaptureModule->device(0U, info)) {
+            return info;
+        }
+    }
     return {};
 }
 
@@ -197,6 +205,19 @@ std::vector<MediaDevice> PeerConnectionFactory::playoutAudioDevices() const
 
 std::vector<MediaDevice> PeerConnectionFactory::recordingCameraDevices() const
 {
+    if (_cameraCaptureModule) {
+        if (const uint32_t count = _cameraCaptureModule->numberOfDevices()) {
+            std::vector<MediaDevice> devices;
+            devices.reserve(count);
+            for (uint32_t i = 0U; i < count; ++i) {
+                MediaDevice device;
+                if (_cameraCaptureModule->device(i, device)) {
+                    devices.push_back(std::move(device));
+                }
+            }
+            return devices;
+        }
+    }
     return {};
 }
 
