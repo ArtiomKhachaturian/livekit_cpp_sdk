@@ -32,7 +32,7 @@ namespace LiveKitCpp
 
 RTCMediaEngine::RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
-    , _microphone(this, true)
+    , _microphone(this, true, logger)
 {
 }
 
@@ -196,7 +196,7 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = localTrack(sender)) {
-        track->notifyThaMediaAddedToTransport();
+        track->notifyThatMediaAddedToTransport();
         sendAddTrack(track);
     }
 }

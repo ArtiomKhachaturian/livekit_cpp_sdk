@@ -15,6 +15,7 @@
 #include "LiveKitClientExport.h"
 #include "LiveKitServiceState.h"
 #include "MediaDevice.h"
+#include "MediaAuthorizationLevel.h"
 #include "Options.h"
 #include <memory>
 #include <vector>
@@ -46,8 +47,10 @@ public:
     LiveKitRoom* makeRoom(const Options& signalOptions = {}) const;
     std::shared_ptr<LiveKitRoom> makeRoomS(const Options& signalOptions = {}) const;
     std::unique_ptr<LiveKitRoom> makeRoomU(const Options& signalOptions = {}) const;
-    // devices
+    // media & network devices
     static NetworkType activeNetworkType();
+    static MediaAuthorizationLevel mediaAuthorizationLevel();
+    void setMediaAuthorizationLevel(MediaAuthorizationLevel level);
     MediaDevice defaultRecordingCameraDevice() const;
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;

@@ -14,6 +14,7 @@
 #include "LiveKitService.h"
 #include "LiveKitRoom.h"
 #include "Logger.h"
+#include "MediaAuthorization.h"
 #include "WebsocketEndPoint.h"
 #include "WebsocketFactory.h"
 #include "NetworkType.h"
@@ -425,6 +426,16 @@ std::vector<MediaDevice> LiveKitService::recordingCameraDevices() const { return
 NetworkType LiveKitService::activeNetworkType()
 {
     return LiveKitCpp::activeNetworkType();
+}
+
+MediaAuthorizationLevel LiveKitService::mediaAuthorizationLevel()
+{
+    return LiveKitCpp::mediaAuthorizationLevel();
+}
+
+void LiveKitService::setMediaAuthorizationLevel(MediaAuthorizationLevel level)
+{
+    LiveKitCpp::setMediaAuthorizationLevel(level);
 }
 
 ClientInfo::ClientInfo()

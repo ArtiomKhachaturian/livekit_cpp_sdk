@@ -11,17 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalTrack.h"
-#include "Utils.h"
+#pragma once // MediaAuthorizationStatus.h
 
 namespace LiveKitCpp
 {
 
-LocalTrack::LocalTrack(std::string name, const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<Track>(logger)
-    , _cid(makeUuid())
-    , _name(std::move(name))
+enum class MediaAuthorizationStatus
 {
-}
+    // explicit user permission is required for media capture, but the user has not yet granted or denied such permission
+    NotDetermined,
+    // the client is authorized to access the system supporting a media type
+    Granted,
+    // the user explicitly denied access to the system supporting a media type for the client
+    Denied,
+    // the client is not authorized to access the system for the media type,
+    // the user cannot change the client's status, possibly due to active restrictions such as parental controls being in place
+    Restricted
+};
 
 } // namespace LiveKitCpp

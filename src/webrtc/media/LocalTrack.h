@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalTrack.h
+#include "Loggable.h"
 #include "Track.h"
 #include "SafeObj.h"
 
@@ -20,7 +21,7 @@ namespace LiveKitCpp
 
 struct AddTrackRequest;
 
-class LocalTrack : public Track
+class LocalTrack : public Bricks::LoggableS<Track>
 {
 public:
     // for publishing
@@ -28,7 +29,7 @@ public:
     virtual void fillRequest(AddTrackRequest* request) const = 0;
     // transport layer
     virtual void resetMedia(bool remove = true) = 0;
-    virtual void notifyThaMediaAddedToTransport() = 0;
+    virtual void notifyThatMediaAddedToTransport() = 0;
     // client track ID, equal to WebRTC track ID
     const std::string& cid() const noexcept { return _cid; }
     // track name
@@ -38,7 +39,7 @@ public:
     std::string sid() const final { return _sid(); }
     bool remote() const noexcept final { return false; }
 protected:
-    LocalTrack(std::string name);
+    LocalTrack(std::string name, const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::string _cid;
     const std::string _name;

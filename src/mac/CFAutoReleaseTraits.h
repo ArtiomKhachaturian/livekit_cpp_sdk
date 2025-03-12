@@ -11,17 +11,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalTrack.h"
-#include "Utils.h"
+#pragma once // CFAutoReleaseTraits.h
+#include <CoreFoundation/CFBase.h>
 
 namespace LiveKitCpp
 {
 
-LocalTrack::LocalTrack(std::string name, const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<Track>(logger)
-    , _cid(makeUuid())
-    , _name(std::move(name))
+template <class TCFRef>
+class CFAutoReleaseTraits
 {
-}
+public:
+    static constexpr TCFRef invalidValue() { return nullptr; }
+    static TCFRef retain(TCFRef ref)
+    {
+        if (ref) {
+            CFRetain(ref);
+        }
+        return ref;
+    }
+    static void release(TCFRef ref)
+    {
+        if (ref) {
+            CFRelease(ref);
+        }
+    }
+};
 
 } // namespace LiveKitCpp

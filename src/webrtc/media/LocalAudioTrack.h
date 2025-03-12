@@ -19,13 +19,15 @@ namespace LiveKitCpp
 class LocalAudioTrack : public LocalTrackImpl<webrtc::AudioTrackInterface>
 {
 public:
-    LocalAudioTrack(LocalTrackManager* manager, bool microphone = true);
+    LocalAudioTrack(LocalTrackManager* manager, bool microphone = true,
+                    const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of LocalTrack
     cricket::MediaType mediaType() const noexcept { return cricket::MEDIA_TYPE_AUDIO; }
     void fillRequest(AddTrackRequest* request) const final;
 protected:
-    // impl. LocalTrack
+    // impl. LocalTrackImpl
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMediaTrack(const std::string& id) final;
+    void requestAuthorization() final;
 private:
     const bool _microphone;
 };

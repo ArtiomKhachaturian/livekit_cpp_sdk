@@ -24,13 +24,15 @@ public:
     // impl. of LocalTrack
     cricket::MediaType mediaType() const noexcept { return cricket::MEDIA_TYPE_VIDEO; }
 protected:
-    LocalVideoTrack(std::string name, LocalTrackManager* manager);
+    LocalVideoTrack(std::string name, LocalTrackManager* manager,
+                    const std::shared_ptr<Bricks::Logger>& logger = {});
 };
 
 template<class TMediaTrack>
 inline LocalVideoTrack<TMediaTrack>::LocalVideoTrack(std::string name,
-                                                     LocalTrackManager* manager)
-    : LocalTrackImpl<TMediaTrack>(std::move(name), manager)
+                                                     LocalTrackManager* manager,
+                                                     const std::shared_ptr<Bricks::Logger>& logger)
+    : LocalTrackImpl<TMediaTrack>(std::move(name), manager, logger)
 {
 }
 

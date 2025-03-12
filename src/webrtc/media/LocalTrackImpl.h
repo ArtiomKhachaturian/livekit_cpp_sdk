@@ -23,25 +23,30 @@ namespace LiveKitCpp
 {
 
 template<class TMediaTrack>
-class LocalTrackImpl : public LocalTrack
+class LocalTrackImpl : public LocalTrack, private webrtc::ObserverInterface
 {
 public:
     ~LocalTrackImpl() override { LocalTrackImpl<TMediaTrack>::resetMedia(); }
     // impl. of LocalTrack
     void resetMedia(bool remove = true) final;
-    void notifyThaMediaAddedToTransport() final;
+    void notifyThatMediaAddedToTransport() final;
     bool live() const noexcept final;
     void fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
     void mute(bool mute) final; // request media track creation if needed
     bool muted() const final { return _muted; }
 protected:
-    LocalTrackImpl(std::string name, LocalTrackManager* manager);
+    LocalTrackImpl(std::string name, LocalTrackManager* manager,
+                   const std::shared_ptr<Bricks::Logger>& logger = {});
     LocalTrackManager* manager() const noexcept { return _manager; }
     virtual webrtc::scoped_refptr<TMediaTrack>
         createMediaTrack(const std::string& id) = 0;
+    virtual void requestAuthorization() {}
 private:
     void notifyAboutMuted(bool mute) const;
+    void checkAuthorization();
+    // impl. of webrtc::NotifierInterface
+    void OnChanged() final { checkAuthorization(); }
 private:
     LocalTrackManager* const _manager;
     std::atomic_bool _muted = true;
@@ -52,8 +57,9 @@ private:
 
 template<class TMediaTrack>
 inline LocalTrackImpl<TMediaTrack>::LocalTrackImpl(std::string name,
-                                                   LocalTrackManager* manager)
-    : LocalTrack(std::move(name))
+                                                   LocalTrackManager* manager,
+                                                   const std::shared_ptr<Bricks::Logger>& logger)
+    : LocalTrack(std::move(name), logger)
     , _manager(manager)
 {
 }
@@ -63,7 +69,12 @@ inline void LocalTrackImpl<TMediaTrack>::resetMedia(bool remove)
 {
     LOCK_WRITE_SAFE_OBJ(_track);
     if (const auto track = _track.take()) {
-        _pendingPublish = false;
+        if (!_pendingPublish) {
+            track->UnregisterObserver(this);
+        }
+        else {
+            _pendingPublish = false;
+        }
         if (remove && _manager) {
             _manager->removeLocalMedia(track);
         }
@@ -71,11 +82,13 @@ inline void LocalTrackImpl<TMediaTrack>::resetMedia(bool remove)
 }
 
 template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::notifyThaMediaAddedToTransport()
+inline void LocalTrackImpl<TMediaTrack>::notifyThatMediaAddedToTransport()
 {
     LOCK_WRITE_SAFE_OBJ(_track);
     if (_pendingPublish) {
         _pendingPublish = false;
+        _track.constRef()->RegisterObserver(this);
+        checkAuthorization();
         notifyAboutMuted(muted());
     }
 }
@@ -150,6 +163,14 @@ inline void LocalTrackImpl<TMediaTrack>::notifyAboutMuted(bool mute) const
         if (!sid.empty()) {
             _manager->notifyAboutMuteChanges(sid, mute);
         }
+    }
+}
+
+template<class TMediaTrack>
+inline void LocalTrackImpl<TMediaTrack>::checkAuthorization()
+{
+    if (live()) {
+        requestAuthorization();
     }
 }
 

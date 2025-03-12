@@ -15,6 +15,7 @@
 #include "TrackManager.h"
 #include <modules/video_capture/video_capture_defines.h>
 #include <api/scoped_refptr.h>
+#include <memory>
 
 namespace webrtc {
 class MediaStreamTrackInterface;

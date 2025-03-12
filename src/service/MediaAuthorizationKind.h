@@ -11,17 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalTrack.h"
-#include "Utils.h"
+#pragma once // MediaAuthorizationKind.h
+#include <string>
 
 namespace LiveKitCpp
 {
 
-LocalTrack::LocalTrack(std::string name, const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<Track>(logger)
-    , _cid(makeUuid())
-    , _name(std::move(name))
+enum class MediaAuthorizationKind
 {
-}
+    Camera,
+    Microphone,
+    // required for screen/window sharing on MacOS
+    ScreenCapturing,
+    WindowCapturing
+};
+
+std::string toString(MediaAuthorizationKind kind);
 
 } // namespace LiveKitCpp

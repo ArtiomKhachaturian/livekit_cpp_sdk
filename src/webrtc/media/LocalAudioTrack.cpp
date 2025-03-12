@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "LocalAudioTrack.h"
 #include "LocalTrackManager.h"
+#include "MediaAuthorization.h"
 #include <api/media_stream_interface.h>
 
 namespace {
@@ -26,8 +27,9 @@ inline std::string audioLabel(bool microphone) {
 namespace LiveKitCpp
 {
 
-LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone)
-    : LocalTrackImpl<webrtc::AudioTrackInterface>(audioLabel(microphone), manager)
+LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
+                                 const std::shared_ptr<Bricks::Logger>& logger)
+    : LocalTrackImpl<webrtc::AudioTrackInterface>(audioLabel(microphone), manager, logger)
     , _microphone(microphone)
 {
 }
@@ -37,6 +39,14 @@ void LocalAudioTrack::fillRequest(AddTrackRequest* request) const
     LocalTrackImpl<webrtc::AudioTrackInterface>::fillRequest(request);
     if (request) {
         request->_source = _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
+    }
+}
+
+void LocalAudioTrack::requestAuthorization()
+{
+    LocalTrackImpl<webrtc::AudioTrackInterface>::requestAuthorization();
+    if (_microphone) {
+        MediaAuthorization::maybeAuthorized(MediaAuthorizationKind::Microphone, logger());
     }
 }
 
