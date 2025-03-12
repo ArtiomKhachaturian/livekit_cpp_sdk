@@ -11,26 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalAudioTrack.h
-#include "LocalTrack.h"
-#include <api/audio_options.h>
+#pragma once // RemoteTrack.h
+#include "Track.h"
+#include <api/rtp_receiver_interface.h>
 
 namespace LiveKitCpp
 {
-class LocalAudioTrack : public LocalTrack
+
+class TrackManager;
+
+class RemoteTrack : public Track
 {
 public:
-    LocalAudioTrack(LocalTrackManager* manager, bool microphone = true,
-                    const cricket::AudioOptions& options = {});
-    // impl. of LocalTrack
-    cricket::MediaType mediaType() const noexcept { return cricket::MEDIA_TYPE_AUDIO; }
-    void fillRequest(AddTrackRequest& request) const final;
-protected:
-    // impl. LocalTrack
-    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> createMediaTrack(const std::string& id) final;
+    RemoteTrack(TrackManager* manager, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver);
+    // impl. of Track
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> raw() const final;
+    cricket::MediaType mediaType() const final;
+    std::string sid() const final;
+    void mute(bool mute) final;
+    bool muted() const final;
 private:
-    const bool _microphone;
-    const cricket::AudioOptions _options;
+    TrackManager* const _manager;
+    const rtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;
+    const std::string _sid;
 };
 
 } // namespace LiveKitCpp

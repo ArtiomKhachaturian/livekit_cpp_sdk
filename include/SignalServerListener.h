@@ -42,29 +42,29 @@ struct Pong;
 class LIVEKIT_CLIENT_API SignalServerListener
 {
 public:
-    virtual void onJoin(uint64_t /*signalClientId*/, const JoinResponse& /*response*/) {}
-    virtual void onOffer(uint64_t /*signalClientId*/, const SessionDescription& /*sdp*/) {}
-    virtual void onAnswer(uint64_t /*signalClientId*/, const SessionDescription& /*sdp*/) {}
-    virtual void onTrickle(uint64_t /*signalClientId*/, const TrickleRequest& /*request*/) {}
-    virtual void onUpdate(uint64_t /*signalClientId*/, const ParticipantUpdate& /*update*/) {}
-    virtual void onTrackPublished(uint64_t /*signalClientId*/, const TrackPublishedResponse& /*published*/) {}
-    virtual void onTrackUnpublished(uint64_t /*signalClientId*/, const TrackUnpublishedResponse& /*unpublished*/) {}
-    virtual void onLeave(uint64_t /*signalClientId*/, const LeaveRequest& /*leave*/) {}
-    virtual void onMute(uint64_t /*signalClientId*/, const MuteTrackRequest& /*mute*/) {}
-    virtual void onSpeakersChanged(uint64_t /*signalClientId*/, const SpeakersChanged& /*changed*/) {}
-    virtual void onRoomUpdate(uint64_t /*signalClientId*/, const RoomUpdate& /*update*/) {}
-    virtual void onConnectionQuality(uint64_t /*signalClientId*/, const ConnectionQualityUpdate& /*update*/) {}
-    virtual void onStreamStateUpdate(uint64_t /*signalClientId*/, const StreamStateUpdate& /*update*/) {}
-    virtual void onSubscribedQualityUpdate(uint64_t /*signalClientId*/, const SubscribedQualityUpdate& /*update*/) {}
-    virtual void onSubscriptionPermission(uint64_t /*signalClientId*/, const SubscriptionPermissionUpdate& /*update*/) {}
-    virtual void onRefreshToken(uint64_t /*signalClientId*/, const std::string& /*authToken*/) {}
-    virtual void onReconnect(uint64_t /*signalClientId*/, const ReconnectResponse& /*response*/) {}
-    virtual void onTrackSubscribed(uint64_t /*signalClientId*/, const TrackSubscribed& /*subscribed*/) {}
-    virtual void onRequestResponse(uint64_t /*signalClientId*/, const RequestResponse& /*response*/) {}
-    virtual void onSubscriptionResponse(uint64_t /*signalClientId*/, const SubscriptionResponse& /*response*/) {}
-    virtual void onPong(uint64_t /*signalClientId*/, const Pong& /*pong*/) {}
+    virtual void onJoin(const JoinResponse& /*response*/) {}
+    virtual void onOffer(const SessionDescription& /*sdp*/) {}
+    virtual void onAnswer(const SessionDescription& /*sdp*/) {}
+    virtual void onTrickle(const TrickleRequest& /*request*/) {}
+    virtual void onUpdate(const ParticipantUpdate& /*update*/) {}
+    virtual void onTrackPublished(const TrackPublishedResponse& /*published*/) {}
+    virtual void onTrackUnpublished(const TrackUnpublishedResponse& /*unpublished*/) {}
+    virtual void onLeave(const LeaveRequest& /*leave*/) {}
+    virtual void onMute(const MuteTrackRequest& /*mute*/) {}
+    virtual void onSpeakersChanged(const SpeakersChanged& /*changed*/) {}
+    virtual void onRoomUpdate(const RoomUpdate& /*update*/) {}
+    virtual void onConnectionQuality(const ConnectionQualityUpdate& /*update*/) {}
+    virtual void onStreamStateUpdate(const StreamStateUpdate& /*update*/) {}
+    virtual void onSubscribedQualityUpdate(const SubscribedQualityUpdate& /*update*/) {}
+    virtual void onSubscriptionPermission(const SubscriptionPermissionUpdate& /*update*/) {}
+    virtual void onRefreshToken(const std::string& /*authToken*/) {}
+    virtual void onReconnect(const ReconnectResponse& /*response*/) {}
+    virtual void onTrackSubscribed(const TrackSubscribed& /*subscribed*/) {}
+    virtual void onRequestResponse(const RequestResponse& /*response*/) {}
+    virtual void onSubscriptionResponse(const SubscriptionResponse& /*response*/) {}
+    virtual void onPong(const Pong& /*pong*/) {}
     // error handling
-    virtual void onSignalParseError(uint64_t /*signalClientId*/) {}
+    virtual void onSignalParseError() {}
 };
 
 } // namespace LiveKitCpp

@@ -129,6 +129,11 @@ bool TransportManager::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface
     return _publisher.removeTrack(std::move(sender));
 }
 
+bool TransportManager::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    return _publisher.removeTrack(track);
+}
+
 bool TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate)
 {
     switch (target) {

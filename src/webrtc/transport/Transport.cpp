@@ -64,6 +64,7 @@ public:
     void invoke(const Method& method, Args&&... args) const;
     void reset() { _listener.reset(); }
     void logWebRTCError(const webrtc::RTCError& error, std::string_view prefix = {}) const;
+    void removeTrackBySender(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
 protected:
     // overrides of Bricks::LoggableS
     std::string_view logCategory() const final { return _logCategory; }
@@ -204,23 +205,35 @@ bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sende
     if (sender) {
         if (const auto thread = signalingThread()) {
             const auto id = sender->id();
-            const auto type = sender->media_type();
-            const auto kind = cricket::MediaTypeToString(type);
+            const auto kind = cricket::MediaTypeToString(sender->media_type());
             _holder->logInfo("request to removal '" + id + "' local " + kind + " track");
-            thread->PostTask([id, type, kind, sender = std::move(sender), ref = weak(_holder)]() {
+            thread->PostTask([sender = std::move(sender), ref = weak(_holder)]() {
                 if (const auto holder = ref.lock()) {
-                    const auto streamIds = sender->stream_ids();
-                    const auto res = holder->peerConnection()->RemoveTrackOrError(std::move(sender));
-                    if (res.ok()) {
-                        holder->logVerbose("local " + kind + " track '" + id + "' track was removed");
-                        holder->invoke(&TransportListener::onLocalTrackRemoved, id, type, streamIds);
+                    holder->removeTrackBySender(sender);
+                }
+            });
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Transport::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (track) {
+        if (const auto thread = signalingThread()) {
+            const auto id = track->id();
+            const auto kind = track->kind();
+            _holder->logInfo("request to removal '" + id + "' local " + kind + " track");
+            thread->PostTask([id, kind, track, ref = weak(_holder)]() {
+                if (const auto holder = ref.lock()) {
+                    rtc::scoped_refptr<webrtc::RtpSenderInterface> trackSender;
+                    for (const auto& sender : holder->peerConnection()->GetSenders()) {
+                        if (sender->track() == track) {
+                            trackSender = sender;
+                        }
                     }
-                    else {
-                        holder->logWebRTCError(res, "failed to remove '" +
-                                               id + "' local " + kind + " track");
-                        holder->invoke(&TransportListener::onLocalTrackRemoveFailure,
-                                       id, type, streamIds, std::move(res));
-                    }
+                    holder->removeTrackBySender(trackSender);
                 }
             });
             return true;
@@ -599,6 +612,25 @@ void Transport::Holder::logWebRTCError(const webrtc::RTCError& error,
         }
         else {
             logError(std::string(prefix) + std::string(": ") + error.message());
+        }
+    }
+}
+
+void Transport::Holder::removeTrackBySender(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender)
+{
+    if (sender) {
+        const auto id = sender->id();
+        const auto type = sender->media_type();
+        const auto kind = cricket::MediaTypeToString(type);
+        const auto streamIds = sender->stream_ids();
+        const auto res = _pc->RemoveTrackOrError(std::move(sender));
+        if (res.ok()) {
+            logVerbose("local " + kind + " track '" + id + "' track was removed");
+            invoke(&TransportListener::onLocalTrackRemoved, id, type, streamIds);
+        }
+        else {
+            logWebRTCError(res, "failed to remove '" + id + "' local " + kind + " track");
+            invoke(&TransportListener::onLocalTrackRemoveFailure, id, type, streamIds, std::move(res));
         }
     }
 }

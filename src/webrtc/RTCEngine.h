@@ -45,8 +45,12 @@ public:
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
 protected:
+    void cleanup(bool error = false);
     // impl. or overrides of RTCMediaEngine
-    void cleanup(bool error = false) final;
+    bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
+    bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
+    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label,
+                                                                   const cricket::AudioOptions& options) final;
     SendResult sendAddTrack(const AddTrackRequest& request) const final;
     SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
     bool closed() const final;
@@ -64,24 +68,22 @@ private:
     void onIceCandidateGathered(SignalTarget target,
                                 const webrtc::IceCandidateInterface* candidate) final;
     // impl. of SignalServerListener
-    void onJoin(uint64_t, const JoinResponse& response) final;
-    void onOffer(uint64_t, const SessionDescription& sdp) final;
-    void onAnswer(uint64_t, const SessionDescription& sdp) final;
-    void onPong(uint64_t, const Pong&) final;
-    void onTrickle(uint64_t, const TrickleRequest& request) final;
+    void onJoin(const JoinResponse& response) final;
+    void onOffer(const SessionDescription& sdp) final;
+    void onAnswer(const SessionDescription& sdp) final;
+    void onPong(const Pong& pong) final;
+    void onTrickle(const TrickleRequest& request) final;
     // impl. of SignalTransportListener
-    void onTransportStateChanged(uint64_t, TransportState state) final;
-    void onTransportError(uint64_t, std::string error) final;
+    void onTransportStateChanged(TransportState state) final;
+    void onTransportError(std::string error) final;
     // impl. of PingPongKitListener
     bool onPingRequested() final;
     void onPongTimeout() final;
-    // impl. LocalTrackFactory
-    bool add(webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track) final;
-    bool remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
     const Options _options;
+    const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
     /** keeps track of how often an initial join connection has been tried */

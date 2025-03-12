@@ -40,7 +40,7 @@ private:
 SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
     :  Bricks::LoggableR<>(logger)
     , _impl(std::make_unique<Impl>(this))
-    , _responseReceiver(std::make_unique<ResponseInterceptor>(id(), logger))
+    , _responseReceiver(std::make_unique<ResponseInterceptor>(logger))
     , _requestSender(std::make_unique<RequestInterceptor>(commandSender, logger))
 {
 }
@@ -223,16 +223,14 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
         }
     }
     if (ChangeTransportStateResult::Changed == result) {
-        _listener.invoke(&SignalTransportListener::onTransportStateChanged,
-                         _client->id(), state);
+        _listener.invoke(&SignalTransportListener::onTransportStateChanged, state);
     }
     return result;
 }
 
 void SignalClient::Impl::notifyAboutTransportError(std::string error)
 {
-    _listener.invoke(&SignalTransportListener::onTransportError,
-                     _client->id(), std::move(error));
+    _listener.invoke(&SignalTransportListener::onTransportError, std::move(error));
 }
 
 } // namespace LiveKitCpp

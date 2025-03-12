@@ -23,8 +23,8 @@ enum class TransportState;
 class LIVEKIT_CLIENT_API SignalTransportListener
 {
 public:
-    virtual void onTransportStateChanged(uint64_t /*signalClientId*/, TransportState /*state*/) {}
-    virtual void onTransportError(uint64_t /*signalClientId*/, std::string /*error*/) {}
+    virtual void onTransportStateChanged(TransportState /*state*/) {}
+    virtual void onTransportError(std::string /*error*/) {}
 };
 
 } // namespace LiveKitCpp

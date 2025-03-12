@@ -67,7 +67,6 @@ public:
     virtual bool connect();
     virtual void disconnect();
     TransportState transportState() const noexcept;
-    uint64_t id() const noexcept { return reinterpret_cast<uint64_t>(this); }
     // requests sending
     bool sendOffer(const SessionDescription& sdp) const;
     bool sendAnswer(const SessionDescription& sdp) const;

@@ -14,9 +14,7 @@
 #include "LocalTrack.h"
 #include "LocalTrackManager.h"
 #include "Utils.h"
-#include "rtc/AddTrackRequest.h"
 #include <api/media_stream_interface.h>
-#include <api/rtp_sender_interface.h>
 
 namespace LiveKitCpp
 {
@@ -30,113 +28,103 @@ LocalTrack::LocalTrack(std::string name, LocalTrackManager* manager)
 
 LocalTrack::~LocalTrack()
 {
-    resetTrackSender(true);
+    reset();
+}
+
+void LocalTrack::reset()
+{
+    LOCK_WRITE_SAFE_OBJ(_track);
+    if (const auto track = _track.take()) {
+        if (_manager) {
+            _manager->removeLocalMedia(track);
+        }
+    }
+}
+
+void LocalTrack::setPublished(bool error)
+{
+    LOCK_WRITE_SAFE_OBJ(_track);
+    if (error) {
+        _track = {};
+        _pendingPublish = false;
+    }
+    else if (_pendingPublish) {
+        _pendingPublish = false;
+        notifyAboutMuted(muted());
+    }
+}
+
+bool LocalTrack::live() const noexcept
+{
+    LOCK_READ_SAFE_OBJ(_track);
+    if (const auto& track = _track.constRef()) {
+        return webrtc::MediaStreamTrackInterface::kLive == track->state();
+    }
+    return false;
+}
+
+void LocalTrack::fillRequest(AddTrackRequest& request) const
+{
+    switch (mediaType()) {
+        case cricket::MEDIA_TYPE_AUDIO:
+            request._type = TrackType::Audio;
+            break;
+        case cricket::MEDIA_TYPE_VIDEO:
+            request._type = TrackType::Video;
+            break;
+        case cricket::MEDIA_TYPE_DATA:
+            request._type = TrackType::Data;
+            break;
+        default:
+            break;
+    }
+    request._cid = _cid;
+    request._name = _name;
+    request._muted = _muted;
+    request._sid = _sid();
+}
+
+webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalTrack::raw() const
+{
+    LOCK_READ_SAFE_OBJ(_track);
+    return _track.constRef();
 }
 
 void LocalTrack::mute(bool mute)
 {
     if (mute != _muted.exchange(mute)) {
-        LOCK_WRITE_SAFE_OBJ(_sender);
-        if (mute) {
-            _requested = false;
-            muteSender(true, true);
-        }
-        else {
-            if (_sender.constRef()) {
-                muteSender(true, false);
-            }
-            else if (!_requested && _manager) {
+        bool sendNotification = false;
+        {
+            LOCK_WRITE_SAFE_OBJ(_track);
+            if (!mute && !_track.constRef() && _manager) {
                 if (auto track = createMediaTrack(_cid)) {
-                    _requested = _manager->add(std::move(track));
+                    // create track by demand
+                    _pendingPublish = _manager->addLocalMedia(track);
+                    _track = std::move(track);
+                }
+            }
+            if (const auto& track = _track.constRef()) {
+                const auto wasEnabled = track->enabled();
+                if (wasEnabled == mute) {
+                    track->set_enabled(!mute);
+                    sendNotification = true;
                 }
             }
         }
-    }
-}
-
-SetSenderResult LocalTrack::setTrackSender(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender)
-{
-    LOCK_WRITE_SAFE_OBJ(_sender);
-    if (_requested && sender) {
-        if (accept(sender)) {
-            _sender = sender;
-            _requested = false;
-            muteSender(muted(), false);
-            return SetSenderResult::Accepted;
-        }
-        return SetSenderResult::NotMatchedToRequest;
-    }
-    return SetSenderResult::Rejected;
-}
-
-bool LocalTrack::resetTrackSender(bool full)
-{
-    bool ok = false;
-    LOCK_WRITE_SAFE_OBJ(_sender);
-    if (auto sender = _sender.take()) {
-        if (full && _manager) {
-            ok = _manager->remove(std::move(sender));
-        }
-        else {
-            ok = true;
-        }
-    }
-    else {
-        _requested = false;
-        ok = true;
-    }
-    return ok;
-}
-
-bool LocalTrack::fillRequest(AddTrackRequest& request) const
-{
-    LOCK_READ_SAFE_OBJ(_sender);
-    if (_sender.constRef()) {
-        switch (mediaType()) {
-            case cricket::MEDIA_TYPE_AUDIO:
-                request._type = TrackType::Audio;
-                break;
-            case cricket::MEDIA_TYPE_VIDEO:
-                request._type = TrackType::Video;
-                break;
-            case cricket::MEDIA_TYPE_DATA:
-                request._type = TrackType::Data;
-                break;
-            default:
-                break;
-        }
-        request._cid = _cid;
-        request._name = _name;
-        request._muted = _muted;
-        request._sid = _sid;
-        return true;
-    }
-    return false;
-}
-
-void LocalTrack::muteSender(bool mute, bool notify = true) const
-{
-    if (const auto& sender = _sender.constRef()) {
-        if (const auto track = sender->track()) {
-            const auto wasEnabled = track->enabled();
-            if (wasEnabled == mute) {
-                track->set_enabled(!mute);
-                if (notify && _manager) {
-                    _manager->notifyAboutMuteChanges(_sid, mute);
-                }
-            }
+        if (sendNotification) {
+            notifyAboutMuted(mute);
         }
     }
 }
 
-bool LocalTrack::accept(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
+void LocalTrack::notifyAboutMuted(bool mute) const
 {
-    if (sender && sender->media_type() == mediaType()) {
-        if (const auto track = sender->track()) {
-            return accept(track->id());
+    if (_manager && !_pendingPublish) {
+        const auto sid = this->sid();
+        if (!sid.empty()) {
+            _manager->notifyAboutMuteChanges(sid, mute);
         }
     }
-    return false;
 }
 
 } // namespace LiveKitCpp

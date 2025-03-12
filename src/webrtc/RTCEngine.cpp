@@ -30,8 +30,9 @@ RTCEngine::RTCEngine(const Options& signalOptions,
                      PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : RTCMediaEngine(pcf, logger)
+    : RTCMediaEngine(logger)
     , _options(signalOptions)
+    , _pcf(pcf)
     , _client(std::move(socket), logger.get())
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
@@ -72,11 +73,39 @@ bool RTCEngine::connect(std::string url, std::string authToken)
     return ok;
 }
 
-void RTCEngine::cleanup(bool error)
+void RTCEngine::cleanup(bool /*error*/)
 {
     std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
     _client.disconnect();
-    RTCMediaEngine::cleanup(error);
+    cleanupLocalResources();
+    cleanupRemoteResources();
+}
+
+bool RTCEngine::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        return pcManager->addTrack(track);
+    }
+    return RTCMediaEngine::addLocalMedia(track);
+}
+
+bool RTCEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        return pcManager->removeTrack(track);
+    }
+    return RTCMediaEngine::removeLocalMedia(track);
+}
+
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::
+    createAudio(const std::string& label, const cricket::AudioOptions& options)
+{
+    if (_pcf) {
+        if (const auto source = _pcf->CreateAudioSource(options)) {
+            return _pcf->CreateAudioTrack(label, source.get());
+        }
+    }
+    return {};
 }
 
 RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const
@@ -172,6 +201,7 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
 
 void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
+    RTCMediaEngine::onPublisherOffer(desc);
     if (const auto sdp = RoomUtils::map(desc)) {
         if (!_client.sendOffer(sdp.value())) {
             logError("failed to send publisher offer to the server");
@@ -184,6 +214,7 @@ void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc
 
 void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc)
 {
+    RTCMediaEngine::onSubscriberAnswer(desc);
     if (const auto sdp = RoomUtils::map(desc)) {
         if (!_client.sendAnswer(sdp.value())) {
             logError("failed to send subscriber answer to the server");
@@ -197,6 +228,7 @@ void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* de
 void RTCEngine::onIceCandidateGathered(SignalTarget target,
                                        const webrtc::IceCandidateInterface* candidate)
 {
+    RTCMediaEngine::onIceCandidateGathered(target, candidate);
     if (candidate) {
         TrickleRequest request;
         if (RoomUtils::map(candidate, request._candidateInit)) {
@@ -214,21 +246,24 @@ void RTCEngine::onIceCandidateGathered(SignalTarget target,
     }
 }
 
-void RTCEngine::onJoin(uint64_t, const JoinResponse& response)
+void RTCEngine::onJoin(const JoinResponse& response)
 {
+    RTCMediaEngine::onJoin(response);
     TransportManagerListener* listener = this;
-    auto pcManager = std::make_shared<TransportManager>(response,
-                                                        listener,
-                                                        peerConnectionFactory(),
-                                                        makeConfiguration(response),
+    auto pcManager = std::make_shared<TransportManager>(response, listener,
+                                                        _pcf, makeConfiguration(response),
                                                         logger());
     std::atomic_store(&_pcManager, pcManager);
+    for (auto media : pendingLocalMedia()) {
+        pcManager->addTrack(std::move(media));
+    }
     pcManager->negotiate(false);
     pcManager->startPing();
 }
 
-void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
+void RTCEngine::onOffer(const SessionDescription& sdp)
 {
+    RTCMediaEngine::onOffer(sdp);
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -240,8 +275,9 @@ void RTCEngine::onOffer(uint64_t, const SessionDescription& sdp)
     }
 }
 
-void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
+void RTCEngine::onAnswer(const SessionDescription& sdp)
 {
+    RTCMediaEngine::onAnswer(sdp);
     webrtc::SdpParseError error;
     if (auto desc = RoomUtils::map(sdp, &error)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -253,16 +289,18 @@ void RTCEngine::onAnswer(uint64_t, const SessionDescription& sdp)
     }
 }
 
-void RTCEngine::onPong(uint64_t, const Pong&)
+void RTCEngine::onPong(const Pong& pong)
 {
+    RTCMediaEngine::onPong(pong);
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         // Clear timeout timer
         pcManager->notifyThatPongReceived();
     }
 }
 
-void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
+void RTCEngine::onTrickle(const TrickleRequest& request)
 {
+    RTCMediaEngine::onTrickle(request);
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         webrtc::SdpParseError error;
         if (auto candidate = RoomUtils::map(request, &error)) {
@@ -277,14 +315,14 @@ void RTCEngine::onTrickle(uint64_t, const TrickleRequest& request)
     }
 }
 
-void RTCEngine::onTransportStateChanged(uint64_t, TransportState state)
+void RTCEngine::onTransportStateChanged(TransportState state)
 {
     if (TransportState::Disconnected == state) {
         cleanup(false);
     }
 }
 
-void RTCEngine::onTransportError(uint64_t, std::string error)
+void RTCEngine::onTransportError(std::string error)
 {
     logError(error);
     cleanup(true);
@@ -303,26 +341,6 @@ void RTCEngine::onPongTimeout()
     logError("ping/pong timed out");
     cleanup(true);
     //await self.cleanUp(withError: LiveKitError(.serverPingTimedOut))
-}
-
-bool RTCEngine::add(webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
-{
-    if (track) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            return pcManager->addTrack(std::move(track));
-        }
-    }
-    return false;
-}
-
-bool RTCEngine::remove(webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
-{
-    if (sender) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            return pcManager->removeTrack(std::move(sender));
-        }
-    }
-    return false;
 }
 
 std::string_view RTCEngine::logCategory() const

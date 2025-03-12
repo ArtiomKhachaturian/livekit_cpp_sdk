@@ -54,9 +54,8 @@ MARSHALLED_TYPE_NAME_DECL(livekit::RequestResponse)
 MARSHALLED_TYPE_NAME_DECL(livekit::TrackSubscribed)
 MARSHALLED_TYPE_NAME_DECL(livekit::Pong)
 
-ResponseInterceptor::ResponseInterceptor(uint64_t signalClientId, Bricks::Logger* logger)
+ResponseInterceptor::ResponseInterceptor(Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
-    , _signalClientId(signalClientId)
     , _marshaller(logger)
 {
 }
@@ -164,7 +163,7 @@ std::optional<livekit::SignalResponse> ResponseInterceptor::
 template <class Method, typename... Args>
 void ResponseInterceptor::notify(const Method& method, Args&&... args) const
 {
-    _listener.invoke(method, _signalClientId, std::forward<Args>(args)...);
+    _listener.invoke(method, std::forward<Args>(args)...);
 }
 
 template <class Method, class TLiveKitType>

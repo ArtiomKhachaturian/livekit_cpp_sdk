@@ -11,26 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalAudioTrack.h
-#include "LocalTrack.h"
-#include <api/audio_options.h>
+#pragma once // LocalTrackFactory.h
+#include <string>
 
 namespace LiveKitCpp
 {
-class LocalAudioTrack : public LocalTrack
+
+class TrackManager
 {
 public:
-    LocalAudioTrack(LocalTrackManager* manager, bool microphone = true,
-                    const cricket::AudioOptions& options = {});
-    // impl. of LocalTrack
-    cricket::MediaType mediaType() const noexcept { return cricket::MEDIA_TYPE_AUDIO; }
-    void fillRequest(AddTrackRequest& request) const final;
+    virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
 protected:
-    // impl. LocalTrack
-    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> createMediaTrack(const std::string& id) final;
-private:
-    const bool _microphone;
-    const cricket::AudioOptions _options;
+    virtual ~TrackManager() = default;
 };
 
 } // namespace LiveKitCpp

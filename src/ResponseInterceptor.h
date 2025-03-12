@@ -26,7 +26,7 @@ class SignalServerListener;
 class ResponseInterceptor : private Bricks::LoggableR<>
 {
 public:
-    ResponseInterceptor(uint64_t signalClientId, Bricks::Logger* logger = nullptr);
+    ResponseInterceptor(Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
 protected:
@@ -60,7 +60,6 @@ private:
     void handle(const livekit::TrackSubscribed& subscribed) const;
     void handle(const livekit::Pong& pong) const;
 private:
-    const uint64_t _signalClientId;
     const ProtoMarshaller _marshaller;
     Bricks::Listener<SignalServerListener*> _listener;
 };

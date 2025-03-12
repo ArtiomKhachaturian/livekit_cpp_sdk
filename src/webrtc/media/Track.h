@@ -11,28 +11,31 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalTrackManager.h
-#include "TrackManager.h"
-#include <api/audio_options.h>
+#pragma once // Track.h
+#include <api/media_types.h>
 #include <api/scoped_refptr.h>
+#include <string>
 
 namespace webrtc {
 class MediaStreamTrackInterface;
-class AudioTrackInterface;
 }
 
 namespace LiveKitCpp
 {
 
-class LocalTrackManager : public TrackManager
+class Track
 {
 public:
-    virtual bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) = 0;
-    virtual bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) = 0;
-    virtual webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label,
-                                                                           const cricket::AudioOptions& options = {}) = 0;
-protected:
-    ~LocalTrackManager() override = default;
+    virtual ~Track() = default;
+    // underlying track if any
+    virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> raw() const = 0;
+    // type
+    virtual cricket::MediaType mediaType() const = 0;
+    // server track ID
+    virtual std::string sid() const = 0;
+    // mute/unmute state
+    virtual void mute(bool mute) = 0;
+    virtual bool muted() const = 0;
 };
 
 } // namespace LiveKitCpp

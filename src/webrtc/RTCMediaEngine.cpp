@@ -13,10 +13,11 @@
 // limitations under the License.
 #include "RTCMediaEngine.h"
 #include "DataChannel.h"
-#include "PeerConnectionFactory.h"
+#include "RemoteTrack.h"
 #include "rtc/AddTrackRequest.h"
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrackPublishedResponse.h"
+#include "rtc/TrackUnpublishedResponse.h"
 
 namespace {
 
@@ -29,61 +30,93 @@ inline std::string dcType(bool local) {
 namespace LiveKitCpp
 {
 
-RTCMediaEngine::RTCMediaEngine(PeerConnectionFactory* pcf,
-                               const std::shared_ptr<Bricks::Logger>& logger)
+RTCMediaEngine::RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
-    , _pcf(pcf)
     , _microphone(this, true)
 {
 }
 
 RTCMediaEngine::~RTCMediaEngine()
 {
-    RTCMediaEngine::cleanup(false);
+    cleanupLocalResources();
+    cleanupRemoteResources();
 }
 
-void RTCMediaEngine::cleanup(bool /*error*/)
+void RTCMediaEngine::cleanupLocalResources()
 {
-    _microphone.resetTrackSender();
+    _microphone.reset();
+    _pendingLocalMedias({});
+}
+
+void RTCMediaEngine::cleanupRemoteResources()
+{
     _localDCs({});
     _remoteDCs({});
+    _remoteTracks({});
 }
 
-LocalTrack* RTCMediaEngine::localTrack(const std::string& id, cricket::MediaType type)
+std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>
+    RTCMediaEngine::pendingLocalMedia()
+{
+    LOCK_WRITE_SAFE_OBJ(_pendingLocalMedias);
+    std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> medias;
+    medias.reserve(_pendingLocalMedias->size());
+    for (auto it = _pendingLocalMedias->begin(); it != _pendingLocalMedias->end(); ++it) {
+        medias.push_back(std::move(it->second));
+    }
+    _pendingLocalMedias->clear();
+    return medias;
+}
+
+bool RTCMediaEngine::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (track) {
+        auto id = track->id();
+        if (!id.empty()) {
+            LOCK_WRITE_SAFE_OBJ(_pendingLocalMedias);
+            _pendingLocalMedias->insert(std::make_pair(std::move(id), track));
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RTCMediaEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (track) {
+        const auto id = track->id();
+        if (!id.empty()) {
+            LOCK_WRITE_SAFE_OBJ(_pendingLocalMedias);
+            return _pendingLocalMedias->erase(track->id()) > 0U;
+        }
+    }
+    return false;
+}
+
+LocalTrack* RTCMediaEngine::localTrack(const std::string& id, bool cid)
 {
     if (!id.empty()) {
-        if (cricket::MEDIA_TYPE_UNSUPPORTED == type) {
-            if (id == _microphone.cid()) {
-                return &_microphone;
-            }
+        if (id == (cid ? _microphone.cid() : _microphone.sid())) {
+            return &_microphone;
         }
-        else {
-            switch (type) {
-                case cricket::MEDIA_TYPE_AUDIO:
-                    if (id == _microphone.cid()) {
-                        return &_microphone;
-                    }
-                    break;
-                case cricket::MEDIA_TYPE_VIDEO:
-                    break;
-                default:
-                    break;
-            }
-        }
+    }
+    return nullptr;
+}
+
+LocalTrack* RTCMediaEngine::localTrack(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender)
+{
+    if (sender) {
+        return localTrack(sender->id(), true);
     }
     return nullptr;
 }
 
 void RTCMediaEngine::sendAddTrack(const LocalTrack* track)
 {
-    if (track && !closed()) {
+    if (track && track->live() && !closed()) {
         AddTrackRequest request;
-        if (track->fillRequest(request)) {
-            if (SendResult::TransportError == sendAddTrack(request)) {
-                // TODO: log error
-            }
-        }
-        else {
+        track->fillRequest(request);
+        if (SendResult::TransportError == sendAddTrack(request)) {
             // TODO: log error
         }
     }
@@ -115,9 +148,9 @@ void RTCMediaEngine::addDataChannelToList(rtc::scoped_refptr<DataChannel> channe
     }
 }
 
-void RTCMediaEngine::onTrackPublished(uint64_t, const TrackPublishedResponse& published)
+void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
 {
-    if (const auto track = localTrack(published._cid)) {
+    if (const auto track = localTrack(published._cid, true)) {
         track->setSid(published._track._sid);
         // reconcile track mute status.
         // if server's track mute status doesn't match actual, we'll have to update
@@ -129,37 +162,79 @@ void RTCMediaEngine::onTrackPublished(uint64_t, const TrackPublishedResponse& pu
     }
 }
 
+void RTCMediaEngine::onTrackUnpublished(const TrackUnpublishedResponse& unpublished)
+{
+    if (const auto track = localTrack(unpublished._trackSid, false)) {
+        track->reset();
+    }
+}
+
+void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
+                                   webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
+                                   webrtc::PeerConnectionInterface::PeerConnectionState subscriberState)
+{
+    switch (publisherState) {
+        case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
+            // publish local tracks
+            sendAddTrack(&_microphone);
+            break;
+        case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
+            cleanupLocalResources();
+            break;
+        default:
+            break;
+    }
+    switch (subscriberState) {
+        case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
+            cleanupRemoteResources();
+            break;
+        default:
+            break;
+    }
+ }
+
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
-    if (sender) {
-        if (const auto track = localTrack(sender->id(), sender->media_type())) {
-            const auto result = track->setTrackSender(sender);
-            if (SetSenderResult::Accepted == result) {
-                sendAddTrack(track);
-            }
-            else if (SetSenderResult::Rejected == result) {
-                if (!remove(std::move(sender))) {
-                    // TODO: maybe log as warn
-                }
-            }
-        }
+    if (const auto track = localTrack(sender)) {
+        track->setPublished(false);
+        sendAddTrack(track);
     }
 }
 
 void RTCMediaEngine::onLocalTrackAddFailure(const std::string& id,
-                                            cricket::MediaType type,
+                                            cricket::MediaType,
                                             const std::vector<std::string>&,
                                             webrtc::RTCError)
 {
-    if (const auto track = localTrack(id, type)) {
-        track->resetTrackSender();
+    if (const auto track = localTrack(id, true)) {
+        track->setPublished(true);
     }
 }
 
-void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType type)
+void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
 {
-    if (const auto track = localTrack(id, type)) {
-        track->resetTrackSender();
+    if (const auto track = localTrack(id, true)) {
+        track->setPublished(false);
+    }
+}
+
+void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+{
+    if (transceiver) {
+        TrackManager* manager = this;
+        auto track = std::make_unique<RemoteTrack>(manager, transceiver->receiver());
+        auto sid = track->sid();
+        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
+        _remoteTracks->insert(std::make_pair(std::move(sid), std::move(track)));
+    }
+}
+
+void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+{
+    if (receiver) {
+        const auto sid = receiver->id();
+        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
+        _remoteTracks->erase(sid);
     }
 }
 
@@ -179,21 +254,11 @@ void RTCMediaEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> c
     }
 }
 
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCMediaEngine::
-    createAudio(const std::string& label, const cricket::AudioOptions& options)
-{
-    if (_pcf) {
-        if (const auto source = _pcf->CreateAudioSource(options)) {
-            return _pcf->CreateAudioTrack(label, source.get());
-        }
-    }
-    return {};
-}
-
 void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool muted)
 {
     if (!trackSid.empty()) {
-        if (SendResult::TransportError == sendMuteTrack({._sid = trackSid, ._muted = muted})) {
+        const auto result = sendMuteTrack({._sid = trackSid, ._muted = muted});
+        if (SendResult::TransportError == result) {
             // TODO: log error
         }
     }
@@ -220,6 +285,11 @@ void RTCMediaEngine::onMessage(DataChannel* channel,
 void RTCMediaEngine::onBufferedAmountChange(DataChannel* /*channelType*/,
                                             uint64_t /*sentDataSize*/)
 {
+}
+
+void RTCMediaEngine::onSendError(DataChannel* channel, webrtc::RTCError error)
+{
+    
 }
 
 } // namespace LiveKitCpp

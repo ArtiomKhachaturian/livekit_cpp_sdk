@@ -13,7 +13,6 @@
 // limitations under the License.
 #include "LocalAudioTrack.h"
 #include "LocalTrackManager.h"
-#include "rtc/AddTrackRequest.h"
 #include <api/media_stream_interface.h>
 
 namespace {
@@ -35,13 +34,10 @@ LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
 {
 }
 
-bool LocalAudioTrack::fillRequest(AddTrackRequest& request) const
+void LocalAudioTrack::fillRequest(AddTrackRequest& request) const
 {
-    if (LocalTrack::fillRequest(request)) {
-        request._source = _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
-        return true;
-    }
-    return false;
+    LocalTrack::fillRequest(request);
+    request._source = _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalAudioTrack::createMediaTrack(const std::string& id)
