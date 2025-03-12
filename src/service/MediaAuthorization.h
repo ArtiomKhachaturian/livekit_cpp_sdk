@@ -30,25 +30,21 @@ class MediaAuthorization
 {
 public:
     // sync version
-    static MediaAuthorizationStatus request(MediaAuthorizationKind kind,
-                                            bool askPermissions,
-                                            const std::shared_ptr<Bricks::Logger>& logger = {});
+    [[nodiscard]] static MediaAuthorizationStatus request(MediaAuthorizationKind kind,
+                                                          bool askPermissions,
+                                                          const std::shared_ptr<Bricks::Logger>& logger = {});
     // sync/async version, depends on platform impl.
-    static void request(MediaAuthorizationKind kind, bool askPermissions,
+    static void query(MediaAuthorizationKind kind, bool askPermissions,
                         const std::shared_ptr<MediaAuthorizationCallback>& callback);
+    static void query(MediaAuthorizationKind kind, bool askPermissions,
+                      const std::shared_ptr<Bricks::Logger>& logger);
     // helper function, suitable for most cases
     static bool maybeAuthorized(MediaAuthorizationKind kind,
                                 const std::shared_ptr<Bricks::Logger>& logger = {});
-
 private:
-    static void logAuthorizationStatus(MediaAuthorizationKind kind,
-                                       MediaAuthorizationStatus status,
-                                       const std::shared_ptr<Bricks::Logger>& logger);
     // platform impl.
     static void requestFromSystem(MediaAuthorizationKind kind, bool askPermissions,
                                   const std::shared_ptr<MediaAuthorizationCallback>& callback);
-private:
-    static inline const std::string_view _category = "media_authorization";
 };
 
 MediaAuthorizationLevel mediaAuthorizationLevel();

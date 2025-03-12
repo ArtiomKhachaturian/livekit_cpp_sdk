@@ -46,7 +46,7 @@ void LocalAudioTrack::requestAuthorization()
 {
     LocalTrackImpl<webrtc::AudioTrackInterface>::requestAuthorization();
     if (_microphone) {
-        MediaAuthorization::maybeAuthorized(MediaAuthorizationKind::Microphone, logger());
+        MediaAuthorization::query(MediaAuthorizationKind::Microphone, true, logger());
     }
 }
 

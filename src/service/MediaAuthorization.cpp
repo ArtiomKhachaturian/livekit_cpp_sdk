@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "MediaAuthorization.h"
 #include "MediaAuthorizationCallback.h"
-#include "Logger.h"
+#include "Loggable.h"
 #include <atomic>
 #include <thread>
 
@@ -24,6 +24,8 @@ using namespace LiveKitCpp;
 
 std::atomic<MediaAuthorizationLevel> g_mediaAuthorizationLevel(MediaAuthorizationLevel::CheckOnly);
 
+const std::string_view g_category = "media_authorization";
+
 class SyncCallback : public MediaAuthorizationCallback
 {
 public:
@@ -31,11 +33,25 @@ public:
     MediaAuthorizationStatus waitStatus();
     // impl. of MediaAuthorizationCallback
     void completed(MediaAuthorizationStatus status) final;
-
 private:
     std::atomic<MediaAuthorizationStatus> _status;
     std::atomic_bool _completed;
 };
+
+class LoggedCallback : public Bricks::LoggableS<MediaAuthorizationCallback>
+{
+public:
+    LoggedCallback(MediaAuthorizationKind kind, const std::shared_ptr<Bricks::Logger>& logger);
+    // impl. of MediaAuthorizationCallback
+    void completed(MediaAuthorizationStatus status) final;
+private:
+    const MediaAuthorizationKind _kind;
+};
+
+void logAuthorizationStatus(MediaAuthorizationKind kind,
+                            MediaAuthorizationStatus status,
+                            const std::shared_ptr<Bricks::Logger>& logger);
+
 
 } // namespace
 
@@ -60,9 +76,9 @@ MediaAuthorizationStatus MediaAuthorization::request(MediaAuthorizationKind kind
     return status;
 }
 
-void MediaAuthorization::request(MediaAuthorizationKind kind,
-                                 bool askPermissions,
-                                 const std::shared_ptr<MediaAuthorizationCallback>& callback)
+void MediaAuthorization::query(MediaAuthorizationKind kind,
+                               bool askPermissions,
+                               const std::shared_ptr<MediaAuthorizationCallback>& callback)
 {
     if (callback) {
         const auto level = mediaAuthorizationLevel();
@@ -74,6 +90,14 @@ void MediaAuthorization::request(MediaAuthorizationKind kind,
         } else {
             callback->completed(MediaAuthorizationStatus::Granted);
         }
+    }
+}
+
+void MediaAuthorization::query(MediaAuthorizationKind kind, bool askPermissions,
+                                 const std::shared_ptr<Bricks::Logger>& logger)
+{
+    if (logger) {
+        query(kind, askPermissions, std::make_shared<LoggedCallback>(kind, logger));
     }
 }
 
@@ -90,42 +114,6 @@ bool MediaAuthorization::maybeAuthorized(MediaAuthorizationKind kind,
             break;
     }
     return false;
-}
-
-void MediaAuthorization::logAuthorizationStatus(MediaAuthorizationKind kind,
-                                                MediaAuthorizationStatus status,
-                                                const std::shared_ptr<Bricks::Logger>& logger)
-{
-    if (logger) {
-        switch (status) {
-            case MediaAuthorizationStatus::NotDetermined:
-                if (logger->canLogInfo()) {
-                    logger->logInfo("User has made a choice regarding whether the application can access the "
-                                    + toString(kind), _category);
-                }
-                break;
-            case MediaAuthorizationStatus::Granted:
-                if (logger->canLogVerbose()) {
-                    logger->logVerbose("The application is authorized to access the OS supporting a "
-                                       + toString(kind), _category);
-                }
-                break;
-            case MediaAuthorizationStatus::Restricted:
-                if (logger->canLogWarning()) {
-                    logger->logWarning("The application is not authorized to access the OS for the "
-                                       + toString(kind), _category);
-                }
-                break;
-            case MediaAuthorizationStatus::Denied:
-                if (logger->canLogError()) {
-                    logger->logError("User explicitly denied access to the OS supporting a "
-                                     + toString(kind) + " for the application", _category);
-                }
-                break;
-            default: // ???
-                break;
-        }
-    }
 }
 
 std::string toString(MediaAuthorizationKind kind)
@@ -177,6 +165,54 @@ void SyncCallback::completed(MediaAuthorizationStatus status)
 {
     _status = status;
     _completed = true;
+}
+
+LoggedCallback::LoggedCallback(MediaAuthorizationKind kind,
+                               const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<MediaAuthorizationCallback>(logger)
+    , _kind(kind)
+{
+}
+
+void LoggedCallback::completed(MediaAuthorizationStatus status)
+{
+    logAuthorizationStatus(_kind, status, logger());
+}
+
+void logAuthorizationStatus(MediaAuthorizationKind kind,
+                            MediaAuthorizationStatus status,
+                            const std::shared_ptr<Bricks::Logger>& logger)
+{
+    if (logger) {
+        switch (status) {
+            case MediaAuthorizationStatus::NotDetermined:
+                if (logger->canLogInfo()) {
+                    logger->logInfo("User has made a choice regarding whether the application can access the "
+                                    + toString(kind), g_category);
+                }
+                break;
+            case MediaAuthorizationStatus::Granted:
+                if (logger->canLogVerbose()) {
+                    logger->logVerbose("The application is authorized to access the OS supporting a "
+                                       + toString(kind), g_category);
+                }
+                break;
+            case MediaAuthorizationStatus::Restricted:
+                if (logger->canLogWarning()) {
+                    logger->logWarning("The application is not authorized to access the OS for the "
+                                       + toString(kind), g_category);
+                }
+                break;
+            case MediaAuthorizationStatus::Denied:
+                if (logger->canLogError()) {
+                    logger->logError("User explicitly denied access to the OS supporting a "
+                                     + toString(kind) + " for the application", g_category);
+                }
+                break;
+            default: // ???
+                break;
+        }
+    }
 }
 
 } // namespace
