@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "./Camera/CameraCaptureModule.h"
+#include "./Camera/CameraManager.h"
 #include "AVCameraCapturer.h"
 #include "MacOSCameraCapturer.h"
 #include "Utils.h"
@@ -47,24 +47,26 @@ protected:
 namespace LiveKitCpp
 {
 
-bool CameraCaptureModule::hasDevice(const std::string_view& deviceGuid) const
+bool CameraManager::deviceIsValid(std::string_view guid)
 {
-    if (!deviceGuid.empty()) {
+    if (!guid.empty()) {
         @autoreleasepool {
-            return nil != MacOSDeviceInfoImpl::findDevice(deviceGuid.data());
+            return nil != MacOSDeviceInfoImpl::findDevice(guid.data());
         }
     }
     return false;
 }
 
-webrtc::VideoCaptureModule::DeviceInfo* CameraCaptureModule::createPlatformDeviceInfo()
+webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
 {
-    return new MacOSDeviceInfoImpl();
+    static const auto info = std::make_unique<MacOSDeviceInfoImpl>();
+    return info.get();
 }
 
-rtc::scoped_refptr<CameraCapturer> CameraCaptureModule::createPlatformCapturer(const std::string_view& deviceGuid)
+rtc::scoped_refptr<CameraCapturer> CameraManager::
+    createCapturer(std::string_view guid, const std::shared_ptr<Bricks::Logger>& logger)
 {
-    return MacOSCameraCapturer::create(deviceGuid);
+    return MacOSCameraCapturer::create(guid, logger);
 }
 
 } // namespace LiveKitCpp
@@ -84,7 +86,7 @@ uint32_t MacOSDeviceInfoImpl::NumberOfDevices()
     @autoreleasepool {
         auto devs = [AVCameraCapturer availableDevices];
         if (devs) {
-            return [devs count];
+            return static_cast<uint32_t>([devs count]);
         }
     }
     return 0U;
@@ -126,7 +128,7 @@ int32_t MacOSDeviceInfoImpl::GetDeviceName(uint32_t deviceNumber,
 int32_t MacOSDeviceInfoImpl::CreateCapabilityMap(const char* deviceUniqueIdUTF8)
 {
     _captureCapabilities = MacOSCameraCapturer::capabilities(deviceUniqueIdUTF8);
-    return _captureCapabilities.size();
+    return static_cast<int32_t>(_captureCapabilities.size());
 }
 
 }

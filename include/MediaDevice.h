@@ -19,9 +19,9 @@ namespace LiveKitCpp
 
 struct MediaDevice
 {
-    std::string _id;
     std::string _name;
-    bool empty() const noexcept { return _id.empty() && _name.empty(); }
+    std::string _guid;
+    bool empty() const noexcept { return _guid.empty() && _name.empty(); }
 };
 
 } // namespace LiveKitCpp

@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraVideoTrack.h"
+#include "CameraManager.h"
 #include "CameraCapturer.h"
 
 namespace LiveKitCpp
 {
 
 CameraVideoTrack::CameraVideoTrack(const std::string& id,
-                                   const std::weak_ptr<CameraCaptureModule>& module,
                                    webrtc::scoped_refptr<CameraVideoSource> source)
     : _id(id)
-    , _module(module)
     , _source(std::move(source))
     , _state(webrtc::MediaStreamTrackInterface::TrackState::kEnded)
 {
@@ -45,15 +44,23 @@ CameraVideoTrack::~CameraVideoTrack()
 void CameraVideoTrack::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                                        const rtc::VideoSinkWants& wants)
 {
-    if (_source) {
+    if (sink && _source) {
+        if (0U == _sinksCount.fetch_add(1U)) {
+            // create capturer
+            selectCapturer(_device());
+        }
         _source->AddOrUpdateSink(sink, wants);
     }
 }
 
 void CameraVideoTrack::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
-    if (_source) {
+    if (sink && _source) {
         _source->RemoveSink(sink);
+        if (1U == _sinksCount.fetch_sub(1U)) {
+            // destroy capturer
+            _source->setCapturer(nullptr);
+        }
     }
 }
 
@@ -82,6 +89,19 @@ void CameraVideoTrack::RegisterObserver(webrtc::ObserverInterface* observer)
 void CameraVideoTrack::UnregisterObserver(webrtc::ObserverInterface* observer)
 {
     _observers.remove(observer);
+}
+
+void CameraVideoTrack::selectCapturer(MediaDevice deviceInfo)
+{
+    if (_source && CameraManager::available()) {
+        bool ok = true;
+        if (deviceInfo._guid.empty()) {
+            ok = CameraManager::defaultDevice(deviceInfo);
+        }
+        if (ok) {
+            _source->setCapturer(CameraManager::createCapturer(deviceInfo._guid));
+        }
+    }
 }
 
 void CameraVideoTrack::changeState(webrtc::MediaStreamTrackInterface::TrackState state)

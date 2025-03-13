@@ -42,7 +42,6 @@ namespace LiveKitCpp
 {
 
 class WebRtcLogSink;
-class CameraCaptureModule;
 
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 {
@@ -53,8 +52,6 @@ public:
     const auto& timersQueue() const noexcept { return _timersQueue; }
     auto workingThread() const noexcept { return _workingThread.get(); }
     auto signalingThread() const noexcept { return _signalingThread.get(); }
-    const auto& cameraCaptureModule() const noexcept { return _cameraCaptureModule; }
-    MediaDevice defaultRecordingCameraDevice() const;
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;
     bool setRecordingAudioDevice(const MediaDevice& device);
@@ -63,7 +60,6 @@ public:
     MediaDevice playoutAudioDevice() const;
     std::vector<MediaDevice> recordingAudioDevices() const;
     std::vector<MediaDevice> playoutAudioDevices() const;
-    std::vector<MediaDevice> recordingCameraDevices() const;
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>
@@ -94,7 +90,6 @@ private:
     const std::unique_ptr<rtc::Thread> _workingThread;
     const std::unique_ptr<rtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
-    const std::shared_ptr<CameraCaptureModule> _cameraCaptureModule;
 };
 
 } // namespace LiveKitCpp

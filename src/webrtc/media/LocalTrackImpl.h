@@ -40,9 +40,9 @@ protected:
     LocalTrackImpl(std::string name, LocalTrackManager* manager,
                    const std::shared_ptr<Bricks::Logger>& logger = {});
     LocalTrackManager* manager() const noexcept { return _manager; }
-    virtual webrtc::scoped_refptr<TMediaTrack>
-        createMediaTrack(const std::string& id) = 0;
     virtual void requestAuthorization() {}
+    virtual webrtc::scoped_refptr<TMediaTrack> createMediaTrack(const std::string& id) = 0;
+    webrtc::scoped_refptr<TMediaTrack> mediaTrack() const noexcept { return _track(); }
 private:
     void notifyAboutMuted(bool mute) const;
     void checkAuthorization();

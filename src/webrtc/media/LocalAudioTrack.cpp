@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "LocalAudioTrack.h"
-#include "LocalTrackManager.h"
 #include "MediaAuthorization.h"
-#include <api/media_stream_interface.h>
 
 namespace {
 

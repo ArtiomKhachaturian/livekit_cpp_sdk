@@ -21,6 +21,7 @@
 #include "Utils.h"
 #include "rtc/ClientInfo.h"
 #ifdef WEBRTC_AVAILABLE
+#include "./Camera/CameraManager.h"
 #include "PeerConnectionFactory.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
@@ -94,7 +95,6 @@ public:
          const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents);
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
-    MediaDevice defaultRecordingCameraDevice() const;
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;
     bool setRecordingAudioDevice(const MediaDevice& device);
@@ -103,7 +103,6 @@ public:
     MediaDevice playoutAudioDevice() const;
     std::vector<MediaDevice> recordingAudioDevices() const;
     std::vector<MediaDevice> playoutAudioDevices() const;
-    std::vector<MediaDevice> recordingCameraDevices() const;
     template <typename TOutput>
     TOutput makeRoom(const Options& signalOptions) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -164,7 +163,11 @@ std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options& signalOpti
 
 MediaDevice LiveKitService::defaultRecordingCameraDevice() const
 {
-    return _impl->defaultRecordingCameraDevice();
+    MediaDevice dev;
+    if (CameraManager::defaultDevice(dev)) {
+        return dev;
+    }
+    return {};
 }
 
 MediaDevice LiveKitService::defaultRecordingAudioDevice() const
@@ -209,7 +212,7 @@ std::vector<MediaDevice> LiveKitService::playoutAudioDevices() const
 
 std::vector<MediaDevice> LiveKitService::recordingCameraDevices() const
 {
-    return _impl->recordingCameraDevices();
+    return CameraManager::devices();
 }
 
 LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -226,14 +229,6 @@ LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websockets
             logger->logError("failed to create of queue for media timers", g_logCategory);
         }
     }
-}
-
-MediaDevice LiveKitService::Impl::defaultRecordingCameraDevice() const
-{
-    if (_pcf) {
-        return _pcf->defaultRecordingCameraDevice();
-    }
-    return {};
 }
 
 MediaDevice LiveKitService::Impl::defaultRecordingAudioDevice() const
@@ -290,14 +285,6 @@ std::vector<MediaDevice> LiveKitService::Impl::playoutAudioDevices() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevices();
-    }
-    return {};
-}
-
-std::vector<MediaDevice> LiveKitService::Impl::recordingCameraDevices() const
-{
-    if (_pcf) {
-        return _pcf->recordingCameraDevices();
     }
     return {};
 }

@@ -26,6 +26,7 @@ public:
     void fillRequest(AddTrackRequest* request) const final;
 protected:
     webrtc::scoped_refptr<CameraVideoTrack> createMediaTrack(const std::string& id) final;
+    void requestAuthorization() final;
 };
 
 } // namespace LiveKitCpp

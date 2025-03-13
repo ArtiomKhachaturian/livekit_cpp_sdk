@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraTrack.h"
+#include "MediaAuthorization.h"
 
 namespace LiveKitCpp
 {
@@ -35,6 +36,12 @@ void CameraTrack::fillRequest(AddTrackRequest* request) const
     if (request) {
         request->_source = TrackSource::Camera;
     }
+}
+
+void CameraTrack::requestAuthorization()
+{
+    LocalVideoTrack<CameraVideoTrack>::requestAuthorization();
+    MediaAuthorization::query(MediaAuthorizationKind::Camera, true, logger());
 }
 
 } // namespace LiveKitCpp

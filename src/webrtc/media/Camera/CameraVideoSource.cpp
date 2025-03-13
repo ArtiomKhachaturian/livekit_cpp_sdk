@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraVideoSource.h"
-#include "CameraCaptureModule.h"
+#include "CameraManager.h"
 #include "CameraCapturer.h"
 #include "Utils.h"
 #include <api/video/i420_buffer.h>
@@ -36,7 +36,7 @@ namespace LiveKitCpp
 
 CameraVideoSource::CameraVideoSource()
     : _adapter(2)
-    , _capability(CameraCaptureModule::defaultCapability())
+    , _capability(CameraManager::defaultCapability())
     , _state(webrtc::MediaSourceInterface::kEnded)
 {
 }
@@ -55,9 +55,10 @@ void CameraVideoSource::setCapturer(rtc::scoped_refptr<CameraCapturer> capturer)
             prev->DeRegisterCaptureDataCallback();
             prev->setObserver(nullptr);
         }
-        if (capturer) {
-            capturer->setObserver(this);
+        _capturer = std::move(capturer);
+        if (const auto& capturer = _capturer.constRef()) {
             capturer->RegisterCaptureDataCallback(this);
+            capturer->setObserver(this);
             if (_broadcaster.frame_wanted()) {
                 capturer->StartCapture(_capability());
             }
@@ -248,7 +249,7 @@ bool CameraVideoSource::adaptFrame(int width, int height, int64_t timeUs,
     }
 
     cropX = (width - cropWidth) / 2;
-    cropY = (height - cropWidth) / 2;
+    cropY = (height - cropHeight) / 2;
     return true;
 }
 

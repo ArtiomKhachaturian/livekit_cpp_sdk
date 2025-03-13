@@ -18,6 +18,7 @@
 #include "RoomUtils.h"
 #include "./Camera/CameraVideoTrack.h"
 #include "./Camera/CameraVideoSource.h"
+#include "./Camera/CameraManager.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
@@ -139,14 +140,14 @@ webrtc::scoped_refptr<CameraVideoTrack> RTCEngine::createCamera(const std::strin
 {
     webrtc::scoped_refptr<CameraVideoTrack> track;
     if (_pcf) {
-        if (const auto& ccm = _pcf->cameraCaptureModule()) {
+        if (CameraManager::available()) {
             logInfo("request to create '" + label + "' video track");
             auto source = webrtc::make_ref_counted<CameraVideoSource>();
-            track = webrtc::make_ref_counted<CameraVideoTrack>(label, ccm, std::move(source));
+            track = webrtc::make_ref_counted<CameraVideoTrack>(label, std::move(source));
             logVerbose("video track '" + label + "' has been created");
         }
         else {
-            logError("unable to create video track '" + label + "': camera capturers is not available");
+            logError("unable to create video track '" + label + "': camera manager is not available");
         }
     }
     return track;

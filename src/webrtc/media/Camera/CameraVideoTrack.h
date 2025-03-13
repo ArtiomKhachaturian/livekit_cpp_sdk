@@ -13,21 +13,18 @@
 // limitations under the License.
 #pragma once // CameraVideoTrack.h
 #include "CameraVideoSource.h"
+#include "MediaDevice.h"
 #include <api/media_stream_interface.h>
 #include <memory>
 
 namespace LiveKitCpp
 {
 
-class CameraCaptureModule;
-
 class CameraVideoTrack : public webrtc::VideoTrackInterface,
                          private webrtc::ObserverInterface
 {
 public:
-    CameraVideoTrack(const std::string& id,
-                     const std::weak_ptr<CameraCaptureModule>& module,
-                     webrtc::scoped_refptr<CameraVideoSource> source);
+    CameraVideoTrack(const std::string& id, webrtc::scoped_refptr<CameraVideoSource> source);
     ~CameraVideoTrack() override;
     // impl. of webrtc::VideoTrackInterface
     void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
@@ -44,16 +41,18 @@ public:
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
+    void selectCapturer(MediaDevice device = {});
     void changeState(webrtc::MediaStreamTrackInterface::TrackState state);
     // impl. of webrtc::ObserverInterface
     void OnChanged() final;
 private:
     const std::string _id;
     const webrtc::scoped_refptr<CameraVideoSource> _source;
-    const std::weak_ptr<CameraCaptureModule> _module;
     std::atomic<webrtc::MediaStreamTrackInterface::TrackState> _state;
     std::atomic_bool _enabled = true;
     Bricks::Listeners<webrtc::ObserverInterface*> _observers;
+    Bricks::SafeObj<MediaDevice> _device;
+    std::atomic<size_t> _sinksCount = 0U;
 };
 
 } // namespace LiveKitCpp
