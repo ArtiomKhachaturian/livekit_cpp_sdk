@@ -17,9 +17,7 @@
 #ifdef _WIN32
 #include <atlbase.h>
 #include <Windows.h>
-#include <wbemidl.h>
 #else
-#include <uuid/uuid.h>
 #include <pthread.h>
 #ifndef __APPLE__
 #include <sys/prctl.h>
@@ -27,22 +25,11 @@
 #endif
 #ifdef WEBRTC_AVAILABLE
 #include <api/task_queue/default_task_queue_factory.h>
+#include <rtc_base/crypto_random.h>
 #include <thread>
 #endif
 #include <codecvt>
 #include <locale>
-
-#ifdef WIN32 // for UUID
-extern "C" {
-    #include <Rpc.h>
-}
-#pragma comment(lib, "Rpcrt4.lib")
-#endif
-
-#ifdef WIN32
-typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOEXW);
-#pragma comment(lib, "wbemuuid.lib")
-#endif
 
 namespace {
 
@@ -164,27 +151,6 @@ std::string fromWideChar(const std::wstring& w)
     return {};
 }
 
-std::string makeUuid()
-{
-    std::string res;
-#ifdef WIN32
-    UUID uuid;
-    if (RPC_S_UUID_NO_ADDRESS != ::UuidCreate(&uuid)) {
-        unsigned char* str = nullptr;
-        if (RPC_S_UUID_NO_ADDRESS != ::UuidToStringA(&uuid, &str)) {
-            res = std::string((char*)str);
-            ::RpcStringFreeA(&str);
-        }
-    }
-#else //linux way
-    uuid_t uuid;
-    uuid_generate_random(uuid);
-    res.resize(36U);
-    uuid_unparse(uuid, res.data());
-#endif
-    return res;
-}
-
 template<typename TPCEnum>
 inline std::string stateToString(TPCEnum state) { return {}; }
 
@@ -269,6 +235,11 @@ inline std::string stateToString(webrtc::TaskQueueBase::DelayPrecision precision
             break;
     }
     return {};
+}
+
+std::string makeUuid()
+{
+    return rtc::CreateRandomUuid();
 }
 
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,

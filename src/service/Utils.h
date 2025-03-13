@@ -53,14 +53,18 @@ std::string modelIdentifier();
 // wifi, wired, cellular, vpn, empty if not known
 NetworkType activeNetworkType();
 std::string fromWideChar(const std::wstring& w);
-std::string makeUuid();
 
 template <unsigned flag>
 inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }
 
+inline constexpr uint64_t clueToUint64(int32_t i32hw, int32_t i32lw) { return (uint64_t(i32hw) << 32) | i32lw; }
+inline constexpr int32_t extractHiWord(uint64_t i64) { return int32_t(i64 >> 32); }
+inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xffffffffUL); }
+
 std::string makeStateChangesString(TransportState from, TransportState to);
 
 #ifdef WEBRTC_AVAILABLE
+std::string makeUuid();
 // human readable string for reflect of changes for some types
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,
                                    webrtc::PeerConnectionInterface::PeerConnectionState to);

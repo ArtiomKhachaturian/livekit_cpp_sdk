@@ -16,4 +16,25 @@
 namespace LiveKitCpp
 {
 
+CameraTrack::CameraTrack(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger)
+    : LocalVideoTrack<CameraVideoTrack>("camera", manager, logger)
+{
+}
+
+webrtc::scoped_refptr<CameraVideoTrack> CameraTrack::createMediaTrack(const std::string& id)
+{
+    if (const auto m = manager()) {
+        return m->createCamera(id);
+    }
+    return {};
+}
+
+void CameraTrack::fillRequest(AddTrackRequest* request) const
+{
+    LocalVideoTrack<CameraVideoTrack>::fillRequest(request);
+    if (request) {
+        request->_source = TrackSource::Camera;
+    }
+}
+
 } // namespace LiveKitCpp

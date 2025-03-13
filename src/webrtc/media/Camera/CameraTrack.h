@@ -21,7 +21,11 @@ namespace LiveKitCpp
 class CameraTrack : public LocalVideoTrack<CameraVideoTrack>
 {
 public:
-    //CameraTrack(
+    CameraTrack(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
+    // impl. of LocalTrack
+    void fillRequest(AddTrackRequest* request) const final;
+protected:
+    webrtc::scoped_refptr<CameraVideoTrack> createMediaTrack(const std::string& id) final;
 };
 
 } // namespace LiveKitCpp

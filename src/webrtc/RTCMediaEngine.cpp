@@ -33,6 +33,7 @@ namespace LiveKitCpp
 RTCMediaEngine::RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
     , _microphone(this, true, logger)
+    , _camera(this, logger)
 {
 }
 
@@ -45,11 +46,13 @@ RTCMediaEngine::~RTCMediaEngine()
 void RTCMediaEngine::addLocalResourcesToTransport()
 {
     _microphone.addToTransport();
+    _camera.addToTransport();
 }
 
 void RTCMediaEngine::cleanupLocalResources()
 {
     _microphone.resetMedia();
+    _camera.resetMedia();
     _pendingLocalMedias({});
 }
 
@@ -104,6 +107,9 @@ LocalTrack* RTCMediaEngine::localTrack(const std::string& id, bool cid)
         if (id == (cid ? _microphone.cid() : _microphone.sid())) {
             return &_microphone;
         }
+        if (id == (cid ? _camera.cid() : _camera.sid())) {
+            return &_camera;
+        }
     }
     return nullptr;
 }
@@ -118,7 +124,7 @@ LocalTrack* RTCMediaEngine::localTrack(const rtc::scoped_refptr<webrtc::RtpSende
 
 void RTCMediaEngine::sendAddTrack(const LocalTrack* track)
 {
-    if (track && track->live() && !closed()) {
+    if (track && track->canPublish() && !closed()) {
         AddTrackRequest request;
         track->fillRequest(&request);
         if (SendResult::TransportError == sendAddTrack(request)) {
@@ -182,6 +188,7 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
             // publish local tracks
             sendAddTrack(&_microphone);
+            sendAddTrack(&_camera);
             break;
         case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
             cleanupLocalResources();

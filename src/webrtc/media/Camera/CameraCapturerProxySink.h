@@ -14,8 +14,10 @@
 #pragma once
 #include "CameraObserver.h"
 #include <api/video/video_sink_interface.h>
+#include <api/video/video_frame.h>
 
-namespace LiveKitCpp {
+namespace LiveKitCpp
+{
 
 class CameraCapturerProxySink : public CameraObserver,
                                 public rtc::VideoSinkInterface<webrtc::VideoFrame>

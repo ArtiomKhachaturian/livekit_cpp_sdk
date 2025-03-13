@@ -15,6 +15,7 @@
 #include "Loggable.h"
 #include "TransportManagerListener.h"
 #include "LocalAudioTrack.h"
+#include "./Camera/CameraTrack.h"
 #include "LocalTrackManager.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
@@ -51,6 +52,8 @@ protected:
 public:
     void unmuteMicrophone(bool unmute = true) { muteMicrophone(!unmute); }
     void muteMicrophone(bool mute = true) { _microphone.mute(mute); }
+    void unmuteCamera(bool unmute = true) { muteCamera(!unmute); }
+    void muteCamera(bool mute = true) { _camera.mute(mute); }
 protected:
     RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
@@ -98,6 +101,7 @@ private:
     Bricks::SafeObj<DataChannels> _remoteDCs;
     Bricks::SafeObj<RemoteTracks> _remoteTracks;
     LocalAudioTrack _microphone;
+    CameraTrack _camera;
 };
 
 } // namespace LiveKitCpp

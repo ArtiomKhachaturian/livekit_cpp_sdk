@@ -16,6 +16,8 @@
 #include "PeerConnectionFactory.h"
 #include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
+#include "./Camera/CameraVideoTrack.h"
+#include "./Camera/CameraVideoSource.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
@@ -111,7 +113,7 @@ bool RTCEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStream
     return RTCMediaEngine::removeLocalMedia(track);
 }
 
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createAudio(const std::string& label)
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createMic(const std::string& label)
 {
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> track;
     if (_pcf) {
@@ -133,13 +135,19 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createAudio(const 
     return track;
 }
 
-webrtc::scoped_refptr<webrtc::VideoTrackInterface> RTCEngine::
-    createVideo(const std::string& label, const std::string& deviceId,
-                const webrtc::VideoCaptureCapability& capability)
+webrtc::scoped_refptr<CameraVideoTrack> RTCEngine::createCamera(const std::string& label)
 {
-    webrtc::scoped_refptr<webrtc::VideoTrackInterface> track;
+    webrtc::scoped_refptr<CameraVideoTrack> track;
     if (_pcf) {
-        logInfo("request to create '" + label + "' video track");
+        if (const auto& ccm = _pcf->cameraCaptureModule()) {
+            logInfo("request to create '" + label + "' video track");
+            auto source = webrtc::make_ref_counted<CameraVideoSource>();
+            track = webrtc::make_ref_counted<CameraVideoTrack>(label, ccm, std::move(source));
+            logVerbose("video track '" + label + "' has been created");
+        }
+        else {
+            logError("unable to create video track '" + label + "': camera capturers is not available");
+        }
     }
     return track;
 }

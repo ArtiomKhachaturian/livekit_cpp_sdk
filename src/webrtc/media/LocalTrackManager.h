@@ -26,15 +26,15 @@ class VideoTrackInterface;
 namespace LiveKitCpp
 {
 
+class CameraVideoTrack;
+
 class LocalTrackManager : public TrackManager
 {
 public:
     virtual bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) = 0;
     virtual bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) = 0;
-    virtual webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label) = 0;
-    virtual webrtc::scoped_refptr<webrtc::VideoTrackInterface>
-        createVideo(const std::string& label, const std::string& deviceId = {},
-                    const webrtc::VideoCaptureCapability& capability = {}) = 0;
+    virtual webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const std::string& label) = 0;
+    virtual webrtc::scoped_refptr<CameraVideoTrack> createCamera(const std::string& label) = 0;
 protected:
     ~LocalTrackManager() override = default;
 };

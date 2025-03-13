@@ -52,10 +52,8 @@ protected:
     // impl. or overrides of RTCMediaEngine
     bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
     bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createAudio(const std::string& label) final;
-    webrtc::scoped_refptr<webrtc::VideoTrackInterface>
-        createVideo(const std::string& label, const std::string& deviceId,
-                    const webrtc::VideoCaptureCapability& capability) final;
+    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const std::string& label) final;
+    webrtc::scoped_refptr<CameraVideoTrack> createCamera(const std::string& label) final;
     SendResult sendAddTrack(const AddTrackRequest& request) const final;
     SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
     bool closed() const final;

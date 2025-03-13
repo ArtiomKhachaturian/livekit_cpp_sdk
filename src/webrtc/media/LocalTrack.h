@@ -25,7 +25,7 @@ class LocalTrack : public Bricks::LoggableS<Track>
 {
 public:
     // for publishing
-    virtual bool live() const noexcept = 0;
+    virtual bool canPublish() const noexcept = 0;
     virtual void fillRequest(AddTrackRequest* request) const = 0;
     // transport layer
     virtual void resetMedia(bool remove = true) = 0;

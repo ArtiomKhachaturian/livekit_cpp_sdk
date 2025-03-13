@@ -18,6 +18,7 @@
 #include "./Windows/WinCameraCapturer.h"
 #include "./Windows/WinCameraPool.h"
 #endif
+#include <modules/video_capture/video_capture_config.h>
 
 namespace LiveKitCpp
 {
@@ -53,6 +54,20 @@ std::shared_ptr<CameraCaptureModule> CameraCaptureModule::create()
         return std::shared_ptr<CameraCaptureModule>(new CameraCaptureModule(std::move(impl)));
     }
     return {};
+}
+
+webrtc::VideoCaptureCapability CameraCaptureModule::defaultCapability()
+{
+    webrtc::VideoCaptureCapability capability;
+    capability.width = webrtc::videocapturemodule::kDefaultWidth;
+    capability.height = webrtc::videocapturemodule::kDefaultHeight;
+    capability.maxFPS = 30;
+#ifdef __APPLE__
+    capability.videoType = webrtc::VideoType::kNV12;
+#else
+    capability.videoType = webrtc::VideoType::kI420;
+#endif
+    return capability;
 }
 
 rtc::scoped_refptr<webrtc::VideoCaptureModule> CameraCaptureModule::createCapturer(const std::string_view& deviceGuid,

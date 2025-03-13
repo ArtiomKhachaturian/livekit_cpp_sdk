@@ -51,8 +51,9 @@ public:
     static webrtc::scoped_refptr<PeerConnectionFactory> Create(bool audioProcessing,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& timersQueue() const noexcept { return _timersQueue; }
-    rtc::Thread* workingThread() const noexcept { return _workingThread.get(); }
-    rtc::Thread* signalingThread() const noexcept { return _signalingThread.get(); }
+    auto workingThread() const noexcept { return _workingThread.get(); }
+    auto signalingThread() const noexcept { return _signalingThread.get(); }
+    const auto& cameraCaptureModule() const noexcept { return _cameraCaptureModule; }
     MediaDevice defaultRecordingCameraDevice() const;
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;

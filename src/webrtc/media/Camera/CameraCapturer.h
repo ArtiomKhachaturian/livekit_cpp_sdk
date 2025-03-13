@@ -40,7 +40,7 @@ public:
     void DeRegisterCaptureDataCallback() final;
     int32_t SetCaptureRotation(webrtc::VideoRotation rotation) final;
     bool SetApplyRotation(bool enable) final;
-    bool GetApplyRotation() final { return _applyRotation.load(std::memory_order_relaxed); }
+    bool GetApplyRotation() final { return _applyRotation; }
     // Returns the name of the device used by this module
     const char* CurrentDeviceName() const final { return currentDeviceName().c_str(); }
 protected:

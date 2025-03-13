@@ -53,7 +53,7 @@ void LocalAudioTrack::requestAuthorization()
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrack::createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
-        return m->createAudio(id);
+        return m->createMic(id);
     }
     return {};
 }

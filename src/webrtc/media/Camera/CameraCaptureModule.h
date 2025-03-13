@@ -33,6 +33,7 @@ class CameraCaptureModule
 public:
     ~CameraCaptureModule();
     static std::shared_ptr<CameraCaptureModule> create();
+    static webrtc::VideoCaptureCapability defaultCapability();
     rtc::scoped_refptr<webrtc::VideoCaptureModule>
         createCapturer(const std::string_view& deviceGuid, CameraObserver* observer = nullptr) const;
     uint32_t numberOfDevices() const;

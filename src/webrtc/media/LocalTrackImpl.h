@@ -31,7 +31,7 @@ public:
     void resetMedia(bool remove = true) final;
     void addToTransport() final;
     void notifyThatMediaAddedToTransport() final;
-    bool live() const noexcept final;
+    bool canPublish() const noexcept final;
     void fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
     void mute(bool mute) final; // request media track creation if needed
@@ -113,13 +113,10 @@ inline void LocalTrackImpl<TMediaTrack>::notifyThatMediaAddedToTransport()
 }
 
 template<class TMediaTrack>
-inline bool LocalTrackImpl<TMediaTrack>::live() const noexcept
+inline bool LocalTrackImpl<TMediaTrack>::canPublish() const noexcept
 {
     LOCK_READ_SAFE_OBJ(_track);
-    if (const auto& track = _track.constRef()) {
-        return webrtc::MediaStreamTrackInterface::kLive == track->state();
-    }
-    return false;
+    return !_pendingPublish && nullptr != _track.constRef();
 }
 
 template<class TMediaTrack>
@@ -181,7 +178,7 @@ inline void LocalTrackImpl<TMediaTrack>::notifyAboutMuted(bool mute) const
 template<class TMediaTrack>
 inline void LocalTrackImpl<TMediaTrack>::checkAuthorization()
 {
-    if (live()) {
+    if (canPublish()) {
         requestAuthorization();
     }
 }

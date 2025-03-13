@@ -21,7 +21,6 @@ class CameraObserver
 {
 public:
     virtual void onStateChanged(CameraState state) = 0;
-
 protected:
     ~CameraObserver() = default;
 };
