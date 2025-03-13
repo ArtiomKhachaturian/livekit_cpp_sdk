@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Track.h
-#include <api/media_types.h>
-#include <api/scoped_refptr.h>
+#include "rtc/TrackType.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -23,9 +22,12 @@ class Track
 {
 public:
     virtual ~Track() = default;
+    // local or remote
     virtual bool remote() const noexcept = 0;
+    // live or ended, a track will never be live again after becoming ended
+    virtual bool live() const = 0;
     // type
-    virtual cricket::MediaType mediaType() const = 0;
+    virtual TrackType type() const = 0;
     // server track ID
     virtual std::string sid() const = 0;
     // mute/unmute state

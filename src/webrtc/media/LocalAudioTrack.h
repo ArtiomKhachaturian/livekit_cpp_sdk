@@ -22,7 +22,7 @@ public:
     LocalAudioTrack(LocalTrackManager* manager, bool microphone = true,
                     const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of LocalTrack
-    cricket::MediaType mediaType() const noexcept { return cricket::MEDIA_TYPE_AUDIO; }
+    TrackType type() const final { return TrackType::Audio; }
     void fillRequest(AddTrackRequest* request) const final;
 protected:
     // impl. LocalTrackImpl

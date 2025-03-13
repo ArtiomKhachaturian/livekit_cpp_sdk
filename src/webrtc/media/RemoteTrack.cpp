@@ -25,17 +25,27 @@ RemoteTrack::RemoteTrack(TrackManager* manager,
 {
 }
 
-cricket::MediaType RemoteTrack::mediaType() const
+TrackType RemoteTrack::type() const
 {
     if (_receiver) {
-        return _receiver->media_type();
+        switch (_receiver->media_type()) {
+            case cricket::MEDIA_TYPE_AUDIO:
+                return TrackType::Audio;
+            case cricket::MEDIA_TYPE_VIDEO:
+                return TrackType::Video;
+            default:
+                break;
+        }
     }
-    return cricket::MEDIA_TYPE_UNSUPPORTED;
+    return TrackType::Data;
 }
 
-std::string RemoteTrack::sid() const
+bool RemoteTrack::live() const
 {
-    return _sid;
+    if (const auto track = raw()) {
+        return webrtc::MediaStreamTrackInterface::kLive == track->state();
+    }
+    return false;
 }
 
 void RemoteTrack::mute(bool mute)

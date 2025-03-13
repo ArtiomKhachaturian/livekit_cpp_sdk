@@ -22,7 +22,7 @@ class LocalVideoTrack : public LocalTrackImpl<TMediaTrack>
 {
 public:
     // impl. of LocalTrack
-    cricket::MediaType mediaType() const noexcept { return cricket::MEDIA_TYPE_VIDEO; }
+    TrackType type() const final { return TrackType::Video; }
 protected:
     LocalVideoTrack(std::string name, LocalTrackManager* manager,
                     const std::shared_ptr<Bricks::Logger>& logger = {});

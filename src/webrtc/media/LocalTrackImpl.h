@@ -34,6 +34,7 @@ public:
     bool canPublish() const noexcept final;
     void fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
+    bool live() const final;
     void mute(bool mute) final; // request media track creation if needed
     bool muted() const final { return _muted; }
 protected:
@@ -123,24 +124,21 @@ template<class TMediaTrack>
 inline void LocalTrackImpl<TMediaTrack>::fillRequest(AddTrackRequest* request) const
 {
     if (request) {
-        switch (mediaType()) {
-            case cricket::MEDIA_TYPE_AUDIO:
-                request->_type = TrackType::Audio;
-                break;
-            case cricket::MEDIA_TYPE_VIDEO:
-                request->_type = TrackType::Video;
-                break;
-            case cricket::MEDIA_TYPE_DATA:
-                request->_type = TrackType::Data;
-                break;
-            default:
-                break;
-        }
+        request->_type = type();
         request->_cid = cid();
         request->_name = name();
         request->_muted = muted();
         request->_sid = sid();
     }
+}
+
+template<class TMediaTrack>
+inline bool LocalTrackImpl<TMediaTrack>::live() const
+{
+    if (const auto track = mediaTrack()) {
+        return webrtc::MediaStreamTrackInterface::kLive == track->state();
+    }
+    return false;
 }
 
 template<class TMediaTrack>

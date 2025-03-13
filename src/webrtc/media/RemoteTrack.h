@@ -26,8 +26,9 @@ public:
     RemoteTrack(TrackManager* manager, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver);
     // impl. of Track
     bool remote() const noexcept final { return true; }
-    cricket::MediaType mediaType() const final;
-    std::string sid() const final;
+    TrackType type() const final;
+    bool live() const final;
+    std::string sid() const final { return _sid; }
     void mute(bool mute) final;
     bool muted() const final;
 private:
