@@ -30,11 +30,11 @@ inline rtc::scoped_refptr<const webrtc::I420BufferInterface> toI420(const webrtc
 }
 
 inline std::string makeCapturerError(int code, const std::string& what = {}) {
-    std::string desc = "camera capturer error - code #" + std::to_string(code);
-    if (!what.empty()) {
-        desc += ": " + what;
+    std::string errorCode = "code #" + std::to_string(code);
+    if (what.empty()) {
+        return "capturer error - " + errorCode;
     }
-    return desc;
+    return what + ": " + errorCode;
 }
 
 }
@@ -233,7 +233,7 @@ bool CameraVideoSource::start(const rtc::scoped_refptr<CameraCapturer>& capturer
     if (capturer) {
         const auto code = capturer->StartCapture(capability);
         if (0 != code) {
-            logError(makeCapturerError(code, "start capturer failed"));
+            logError(makeCapturerError(code, "failed to start capturer"));
             return false;
         }
     }
@@ -245,7 +245,7 @@ bool CameraVideoSource::stop(const rtc::scoped_refptr<CameraCapturer>& capturer)
     if (capturer) {
         const auto code = capturer->StopCapture();
         if (0 != code) {
-            logError(makeCapturerError(code, "stop capturer failed"));
+            logError(makeCapturerError(code, "failed to stop capturer"));
             return false;
         }
     }
@@ -319,5 +319,9 @@ bool CameraVideoSource::adaptFrame(int width, int height, int64_t timeUs,
     return true;
 }
 
+std::string_view CameraVideoSource::logCategory() const
+{
+    return CameraManager::logCategory();
+}
 
 } // namespace LiveKitCpp

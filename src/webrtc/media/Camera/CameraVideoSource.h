@@ -88,6 +88,8 @@ private:
                     int& outWidth, int& outHeight,
                     int& cropWidth, int& cropHeight,
                     int& cropX, int& cropY);
+    // impl. of Bricks::LoggableS<>
+    std::string_view logCategory() const final;
 private:
     cricket::VideoAdapter _adapter;
     rtc::VideoBroadcaster _broadcaster;

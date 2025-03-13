@@ -151,6 +151,12 @@ bool CameraManager::bestMatchedCapability(std::string_view guid,
     return false;
 }
 
+std::string_view CameraManager::logCategory()
+{
+    static const std::string_view category("camera");
+    return category;
+}
+
 bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& orientation)
 {
     if (!guid.empty()) {

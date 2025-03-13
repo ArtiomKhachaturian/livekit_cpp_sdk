@@ -179,6 +179,10 @@ int32_t MacOSCameraCapturer::StopCapture()
                 if ([_impl stopCapture]) {
                     return 0;
                 }
+                break;
+            case CameraState::Stopping:
+            case CameraState::Stopped:
+                return 0;
             default:
                 break;
         }

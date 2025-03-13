@@ -16,6 +16,7 @@
 #include "Utils.h"
 #include "Logger.h"
 #include "./Camera/CameraObserver.h"
+#include "./Camera/CameraManager.h"
 
 @implementation MacOSCameraCapturerDelegate {
     LiveKitCpp::MacOSCameraCapturer* _capturer;
@@ -42,6 +43,7 @@
     @synchronized (self) {
         _capturer = nullptr;
         _observer = nullptr;
+        _logger = nullptr;
     }
 }
 
@@ -73,13 +75,18 @@
         capturer:(AVCameraCapturer*) capturer {
 #pragma unused(capturer)
     if (fatal) {
-        if (_logger) {
-            _logger->logError(LiveKitCpp::toString(error), "camera_delegate_mac");
-        }
         [self notifyAboutChanges:LiveKitCpp::CameraState::Stopped];
     }
-    else if (_logger) {
-        _logger->logWarning(LiveKitCpp::toString(error), "camera_delegate_mac");
+    @synchronized (self) {
+        if (_logger) {
+            const auto errorStr = LiveKitCpp::toString(error);
+            if (fatal) {
+                _logger->logError(errorStr, LiveKitCpp::CameraManager::logCategory());
+            }
+            else {
+                _logger->logWarning(errorStr, LiveKitCpp::CameraManager::logCategory());
+            }
+        }
     }
 }
 

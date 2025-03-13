@@ -138,6 +138,11 @@ void CameraVideoTrack::changeState(webrtc::MediaStreamTrackInterface::TrackState
     }
 }
 
+std::string_view CameraVideoTrack::logCategory() const
+{
+    return CameraManager::logCategory();
+}
+
 void CameraVideoTrack::OnChanged()
 {
     if (_source) {

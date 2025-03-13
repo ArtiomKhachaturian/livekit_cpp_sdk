@@ -55,6 +55,7 @@ public:
                                       const webrtc::VideoCaptureCapability& requested,
                                       webrtc::VideoCaptureCapability& resulting);
     // common
+    static std::string_view logCategory();
     // Gets clockwise angle the captured frames should be rotated in order
     // to be displayed correctly on a normally rotated display.
     static bool orientation(std::string_view guid, webrtc::VideoRotation& orientation);

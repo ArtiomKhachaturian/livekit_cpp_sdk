@@ -49,6 +49,8 @@ private:
     void setSourceCapturer(MediaDevice device = {});
     void resetSourceCapturer();
     void changeState(webrtc::MediaStreamTrackInterface::TrackState state);
+    // impl. of Bricks::LoggableS<>
+    std::string_view logCategory() const final;
     // impl. of webrtc::ObserverInterface
     void OnChanged() final;
 private:
