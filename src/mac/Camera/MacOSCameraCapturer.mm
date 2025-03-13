@@ -34,7 +34,7 @@ namespace LiveKitCpp
 
 MacOSCameraCapturer::MacOSCameraCapturer(AVCaptureDevice* device,
                                          const std::shared_ptr<Bricks::Logger>& logger)
-    : CameraCapturer(localizedDeviceName(device))
+    : CameraCapturer(deviceInfo(device))
     , _device(device)
     , _delegate([[MacOSCameraCapturerDelegate alloc] initWithCapturer:this andLogger:logger])
     , _impl([[AVCameraCapturer alloc] initWithDelegate:_delegate])
@@ -132,7 +132,15 @@ std::string MacOSCameraCapturer::localizedDeviceName(AVCaptureDevice* device)
     if (device) {
         return fromNSString(device.localizedName);
     }
-    return std::string();
+    return {};
+}
+
+std::string MacOSCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
+{
+    if (device) {
+        return fromNSString(device.uniqueID);
+    }
+    return {};
 }
 
 void MacOSCameraCapturer::setObserver(CameraObserver* observer)
@@ -192,7 +200,7 @@ int32_t MacOSCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& set
             settings.interlaced = interlaced(_device.activeFormat.formatDescription);
             settings.width = dimensions.width;
             settings.height = dimensions.height;
-            settings.maxFPS = [_impl fps];
+            settings.maxFPS = static_cast<int32_t>([_impl fps]);
             return 0;
         }
     }
@@ -230,6 +238,14 @@ AVCaptureDeviceFormat* MacOSCameraCapturer::findClosestFormat(const webrtc::Vide
 std::optional<webrtc::ColorSpace> MacOSCameraCapturer::activeColorSpace() const
 {
     return std::nullopt; // not yet supported now
+}
+
+MediaDevice MacOSCameraCapturer::deviceInfo(AVCaptureDevice* device)
+{
+    if (device) {
+        return MediaDevice{localizedDeviceName(device), deviceUniqueIdUTF8(device)};
+    }
+    return {};
 }
 
 webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(OSType type)

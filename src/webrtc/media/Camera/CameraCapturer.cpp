@@ -18,8 +18,8 @@
 namespace LiveKitCpp
 {
 
-CameraCapturer::CameraCapturer(std::string currentDeviceName)
-    : _currentDeviceName(std::move(currentDeviceName))
+CameraCapturer::CameraCapturer(MediaDevice deviceInfo)
+    : _deviceInfo(std::move(deviceInfo))
 {
 }
 

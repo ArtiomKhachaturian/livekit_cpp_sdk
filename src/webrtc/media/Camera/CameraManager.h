@@ -60,6 +60,8 @@ public:
     static bool orientation(std::string_view guid, webrtc::VideoRotation& orientation);
     static rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
                                                              const std::shared_ptr<Bricks::Logger>& logger = {});
+    static rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDevice& dev,
+                                                             const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     static webrtc::VideoCaptureModule::DeviceInfo* deviceInfo();
 };

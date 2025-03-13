@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "Loggable.h"
 #include "CameraCapturerProxySink.h"
 #include "CameraObserver.h"
 #include "Listeners.h"
@@ -37,12 +38,13 @@ namespace LiveKitCpp
 class CameraCapturer;
 
 class CameraVideoSource : public webrtc::VideoTrackSourceInterface,
-                          private CameraCapturerProxySink
+                          private Bricks::LoggableS<CameraCapturerProxySink>
 {
 public:
-    CameraVideoSource();
+    CameraVideoSource(const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
     void setCapturer(rtc::scoped_refptr<CameraCapturer> capturer);
+    void setCapability(webrtc::VideoCaptureCapability capability);
     void enableBlackFrames(bool enable);
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
@@ -69,6 +71,13 @@ public:
     void OnDiscardedFrame() final;
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints) final;
 private:
+    static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
+                                                      std::string_view guid = {});
+    static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
+                                                      const rtc::scoped_refptr<CameraCapturer>& capturer);
+    bool start(const rtc::scoped_refptr<CameraCapturer>& capturer,
+               const webrtc::VideoCaptureCapability& capability) const;
+    bool stop(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
     bool applyRotation() const;
     void broadcast(const webrtc::VideoFrame& frame);
     void changeState(webrtc::MediaSourceInterface::SourceState state);

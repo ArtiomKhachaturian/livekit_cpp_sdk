@@ -52,6 +52,7 @@ public:
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(const char* deviceUniqueIdUTF8);
     static std::string localizedDeviceName(AVCaptureDevice* device);
+    static std::string deviceUniqueIdUTF8(AVCaptureDevice* device);
     // impl. of CameraCapturer
     void setObserver(CameraObserver* observer) final;
     // impl. of webrtc::VideoCaptureModule
@@ -65,6 +66,7 @@ private:
     rtc::scoped_refptr<webrtc::VideoFrameBuffer> createBuffer(CMSampleBufferRef sampleBuffer) const;
     AVCaptureDeviceFormat* findClosestFormat(const webrtc::VideoCaptureCapability& capability) const;
     std::optional<webrtc::ColorSpace> activeColorSpace() const;
+    static MediaDevice deviceInfo(AVCaptureDevice* device);
     static webrtc::VideoType fromMediaSubType(OSType type);
     static webrtc::VideoType fromMediaSubType(CMFormatDescriptionRef format);
     static bool interlaced(CMFormatDescriptionRef format);

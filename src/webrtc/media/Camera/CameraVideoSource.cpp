@@ -29,13 +29,22 @@ inline rtc::scoped_refptr<const webrtc::I420BufferInterface> toI420(const webrtc
     return {};
 }
 
+inline std::string makeCapturerError(int code, const std::string& what = {}) {
+    std::string desc = "camera capturer error - code #" + std::to_string(code);
+    if (!what.empty()) {
+        desc += ": " + what;
+    }
+    return desc;
+}
+
 }
 
 namespace LiveKitCpp
 {
 
-CameraVideoSource::CameraVideoSource()
-    : _adapter(2)
+CameraVideoSource::CameraVideoSource(const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<CameraCapturerProxySink>(logger)
+    , _adapter(2)
     , _capability(CameraManager::defaultCapability())
     , _state(webrtc::MediaSourceInterface::kEnded)
 {
@@ -50,8 +59,8 @@ void CameraVideoSource::setCapturer(rtc::scoped_refptr<CameraCapturer> capturer)
 {
     LOCK_WRITE_SAFE_OBJ(_capturer);
     if (capturer != _capturer.constRef()) {
-        if (auto prev = _capturer.take()) {
-            prev->StopCapture();
+        if (const auto& prev = _capturer.constRef()) {
+            stop(prev);
             prev->DeRegisterCaptureDataCallback();
             prev->setObserver(nullptr);
         }
@@ -59,10 +68,27 @@ void CameraVideoSource::setCapturer(rtc::scoped_refptr<CameraCapturer> capturer)
         if (const auto& capturer = _capturer.constRef()) {
             capturer->RegisterCaptureDataCallback(this);
             capturer->setObserver(this);
+            LOCK_WRITE_SAFE_OBJ(_capability);
+            _capability = bestMatched(_capability.constRef(), _capturer.constRef());
             if (_broadcaster.frame_wanted()) {
-                capturer->StartCapture(_capability());
+                start(capturer, _capability.constRef());
             }
         }
+    }
+}
+
+void CameraVideoSource::setCapability(webrtc::VideoCaptureCapability capability)
+{
+    LOCK_READ_SAFE_OBJ(_capturer);
+    const auto& capturer = _capturer.constRef();
+    capability = bestMatched(std::move(capability), capturer);
+    LOCK_READ_SAFE_OBJ(_capability);
+    if (capability != _capability.constRef()) {
+        if (capturer && capturer->CaptureStarted()) {
+            stop(capturer);
+            start(capturer, capability);
+        }
+        _capability = std::move(capability);
     }
 }
 
@@ -97,10 +123,7 @@ void CameraVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFra
         _broadcaster.AddOrUpdateSink(sink, wants);
         _adapter.OnSinkWants(_broadcaster.wants());
         if (frameWanted != _broadcaster.frame_wanted()) {
-            LOCK_READ_SAFE_OBJ(_capturer);
-            if (const auto& capturer = _capturer.constRef()) {
-                capturer->StartCapture(_capability());
-            }
+            start(_capturer(), _capability());
         }
     }
 }
@@ -111,10 +134,7 @@ void CameraVideoSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* 
         _broadcaster.RemoveSink(sink);
         _adapter.OnSinkWants(_broadcaster.wants());
         if (!_broadcaster.frame_wanted()) {
-            LOCK_READ_SAFE_OBJ(_capturer);
-            if (const auto& capturer = _capturer.constRef()) {
-                capturer->StopCapture();
-            }
+            stop(_capturer());
         }
     }
 }
@@ -184,6 +204,52 @@ void CameraVideoSource::OnConstraintsChanged(const webrtc::VideoTrackSourceConst
     for (const auto sink : _sinks.constRef()) {
         sink->OnConstraintsChanged(constraints);
     }*/
+}
+
+webrtc::VideoCaptureCapability CameraVideoSource::bestMatched(webrtc::VideoCaptureCapability capability,
+                                                              std::string_view guid)
+{
+    if (!guid.empty()) {
+        webrtc::VideoCaptureCapability matched;
+        if (CameraManager::bestMatchedCapability(guid, capability, matched)) {
+            return matched;
+        }
+    }
+    return capability;
+}
+
+webrtc::VideoCaptureCapability CameraVideoSource::bestMatched(webrtc::VideoCaptureCapability capability,
+                                                              const rtc::scoped_refptr<CameraCapturer>& capturer)
+{
+    if (capturer) {
+        return bestMatched(std::move(capability), capturer->guid());
+    }
+    return bestMatched(std::move(capability));
+}
+
+bool CameraVideoSource::start(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                              const webrtc::VideoCaptureCapability& capability) const
+{
+    if (capturer) {
+        const auto code = capturer->StartCapture(capability);
+        if (0 != code) {
+            logError(makeCapturerError(code, "start capturer failed"));
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CameraVideoSource::stop(const rtc::scoped_refptr<CameraCapturer>& capturer) const
+{
+    if (capturer) {
+        const auto code = capturer->StopCapture();
+        if (0 != code) {
+            logError(makeCapturerError(code, "stop capturer failed"));
+            return false;
+        }
+    }
+    return true;
 }
 
 bool CameraVideoSource::applyRotation() const

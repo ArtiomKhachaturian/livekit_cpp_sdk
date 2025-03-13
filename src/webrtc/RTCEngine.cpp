@@ -142,8 +142,8 @@ webrtc::scoped_refptr<CameraVideoTrack> RTCEngine::createCamera(const std::strin
     if (_pcf) {
         if (CameraManager::available()) {
             logInfo("request to create '" + label + "' video track");
-            auto source = webrtc::make_ref_counted<CameraVideoSource>();
-            track = webrtc::make_ref_counted<CameraVideoTrack>(label, std::move(source));
+            auto source = webrtc::make_ref_counted<CameraVideoSource>(logger());
+            track = webrtc::make_ref_counted<CameraVideoTrack>(label, std::move(source), logger());
             logVerbose("video track '" + label + "' has been created");
         }
         else {

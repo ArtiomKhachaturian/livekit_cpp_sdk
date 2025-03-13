@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include "SafeObj.h"
+#include "MediaDevice.h"
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture.h>
 #include <modules/video_capture/video_capture_config.h>
@@ -30,10 +31,8 @@ class CameraCapturer : public webrtc::VideoCaptureModule
 {
 public:
     ~CameraCapturer() override;
-    bool hasSink() const { return nullptr != _sink(); }
-    bool hasRawSink() const { return nullptr != _rawSink(); }
     virtual void setObserver(CameraObserver* /*observer*/ = nullptr) {}
-    const std::string& currentDeviceName() const { return _currentDeviceName; }
+    std::string_view guid() const { return _deviceInfo._guid; }
     // impl. of webrtc::VideoCaptureModule
     void RegisterCaptureDataCallback(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
     void RegisterCaptureDataCallback(webrtc::RawVideoSinkInterface* rawSink) final;
@@ -42,9 +41,11 @@ public:
     bool SetApplyRotation(bool enable) final;
     bool GetApplyRotation() final { return _applyRotation; }
     // Returns the name of the device used by this module
-    const char* CurrentDeviceName() const final { return currentDeviceName().c_str(); }
+    const char* CurrentDeviceName() const final { return _deviceInfo._name.c_str(); }
 protected:
-    CameraCapturer(std::string currentDeviceName);
+    CameraCapturer(MediaDevice deviceInfo);
+    bool hasSink() const { return nullptr != _sink(); }
+    bool hasRawSink() const { return nullptr != _rawSink(); }
     virtual bool doApplyRotation(bool enable);
     bool sendFrame(const webrtc::VideoFrame& frame);
     int32_t sendRawFrame(uint8_t* videoFrame, size_t videoFrameLength,
@@ -63,7 +64,7 @@ protected:
                          int64_t timeStampMicro = 0LL, uint16_t id = 0U,
                          const std::optional<webrtc::ColorSpace>& colorSpace = {});
 private:
-    const std::string _currentDeviceName;
+    const MediaDevice _deviceInfo;
     Bricks::SafeObj<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink = nullptr;
     Bricks::SafeObj<webrtc::RawVideoSinkInterface*> _rawSink = nullptr;
     // set if the frame should be rotated by the capture module

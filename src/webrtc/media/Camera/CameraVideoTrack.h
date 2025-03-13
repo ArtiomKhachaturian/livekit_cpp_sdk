@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraVideoTrack.h
+#include "Loggable.h"
 #include "CameraVideoSource.h"
 #include "MediaDevice.h"
 #include <api/media_stream_interface.h>
@@ -21,11 +22,15 @@ namespace LiveKitCpp
 {
 
 class CameraVideoTrack : public webrtc::VideoTrackInterface,
-                         private webrtc::ObserverInterface
+                         private Bricks::LoggableS<webrtc::ObserverInterface>
 {
 public:
-    CameraVideoTrack(const std::string& id, webrtc::scoped_refptr<CameraVideoSource> source);
+    CameraVideoTrack(const std::string& id,
+                     webrtc::scoped_refptr<CameraVideoSource> source,
+                     const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoTrack() override;
+    void setDevice(MediaDevice device = {});
+    void setCapability(webrtc::VideoCaptureCapability capability);
     // impl. of webrtc::VideoTrackInterface
     void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                          const rtc::VideoSinkWants& wants) final;
@@ -41,7 +46,8 @@ public:
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
-    void selectCapturer(MediaDevice device = {});
+    void setSourceCapturer(MediaDevice device = {});
+    void resetSourceCapturer();
     void changeState(webrtc::MediaStreamTrackInterface::TrackState state);
     // impl. of webrtc::ObserverInterface
     void OnChanged() final;

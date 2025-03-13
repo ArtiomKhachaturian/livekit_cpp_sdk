@@ -22,6 +22,8 @@ class CameraTrack : public LocalVideoTrack<CameraVideoTrack>
 {
 public:
     CameraTrack(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
+    void setDevice(MediaDevice device = {});
+    void setCapability(webrtc::VideoCaptureCapability capability);
     // impl. of LocalTrack
     void fillRequest(AddTrackRequest* request) const final;
 protected:

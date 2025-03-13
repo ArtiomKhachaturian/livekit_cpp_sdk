@@ -19,8 +19,10 @@ namespace LiveKitCpp
 {
 
 CameraVideoTrack::CameraVideoTrack(const std::string& id,
-                                   webrtc::scoped_refptr<CameraVideoSource> source)
-    : _id(id)
+                                   webrtc::scoped_refptr<CameraVideoSource> source,
+                                   const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<webrtc::ObserverInterface>(logger)
+    , _id(id)
     , _source(std::move(source))
     , _state(webrtc::MediaStreamTrackInterface::TrackState::kEnded)
 {
@@ -35,9 +37,27 @@ CameraVideoTrack::CameraVideoTrack(const std::string& id,
 CameraVideoTrack::~CameraVideoTrack()
 {
     if (_source) {
-        _source->setCapturer(nullptr);
+        resetSourceCapturer();
         _source->UnregisterObserver(this);
         changeState(webrtc::MediaStreamTrackInterface::TrackState::kEnded);
+    }
+}
+
+void CameraVideoTrack::setDevice(MediaDevice device)
+{
+    LOCK_WRITE_SAFE_OBJ(_device);
+    if (_device->_guid != device._guid) {
+        _device = std::move(device);
+        if (_sinksCount > 0U) {
+            setSourceCapturer(_device.constRef());
+        }
+    }
+}
+
+void CameraVideoTrack::setCapability(webrtc::VideoCaptureCapability capability)
+{
+    if (_source) {
+        _source->setCapability(capability);
     }
 }
 
@@ -47,7 +67,7 @@ void CameraVideoTrack::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFram
     if (sink && _source) {
         if (0U == _sinksCount.fetch_add(1U)) {
             // create capturer
-            selectCapturer(_device());
+            setSourceCapturer(_device());
         }
         _source->AddOrUpdateSink(sink, wants);
     }
@@ -59,7 +79,7 @@ void CameraVideoTrack::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* s
         _source->RemoveSink(sink);
         if (1U == _sinksCount.fetch_sub(1U)) {
             // destroy capturer
-            _source->setCapturer(nullptr);
+            resetSourceCapturer();
         }
     }
 }
@@ -91,7 +111,7 @@ void CameraVideoTrack::UnregisterObserver(webrtc::ObserverInterface* observer)
     _observers.remove(observer);
 }
 
-void CameraVideoTrack::selectCapturer(MediaDevice deviceInfo)
+void CameraVideoTrack::setSourceCapturer(MediaDevice deviceInfo)
 {
     if (_source && CameraManager::available()) {
         bool ok = true;
@@ -101,6 +121,13 @@ void CameraVideoTrack::selectCapturer(MediaDevice deviceInfo)
         if (ok) {
             _source->setCapturer(CameraManager::createCapturer(deviceInfo._guid));
         }
+    }
+}
+
+void CameraVideoTrack::resetSourceCapturer()
+{
+    if (_source) {
+        _source->setCapturer(nullptr);
     }
 }
 

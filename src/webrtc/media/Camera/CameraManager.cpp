@@ -161,4 +161,10 @@ bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& or
     return false;
 }
 
+rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDevice& dev,
+                                                                 const std::shared_ptr<Bricks::Logger>& logger)
+{
+    return createCapturer(dev._guid, logger);
+}
+
 } // namespace LiveKitCpp

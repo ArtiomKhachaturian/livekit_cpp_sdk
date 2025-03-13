@@ -22,6 +22,20 @@ CameraTrack::CameraTrack(LocalTrackManager* manager, const std::shared_ptr<Brick
 {
 }
 
+void CameraTrack::setDevice(MediaDevice device)
+{
+    if (const auto track = mediaTrack()) {
+        track->setDevice(std::move(device));
+    }
+}
+
+void CameraTrack::setCapability(webrtc::VideoCaptureCapability capability)
+{
+    if (const auto track = mediaTrack()) {
+        track->setCapability(std::move(capability));
+    }
+}
+
 webrtc::scoped_refptr<CameraVideoTrack> CameraTrack::createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
