@@ -74,9 +74,6 @@
            error:(NSError*) error
         capturer:(AVCameraCapturer*) capturer {
 #pragma unused(capturer)
-    if (fatal) {
-        [self notifyAboutChanges:LiveKitCpp::CameraState::Stopped];
-    }
     @synchronized (self) {
         if (_logger) {
             const auto errorStr = LiveKitCpp::toString(error);
@@ -87,6 +84,9 @@
                 _logger->logWarning(errorStr, LiveKitCpp::CameraManager::logCategory());
             }
         }
+    }
+    if (fatal) {
+        [self notifyAboutChanges:LiveKitCpp::CameraState::Stopped];
     }
 }
 
