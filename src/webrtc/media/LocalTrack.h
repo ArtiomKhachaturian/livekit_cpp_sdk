@@ -29,6 +29,7 @@ public:
     virtual void fillRequest(AddTrackRequest* request) const = 0;
     // transport layer
     virtual void resetMedia(bool remove = true) = 0;
+    virtual void addToTransport() = 0;
     virtual void notifyThatMediaAddedToTransport() = 0;
     // client track ID, equal to WebRTC track ID
     const std::string& cid() const noexcept { return _cid; }

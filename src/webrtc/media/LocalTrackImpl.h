@@ -29,6 +29,7 @@ public:
     ~LocalTrackImpl() override { LocalTrackImpl<TMediaTrack>::resetMedia(); }
     // impl. of LocalTrack
     void resetMedia(bool remove = true) final;
+    void addToTransport() final;
     void notifyThatMediaAddedToTransport() final;
     bool live() const noexcept final;
     void fillRequest(AddTrackRequest* request) const override;
@@ -77,6 +78,24 @@ inline void LocalTrackImpl<TMediaTrack>::resetMedia(bool remove)
         }
         if (remove && _manager) {
             _manager->removeLocalMedia(track);
+        }
+    }
+}
+
+template<class TMediaTrack>
+inline void LocalTrackImpl<TMediaTrack>::addToTransport()
+{
+    if (!muted() && _manager) {
+        LOCK_WRITE_SAFE_OBJ(_track);
+        if (!_track.constRef()) {
+            if (auto track = createMediaTrack(cid())) {
+                // create track by demand
+                track->set_enabled(true);
+                _pendingPublish = _manager->addLocalMedia(track);
+                if (_pendingPublish) {
+                    _track = std::move(track);
+                }
+            }
         }
     }
 }
@@ -134,13 +153,6 @@ inline void LocalTrackImpl<TMediaTrack>::mute(bool mute)
         bool sendNotification = false;
         {
             LOCK_WRITE_SAFE_OBJ(_track);
-            if (!mute && !_track.constRef() && _manager) {
-                if (auto track = createMediaTrack(cid())) {
-                    // create track by demand
-                    _pendingPublish = _manager->addLocalMedia(track);
-                    _track = std::move(track);
-                }
-            }
             if (const auto& track = _track.constRef()) {
                 const auto wasEnabled = track->enabled();
                 if (wasEnabled == mute) {

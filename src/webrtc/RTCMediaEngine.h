@@ -54,6 +54,7 @@ public:
 protected:
     RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
+    void addLocalResourcesToTransport();
     void cleanupLocalResources();
     void cleanupRemoteResources();
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> pendingLocalMedia();

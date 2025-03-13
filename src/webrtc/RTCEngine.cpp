@@ -361,8 +361,15 @@ void RTCEngine::onTrickle(const TrickleRequest& request)
 
 void RTCEngine::onTransportStateChanged(TransportState state)
 {
-    if (TransportState::Disconnected == state) {
-        cleanup(false);
+    switch (state) {
+        case TransportState::Connecting:
+            addLocalResourcesToTransport();
+            break;
+        case TransportState::Disconnected:
+            cleanup(false);
+            break;
+        default:
+            break;
     }
 }
 

@@ -42,6 +42,11 @@ RTCMediaEngine::~RTCMediaEngine()
     cleanupRemoteResources();
 }
 
+void RTCMediaEngine::addLocalResourcesToTransport()
+{
+    _microphone.addToTransport();
+}
+
 void RTCMediaEngine::cleanupLocalResources()
 {
     _microphone.resetMedia();
