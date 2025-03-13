@@ -67,6 +67,18 @@ protected:
     // impl. LocalTrackManager
     bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) override;
     bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) override;
+    // impl. of TransportManagerListener
+    void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
+    void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
+                       webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
+                       webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) override;
+    void onLocalTrackAddFailure(const std::string& id, cricket::MediaType,
+                                const std::vector<std::string>&, webrtc::RTCError) override;
+    void onLocalTrackRemoved(const std::string& id, cricket::MediaType) override;
+    void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
+    void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
+    void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) override;
+    void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) override;
 private:
     // search by cid or sid
     LocalTrack* localTrack(const std::string& id, bool cid);
@@ -76,18 +88,6 @@ private:
     // impl. of SignalServerListener
     void onTrackPublished(const TrackPublishedResponse& published) final;
     void onTrackUnpublished(const TrackUnpublishedResponse& unpublished) final;
-    // impl. of TransportManagerListener
-    void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
-                       webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
-                       webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) final;
-    void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
-    void onLocalTrackAddFailure(const std::string& id, cricket::MediaType,
-                                const std::vector<std::string>&, webrtc::RTCError) final;
-    void onLocalTrackRemoved(const std::string& id, cricket::MediaType) final;
-    void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
-    void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
-    void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
-    void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) final;
     // impl. LocalTrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
     // impl. of DataChannelListener

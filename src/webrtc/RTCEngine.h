@@ -68,6 +68,7 @@ private:
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const ReconnectResponse& response) const;
     // impl. of TransportManagerListener
+    void onNegotiationNeeded() final;
     void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
     void onIceCandidateGathered(SignalTarget target,

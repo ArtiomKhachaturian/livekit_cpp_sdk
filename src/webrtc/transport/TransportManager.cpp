@@ -122,12 +122,12 @@ bool TransportManager::setConfiguration(const webrtc::PeerConnectionInterface::R
 
 bool TransportManager::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
 {
-    return _publisher.addTrack(std::move(track));
-}
-
-bool TransportManager::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
-{
-    return _publisher.removeTrack(std::move(sender));
+    if (track) {
+        webrtc::RtpTransceiverInit init;
+        init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
+        return _publisher.addTransceiver(std::move(track), init);
+    }
+    return false;
 }
 
 bool TransportManager::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -276,23 +276,23 @@ void TransportManager::onSdpSetFailure(SignalTarget target, bool local, webrtc::
     }
 }
 
-void TransportManager::onLocalTrackAdded(SignalTarget target,
-                                         rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+void TransportManager::onTransceiverAdded(SignalTarget target,
+                                          rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    if (SignalTarget::Publisher == target) {
-        invoke(&TransportManagerListener::onLocalTrackAdded, std::move(sender));
+    if (SignalTarget::Publisher == target && transceiver) {
+        invoke(&TransportManagerListener::onLocalTrackAdded, transceiver->sender());
     }
 }
 
-void TransportManager::onLocalTrackAddFailure(SignalTarget target,
-                                              const std::string& id,
-                                              cricket::MediaType type,
-                                              const std::vector<std::string>& streamIds,
-                                              webrtc::RTCError error)
+void TransportManager::onTransceiverAddFailure(SignalTarget target,
+                                               const std::string& id,
+                                               cricket::MediaType type,
+                                               const webrtc::RtpTransceiverInit& init,
+                                               webrtc::RTCError error)
 {
     if (SignalTarget::Publisher == target) {
         invoke(&TransportManagerListener::onLocalTrackAddFailure, id, type,
-               streamIds, std::move(error));
+               init.stream_ids, std::move(error));
     }
 }
 

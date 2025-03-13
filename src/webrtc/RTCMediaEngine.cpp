@@ -101,6 +101,67 @@ bool RTCMediaEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaS
     return false;
 }
 
+void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+{
+    if (const auto track = localTrack(sender)) {
+        track->notifyThatMediaAddedToTransport();
+        sendAddTrack(track);
+    }
+}
+
+void RTCMediaEngine::onLocalTrackAddFailure(const std::string& id,
+                                            cricket::MediaType,
+                                            const std::vector<std::string>&,
+                                            webrtc::RTCError)
+{
+    if (const auto track = localTrack(id, true)) {
+        track->resetMedia();
+    }
+}
+
+void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
+{
+    if (const auto track = localTrack(id, true)) {
+        track->resetMedia(false);
+    }
+}
+
+void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+{
+    if (transceiver) {
+        TrackManager* manager = this;
+        auto track = std::make_unique<RemoteTrack>(manager, transceiver->receiver());
+        auto sid = track->sid();
+        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
+        _remoteTracks->insert(std::make_pair(std::move(sid), std::move(track)));
+    }
+}
+
+void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+{
+    if (receiver) {
+        const auto sid = receiver->id();
+        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
+        _remoteTracks->erase(sid);
+    }
+}
+
+void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
+{
+    if (channel) {
+        LOCK_WRITE_SAFE_OBJ(_localDCs);
+        addDataChannelToList(std::move(channel), _localDCs.ref());
+    }
+}
+
+void RTCMediaEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
+{
+    if (channel) {
+        LOCK_WRITE_SAFE_OBJ(_remoteDCs);
+        addDataChannelToList(std::move(channel), _remoteDCs.ref());
+    }
+}
+
 LocalTrack* RTCMediaEngine::localTrack(const std::string& id, bool cid)
 {
     if (!id.empty()) {
@@ -202,67 +263,6 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
             break;
         default:
             break;
-    }
- }
-
-void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
-{
-    if (const auto track = localTrack(sender)) {
-        track->notifyThatMediaAddedToTransport();
-        sendAddTrack(track);
-    }
-}
-
-void RTCMediaEngine::onLocalTrackAddFailure(const std::string& id,
-                                            cricket::MediaType,
-                                            const std::vector<std::string>&,
-                                            webrtc::RTCError)
-{
-    if (const auto track = localTrack(id, true)) {
-        track->resetMedia();
-    }
-}
-
-void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
-{
-    if (const auto track = localTrack(id, true)) {
-        track->resetMedia(false);
-    }
-}
-
-void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
-{
-    if (transceiver) {
-        TrackManager* manager = this;
-        auto track = std::make_unique<RemoteTrack>(manager, transceiver->receiver());
-        auto sid = track->sid();
-        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
-        _remoteTracks->insert(std::make_pair(std::move(sid), std::move(track)));
-    }
-}
-
-void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
-{
-    if (receiver) {
-        const auto sid = receiver->id();
-        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
-        _remoteTracks->erase(sid);
-    }
-}
-
-void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
-{
-    if (channel) {
-        LOCK_WRITE_SAFE_OBJ(_localDCs);
-        addDataChannelToList(std::move(channel), _localDCs.ref());
-    }
-}
-
-void RTCMediaEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
-{
-    if (channel) {
-        LOCK_WRITE_SAFE_OBJ(_remoteDCs);
-        addDataChannelToList(std::move(channel), _remoteDCs.ref());
     }
 }
 

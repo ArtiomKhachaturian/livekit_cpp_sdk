@@ -251,6 +251,13 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
+void RTCEngine::onNegotiationNeeded()
+{
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        pcManager->negotiate(true);
+    }
+}
+
 void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
     RTCMediaEngine::onPublisherOffer(desc);

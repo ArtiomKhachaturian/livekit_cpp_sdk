@@ -51,7 +51,6 @@ public:
     bool setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
-    bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
     bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     bool addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
@@ -70,13 +69,13 @@ private:
     void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
     void onSdpSet(SignalTarget target, bool local, const webrtc::SessionDescriptionInterface* desc) final;
     void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
-    void onLocalTrackAdded(SignalTarget target,
-                           rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
-    void onLocalTrackAddFailure(SignalTarget target,
-                                const std::string& id,
-                                cricket::MediaType type,
-                                const std::vector<std::string>& streamIds,
-                                webrtc::RTCError error) final;
+    void onTransceiverAdded(SignalTarget target,
+                            rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void onTransceiverAddFailure(SignalTarget target,
+                                 const std::string& id,
+                                 cricket::MediaType type,
+                                 const webrtc::RtpTransceiverInit& init,
+                                 webrtc::RTCError error) final;
     void onLocalTrackRemoved(SignalTarget target, const std::string& id, cricket::MediaType type,
                              const std::vector<std::string>&) final;
     void onLocalDataChannelCreated(SignalTarget target,
