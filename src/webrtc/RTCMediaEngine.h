@@ -15,7 +15,7 @@
 #include "Loggable.h"
 #include "TransportManagerListener.h"
 #include "LocalAudioTrack.h"
-#include "./Camera/CameraTrack.h"
+#include "CameraTrack.h"
 #include "LocalTrackManager.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"

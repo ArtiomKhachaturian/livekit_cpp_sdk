@@ -21,7 +21,7 @@
 #include "Utils.h"
 #include "rtc/ClientInfo.h"
 #ifdef WEBRTC_AVAILABLE
-#include "./Camera/CameraManager.h"
+#include "CameraManager.h"
 #include "PeerConnectionFactory.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"

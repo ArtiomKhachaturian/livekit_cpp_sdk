@@ -210,10 +210,10 @@ if (WEBRTC_AVAILABLE)
         ${WEBRTC_INCLUDE_DIR} 
         ${NLOHMANN_HDRS_DIR}
         ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}/camera
-        ${CMAKE_SOURCE_DIR}/src/webrtc 
-        ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
+        ${CMAKE_SOURCE_DIR}/src/webrtc
         ${CMAKE_SOURCE_DIR}/src/webrtc/transport
         ${CMAKE_SOURCE_DIR}/src/webrtc/media
+        ${CMAKE_SOURCE_DIR}/src/webrtc/media/camera
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp 
         ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
