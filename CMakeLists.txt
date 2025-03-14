@@ -26,6 +26,7 @@ endif(APPLE)
 # Generate C++ code from proto files
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
 find_package(absl REQUIRED)
+find_package(utf8_range REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
 
 function(recreateDir DIR)
@@ -43,37 +44,6 @@ function(downloadAndExtract ZIP_URL ZIP_FILE EXTRACT_DIR)
         file(ARCHIVE_EXTRACT INPUT ${ZIP_FILE} DESTINATION ${EXTRACT_DIR})
     endif()
 endfunction(downloadAndExtract)
-
-function(findOpenSSL)
-    find_package(OpenSSL)
-    if (${OpenSSL_FOUND})
-        message(STATUS "Found OpenSSL")
-    else()
-        set(OPENSSL_INCLUDE_DIRS $ENV{OPENSSL_INCLUDE_DIRS} CACHE PATH "Path to folder with OpenSSL headers")
-        set(OPENSSL_LIB_DIR $ENV{OPENSSL_LIB_DIR} CACHE PATH "Path to folder with OpenSSL libraries")
-        if (EXISTS ${OPENSSL_LIB_DIR})
-            set(OPENSSL_LIBS ssl crypto)
-            set(OPENSSL_LIBRARIES "")
-            foreach(OPENSSL_LIB ${OPENSSL_LIBS})
-                if (WIN32)
-                    set(OPENSSL_LIB "${OPENSSL_LIB_DIR}\\lib${OPENSSL_LIB}.lib")
-                else()
-                    set(OPENSSL_LIB "${OPENSSL_LIB_DIR}/lib${OPENSSL_LIB}.dylib")
-                endif()
-                if (EXISTS ${OPENSSL_LIB})
-                    list(APPEND OPENSSL_LIBRARIES ${OPENSSL_LIB})
-                else()
-                    message(FATAL_ERROR "OpenSSL library ${OPENSSL_LIB} was not found")
-                endif()
-            endforeach()
-            #string(REPLACE ";" ";" OPENSSL_LIBRARIES "${OPENSSL_LIBRARIES}")
-        else()
-            message(FATAL_ERROR "Not found OpenSSL, try to set the path to OpenSSL lib folder in the system variable OPENSSL_LIB_DIR")
-        endif()
-    endif()
-    set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES} PARENT_SCOPE)
-    set(OPENSSL_INCLUDE_DIRS ${OPENSSL_INCLUDE_DIRS} PARENT_SCOPE)
-endfunction(findOpenSSL)
 
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
 recreateDir(${GENERATED_DIR})
@@ -96,21 +66,6 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 
 # Generate .cpp and .h files from proto
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
-
-option(USE_ZAPHOYD_TPP_SOCKETS "Use of well-known Zaphoyd framework for websockets backend" ON)
-
-if (USE_ZAPHOYD_TPP_SOCKETS)
-    findOpenSSL()
-    option(ZAPHOYD_SHARED_IO_SERVICE "Common I/O worker thread for all websockets instances" ON)
-    set(TPP_ZIP_URL "https://github.com/zaphoyd/websocketpp/archive/refs/heads/master.zip")
-    set(TPP_SRC_DIR ${CMAKE_BINARY_DIR}/zaphoyd_tpp_src)
-    set(ASIO_ZIP_URL "https://sourceforge.net/projects/asio/files/asio/1.30.2%20%28Stable%29/asio-1.30.2.tar.gz/download")
-    set(ASIO_SRC_DIR ${CMAKE_BINARY_DIR}/asio_src)
-    downloadAndExtract(${TPP_ZIP_URL} ${CMAKE_BINARY_DIR}/zaphoyd_tpp.zip ${TPP_SRC_DIR})
-    downloadAndExtract(${ASIO_ZIP_URL} ${CMAKE_BINARY_DIR}/asio.zip ${ASIO_SRC_DIR})
-    set(TPP_HDRS_DIR ${TPP_SRC_DIR}/websocketpp-master)
-    set(ASIO_HDRS_DIR ${ASIO_SRC_DIR}/asio-1.30.2/include)
-endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # Create a static library
 add_library(${LIB_PROJECT_NAME} SHARED
@@ -140,7 +95,11 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
 # Link Protobuf library
 target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
 # Link abseil
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status 
+                      absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+# Link UFT8_range
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC utf8_range::utf8_validity utf8_range::utf8_range)
+
 # Generic attributes for the library
 set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (APPLE)
@@ -150,37 +109,6 @@ elseif(WIN32)
     target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 endif()
 target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
-
-# Websockets
-if (USE_ZAPHOYD_TPP_SOCKETS)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DUSE_ZAPHOYD_TPP_SOCKETS -DASIO_STANDALONE)
-    if (WIN32)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -D_WEBSOCKETPP_CPP11_STL_)
-    endif()
-    if (ZAPHOYD_SHARED_IO_SERVICE)
-        target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DWEBSOCKETS_TPP_SHARED_IO_SERVICE)
-    endif(ZAPHOYD_SHARED_IO_SERVICE)
-    target_include_directories(${LIB_PROJECT_NAME} PRIVATE ${TPP_HDRS_DIR} ${ASIO_HDRS_DIR} ${OPENSSL_INCLUDE_DIRS})
-    if (WIN32)
-        target_link_libraries(${LIB_PROJECT_NAME} PUBLIC "ws2_32.lib")
-    endif(WIN32)
-    target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${OPENSSL_LIBRARIES})
-endif(USE_ZAPHOYD_TPP_SOCKETS)
-
-# test application
-if (USE_ZAPHOYD_TPP_SOCKETS)
-    set(TEST_APP_NAME ${LIB_PROJECT_NAME}TestApp)
-    file(GLOB_RECURSE CPP_SOURCES ${CMAKE_SOURCE_DIR}/test/*.cpp)
-    file(GLOB_RECURSE CPP_HEADERS ${CMAKE_SOURCE_DIR}/test/*.h)
-
-    add_executable(${TEST_APP_NAME} 
-        ${CPP_HEADERS}
-        ${CPP_SOURCES}
-    )
-
-    target_include_directories(${TEST_APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_link_libraries(${TEST_APP_NAME} PRIVATE ${LIB_PROJECT_NAME})
-endif(USE_ZAPHOYD_TPP_SOCKETS)
 
 # install steps
 if (EXISTS ${CMAKE_INSTALL_PREFIX})
