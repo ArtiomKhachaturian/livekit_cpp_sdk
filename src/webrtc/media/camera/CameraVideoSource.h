@@ -14,15 +14,17 @@
 #pragma once
 #include "Loggable.h"
 #include "CameraCapturerProxySink.h"
-#include "Listeners.h"
+#include "AsyncListeners.h"
 #include "SafeScopedRefPtr.h"
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture_defines.h>
 #include <atomic>
 #include <memory>
-#include <optional>
 #include <unordered_map>
 
+namespace rtc {
+class Thread;
+}
 
 namespace LiveKitCpp
 {
@@ -36,8 +38,10 @@ class CameraVideoSource : public webrtc::VideoTrackSourceInterface,
     using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
                                             std::unique_ptr<VideoSinkBroadcast>>;
 public:
-    CameraVideoSource(const std::shared_ptr<Bricks::Logger>& logger = {});
+    CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
+                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
+    const auto& signalingThread() const noexcept { return _observers.thread(); }
     void setCapturer(rtc::scoped_refptr<CameraCapturer> capturer);
     void setCapability(webrtc::VideoCaptureCapability capability);
     bool enabled() const noexcept { return _enabled; }
@@ -79,8 +83,8 @@ private:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
+    AsyncListeners<webrtc::ObserverInterface*> _observers;
     Bricks::SafeObj<Broadcasters> _broadcasters;
-    Bricks::Listeners<webrtc::ObserverInterface*> _observers;
     SafeScopedRefPtr<CameraCapturer> _capturer;
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
     std::atomic_bool _enabled = true;

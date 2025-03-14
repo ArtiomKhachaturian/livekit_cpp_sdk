@@ -38,7 +38,7 @@ namespace {
 
 static const std::string_view g_pcfInit("PeerConnectionFactory_Init");
 
-inline std::unique_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
+inline std::shared_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
                                                         const absl::string_view& threadName,
                                                         const std::shared_ptr<Bricks::Logger>& logger = {})
 {
@@ -46,7 +46,7 @@ inline std::unique_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
         thread->SetName(threadName, thread.get());
         thread->AllowInvokesToThread(thread.get());
         if (thread->Start()) {
-            return thread;
+            return std::shared_ptr<rtc::Thread>(thread.release());
         }
         if (logger) {
             logger->logError("Failed to start of '" + std::string(threadName)
@@ -79,9 +79,9 @@ namespace LiveKitCpp
 {
 
 PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webrtcLogSink,
-                                             std::unique_ptr<rtc::Thread> networkThread,
-                                             std::unique_ptr<rtc::Thread> workingThread,
-                                             std::unique_ptr<rtc::Thread> signalingThread,
+                                             std::shared_ptr<rtc::Thread> networkThread,
+                                             std::shared_ptr<rtc::Thread> workingThread,
+                                             std::shared_ptr<rtc::Thread> signalingThread,
                                              webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl)
     : _timersQueue(createTaskQueue(webrtc::TaskQueueFactory::Priority::LOW, "timers_queue"))
     , _webrtcLogSink(std::move(webrtcLogSink))

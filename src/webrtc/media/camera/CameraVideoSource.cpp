@@ -32,8 +32,10 @@ inline std::string makeCapturerError(int code, const std::string& what = {}) {
 namespace LiveKitCpp
 {
 
-CameraVideoSource::CameraVideoSource(const std::shared_ptr<Bricks::Logger>& logger)
+CameraVideoSource::CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
+                                     const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<CameraCapturerProxySink>(logger)
+    , _observers(std::move(signalingThread))
     , _capability(CameraManager::defaultCapability())
     , _state(webrtc::MediaSourceInterface::kEnded)
 {

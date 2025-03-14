@@ -24,6 +24,7 @@ CameraVideoTrack::CameraVideoTrack(const std::string& id,
     : Bricks::LoggableS<webrtc::ObserverInterface>(logger)
     , _id(id)
     , _source(std::move(source))
+    , _observers(_source ? _source->signalingThread() : std::weak_ptr<rtc::Thread>())
     , _state(webrtc::MediaStreamTrackInterface::TrackState::kEnded)
 {
     if (_source) {
@@ -96,7 +97,11 @@ bool CameraVideoTrack::enabled() const
 
 bool CameraVideoTrack::set_enabled(bool enable)
 {
-    return _source && _source->setEnabled(enable);
+    if (_source && _source->setEnabled(enable)) {
+        _observers.invoke(&webrtc::ObserverInterface::OnChanged);
+        return true;
+    }
+    return false;
 }
 
 void CameraVideoTrack::RegisterObserver(webrtc::ObserverInterface* observer)

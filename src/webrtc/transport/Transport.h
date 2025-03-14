@@ -92,7 +92,7 @@ private:
     template<typename TState>
     bool changeAndLogState(TState newState, std::atomic<TState>& holder) const;
     // return NULL if there are not peer connection or peer connection factory
-    rtc::Thread* signalingThread() const noexcept;
+    std::shared_ptr<rtc::Thread> signalingThread() const noexcept;
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onFailure(webrtc::SdpType type, webrtc::RTCError error) final;

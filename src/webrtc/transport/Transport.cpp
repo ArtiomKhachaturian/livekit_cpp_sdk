@@ -445,10 +445,10 @@ bool Transport::changeAndLogState(TState newState, std::atomic<TState>& holder) 
     return false;
 }
 
-rtc::Thread* Transport::signalingThread() const noexcept
+std::shared_ptr<rtc::Thread> Transport::signalingThread() const noexcept
 {
     if (_pcf && _holder->peerConnection()) {
-        return _pcf->signalingThread();
+        return _pcf->signalingThread().lock();
     }
     return nullptr;
 }

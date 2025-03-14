@@ -56,8 +56,8 @@ private:
 private:
     const std::string _id;
     const webrtc::scoped_refptr<CameraVideoSource> _source;
+    AsyncListeners<webrtc::ObserverInterface*> _observers;
     std::atomic<webrtc::MediaStreamTrackInterface::TrackState> _state;
-    Bricks::Listeners<webrtc::ObserverInterface*> _observers;
     Bricks::SafeObj<MediaDevice> _device;
     std::atomic<size_t> _sinksCount = 0U;
 };

@@ -50,8 +50,7 @@ public:
     static webrtc::scoped_refptr<PeerConnectionFactory> Create(bool audioProcessing,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& timersQueue() const noexcept { return _timersQueue; }
-    auto workingThread() const noexcept { return _workingThread.get(); }
-    auto signalingThread() const noexcept { return _signalingThread.get(); }
+    std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;
     bool setRecordingAudioDevice(const MediaDevice& device);
@@ -79,16 +78,16 @@ public:
     void StopAecDump() final;
 protected:
     PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webrtcLogSink,
-                          std::unique_ptr<rtc::Thread> networkThread,
-                          std::unique_ptr<rtc::Thread> workingThread,
-                          std::unique_ptr<rtc::Thread> signalingThread,
+                          std::shared_ptr<rtc::Thread> networkThread,
+                          std::shared_ptr<rtc::Thread> workingThread,
+                          std::shared_ptr<rtc::Thread> signalingThread,
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl);
 private:
     const std::shared_ptr<webrtc::TaskQueueBase> _timersQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;
-    const std::unique_ptr<rtc::Thread> _networkThread;
-    const std::unique_ptr<rtc::Thread> _workingThread;
-    const std::unique_ptr<rtc::Thread> _signalingThread;
+    const std::shared_ptr<rtc::Thread> _networkThread;
+    const std::shared_ptr<rtc::Thread> _workingThread;
+    const std::shared_ptr<rtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
 };
 
