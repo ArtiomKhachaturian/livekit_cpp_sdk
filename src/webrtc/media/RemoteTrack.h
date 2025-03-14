@@ -24,6 +24,7 @@ class RemoteTrack : public Track
 {
 public:
     RemoteTrack(TrackManager* manager, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver);
+    static std::string sid(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     // impl. of Track
     bool remote() const noexcept final { return true; }
     TrackType type() const final;

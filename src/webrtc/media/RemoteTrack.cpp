@@ -21,8 +21,13 @@ RemoteTrack::RemoteTrack(TrackManager* manager,
                          rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
     : _manager(manager)
     , _receiver(std::move(receiver))
-    , _sid(_receiver ? _receiver->id() : std::string())
+    , _sid(sid(_receiver))
 {
+}
+
+std::string RemoteTrack::sid(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+{
+    return receiver ? receiver->id() : std::string();
 }
 
 TrackType RemoteTrack::type() const

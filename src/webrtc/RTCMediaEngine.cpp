@@ -130,10 +130,15 @@ void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceive
 {
     if (transceiver) {
         TrackManager* manager = this;
-        auto track = std::make_unique<RemoteTrack>(manager, transceiver->receiver());
-        auto sid = track->sid();
-        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
-        _remoteTracks->insert(std::make_pair(std::move(sid), std::move(track)));
+        auto sid = RemoteTrack::sid(transceiver->receiver());
+        if (!sid.empty()) {
+            auto track = std::make_unique<RemoteTrack>(manager, transceiver->receiver());
+            LOCK_WRITE_SAFE_OBJ(_remoteTracks);
+            _remoteTracks->insert(std::make_pair(std::move(sid), std::move(track)));
+        }
+        else {
+            logWarning("empty ID of received transceiver");
+        }
     }
 }
 

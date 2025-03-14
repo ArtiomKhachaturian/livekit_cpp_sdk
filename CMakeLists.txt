@@ -209,6 +209,7 @@ if (WEBRTC_AVAILABLE)
     target_include_directories(${PROJECT_NAME} PRIVATE 
         ${WEBRTC_INCLUDE_DIR} 
         ${NLOHMANN_HDRS_DIR}
+        ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}/camera
         ${CMAKE_SOURCE_DIR}/src/webrtc 
         ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER} 
         ${CMAKE_SOURCE_DIR}/src/webrtc/transport
