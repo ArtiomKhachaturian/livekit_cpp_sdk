@@ -20,6 +20,7 @@
 #include "WebsocketState.h"
 #include "WebsocketListener.h"
 #include "WebsocketOptions.h"
+#include "rtc/ClientInfo.h"
 #include "Utils.h"
 #include <atomic>
 
@@ -392,6 +393,21 @@ std::string toString(SDK sdk)
             break;
     }
     return "UNKNOWN";
+}
+
+ClientInfo::ClientInfo()
+{
+    _protocol = LIVEKIT_PROTOCOL_VERSION;
+}
+
+ClientInfo ClientInfo::defaultClientInfo()
+{
+    ClientInfo ci;
+    ci._os = operatingSystemName();
+    ci._osVersion = operatingSystemVersion();
+    ci._deviceModel = modelIdentifier();
+    ci._network = toString(activeNetworkType());
+    return ci;
 }
 
 } // namespace LiveKitCpp
