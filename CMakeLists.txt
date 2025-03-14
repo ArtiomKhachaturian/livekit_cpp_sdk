@@ -230,10 +230,11 @@ if (WEBRTC_AVAILABLE)
 endif()
 
 # Link Protobuf library
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Protobuf_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC protobuf::libprotobuf-lite protobuf::libprotobuf protobuf::libprotoc)
 # Link abseil
 target_link_libraries(${PROJECT_NAME} PUBLIC absl::base absl::strings absl::status 
                       absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/AbslAliasing.h)
 # Link UFT8_range
 target_link_libraries(${PROJECT_NAME} PUBLIC utf8_range::utf8_validity utf8_range::utf8_range)
 # Generic attributes for the library
@@ -242,7 +243,7 @@ if (APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit -framework CoreWLAN")
 elseif(WIN32)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
 endif()
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS 
     -DLIVEKIT_PROTOCOL_VERSION=${LIVEKIT_PROTOCOL_VERSION} 
