@@ -119,7 +119,9 @@ void ResponseInterceptor::parseBinary(const void* data, size_t dataLen)
                 case livekit::SignalResponse::kPong: // deprecated
                     if (response->has_pong()) {
                         logVerbose(formatVerboseMsg<livekit::Pong>());
-                        notify(&SignalServerListener::onPong, Pong{._timestamp = response->pong()});
+                        Pong pong;
+                        pong._timestamp = response->pong();
+                        notify(&SignalServerListener::onPong, pong);
                     }
                     break;
                 case livekit::SignalResponse::kReconnect:

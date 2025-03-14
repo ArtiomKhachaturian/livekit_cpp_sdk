@@ -17,6 +17,7 @@
 #ifdef _WIN32
 #include <atlbase.h>
 #include <Windows.h>
+#include <wbemidl.h>
 #else
 #include <pthread.h>
 #ifndef __APPLE__
@@ -25,6 +26,11 @@
 #endif
 #include <codecvt>
 #include <locale>
+
+#ifdef WIN32
+typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOEXW);
+#pragma comment(lib, "wbemuuid.lib")
+#endif
 
 namespace {
 
