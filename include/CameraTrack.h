@@ -12,25 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraTrack.h
-#include "LocalVideoTrack.h"
-#include "CameraVideoTrack.h"
+#include "VideoTrack.h"
+#include "MediaDevice.h"
 
 namespace LiveKitCpp
 {
 
-class CameraTrack : public LocalVideoTrack<CameraVideoTrack>
+class CameraTrack : public VideoTrack
 {
-    using Base = LocalVideoTrack<CameraVideoTrack>;
 public:
-    CameraTrack(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
-    void setDevice(MediaDevice device = {});
-    void setCapability(webrtc::VideoCaptureCapability capability);
-    // impl. of LocalTrack
-    void fillRequest(AddTrackRequest* request) const final;
+    virtual void setDevice(MediaDevice device = {}) = 0;
+    // impl. of Track
     TrackSource source() const final { return TrackSource::Camera; }
-protected:
-    webrtc::scoped_refptr<CameraVideoTrack> createMediaTrack(const std::string& id) final;
-    void requestAuthorization() final;
 };
 
 } // namespace LiveKitCpp

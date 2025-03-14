@@ -215,6 +215,7 @@ if (WEBRTC_AVAILABLE)
         ${CMAKE_SOURCE_DIR}/src/webrtc
         ${CMAKE_SOURCE_DIR}/src/webrtc/transport
         ${CMAKE_SOURCE_DIR}/src/webrtc/media
+        ${CMAKE_SOURCE_DIR}/src/webrtc/media/audio
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/camera
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/video
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp 

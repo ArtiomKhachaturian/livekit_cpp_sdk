@@ -11,27 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalAudioTrack.h
-#include "LocalTrackImpl.h"
-#include "AudioTrack.h"
+#pragma once // CameraTrack.h
+#include "LocalVideoTrackImpl.h"
+#include "CameraVideoTrack.h"
+#include "CameraTrack.h"
 
 namespace LiveKitCpp
 {
-class LocalAudioTrack : public LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrack>
+
+class CameraTrackImpl : public LocalVideoTrackImpl<CameraVideoTrack, CameraTrack>
 {
-    using Base = LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrack>;
+    using Base = LocalVideoTrackImpl<CameraVideoTrack, CameraTrack>;
 public:
-    LocalAudioTrack(LocalTrackManager* manager, bool microphone = true,
-                    const std::shared_ptr<Bricks::Logger>& logger = {});
+    CameraTrackImpl(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
+    void setCapability(webrtc::VideoCaptureCapability capability);
+    // impl. of CameraTrack
+    void setDevice(MediaDevice device = {}) final;
     // impl. of LocalTrack
-    TrackSource source() const final;
     void fillRequest(AddTrackRequest* request) const final;
 protected:
-    // impl. LocalTrackImpl
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMediaTrack(const std::string& id) final;
+    webrtc::scoped_refptr<CameraVideoTrack> createMediaTrack(const std::string& id) final;
     void requestAuthorization() final;
-private:
-    const bool _microphone;
 };
 
 } // namespace LiveKitCpp

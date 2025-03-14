@@ -11,32 +11,33 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CameraTrack.h"
+#include "CameraTrackImpl.h"
 #include "MediaAuthorization.h"
 
 namespace LiveKitCpp
 {
 
-CameraTrack::CameraTrack(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger)
+CameraTrackImpl::CameraTrackImpl(LocalTrackManager* manager,
+                                 const std::shared_ptr<Bricks::Logger>& logger)
     : Base("camera", manager, logger)
 {
 }
 
-void CameraTrack::setDevice(MediaDevice device)
-{
-    if (const auto track = mediaTrack()) {
-        track->setDevice(std::move(device));
-    }
-}
-
-void CameraTrack::setCapability(webrtc::VideoCaptureCapability capability)
+void CameraTrackImpl::setCapability(webrtc::VideoCaptureCapability capability)
 {
     if (const auto track = mediaTrack()) {
         track->setCapability(std::move(capability));
     }
 }
 
-void CameraTrack::fillRequest(AddTrackRequest* request) const
+void CameraTrackImpl::setDevice(MediaDevice device)
+{
+    if (const auto track = mediaTrack()) {
+        track->setDevice(std::move(device));
+    }
+}
+
+void CameraTrackImpl::fillRequest(AddTrackRequest* request) const
 {
     Base::fillRequest(request);
     if (request) {
@@ -45,7 +46,7 @@ void CameraTrack::fillRequest(AddTrackRequest* request) const
     }
 }
 
-webrtc::scoped_refptr<CameraVideoTrack> CameraTrack::createMediaTrack(const std::string& id)
+webrtc::scoped_refptr<CameraVideoTrack> CameraTrackImpl::createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
         return m->createCamera(id);
@@ -53,7 +54,7 @@ webrtc::scoped_refptr<CameraVideoTrack> CameraTrack::createMediaTrack(const std:
     return {};
 }
 
-void CameraTrack::requestAuthorization()
+void CameraTrackImpl::requestAuthorization()
 {
     Base::requestAuthorization();
     MediaAuthorization::query(MediaAuthorizationKind::Camera, true, logger());
