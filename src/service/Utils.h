@@ -19,8 +19,11 @@
 #endif
 #ifdef __APPLE__
 #include <CoreMedia/CMTime.h>
+#elif defined(_WIN32)
+#include <Windows.h>
 #endif // __APPLE__
 #include <string>
+#include <vector>
 
 #ifdef __APPLE__
 #ifdef __OBJC__
@@ -48,6 +51,9 @@ std::string toString(NSError* error);
 int64_t cmTimeToMicro(const CMTime& time);
 int32_t cmTimeToMilli(const CMTime& time);
 #endif
+#elif defined(_WIN32)
+// https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types
+std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueName = NULL, LPDWORD lpType = NULL);
 #endif // __APPLE__
 std::string operatingSystemVersion();
 std::string operatingSystemName();

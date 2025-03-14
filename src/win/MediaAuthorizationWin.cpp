@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "MediaAuthorization.h"
 #include "MediaAuthorizationCallback.h"
+#include "Utils.h"
 
 namespace LiveKitCpp
 {

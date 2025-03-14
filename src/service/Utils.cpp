@@ -332,6 +332,33 @@ std::string toString(NetworkType state)
     return "";
 }
 
+#ifdef _WIN32
+std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueName, LPDWORD lpType)
+{
+    std::vector<BYTE> data;
+    if (root) {
+        HKEY hkey = NULL;
+        auto status = ::RegOpenKeyExA(root, lpSubKey, 0, KEY_QUERY_VALUE, &hkey);
+        if (ERROR_SUCCESS == status) {
+            DWORD dataSize = 0;
+            status = ::RegQueryValueExA(hkey, lpValueName, NULL, lpType, NULL, &dataSize);
+            if (ERROR_SUCCESS == status) {
+                data.resize(dataSize);
+                status = ::RegQueryValueExA(hkey, lpValueName, NULL, NULL, data.data(), &dataSize);
+                if (ERROR_SUCCESS != status) {
+                    // log warn
+                    data.clear();
+                }
+            }
+        }
+        if (hkey) {
+            ::RegCloseKey(hkey);
+        }
+    }
+    return data;
+}
+#endif
+
 } // namespace LiveKitCpp
 
 #ifdef WIN32
