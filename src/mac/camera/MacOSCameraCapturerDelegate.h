@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_MAC
 #include "AVCameraCapturerDelegate.h"
 #include "CameraState.h"
 #include <api/scoped_refptr.h>
@@ -33,3 +34,4 @@ class MacOSCameraCapturer;
 - (void) setObserver:(LiveKitCpp::CameraObserver* _Nullable) observer;
 @property (readonly) LiveKitCpp::CameraState state;
 @end
+#endif

@@ -397,8 +397,6 @@ bool LiveKitService::setRecordingAudioDevice(const MediaDevice&) { return false;
 
 MediaDevice LiveKitService::recordingAudioDevice() const { return {}; }
 
-MediaDevice LiveKitService::defaultRecordingAudioDevice() const { return {}; }
-
 bool LiveKitService::setPlayoutAudioDevice(const MediaDevice&) { return false; }
 
 MediaDevice LiveKitService::playoutAudioDevice() const { return {}; }

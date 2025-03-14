@@ -13,10 +13,8 @@
 // limitations under the License.#include "MediaAuthorization.h"
 #include "MediaAuthorizationCallback.h"
 #include "MediaAuthorization.h"
+#ifdef WEBRTC_MAC
 #include "CFAutoRelease.h"
-//#include "Sharing/MacOS/CGWindowDescription.h"
-//#include "Platform.h"
-//#include "VTSupportedPixelFormats.h"
 #include <modules/desktop_capture/mac/window_list_utils.h>
 #include <optional>
 #import <AVFoundation/AVCaptureDevice.h>
@@ -186,4 +184,15 @@ MediaAuthorizationStatus askScreenRecordingStatus(bool windowCapturing, bool ask
 
 #ifdef __clang__
 #pragma GCC diagnostic pop
+#endif
+#else
+
+namespace LiveKitCpp
+{
+void MediaAuthorization::requestFromSystem(MediaAuthorizationKind, bool,
+                                           const std::shared_ptr<MediaAuthorizationCallback>&)
+{
+}
+
+} // namespace LiveKitCpp
 #endif

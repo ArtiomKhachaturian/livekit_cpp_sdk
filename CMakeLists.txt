@@ -35,6 +35,7 @@ endif(APPLE)
 # Specify search paths in CMAKE_PREFIX_PATH variable (if needed): "/path/to/module_a;/another/path/to/module_b"
 find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
 find_package(absl REQUIRED)
+find_package(utf8_range REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
 
 # Specify source files
@@ -230,7 +231,10 @@ endif()
 # Link Protobuf library
 target_link_libraries(${PROJECT_NAME} PRIVATE ${Protobuf_LIBRARIES})
 # Link abseil
-target_link_libraries(${PROJECT_NAME} PRIVATE absl::base absl::strings absl::status absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_link_libraries(${PROJECT_NAME} PUBLIC absl::base absl::strings absl::status 
+                      absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+# Link UFT8_range
+target_link_libraries(${PROJECT_NAME} PUBLIC utf8_range::utf8_validity utf8_range::utf8_range)
 # Generic attributes for the library
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (APPLE)

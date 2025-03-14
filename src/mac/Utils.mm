@@ -13,13 +13,16 @@
 // limitations under the License.
 #include "Utils.h"
 #include "NetworkType.h"
+#ifdef WEBRTC_MAC
 #include <rtc_base/time_utils.h>
 #include <api/units/timestamp.h>
+#endif
 #include <optional>
 #import <Foundation/Foundation.h>
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <CoreWLAN/CoreWLAN.h>
 
+#ifdef WEBRTC_MAC
 namespace {
 
 inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
@@ -31,6 +34,7 @@ inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
 }
 
 }
+#endif
 
 namespace LiveKitCpp
 {
@@ -68,6 +72,7 @@ std::string toString(NSError* error)
     return std::string();
 }
 
+#ifdef WEBRTC_MAC
 int64_t cmTimeToMicro(const CMTime& time)
 {
     const auto ts = toTimestamp(time);
@@ -85,6 +90,7 @@ int32_t cmTimeToMilli(const CMTime& time)
     }
     return 0;
 }
+#endif
 
 std::string operatingSystemVersion()
 {
@@ -154,3 +160,4 @@ NetworkType activeNetworkType()
 }
 
 } // namespace LiveKitCpp
+

@@ -44,8 +44,10 @@ NSString* toNSString(std::string_view string);
 std::string toString(NSError* error);
 // timestamps
 // return zero if failed
+#ifdef WEBRTC_MAC
 int64_t cmTimeToMicro(const CMTime& time);
 int32_t cmTimeToMilli(const CMTime& time);
+#endif
 #endif // __APPLE__
 std::string operatingSystemVersion();
 std::string operatingSystemName();

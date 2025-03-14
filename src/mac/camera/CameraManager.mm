@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#ifdef WEBRTC_MAC
 #include "CameraManager.h"
 #include "AVCameraCapturer.h"
 #include "MacOSCameraCapturer.h"
@@ -132,3 +133,4 @@ int32_t MacOSDeviceInfoImpl::CreateCapabilityMap(const char* deviceUniqueIdUTF8)
 }
 
 }
+#endif

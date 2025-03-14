@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_MAC
 #include <CoreMedia/CMSampleBuffer.h>
 #import <Foundation/Foundation.h>
 
@@ -26,3 +27,4 @@
 - (void) didStarted:(AVCameraCapturer*) capturer;
 - (void) didStopped:(AVCameraCapturer*) capturer;
 @end
+#endif
