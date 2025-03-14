@@ -14,20 +14,10 @@
 #include "CameraVideoSource.h"
 #include "CameraManager.h"
 #include "CameraCapturer.h"
+#include "VideoSinkBroadcast.h"
 #include "Utils.h"
-#include <api/video/i420_buffer.h>
 
 namespace {
-
-inline rtc::scoped_refptr<const webrtc::I420BufferInterface> toI420(const webrtc::VideoFrame& frame) {
-    if (const auto buffer = frame.video_frame_buffer()) {
-        if (webrtc::VideoFrameBuffer::Type::kI420 == buffer->type()) {
-            return rtc::scoped_refptr<const webrtc::I420BufferInterface>(buffer->GetI420());
-        }
-        return buffer->ToI420();
-    }
-    return {};
-}
 
 inline std::string makeCapturerError(int code, const std::string& what = {}) {
     std::string errorCode = "code #" + std::to_string(code);
@@ -44,7 +34,6 @@ namespace LiveKitCpp
 
 CameraVideoSource::CameraVideoSource(const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<CameraCapturerProxySink>(logger)
-    , _adapter(2)
     , _capability(CameraManager::defaultCapability())
     , _state(webrtc::MediaSourceInterface::kEnded)
 {
@@ -53,6 +42,8 @@ CameraVideoSource::CameraVideoSource(const std::shared_ptr<Bricks::Logger>& logg
 CameraVideoSource::~CameraVideoSource()
 {
     setCapturer({});
+    LOCK_WRITE_SAFE_OBJ(_broadcasters);
+    _broadcasters->clear();
 }
 
 void CameraVideoSource::setCapturer(rtc::scoped_refptr<CameraCapturer> capturer)
@@ -70,7 +61,7 @@ void CameraVideoSource::setCapturer(rtc::scoped_refptr<CameraCapturer> capturer)
             capturer->setObserver(this);
             LOCK_WRITE_SAFE_OBJ(_capability);
             _capability = bestMatched(_capability.constRef(), _capturer.constRef());
-            if (_broadcaster.frame_wanted()) {
+            if (frameWanted()) {
                 start(capturer, _capability.constRef());
             }
         }
@@ -92,11 +83,16 @@ void CameraVideoSource::setCapability(webrtc::VideoCaptureCapability capability)
     }
 }
 
-void CameraVideoSource::enableBlackFrames(bool enable)
+bool CameraVideoSource::setEnabled(bool enabled)
 {
-    auto wants = _broadcaster.wants();
-    wants.black_frames = enable;
-    _adapter.OnSinkWants(wants);
+    if (enabled != _enabled.exchange(enabled)) {
+        LOCK_READ_SAFE_OBJ(_broadcasters);
+        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+            it->second->applyBlackFrames(!enabled);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool CameraVideoSource::GetStats(Stats* stats)
@@ -112,18 +108,27 @@ bool CameraVideoSource::GetStats(Stats* stats)
 
 void CameraVideoSource::ProcessConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
-    _broadcaster.ProcessConstraints(c);
+    LOCK_READ_SAFE_OBJ(_broadcasters);
+    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+        it->second->OnConstraintsChanged(c);
+    }
 }
 
 void CameraVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                                         const rtc::VideoSinkWants& wants)
 {
     if (sink) {
-        const auto frameWanted = _broadcaster.frame_wanted();
-        _broadcaster.AddOrUpdateSink(sink, wants);
-        _adapter.OnSinkWants(_broadcaster.wants());
-        if (frameWanted != _broadcaster.frame_wanted()) {
-            start(_capturer(), _capability());
+        LOCK_WRITE_SAFE_OBJ(_broadcasters);
+        const auto it = _broadcasters->find(sink);
+        if (it != _broadcasters->end()) {
+            it->second->updateSinkWants(wants);
+        }
+        else {
+            auto adapter = std::make_unique<VideoSinkBroadcast>(sink, wants);
+            _broadcasters->insert(std::make_pair(sink, std::move(adapter)));
+            if (1U == _broadcasters->size()) {
+                start(_capturer(), _capability());
+            }
         }
     }
 }
@@ -131,9 +136,8 @@ void CameraVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFra
 void CameraVideoSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (sink) {
-        _broadcaster.RemoveSink(sink);
-        _adapter.OnSinkWants(_broadcaster.wants());
-        if (!_broadcaster.frame_wanted()) {
+        LOCK_WRITE_SAFE_OBJ(_broadcasters);
+        if (_broadcasters->erase(sink) > 0U && _broadcasters->empty()) {
             stop(_capturer());
         }
     }
@@ -168,42 +172,27 @@ void CameraVideoSource::onStateChanged(CameraState state)
 
 void CameraVideoSource::OnFrame(const webrtc::VideoFrame& frame)
 {
-    if (const auto buffer = frame.video_frame_buffer()) {
-        int adaptedWidth, adaptedHeight, cropWidth, cropHeight, cropX, cropY;
-        if (adaptFrame(frame.width(), frame.height(), frame.timestamp_us(),
-                       adaptedWidth, adaptedHeight,
-                       cropWidth, cropHeight, cropX, cropY)) {
-            if (adaptedWidth == frame.width() && adaptedHeight == frame.height()) {
-                // No adaption - optimized path.
-                broadcast(frame);
-            }
-            else {
-                if (const auto srcI420 = toI420(frame)) {
-                    auto dstI420 = webrtc::I420Buffer::Create(adaptedWidth, adaptedHeight);
-                    dstI420->CropAndScaleFrom(*srcI420, cropX, cropY, cropWidth, cropHeight);
-                    webrtc::VideoFrame adapted(frame);
-                    adapted.set_video_frame_buffer(dstI420);
-                    broadcast(adapted);
-                }
-                else {
-                    // TODO: report error
-                }
-            }
+    if (frame.video_frame_buffer()) {
+        _lastResolution = clueToUint64(frame.width(), frame.height());
+        _hasLastResolution = true;
+        LOCK_READ_SAFE_OBJ(_broadcasters);
+        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+            it->second->OnFrame(frame);
         }
     }
 }
 
 void CameraVideoSource::OnDiscardedFrame()
 {
-    _broadcaster.OnDiscardedFrame();
+    LOCK_READ_SAFE_OBJ(_broadcasters);
+    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+        it->second->OnDiscardedFrame();
+    }
 }
 
-void CameraVideoSource::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& /*constraints*/)
+void CameraVideoSource::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints)
 {
-    /*LOCK_READ_SAFE_OBJ(_sinks);
-    for (const auto sink : _sinks.constRef()) {
-        sink->OnConstraintsChanged(constraints);
-    }*/
+    ProcessConstraints(constraints);
 }
 
 webrtc::VideoCaptureCapability CameraVideoSource::bestMatched(webrtc::VideoCaptureCapability capability,
@@ -252,27 +241,10 @@ bool CameraVideoSource::stop(const rtc::scoped_refptr<CameraCapturer>& capturer)
     return true;
 }
 
-bool CameraVideoSource::applyRotation() const
+bool CameraVideoSource::frameWanted() const
 {
-    return _broadcaster.wants().rotation_applied;
-}
-
-void CameraVideoSource::broadcast(const webrtc::VideoFrame& frame)
-{
-    if (applyRotation() && frame.rotation() != webrtc::kVideoRotation_0) {
-        if (const auto srcI420 = toI420(frame)) {
-            webrtc::VideoFrame rotatedFrame(frame);
-            rotatedFrame.set_video_frame_buffer(webrtc::I420Buffer::Rotate(*srcI420, frame.rotation()));
-            rotatedFrame.set_rotation(webrtc::kVideoRotation_0);
-            _broadcaster.OnFrame(rotatedFrame);
-        }
-        else {
-            // TODO: report error
-        }
-        
-    } else {
-        _broadcaster.OnFrame(frame);
-    }
+    LOCK_READ_SAFE_OBJ(_broadcasters);
+    return !_broadcasters->empty();
 }
 
 void CameraVideoSource::changeState(webrtc::MediaSourceInterface::SourceState state)
@@ -291,32 +263,6 @@ void CameraVideoSource::changeState(webrtc::MediaSourceInterface::SourceState st
         return true;
     }
     return false;
-}
-
-bool CameraVideoSource::adaptFrame(int width, int height, int64_t timeUs,
-                                   int& outWidth, int& outHeight,
-                                   int& cropWidth, int& cropHeight,
-                                   int& cropX, int& cropY)
-{
-    _lastResolution = clueToUint64(width, height);
-    _hasLastResolution = true;
-
-    if (!_broadcaster.frame_wanted()) {
-        return false;
-    }
-
-    if (!_adapter.AdaptFrameResolution(width, height,
-                                       timeUs * rtc::kNumNanosecsPerMicrosec,
-                                       &cropWidth, &cropHeight,
-                                       &outWidth, &outHeight)) {
-        _broadcaster.OnDiscardedFrame();
-        // VideoAdapter dropped the frame.
-        return false;
-    }
-
-    cropX = (width - cropWidth) / 2;
-    cropY = (height - cropHeight) / 2;
-    return true;
 }
 
 std::string_view CameraVideoSource::logCategory() const

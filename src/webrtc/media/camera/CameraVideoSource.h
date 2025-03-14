@@ -14,38 +14,34 @@
 #pragma once
 #include "Loggable.h"
 #include "CameraCapturerProxySink.h"
-#include "CameraObserver.h"
 #include "Listeners.h"
 #include "SafeScopedRefPtr.h"
-
-
-#include <api/video/video_frame.h>
-#include <api/video/video_sink_interface.h>
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture_defines.h>
-#include <media/base/adapted_video_track_source.h>
-#include <media/base/video_adapter.h>
-#include <media/base/video_broadcaster.h>
 #include <atomic>
 #include <memory>
 #include <optional>
-#include <unordered_set>
+#include <unordered_map>
 
 
 namespace LiveKitCpp
 {
 
 class CameraCapturer;
+class VideoSinkBroadcast;
 
 class CameraVideoSource : public webrtc::VideoTrackSourceInterface,
                           private Bricks::LoggableS<CameraCapturerProxySink>
 {
+    using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
+                                            std::unique_ptr<VideoSinkBroadcast>>;
 public:
     CameraVideoSource(const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
     void setCapturer(rtc::scoped_refptr<CameraCapturer> capturer);
     void setCapability(webrtc::VideoCaptureCapability capability);
-    void enableBlackFrames(bool enable);
+    bool enabled() const noexcept { return _enabled; }
+    bool setEnabled(bool enabled);
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
     std::optional<bool> needs_denoising() const final { return {}; }
@@ -65,7 +61,7 @@ public:
     // impl. of NotifierInterface
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
-    // impl. of CameraCapturerProxySink
+    // impl. of CameraObserver
     void onStateChanged(CameraState state) final;
     void OnFrame(const webrtc::VideoFrame& frame) final;
     void OnDiscardedFrame() final;
@@ -78,24 +74,16 @@ private:
     bool start(const rtc::scoped_refptr<CameraCapturer>& capturer,
                const webrtc::VideoCaptureCapability& capability) const;
     bool stop(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
-    bool applyRotation() const;
-    void broadcast(const webrtc::VideoFrame& frame);
+    bool frameWanted() const;
     void changeState(webrtc::MediaSourceInterface::SourceState state);
-    // Reports the appropriate frame size after adaptation. Returns true
-    // if a frame is wanted. Returns false if there are no interested
-    // sinks, or if the VideoAdapter decides to drop the frame.
-    bool adaptFrame(int width, int height, int64_t timeUs,
-                    int& outWidth, int& outHeight,
-                    int& cropWidth, int& cropHeight,
-                    int& cropX, int& cropY);
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
-    cricket::VideoAdapter _adapter;
-    rtc::VideoBroadcaster _broadcaster;
+    Bricks::SafeObj<Broadcasters> _broadcasters;
     Bricks::Listeners<webrtc::ObserverInterface*> _observers;
     SafeScopedRefPtr<CameraCapturer> _capturer;
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
+    std::atomic_bool _enabled = true;
     std::atomic<uint64_t> _lastResolution = 0ULL;
     std::atomic_bool _hasLastResolution = false;
     std::atomic<webrtc::MediaSourceInterface::SourceState> _state;

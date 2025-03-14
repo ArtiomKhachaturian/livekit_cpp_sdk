@@ -39,7 +39,7 @@ public:
     // impl. of MediaStreamTrackInterface
     std::string kind() const final { return webrtc::VideoTrackInterface::kVideoKind; }
     std::string id() const final { return _id; }
-    bool enabled() const final { return _enabled; }
+    bool enabled() const final;
     bool set_enabled(bool enable) final;
     webrtc::MediaStreamTrackInterface::TrackState state() const final { return _state; }
     // impl. of NotifierInterface
@@ -57,7 +57,6 @@ private:
     const std::string _id;
     const webrtc::scoped_refptr<CameraVideoSource> _source;
     std::atomic<webrtc::MediaStreamTrackInterface::TrackState> _state;
-    std::atomic_bool _enabled = true;
     Bricks::Listeners<webrtc::ObserverInterface*> _observers;
     Bricks::SafeObj<MediaDevice> _device;
     std::atomic<size_t> _sinksCount = 0U;

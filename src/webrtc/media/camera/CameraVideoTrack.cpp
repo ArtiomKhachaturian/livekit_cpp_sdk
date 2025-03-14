@@ -89,16 +89,14 @@ webrtc::VideoTrackSourceInterface* CameraVideoTrack::GetSource() const
     return _source.get();
 }
 
+bool CameraVideoTrack::enabled() const
+{
+    return _source && _source->enabled();
+}
+
 bool CameraVideoTrack::set_enabled(bool enable)
 {
-    if (enable != _enabled.exchange(enable)) {
-        if (_source) {
-            _source->enableBlackFrames(!enable);
-        }
-        _observers.invoke(&webrtc::ObserverInterface::OnChanged);
-        return true;
-    }
-    return false;
+    return _source && _source->setEnabled(enable);
 }
 
 void CameraVideoTrack::RegisterObserver(webrtc::ObserverInterface* observer)
