@@ -25,7 +25,7 @@ public:
     void setDevice(MediaDevice device = {});
     void setCapability(webrtc::VideoCaptureCapability capability);
     // impl. of LocalTrack
-    void fillRequest(AddTrackRequest* request) const final;
+    TrackSource source() const final { return TrackSource::Camera; }
 protected:
     webrtc::scoped_refptr<CameraVideoTrack> createMediaTrack(const std::string& id) final;
     void requestAuthorization() final;

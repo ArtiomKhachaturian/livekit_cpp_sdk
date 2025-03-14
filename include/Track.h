@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // Track.h
 #include "rtc/TrackType.h"
+#include "rtc/TrackSource.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -28,6 +29,8 @@ public:
     virtual bool live() const = 0;
     // type
     virtual TrackType type() const = 0;
+    // source
+    virtual TrackSource source() const = 0;
     // server track ID
     virtual std::string sid() const = 0;
     // mute/unmute state

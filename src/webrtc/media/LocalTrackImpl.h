@@ -129,6 +129,7 @@ inline void LocalTrackImpl<TMediaTrack>::fillRequest(AddTrackRequest* request) c
         request->_name = name();
         request->_muted = muted();
         request->_sid = sid();
+        request->_source = source();
     }
 }
 

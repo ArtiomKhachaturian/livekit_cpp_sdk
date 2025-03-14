@@ -23,7 +23,7 @@ public:
                     const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of LocalTrack
     TrackType type() const final { return TrackType::Audio; }
-    void fillRequest(AddTrackRequest* request) const final;
+    TrackSource source() const final;
 protected:
     // impl. LocalTrackImpl
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMediaTrack(const std::string& id) final;

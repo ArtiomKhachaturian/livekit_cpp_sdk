@@ -27,6 +27,7 @@ public:
     static std::string sid(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     // impl. of Track
     bool remote() const noexcept final { return true; }
+    TrackSource source() const final { return TrackSource::Unknown; }
     TrackType type() const final;
     bool live() const final;
     std::string sid() const final { return _sid; }

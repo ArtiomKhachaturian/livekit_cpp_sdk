@@ -44,14 +44,6 @@ webrtc::scoped_refptr<CameraVideoTrack> CameraTrack::createMediaTrack(const std:
     return {};
 }
 
-void CameraTrack::fillRequest(AddTrackRequest* request) const
-{
-    LocalVideoTrack<CameraVideoTrack>::fillRequest(request);
-    if (request) {
-        request->_source = TrackSource::Camera;
-    }
-}
-
 void CameraTrack::requestAuthorization()
 {
     LocalVideoTrack<CameraVideoTrack>::requestAuthorization();

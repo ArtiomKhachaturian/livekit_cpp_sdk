@@ -32,12 +32,9 @@ LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
 {
 }
 
-void LocalAudioTrack::fillRequest(AddTrackRequest* request) const
+TrackSource LocalAudioTrack::source() const
 {
-    LocalTrackImpl<webrtc::AudioTrackInterface>::fillRequest(request);
-    if (request) {
-        request->_source = _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
-    }
+    return _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
 }
 
 void LocalAudioTrack::requestAuthorization()
