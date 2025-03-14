@@ -100,10 +100,11 @@ target_include_directories(${LIB_PROJECT_NAME} PRIVATE
 )
 
 # Link Protobuf library
-target_link_libraries(${LIB_PROJECT_NAME} PUBLIC ${Protobuf_LIBRARIES})
+target_link_libraries(${LIB_PROJECT_NAME} PUBLIC protobuf::libprotobuf-lite protobuf::libprotobuf protobuf::libprotoc)
 # Link abseil
 target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::status 
                       absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_precompile_headers(${LIB_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/AbslAliasing.h)
 # Link UFT8_range
 target_link_libraries(${LIB_PROJECT_NAME} PUBLIC utf8_range::utf8_validity utf8_range::utf8_range)
 # Protocol versioning
@@ -116,7 +117,7 @@ if (APPLE)
     set_target_properties(${LIB_PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
     target_link_libraries(${LIB_PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit -framework CoreWLAN")
 elseif(WIN32)
-    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+    target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
 endif()
 target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
 
