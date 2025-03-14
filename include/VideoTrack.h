@@ -11,29 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalTrack.h
-#include <string>
+#pragma once // VideoTrack.h
 
 namespace LiveKitCpp
 {
 
-struct AddTrackRequest;
-
-class LocalTrack
+class VideoTrack : public Track
 {
 public:
-    // for publishing
-    virtual void setSid(const std::string& sid) = 0;
-    virtual bool canPublish() const noexcept = 0;
-    virtual void fillRequest(AddTrackRequest* request) const = 0;
-    // transport layer
-    virtual void resetMedia(bool remove = true) = 0;
-    virtual void addToTransport() = 0;
-    virtual void notifyThatMediaAddedToTransport() = 0;
-    // state
-    virtual bool muted() const = 0;
-protected:
-    ~LocalTrack() = default;
+    // impl. of Track
+    TrackType type() const final { return TrackType::Video; }
 };
 
 } // namespace LiveKitCpp

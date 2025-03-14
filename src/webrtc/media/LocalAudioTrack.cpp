@@ -27,7 +27,7 @@ namespace LiveKitCpp
 
 LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
                                  const std::shared_ptr<Bricks::Logger>& logger)
-    : LocalTrackImpl<webrtc::AudioTrackInterface>(audioLabel(microphone), manager, logger)
+    : Base(audioLabel(microphone), manager, logger)
     , _microphone(microphone)
 {
 }
@@ -37,9 +37,18 @@ TrackSource LocalAudioTrack::source() const
     return _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
 }
 
+void LocalAudioTrack::fillRequest(AddTrackRequest* request) const
+{
+    Base::fillRequest(request);
+    if (request) {
+        request->_type = type();
+        request->_source = source();
+    }
+}
+
 void LocalAudioTrack::requestAuthorization()
 {
-    LocalTrackImpl<webrtc::AudioTrackInterface>::requestAuthorization();
+    Base::requestAuthorization();
     if (_microphone) {
         MediaAuthorization::query(MediaAuthorizationKind::Microphone, true, logger());
     }

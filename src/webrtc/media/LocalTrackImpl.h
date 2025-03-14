@@ -12,22 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalTrack.h
+#include "Loggable.h"
 #include "SafeScopedRefPtr.h"
 #include "rtc/AddTrackRequest.h"
+#include "Track.h"
 #include "LocalTrack.h"
 #include "LocalTrackManager.h"
+#include "Utils.h"
 #include <api/media_stream_interface.h>
 #include <atomic>
+#include <type_traits>
 
 namespace LiveKitCpp
 {
 
-template<class TMediaTrack>
-class LocalTrackImpl : public LocalTrack, private webrtc::ObserverInterface
+template<class TMediaTrack, class TBaseInterface>
+class LocalTrackImpl : public Bricks::LoggableS<TBaseInterface>,
+                       public LocalTrack,
+                       private webrtc::ObserverInterface
 {
+    static_assert(std::is_base_of_v<Track, TBaseInterface>);
 public:
-    ~LocalTrackImpl() override { LocalTrackImpl<TMediaTrack>::resetMedia(); }
+    ~LocalTrackImpl() override { resetMedia(); }
+    // client track ID, equal to WebRTC track ID
+    const std::string& cid() const noexcept { return _cid; }
+    // track name
+    const std::string& name() const noexcept { return _name; }
     // impl. of LocalTrack
+    void setSid(const std::string& sid) final { _sid(sid); }
     void resetMedia(bool remove = true) final;
     void addToTransport() final;
     void notifyThatMediaAddedToTransport() final;
@@ -37,6 +49,8 @@ public:
     bool live() const final;
     void mute(bool mute) final; // request media track creation if needed
     bool muted() const final { return _muted; }
+    std::string sid() const final { return _sid(); }
+    bool remote() const noexcept final { return false; }
 protected:
     LocalTrackImpl(std::string name, LocalTrackManager* manager,
                    const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -50,24 +64,29 @@ private:
     // impl. of webrtc::NotifierInterface
     void OnChanged() final { checkAuthorization(); }
 private:
+    const std::string _cid;
+    const std::string _name;
     LocalTrackManager* const _manager;
     std::atomic_bool _muted = true;
+    Bricks::SafeObj<std::string> _sid;
     SafeScopedRefPtr<TMediaTrack> _track;
     // under lock together with [_track]
     bool _pendingPublish = false;
 };
 
-template<class TMediaTrack>
-inline LocalTrackImpl<TMediaTrack>::LocalTrackImpl(std::string name,
-                                                   LocalTrackManager* manager,
-                                                   const std::shared_ptr<Bricks::Logger>& logger)
-    : LocalTrack(std::move(name), logger)
+template<class TMediaTrack, class TBaseInterface>
+inline LocalTrackImpl<TMediaTrack, TBaseInterface>::
+    LocalTrackImpl(std::string name, LocalTrackManager* manager,
+                   const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<TBaseInterface>(logger)
+    , _cid(makeUuid())
+    , _name(std::move(name))
     , _manager(manager)
 {
 }
 
-template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::resetMedia(bool remove)
+template<class TMediaTrack, class TBaseInterface>
+inline void LocalTrackImpl<TMediaTrack, TBaseInterface>::resetMedia(bool remove)
 {
     LOCK_WRITE_SAFE_OBJ(_track);
     if (const auto track = _track.take()) {
@@ -83,8 +102,8 @@ inline void LocalTrackImpl<TMediaTrack>::resetMedia(bool remove)
     }
 }
 
-template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::addToTransport()
+template<class TMediaTrack, class TBaseInterface>
+inline void LocalTrackImpl<TMediaTrack, TBaseInterface>::addToTransport()
 {
     if (!muted() && _manager) {
         LOCK_WRITE_SAFE_OBJ(_track);
@@ -101,8 +120,8 @@ inline void LocalTrackImpl<TMediaTrack>::addToTransport()
     }
 }
 
-template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::notifyThatMediaAddedToTransport()
+template<class TMediaTrack, class TBaseInterface>
+inline void LocalTrackImpl<TMediaTrack, TBaseInterface>::notifyThatMediaAddedToTransport()
 {
     LOCK_WRITE_SAFE_OBJ(_track);
     if (_pendingPublish) {
@@ -113,28 +132,27 @@ inline void LocalTrackImpl<TMediaTrack>::notifyThatMediaAddedToTransport()
     }
 }
 
-template<class TMediaTrack>
-inline bool LocalTrackImpl<TMediaTrack>::canPublish() const noexcept
+template<class TMediaTrack, class TBaseInterface>
+inline bool LocalTrackImpl<TMediaTrack, TBaseInterface>::canPublish() const noexcept
 {
     LOCK_READ_SAFE_OBJ(_track);
     return !_pendingPublish && nullptr != _track.constRef();
 }
 
-template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::fillRequest(AddTrackRequest* request) const
+template<class TMediaTrack, class TBaseInterface>
+inline void LocalTrackImpl<TMediaTrack, TBaseInterface>::
+    fillRequest(AddTrackRequest* request) const
 {
     if (request) {
-        request->_type = type();
         request->_cid = cid();
         request->_name = name();
         request->_muted = muted();
         request->_sid = sid();
-        request->_source = source();
     }
 }
 
-template<class TMediaTrack>
-inline bool LocalTrackImpl<TMediaTrack>::live() const
+template<class TMediaTrack, class TBaseInterface>
+inline bool LocalTrackImpl<TMediaTrack, TBaseInterface>::live() const
 {
     if (const auto track = mediaTrack()) {
         return webrtc::MediaStreamTrackInterface::kLive == track->state();
@@ -142,8 +160,8 @@ inline bool LocalTrackImpl<TMediaTrack>::live() const
     return false;
 }
 
-template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::mute(bool mute)
+template<class TMediaTrack, class TBaseInterface>
+inline void LocalTrackImpl<TMediaTrack, TBaseInterface>::mute(bool mute)
 {
     if (mute != _muted.exchange(mute)) {
         bool sendNotification = false;
@@ -163,8 +181,9 @@ inline void LocalTrackImpl<TMediaTrack>::mute(bool mute)
     }
 }
 
-template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::notifyAboutMuted(bool mute) const
+template<class TMediaTrack, class TBaseInterface>
+inline void LocalTrackImpl<TMediaTrack, TBaseInterface>::
+    notifyAboutMuted(bool mute) const
 {
     if (_manager && !_pendingPublish) {
         const auto sid = this->sid();
@@ -174,8 +193,8 @@ inline void LocalTrackImpl<TMediaTrack>::notifyAboutMuted(bool mute) const
     }
 }
 
-template<class TMediaTrack>
-inline void LocalTrackImpl<TMediaTrack>::checkAuthorization()
+template<class TMediaTrack, class TBaseInterface>
+inline void LocalTrackImpl<TMediaTrack, TBaseInterface>::checkAuthorization()
 {
     if (canPublish()) {
         requestAuthorization();

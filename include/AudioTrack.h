@@ -11,17 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalTrack.h"
-#include "Utils.h"
+#pragma once // AudioTrack.h
+#include "Track.h"
 
 namespace LiveKitCpp
 {
 
-LocalTrack::LocalTrack(std::string name, const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<Track>(logger)
-    , _cid(makeUuid())
-    , _name(std::move(name))
+class AudioTrack : public Track
 {
-}
+public:
+    // impl. of Track
+    TrackType type() const final { return TrackType::Audio; }
+};
 
 } // namespace LiveKitCpp
