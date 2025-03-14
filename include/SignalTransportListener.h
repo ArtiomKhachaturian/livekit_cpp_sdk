@@ -11,20 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#pragma once // SignalTransportListener.h
 #include "LiveKitClientExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
 
-enum class State
-{
-    Connecting,
-    Connected,
-    Disconnecting,
-    Disconnected,
-};
+enum class TransportState;
 
-LIVEKIT_CLIENT_API const char* toString(State state);
+class LIVEKIT_CLIENT_API SignalTransportListener
+{
+public:
+    virtual void onTransportStateChanged(TransportState /*state*/) {}
+    virtual void onTransportError(std::string /*error*/) {}
+};
 
 } // namespace LiveKitCpp

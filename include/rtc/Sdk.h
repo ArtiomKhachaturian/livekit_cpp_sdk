@@ -11,19 +11,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SignalTarget.h
+#pragma once // Sdk.h
 #include "LiveKitClientExport.h"
 #include <string>
 
 namespace LiveKitCpp
 {
 
-enum class SignalTarget
+enum class SDK
 {
-    Publisher = 0,
-    Subscriber = 1,
+    Unknown = 0,
+    JS = 1,
+    Swift = 2,
+    Android = 3,
+    Flutter = 4,
+    GO = 5,
+    Unity = 6,
+    ReactNative = 7,
+    Rust = 8,
+    Python = 9,
+    CPP = 10,
+    UnityWeb = 11,
+    Node = 12,
 };
 
-std::string toString(SignalTarget target);
+LIVEKIT_CLIENT_API std::string toString(SDK sdk);
 
 } // namespace LiveKitCpp

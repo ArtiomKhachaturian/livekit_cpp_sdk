@@ -11,19 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SignalTarget.h
-#include "LiveKitClientExport.h"
-#include <string>
+#pragma once // Pong.h
+#include <cstdint>
 
 namespace LiveKitCpp
 {
 
-enum class SignalTarget
+struct Pong
 {
-    Publisher = 0,
-    Subscriber = 1,
+    // timestamp field of last received ping request
+    int64_t _lastPingTimestamp = {};
+    int64_t _timestamp = {};
 };
-
-std::string toString(SignalTarget target);
 
 } // namespace LiveKitCpp

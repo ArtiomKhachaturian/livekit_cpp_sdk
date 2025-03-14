@@ -11,19 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SignalTarget.h
+#pragma once // State.h
 #include "LiveKitClientExport.h"
 #include <string>
 
 namespace LiveKitCpp
 {
 
-enum class SignalTarget
+enum class TransportState
 {
-    Publisher = 0,
-    Subscriber = 1,
+    Connecting,
+    Connected,
+    Disconnecting,
+    Disconnected,
 };
 
-std::string toString(SignalTarget target);
+LIVEKIT_CLIENT_API std::string toString(TransportState state);
 
 } // namespace LiveKitCpp

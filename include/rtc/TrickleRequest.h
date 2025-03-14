@@ -21,9 +21,17 @@ namespace LiveKitCpp
 // sent when an ICE candidate is available
 struct TrickleRequest
 {
-    std::string _candidateInit;
+    std::string _candidateInit; // this is an JSON, see comments below
     SignalTarget _target = {};
     bool _final = {};
 };
+
+/*
+ structure of _candidateInit:
+    - candidate (SDP)
+    - sdpMid
+    - sdpMLineIndex
+    - usernameFragment (may contains null value)
+ */
 
 } // namespace LiveKitCpp

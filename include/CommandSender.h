@@ -11,19 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // SignalTarget.h
-#include "LiveKitClientExport.h"
+#pragma once // CommandSender.h
 #include <string>
+
+// prototype defined in 'Bricks' library,
+// see https://github.com/ArtiomKhachaturian/Bricks
+namespace Bricks {
+class Blob;
+}
 
 namespace LiveKitCpp
 {
 
-enum class SignalTarget
+class CommandSender
 {
-    Publisher = 0,
-    Subscriber = 1,
+public:
+    virtual bool sendBinary(const Bricks::Blob& /*binary*/) { return false; }
+    virtual bool sendText(const std::string_view& /*text*/) { return false; }
+protected:
+    virtual ~CommandSender() = default;
 };
-
-std::string toString(SignalTarget target);
 
 } // namespace LiveKitCpp

@@ -16,11 +16,11 @@
 namespace LiveKitCpp
 {
 
-enum TrackType
+enum class TrackType
 {
-  Audio = 0,
-  Video = 1,
-  Data = 2,
+    Audio = 0,
+    Video = 1,
+    Data = 2,
 };
 
 } // namespace LiveKitCpp
