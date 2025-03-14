@@ -32,8 +32,9 @@ else()
 endif(APPLE)
 
 # Generate C++ code from proto files
+# Find Protobuf (ensure it is installed)
 # Specify search paths in CMAKE_PREFIX_PATH variable (if needed): "/path/to/module_a;/another/path/to/module_b"
-find_package(Protobuf REQUIRED) # Find Protobuf (ensure it is installed)
+find_package(Protobuf 5.29.3 REQUIRED)
 find_package(absl REQUIRED)
 find_package(utf8_range REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
