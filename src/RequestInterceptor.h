@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RequestSender.h
+#include "ProtoMarshaller.h"
 #include <memory>
 #include <vector>
 
@@ -40,10 +41,10 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class RequestSender
+class RequestInterceptor : private Bricks::LoggableR<>
 {
 public:
-    RequestSender(CommandSender* commandSender);
+    RequestInterceptor(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     // all requests are defined in 'SignalRequest':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L24
     bool offer(const SessionDescription& sdp) const;
@@ -62,14 +63,17 @@ public:
     bool pingReq(const Ping& ping) const;
     bool updateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool updateVideoTrack(const UpdateLocalVideoTrack& track) const;
+protected:
+    // overrides of Bricks::LoggableR
+    std::string_view logCategory() const final;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>
-    bool send(const TSetMethod& setMethod, const TObject& object) const;
-    static std::vector<uint8_t> toBytes(const google::protobuf::MessageLite& proto);
-    static std::shared_ptr<MemoryBlock> toMemBlock(const google::protobuf::MessageLite& proto);
+    bool send(const TSetMethod& setMethod, const TObject& object,
+              std::string typeName = {}) const;
 private:
     CommandSender* const _commandSender;
+    const ProtoMarshaller _marshaller;
 };
 
 } // namespace LiveKitCpp

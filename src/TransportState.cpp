@@ -11,24 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#ifdef USE_ZAPHOYD_TPP_SOCKETS
-#include "CommandSender.h"
+#include "TransportState.h"
 
 namespace LiveKitCpp
 {
 
-enum class State;
-
-class WebsocketTppApi : public CommandSender
-{
-public:
-    ~WebsocketTppApi() override = default;
-    virtual bool open() = 0;
-    virtual std::string host() const = 0;
-    virtual State state() const = 0;
-    virtual void destroy() = 0;
-};
+std::string toString(TransportState state) {
+    switch (state) {
+        case TransportState::Connecting:
+            return "connecting";
+        case TransportState::Connected:
+            return "connected";
+        case TransportState::Disconnecting:
+            return "disconnecting";
+        case TransportState::Disconnected:
+            return "disconnected";
+        default:
+            break;
+    }
+    return "unknown";
+}
 
 } // namespace LiveKitCpp
-#endif

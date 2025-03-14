@@ -13,6 +13,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # -fvisibility=hidden
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
+set(LIVEKIT_PROTOCOL_VERSION 12)
 
 # Specify source files
 file(GLOB_RECURSE PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
@@ -87,8 +90,10 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "Sources" FILES ${CPP_SOURCES})
 # Add include directories
 target_include_directories(${LIB_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/websocket
+    ${CMAKE_SOURCE_DIR}/websockets_api/include
+    ${CMAKE_SOURCE_DIR}/bricks/include
+    ${CMAKE_SOURCE_DIR}/bricks/include/logger
+    ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
@@ -101,6 +106,9 @@ target_link_libraries(${LIB_PROJECT_NAME} PUBLIC absl::base absl::strings absl::
                       absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
 # Link UFT8_range
 target_link_libraries(${LIB_PROJECT_NAME} PUBLIC utf8_range::utf8_validity utf8_range::utf8_range)
+# Protocol versioning
+target_compile_definitions(${LIB_PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS 
+    -DLIVEKIT_PROTOCOL_VERSION=${LIVEKIT_PROTOCOL_VERSION})
 
 # Generic attributes for the library
 set_target_properties(${LIB_PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})

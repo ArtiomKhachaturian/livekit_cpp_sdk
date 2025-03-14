@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
+#include "TransportState.h"
+#include "NetworkType.h"
 #ifdef _WIN32
 #include <atlbase.h>
 #include <Windows.h>
-#include <wbemidl.h>
-#elif !defined(__APPLE__)
+#else
 #include <pthread.h>
+#ifndef __APPLE__
+#include <sys/prctl.h>
+#endif
 #endif
 #include <codecvt>
 #include <locale>
 
-#ifdef WIN32
-typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOEXW);
-#pragma comment(lib, "wbemuuid.lib")
-
 namespace {
 
+#ifdef WIN32
 class ScopedComInitializer
 {
 public:
@@ -38,10 +39,9 @@ public:
 private:
     const HRESULT _hr;
 };
+#endif
 
 }
-
-#endif
 
 using ConvertType = std::codecvt_utf8<wchar_t>;
 
@@ -128,6 +128,13 @@ std::string modelIdentifier()
     }
     return fromWideChar(model);
 }
+
+NetworkType activeNetworkType()
+{
+    // TODO: implement it
+    return NetworkType::Unknown;
+}
+
 #endif
 
 std::string fromWideChar(const std::wstring& w)
@@ -137,6 +144,50 @@ std::string fromWideChar(const std::wstring& w)
         return converter.to_bytes(w);
     }
     return {};
+}
+
+template<typename TPCEnum>
+inline std::string stateToString(TPCEnum state) { return {}; }
+
+template<typename TPCEnum>
+inline std::string enumTypeToString() { return {}; }
+
+template<>
+inline std::string stateToString<TransportState>(TransportState state) {
+    return toString(state);
+}
+
+template<>
+inline std::string enumTypeToString<TransportState>() {
+    return "transport";
+}
+
+template<typename TPCEnum>
+inline std::string makeChangesString(TPCEnum from, TPCEnum to) {
+    return enumTypeToString<TPCEnum>() + " state changed from '" +
+           stateToString(from) + "' to '" + stateToString(to) + "'";
+}
+
+std::string makeStateChangesString(TransportState from, TransportState to)
+{
+    return makeChangesString(from, to);
+}
+
+std::string toString(NetworkType state)
+{
+    switch (state) {
+        case NetworkType::WiFi:
+            return "wifi";
+        case NetworkType::Wired:
+            return "wired";
+        case NetworkType::Cellular:
+            return "cellular";
+        case NetworkType::Vpn:
+            return "vpn";
+        default:
+            break;
+    }
+    return "";
 }
 
 } // namespace LiveKitCpp

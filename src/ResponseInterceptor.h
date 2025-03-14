@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ResponseReceiver.h
-#include "Listeners.h"
+#include "Listener.h"
+#include "ProtoMarshaller.h"
 #include "livekit_rtc.pb.h"
 #include <memory>
 #include <optional>
@@ -22,19 +23,21 @@ namespace LiveKitCpp
 
 class SignalServerListener;
 
-class ResponseReceiver
+class ResponseInterceptor : private Bricks::LoggableR<>
 {
 public:
-    ResponseReceiver(uint64_t signalClientId);
+    ResponseInterceptor(Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
-    void addListener(SignalServerListener* listener);
-    void removeListener(SignalServerListener* listener);
+    void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
+protected:
+    // overrides of Bricks::LoggableR
+    std::string_view logCategory() const final;
 private:
-    static std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen);
+    std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen) const;
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
     template <class Method, class TLiveKitType>
-    void signal(const Method& method, const TLiveKitType& sig) const;
+    void signal(const Method& method, const TLiveKitType& sig, std::string typeName = {}) const;
     // all responses are defined in 'SignalResponse':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L61
     void handle(const livekit::JoinResponse& response) const;
@@ -57,8 +60,8 @@ private:
     void handle(const livekit::TrackSubscribed& subscribed) const;
     void handle(const livekit::Pong& pong) const;
 private:
-    const uint64_t _signalClientId;
-    Listeners<SignalServerListener*> _listeners;
+    const ProtoMarshaller _marshaller;
+    Bricks::Listener<SignalServerListener*> _listener;
 };
 
 } // namespace LiveKitCpp

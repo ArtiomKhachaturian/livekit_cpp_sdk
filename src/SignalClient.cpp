@@ -13,11 +13,12 @@
 // limitations under the License.
 #include "SignalClient.h"
 #include "SignalTransportListener.h"
-#include "ProtectedObj.h"
-#include "Listeners.h"
-#include "MemoryBlock.h"
-#include "core/ResponseReceiver.h"
-#include "core/RequestSender.h"
+#include "SafeObj.h"
+#include "Listener.h"
+#include "ResponseInterceptor.h"
+#include "RequestInterceptor.h"
+#include "Utils.h"
+#include "Blob.h"
 
 namespace LiveKitCpp
 {
@@ -25,22 +26,22 @@ namespace LiveKitCpp
 class SignalClient::Impl
 {
 public:
-    Impl(uint64_t id);
-    State transportState() const noexcept;
-    bool changeTransportState(State state);
-    void notifyAboutTransportError(const std::string& error);
-    void addListener(SignalTransportListener* listener);
-    void removeListener(SignalTransportListener* listener);
+    Impl(const SignalClient* client);
+    TransportState transportState() const noexcept;
+    ChangeTransportStateResult changeTransportState(TransportState state);
+    void notifyAboutTransportError(std::string error);
+    void setListener(SignalTransportListener* listener) { _listener = listener; }
 private:
-    const uint64_t _id;
-    Listeners<SignalTransportListener*> _listeners;
-    ProtectedObj<State> _transportState = State::Disconnected;
+    const SignalClient* _client;
+    Bricks::Listener<SignalTransportListener*> _listener;
+    Bricks::SafeObj<TransportState> _transportState = TransportState::Disconnected;
 };
 
-SignalClient::SignalClient(CommandSender* commandSender)
-    : _impl(std::make_unique<Impl>(id()))
-    , _responseReceiver(std::make_unique<ResponseReceiver>(id()))
-    , _requestSender(std::make_unique<RequestSender>(commandSender))
+SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
+    :  Bricks::LoggableR<>(logger)
+    , _impl(std::make_unique<Impl>(this))
+    , _responseReceiver(std::make_unique<ResponseInterceptor>(logger))
+    , _requestSender(std::make_unique<RequestInterceptor>(commandSender, logger))
 {
 }
 
@@ -48,37 +49,27 @@ SignalClient::~SignalClient()
 {
 }
 
-void SignalClient::addTransportListener(SignalTransportListener* listener)
+void SignalClient::setTransportListener(SignalTransportListener* listener)
 {
-    _impl->addListener(listener);
+    _impl->setListener(listener);
 }
 
-void SignalClient::addServerListener(SignalServerListener* listener)
+void SignalClient::setServerListener(SignalServerListener* listener)
 {
-    _responseReceiver->addListener(listener);
-}
-
-void SignalClient::removeTransportListener(SignalTransportListener* listener)
-{
-    _impl->removeListener(listener);
-}
-
-void SignalClient::removeServerListener(SignalServerListener* listener)
-{
-    _responseReceiver->removeListener(listener);
+    _responseReceiver->setListener(listener);
 }
 
 bool SignalClient::connect()
 {
-    return changeTransportState(State::Connected);
+    return ChangeTransportStateResult::Rejected != changeTransportState(TransportState::Connected);
 }
 
 void SignalClient::disconnect()
 {
-    changeTransportState(State::Disconnected);
+    changeTransportState(TransportState::Disconnected);
 }
 
-State SignalClient::transportState() const noexcept
+TransportState SignalClient::transportState() const noexcept
 {
     return _impl->transportState();
 }
@@ -163,88 +154,83 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
     return _requestSender->updateVideoTrack(track);
 }
 
-bool SignalClient::changeTransportState(State state)
+SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(TransportState state)
 {
     return _impl->changeTransportState(state);
 }
 
-void SignalClient::handleServerProtobufMessage(const std::shared_ptr<const MemoryBlock>& message)
+void SignalClient::notifyAboutTransportError(std::string error)
+{
+    _impl->notifyAboutTransportError(std::move(error));
+}
+
+void SignalClient::handleServerProtobufMessage(const Bricks::Blob& message)
 {
     if (message) {
-        handleServerProtobufMessage(message->data(), message->size());
+        _responseReceiver->parseBinary(message.data(), message.size());
     }
 }
 
-void SignalClient::handleServerProtobufMessage(const void* message, size_t len)
+std::string_view SignalClient::logCategory() const
 {
-    _responseReceiver->parseBinary(message, len);
+    static const std::string_view category("signaling_client");
+    return category;
 }
 
-void SignalClient::notifyAboutTransportError(const std::string& error)
-{
-    _impl->notifyAboutTransportError(error);
-}
-
-SignalClient::Impl::Impl(uint64_t id)
-    : _id(id)
+SignalClient::Impl::Impl(const SignalClient* client)
+    : _client(client)
 {
 }
 
-State SignalClient::Impl::transportState() const noexcept
+TransportState SignalClient::Impl::transportState() const noexcept
 {
-    LOCK_READ_PROTECTED_OBJ(_transportState);
+    LOCK_READ_SAFE_OBJ(_transportState);
     return _transportState.constRef();
 }
 
-bool SignalClient::Impl::changeTransportState(State state)
+SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportState(TransportState state)
 {
-    bool accepted = false, changed = false;
+    ChangeTransportStateResult result = ChangeTransportStateResult::Rejected;
     {
-        LOCK_WRITE_PROTECTED_OBJ(_transportState);
+        LOCK_WRITE_SAFE_OBJ(_transportState);
         if (_transportState != state) {
+            bool accepted = false;
             switch(_transportState.constRef()) {
-                case State::Connecting:
+                case TransportState::Connecting:
                     // any state is good
                     accepted = true;
                     break;
-                case State::Connected:
-                    accepted = State::Disconnecting == state || State::Disconnected == state;
+                case TransportState::Connected:
+                    accepted = TransportState::Disconnecting == state || TransportState::Disconnected == state;
                     break;
-                case State::Disconnecting:
-                    accepted = State::Disconnected == state;
+                case TransportState::Disconnecting:
+                    accepted = TransportState::Disconnected == state;
                     break;
-                case State::Disconnected:
-                    accepted = State::Connecting == state || State::Connected == state;
+                case TransportState::Disconnected:
+                    accepted = TransportState::Connecting == state || TransportState::Connected == state;
                     break;
             }
             if (accepted) {
+                if (_client->canLogVerbose()) {
+                    _client->logVerbose(makeStateChangesString(_transportState, state));
+                }
                 _transportState = state;
-                changed = true;
+                result = ChangeTransportStateResult::Changed;
             }
         }
         else {
-            accepted = true;
+            result = ChangeTransportStateResult::NotChanged;
         }
     }
-    if (changed) {
-        _listeners.invokeMethod(&SignalTransportListener::onTransportStateChanged, _id, state);
+    if (ChangeTransportStateResult::Changed == result) {
+        _listener.invoke(&SignalTransportListener::onTransportStateChanged, state);
     }
-    return accepted;
+    return result;
 }
 
-void SignalClient::Impl::notifyAboutTransportError(const std::string& error)
+void SignalClient::Impl::notifyAboutTransportError(std::string error)
 {
-    _listeners.invokeMethod(&SignalTransportListener::onTransportError, _id, error);
-}
-
-void SignalClient::Impl::addListener(SignalTransportListener* listener)
-{
-    _listeners.add(listener);
-}
-
-void SignalClient::Impl::removeListener(SignalTransportListener* listener)
-{
-    _listeners.remove(listener);
+    _listener.invoke(&SignalTransportListener::onTransportError, std::move(error));
 }
 
 } // namespace LiveKitCpp

@@ -11,24 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#ifdef USE_ZAPHOYD_TPP_SOCKETS
-#include "WebsocketTppTypeDefs.h"
+#pragma once // MarshalledTypesFwd.h
+#include <string>
+
+#define MARSHALLED_TYPE_NAME_DECL(name) \
+    template<> std::string marshalledTypeName<name>() { return #name; }
 
 namespace LiveKitCpp
 {
 
-struct WebsocketTls;
-
-class WebsocketTppServiceProvider
-{
-public:
-    virtual ~WebsocketTppServiceProvider() = default;
-    virtual void startService() = 0;
-    virtual void stopService() = 0;
-    virtual WebsocketTppIOSrv* service() = 0;
-    virtual std::shared_ptr<WebsocketTppSSLCtx> createSSLContext(const WebsocketTls& tls) const = 0;
-};
+template<typename T>
+inline std::string marshalledTypeName() {
+    static_assert(false, "type name not evaluated, "
+                         "use MARSHALLED_TYPE_NAME_DECL macro "
+                         "for the type name declaration");
+}
 
 } // namespace LiveKitCpp
-#endif
