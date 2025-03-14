@@ -4,3 +4,9 @@
 [submodule "psrpc"]
 	path = psrpc
 	url = https://github.com/livekit/psrpc.git
+[submodule "bricks"]
+	path = bricks
+	url = https://github.com/ArtiomKhachaturian/Bricks.git
+[submodule "websockets_api"]
+	path = websockets_api
+	url = https://github.com/ArtiomKhachaturian/Websockets-API.git
