@@ -22,60 +22,78 @@ template <typename T>
 class ScopedCoMem
 {
 public:
-    ScopedCoMem(T* ptr = nullptr)
-        : _ptr(ptr)
-    {
-    }
+    ScopedCoMem(T* ptr = nullptr) noexcept;
     ScopedCoMem(const ScopedCoMem&) = delete;
-    ScopedCoMem(ScopedCoMem&& tmp) noexcept
-        : _ptr(tmp.take())
-    {
-    }
-    ~ScopedCoMem() { reset(nullptr); }
-    static ScopedCoMem alloc(bool zeroed = true)
-    {
-        const auto ptr = reinterpret_cast<T*>(::CoTaskMemAlloc(sizeof(T)));
-        if (ptr && zeroed) {
-            ZeroMemory(ptr, sizeof(T));
-        }
-        return ScopedCoMem(ptr);
-    }
+    ScopedCoMem(ScopedCoMem&& tmp) noexcept;
+    ~ScopedCoMem() { reset(); }
+    static ScopedCoMem alloc(bool zeroed = true);
     ScopedCoMem& operator=(const ScopedCoMem&) = delete;
-    ScopedCoMem& operator=(ScopedCoMem&& tmp)
-    {
-        if (&tmp != this) {
-            reset(tmp.take());
-        }
-        return *this;
-    }
+    ScopedCoMem& operator=(ScopedCoMem&& tmp) noexcept;
     T** operator&() noexcept { return &_ptr; }
     operator T*() noexcept { return _ptr; }
     T* operator->() noexcept { return _ptr; }
     const T* operator->() const noexcept { return _ptr; }
     explicit operator bool() const noexcept { return nullptr != _ptr; }
-    friend bool operator==(const ScopedCoMem& lhs, std::nullptr_t) { return lhs.get() == nullptr; }
-    friend bool operator==(std::nullptr_t, const ScopedCoMem& rhs) { return rhs.get() == nullptr; }
-    friend bool operator!=(const ScopedCoMem& lhs, std::nullptr_t) { return lhs.get() != nullptr; }
-    friend bool operator!=(std::nullptr_t, const ScopedCoMem& rhs) { return rhs.get() != nullptr; }
-    void reset(T* ptr)
-    {
-        if (_ptr) {
-            ::CoTaskMemFree(_ptr);
-        }
-        _ptr = ptr;
-    }
+    friend bool operator==(const ScopedCoMem& lhs, std::nullptr_t) noexcept { return lhs.get() == nullptr; }
+    friend bool operator==(std::nullptr_t, const ScopedCoMem& rhs) noexcept { return rhs.get() == nullptr; }
+    friend bool operator!=(const ScopedCoMem& lhs, std::nullptr_t) noexcept { return lhs.get() != nullptr; }
+    friend bool operator!=(std::nullptr_t, const ScopedCoMem& rhs) noexcept { return rhs.get() != nullptr; }
+    void reset(T* ptr = nullptr);
     T* get() const noexcept { return _ptr; }
-    T* take()
-    {
-        if (_ptr) {
-            T* ptr = nullptr;
-            std::swap(ptr, _ptr);
-            return ptr;
-        }
-        return nullptr;
-    }
+    T* take() noexcept;
 private:
     T* _ptr;
 };
+
+template <typename T>
+inline ScopedCoMem<T>::ScopedCoMem(T* ptr) noexcept
+    : _ptr(ptr)
+{
+}
+
+template <typename T>
+inline ScopedCoMem<T>::ScopedCoMem(ScopedCoMem&& tmp) noexcept
+    : _ptr(tmp.take())
+{
+}
+
+template <typename T>
+inline ScopedCoMem<T> ScopedCoMem<T>::alloc(bool zeroed)
+{
+    const auto ptr = reinterpret_cast<T*>(::CoTaskMemAlloc(sizeof(T)));
+    if (ptr && zeroed) {
+        ZeroMemory(ptr, sizeof(T));
+    }
+    return ScopedCoMem(ptr);
+}
+
+template <typename T>
+inline ScopedCoMem<T>& ScopedCoMem<T>::operator=(ScopedCoMem<T>&& tmp) noexcept
+{
+    if (&tmp != this) {
+        reset(tmp.take());
+    }
+    return *this;
+}
+
+template <typename T>
+inline void ScopedCoMem<T>::reset(T* ptr)
+{
+    if (_ptr) {
+        ::CoTaskMemFree(_ptr);
+    }
+    _ptr = ptr;
+}
+
+template <typename T>
+T* ScopedCoMem<T>::take() noexcept
+{
+    if (_ptr) {
+        T* ptr = nullptr;
+        std::swap(ptr, _ptr);
+        return ptr;
+    }
+    return nullptr;
+}
 
 } // namespace LiveKitCpp

@@ -27,60 +27,84 @@ class IUnknownImpl : public TBaseComInterfaces...
     static_assert((std::is_base_of_v<IUnknown, TBaseComInterfaces> && ...), 
                   "TBaseComInterfaces must be derived from IUnknown");
 public:
-    ULONG STDMETHODCALLTYPE AddRef() override
-    {
-        const MutexLock lock(_refMutex);
-        return ++_ref;
-    }
-    ULONG STDMETHODCALLTYPE Release() override
-    {
-        const ULONG refCount = decrementRef();
-        if (0UL == refCount) {
-            releaseThis();
-        }
-        return refCount;
-    }
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, VOID** ppvInterface) override
-    {
-        HRESULT hr = E_INVALIDARG;
-        if (ppvInterface) {
-            *ppvInterface = nullptr;
-            if (IID_IUnknown == riid || isUuidOf(riid, static_cast<TBaseComInterfaces*>(this)...)) {
-                *ppvInterface = (void*)this;
-                AddRef();
-                hr = NOERROR;
-            } else {
-                hr = E_NOINTERFACE;
-            }
-        }
-        return hr;
-    }
+    ULONG STDMETHODCALLTYPE AddRef() override;
+    ULONG STDMETHODCALLTYPE Release() override;
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, VOID** ppvInterface) override;
 protected:
     IUnknownImpl() = default;
     // IUnknown has no virtual destructor
     virtual void releaseThis() = 0;
 private:
-    ULONG decrementRef()
-    {
-        const MutexLock lock(_refMutex);
-        if (_ref > 0UL) {
-            --_ref;
-        }
-        return _ref;
-    }
+    ULONG decrementRef();
     template <class TComInterface>
-    static bool isUuidOf(REFIID riid, TComInterface*)
-    {
-        return riid == __uuidof(TComInterface);
-    }
+    static bool isUuidOf(REFIID riid, TComInterface*);
     template <class TComInterface, class... TRestComInterfaces>
-    static bool isUuidOf(REFIID riid, TComInterface* comInterface, TRestComInterfaces... restComInterfaces)
-    {
-        return isUuidOf(riid, comInterface) || isUuidOf(riid, restComInterfaces...);
-    }
+    static bool isUuidOf(REFIID riid, TComInterface* comInterface,
+                         TRestComInterfaces... restComInterfaces);
 private:
     Mutex _refMutex;
     LONG _ref = 0LL;
 };
+
+template <class... TBaseComInterfaces>
+inline ULONG IUnknownImpl<TBaseComInterfaces...>::AddRef()
+{
+    const MutexLock lock(_refMutex);
+    return ++_ref;
+}
+
+template <class... TBaseComInterfaces>
+inline ULONG IUnknownImpl<TBaseComInterfaces...>::Release()
+{
+    const ULONG refCount = decrementRef();
+    if (0UL == refCount) {
+        releaseThis();
+    }
+    return refCount;
+}
+
+template <class... TBaseComInterfaces>
+inline HRESULT IUnknownImpl<TBaseComInterfaces...>::QueryInterface(REFIID riid, VOID** ppvInterface)
+{
+    HRESULT hr = E_INVALIDARG;
+    if (ppvInterface) {
+        *ppvInterface = nullptr;
+        if (IID_IUnknown == riid || isUuidOf(riid, static_cast<TBaseComInterfaces*>(this)...)) {
+            *ppvInterface = (void*)this;
+            AddRef();
+            hr = NOERROR;
+        }
+        else {
+            hr = E_NOINTERFACE;
+        }
+    }
+    return hr;
+}
+
+template <class... TBaseComInterfaces>
+inline ULONG IUnknownImpl<TBaseComInterfaces...>::decrementRef()
+{
+    const MutexLock lock(_refMutex);
+    if (_ref > 0UL) {
+        --_ref;
+    }
+    return _ref;
+}
+
+template <class... TBaseComInterfaces>
+template <class TComInterface>
+inline bool IUnknownImpl<TBaseComInterfaces...>::isUuidOf(REFIID riid, TComInterface*)
+{
+    return riid == __uuidof(TComInterface);
+}
+
+template <class... TBaseComInterfaces>
+template <class TComInterface, class... TRestComInterfaces>
+inline bool IUnknownImpl<TBaseComInterfaces...>::isUuidOf(REFIID riid, 
+                                                          TComInterface* comInterface, 
+                                                          TRestComInterfaces... restComInterfaces)
+{
+    return isUuidOf(riid, comInterface) || isUuidOf(riid, restComInterfaces...);
+}
 
 } // namespace LiveKitCpp
