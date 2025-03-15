@@ -216,10 +216,22 @@ if (WEBRTC_AVAILABLE)
         target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
         target_link_libraries(${PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
     elseif(WIN32)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -DRTC_ENABLE_WIN_WGC)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE -DWINRT_DIAGNOSTICS -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -DRTC_ENABLE_WIN_WGC)
         # C++20 required for supporting of designated initializers (related to video codecs) in WebRTC code
         # maybe we need to review this approach and remove such initializer with replacement to own code
         target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /wd4068 /wd4141)
+        target_link_libraries(${PROJECT_NAME} PRIVATE wmcodecdspuuid.lib 
+                                                      dmoguids.lib 
+                                                      msdmo.lib 
+                                                      avrt.lib 
+                                                      strmiids.lib 
+                                                      winmm.lib
+                                                      windowscodecs.lib 
+                                                      crypt32.lib 
+                                                      secur32.lib 
+                                                      ws2_32.lib 
+                                                      d3d11.lib 
+                                                      dxgi.lib)
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE ${WEBRTC_LIB_FILES})
 endif()
