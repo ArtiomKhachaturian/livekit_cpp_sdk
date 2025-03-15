@@ -231,7 +231,8 @@ if (WEBRTC_AVAILABLE)
                                                       secur32.lib 
                                                       ws2_32.lib 
                                                       d3d11.lib 
-                                                      dxgi.lib)
+                                                      dxgi.lib 
+                                                      iphlpapi.lib)
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE ${WEBRTC_LIB_FILES})
 endif()
