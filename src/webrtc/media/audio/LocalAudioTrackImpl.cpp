@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalAudioTrack.h"
+#include "LocalAudioTrackImpl.h"
 #include "MediaAuthorization.h"
 
 namespace {
@@ -25,19 +25,19 @@ inline std::string audioLabel(bool microphone) {
 namespace LiveKitCpp
 {
 
-LocalAudioTrack::LocalAudioTrack(LocalTrackManager* manager, bool microphone,
-                                 const std::shared_ptr<Bricks::Logger>& logger)
+LocalAudioTrackImpl::LocalAudioTrackImpl(LocalTrackManager* manager, bool microphone,
+                                         const std::shared_ptr<Bricks::Logger>& logger)
     : Base(audioLabel(microphone), manager, logger)
     , _microphone(microphone)
 {
 }
 
-TrackSource LocalAudioTrack::source() const
+TrackSource LocalAudioTrackImpl::source() const
 {
     return _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
 }
 
-void LocalAudioTrack::fillRequest(AddTrackRequest* request) const
+void LocalAudioTrackImpl::fillRequest(AddTrackRequest* request) const
 {
     Base::fillRequest(request);
     if (request) {
@@ -46,7 +46,7 @@ void LocalAudioTrack::fillRequest(AddTrackRequest* request) const
     }
 }
 
-void LocalAudioTrack::requestAuthorization()
+void LocalAudioTrackImpl::requestAuthorization()
 {
     Base::requestAuthorization();
     if (_microphone) {
@@ -54,7 +54,8 @@ void LocalAudioTrack::requestAuthorization()
     }
 }
 
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrack::createMediaTrack(const std::string& id)
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrackImpl::
+    createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
         return m->createMic(id);

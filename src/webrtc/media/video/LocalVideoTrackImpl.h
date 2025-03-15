@@ -18,19 +18,19 @@
 namespace LiveKitCpp
 {
 
-template<class TMediaTrack = webrtc::VideoTrackInterface>
-class LocalVideoTrack : public LocalTrackImpl<TMediaTrack, VideoTrack>
+template<class TRtcTrack = webrtc::VideoTrackInterface, class TTrackApi = VideoTrack>
+class LocalVideoTrackImpl : public LocalTrackImpl<TRtcTrack, TTrackApi>
 {
-    using Base = LocalTrackImpl<TMediaTrack, VideoTrack>;
+    using Base = LocalTrackImpl<TRtcTrack, TTrackApi>;
 protected:
-    LocalVideoTrack(std::string name, LocalTrackManager* manager,
-                    const std::shared_ptr<Bricks::Logger>& logger = {});
+    LocalVideoTrackImpl(std::string name, LocalTrackManager* manager,
+                        const std::shared_ptr<Bricks::Logger>& logger = {});
 };
 
-template<class TMediaTrack>
-inline LocalVideoTrack<TMediaTrack>::LocalVideoTrack(std::string name,
-                                                     LocalTrackManager* manager,
-                                                     const std::shared_ptr<Bricks::Logger>& logger)
+template<class TRtcTrack, class TTrackApi>
+inline LocalVideoTrackImpl<TRtcTrack, TTrackApi>::
+    LocalVideoTrackImpl(std::string name, LocalTrackManager* manager,
+                        const std::shared_ptr<Bricks::Logger>& logger)
     : Base(std::move(name), manager, logger)
 {
 }

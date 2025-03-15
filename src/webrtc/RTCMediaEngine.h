@@ -14,8 +14,8 @@
 #pragma once // RTCMediaEngine.h
 #include "Loggable.h"
 #include "TransportManagerListener.h"
-#include "LocalAudioTrack.h"
-#include "CameraTrack.h"
+#include "LocalAudioTrackImpl.h"
+#include "CameraTrackImpl.h"
 #include "LocalTrackManager.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
@@ -100,8 +100,8 @@ private:
     Bricks::SafeObj<DataChannels> _localDCs;
     Bricks::SafeObj<DataChannels> _remoteDCs;
     Bricks::SafeObj<RemoteTracks> _remoteTracks;
-    LocalAudioTrack _microphone;
-    CameraTrack _camera;
+    LocalAudioTrackImpl _microphone;
+    CameraTrackImpl _camera;
 };
 
 } // namespace LiveKitCpp
