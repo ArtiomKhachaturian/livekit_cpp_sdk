@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#ifdef WEBRTC_WIN
 #include "WinCameraCapturer.h"
 #include "CameraManager.h"
 #include "CameraObserver.h"
@@ -456,3 +457,4 @@ void WinCameraCapturer::DVCameraConfig::disconnect()
 }
 
 } // namespace LiveKitCpp
+#endif

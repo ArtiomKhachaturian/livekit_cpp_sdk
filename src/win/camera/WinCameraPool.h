@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_WIN
 #include <api/scoped_refptr.h>
 #include <memory>
 #include <string>
@@ -45,3 +46,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

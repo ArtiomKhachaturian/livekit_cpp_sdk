@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ComErrorHandling.h
+#ifdef WEBRTC_WIN
 #include <memory>
 #include <system_error>
 #include <Windows.h>
@@ -51,3 +52,4 @@ inline std::error_code make_error_code(HRESULT hr) noexcept {
 }
 
 }
+#endif

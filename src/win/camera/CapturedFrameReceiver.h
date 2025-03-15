@@ -9,6 +9,7 @@
 **                                                                                                               **
 *********************************************************************************************************************/
 #pragma once
+#ifdef WEBRTC_WIN
 #include <atlbase.h> //CComPtr support
 #include <stddef.h>
 #include <strmif.h>
@@ -32,3 +33,4 @@ protected:
 };
 
 } // namespace LiveKitCpp
+#endif

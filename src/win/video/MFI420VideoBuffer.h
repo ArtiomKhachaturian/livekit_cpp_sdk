@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_WIN
 #include "MFVideoBuffer.h"
 #include <api/video/i420_buffer.h>
 #include <memory>
@@ -92,3 +93,4 @@ inline const uint8_t* MFI420VideoBuffer<TMFData>::DataV() const
 }
 
 } // namespace LiveKitCpp
+#endif

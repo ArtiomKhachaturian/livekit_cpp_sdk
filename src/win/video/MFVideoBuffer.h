@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_WIN
 #include "MFVideoBufferInterface.h"
 #include <atlbase.h> //CComPtr support
 #include <mfobjects.h>
@@ -80,3 +81,4 @@ inline MFVideoBuffer<TBaseBuffer, TMFData>::~MFVideoBuffer()
 }
 
 } // namespace LiveKitCpp
+#endif

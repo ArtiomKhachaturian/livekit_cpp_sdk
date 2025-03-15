@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#ifdef WEBRTC_WIN
 #include "MFMediaSampleBuffer.h"
 #include "MFI420VideoBuffer.h"
 #include "MFNV12VideoBuffer.h"
@@ -176,3 +177,4 @@ void MFMediaSampleBuffer::swapIfRotated(webrtc::VideoRotation rotation, int& wid
 }
 
 } // namespace LiveKitCpp
+#endif

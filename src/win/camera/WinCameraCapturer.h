@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_WIN
 #include "Loggable.h"
 #include "CameraCapturer.h"
 #include "CapturedFrameReceiver.h"
@@ -92,3 +93,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

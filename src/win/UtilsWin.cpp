@@ -15,8 +15,10 @@
 #include "ComErrorHandling.h"
 #include "NetworkType.h"
 #include "Logger.h"
+#ifdef WEBRTC_WIN
 #include <rtc_base/string_utils.h>
 #include <rtc_base/strings/string_builder.h>
+#endif
 #include <atlbase.h>
 #include <Windows.h>
 #include <wbemidl.h>
@@ -156,6 +158,7 @@ std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueN
     return data;
 }
 
+#ifdef WEBRTC_WIN
 std::string comErrorToString(const _com_error& error, const char* function, int lineNumber)
 {
     thread_local static char ss_buf[1024];
@@ -208,6 +211,7 @@ HRESULT logComError(HRESULT hr, const char* function, int lineNumber,
     }
     return hr;
 }
+#endif
 
 } // namespace LiveKitCpp
 

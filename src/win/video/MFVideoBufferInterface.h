@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_WIN
 #include <Windows.h>
 #include <api/video/video_frame_buffer.h>
 #include <common_video/libyuv/include/webrtc_libyuv.h>
@@ -33,3 +34,4 @@ protected:
 };
 
 } // namespace LiveKitCpp
+#endif

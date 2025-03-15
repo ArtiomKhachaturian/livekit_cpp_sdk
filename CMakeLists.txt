@@ -219,7 +219,7 @@ if (WEBRTC_AVAILABLE)
         target_compile_definitions(${PROJECT_NAME} PRIVATE -DWINRT_DIAGNOSTICS -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -DRTC_ENABLE_WIN_WGC)
         # C++20 required for supporting of designated initializers (related to video codecs) in WebRTC code
         # maybe we need to review this approach and remove such initializer with replacement to own code
-        target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /wd4068 /wd4141)
+        target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20)
         target_link_libraries(${PROJECT_NAME} PRIVATE wmcodecdspuuid.lib 
                                                       dmoguids.lib 
                                                       msdmo.lib 
@@ -252,6 +252,7 @@ if (APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreServices -framework IOKit -framework CoreWLAN")
 elseif(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+    target_compile_options(${PROJECT_NAME} PRIVATE /wd4068 /wd4141)
 endif()
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DLIVEKIT_CLIENT_EXPORTS 
     -DLIVEKIT_PROTOCOL_VERSION=${LIVEKIT_PROTOCOL_VERSION} 

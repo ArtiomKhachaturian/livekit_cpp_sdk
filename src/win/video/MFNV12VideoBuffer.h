@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_WIN
 #include "MFVideoBuffer.h"
 #include "NV12VideoFrameBuffer.h"
 
@@ -62,3 +63,4 @@ inline const uint8_t* MFNV12VideoBuffer<TMFData>::DataUV() const
 }
 
 } // namespace LiveKitCpp
+#endif

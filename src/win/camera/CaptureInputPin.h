@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef WEBRTC_WIN
 #include "Loggable.h"
 #include "IUnknownImpl.h"
 #include "SafeComPtr.h"
@@ -84,3 +85,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif
