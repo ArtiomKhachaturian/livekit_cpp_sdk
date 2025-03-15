@@ -26,12 +26,12 @@ namespace LiveKitCpp
 {
 
 class CaptureSinkFilter;
+class DVCameraConfig;
 enum class CameraState;
 
 class WinCameraCapturer : public Bricks::LoggableS<CameraCapturer>,
                           private CapturedFrameReceiver
 {
-    class DVCameraConfig;
     using DeviceInfoDS = webrtc::videocapturemodule::DeviceInfoDS;
 public:
     ~WinCameraCapturer() override;

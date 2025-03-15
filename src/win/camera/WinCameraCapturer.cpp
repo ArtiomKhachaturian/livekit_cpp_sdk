@@ -17,6 +17,7 @@
 #include "CameraObserver.h"
 #include "CaptureSinkFilter.h"
 #include "CameraErrorHandling.h"
+#include "DVCameraConfig.h"
 #include "./video/MFMediaSampleBuffer.h"
 #include <api/media_stream_interface.h>
 #include <dvdmedia.h>
@@ -29,32 +30,6 @@
 
 namespace LiveKitCpp 
 {
-
-// Microsoft DV interface (external DV cameras)
-class WinCameraCapturer::DVCameraConfig : public Bricks::LoggableS<>
-{
-public:
-    DVCameraConfig(const CComPtr<IGraphBuilder>& graphBuilder,
-                   const CComPtr<IPin>& inputDvPin,
-                   const CComPtr<IPin>& outputDvPin,
-                   const CComPtr<IBaseFilter>& dvFilter,
-                   const CComPtr<IPin>& inputSendPin,
-                   const CComPtr<IPin>& outputCapturePin,
-                   const std::shared_ptr<Bricks::Logger>& logger);
-    ~DVCameraConfig();
-    bool connect();
-    void disconnect();
-protected:
-    // overrides of Bricks::LoggableS
-    std::string_view logCategory() const final { return CameraManager::logCategory(); }
-private:
-    const CComPtr<IGraphBuilder> _graphBuilder;
-    const CComPtr<IPin> _inputDvPin;
-    const CComPtr<IPin> _outputDvPin;
-    const CComPtr<IBaseFilter> _dvFilter;
-    const CComPtr<IPin> _inputSendPin;
-    const CComPtr<IPin> _outputCapturePin;
-};
 
 WinCameraCapturer::WinCameraCapturer(const MediaDevice& device,
                                      std::unique_ptr<DeviceInfoDS> deviceInfo,
@@ -97,49 +72,60 @@ std::string_view WinCameraCapturer::logCategory() const
                                                                const std::shared_ptr<Bricks::Logger>& logger)
 {
     const auto& guid = device._guid;
-    if (!guid.empty()) {
-        std::unique_ptr<DeviceInfoDS> deviceInfo(DeviceInfoDS::Create());
-        if (deviceInfo) {
-            const CComPtr<IBaseFilter> captureFilter = deviceInfo->GetDeviceFilter(guid.data());
-            if (captureFilter) {
-                CComPtr<IGraphBuilder> graphBuilder;
-                HRESULT hr = graphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER);
-                if (CAMERA_IS_OK(hr, logger)) {
-                    CComPtr<IMediaControl> mediaControl;
-                    hr = graphBuilder->QueryInterface(&mediaControl);
-                    if (CAMERA_IS_OK(hr, logger)) {
-                        hr = graphBuilder->AddFilter(captureFilter, CAPTURE_FILTER_NAME);
-                        if (CAMERA_IS_OK(hr, logger)) {
-                            const CComPtr<IPin> outputCapturePin = findOutputPin(captureFilter, logger);
-                            if (outputCapturePin) {
-                                const auto capturer = rtc::make_ref_counted<WinCameraCapturer>(device,
-                                                                                               std::move(deviceInfo),
-                                                                                               captureFilter,
-                                                                                               graphBuilder,
-                                                                                               mediaControl,
-                                                                                               outputCapturePin,
-                                                                                               logger);
-                                if (capturer->_inputSendPin &&
-                                    capturer->setCameraOutput(defaultCapability())) {
-                                    hr = capturer->_mediaControl->Pause();
-                                    if (CAMERA_IS_OK(hr, logger)) {
-                                        LOCK_WRITE_SAFE_OBJ(capturer->_requestedCapability);
-                                        capturer->_requestedCapability = webrtc::VideoCaptureCapability();
-                                        return capturer;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if (logger) {
-                logger->logWarning("failed to create capture filter");
-            }
-        } else if (logger) {
-            logger->logWarning("failed to create DS info module");
-        }
+    if (guid.empty()) {
+        return {};
     }
-    return nullptr;
+    std::unique_ptr<DeviceInfoDS> deviceInfo(DeviceInfoDS::Create());
+    if (!deviceInfo) {
+        if (logger) {
+            logger->logError("failed to create DS info module");
+        }
+        return {};
+    }
+    const CComPtr<IBaseFilter> captureFilter = deviceInfo->GetDeviceFilter(guid.data());
+    if (!captureFilter) {
+        if (logger) {
+            logger->logError("failed to create capture filter");
+        }
+        return {};
+    }
+    CComPtr<IGraphBuilder> graphBuilder;
+    HRESULT hr = graphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER);
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return {};
+    }
+    CComPtr<IMediaControl> mediaControl;
+    hr = graphBuilder->QueryInterface(&mediaControl);
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return {};
+    }
+    hr = graphBuilder->AddFilter(captureFilter, CAPTURE_FILTER_NAME);
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return {};
+    }
+    const CComPtr<IPin> outputCapturePin = findOutputPin(captureFilter, logger);
+    if (!outputCapturePin) {
+        return {};
+    }
+    const auto capturer = rtc::make_ref_counted<WinCameraCapturer>(device,
+                                                                   std::move(deviceInfo),
+                                                                   captureFilter,
+                                                                   graphBuilder,
+                                                                   mediaControl,
+                                                                   outputCapturePin,
+                                                                   logger);
+    if (!capturer->_inputSendPin) {
+        return {};
+    }
+    if (!capturer->setCameraOutput(defaultCapability())) {
+        return {};
+    }
+    hr = capturer->_mediaControl->Pause();
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return {};
+    }
+    capturer->_requestedCapability({});
+    return capturer;
 }
 
 void WinCameraCapturer::setObserver(CameraObserver* observer)
@@ -231,43 +217,49 @@ bool WinCameraCapturer::connectDVCamera(const CComPtr<IGraphBuilder>& graphBuild
                                         std::unique_ptr<DVCameraConfig>& outputConfig,
                                         const std::shared_ptr<Bricks::Logger>& logger)
 {
-    if (graphBuilder && inputSendPin && outputCapturePin) {
-        CComPtr<IBaseFilter> dvFilter;
-        HRESULT hr = dvFilter.CoCreateInstance(CLSID_DVVideoCodec, NULL, CLSCTX_INPROC);
-        if (CAMERA_IS_OK(hr, logger)) {
-            hr = graphBuilder->AddFilter(dvFilter, L"VideoDecoderDV");
-            if (CAMERA_IS_OK(hr, logger)) {
-                const CComPtr<IPin> inputDvPin = findInputPin(dvFilter, logger);
-                if (inputDvPin) {
-                    const CComPtr<IPin> outputDvPin = findOutputPin(dvFilter, logger);
-                    if (outputDvPin) {
-                        auto newConfig = std::make_unique<DVCameraConfig>(graphBuilder, inputDvPin,
-                                                                          outputDvPin, dvFilter,
-                                                                          inputSendPin, 
-                                                                          outputCapturePin,
-                                                                          logger);
-                        if (newConfig->connect()) {
-                            outputConfig = std::move(newConfig);
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
+    if (!graphBuilder || !inputSendPin || !outputCapturePin) {
+        return false;
     }
-    return false;
+    CComPtr<IBaseFilter> dvFilter;
+    HRESULT hr = dvFilter.CoCreateInstance(CLSID_DVVideoCodec, NULL, CLSCTX_INPROC);
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return false;
+    }
+    hr = graphBuilder->AddFilter(dvFilter, L"VideoDecoderDV");
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return false;
+    }
+    const CComPtr<IPin> inputDvPin = findInputPin(dvFilter, logger);
+    if (!inputDvPin) {
+        return false;
+    }
+    const CComPtr<IPin> outputDvPin = findOutputPin(dvFilter, logger);
+    if (!outputDvPin) {
+        return false;
+    }
+    auto newConfig = std::make_unique<DVCameraConfig>(graphBuilder, inputDvPin,
+                                                      outputDvPin, dvFilter,
+                                                      inputSendPin,
+                                                      outputCapturePin,
+                                                      logger);
+    if (!newConfig->connect()) {
+        return false;
+    }
+    outputConfig = std::move(newConfig);
+    return true;
 }
 
 CComPtr<IPin> WinCameraCapturer::findInputSendPin(const CComPtr<IGraphBuilder>& graphBuilder,
                                                   IBaseFilter* filter,
                                                   const std::shared_ptr<Bricks::Logger>& logger)
 {
-    if (graphBuilder && filter) {
-        if (CAMERA_IS_OK(graphBuilder->AddFilter(filter, SINK_FILTER_NAME), logger)) {
-            return findInputPin(filter, logger);
-        }
+    if (!graphBuilder || !filter) {
+        return {};
     }
-    return CComPtr<IPin>();
+    if (!CAMERA_IS_OK(graphBuilder->AddFilter(filter, SINK_FILTER_NAME), logger)) {
+        return {};
+    }
+    return findInputPin(filter, logger);
 }
 
 CComPtr<IPin> WinCameraCapturer::findInputPin(IBaseFilter* filter,
@@ -412,48 +404,6 @@ void WinCameraCapturer::disconnect()
     if (const auto& dvCameraConfig = _dvCameraConfig.constRef()) {
         dvCameraConfig->disconnect();
     }
-}
-
-WinCameraCapturer::DVCameraConfig::DVCameraConfig(const CComPtr<IGraphBuilder>& graphBuilder,
-                                                  const CComPtr<IPin>& inputDvPin,
-                                                  const CComPtr<IPin>& outputDvPin,
-                                                  const CComPtr<IBaseFilter>& dvFilter,
-                                                  const CComPtr<IPin>& inputSendPin,
-                                                  const CComPtr<IPin>& outputCapturePin,
-                                                  const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<>(logger)
-    , _graphBuilder(graphBuilder)
-    , _inputDvPin(inputDvPin)
-    , _outputDvPin(outputDvPin)
-    , _dvFilter(dvFilter)
-    , _inputSendPin(inputSendPin)
-    , _outputCapturePin(outputCapturePin)
-{
-    assert(_graphBuilder);
-    assert(_inputDvPin);
-    assert(_outputDvPin);
-    assert(_dvFilter);
-    assert(_inputSendPin);
-    assert(_outputCapturePin);
-}
-
-WinCameraCapturer::DVCameraConfig::~DVCameraConfig()
-{
-    _graphBuilder->RemoveFilter(_dvFilter);
-}
-
-bool WinCameraCapturer::DVCameraConfig::connect()
-{
-    if (LOGGABLE_COM_IS_OK(_graphBuilder->ConnectDirect(_outputCapturePin, _inputDvPin, NULL))) {
-        return LOGGABLE_COM_IS_OK(_graphBuilder->ConnectDirect(_outputDvPin, _inputSendPin, NULL));
-    }
-    return false;
-}
-
-void WinCameraCapturer::DVCameraConfig::disconnect()
-{
-    LOGGABLE_COM_ERROR(_graphBuilder->Disconnect(_inputDvPin));
-    LOGGABLE_COM_ERROR(_graphBuilder->Disconnect(_outputDvPin));
 }
 
 } // namespace LiveKitCpp
