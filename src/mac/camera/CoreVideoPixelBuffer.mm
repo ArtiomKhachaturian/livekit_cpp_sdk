@@ -15,6 +15,7 @@
 #include "CoreVideoPixelBuffer.h"
 #include "CVPixelBufferAutoRelease.h"
 #include "VTSupportedPixelFormats.h"
+#include "VideoFrameBuffer.h"
 #include <api/video/nv12_buffer.h>
 #include <api/video/i420_buffer.h>
 #include <api/make_ref_counted.h>
@@ -35,7 +36,8 @@ protected:
 };
 
 template<class TBaseVideoBuffer>
-class CoreVideoPixelBufferHolder : public TBaseVideoBuffer, public CoreVideoPixelBufferAccessor
+class CoreVideoPixelBufferHolder : public VideoFrameBuffer<TBaseVideoBuffer>,
+                                   public CoreVideoPixelBufferAccessor
 {
 public:
     ~CoreVideoPixelBufferHolder();
@@ -71,7 +73,8 @@ public:
     int StrideUV() const final { return cvStride(1UL); }
     int width() const final { return cvWidth(); }
     int height() const final { return cvHeight(); }
-    rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
+protected:
+    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 }
@@ -140,7 +143,7 @@ namespace
 template<class TBaseVideoBuffer> template <class... AdditionalArgs>
 CoreVideoPixelBufferHolder<TBaseVideoBuffer>::CoreVideoPixelBufferHolder(CVPixelBufferAutoRelease lockedBuffer,
                                                                          AdditionalArgs&&... additionalArgs)
-    : TBaseVideoBuffer(std::forward<AdditionalArgs>(additionalArgs)...)
+    : VideoFrameBuffer<TBaseVideoBuffer>(std::forward<AdditionalArgs>(additionalArgs)...)
     , _lockedBuffer(std::move(lockedBuffer))
 {
 }
@@ -156,14 +159,16 @@ NV12PixelBuffer::NV12PixelBuffer(CVPixelBufferAutoRelease lockedBuffer)
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> NV12PixelBuffer::ToI420()
+rtc::scoped_refptr<webrtc::I420BufferInterface> NV12PixelBuffer::convertToI420() const
 {
-    auto i420 = webrtc::I420Buffer::Create(width(), height());
-    libyuv::NV12ToI420(DataY(), StrideY(), DataUV(), StrideUV(),
-                       i420->MutableDataY(), i420->StrideY(),
-                       i420->MutableDataU(), i420->StrideU(),
-                       i420->MutableDataV(), i420->StrideV(),
-                       width(), height());
+    auto i420 = createI420(width(), height());
+    if (i420) {
+        libyuv::NV12ToI420(DataY(), StrideY(), DataUV(), StrideUV(),
+                           i420->MutableDataY(), i420->StrideY(),
+                           i420->MutableDataU(), i420->StrideU(),
+                           i420->MutableDataV(), i420->StrideV(),
+                           width(), height());
+    }
     return i420;
 }
 
