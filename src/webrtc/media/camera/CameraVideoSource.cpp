@@ -262,9 +262,7 @@ void CameraVideoSource::changeState(webrtc::MediaSourceInterface::SourceState st
                 break;
         }
         _observers.invoke(&webrtc::ObserverInterface::OnChanged);
-        return true;
     }
-    return false;
 }
 
 std::string_view CameraVideoSource::logCategory() const

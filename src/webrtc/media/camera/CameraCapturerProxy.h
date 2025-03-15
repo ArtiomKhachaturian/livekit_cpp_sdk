@@ -37,6 +37,7 @@ public:
     bool captureCapability(webrtc::VideoCaptureCapability& capability) const;
     int32_t startCapture(const webrtc::VideoCaptureCapability& capability, CameraCapturerProxySink* sink);
     int32_t stopCapture(CameraCapturerProxySink* sink);
+    const char* currentDeviceName() const;
 protected:
     CameraCapturerProxy(::rtc::scoped_refptr<CameraCapturer> impl);
 private:

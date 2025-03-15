@@ -274,7 +274,10 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
 void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool muted)
 {
     if (!trackSid.empty()) {
-        const auto result = sendMuteTrack({._sid = trackSid, ._muted = muted});
+        MuteTrackRequest request;
+        request._sid = trackSid;
+        request._muted = muted;
+        const auto result = sendMuteTrack(request);
         if (SendResult::TransportError == result) {
             // TODO: log error
         }

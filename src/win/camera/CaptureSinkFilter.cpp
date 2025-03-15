@@ -35,10 +35,10 @@ private:
     int _pos = 0;
 };
 
-
-CaptureSinkFilter::CaptureSinkFilter(CapturedFrameReceiver* receiver)
+CaptureSinkFilter::CaptureSinkFilter(CapturedFrameReceiver* receiver,
+                                     const std::shared_ptr<Bricks::Logger>& logger)
     : _receiver(receiver)
-    , _inputPin(new CaptureInputPin(this))
+    , _inputPin(new CaptureInputPin(this, logger))
 {
 }
 

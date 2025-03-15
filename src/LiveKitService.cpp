@@ -316,15 +316,15 @@ bool LiveKitService::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>&
     static const WSAInitializer initializer;
     if (const auto error = initializer.GetError()) {
         if (logger && logger->canLogError()) {
-            logger->logError("Failed to WINSOCK initialization, error code: " + std::to_string(error), g_srvInit);
+            logger->logError("Failed to WINSOCK initialization, error code: " + std::to_string(error), g_logCategory);
         }
         return false;
     }
-    if (logger && && logger->canLogVerbose()) {
+    if (logger && logger->canLogVerbose()) {
         const auto& wsaVersion = initializer.GetSelectedVersion();
         if (wsaVersion.has_value()) {
             logger->logVerbose("WINSOCK initialization is done, library version: " +
-                              WSAInitializer::ToString(wsaVersion.value()), g_srvInit);
+                              WSAInitializer::ToString(wsaVersion.value()), g_logCategory);
         }
     }
 #endif
@@ -480,7 +480,7 @@ WSAInitializer::WSAInitializer()
 
 WSAInitializer::~WSAInitializer()
 {
-    if (0 == error()) {
+    if (0 == _error) {
         ::WSACleanup();
     }
 }

@@ -101,6 +101,11 @@ int32_t CameraCapturerProxy::stopCapture(CameraCapturerProxySink* sink)
     return result;
 }
 
+const char* CameraCapturerProxy::currentDeviceName() const
+{
+    return _impl->CurrentDeviceName();
+}
+
 void CameraCapturerProxy::onStateChanged(CameraState state)
 {
     _sinks.invoke(&CameraCapturerProxySink::onStateChanged, state);

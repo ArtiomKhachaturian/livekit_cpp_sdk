@@ -42,8 +42,11 @@ TransportManager::TransportManager(const JoinResponse& joinResponse,
     , _pingPongKit(listener, positiveOrZero(joinResponse._pingInterval), positiveOrZero(joinResponse._pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
-    _publisher.createDataChannel(DataChannel::lossyDCLabel(), {.ordered = true, .maxRetransmits = 0});
-    _publisher.createDataChannel(DataChannel::reliableDCLabel(), {.ordered = true});
+    webrtc::DataChannelInit lossy, reliable;
+    lossy.ordered = reliable.ordered = true;
+    lossy.maxRetransmits = 0;
+    _publisher.createDataChannel(DataChannel::lossyDCLabel(), lossy);
+    _publisher.createDataChannel(DataChannel::reliableDCLabel(), reliable);
 }
 
 TransportManager::~TransportManager()

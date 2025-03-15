@@ -51,7 +51,7 @@ webrtc::VideoEncoderFactory::CodecSupport VideoEncoderFactory::
     if (originalFormat) {
         return _factory->QueryCodecSupport(originalFormat.value(), std::move(scalabilityMode));
     }
-    return CodecSupport{.is_supported = false};
+    return {};
 }
 
 std::unique_ptr<webrtc::VideoEncoder> VideoEncoderFactory::Create(const webrtc::Environment& env,

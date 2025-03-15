@@ -13,13 +13,13 @@
 // limitations under the License.
 #pragma once // TransportManagerListener.h
 #include "PingPongKitListener.h"
+#include "DataChannel.h"
 #include <api/peer_connection_interface.h>
 
 namespace LiveKitCpp
 {
 
 enum class SignalTarget;
-class DataChannel;
 
 class TransportManagerListener : public PingPongKitListener
 {

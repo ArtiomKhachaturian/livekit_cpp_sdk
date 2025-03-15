@@ -16,8 +16,13 @@
 #include "IUnknownImpl.h"
 #include "SafeComPtr.h"
 #include <atlbase.h> //CComPtr support
-#include <atomic>
 #include <strmif.h>
+#include <atomic>
+#include <memory>
+
+namespace Bricks {
+class Logger;
+}
 
 namespace LiveKitCpp 
 {
@@ -29,7 +34,7 @@ class CaptureSinkFilter : public CapturedFrameReceiver, public IUnknownImpl<IBas
 {
     class PinsEnumerator;
 public:
-    CaptureSinkFilter(CapturedFrameReceiver* receiver);
+    CaptureSinkFilter(CapturedFrameReceiver* receiver, const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CaptureSinkFilter() override;
     HRESULT setRequestedCapability(const webrtc::VideoCaptureCapability& capability);
     void notifyEvent(long code, LONG_PTR param1, LONG_PTR param2);

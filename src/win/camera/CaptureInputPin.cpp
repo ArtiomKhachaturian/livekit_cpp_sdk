@@ -13,7 +13,9 @@
 // limitations under the License.
 #include "CaptureInputPin.h"
 #include "CaptureSinkFilter.h"
+#include "CameraManager.h"
 #include "ScopedCoMem.h"
+#include "CameraErrorHandling.h"
 #include "Utils.h"
 #include <dvdmedia.h>
 #include <modules/video_capture/windows/help_functions_ds.h>
@@ -64,8 +66,10 @@ private:
     size_t _pos = 0UL;
 };
 
-CaptureInputPin::CaptureInputPin(CaptureSinkFilter* filter)
-    : _info{filter, PINDIR_INPUT}
+CaptureInputPin::CaptureInputPin(CaptureSinkFilter* filter,
+                                 const std::shared_ptr<Bricks::Logger>& logger)
+    : Base(logger)
+    , _info{filter, PINDIR_INPUT}
 {
     ZeroMemory(&_mediaType.ref(), sizeof(AM_MEDIA_TYPE));
 }
@@ -100,7 +104,7 @@ void CaptureInputPin::notifyThatFilterActivated(bool activated)
         _flushing = true;
         LOCK_READ_SAFE_OBJ(_allocator);
         if (const auto& allocator = _allocator.constRef()) {
-            TRACE_COM_ERROR(allocator->Decommit());
+            LOGGABLE_COM_ERROR(allocator->Decommit());
         }
     }
 }
@@ -114,7 +118,7 @@ HRESULT CaptureInputPin::Connect(IPin* receivePin, const AM_MEDIA_TYPE* mediaTyp
             if (!_receivePin.constRef()) {
                 if (isMediaTypeFullySpecified(*mediaType)) {
                     hr = attemptConnection(receivePin, mediaType);
-                    if (COM_IS_OK(hr)) {
+                    if (LOGGABLE_COM_IS_OK(hr)) {
                         _receivePin.ref() = receivePin;
                         resetMediaType(mediaType);
                     }
@@ -122,7 +126,7 @@ HRESULT CaptureInputPin::Connect(IPin* receivePin, const AM_MEDIA_TYPE* mediaTyp
                     AM_MEDIA_TYPE* acceptedMediaType = nullptr;
                     const auto types = determineCandidateFormats(receivePin, mediaType);
                     for (const auto type : types) {
-                        if (acceptedMediaType == nullptr && COM_IS_OK(attemptConnection(receivePin, type))) {
+                        if (acceptedMediaType == nullptr && LOGGABLE_COM_IS_OK(attemptConnection(receivePin, type))) {
                             acceptedMediaType = type;
                         }
                         if (type != acceptedMediaType) {
@@ -158,7 +162,7 @@ HRESULT CaptureInputPin::ReceiveConnection(IPin* connector, const AM_MEDIA_TYPE*
                 hr = VFW_E_ALREADY_CONNECTED;
             } else {
                 hr = checkDirection(connector);
-                if (COM_IS_OK(hr)) {
+                if (LOGGABLE_COM_IS_OK(hr)) {
                     webrtc::VideoCaptureCapability capability;
                     if (translateMediaTypeToVideoCaptureCapability(mediaType, capability)) {
                         LOCK_WRITE_SAFE_OBJ(_resultingCapability);
@@ -312,7 +316,7 @@ HRESULT CaptureInputPin::GetAllocator(IMemAllocator** allocator)
         } else {
             hr = S_OK;
         }
-        if (COM_IS_OK(hr)) {
+        if (LOGGABLE_COM_IS_OK(hr)) {
             *allocator = _allocator.constRef();
             (*allocator)->AddRef();
         }
@@ -393,6 +397,11 @@ HRESULT CaptureInputPin::ReceiveMultiple(IMediaSample** samples, long count, lon
     return hr;
 }
 
+std::string_view CaptureInputPin::logCategory() const
+{
+    return CameraManager::logCategory();
+}
+
 CaptureSinkFilter* CaptureInputPin::filter() const
 {
     return static_cast<CaptureSinkFilter*>(_info.pFilter);
@@ -413,7 +422,7 @@ HRESULT CaptureInputPin::checkDirection(IPin* pin) const
     if (pin) {
         PIN_DIRECTION pd;
         hr = pin->QueryDirection(&pd);
-        if (COM_IS_OK(hr)) {
+        if (LOGGABLE_COM_IS_OK(hr)) {
             // fairly basic check, make sure we don't pair input with input etc.
             hr = pd == _info.dir ? VFW_E_INVALID_DIRECTION : S_OK;
         }
@@ -426,7 +435,7 @@ void CaptureInputPin::clearAllocator(bool decommit)
     LOCK_WRITE_SAFE_OBJ(_allocator);
     if (auto& allocator = _allocator.ref()) {
         if (decommit) {
-            TRACE_COM_ERROR(allocator->Decommit());
+            LOGGABLE_COM_ERROR(allocator->Decommit());
         }
         allocator.Release();
     }
@@ -444,11 +453,11 @@ HRESULT CaptureInputPin::attemptConnection(IPin* receivePin, const AM_MEDIA_TYPE
     if (receivePin && mediaType) {
         if (filter()->isStopped()) {
             hr = checkDirection(receivePin);
-            if (COM_IS_OK(hr)) {
+            if (LOGGABLE_COM_IS_OK(hr)) {
                 webrtc::VideoCaptureCapability capability;
                 if (translateMediaTypeToVideoCaptureCapability(mediaType, capability)) {
                     hr = receivePin->ReceiveConnection(this, mediaType);
-                    if (COM_IS_OK(hr)) {
+                    if (LOGGABLE_COM_IS_OK(hr)) {
                         LOCK_WRITE_SAFE_OBJ(_resultingCapability);
                         _resultingCapability = std::move(capability);
                     }
@@ -474,7 +483,7 @@ std::vector<AM_MEDIA_TYPE*> CaptureInputPin::determineCandidateFormats(IPin* rec
             CComPtr<IEnumMediaTypes> types;
             if (i == 0) {
                 // first time around, try types from receive_pin
-                TRACE_COM_ERROR(receivePin->EnumMediaTypes(&types));
+                LOGGABLE_COM_ERROR(receivePin->EnumMediaTypes(&types));
             } else {
                 types = createMediaTypesEnumerator();
             }

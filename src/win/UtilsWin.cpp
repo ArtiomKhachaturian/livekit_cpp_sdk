@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
+#include "ComErrorHandling.h"
 #include "NetworkType.h"
+#include "Logger.h"
+#include <rtc_base/string_utils.h>
+#include <rtc_base/strings/string_builder.h>
 #include <atlbase.h>
 #include <Windows.h>
 #include <wbemidl.h>
@@ -150,6 +154,59 @@ std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueN
         }
     }
     return data;
+}
+
+std::string comErrorToString(const _com_error& error, const char* function, int lineNumber)
+{
+    thread_local static char ss_buf[1024];
+    rtc::SimpleStringBuilder ss(ss_buf);
+    ss.AppendFormat("%s (0x%08X)", rtc::ToUtf8(error.ErrorMessage()).c_str(), error.Error());
+    if (function) {
+        const std::string_view functionName(function);
+        if (!functionName.empty()) {
+            ss << "[" << functionName;
+            if (lineNumber > 0) {
+                ss << ", line #" << lineNumber;
+            }
+            ss << "]";
+        }
+    }
+    return ss.str();
+}
+
+std::string comErrorToString(HRESULT hr, const char* function, int lineNumber)
+{
+    if (FAILED(hr)) {
+        return comErrorToString(_com_error(hr), function, lineNumber);
+    }
+    return {};
+}
+
+std::string comErrorToString(const std::system_error& e, const char* function, int lineNumber)
+{
+    const HRESULT code(e.code().value());
+    if (FAILED(code)) {
+        std::string error(e.what());
+        if (!error.empty()) {
+            const auto desc = comErrorToString(code, function, lineNumber);
+            if (!desc.empty()) {
+                error += " - " + desc;
+            }
+        }
+        return error;
+    }
+    return {};
+}
+
+HRESULT logComError(HRESULT hr, const char* function, int lineNumber,
+                    const std::shared_ptr<Bricks::Logger>& logger,
+                    std::string_view category)
+{
+    if (FAILED(hr) && logger && logger->canLogError()) {
+        const auto error = comErrorToString(hr, function, lineNumber);
+        logger->logError(error, category);
+    }
+    return hr;
 }
 
 } // namespace LiveKitCpp

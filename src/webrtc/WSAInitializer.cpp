@@ -25,7 +25,7 @@ WSAInitializer::WSAInitializer()
     // request versions in descending order
     for (const auto version : {Version::v2_2, Version::v2_1, Version::v2_0,
                                Version::v1_1, Version::v1_0}) {
-        _error = WsaStartup(version, wsaData);
+        _error = ::WSAStartup(WORD(version), &wsaData);
         if (0 == _error) {
             _selectedVersion = version;
             break;

@@ -14,10 +14,6 @@
 #include "CameraManager.h"
 #include "CameraCapturer.h"
 #include "MediaDevice.h"
-#ifdef WEBRTC_WIN
-#include "./Windows/WinCameraCapturer.h"
-#include "./Windows/WinCameraPool.h"
-#endif
 #include <modules/video_capture/video_capture_config.h>
 
 namespace LiveKitCpp

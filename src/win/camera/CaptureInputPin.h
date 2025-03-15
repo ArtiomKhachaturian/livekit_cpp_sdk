@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "Loggable.h"
 #include "IUnknownImpl.h"
 #include "SafeComPtr.h"
 #include <atomic>
@@ -23,12 +24,12 @@ namespace LiveKitCpp
 
 class CaptureSinkFilter;
 
-class CaptureInputPin : public IUnknownImpl<IMemInputPin, IPin>
+class CaptureInputPin : public Bricks::LoggableS<IUnknownImpl<IMemInputPin, IPin>>
 {
     class MediaTypesEnum;
-
+    using Base = Bricks::LoggableS<IUnknownImpl<IMemInputPin, IPin>>;
 public:
-    CaptureInputPin(CaptureSinkFilter* filter);
+    CaptureInputPin(CaptureSinkFilter* filter, const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CaptureInputPin();
     HRESULT SetRequestedCapability(const webrtc::VideoCaptureCapability& capability);
     void notifyThatFilterActivated(bool activated);
@@ -58,6 +59,8 @@ public:
 protected:
     // impl. of IUnknownImpl
     void releaseThis() final { delete this; }
+    // overrides of Bricks::LoggableS
+    std::string_view logCategory() const final;
 private:
     CaptureSinkFilter* filter() const;
     void resetMediaType(const AM_MEDIA_TYPE* newMediaType = nullptr);
