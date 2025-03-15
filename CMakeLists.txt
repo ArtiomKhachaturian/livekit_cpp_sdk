@@ -95,15 +95,7 @@ protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
     if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
         message(STATUS "Found WebRTC")
-        set(WEBRTC_LIBS
-            "audio_decoder_g711"
-            "audio_decoder_g722"
-            "audio_decoder_L16"
-            "audio_decoder_opus"
-            "builtin_audio_decoder_factory"
-            "primitives"
-            "desktop_capture_differ_sse2"
-            "webrtc")
+        set(WEBRTC_LIBS "webrtc")
         if (APPLE)
             list(APPEND WEBRTC_LIBS
                 "base_native_additions_objc"
