@@ -102,6 +102,11 @@ uint32_t CameraManager::capabilitiesNumber(std::string_view guid)
     return 0U;
 }
 
+uint32_t CameraManager::capabilitiesNumber(const MediaDevice& device)
+{
+    return capabilitiesNumber(device._guid);
+}
+
 bool CameraManager::capability(std::string_view guid,
                                uint32_t number,
                                webrtc::VideoCaptureCapability& capability)
@@ -112,6 +117,12 @@ bool CameraManager::capability(std::string_view guid,
         }
     }
     return false;
+}
+
+uint32_t CameraManager::capability(const MediaDevice& device, uint32_t number,
+                                   webrtc::VideoCaptureCapability& capability)
+{
+    return CameraManager::capability(device._guid, number, capability);
 }
 
 std::vector<webrtc::VideoCaptureCapability> CameraManager::capabilities(std::string_view guid)
@@ -135,6 +146,11 @@ std::vector<webrtc::VideoCaptureCapability> CameraManager::capabilities(std::str
     return {};
 }
 
+std::vector<webrtc::VideoCaptureCapability> CameraManager::capabilities(const MediaDevice& device)
+{
+    return capabilities(device._guid);
+}
+
 bool CameraManager::bestMatchedCapability(std::string_view guid,
                                           const webrtc::VideoCaptureCapability& requested,
                                           webrtc::VideoCaptureCapability& resulting)
@@ -145,6 +161,13 @@ bool CameraManager::bestMatchedCapability(std::string_view guid,
         }
     }
     return false;
+}
+
+bool CameraManager::bestMatchedCapability(const MediaDevice& device,
+                                          const webrtc::VideoCaptureCapability& requested,
+                                          webrtc::VideoCaptureCapability& resulting)
+{
+    return bestMatchedCapability(device._guid, requested, resulting);
 }
 
 std::string_view CameraManager::logCategory()
@@ -163,10 +186,27 @@ bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& or
     return false;
 }
 
-rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDevice& dev,
+bool CameraManager::orientation(const MediaDevice& device, webrtc::VideoRotation& orientation)
+{
+    return CameraManager::orientation(device._guid, orientation);
+}
+
+rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_view guid,
                                                                  const std::shared_ptr<Bricks::Logger>& logger)
 {
-    return createCapturer(dev._guid, logger);
+    if (!guid.empty()) {
+        if (const auto di = deviceInfo()) {
+            if (const uint32_t count = di->NumberOfDevices()) {
+                MediaDevice deviceInfo;
+                for (uint32_t i = 0U; i < count; ++i) {
+                    if (CameraManager::device(i, deviceInfo) && deviceInfo._guid == guid) {
+                        return createCapturer(deviceInfo, logger);
+                    }
+                }
+            }
+        }
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp

@@ -18,8 +18,8 @@
 namespace LiveKitCpp
 {
 
-CameraCapturer::CameraCapturer(std::string_view guid)
-    : _guid(guid)
+CameraCapturer::CameraCapturer(const MediaDevice& deviceInfo)
+    : _deviceInfo(deviceInfo)
 {
 }
 

@@ -42,16 +42,23 @@ public:
     static bool defaultdevice(uint32_t number, std::string& name, std::string& guid);
     static bool defaultDevice(MediaDevice& out);
     static std::vector<MediaDevice> devices();
-    static bool deviceIsValid(std::string_view guid);
     // capabilities API
     static webrtc::VideoCaptureCapability defaultCapability();
     // Returns the number of capabilities this device.
     static uint32_t capabilitiesNumber(std::string_view guid);
+    static uint32_t capabilitiesNumber(const MediaDevice& device);
     // Gets the capability of the named device.
-    static bool capability(std::string_view guid, uint32_t number, webrtc::VideoCaptureCapability& capability);
+    static bool capability(std::string_view guid, uint32_t number,
+                           webrtc::VideoCaptureCapability& capability);
+    static uint32_t capability(const MediaDevice& device, uint32_t number,
+                               webrtc::VideoCaptureCapability& capability);
     // Gets the capabilities of the named device.
     static std::vector<webrtc::VideoCaptureCapability> capabilities(std::string_view guid);
+    static std::vector<webrtc::VideoCaptureCapability> capabilities(const MediaDevice& device);
     static bool bestMatchedCapability(std::string_view guid,
+                                      const webrtc::VideoCaptureCapability& requested,
+                                      webrtc::VideoCaptureCapability& resulting);
+    static bool bestMatchedCapability(const MediaDevice& device,
                                       const webrtc::VideoCaptureCapability& requested,
                                       webrtc::VideoCaptureCapability& resulting);
     // common
@@ -59,6 +66,7 @@ public:
     // Gets clockwise angle the captured frames should be rotated in order
     // to be displayed correctly on a normally rotated display.
     static bool orientation(std::string_view guid, webrtc::VideoRotation& orientation);
+    static bool orientation(const MediaDevice& device, webrtc::VideoRotation& orientation);
     static rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
                                                              const std::shared_ptr<Bricks::Logger>& logger = {});
     static rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDevice& dev,

@@ -122,7 +122,7 @@ void CameraVideoTrack::setSourceCapturer(MediaDevice deviceInfo)
             ok = CameraManager::defaultDevice(deviceInfo);
         }
         if (ok) {
-            _source->setCapturer(CameraManager::createCapturer(deviceInfo._guid));
+            _source->setCapturer(CameraManager::createCapturer(deviceInfo));
         }
     }
 }

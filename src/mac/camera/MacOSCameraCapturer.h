@@ -44,10 +44,7 @@ class MacOSCameraCapturer : public CameraCapturer
 public:
     ~MacOSCameraCapturer() override;
     static rtc::scoped_refptr<MacOSCameraCapturer>
-        create(AVCaptureDevice* device,
-               const std::shared_ptr<Bricks::Logger>& logger = {});
-    static rtc::scoped_refptr<MacOSCameraCapturer>
-        create(const std::string_view& deviceUniqueIdUTF8,
+        create(const MediaDevice& deviceInfo,
                const std::shared_ptr<Bricks::Logger>& logger = {});
     void deliverFrame(int64_t timestampMicro, CMSampleBufferRef sampleBuffer);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
@@ -62,12 +59,13 @@ public:
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
     bool CaptureStarted() final;
 protected:
-    MacOSCameraCapturer(AVCaptureDevice* device, const std::shared_ptr<Bricks::Logger>& logger = {});
+    MacOSCameraCapturer(const MediaDevice& deviceInfo,
+                        AVCaptureDevice* device,
+                        const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     rtc::scoped_refptr<webrtc::VideoFrameBuffer> createBuffer(CMSampleBufferRef sampleBuffer) const;
     AVCaptureDeviceFormat* findClosestFormat(const webrtc::VideoCaptureCapability& capability) const;
     std::optional<webrtc::ColorSpace> activeColorSpace() const;
-    static MediaDevice deviceInfo(AVCaptureDevice* device);
     static webrtc::VideoType fromMediaSubType(OSType type);
     static webrtc::VideoType fromMediaSubType(CMFormatDescriptionRef format);
     static bool interlaced(CMFormatDescriptionRef format);

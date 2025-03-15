@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include "SafeObj.h"
+#include "MediaDevice.h"
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture.h>
 #include <modules/video_capture/video_capture_config.h>
@@ -31,7 +32,7 @@ class CameraCapturer : public webrtc::VideoCaptureModule
 public:
     ~CameraCapturer() override;
     virtual void setObserver(CameraObserver* /*observer*/ = nullptr) {}
-    std::string_view guid() const { return _guid; }
+    const auto& guid() const noexcept { return _deviceInfo._guid; }
     // impl. of webrtc::VideoCaptureModule
     void RegisterCaptureDataCallback(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
     void RegisterCaptureDataCallback(webrtc::RawVideoSinkInterface* rawSink) final;
@@ -39,8 +40,9 @@ public:
     int32_t SetCaptureRotation(webrtc::VideoRotation rotation) final;
     bool SetApplyRotation(bool enable) final;
     bool GetApplyRotation() final { return _applyRotation; }
+    const char* CurrentDeviceName() const final { return _deviceInfo._name.c_str(); }
 protected:
-    CameraCapturer(std::string_view guid);
+    CameraCapturer(const MediaDevice& deviceInfo);
     bool hasSink() const { return nullptr != _sink(); }
     bool hasRawSink() const { return nullptr != _rawSink(); }
     virtual bool doApplyRotation(bool enable);
@@ -61,7 +63,7 @@ protected:
                          int64_t timeStampMicro = 0LL, uint16_t id = 0U,
                          const std::optional<webrtc::ColorSpace>& colorSpace = {});
 private:
-    const std::string _guid;
+    const MediaDevice _deviceInfo;
     Bricks::SafeObj<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink = nullptr;
     Bricks::SafeObj<webrtc::RawVideoSinkInterface*> _rawSink = nullptr;
     // set if the frame should be rotated by the capture module

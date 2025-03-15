@@ -48,26 +48,16 @@ protected:
 namespace LiveKitCpp
 {
 
-bool CameraManager::deviceIsValid(std::string_view guid)
-{
-    if (!guid.empty()) {
-        @autoreleasepool {
-            return nil != MacOSDeviceInfoImpl::findDevice(guid.data());
-        }
-    }
-    return false;
-}
-
 webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
 {
     static const auto info = std::make_unique<MacOSDeviceInfoImpl>();
     return info.get();
 }
 
-rtc::scoped_refptr<CameraCapturer> CameraManager::
-    createCapturer(std::string_view guid, const std::shared_ptr<Bricks::Logger>& logger)
+rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDevice& dev,
+                                                                 const std::shared_ptr<Bricks::Logger>& logger)
 {
-    return MacOSCameraCapturer::create(guid, logger);
+    return MacOSCameraCapturer::create(dev, logger);
 }
 
 } // namespace LiveKitCpp

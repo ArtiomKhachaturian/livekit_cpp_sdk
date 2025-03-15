@@ -33,9 +33,10 @@ int32_t maxFrameRate(AVFrameRateRange* range);
 namespace LiveKitCpp
 {
 
-MacOSCameraCapturer::MacOSCameraCapturer(AVCaptureDevice* device,
+MacOSCameraCapturer::MacOSCameraCapturer(const MediaDevice& deviceInfo,
+                                         AVCaptureDevice* device,
                                          const std::shared_ptr<Bricks::Logger>& logger)
-    : CameraCapturer(deviceInfo(device))
+    : CameraCapturer(deviceInfo)
     , _device(device)
     , _delegate([[MacOSCameraCapturerDelegate alloc] initWithCapturer:this andLogger:logger])
     , _impl([[AVCameraCapturer alloc] initWithDelegate:_delegate])
@@ -49,22 +50,23 @@ MacOSCameraCapturer::~MacOSCameraCapturer()
 }
 
 rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
-    create(AVCaptureDevice* device, const std::shared_ptr<Bricks::Logger>& logger)
-{
-    if (device) {
-        auto capturer = rtc::make_ref_counted<MacOSCameraCapturer>(device, logger);
-        if (capturer->_impl) {
-            return capturer;
-        }
-    }
-    return nullptr;
-}
-
-rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
-    create(const std::string_view& deviceUniqueIdUTF8,
+    create(const MediaDevice& deviceInfo,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
-    return create([AVCameraCapturer deviceWithUniqueIDUTF8:deviceUniqueIdUTF8.data()], logger);
+    if (!deviceInfo._guid.empty()) {
+        @autoreleasepool {
+            const auto guid = deviceInfo._guid.c_str();
+            if (AVCaptureDevice* device = [AVCameraCapturer deviceWithUniqueIDUTF8:guid]) {
+                auto capturer = rtc::make_ref_counted<MacOSCameraCapturer>(deviceInfo,
+                                                                           device,
+                                                                           logger);
+                if (capturer->_impl) {
+                    return capturer;
+                }
+            }
+        }
+    }
+    return {};
 }
 
 void MacOSCameraCapturer::deliverFrame(int64_t timestampMicro, CMSampleBufferRef sampleBuffer)
@@ -243,14 +245,6 @@ AVCaptureDeviceFormat* MacOSCameraCapturer::findClosestFormat(const webrtc::Vide
 std::optional<webrtc::ColorSpace> MacOSCameraCapturer::activeColorSpace() const
 {
     return std::nullopt; // not yet supported now
-}
-
-MediaDevice MacOSCameraCapturer::deviceInfo(AVCaptureDevice* device)
-{
-    if (device) {
-        return MediaDevice{localizedDeviceName(device), deviceUniqueIdUTF8(device)};
-    }
-    return {};
 }
 
 webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(OSType type)
