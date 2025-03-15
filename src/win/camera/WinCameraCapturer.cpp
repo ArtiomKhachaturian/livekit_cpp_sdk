@@ -16,8 +16,7 @@
 #include "CameraObserver.h"
 #include "CaptureSinkFilter.h"
 #include "CameraErrorHandling.h"
-//#include "VideoUtils.h"
-//#include "Windows/MFMediaSampleBuffer.h"
+#include "./video/MFMediaSampleBuffer.h"
 #include <api/media_stream_interface.h>
 #include <dvdmedia.h>
 #include <modules/video_capture/video_capture_factory.h> //VideoCaptureFactory
@@ -209,10 +208,10 @@ void WinCameraCapturer::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
                                      const webrtc::VideoCaptureCapability& frameInfo)
 {
     if (buffer && actualBufferLen > 0UL && hasSink()) {
-        /*assert(totalBufferLen >= actualBufferLen);
+        assert(totalBufferLen >= actualBufferLen);
         const auto videoBuffer = MFMediaSampleBuffer::create(frameInfo, buffer,
                                                              actualBufferLen, totalBufferLen, sample,
-                                                             std::nullopt, i420BuffersPool(), captureRotation());
+                                                             captureRotation());
         if (videoBuffer) {
             const auto videoFrame = createVideoFrame(videoBuffer);
             if (videoFrame.has_value()) {
@@ -221,7 +220,7 @@ void WinCameraCapturer::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
         } else {
             logWarning("failed to create captured video buffer from type " + std::to_string(static_cast<int>(frameInfo.videoType)));
             discardFrame();
-        }*/
+        }
     }
 }
 
