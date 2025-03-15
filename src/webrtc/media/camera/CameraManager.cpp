@@ -78,9 +78,10 @@ std::vector<MediaDevice> CameraManager::devices()
 webrtc::VideoCaptureCapability CameraManager::defaultCapability()
 {
     webrtc::VideoCaptureCapability capability;
-    capability.width = webrtc::videocapturemodule::kDefaultWidth;
-    capability.height = webrtc::videocapturemodule::kDefaultHeight;
-    capability.maxFPS = 30;
+    // HD ready (720p x 30 fps)
+    capability.width = 1280;
+    capability.height = 720;
+    capability.maxFPS = webrtc::videocapturemodule::kDefaultFrameRate;
 #ifdef __APPLE__
     capability.videoType = webrtc::VideoType::kNV12;
 #else

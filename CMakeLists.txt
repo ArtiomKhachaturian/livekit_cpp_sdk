@@ -238,13 +238,13 @@ if (WEBRTC_AVAILABLE)
 endif()
 
 # Link Protobuf library
-target_link_libraries(${PROJECT_NAME} PUBLIC protobuf::libprotobuf-lite protobuf::libprotobuf protobuf::libprotoc)
+target_link_libraries(${PROJECT_NAME} PRIVATE protobuf::libprotobuf-lite protobuf::libprotobuf protobuf::libprotoc)
 # Link abseil
-target_link_libraries(${PROJECT_NAME} PUBLIC absl::base absl::strings absl::status 
+target_link_libraries(${PROJECT_NAME} PRIVATE absl::base absl::strings absl::status 
                       absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/AbslAliasing.h)
 # Link UFT8_range
-target_link_libraries(${PROJECT_NAME} PUBLIC utf8_range::utf8_validity utf8_range::utf8_range)
+target_link_libraries(${PROJECT_NAME} PRIVATE utf8_range::utf8_validity utf8_range::utf8_range)
 # Generic attributes for the library
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (APPLE)

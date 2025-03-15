@@ -89,7 +89,6 @@ private:
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
     std::atomic_bool _enabled = true;
     std::atomic<uint64_t> _lastResolution = 0ULL;
-    std::atomic_bool _hasLastResolution = false;
     std::atomic<webrtc::MediaSourceInterface::SourceState> _state;
 };
 

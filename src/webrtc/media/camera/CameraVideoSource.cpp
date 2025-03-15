@@ -99,11 +99,13 @@ bool CameraVideoSource::setEnabled(bool enabled)
 
 bool CameraVideoSource::GetStats(Stats* stats)
 {
-    if (stats && _hasLastResolution) {
+    if (stats) {
         const auto lastResolution = _lastResolution.load();
-        stats->input_width = extractHiWord(lastResolution);
-        stats->input_height = extractLoWord(lastResolution);
-        return true;
+        if (lastResolution) {
+            stats->input_width = extractHiWord(lastResolution);
+            stats->input_height = extractLoWord(lastResolution);
+            return true;
+        }
     }
     return false;
 }
@@ -176,7 +178,6 @@ void CameraVideoSource::OnFrame(const webrtc::VideoFrame& frame)
 {
     if (frame.video_frame_buffer()) {
         _lastResolution = clueToUint64(frame.width(), frame.height());
-        _hasLastResolution = true;
         LOCK_READ_SAFE_OBJ(_broadcasters);
         for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
             it->second->OnFrame(frame);
@@ -254,9 +255,7 @@ void CameraVideoSource::changeState(webrtc::MediaSourceInterface::SourceState st
     if (state != _state.exchange(state)) {
         switch (state) {
             case webrtc::MediaSourceInterface::SourceState::kEnded:
-                if (_hasLastResolution.exchange(false)) {
-                    _lastResolution = 0ULL;
-                }
+                _lastResolution = 0ULL;
                 break;
             default:
                 break;
