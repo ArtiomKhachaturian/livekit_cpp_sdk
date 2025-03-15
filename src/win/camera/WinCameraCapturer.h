@@ -35,7 +35,7 @@ class WinCameraCapturer : public Bricks::LoggableS<CameraCapturer>,
 public:
     ~WinCameraCapturer() override;
     static ::rtc::scoped_refptr<CameraCapturer> 
-        create(std::string_view guid, const std::shared_ptr<Bricks::Logger>& logger = {});
+        create(const MediaDevice& device, const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of CameraCapturer
     void setObserver(CameraObserver* observer) final;
     // impl. of webrtc::VideoCaptureModule
@@ -43,9 +43,8 @@ public:
     int32_t StopCapture() final;
     bool CaptureStarted() final;
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
-    const char* CurrentDeviceName() const final;
 protected:
-    WinCameraCapturer(std::string_view guid,
+    WinCameraCapturer(const MediaDevice& device,
                       std::unique_ptr<DeviceInfoDS> deviceInfo,
                       const CComPtr<IBaseFilter>& captureFilter,
                       const CComPtr<IGraphBuilder>& graphBuilder,

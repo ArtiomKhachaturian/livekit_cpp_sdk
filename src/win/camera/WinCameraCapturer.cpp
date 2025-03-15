@@ -56,14 +56,14 @@ private:
     const CComPtr<IPin> _outputCapturePin;
 };
 
-WinCameraCapturer::WinCameraCapturer(std::string_view guid,
+WinCameraCapturer::WinCameraCapturer(const MediaDevice& device,
                                      std::unique_ptr<DeviceInfoDS> deviceInfo,
                                      const CComPtr<IBaseFilter>& captureFilter,
                                      const CComPtr<IGraphBuilder>& graphBuilder,
                                      const CComPtr<IMediaControl>& mediaControl,
                                      const CComPtr<IPin>& outputCapturePin,
                                      const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<CameraCapturer>(logger, std::move(guid))
+    : Bricks::LoggableS<CameraCapturer>(logger, device)
     , _sinkFilter(new CaptureSinkFilter(this, logger))
     , _deviceInfo(std::move(deviceInfo))
     , _captureFilter(captureFilter)
@@ -93,9 +93,10 @@ std::string_view WinCameraCapturer::logCategory() const
     return CameraManager::logCategory();
 }
 
-::rtc::scoped_refptr<CameraCapturer> WinCameraCapturer::create(std::string_view guid,
+::rtc::scoped_refptr<CameraCapturer> WinCameraCapturer::create(const MediaDevice& device,
                                                                const std::shared_ptr<Bricks::Logger>& logger)
 {
+    const auto& guid = device._guid;
     if (!guid.empty()) {
         std::unique_ptr<DeviceInfoDS> deviceInfo(DeviceInfoDS::Create());
         if (deviceInfo) {
@@ -111,7 +112,7 @@ std::string_view WinCameraCapturer::logCategory() const
                         if (CAMERA_IS_OK(hr, logger)) {
                             const CComPtr<IPin> outputCapturePin = findOutputPin(captureFilter, logger);
                             if (outputCapturePin) {
-                                const auto capturer = rtc::make_ref_counted<WinCameraCapturer>(std::move(guid),
+                                const auto capturer = rtc::make_ref_counted<WinCameraCapturer>(device,
                                                                                                std::move(deviceInfo),
                                                                                                captureFilter,
                                                                                                graphBuilder,
@@ -191,12 +192,6 @@ int32_t WinCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& setti
     LOCK_READ_SAFE_OBJ(_requestedCapability);
     settings = _requestedCapability.constRef();
     return 0;
-}
-
-const char* WinCameraCapturer::CurrentDeviceName() const
-{
-    // TODO: implement it
-    return "";
 }
 
 webrtc::VideoCaptureCapability WinCameraCapturer::defaultCapability()

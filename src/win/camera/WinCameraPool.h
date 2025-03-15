@@ -29,6 +29,7 @@ namespace LiveKitCpp
 
 class CameraObserver;
 class CameraCapturer;
+struct MediaDevice;
 
 class WinCameraPool
 {
@@ -37,7 +38,7 @@ class WinCameraPool
     class CameraWrapper;
 public:
     static ::rtc::scoped_refptr<CameraCapturer>
-        create(std::string_view guid, const std::shared_ptr<Bricks::Logger>& logger = {},
+        create(const MediaDevice& device, const std::shared_ptr<Bricks::Logger>& logger = {},
                CameraObserver* observer = nullptr);
 private:
     static const std::shared_ptr<Impl>& implementation();
