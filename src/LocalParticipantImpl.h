@@ -30,13 +30,14 @@ namespace LiveKitCpp
 {
 
 class LocalParticipantImpl : public ParticipantImpl<LocalParticipant>,
-                             public DataChannelsStorage<LocalTrackManager>
+                             protected DataChannelsStorage<LocalTrackManager>
 {
     // key is cid (track id), for LocalTrackManager [publishMedia] / [unpublishMedia]
     using PendingLocalMedias = std::unordered_map<std::string, webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>;
 public:
     LocalParticipantImpl(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipantImpl() final;
+    bool addDataChannel(rtc::scoped_refptr<DataChannel> channel);
     void addTracksToTransport();
     void resetTracksMedia();
     LocalTrack* track(const std::string& id, bool cid);
@@ -47,6 +48,9 @@ public:
     const CameraTrackImpl& camera() const final { return _camera; }
     LocalAudioTrackImpl& microphone() final { return _microphone; }
     const LocalAudioTrackImpl& microphone() const final { return _microphone; }
+protected:
+    // impl. of Bricks::LoggableS<>
+    std::string_view logCategory() const final;
 private:
     // impl. of LocalTrackManager
     bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
@@ -54,11 +58,6 @@ private:
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const std::string& label) final;
     webrtc::scoped_refptr<CameraVideoTrack> createCamera(const std::string& label) final;
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
-    // impl. of DataChannelListener
-    void onStateChange(DataChannel* channel) final;
-    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
-    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
-    void onSendError(DataChannel* channel, webrtc::RTCError error) final;
 private:
     LocalTrackManager* const _manager;
     LocalAudioTrackImpl _microphone;

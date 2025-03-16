@@ -32,6 +32,11 @@ LocalParticipantImpl::~LocalParticipantImpl()
     clear();
 }
 
+bool LocalParticipantImpl::addDataChannel(rtc::scoped_refptr<DataChannel> channel)
+{
+    return channel && channel->local() && add(std::move(channel));
+}
+
 void LocalParticipantImpl::addTracksToTransport()
 {
     _microphone.addToTransport();
@@ -66,7 +71,8 @@ LocalTrack* LocalParticipantImpl::track(const rtc::scoped_refptr<webrtc::RtpSend
     return nullptr;
 }
 
-std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> LocalParticipantImpl::pendingLocalMedia()
+std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>
+    LocalParticipantImpl::pendingLocalMedia()
 {
     LOCK_WRITE_SAFE_OBJ(_pendingLocalMedias);
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> medias;
@@ -76,6 +82,12 @@ std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> LocalParti
     }
     _pendingLocalMedias->clear();
     return medias;
+}
+
+std::string_view LocalParticipantImpl::logCategory() const
+{
+    static const std::string_view category("local_participant");
+    return category;
 }
 
 bool LocalParticipantImpl::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -132,41 +144,6 @@ void LocalParticipantImpl::notifyAboutMuteChanges(const std::string& trackSid, b
     if (_manager) {
         _manager->notifyAboutMuteChanges(trackSid, muted);
     }
-}
-
-
-void LocalParticipantImpl::onStateChange(DataChannel* /*channel*/)
-{
-    /*if (channel) {
-        if (canLogVerbose()) {
-            logVerbose(dcType(channel->local()) + " data channel '" +
-                       channel->label() + "' state has been changed to " +
-                       dataStateToString(channel->state()));
-        }
-    }*/
-}
-
-void LocalParticipantImpl::onMessage(DataChannel* /*channel*/,
-                                     const webrtc::DataBuffer& /*buffer*/)
-{
-    /*if (channel) {
-        if (canLogVerbose()) {
-            logVerbose("a message buffer was successfully received for '" +
-                       channel->label() + "' " + dcType(channel->local()) +
-                       " data channel");
-        }
-    }*/
-}
-
-void LocalParticipantImpl::onBufferedAmountChange(DataChannel* /*channelType*/,
-                                                  uint64_t /*sentDataSize*/)
-{
-}
-
-void LocalParticipantImpl::onSendError(DataChannel* /*channel*/,
-                                       webrtc::RTCError /*error*/)
-{
-    
 }
 
 } // namespace LiveKitCpp

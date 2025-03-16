@@ -139,7 +139,7 @@ void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceive
 
 void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
 {
-    _localParticipant->add(std::move(channel));
+    _localParticipant->addDataChannel(std::move(channel));
 }
 
 void RTCMediaEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
