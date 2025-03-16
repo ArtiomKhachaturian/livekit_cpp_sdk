@@ -84,12 +84,8 @@ HRESULT CaptureInputPin::SetRequestedCapability(const webrtc::VideoCaptureCapabi
 {
     HRESULT hr = VFW_E_NOT_STOPPED;
     if (filter()->isStopped()) {
-        {
-            LOCK_WRITE_SAFE_OBJ(_requestedCapability);
-            _requestedCapability.ref() = capability;
-        }
-        LOCK_WRITE_SAFE_OBJ(_resultingCapability);
-        _resultingCapability = webrtc::VideoCaptureCapability();
+        _requestedCapability(capability);
+        _resultingCapability({});
         hr = S_OK;
     }
     return hr;
@@ -120,7 +116,7 @@ HRESULT CaptureInputPin::Connect(IPin* receivePin, const AM_MEDIA_TYPE* mediaTyp
                 if (isMediaTypeFullySpecified(*mediaType)) {
                     hr = attemptConnection(receivePin, mediaType);
                     if (LOGGABLE_COM_IS_OK(hr)) {
-                        _receivePin.ref() = receivePin;
+                        _receivePin = receivePin;
                         resetMediaType(mediaType);
                     }
                 } else {
@@ -138,7 +134,7 @@ HRESULT CaptureInputPin::Connect(IPin* receivePin, const AM_MEDIA_TYPE* mediaTyp
                         hr = VFW_E_NO_ACCEPTABLE_TYPES;
                     } else {
                         hr = S_OK;
-                        _receivePin.ref() = receivePin;
+                        _receivePin = receivePin;
                         resetMediaType(acceptedMediaType);
                         webrtc::videocapturemodule::FreeMediaType(acceptedMediaType);
                     }
@@ -263,8 +259,7 @@ HRESULT CaptureInputPin::QueryAccept(const AM_MEDIA_TYPE* mediaType)
 {
     if (mediaType) {
         if (filter()->isStopped()) {
-            LOCK_READ_SAFE_OBJ(_resultingCapability);
-            webrtc::VideoCaptureCapability capability(_resultingCapability.constRef());
+            webrtc::VideoCaptureCapability capability(_resultingCapability());
             if (translateMediaTypeToVideoCaptureCapability(mediaType, capability)) {
                 return S_OK;
             }
@@ -302,8 +297,7 @@ HRESULT CaptureInputPin::EndFlush()
 
 HRESULT CaptureInputPin::NotifyAllocator(IMemAllocator* allocator, BOOL)
 {
-    LOCK_WRITE_SAFE_OBJ(_allocator);
-    _allocator = allocator;
+    _allocator(allocator);
     return S_OK;
 }
 
@@ -357,10 +351,9 @@ HRESULT CaptureInputPin::Receive(IMediaSample* sample)
                 }
             }
             if (S_OK == hr) {
-                LOCK_READ_SAFE_OBJ(_resultingCapability);
                 filter()->deliverFrame(sampleProps.pbBuffer, sampleProps.lActual,
                                        sampleProps.cbBuffer, sample,
-                                       _resultingCapability.constRef());
+                                       _resultingCapability());
             }
         }
     }
@@ -459,8 +452,7 @@ HRESULT CaptureInputPin::attemptConnection(IPin* receivePin, const AM_MEDIA_TYPE
                 if (translateMediaTypeToVideoCaptureCapability(mediaType, capability)) {
                     hr = receivePin->ReceiveConnection(this, mediaType);
                     if (LOGGABLE_COM_IS_OK(hr)) {
-                        LOCK_WRITE_SAFE_OBJ(_resultingCapability);
-                        _resultingCapability = std::move(capability);
+                        _resultingCapability(std::move(capability));
                     }
                 } else {
                     clearAllocator(true); // ???

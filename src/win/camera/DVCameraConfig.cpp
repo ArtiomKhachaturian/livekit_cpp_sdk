@@ -11,20 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#ifdef WEBRTC_WIN
 #include "DVCameraConfig.h"
 #include "CameraErrorHandling.h"
+#include "CameraManager.h"
 #include <cassert>
 
 namespace LiveKitCpp
 {
 
-WinCameraCapturer::DVCameraConfig::DVCameraConfig(const CComPtr<IGraphBuilder>& graphBuilder,
-                                                  const CComPtr<IPin>& inputDvPin,
-                                                  const CComPtr<IPin>& outputDvPin,
-                                                  const CComPtr<IBaseFilter>& dvFilter,
-                                                  const CComPtr<IPin>& inputSendPin,
-                                                  const CComPtr<IPin>& outputCapturePin,
-                                                  const std::shared_ptr<Bricks::Logger>& logger)
+DVCameraConfig::DVCameraConfig(const CComPtr<IGraphBuilder>& graphBuilder,
+                               const CComPtr<IPin>& inputDvPin,
+                               const CComPtr<IPin>& outputDvPin,
+                               const CComPtr<IBaseFilter>& dvFilter,
+                               const CComPtr<IPin>& inputSendPin,
+                               const CComPtr<IPin>& outputCapturePin,
+                               const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _graphBuilder(graphBuilder)
     , _inputDvPin(inputDvPin)
@@ -41,12 +43,12 @@ WinCameraCapturer::DVCameraConfig::DVCameraConfig(const CComPtr<IGraphBuilder>& 
     assert(_outputCapturePin);
 }
 
-WinCameraCapturer::DVCameraConfig::~DVCameraConfig()
+DVCameraConfig::~DVCameraConfig()
 {
     _graphBuilder->RemoveFilter(_dvFilter);
 }
 
-bool WinCameraCapturer::DVCameraConfig::connect()
+bool DVCameraConfig::connect()
 {
     if (!LOGGABLE_COM_IS_OK(_graphBuilder->ConnectDirect(_outputCapturePin, _inputDvPin, NULL))) {
         return false;
@@ -54,10 +56,16 @@ bool WinCameraCapturer::DVCameraConfig::connect()
     return LOGGABLE_COM_IS_OK(_graphBuilder->ConnectDirect(_outputDvPin, _inputSendPin, NULL));
 }
 
-void WinCameraCapturer::DVCameraConfig::disconnect()
+void DVCameraConfig::disconnect()
 {
     LOGGABLE_COM_ERROR(_graphBuilder->Disconnect(_inputDvPin));
     LOGGABLE_COM_ERROR(_graphBuilder->Disconnect(_outputDvPin));
 }
 
+std::string_view DVCameraConfig::logCategory() const
+{ 
+    return CameraManager::logCategory(); 
+}
+
 } // namespace LiveKitCpp
+#endif

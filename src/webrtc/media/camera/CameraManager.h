@@ -75,4 +75,6 @@ private:
     static webrtc::VideoCaptureModule::DeviceInfo* deviceInfo();
 };
 
+std::string toString(const webrtc::VideoCaptureCapability& capability);
+
 } // namespace LiveKitCpp

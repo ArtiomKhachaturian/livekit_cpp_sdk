@@ -55,7 +55,6 @@ protected:
     // overrides of Bricks::LoggableS
     std::string_view logCategory() const final;
 private:
-    static webrtc::VideoCaptureCapability defaultCapability();
     static bool connectDVCamera(const CComPtr<IGraphBuilder>& graphBuilder,
                                 const CComPtr<IPin>& inputSendPin,
                                 const CComPtr<IPin>& outputCapturePin,

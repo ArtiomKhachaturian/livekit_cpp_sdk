@@ -210,4 +210,11 @@ rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_vie
     return {};
 }
 
+std::string toString(const webrtc::VideoCaptureCapability& capability)
+{
+    return std::to_string(capability.width) + "x" + std::to_string(capability.height) +
+            "/" + std::to_string(capability.maxFPS) + "/fourCC=" + 
+            std::to_string(webrtc::ConvertVideoType(capability.videoType));
+}
+
 } // namespace LiveKitCpp

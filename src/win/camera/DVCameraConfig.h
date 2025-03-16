@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DVCameraConfig.h
+#ifdef WEBRTC_WIN
 #include "Loggable.h"
 #include <atlbase.h> //CComPtr support
 #include <Dshow.h>
@@ -35,7 +36,7 @@ public:
     void disconnect();
 protected:
     // overrides of Bricks::LoggableS
-    std::string_view logCategory() const final { return CameraManager::logCategory(); }
+    std::string_view logCategory() const final;
 private:
     const CComPtr<IGraphBuilder> _graphBuilder;
     const CComPtr<IPin> _inputDvPin;
@@ -46,3 +47,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

@@ -117,7 +117,7 @@ std::string_view WinCameraCapturer::logCategory() const
     if (!capturer->_inputSendPin) {
         return {};
     }
-    if (!capturer->setCameraOutput(defaultCapability())) {
+    if (!capturer->setCameraOutput(CameraManager::defaultCapability())) {
         return {};
     }
     hr = capturer->_mediaControl->Pause();
@@ -175,39 +175,30 @@ bool WinCameraCapturer::CaptureStarted()
 
 int32_t WinCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& settings)
 {
-    LOCK_READ_SAFE_OBJ(_requestedCapability);
-    settings = _requestedCapability.constRef();
+    settings = _requestedCapability();
     return 0;
-}
-
-webrtc::VideoCaptureCapability WinCameraCapturer::defaultCapability()
-{
-    webrtc::VideoCaptureCapability caps;
-    caps.width = webrtc::videocapturemodule::kDefaultWidth;
-    caps.height = webrtc::videocapturemodule::kDefaultHeight;
-    caps.maxFPS = webrtc::videocapturemodule::kDefaultFrameRate;
-    caps.videoType = webrtc::VideoType::kI420;
-    return caps;
 }
 
 void WinCameraCapturer::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
                                      DWORD totalBufferLen, const CComPtr<IMediaSample>& sample,
                                      const webrtc::VideoCaptureCapability& frameInfo)
 {
-    if (buffer && actualBufferLen > 0UL && hasSink()) {
-        assert(totalBufferLen >= actualBufferLen);
-        const auto videoBuffer = MFMediaSampleBuffer::create(frameInfo, buffer,
-                                                             actualBufferLen, totalBufferLen, sample,
-                                                             captureRotation());
-        if (videoBuffer) {
-            const auto videoFrame = createVideoFrame(videoBuffer);
-            if (videoFrame.has_value()) {
-                sendFrame(videoFrame.value());
-            }
-        } else {
-            logWarning("failed to create captured video buffer from type " + std::to_string(static_cast<int>(frameInfo.videoType)));
-            discardFrame();
-        }
+    if (!buffer || !actualBufferLen || !hasSink()) {
+        return;
+    }
+    assert(totalBufferLen >= actualBufferLen);
+    const auto sampleBuffer = MFMediaSampleBuffer::create(frameInfo, buffer,
+                                                          actualBufferLen, totalBufferLen, 
+                                                          sample, captureRotation());
+    if (!sampleBuffer) {
+        logWarning("failed to create captured video buffer from type " + 
+                   std::to_string(static_cast<int>(frameInfo.videoType)));
+        discardFrame();
+        return;
+    }
+    const auto videoFrame = createVideoFrame(sampleBuffer);
+    if (videoFrame.has_value()) {
+        sendFrame(videoFrame.value());
     }
 }
 
@@ -279,36 +270,39 @@ CComPtr<IPin> WinCameraCapturer::findPin(IBaseFilter* filter,
                                          PIN_DIRECTION expectedDir, 
                                          REFGUID category)
 {
-    if (filter) {
-        CComPtr<IEnumPins> pinEnums;
-        HRESULT hr = filter->EnumPins(&pinEnums);
+    if (!filter) {
+        return {};
+    }
+    CComPtr<IEnumPins> pinEnums;
+    HRESULT hr = filter->EnumPins(&pinEnums);
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return {};
+    }
+    hr = pinEnums->Reset();
+    if (!CAMERA_IS_OK(hr, logger)) {
+        return {};
+    }
+    CComPtr<IPin> pin;
+    while (S_OK == pinEnums->Next(1UL, &pin, NULL)) {
+        PIN_DIRECTION pinDir;
+        hr = pin->QueryDirection(&pinDir);
         if (CAMERA_IS_OK(hr, logger)) {
-            hr = pinEnums->Reset();
-            if (CAMERA_IS_OK(hr, logger)) {
-                CComPtr<IPin> pin;
-                while (S_OK == pinEnums->Next(1UL, &pin, NULL)) {
-                    PIN_DIRECTION pinDir;
-                    hr = pin->QueryDirection(&pinDir);
-                    if (CAMERA_IS_OK(hr, logger)) {
-                        bool accepted = expectedDir == pinDir; // this is an expected pin
-                        if (accepted && GUID_NULL != category) {
-                            accepted = webrtc::videocapturemodule::PinMatchesCategory(pin, category);
-                        }
-                        if (accepted && PINDIR_INPUT == pinDir) {
-                            CComPtr<IPin> tempPin;
-                            hr = pin->ConnectedTo(&tempPin);
-                            accepted = FAILED(hr); // the pin is not connected
-                        }
-                        if (accepted) {
-                            return pin;
-                        }
-                    }
-                    pin.Release();
-                }
+            bool accepted = expectedDir == pinDir; // this is an expected pin
+            if (accepted && GUID_NULL != category) {
+                accepted = webrtc::videocapturemodule::PinMatchesCategory(pin, category);
+            }
+            if (accepted && PINDIR_INPUT == pinDir) {
+                CComPtr<IPin> tempPin;
+                hr = pin->ConnectedTo(&tempPin);
+                accepted = FAILED(hr); // the pin is not connected
+            }
+            if (accepted) {
+                return pin;
             }
         }
+        pin.Release();
     }
-    return CComPtr<IPin>();
+    return {};
 }
 
 void WinCameraCapturer::setCameraState(CameraState state)
@@ -318,80 +312,87 @@ void WinCameraCapturer::setCameraState(CameraState state)
 
 bool WinCameraCapturer::setCameraOutput(const webrtc::VideoCaptureCapability& requestedCapability)
 {
-    bool ok = false;
-    if (_inputSendPin) {
-        // get the best matching capability
-        webrtc::VideoCaptureCapability capability;
-        // match the requested capability with the supported
-        const int32_t capabilityIndex = _deviceInfo->GetBestMatchedCapability(CurrentDeviceName(), requestedCapability, capability);
-        if (capabilityIndex >= 0) {
-            // reduce the frame rate if possible.
-            if (capability.maxFPS > requestedCapability.maxFPS) {
-                capability.maxFPS = requestedCapability.maxFPS;
-            } else if (capability.maxFPS <= 0) {
-                capability.maxFPS = 30;
-            }
-            // convert it to the windows capability index since they are not neccessary the same
-            webrtc::videocapturemodule::VideoCaptureCapabilityWindows windowsCapability;
-            if (0 == _deviceInfo->GetWindowsCapability(capabilityIndex, windowsCapability)) {
-                CComPtr<IAMStreamConfig> streamConfig;
-                HRESULT hr = _outputCapturePin->QueryInterface(&streamConfig);
-                if (LOGGABLE_COM_IS_OK(hr)) {
-                    AM_MEDIA_TYPE* pmt = NULL;
-                    VIDEO_STREAM_CONFIG_CAPS caps;
-                    // get the windows capability from the capture device
-                    hr = streamConfig->GetStreamCaps(windowsCapability.directShowCapabilityIndex,
-                                                     &pmt, reinterpret_cast<BYTE*>(&caps));
-                    if (LOGGABLE_COM_IS_OK(hr)) {
-                        if (pmt->formattype == FORMAT_VideoInfo2) {
-                            VIDEOINFOHEADER2* h = reinterpret_cast<VIDEOINFOHEADER2*>(pmt->pbFormat);
-                            if (capability.maxFPS > 0 && windowsCapability.supportFrameRateControl) {
-                                h->AvgTimePerFrame = REFERENCE_TIME(10000000.0 / capability.maxFPS);
-                            }
-                        } else {
-                            VIDEOINFOHEADER* h = reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
-                            if (capability.maxFPS > 0 && windowsCapability.supportFrameRateControl) {
-                                h->AvgTimePerFrame = REFERENCE_TIME(10000000.0 / capability.maxFPS);
-                            }
-                        }
-                        // Set the sink filter to request this capability
-                        hr = _sinkFilter->setRequestedCapability(capability);
-                        if (LOGGABLE_COM_IS_OK(hr)) {
-                            // order the capture device to use this capability
-                            hr = streamConfig->SetFormat(pmt);
-                            if (LOGGABLE_COM_IS_OK(hr)) {
-                                bool connected = false;
-                                const bool isDVCamera = pmt->subtype == MEDIASUBTYPE_dvsl ||
-                                                        pmt->subtype == MEDIASUBTYPE_dvsd ||
-                                                        pmt->subtype == MEDIASUBTYPE_dvhd;
-                                if (isDVCamera) {
-                                    LOCK_WRITE_SAFE_OBJ(_dvCameraConfig);
-                                    if (!_dvCameraConfig.constRef()) {
-                                        connected = connectDVCamera(_graphBuilder,
-                                                                    _inputSendPin, _outputCapturePin,
-                                                                    _dvCameraConfig.ref(), logger());
-                                    } else {
-                                        connected = _dvCameraConfig.constRef()->connect();
-                                    }
-
-                                } else {
-                                    connected = LOGGABLE_COM_IS_OK(_graphBuilder->ConnectDirect(_outputCapturePin,
-                                                                                                _inputSendPin, NULL));
-                                }
-                                if (connected) {
-                                    LOCK_WRITE_SAFE_OBJ(_requestedCapability);
-                                    _requestedCapability = capability;
-                                    ok = true;
-                                }
-                            }
-                        }
-                        webrtc::videocapturemodule::FreeMediaType(pmt);
-                    }
-                }
-            }
+    if (!_inputSendPin) {
+        return false;
+    }
+    // get the best matching capability
+    webrtc::VideoCaptureCapability capability;
+    // match the requested capability with the supported
+    const int32_t capabilityIndex = _deviceInfo->GetBestMatchedCapability(guid().data(), 
+                                                                          requestedCapability, 
+                                                                          capability);
+    if (capabilityIndex < 0) {
+        logError("unable to get best matched capability for [" + toString(requestedCapability) + "]");
+        return false;
+    }
+    // reduce the frame rate if possible.
+    if (capability.maxFPS > requestedCapability.maxFPS) {
+        capability.maxFPS = requestedCapability.maxFPS;
+    }
+    else if (capability.maxFPS <= 0) {
+        capability.maxFPS = 30;
+    }
+    // convert it to the windows capability index since they are not neccessary the same
+    webrtc::videocapturemodule::VideoCaptureCapabilityWindows windowsCapability;
+    if (0 != _deviceInfo->GetWindowsCapability(capabilityIndex, windowsCapability)) {
+        logError("unable to get windows capability for [" + toString(requestedCapability) + "]");
+        return false;
+    }
+    CComPtr<IAMStreamConfig> streamConfig;
+    HRESULT hr = _outputCapturePin->QueryInterface(&streamConfig);
+    if (!LOGGABLE_COM_IS_OK(hr)) {
+        return false;
+    }
+    AM_MEDIA_TYPE* pmt = NULL;
+    VIDEO_STREAM_CONFIG_CAPS caps;
+    // get the windows capability from the capture device
+    hr = streamConfig->GetStreamCaps(windowsCapability.directShowCapabilityIndex,
+                                     &pmt, reinterpret_cast<BYTE*>(&caps));
+    if (!LOGGABLE_COM_IS_OK(hr)) {
+        return false;
+    }
+    if (pmt->formattype == FORMAT_VideoInfo2) {
+        VIDEOINFOHEADER2* h = reinterpret_cast<VIDEOINFOHEADER2*>(pmt->pbFormat);
+        if (capability.maxFPS > 0 && windowsCapability.supportFrameRateControl) {
+            h->AvgTimePerFrame = REFERENCE_TIME(10000000.0 / capability.maxFPS);
         }
     }
-    return ok;
+    else {
+        VIDEOINFOHEADER* h = reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
+        if (capability.maxFPS > 0 && windowsCapability.supportFrameRateControl) {
+            h->AvgTimePerFrame = REFERENCE_TIME(10000000.0 / capability.maxFPS);
+        }
+    }
+    // Set the sink filter to request this capability
+    hr = _sinkFilter->setRequestedCapability(capability);
+    if (!LOGGABLE_COM_IS_OK(hr)) {
+        webrtc::videocapturemodule::FreeMediaType(pmt);
+        return false;
+    }
+    bool connected = false;
+    const bool isDVCamera = pmt->subtype == MEDIASUBTYPE_dvsl ||
+                            pmt->subtype == MEDIASUBTYPE_dvsd ||
+                            pmt->subtype == MEDIASUBTYPE_dvhd;
+    if (isDVCamera) {
+        LOCK_WRITE_SAFE_OBJ(_dvCameraConfig);
+        if (!_dvCameraConfig.constRef()) {
+            connected = connectDVCamera(_graphBuilder,
+                _inputSendPin, _outputCapturePin,
+                _dvCameraConfig.ref(), logger());
+        }
+        else {
+            connected = _dvCameraConfig.constRef()->connect();
+        }
+    }
+    else {
+        hr = _graphBuilder->ConnectDirect(_outputCapturePin, _inputSendPin, NULL);
+        connected = LOGGABLE_COM_IS_OK(hr);
+    }
+    if (connected) {
+        _requestedCapability(capability);
+    }
+    webrtc::videocapturemodule::FreeMediaType(pmt);
+    return connected;
 }
 
 void WinCameraCapturer::disconnect()

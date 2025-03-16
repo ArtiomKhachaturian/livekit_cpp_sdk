@@ -155,8 +155,7 @@ HRESULT CaptureSinkFilter::FindPin(LPCWSTR, IPin**)
 HRESULT CaptureSinkFilter::QueryFilterInfo(FILTER_INFO* info)
 {
     if (info) {
-        LOCK_READ_SAFE_OBJ(_info);
-        *info = _info.constRef();
+        *info = _info();
         if (info->pGraph) {
             info->pGraph->AddRef();
         }
