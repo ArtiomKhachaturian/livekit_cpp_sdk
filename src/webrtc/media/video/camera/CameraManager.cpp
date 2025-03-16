@@ -14,6 +14,7 @@
 #include "CameraManager.h"
 #include "CameraCapturer.h"
 #include "MediaDevice.h"
+#include "Utils.h"
 #include <modules/video_capture/video_capture_config.h>
 
 namespace LiveKitCpp
@@ -35,11 +36,13 @@ uint32_t CameraManager::devicesNumber()
 bool CameraManager::device(uint32_t number, std::string& name, std::string& guid)
 {
     if (const auto di = deviceInfo()) {
-        name.resize(webrtc::kVideoCaptureDeviceNameLength, 0);
-        guid.resize(webrtc::kVideoCaptureProductIdLength, 0);
-        return 0 == di->GetDeviceName(number,
-                                      name.data(), webrtc::kVideoCaptureDeviceNameLength,
-                                      guid.data(), webrtc::kVideoCaptureProductIdLength);
+        thread_local static char deviceNameUTF8[webrtc::kVideoCaptureDeviceNameLength] = {0};
+        thread_local static char deviceUniqueIdUTF8[webrtc::kVideoCaptureProductIdLength] = {0};
+        if (0 == di->GetDeviceName(number, deviceNameUTF8, webrtc::kVideoCaptureDeviceNameLength,
+                                   deviceUniqueIdUTF8, webrtc::kVideoCaptureProductIdLength)) {
+            name = deviceNameUTF8;
+            guid = deviceUniqueIdUTF8;
+        }
     }
     return false;
 }
@@ -73,6 +76,26 @@ std::vector<MediaDevice> CameraManager::devices()
         return devicesInfo;
     }
     return {};
+}
+
+bool CameraManager::deviceIsValid(std::string_view guid)
+{
+    if (!guid.empty()) {
+        if (const auto count = devicesNumber()) {
+            for (uint32_t i = 0u; i < count; ++i) {
+                MediaDevice deviceInfo;
+                if (device(i, deviceInfo) && guid == deviceInfo._guid) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool CameraManager::deviceIsValid(const MediaDevice& device)
+{
+    return deviceIsValid(device._guid);
 }
 
 webrtc::VideoCaptureCapability CameraManager::defaultCapability()
@@ -177,6 +200,21 @@ std::string_view CameraManager::logCategory()
     return category;
 }
 
+std::string CameraManager::formatLogMessage(std::string_view deviceName, const std::string& message)
+{
+    if (!message.empty()) {
+        if (!deviceName.empty()) {
+            return "'" + std::string(deviceName) + "' - " + message;
+        }
+    }
+    return message;
+}
+
+std::string CameraManager::formatLogMessage(const MediaDevice& device, const std::string& message)
+{
+    return formatLogMessage(device._name, message);
+}
+
 bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& orientation)
 {
     if (!guid.empty()) {
@@ -213,8 +251,8 @@ rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_vie
 std::string toString(const webrtc::VideoCaptureCapability& capability)
 {
     return std::to_string(capability.width) + "x" + std::to_string(capability.height) +
-            "/" + std::to_string(capability.maxFPS) + "/fourCC=" + 
-            std::to_string(webrtc::ConvertVideoType(capability.videoType));
+            "/" + std::to_string(capability.maxFPS) + "fps|" + 
+            fourccToString(webrtc::ConvertVideoType(capability.videoType));
 }
 
 } // namespace LiveKitCpp

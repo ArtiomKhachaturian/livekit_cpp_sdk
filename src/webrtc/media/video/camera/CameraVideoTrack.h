@@ -46,8 +46,6 @@ public:
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
-    void setSourceCapturer(MediaDevice device = {});
-    void resetSourceCapturer();
     void changeState(webrtc::MediaStreamTrackInterface::TrackState state);
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
@@ -58,8 +56,6 @@ private:
     const webrtc::scoped_refptr<CameraVideoSource> _source;
     AsyncListeners<webrtc::ObserverInterface*> _observers;
     std::atomic<webrtc::MediaStreamTrackInterface::TrackState> _state;
-    Bricks::SafeObj<MediaDevice> _device;
-    std::atomic<size_t> _sinksCount = 0U;
 };
 
 } // namespace LiveKitCpp

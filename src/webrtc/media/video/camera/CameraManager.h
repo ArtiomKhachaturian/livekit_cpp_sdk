@@ -42,6 +42,8 @@ public:
     static bool defaultdevice(uint32_t number, std::string& name, std::string& guid);
     static bool defaultDevice(MediaDevice& out);
     static std::vector<MediaDevice> devices();
+    static bool deviceIsValid(std::string_view guid);
+    static bool deviceIsValid(const MediaDevice& device);
     // capabilities API
     static webrtc::VideoCaptureCapability defaultCapability();
     // Returns the number of capabilities this device.
@@ -63,6 +65,8 @@ public:
                                       webrtc::VideoCaptureCapability& resulting);
     // common
     static std::string_view logCategory();
+    static std::string formatLogMessage(std::string_view deviceName, const std::string& message);
+    static std::string formatLogMessage(const MediaDevice& device, const std::string& message);
     // Gets clockwise angle the captured frames should be rotated in order
     // to be displayed correctly on a normally rotated display.
     static bool orientation(std::string_view guid, webrtc::VideoRotation& orientation);

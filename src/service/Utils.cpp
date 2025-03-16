@@ -128,6 +128,12 @@ inline std::string stateToString(webrtc::TaskQueueBase::DelayPrecision precision
     return {};
 }
 
+std::string fourccToString(int fourcc)
+{
+    const auto fourccStr = (const char*)&fourcc;
+    return std::string(fourccStr, 4U);
+}
+
 std::string makeUuid()
 {
     return rtc::CreateRandomUuid();

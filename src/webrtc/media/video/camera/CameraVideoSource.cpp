@@ -34,38 +34,37 @@ namespace LiveKitCpp
 
 CameraVideoSource::CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
                                      const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<CameraCapturerProxySink>(logger)
+    : Base(logger)
     , _observers(std::move(signalingThread))
     , _capability(CameraManager::defaultCapability())
     , _state(webrtc::MediaSourceInterface::kEnded)
 {
+    CameraManager::defaultDevice(_device.ref());
 }
 
 CameraVideoSource::~CameraVideoSource()
 {
-    setCapturer({});
-    LOCK_WRITE_SAFE_OBJ(_broadcasters);
-    _broadcasters->clear();
+    resetCapturer();
+    _broadcasters({});
 }
 
-void CameraVideoSource::setCapturer(rtc::scoped_refptr<CameraCapturer> capturer)
+void CameraVideoSource::setDevice(MediaDevice device)
 {
-    LOCK_WRITE_SAFE_OBJ(_capturer);
-    if (capturer != _capturer.constRef()) {
-        if (const auto& prev = _capturer.constRef()) {
-            stop(prev);
-            prev->DeRegisterCaptureDataCallback();
-            prev->setObserver(nullptr);
-        }
-        _capturer = std::move(capturer);
-        if (const auto& capturer = _capturer.constRef()) {
-            capturer->RegisterCaptureDataCallback(this);
-            capturer->setObserver(this);
-            LOCK_WRITE_SAFE_OBJ(_capability);
-            _capability = bestMatched(_capability.constRef(), _capturer.constRef());
-            if (frameWanted()) {
-                start(capturer, _capability.constRef());
+    bool ok = true;
+    if (device._guid.empty()) {
+        ok = CameraManager::defaultDevice(device);
+    }
+    if (ok && !device._guid.empty()) {
+        bool changed = false;
+        if (CameraManager::deviceIsValid(device)) {
+            LOCK_WRITE_SAFE_OBJ(_device);
+            if (_device->_guid != device._guid) {
+                _device = std::move(device);
+                changed = true;
             }
+        }
+        if (changed) {
+            requestCapturer();
         }
     }
 }
@@ -74,14 +73,20 @@ void CameraVideoSource::setCapability(webrtc::VideoCaptureCapability capability)
 {
     LOCK_READ_SAFE_OBJ(_capturer);
     const auto& capturer = _capturer.constRef();
-    capability = bestMatched(std::move(capability), capturer);
-    LOCK_READ_SAFE_OBJ(_capability);
-    if (capability != _capability.constRef()) {
-        if (capturer && capturer->CaptureStarted()) {
-            stop(capturer);
-            start(capturer, capability);
+    if (capturer) {
+        capability = bestMatched(std::move(capability), capturer);
+    }
+    bool changed = false;
+    {
+        LOCK_READ_SAFE_OBJ(_capability);
+        if (capability != _capability.constRef()) {
+            _capability = capability;
+            changed = true;
         }
-        _capability = std::move(capability);
+    }
+    if (changed && capturer && capturer->CaptureStarted()) {
+        stopCapturer(capturer);
+        startCapturer(capturer, capability);
     }
 }
 
@@ -122,17 +127,21 @@ void CameraVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFra
                                         const rtc::VideoSinkWants& wants)
 {
     if (sink) {
-        LOCK_WRITE_SAFE_OBJ(_broadcasters);
-        const auto it = _broadcasters->find(sink);
-        if (it != _broadcasters->end()) {
-            it->second->updateSinkWants(wants);
-        }
-        else {
-            auto adapter = std::make_unique<VideoSinkBroadcast>(sink, wants);
-            _broadcasters->insert(std::make_pair(sink, std::move(adapter)));
-            if (1U == _broadcasters->size()) {
-                start(_capturer(), _capability());
+        bool maybeStart = false;
+        {
+            LOCK_WRITE_SAFE_OBJ(_broadcasters);
+            const auto it = _broadcasters->find(sink);
+            if (it != _broadcasters->end()) {
+                it->second->updateSinkWants(wants);
             }
+            else {
+                auto adapter = std::make_unique<VideoSinkBroadcast>(sink, wants);
+                _broadcasters->insert(std::make_pair(sink, std::move(adapter)));
+                maybeStart = 1U == _broadcasters->size();
+            }
+        }
+        if (maybeStart) {
+            requestCapturer();
         }
     }
 }
@@ -140,9 +149,15 @@ void CameraVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFra
 void CameraVideoSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (sink) {
-        LOCK_WRITE_SAFE_OBJ(_broadcasters);
-        if (_broadcasters->erase(sink) > 0U && _broadcasters->empty()) {
-            stop(_capturer());
+        bool maybeStop = false;
+        {
+            LOCK_WRITE_SAFE_OBJ(_broadcasters);
+            if (_broadcasters->erase(sink) > 0U) {
+                maybeStop = _broadcasters->empty();
+            }
+        }
+        if (maybeStop) {
+            resetCapturer();
         }
     }
 }
@@ -219,29 +234,93 @@ webrtc::VideoCaptureCapability CameraVideoSource::bestMatched(webrtc::VideoCaptu
     return bestMatched(std::move(capability));
 }
 
-bool CameraVideoSource::start(const rtc::scoped_refptr<CameraCapturer>& capturer,
-                              const webrtc::VideoCaptureCapability& capability) const
+bool CameraVideoSource::startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                                      const webrtc::VideoCaptureCapability& capability) const
 {
     if (capturer) {
         const auto code = capturer->StartCapture(capability);
         if (0 != code) {
-            logError(makeCapturerError(code, "failed to start capturer"));
-            return false;
+            logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
         }
+        else {
+            logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
+        }
+        return 0 == code;
     }
-    return true;
+    return false;
 }
 
-bool CameraVideoSource::stop(const rtc::scoped_refptr<CameraCapturer>& capturer) const
+bool CameraVideoSource::stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const
 {
     if (capturer) {
         const auto code = capturer->StopCapture();
         if (0 != code) {
-            logError(makeCapturerError(code, "failed to stop capturer"));
-            return false;
+            logError(capturer, "failed to stop capturer",  code);
+        }
+        else {
+            logVerbose(capturer, "capturer has been stopped");
+        }
+        return 0 == code;
+    }
+    return false;
+}
+
+void CameraVideoSource::logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                                 const std::string& message, int code) const
+{
+    if (capturer && canLogError()) {
+        const auto name = capturer->CurrentDeviceName();
+        if (0 == code) {
+            Base::logError(CameraManager::formatLogMessage(name, message));
+        }
+        else {
+            Base::logError(CameraManager::formatLogMessage(name, makeCapturerError(code, message)));
         }
     }
-    return true;
+}
+
+void CameraVideoSource::logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const
+{
+    if (capturer && canLogVerbose()) {
+        Base::logVerbose(CameraManager::formatLogMessage(capturer->CurrentDeviceName(), message));
+    }
+}
+
+void CameraVideoSource::requestCapturer()
+{
+    if (frameWanted()) {
+        LOCK_WRITE_SAFE_OBJ(_capturer);
+        if (!_capturer.constRef()) {
+            LOCK_READ_SAFE_OBJ(_device);
+            if (const auto capturer = CameraManager::createCapturer(_device.constRef())) {
+                LOCK_WRITE_SAFE_OBJ(_capability);
+                _capability = bestMatched(_capability.constRef(), capturer);
+                destroyCapturer();
+                capturer->RegisterCaptureDataCallback(this);
+                capturer->setObserver(this);
+                _capturer = capturer;
+                startCapturer(capturer, _capability.constRef());
+            }
+            else {
+                // TODO: log error
+            }
+        }
+    }
+}
+
+void CameraVideoSource::resetCapturer()
+{
+    LOCK_WRITE_SAFE_OBJ(_capturer);
+    destroyCapturer();
+}
+
+void CameraVideoSource::destroyCapturer()
+{
+    if (auto capturer = _capturer.take()) {
+        stopCapturer(capturer);
+        capturer->DeRegisterCaptureDataCallback();
+        capturer->setObserver(nullptr);
+    }
 }
 
 bool CameraVideoSource::frameWanted() const

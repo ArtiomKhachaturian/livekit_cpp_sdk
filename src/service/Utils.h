@@ -72,6 +72,7 @@ inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xff
 std::string makeStateChangesString(TransportState from, TransportState to);
 
 #ifdef WEBRTC_AVAILABLE
+std::string fourccToString(int fourcc);
 std::string makeUuid();
 // human readable string for reflect of changes for some types
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,

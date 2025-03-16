@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "Loggable.h"
-#include "CameraCapturerProxySink.h"
 #include "AsyncListeners.h"
+#include "CameraCapturerProxySink.h"
+#include "Loggable.h"
+#include "MediaDevice.h"
 #include "SafeScopedRefPtr.h"
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture_defines.h>
@@ -29,20 +30,21 @@ class Thread;
 namespace LiveKitCpp
 {
 
-class CameraCapturer;
 class VideoSinkBroadcast;
+class CameraCapturer;
 
 class CameraVideoSource : public webrtc::VideoTrackSourceInterface,
                           private Bricks::LoggableS<CameraCapturerProxySink>
 {
     using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
                                             std::unique_ptr<VideoSinkBroadcast>>;
+    using Base = Bricks::LoggableS<CameraCapturerProxySink>;
 public:
     CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
                       const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
     const auto& signalingThread() const noexcept { return _observers.thread(); }
-    void setCapturer(rtc::scoped_refptr<CameraCapturer> capturer);
+    void setDevice(MediaDevice device);
     void setCapability(webrtc::VideoCaptureCapability capability);
     bool enabled() const noexcept { return _enabled; }
     bool setEnabled(bool enabled);
@@ -75,9 +77,15 @@ private:
                                                       std::string_view guid = {});
     static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
                                                       const rtc::scoped_refptr<CameraCapturer>& capturer);
-    bool start(const rtc::scoped_refptr<CameraCapturer>& capturer,
-               const webrtc::VideoCaptureCapability& capability) const;
-    bool stop(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
+    bool startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                       const webrtc::VideoCaptureCapability& capability) const;
+    bool stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
+    void logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                  const std::string& message, int code = 0) const;
+    void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
+    void requestCapturer();
+    void resetCapturer();
+    void destroyCapturer(); // non-threadsafe
     bool frameWanted() const;
     void changeState(webrtc::MediaSourceInterface::SourceState state);
     // impl. of Bricks::LoggableS<>
@@ -85,6 +93,7 @@ private:
 private:
     AsyncListeners<webrtc::ObserverInterface*> _observers;
     Bricks::SafeObj<Broadcasters> _broadcasters;
+    Bricks::SafeObj<MediaDevice> _device;
     SafeScopedRefPtr<CameraCapturer> _capturer;
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
     std::atomic_bool _enabled = true;

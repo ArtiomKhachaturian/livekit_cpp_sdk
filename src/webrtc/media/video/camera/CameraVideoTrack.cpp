@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "CameraVideoTrack.h"
 #include "CameraManager.h"
-#include "CameraCapturer.h"
+#include "CameraVideoSource.h"
 
 namespace LiveKitCpp
 {
@@ -38,7 +38,6 @@ CameraVideoTrack::CameraVideoTrack(const std::string& id,
 CameraVideoTrack::~CameraVideoTrack()
 {
     if (_source) {
-        resetSourceCapturer();
         _source->UnregisterObserver(this);
         changeState(webrtc::MediaStreamTrackInterface::TrackState::kEnded);
     }
@@ -46,12 +45,8 @@ CameraVideoTrack::~CameraVideoTrack()
 
 void CameraVideoTrack::setDevice(MediaDevice device)
 {
-    LOCK_WRITE_SAFE_OBJ(_device);
-    if (_device->_guid != device._guid) {
-        _device = std::move(device);
-        if (_sinksCount > 0U) {
-            setSourceCapturer(_device.constRef());
-        }
+    if (_source) {
+        _source->setDevice(std::move(device));
     }
 }
 
@@ -66,10 +61,6 @@ void CameraVideoTrack::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFram
                                        const rtc::VideoSinkWants& wants)
 {
     if (sink && _source) {
-        if (0U == _sinksCount.fetch_add(1U)) {
-            // create capturer
-            setSourceCapturer(_device());
-        }
         _source->AddOrUpdateSink(sink, wants);
     }
 }
@@ -78,10 +69,6 @@ void CameraVideoTrack::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* s
 {
     if (sink && _source) {
         _source->RemoveSink(sink);
-        if (1U == _sinksCount.fetch_sub(1U)) {
-            // destroy capturer
-            resetSourceCapturer();
-        }
     }
 }
 
@@ -112,26 +99,6 @@ void CameraVideoTrack::RegisterObserver(webrtc::ObserverInterface* observer)
 void CameraVideoTrack::UnregisterObserver(webrtc::ObserverInterface* observer)
 {
     _observers.remove(observer);
-}
-
-void CameraVideoTrack::setSourceCapturer(MediaDevice deviceInfo)
-{
-    if (_source && CameraManager::available()) {
-        bool ok = true;
-        if (deviceInfo._guid.empty()) {
-            ok = CameraManager::defaultDevice(deviceInfo);
-        }
-        if (ok) {
-            _source->setCapturer(CameraManager::createCapturer(deviceInfo));
-        }
-    }
-}
-
-void CameraVideoTrack::resetSourceCapturer()
-{
-    if (_source) {
-        _source->setCapturer(nullptr);
-    }
 }
 
 void CameraVideoTrack::changeState(webrtc::MediaStreamTrackInterface::TrackState state)
