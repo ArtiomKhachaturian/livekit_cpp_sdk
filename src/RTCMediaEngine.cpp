@@ -14,11 +14,13 @@
 #include "RTCMediaEngine.h"
 #include "RemoteTrack.h"
 #include "LocalParticipantImpl.h"
+#include "RemoteParticipantsImpl.h"
 #include "rtc/AddTrackRequest.h"
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
 #include "rtc/JoinResponse.h"
+#include "rtc/ParticipantUpdate.h"
 
 namespace LiveKitCpp
 {
@@ -26,6 +28,7 @@ namespace LiveKitCpp
 RTCMediaEngine::RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
     , _localParticipant(new LocalParticipantImpl(this, logger))
+    , _remoteParicipants(new RemoteParticipantsImpl(this, logger))
 {
 }
 
@@ -40,6 +43,11 @@ std::shared_ptr<LocalParticipant> RTCMediaEngine::localParticipant() const
     return _localParticipant;
 }
 
+std::shared_ptr<RemoteParticipants> RTCMediaEngine::remoteParticipants() const
+{
+    return _remoteParicipants;
+}
+
 void RTCMediaEngine::addLocalResourcesToTransport()
 {
     _localParticipant->addTracksToTransport();
@@ -47,38 +55,43 @@ void RTCMediaEngine::addLocalResourcesToTransport()
 
 void RTCMediaEngine::cleanupLocalResources()
 {
-    _localParticipant->resetTracksMedia();
+    _localParticipant->reset();
 }
 
 void RTCMediaEngine::cleanupRemoteResources()
 {
-    //_remoteDCs({});
-    _remoteTracks({});
+    _remoteParicipants->reset();
 }
 
 void RTCMediaEngine::onJoin(const JoinResponse& response)
 {
     _localParticipant->setInfo(response._participant);
+    _remoteParicipants->setInfo(response._otherParticipants);
 }
 
 void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
 {
-    if (const auto track = _localParticipant->track(published._cid, true)) {
-        track->setSid(published._track._sid);
-        // reconcile track mute status.
-        // if server's track mute status doesn't match actual, we'll have to update
-        // the server's copy
-        const auto muted = track->muted();
-        if (muted != published._track._muted) {
-            notifyAboutMuteChanges(published._track._sid, muted);
-        }
-    }
+    _localParticipant->notifyThatTrackPublished(published);
 }
 
 void RTCMediaEngine::onTrackUnpublished(const TrackUnpublishedResponse& unpublished)
 {
-    if (const auto track = _localParticipant->track(unpublished._trackSid, false)) {
-        track->resetMedia();
+    _localParticipant->notifyThatTrackUnpublished(unpublished);
+}
+
+void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
+{
+    std::vector<ParticipantInfo> infos = update._participants;
+    if (const auto s = infos.size()) {
+        for (size_t i = 0U; i < s; ++i) {
+            const auto& info = infos.at(i);
+            if (info._sid == _localParticipant->sid()) {
+                _localParticipant->setInfo(info);
+                infos.erase(infos.begin() + i);
+                break;
+            }
+        }
+        _remoteParicipants->updateInfo(infos);
     }
 }
 
@@ -114,27 +127,12 @@ void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaTy
 
 void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    if (transceiver) {
-        TrackManager* manager = this;
-        auto sid = RemoteTrack::sid(transceiver->receiver());
-        if (!sid.empty()) {
-            auto track = std::make_unique<RemoteTrack>(manager, transceiver->receiver());
-            LOCK_WRITE_SAFE_OBJ(_remoteTracks);
-            _remoteTracks->insert(std::make_pair(std::move(sid), std::move(track)));
-        }
-        else {
-            logWarning("empty ID of received transceiver");
-        }
-    }
+    _remoteParicipants->addMedia(transceiver);
 }
 
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
-    if (receiver) {
-        const auto sid = receiver->id();
-        LOCK_WRITE_SAFE_OBJ(_remoteTracks);
-        _remoteTracks->erase(sid);
-    }
+    _remoteParicipants->removeMedia(receiver);
 }
 
 void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
@@ -144,10 +142,7 @@ void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> c
 
 void RTCMediaEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
 {
-    if (channel) {
-        //LOCK_WRITE_SAFE_OBJ(_remoteDCs);
-        //addDataChannelToList(std::move(channel), _remoteDCs.ref());
-    }
+    _remoteParicipants->addDataChannel(std::move(channel));
 }
 
 void RTCMediaEngine::sendAddTrack(const LocalTrack* track)

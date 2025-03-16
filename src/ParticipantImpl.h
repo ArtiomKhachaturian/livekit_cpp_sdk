@@ -15,6 +15,7 @@
 #include "Participant.h"
 #include "SafeObj.h"
 #include "rtc/ParticipantInfo.h"
+//#include <optional>
 #include <type_traits>
 
 namespace LiveKitCpp

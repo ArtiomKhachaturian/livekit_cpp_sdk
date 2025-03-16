@@ -29,6 +29,9 @@ class Logger;
 namespace LiveKitCpp
 {
 
+struct TrackPublishedResponse;
+struct TrackUnpublishedResponse;
+
 class LocalParticipantImpl : public ParticipantImpl<LocalParticipant>,
                              protected DataChannelsStorage<LocalTrackManager>
 {
@@ -39,7 +42,9 @@ public:
     ~LocalParticipantImpl() final;
     bool addDataChannel(rtc::scoped_refptr<DataChannel> channel);
     void addTracksToTransport();
-    void resetTracksMedia();
+    void reset();
+    void notifyThatTrackPublished(const TrackPublishedResponse& response);
+    void notifyThatTrackUnpublished(const TrackUnpublishedResponse& response);
     LocalTrack* track(const std::string& id, bool cid);
     LocalTrack* track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> pendingLocalMedia();

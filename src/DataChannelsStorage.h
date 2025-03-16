@@ -22,12 +22,13 @@
 namespace LiveKitCpp
 {
 
-template<class TBase = void>
-class DataChannelsStorage : public Bricks::LoggableS<DataChannelListener, TBase>
+template<class... BaseInterfaces>
+class DataChannelsStorage : public Bricks::LoggableS<BaseInterfaces...>,
+                            protected DataChannelListener
 {
     // key is channel label
     using DataChannels = std::unordered_map<std::string, rtc::scoped_refptr<DataChannel>>;
-    using Base = Bricks::LoggableS<DataChannelListener, TBase>;
+    using Base = Bricks::LoggableS<BaseInterfaces...>;
 public:
     ~DataChannelsStorage() override { clear(); }
     bool add(rtc::scoped_refptr<DataChannel> channel);
@@ -47,15 +48,16 @@ private:
     Bricks::SafeObj<DataChannels> _dataChannels;
 };
 
-
-template<class TBase>
-inline DataChannelsStorage<TBase>::DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(logger)
+template <class... BaseInterfaces>
+inline DataChannelsStorage<BaseInterfaces...>::
+    DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger)
+        : Base(logger)
 {
 }
 
-template<class TBase>
-inline bool DataChannelsStorage<TBase>::add(rtc::scoped_refptr<DataChannel> channel)
+template <class... BaseInterfaces>
+inline bool DataChannelsStorage<BaseInterfaces...>::
+    add(rtc::scoped_refptr<DataChannel> channel)
 {
     if (channel) {
         const auto label = channel->label();
@@ -82,8 +84,9 @@ inline bool DataChannelsStorage<TBase>::add(rtc::scoped_refptr<DataChannel> chan
     }
 }
 
-template<class TBase>
-inline bool DataChannelsStorage<TBase>::remove(const std::string& label)
+template <class... BaseInterfaces>
+inline bool DataChannelsStorage<BaseInterfaces...>::
+    remove(const std::string& label)
 {
     bool removed = false;
     if (!label.empty()) {
@@ -103,14 +106,15 @@ inline bool DataChannelsStorage<TBase>::remove(const std::string& label)
     return removed;
 }
 
-template<class TBase>
-inline bool DataChannelsStorage<TBase>::remove(const rtc::scoped_refptr<DataChannel>& channel)
+template <class... BaseInterfaces>
+inline bool DataChannelsStorage<BaseInterfaces...>::
+    remove(const rtc::scoped_refptr<DataChannel>& channel)
 {
     return channel && remove(channel->label());
 }
 
-template<class TBase>
-inline void DataChannelsStorage<TBase>::clear()
+template <class... BaseInterfaces>
+inline void DataChannelsStorage<BaseInterfaces...>::clear()
 {
     LOCK_WRITE_SAFE_OBJ(_dataChannels);
     for (auto it = _dataChannels->begin(); it != _dataChannels->end(); ++it) {
@@ -119,8 +123,8 @@ inline void DataChannelsStorage<TBase>::clear()
     _dataChannels->clear();
 }
 
-template<class TBase>
-inline void DataChannelsStorage<TBase>::onStateChange(DataChannel* channel)
+template <class... BaseInterfaces>
+inline void DataChannelsStorage<BaseInterfaces...>::onStateChange(DataChannel* channel)
 {
     if (channel && Base::canLogVerbose()) {
         Base::logVerbose(dcType(channel->local()) + " data channel '" +
@@ -129,9 +133,9 @@ inline void DataChannelsStorage<TBase>::onStateChange(DataChannel* channel)
     }
 }
 
-template<class TBase>
-inline void DataChannelsStorage<TBase>::onMessage(DataChannel* channel,
-                                                  const webrtc::DataBuffer& /*buffer*/)
+template <class... BaseInterfaces>
+inline void DataChannelsStorage<BaseInterfaces...>::
+    onMessage(DataChannel* channel, const webrtc::DataBuffer& /*buffer*/)
 {
     if (channel && Base::canLogVerbose()) {
         Base::logVerbose("a message buffer was successfully received for '" +
@@ -140,9 +144,9 @@ inline void DataChannelsStorage<TBase>::onMessage(DataChannel* channel,
     }
 }
 
-template<class TBase>
-inline void DataChannelsStorage<TBase>::onBufferedAmountChange(DataChannel* channel,
-                                                               uint64_t sentDataSize)
+template <class... BaseInterfaces>
+inline void DataChannelsStorage<BaseInterfaces...>::
+    onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize)
 {
     if (channel && Base::canLogVerbose()) {
         Base::logVerbose(dcType(channel->local()) + " data channel '" +
@@ -151,9 +155,9 @@ inline void DataChannelsStorage<TBase>::onBufferedAmountChange(DataChannel* chan
     }
 }
 
-template<class TBase>
-inline void DataChannelsStorage<TBase>::onSendError(DataChannel* channel,
-                                                    webrtc::RTCError error)
+template <class... BaseInterfaces>
+inline void DataChannelsStorage<BaseInterfaces...>::
+    onSendError(DataChannel* channel, webrtc::RTCError error)
 {
     if (channel && Base::canLogError()) {
         Base::logError("send operation failed for '" + channel->label() + "' " +

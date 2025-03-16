@@ -14,6 +14,7 @@
 #pragma once // LiveKitRoom.h
 #include "LiveKitClientExport.h"
 #include "LocalParticipant.h"
+#include "RemoteParticipants.h"
 #include <memory>
 
 namespace Websocket {
@@ -39,6 +40,7 @@ public:
     bool connect(std::string host, std::string authToken);
     void disconnect();
     std::shared_ptr<LocalParticipant> localParticipant() const;
+    std::shared_ptr<RemoteParticipants> remoteParticipants() const;
 private:
     LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                 PeerConnectionFactory* pcf,

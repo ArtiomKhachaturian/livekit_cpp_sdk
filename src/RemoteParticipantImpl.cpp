@@ -11,21 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // RemoteParticipant.h
-#include "Participant.h"
-#include "AudioTrack.h"
-#include "VideoTrack.h"
+#include "RemoteParticipantImpl.h"
 
 namespace LiveKitCpp
 {
 
-class RemoteParticipant : public Participant
+size_t RemoteParticipantImpl::audioTracksCount() const
 {
-public:
-    virtual size_t audioTracksCount() const = 0;
-    virtual size_t videoTracksCount() const = 0;
-    virtual std::shared_ptr<AudioTrack> audioTrack(size_t index) const = 0;
-    virtual std::shared_ptr<VideoTrack> videoTrack(size_t index) const = 0;
-};
+    return 0U;
+}
+
+size_t RemoteParticipantImpl::videoTracksCount() const
+{
+    return 0U;
+}
+
+std::shared_ptr<AudioTrack> RemoteParticipantImpl::audioTrack(size_t /*index*/) const
+{
+    return {};
+}
+
+std::shared_ptr<VideoTrack> RemoteParticipantImpl::videoTrack(size_t /*index*/) const
+{
+    return {};
+}
 
 } // namespace LiveKitCpp

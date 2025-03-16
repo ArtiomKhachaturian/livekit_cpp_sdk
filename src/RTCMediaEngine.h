@@ -24,10 +24,12 @@
 namespace LiveKitCpp
 {
 
-class LocalParticipant;
-class LocalParticipantImpl;
 class LocalTrack;
 class RemoteTrack;
+class LocalParticipant;
+class LocalParticipantImpl;
+class RemoteParticipants;
+class RemoteParticipantsImpl;
 struct AddTrackRequest;
 struct MuteTrackRequest;
 
@@ -35,10 +37,9 @@ class RTCMediaEngine : protected Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
                        protected LocalTrackManager
 {
-    // key is sid
-    using RemoteTracks = std::unordered_map<std::string, std::unique_ptr<RemoteTrack>>;
 public:
     std::shared_ptr<LocalParticipant> localParticipant() const;
+    std::shared_ptr<RemoteParticipants> remoteParticipants() const;
 protected:
     enum class SendResult
     {
@@ -60,6 +61,7 @@ protected:
     void onJoin(const JoinResponse& response) override;
     void onTrackPublished(const TrackPublishedResponse& published) final;
     void onTrackUnpublished(const TrackUnpublishedResponse& unpublished) final;
+    void onUpdate(const ParticipantUpdate& update) final;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
@@ -79,8 +81,7 @@ private:
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
 private:
     const std::shared_ptr<LocalParticipantImpl> _localParticipant;
-    //Bricks::SafeObj<DataChannels> _remoteDCs;
-    Bricks::SafeObj<RemoteTracks> _remoteTracks;
+    const std::shared_ptr<RemoteParticipantsImpl> _remoteParicipants;
 };
 
 } // namespace LiveKitCpp

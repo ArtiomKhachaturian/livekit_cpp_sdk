@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "LocalParticipantImpl.h"
-#include "DataChannel.h"
+#include "rtc/TrackPublishedResponse.h"
+#include "rtc/TrackUnpublishedResponse.h"
 
 namespace LiveKitCpp
 {
@@ -28,7 +29,7 @@ LocalParticipantImpl::LocalParticipantImpl(LocalTrackManager* manager,
 
 LocalParticipantImpl::~LocalParticipantImpl()
 {
-    resetTracksMedia();
+    reset();
     clear();
 }
 
@@ -43,11 +44,34 @@ void LocalParticipantImpl::addTracksToTransport()
     _camera.addToTransport();
 }
 
-void LocalParticipantImpl::resetTracksMedia()
+void LocalParticipantImpl::reset()
 {
     _microphone.resetMedia();
     _camera.resetMedia();
     _pendingLocalMedias({});
+    setInfo({});
+}
+
+void LocalParticipantImpl::notifyThatTrackPublished(const TrackPublishedResponse& response)
+{
+    if (const auto t = track(response._cid, true)) {
+        const auto& sid = response._track._sid;
+        t->setSid(sid);
+        // reconcile track mute status.
+        // if server's track mute status doesn't match actual, we'll have to update
+        // the server's copy
+        const auto muted = t->muted();
+        if (muted != response._track._muted) {
+            notifyAboutMuteChanges(sid, muted);
+        }
+    }
+}
+
+void LocalParticipantImpl::notifyThatTrackUnpublished(const TrackUnpublishedResponse& response)
+{
+    if (const auto t = track(response._trackSid, false)) {
+        t->resetMedia();
+    }
 }
 
 LocalTrack* LocalParticipantImpl::track(const std::string& id, bool cid)

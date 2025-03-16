@@ -59,6 +59,11 @@ std::shared_ptr<LocalParticipant> LiveKitRoom::localParticipant() const
     return _impl->_engine.localParticipant();
 }
 
+std::shared_ptr<RemoteParticipants> LiveKitRoom::remoteParticipants() const
+{
+    return _impl->_engine.remoteParticipants();
+}
+
 LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
                         PeerConnectionFactory* pcf,
                         const Options& signalOptions,
@@ -83,6 +88,7 @@ void LiveKitRoom::disconnect() {}
 
 std::shared_ptr<LocalParticipant> LiveKitRoom::localParticipant() const { return {}; }
 
+std::shared_ptr<RemoteParticipants> LiveKitRoom::remoteParticipants() const { return {}; }
 #endif
 
 } // namespace LiveKitCpp
