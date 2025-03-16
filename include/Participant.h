@@ -11,32 +11,31 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // Track.h
-#include "rtc/TrackType.h"
-#include "rtc/TrackSource.h"
+#pragma once // Participant.h
+#include "rtc/ParticipantPermission.h"
+#include "rtc/ParticipantKind.h"
+#include "rtc/ParticipantState.h"
 #include <string>
 
 namespace LiveKitCpp
 {
 
-class Track
+class Participant
 {
 public:
-    virtual ~Track() = default;
-    // local or remote
-    virtual bool remote() const noexcept = 0;
-    // live or ended, a track will never be live again after becoming ended
-    virtual bool live() const = 0;
-    // type
-    virtual TrackType type() const = 0;
-    // source
-    virtual TrackSource source() const = 0;
-    // server track ID
+    virtual ~Participant() = default;
     virtual std::string sid() const = 0;
-    // mute/unmute state
-    virtual void mute(bool mute = true) = 0;
-    virtual bool muted() const = 0;
-    void unmute() { mute(false); }
+    virtual std::string identity() const = 0;
+    virtual std::string name() const = 0;
+    virtual std::string metadata() const = 0;
+    virtual ParticipantState state() const = 0;
+    virtual bool hasActivePublisher() const = 0;
+    virtual ParticipantKind kind() const = 0;
+    /* int64_t _joinedAt = {};
+    uint32_t _version = {};
+    std::optional<ParticipantPermission> _permission;
+    std::string _region;
+    std::unordered_map<std::string, std::string> _attributes;*/
 };
 
 } // namespace LiveKitCpp

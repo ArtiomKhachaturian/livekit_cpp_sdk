@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // LiveKitRoom.h
 #include "LiveKitClientExport.h"
+#include "LocalParticipant.h"
 #include <memory>
 
 namespace Websocket {
@@ -37,8 +38,7 @@ public:
     ~LiveKitRoom();
     bool connect(std::string host, std::string authToken);
     void disconnect();
-    void setMicrophoneEnabled(bool enable);
-    void setCameraEnabled(bool enable);
+    std::shared_ptr<LocalParticipant> localParticipant() const;
 private:
     LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
                 PeerConnectionFactory* pcf,

@@ -187,6 +187,7 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service
     ${CMAKE_SOURCE_DIR}/websockets_api/include
     ${CMAKE_SOURCE_DIR}/bricks/include

@@ -11,32 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // Track.h
-#include "rtc/TrackType.h"
-#include "rtc/TrackSource.h"
-#include <string>
+#pragma once // LocalParticipant.h
+#include "AudioTrack.h"
+#include "CameraTrack.h"
+#include "Participant.h"
 
 namespace LiveKitCpp
 {
 
-class Track
+class LocalParticipant : public Participant
 {
 public:
-    virtual ~Track() = default;
-    // local or remote
-    virtual bool remote() const noexcept = 0;
-    // live or ended, a track will never be live again after becoming ended
-    virtual bool live() const = 0;
-    // type
-    virtual TrackType type() const = 0;
-    // source
-    virtual TrackSource source() const = 0;
-    // server track ID
-    virtual std::string sid() const = 0;
-    // mute/unmute state
-    virtual void mute(bool mute = true) = 0;
-    virtual bool muted() const = 0;
-    void unmute() { mute(false); }
+    virtual CameraTrack& camera() = 0;
+    virtual const CameraTrack& camera() const = 0;
+    virtual AudioTrack& microphone() = 0;
+    virtual const AudioTrack& microphone() const = 0;
 };
 
 } // namespace LiveKitCpp

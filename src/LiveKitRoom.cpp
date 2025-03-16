@@ -54,14 +54,9 @@ void LiveKitRoom::disconnect()
     _impl->_engine.disconnect();
 }
 
-void LiveKitRoom::setMicrophoneEnabled(bool enable)
+std::shared_ptr<LocalParticipant> LiveKitRoom::localParticipant() const
 {
-    _impl->_engine.unmuteMicrophone(enable);
-}
-
-void LiveKitRoom::setCameraEnabled(bool enable)
-{
-    _impl->_engine.unmuteCamera(enable);
+    return _impl->_engine.localParticipant();
 }
 
 LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
@@ -86,9 +81,8 @@ bool LiveKitRoom::connect(std::string, std::string) { return false; }
 
 void LiveKitRoom::disconnect() {}
 
-void LiveKitRoom::setMicrophoneEnabled(bool) {}
+std::shared_ptr<LocalParticipant> LiveKitRoom::localParticipant() const { return {}; }
 
-void LiveKitRoom::setCameraEnabled(bool) {}
 #endif
 
 } // namespace LiveKitCpp

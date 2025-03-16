@@ -103,7 +103,7 @@ bool RTCEngine::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTra
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         return pcManager->addTrack(track);
     }
-    return RTCMediaEngine::addLocalMedia(track);
+    return false;
 }
 
 bool RTCEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -111,7 +111,7 @@ bool RTCEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStream
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         return pcManager->removeTrack(track);
     }
-    return RTCMediaEngine::removeLocalMedia(track);
+    return false;
 }
 
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createMic(const std::string& label)
