@@ -27,6 +27,7 @@ class ParticipantImpl : public TParticipant
     static_assert(std::is_base_of_v<Participant, TParticipant>);
 public:
     virtual void setInfo(const ParticipantInfo& info = {});
+    ParticipantInfo info() const { return _info(); }
     // impl. of Participant
     std::string sid() const override;
     std::string identity() const override;

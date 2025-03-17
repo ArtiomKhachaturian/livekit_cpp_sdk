@@ -29,10 +29,14 @@ public:
     void fillRequest(AddTrackRequest* request) const final;
 protected:
     // impl. of AudioTrackImpl
-    rtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack() const { return mediaTrack(); }
+    void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;
+    bool signalLevel(int& level) const final;
     // impl. LocalTrackImpl
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMediaTrack(const std::string& id) final;
     void requestAuthorization() final;
+private:
+    static void installSink(bool install, webrtc::AudioTrackSinkInterface* sink,
+                            const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track);
 private:
     const bool _microphone;
 };

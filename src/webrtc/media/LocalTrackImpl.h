@@ -36,20 +36,20 @@ public:
     ~LocalTrackImpl() override { resetMedia(); }
     // client track ID, equal to WebRTC track ID
     const std::string& cid() const noexcept { return _cid; }
-    // track name
-    const std::string& name() const noexcept { return _name; }
     // impl. of LocalTrack
     void setSid(const std::string& sid) final { _sid(sid); }
+    // server track ID if any
+    std::string sid() const { return _sid(); }
     void resetMedia(bool remove = true) final;
     void addToTransport() final;
     void notifyThatMediaAddedToTransport() final;
     bool canPublish() const noexcept final;
     void fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
+    std::string name() const final { return _name; }
     bool live() const final;
     void mute(bool mute) final; // request media track creation if needed
     bool muted() const final { return _muted; }
-    std::string sid() const final { return _sid(); }
     bool remote() const noexcept final { return false; }
 protected:
     LocalTrackImpl(std::string name, LocalTrackManager* manager,

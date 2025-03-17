@@ -23,6 +23,8 @@ class Track
 {
 public:
     virtual ~Track() = default;
+    // track name
+    virtual std::string name() const = 0;
     // local or remote
     virtual bool remote() const noexcept = 0;
     // live or ended, a track will never be live again after becoming ended
@@ -31,8 +33,6 @@ public:
     virtual TrackType type() const = 0;
     // source
     virtual TrackSource source() const = 0;
-    // server track ID
-    virtual std::string sid() const = 0;
     // mute/unmute state
     virtual void mute(bool mute = true) = 0;
     virtual bool muted() const = 0;

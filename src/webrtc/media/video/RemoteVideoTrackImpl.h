@@ -31,6 +31,7 @@ public:
                          webrtc::VideoTrackInterface* track);
     ~RemoteVideoTrackImpl() final;
     // impl. of RemoteVideoTrack
+    std::string sid() const final { return info()._sid; }
     uint32_t originalWidth() const final { return info()._width; }
     uint32_t originalHeight() const final { return info()._height; }
     std::vector<VideoLayer> layers() const final { return info()._layers; }
@@ -40,7 +41,8 @@ public:
     EncryptionType encryption() const final { return info()._encryption; }
     BackupCodecPolicy backupCodecPolicy() const final { return info()._backupCodecPolicy; }
 protected:
-    rtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack() const final;
+    // impl. of VideoTrackImpl<>
+    void installSink(bool install, rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
 };
 
 } // namespace LiveKitCpp

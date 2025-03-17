@@ -22,6 +22,8 @@ namespace LiveKitCpp
 class RemoteAudioTrack : public AudioTrack
 {
 public:
+    // server track ID
+    virtual std::string sid() const = 0;
     virtual bool dtx() const = 0;
     virtual bool stereo() const = 0;
     virtual bool red() const = 0;

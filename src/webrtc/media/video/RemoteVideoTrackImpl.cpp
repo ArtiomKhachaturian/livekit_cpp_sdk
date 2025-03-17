@@ -30,16 +30,19 @@ RemoteVideoTrackImpl::RemoteVideoTrackImpl(TrackManager* manager, const TrackInf
 
 RemoteVideoTrackImpl::~RemoteVideoTrackImpl()
 {
-    if (hasSinks()) {
-        if (const auto track = this->track()) {
-            track->RemoveSink(this);
-        }
-    }
+    installSink(false, videoSink());
 }
 
-rtc::scoped_refptr<webrtc::VideoTrackInterface> RemoteVideoTrackImpl::videoTrack() const
+void RemoteVideoTrackImpl::installSink(bool install, rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
-    return track();
+    if (sink && track()) {
+        if (install) {
+            track()->AddOrUpdateSink(sink, {});
+        }
+        else {
+            track()->RemoveSink(sink);
+        }
+    }
 }
 
 } // namespace LiveKitCpp

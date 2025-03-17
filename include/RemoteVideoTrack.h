@@ -23,6 +23,8 @@ namespace LiveKitCpp
 class RemoteVideoTrack : public VideoTrack
 {
 public:
+    // server track ID
+    virtual std::string sid() const = 0;
     // clients may receive a lower resolution version with simulcast
     virtual uint32_t originalWidth() const = 0;
     virtual uint32_t originalHeight() const = 0;

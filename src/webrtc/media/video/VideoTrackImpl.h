@@ -25,7 +25,7 @@ namespace LiveKitCpp
 
 template<class TTrackApi = VideoTrack>
 class VideoTrackImpl : public TTrackApi,
-                       protected rtc::VideoSinkInterface<webrtc::VideoFrame>
+                       private rtc::VideoSinkInterface<webrtc::VideoFrame>
 {
     static_assert(std::is_base_of_v<VideoTrack, TTrackApi>);
 public:
@@ -35,12 +35,11 @@ public:
     void removeSink(VideoTrackSink* sink) final;
 protected:
     VideoTrackImpl() = default;
-    bool hasSinks() const noexcept { return !_sinks.empty(); }
-    virtual rtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack() const = 0;
+    rtc::VideoSinkInterface<webrtc::VideoFrame>* videoSink();
+    virtual void installSink(bool install, rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) = 0;
+private:
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final;
-private:
-    void subscribeVideoTrackSink(bool subscribe);
 private:
     Bricks::Listeners<VideoTrackSink*> _sinks;
 };
@@ -51,7 +50,7 @@ inline void VideoTrackImpl<TTrackApi>::addSink(VideoTrackSink* sink)
     if (sink) {
         const auto res = _sinks.add(sink);
         if (Bricks::AddResult::OkFirst == res) {
-            subscribeVideoTrackSink(true);
+            installSink(true, this);
         }
     }
 }
@@ -62,27 +61,20 @@ inline void VideoTrackImpl<TTrackApi>::removeSink(VideoTrackSink* sink)
     if (sink) {
         const auto res = _sinks.remove(sink);
         if (Bricks::RemoveResult::OkLast == res) {
-            subscribeVideoTrackSink(false);
+            installSink(false, this);
         }
     }
+}
+
+template<class TTrackApi>
+inline rtc::VideoSinkInterface<webrtc::VideoFrame>* VideoTrackImpl<TTrackApi>::videoSink()
+{
+    return _sinks.empty() ? nullptr : this;
 }
 
 template<class TTrackApi>
 inline void VideoTrackImpl<TTrackApi>::OnFrame(const webrtc::VideoFrame& /*frame*/)
 {
-}
-
-template<class TTrackApi>
-inline void VideoTrackImpl<TTrackApi>::subscribeVideoTrackSink(bool subscribe)
-{
-    if (const auto track = videoTrack()) {
-        if (subscribe) {
-            track->AddOrUpdateSink(this, {});
-        }
-        else {
-            track->RemoveSink(this);
-        }
-    }
 }
 
 } // namespace LiveKitCpp

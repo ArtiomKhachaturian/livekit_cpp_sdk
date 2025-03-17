@@ -34,11 +34,7 @@ LocalAudioTrackImpl::LocalAudioTrackImpl(LocalTrackManager* manager, bool microp
 
 LocalAudioTrackImpl::~LocalAudioTrackImpl()
 {
-    if (hasSinks()) {
-        if (const auto track = mediaTrack()) {
-            track->RemoveSink(this);
-        }
-    }
+    installSink(false, audioSink());
 }
 
 TrackSource LocalAudioTrackImpl::source() const
@@ -63,17 +59,45 @@ void LocalAudioTrackImpl::requestAuthorization()
     }
 }
 
+void LocalAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink)
+{
+    if (sink) {
+        installSink(install, sink, mediaTrack());
+    }
+}
+
+bool LocalAudioTrackImpl::signalLevel(int& level) const
+{
+    if (const auto track = mediaTrack()) {
+        return track->GetSignalLevel(&level);
+    }
+    return false;
+}
+
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrackImpl::
     createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
         auto track = m->createMic(id);
-        if (track && hasSinks()) {
-            track->AddSink(this);
+        if (track) {
+            installSink(true, audioSink(), track);
         }
         return track;
     }
     return {};
+}
+
+void LocalAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink,
+                                      const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track)
+{
+    if (sink && track) {
+        if (install) {
+            track->AddSink(sink);
+        }
+        else {
+            track->RemoveSink(sink);
+        }
+    }
 }
 
 } // namespace LiveKitCpp

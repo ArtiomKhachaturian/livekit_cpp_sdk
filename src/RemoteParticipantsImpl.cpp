@@ -39,6 +39,7 @@ void RemoteParticipantsImpl::setInfo(const std::vector<ParticipantInfo>& infos)
         _participants->reserve(infos.size());
         LOCK_WRITE_SAFE_OBJ(_trackRefs);
         LOCK_WRITE_SAFE_OBJ(_orphans);
+        _trackRefs->clear();
         for (const auto& info : infos) {
             auto participant = std::make_shared<RemoteParticipantImpl>(info);
             // fill tracks or keep references for the future orphans

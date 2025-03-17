@@ -30,10 +30,10 @@ class RemoteTrackImpl : public TTrackApi
     static_assert(std::is_base_of_v<Track, TTrackApi>);
 public:
     // impl. of Track
+    std::string name() const final { return _info._name; }
     bool remote() const noexcept final { return true; }
     bool live() const final;
     TrackSource source() const final { return _info._source; }
-    std::string sid() const final { return _info._sid; }
     void mute(bool mute) final;
     bool muted() const final;
 protected:
@@ -41,6 +41,8 @@ protected:
                     const webrtc::scoped_refptr<TRtcTrack>& track);
     const auto& info() const noexcept { return _info; }
     const auto& track() const noexcept { return _track; }
+private:
+    void notifyAboutMuteChanges(bool mute) const;
 private:
     TrackManager* const _manager;
     const TrackInfo _info;
@@ -55,8 +57,8 @@ inline RemoteTrackImpl<TRtcTrack, TTrackApi>::RemoteTrackImpl(TrackManager* mana
     , _info(info)
     , _track(track)
 {
-    if (_manager && _track && info._muted != muted()) {
-        _manager->notifyAboutMuteChanges(sid(), muted());
+    if (_track && info._muted != muted()) {
+        notifyAboutMuteChanges(muted());
     }
 }
 
@@ -72,9 +74,8 @@ inline bool RemoteTrackImpl<TRtcTrack, TTrackApi>::live() const
 template<class TRtcTrack, class TTrackApi>
 inline void RemoteTrackImpl<TRtcTrack, TTrackApi>::mute(bool mute)
 {
-    if (_track && mute == _track->enabled() && _track->set_enabled(!mute)
-        && _manager) {
-        _manager->notifyAboutMuteChanges(sid(), mute);
+    if (_track && mute == _track->enabled() && _track->set_enabled(!mute)) {
+        notifyAboutMuteChanges(mute);
     }
 }
 
@@ -82,6 +83,14 @@ template<class TRtcTrack, class TTrackApi>
 inline bool RemoteTrackImpl<TRtcTrack, TTrackApi>::muted() const
 {
     return !_track || !_track->enabled();
+}
+
+template<class TRtcTrack, class TTrackApi>
+inline void RemoteTrackImpl<TRtcTrack, TTrackApi>::notifyAboutMuteChanges(bool mute) const
+{
+    if (_manager) {
+        _manager->notifyAboutMuteChanges(_info._sid, mute);
+    }
 }
 
 } // namespace LiveKitCpp

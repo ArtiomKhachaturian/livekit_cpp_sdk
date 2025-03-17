@@ -25,11 +25,7 @@ CameraTrackImpl::CameraTrackImpl(LocalTrackManager* manager,
 
 CameraTrackImpl::~CameraTrackImpl()
 {
-    if (hasSinks()) {
-        if (const auto track = mediaTrack()) {
-            track->RemoveSink(this);
-        }
-    }
+    installSink(false, videoSink());
 }
 
 void CameraTrackImpl::setCapability(webrtc::VideoCaptureCapability capability)
@@ -59,8 +55,8 @@ webrtc::scoped_refptr<CameraVideoTrack> CameraTrackImpl::createMediaTrack(const 
 {
     if (const auto m = manager()) {
         auto track = m->createCamera(id);
-        if (track && hasSinks()) {
-            track->AddOrUpdateSink(this, {});
+        if (track) {
+            installSink(true, videoSink(), track);
         }
         return track;
     }

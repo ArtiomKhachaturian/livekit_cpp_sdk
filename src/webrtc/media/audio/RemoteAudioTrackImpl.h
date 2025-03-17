@@ -30,6 +30,7 @@ public:
                          webrtc::AudioTrackInterface* track);
     ~RemoteAudioTrackImpl() final;
     // impl. of RemoteAudioTrack
+    std::string sid() const final { return info()._sid; }
     bool dtx() const final { return !info()._disableDtx; }
     bool stereo() const final { return info()._stereo; }
     bool red() const final { return !info()._disableRed; }
@@ -39,7 +40,8 @@ public:
     BackupCodecPolicy backupCodecPolicy() const final { return info()._backupCodecPolicy; }
 protected:
     // impl. of AudioTrackImpl
-    rtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack() const;
+    void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;
+    bool signalLevel(int& level) const final;
 };
 
 } // namespace LiveKitCpp

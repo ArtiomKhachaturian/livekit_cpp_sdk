@@ -30,16 +30,24 @@ RemoteAudioTrackImpl::RemoteAudioTrackImpl(TrackManager* manager, const TrackInf
 
 RemoteAudioTrackImpl::~RemoteAudioTrackImpl()
 {
-    if (hasSinks()) {
-        if (const auto track = this->track()) {
-            track->RemoveSink(this);
+    installSink(false, audioSink());
+}
+
+void RemoteAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink)
+{
+    if (sink && track()) {
+        if (install) {
+            track()->AddSink(sink);
+        }
+        else {
+            track()->RemoveSink(sink);
         }
     }
 }
 
-rtc::scoped_refptr<webrtc::AudioTrackInterface> RemoteAudioTrackImpl::audioTrack() const
+bool RemoteAudioTrackImpl::signalLevel(int& level) const
 {
-    return track();
+    return track() && track()->GetSignalLevel(&level);
 }
 
 } // namespace LiveKitCpp
