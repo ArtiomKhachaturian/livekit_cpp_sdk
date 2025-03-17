@@ -18,6 +18,7 @@
 #include "SafeObj.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
+#include <optional>
 #include <vector>
 
 namespace webrtc {
@@ -37,6 +38,7 @@ class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipant>
     using VideoTracks = std::vector<std::shared_ptr<RemoteVideoTrackImpl>>;
 public:
     RemoteParticipantImpl(const ParticipantInfo& info = {});
+    ~RemoteParticipantImpl() final;
     bool addAudio(const std::string& sid, TrackManager* manager,
                   const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     bool addVideo(const std::string& sid, TrackManager* manager,
@@ -45,11 +47,16 @@ public:
     size_t audioTracksCount() const final;
     size_t videoTracksCount() const final;
     std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const final;
+    std::shared_ptr<RemoteAudioTrack> audioTrack(const std::string& sid) const final;
     std::shared_ptr<RemoteVideoTrack> videoTrack(size_t index) const final;
+    std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const final;
 private:
     const TrackInfo* findBySid(const std::string& sid) const;
-    template<class TCollection>
-    static bool removeTrack(const std::string& sid, TCollection& collection);
+    template<class TTrack>
+    static std::optional<size_t> findBySid(const std::string& sid,
+                                           const std::vector<TTrack>& collection);
+    template<class TTrack>
+    static bool removeTrack(const std::string& sid, std::vector<TTrack>& collection);
 private:
     Bricks::SafeObj<AudioTracks> _audioTracks;
     Bricks::SafeObj<VideoTracks> _videoTracks;

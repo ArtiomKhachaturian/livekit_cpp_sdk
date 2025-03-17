@@ -26,6 +26,12 @@ RemoteParticipantImpl::RemoteParticipantImpl(const ParticipantInfo& info)
     setInfo(info);
 }
 
+RemoteParticipantImpl::~RemoteParticipantImpl()
+{
+    _audioTracks({});
+    _videoTracks({});
+}
+
 bool RemoteParticipantImpl::addAudio(const std::string& sid, TrackManager* manager,
                                      const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
 {
@@ -93,11 +99,33 @@ std::shared_ptr<RemoteAudioTrack> RemoteParticipantImpl::audioTrack(size_t index
     return {};
 }
 
+std::shared_ptr<RemoteAudioTrack> RemoteParticipantImpl::audioTrack(const std::string& sid) const
+{
+    if (!sid.empty()) {
+        LOCK_READ_SAFE_OBJ(_audioTracks);
+        if (const auto ndx = findBySid(sid, _audioTracks.constRef())) {
+            return _audioTracks->at(ndx.value());
+        }
+    }
+    return {};
+}
+
 std::shared_ptr<RemoteVideoTrack> RemoteParticipantImpl::videoTrack(size_t index) const
 {
     LOCK_READ_SAFE_OBJ(_videoTracks);
     if (index < _videoTracks->size()) {
         return _videoTracks->at(index);
+    }
+    return {};
+}
+
+std::shared_ptr<RemoteVideoTrack> RemoteParticipantImpl::videoTrack(const std::string& sid) const
+{
+    if (!sid.empty()) {
+        LOCK_READ_SAFE_OBJ(_videoTracks);
+        if (const auto ndx = findBySid(sid, _videoTracks.constRef())) {
+            return _videoTracks->at(ndx.value());
+        }
     }
     return {};
 }
@@ -114,16 +142,28 @@ const TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid) const
     return nullptr;
 }
 
-template<class TCollection>
-bool RemoteParticipantImpl::removeTrack(const std::string& sid, TCollection& collection)
+template<class TTrack>
+std::optional<size_t> RemoteParticipantImpl::findBySid(const std::string& sid,
+                                                       const std::vector<TTrack>& collection)
 {
     if (!sid.empty()) {
-        for (auto it = collection.begin(); it != collection.end(); ++it) {
-            if (sid == (*it)->sid()) {
-                collection.erase(it);
-                return true;
+        if (const auto s = collection.size()) {
+            for (size_t i = 0U; i < s; ++i) {
+                if (sid == collection[i]->sid()) {
+                    return i;
+                }
             }
         }
+    }
+    return std::nullopt;
+}
+
+template<class TTrack>
+bool RemoteParticipantImpl::removeTrack(const std::string& sid, std::vector<TTrack>& collection)
+{
+    if (const auto ndx = findBySid(sid, collection)) {
+        collection.erase(collection.begin() + ndx.value());
+        return true;
     }
     return false;
 }

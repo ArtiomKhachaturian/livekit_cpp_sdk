@@ -14,6 +14,7 @@
 #pragma once // RemoteParticipants.h
 #include "RemoteParticipant.h"
 #include <memory>
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -23,7 +24,9 @@ class RemoteParticipants
 public:
     virtual ~RemoteParticipants() = default;
     virtual size_t count() const = 0;
+    // given participant by index or server ID
     virtual std::shared_ptr<RemoteParticipant> at(size_t index) const = 0;
+    virtual std::shared_ptr<RemoteParticipant> at(const std::string& sid) const = 0;
 };
 
 } // namespace LiveKitCpp

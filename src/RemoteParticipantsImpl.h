@@ -56,6 +56,7 @@ public:
     // impl. of RemoteParticipants
     size_t count() const final;
     std::shared_ptr<RemoteParticipant> at(size_t index) const final;
+    std::shared_ptr<RemoteParticipant> at(const std::string& sid) const final;
 protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;

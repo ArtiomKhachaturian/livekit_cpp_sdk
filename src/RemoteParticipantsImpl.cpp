@@ -148,6 +148,19 @@ std::shared_ptr<RemoteParticipant> RemoteParticipantsImpl::at(size_t index) cons
     return {};
 }
 
+std::shared_ptr<RemoteParticipant> RemoteParticipantsImpl::at(const std::string& sid) const
+{
+    if (!sid.empty()) {
+        LOCK_READ_SAFE_OBJ(_participants);
+        for (const auto& participant : _participants.constRef()) {
+            if (sid == participant->sid()) {
+                return participant;
+            }
+        }
+    }
+    return {};
+}
+
 std::string_view RemoteParticipantsImpl::logCategory() const
 {
     static const std::string_view category("remote_participants");
