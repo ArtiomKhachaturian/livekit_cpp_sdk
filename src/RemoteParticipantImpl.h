@@ -15,6 +15,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include "ParticipantImpl.h"
 #include "RemoteParticipant.h"
+#include "RemoteParticipantListener.h"
 #include "SafeObj.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
@@ -32,7 +33,8 @@ class RemoteAudioTrackImpl;
 class RemoteVideoTrackImpl;
 class TrackManager;
 
-class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipant>
+class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipantListener,
+                                                     RemoteParticipant>
 {
     using AudioTracks = std::vector<std::shared_ptr<RemoteAudioTrackImpl>>;
     using VideoTracks = std::vector<std::shared_ptr<RemoteVideoTrackImpl>>;
@@ -45,7 +47,8 @@ public:
                   const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     bool addVideo(const std::string& sid, TrackManager* manager,
                   const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
-    bool removeMedia(const std::string& sid);
+    bool removeAudio(const std::string& sid);
+    bool removeVideo(const std::string& sid);
     size_t audioTracksCount() const final;
     size_t videoTracksCount() const final;
     std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const final;

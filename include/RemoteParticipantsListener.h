@@ -11,25 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalParticipant.h
-#include "AudioTrack.h"
-#include "CameraTrack.h"
-#include "Participant.h"
+#pragma once // RemoteParticipantsListener.h
+#include <string>
 
 namespace LiveKitCpp
 {
 
-class ParticipantListener;
-
-class LocalParticipant : public Participant
+class RemoteParticipantsListener
 {
 public:
-    virtual void addListener(ParticipantListener* listener) = 0;
-    virtual void removeListener(ParticipantListener* listener) = 0;
-    virtual CameraTrack& camera() = 0;
-    virtual const CameraTrack& camera() const = 0;
-    virtual AudioTrack& microphone() = 0;
-    virtual const AudioTrack& microphone() const = 0;
+    virtual void onParticipantAdded(const std::string& /*sid*/) {}
+    virtual void onParticipantRemoved(const std::string& /*sid*/) {}
+protected:
+    virtual ~RemoteParticipantsListener() = default;
 };
 
 } // namespace LiveKitCpp

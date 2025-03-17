@@ -28,8 +28,20 @@ RemoteParticipantImpl::RemoteParticipantImpl(const ParticipantInfo& info)
 
 void RemoteParticipantImpl::reset()
 {
-    _audioTracks({});
-    _videoTracks({});
+    {
+        LOCK_WRITE_SAFE_OBJ(_audioTracks);
+        for (const auto& track : _audioTracks.take()) {
+            _listeners.invoke(&RemoteParticipantListener::onAudioTrackRemoved,
+                              this, track->sid());
+        }
+    }
+    {
+        LOCK_WRITE_SAFE_OBJ(_videoTracks);
+        for (const auto& track : _videoTracks.take()) {
+            _listeners.invoke(&RemoteParticipantListener::onVideoTrackRemoved,
+                              this, track->sid());
+        }
+    }
 }
 
 std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid) const
@@ -50,8 +62,11 @@ bool RemoteParticipantImpl::addAudio(const std::string& sid, TrackManager* manag
         LOCK_READ_SAFE_OBJ(_info);
         if (const auto trackInfo = findBySid(sid)) {
             auto trackImpl = std::make_shared<RemoteAudioTrackImpl>(manager, *trackInfo, audioTrack);
-            LOCK_WRITE_SAFE_OBJ(_audioTracks);
-            _audioTracks->push_back(std::move(trackImpl));
+            {
+                LOCK_WRITE_SAFE_OBJ(_audioTracks);
+                _audioTracks->push_back(std::move(trackImpl));
+            }
+            _listeners.invoke(&RemoteParticipantListener::onAudioTrackAdded, this, sid);
             return true;
         }
     }
@@ -65,26 +80,39 @@ bool RemoteParticipantImpl::addVideo(const std::string& sid, TrackManager* manag
         LOCK_READ_SAFE_OBJ(_info);
         if (const auto trackInfo = findBySid(sid)) {
             auto trackImpl = std::make_shared<RemoteVideoTrackImpl>(manager, *trackInfo, videoTrack);
-            LOCK_WRITE_SAFE_OBJ(_videoTracks);
-            _videoTracks->push_back(std::move(trackImpl));
+            {
+                LOCK_WRITE_SAFE_OBJ(_videoTracks);
+                _videoTracks->push_back(std::move(trackImpl));
+            }
+            _listeners.invoke(&RemoteParticipantListener::onVideoTrackAdded, this, sid);
             return true;
         }
     }
     return false;
 }
 
-bool RemoteParticipantImpl::removeMedia(const std::string& sid)
+bool RemoteParticipantImpl::removeAudio(const std::string& sid)
 {
     bool ok = false;
     if (!sid.empty()) {
-        {
-            LOCK_WRITE_SAFE_OBJ(_audioTracks);
-            ok = removeTrack(sid, _audioTracks.ref());
-        }
-        if (!ok) {
-            LOCK_WRITE_SAFE_OBJ(_videoTracks);
-            ok = removeTrack(sid, _videoTracks.ref());
-        }
+        LOCK_WRITE_SAFE_OBJ(_audioTracks);
+        ok = removeTrack(sid, _audioTracks.ref());
+    }
+    if (ok) {
+        _listeners.invoke(&RemoteParticipantListener::onAudioTrackRemoved, this, sid);
+    }
+    return ok;
+}
+
+bool RemoteParticipantImpl::removeVideo(const std::string& sid)
+{
+    bool ok = false;
+    if (!sid.empty()) {
+        LOCK_WRITE_SAFE_OBJ(_videoTracks);
+        ok = removeTrack(sid, _videoTracks.ref());
+    }
+    if (ok) {
+        _listeners.invoke(&RemoteParticipantListener::onVideoTrackRemoved, this, sid);
     }
     return ok;
 }

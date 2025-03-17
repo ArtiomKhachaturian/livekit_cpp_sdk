@@ -13,7 +13,9 @@
 // limitations under the License.
 #pragma once // ParticipantImpl.h
 #ifdef WEBRTC_AVAILABLE
+#include "Listeners.h"
 #include "Participant.h"
+#include "ParticipantListener.h"
 #include "SafeObj.h"
 #include "rtc/ParticipantInfo.h"
 #include <type_traits>
@@ -21,13 +23,16 @@
 namespace LiveKitCpp
 {
 
-template<class TParticipant = Participant>
+template<class TListener, class TParticipant = Participant>
 class ParticipantImpl : public TParticipant
 {
     static_assert(std::is_base_of_v<Participant, TParticipant>);
+    static_assert(std::is_base_of_v<ParticipantListener, TListener>);
 public:
     virtual void setInfo(const ParticipantInfo& info = {});
     ParticipantInfo info() const { return _info(); }
+    void addListener(TListener* listener) final { _listeners.add(listener); }
+    void removeListener(TListener* listener) final { _listeners.remove(listener); }
     // impl. of Participant
     std::string sid() const override;
     std::string identity() const override;
@@ -38,59 +43,61 @@ public:
     ParticipantKind kind() const override;
 protected:
     Bricks::SafeObj<ParticipantInfo> _info;
+    Bricks::Listeners<TListener*> _listeners;
 };
 
-template<class TParticipant>
-inline void ParticipantImpl<TParticipant>::setInfo(const ParticipantInfo& info)
+template<class TListener, class TParticipant>
+inline void ParticipantImpl<TListener, TParticipant>::setInfo(const ParticipantInfo& info)
 {
     LOCK_WRITE_SAFE_OBJ(_info);
     _info = info;
+    _listeners.invoke(&ParticipantListener::onChanged, this);
 }
 
-template<class TParticipant>
-inline std::string ParticipantImpl<TParticipant>::sid() const
+template<class TListener, class TParticipant>
+inline std::string ParticipantImpl<TListener, TParticipant>::sid() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_sid;
 }
 
-template<class TParticipant>
-inline std::string ParticipantImpl<TParticipant>::identity() const
+template<class TListener, class TParticipant>
+inline std::string ParticipantImpl<TListener, TParticipant>::identity() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_identity;
 }
 
-template<class TParticipant>
-inline std::string ParticipantImpl<TParticipant>::name() const
+template<class TListener, class TParticipant>
+inline std::string ParticipantImpl<TListener, TParticipant>::name() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_name;
 }
 
-template<class TParticipant>
-inline std::string ParticipantImpl<TParticipant>::metadata() const
+template<class TListener, class TParticipant>
+inline std::string ParticipantImpl<TListener, TParticipant>::metadata() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_metadata;
 }
 
-template<class TParticipant>
-inline ParticipantState ParticipantImpl<TParticipant>::state() const
+template<class TListener, class TParticipant>
+inline ParticipantState ParticipantImpl<TListener, TParticipant>::state() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_state;
 }
 
-template<class TParticipant>
-inline bool ParticipantImpl<TParticipant>::hasActivePublisher() const
+template<class TListener, class TParticipant>
+inline bool ParticipantImpl<TListener, TParticipant>::hasActivePublisher() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_isPublisher;
 }
 
-template<class TParticipant>
-inline ParticipantKind ParticipantImpl<TParticipant>::kind() const
+template<class TListener, class TParticipant>
+inline ParticipantKind ParticipantImpl<TListener, TParticipant>::kind() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_kind;

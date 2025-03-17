@@ -19,10 +19,14 @@
 namespace LiveKitCpp
 {
 
+class RemoteParticipantsListener;
+
 class RemoteParticipants
 {
 public:
     virtual ~RemoteParticipants() = default;
+    virtual void addListener(RemoteParticipantsListener* listener) = 0;
+    virtual void removeListener(RemoteParticipantsListener* listener) = 0;
     virtual size_t count() const = 0;
     // given participant by index or server ID
     virtual std::shared_ptr<RemoteParticipant> at(size_t index) const = 0;

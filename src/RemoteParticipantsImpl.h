@@ -14,6 +14,7 @@
 #pragma once // RemoteParticipants.h
 #ifdef WEBRTC_AVAILABLE
 #include "DataChannelsStorage.h"
+#include "Listeners.h"
 #include "RemoteParticipants.h"
 #include "SafeObj.h"
 #include <api/media_types.h>
@@ -52,6 +53,8 @@ public:
     bool addDataChannel(rtc::scoped_refptr<DataChannel> channel);
     void reset();
     // impl. of RemoteParticipants
+    void addListener(RemoteParticipantsListener* listener) final;
+    void removeListener(RemoteParticipantsListener* listener) final;
     size_t count() const final;
     std::shared_ptr<RemoteParticipant> at(size_t index) const final;
     std::shared_ptr<RemoteParticipant> at(const std::string& sid) const final;
@@ -76,6 +79,7 @@ private:
     std::optional<size_t> findBySid(const std::string& sid) const;
 private:
     TrackManager* const _trackManager;
+    Bricks::Listeners<RemoteParticipantsListener*> _listeners;
     Bricks::SafeObj<OrphanedTracks> _orphans;
     Bricks::SafeObj<Participants> _participants;
 };

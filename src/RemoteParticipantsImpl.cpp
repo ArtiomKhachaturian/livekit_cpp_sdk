@@ -14,6 +14,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include "RemoteParticipantsImpl.h"
 #include "RemoteParticipantImpl.h"
+#include "RemoteParticipantsListener.h"
 #include "Seq.h"
 #include <api/rtp_transceiver_interface.h>
 
@@ -118,9 +119,17 @@ bool RemoteParticipantsImpl::removeMedia(const rtc::scoped_refptr<webrtc::RtpRec
                 LOCK_WRITE_SAFE_OBJ(_orphans);
                 _orphans->erase(sid);
             }
+            const auto type = receiver->media_type();
             for (const auto& participant : _participants.constRef()) {
-                if (participant->removeMedia(sid)) {
-                    break;
+                if (cricket::MEDIA_TYPE_VIDEO == type) {
+                    if (participant->removeVideo(sid)) {
+                        break;
+                    }
+                }
+                else if (cricket::MEDIA_TYPE_AUDIO == type) {
+                    if (participant->removeAudio(sid)) {
+                        break;
+                    }
                 }
             }
             return true;
@@ -140,6 +149,16 @@ void RemoteParticipantsImpl::reset()
     _orphans({});
     LOCK_WRITE_SAFE_OBJ(_participants);
     clearParticipants();
+}
+
+void RemoteParticipantsImpl::addListener(RemoteParticipantsListener* listener)
+{
+    _listeners.add(listener);
+}
+
+void RemoteParticipantsImpl::removeListener(RemoteParticipantsListener* listener)
+{
+    _listeners.remove(listener);
 }
 
 size_t RemoteParticipantsImpl::count() const
@@ -259,8 +278,8 @@ void RemoteParticipantsImpl::addParticipant(const std::shared_ptr<RemoteParticip
                 }
             }
         }
-        _participants->push_back(std::move(participant));
-        // TODO: notify about adding
+        _participants->push_back(participant);
+        _listeners.invoke(&RemoteParticipantsListener::onParticipantAdded, participant->sid());
     }
 }
 
@@ -274,7 +293,7 @@ void RemoteParticipantsImpl::removeParticipant(const std::shared_ptr<RemoteParti
             }
         }
         participant->reset();
-        // TODO: notify about removal
+        _listeners.invoke(&RemoteParticipantsListener::onParticipantRemoved, participant->sid());
     }
 }
 

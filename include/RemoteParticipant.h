@@ -20,9 +20,13 @@
 namespace LiveKitCpp
 {
 
+class RemoteParticipantListener;
+
 class RemoteParticipant : public Participant
 {
 public:
+    virtual void addListener(RemoteParticipantListener* listener) = 0;
+    virtual void removeListener(RemoteParticipantListener* listener) = 0;
     virtual size_t audioTracksCount() const = 0;
     virtual size_t videoTracksCount() const = 0;
     // given track by index or server ID

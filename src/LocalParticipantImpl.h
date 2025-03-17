@@ -19,6 +19,7 @@
 #include "LocalParticipant.h"
 #include "LocalTrackManager.h"
 #include "DataChannelsStorage.h"
+#include "ParticipantListener.h"
 #include "SafeObj.h"
 #include <vector>
 #include <unordered_map>
@@ -33,7 +34,7 @@ namespace LiveKitCpp
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 
-class LocalParticipantImpl : public ParticipantImpl<LocalParticipant>,
+class LocalParticipantImpl : public ParticipantImpl<ParticipantListener, LocalParticipant>,
                              protected DataChannelsStorage<LocalTrackManager>
 {
     // key is cid (track id), for LocalTrackManager [publishMedia] / [unpublishMedia]
