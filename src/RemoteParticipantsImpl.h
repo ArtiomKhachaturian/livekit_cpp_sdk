@@ -37,15 +37,13 @@ struct ParticipantInfo;
 class RemoteParticipantsImpl : public RemoteParticipants,
                                protected DataChannelsStorage<>
 {
-    using TrackRef = std::pair<TrackType, RemoteParticipantImpl*>;
     using Participants = std::vector<std::shared_ptr<RemoteParticipantImpl>>;
     // key is sid
     using OrphanedTracks = std::unordered_map<std::string, rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>;
-    using TrackRefs = std::unordered_map<std::string, TrackRef>;
 public:
     RemoteParticipantsImpl(TrackManager* trackManager,
                            const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~RemoteParticipantsImpl() final;
+    ~RemoteParticipantsImpl() final { reset(); }
     void setInfo(const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::vector<ParticipantInfo>& infos);
     bool addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver);
@@ -61,17 +59,24 @@ protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
-    bool addToParticipant(const std::string& sid,
-                          const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
-    void addToParticipant(RemoteParticipantImpl* participant,
-                          TrackType type, const std::string& sid,
-                          const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) const;
+    // non thread-safe to [_participants]
+    std::vector<ParticipantInfo> infos() const;
+    bool addMedia(const std::string& sid,
+                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    void addMedia(const std::shared_ptr<RemoteParticipantImpl>& participant,
+                  TrackType type, const std::string& sid,
+                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) const;
     bool addToOrphans(std::string sid,
                       const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    // service methods, non thread-safe to [_participants]
+    void addParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant);
+    void removeParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant);
+    void removeParticipant(const std::string& sid);
+    void clearParticipants();
+    std::optional<size_t> findBySid(const std::string& sid) const;
 private:
     TrackManager* const _trackManager;
     Bricks::SafeObj<OrphanedTracks> _orphans;
-    Bricks::SafeObj<TrackRefs> _trackRefs;
     Bricks::SafeObj<Participants> _participants;
 };
 

@@ -26,10 +26,21 @@ RemoteParticipantImpl::RemoteParticipantImpl(const ParticipantInfo& info)
     setInfo(info);
 }
 
-RemoteParticipantImpl::~RemoteParticipantImpl()
+void RemoteParticipantImpl::reset()
 {
     _audioTracks({});
     _videoTracks({});
+}
+
+std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid) const
+{
+    if (!sid.empty()) {
+        LOCK_READ_SAFE_OBJ(_info);
+        if (const auto trackInfo = findBySid(sid)) {
+            return trackInfo->_type;
+        }
+    }
+    return std::nullopt;
 }
 
 bool RemoteParticipantImpl::addAudio(const std::string& sid, TrackManager* manager,

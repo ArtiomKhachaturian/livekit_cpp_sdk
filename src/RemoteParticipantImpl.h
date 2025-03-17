@@ -38,7 +38,9 @@ class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipant>
     using VideoTracks = std::vector<std::shared_ptr<RemoteVideoTrackImpl>>;
 public:
     RemoteParticipantImpl(const ParticipantInfo& info = {});
-    ~RemoteParticipantImpl() final;
+    ~RemoteParticipantImpl() final { reset(); }
+    void reset();
+    std::optional<TrackType> trackType(const std::string& sid) const;
     bool addAudio(const std::string& sid, TrackManager* manager,
                   const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     bool addVideo(const std::string& sid, TrackManager* manager,
