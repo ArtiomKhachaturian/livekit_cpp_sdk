@@ -25,7 +25,6 @@ namespace LiveKitCpp
 {
 
 class LocalTrack;
-class RemoteTrack;
 class LocalParticipant;
 class LocalParticipantImpl;
 class RemoteParticipants;

@@ -36,9 +36,24 @@ void RemoteParticipantsImpl::setInfo(const std::vector<ParticipantInfo>& infos)
     _participants->clear();
     if (!infos.empty()) {
         _participants->reserve(infos.size());
+        LOCK_WRITE_SAFE_OBJ(_trackRefs);
+        LOCK_WRITE_SAFE_OBJ(_orphans);
         for (const auto& info : infos) {
-            auto participant = std::make_shared<RemoteParticipantImpl>();
-            participant->setInfo(info);
+            auto participant = std::make_shared<RemoteParticipantImpl>(info);
+            // fill tracks or keep references for the future orphans
+            for (const auto& trackInfo : info._tracks) {
+                const auto& sid = trackInfo._sid;
+                const auto type = trackInfo._type;
+                const auto orphan = _orphans->find(sid);
+                if (orphan != _orphans->end()) {
+                    addToParticipant(participant.get(), type, sid, orphan->second);
+                    _orphans->erase(orphan);
+                }
+                else {
+                    auto trackRef = std::make_pair(type, participant.get());
+                    _trackRefs->insert(std::make_pair(sid, std::move(trackRef)));
+                }
+            }
             _participants->push_back(std::move(participant));
         }
     }
@@ -58,25 +73,47 @@ bool RemoteParticipantsImpl::addMedia(const rtc::scoped_refptr<webrtc::RtpTransc
 
 bool RemoteParticipantsImpl::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
+    bool added = false;
     if (receiver) {
-        /*TrackManager* manager = this;
-        auto sid = RemoteTrack::sid(transceiver->receiver());
-        if (!sid.empty()) {
-            auto track = std::make_unique<RemoteTrack>(manager, transceiver->receiver());
-            LOCK_WRITE_SAFE_OBJ(_remoteTracks);
-            _remoteTracks->insert(std::make_pair(std::move(sid), std::move(track)));
+        if (const auto track = receiver->track()) {
+            auto sid = receiver->id();
+            if (!sid.empty()) {
+                LOCK_WRITE_SAFE_OBJ(_trackRefs);
+                LOCK_WRITE_SAFE_OBJ(_orphans);
+                added = addToParticipant(sid, track);
+                if (!added) {
+                    added = addToOrphans(std::move(sid), track);
+                }
+            }
+            else {
+                logWarning("empty ID of track receiver");
+            }
         }
-        else {
-            logWarning("empty ID of received transceiver");
-        }*/
     }
-    return false;
+    return added;
 }
 
 bool RemoteParticipantsImpl::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
     if (receiver) {
-        
+        const auto sid = receiver->id();
+        if (!sid.empty()) {
+            LOCK_READ_SAFE_OBJ(_participants);
+            {
+                LOCK_WRITE_SAFE_OBJ(_orphans);
+                _orphans->erase(sid);
+            }
+            {
+                LOCK_WRITE_SAFE_OBJ(_trackRefs);
+                _trackRefs->erase(sid);
+            }
+            for (const auto& participant : _participants.constRef()) {
+                if (participant->removeMedia(sid)) {
+                    break;
+                }
+            }
+            return true;
+        }
     }
     return false;
 }
@@ -89,6 +126,9 @@ bool RemoteParticipantsImpl::addDataChannel(rtc::scoped_refptr<DataChannel> chan
 void RemoteParticipantsImpl::reset()
 {
     clear();
+    _orphans({});
+    _trackRefs({});
+    _participants({});
 }
 
 size_t RemoteParticipantsImpl::count() const
@@ -110,6 +150,52 @@ std::string_view RemoteParticipantsImpl::logCategory() const
 {
     static const std::string_view category("remote_participants");
     return category;
+}
+
+bool RemoteParticipantsImpl::addToParticipant(const std::string& sid,
+                                              const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (track && !sid.empty()) {
+        const auto it = _trackRefs->find(sid);
+        if (it != _trackRefs->end()) {
+            addToParticipant(it->second.second, it->second.first, sid, track);
+            _trackRefs->erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+void RemoteParticipantsImpl::addToParticipant(RemoteParticipantImpl* participant,
+                                              TrackType type, const std::string& sid,
+                                              const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) const
+{
+    if (participant && track) {
+        bool added = false;
+        switch (type) {
+            case TrackType::Audio:
+                added = participant->addAudio(sid, _trackManager, track);
+                break;
+            case TrackType::Video:
+                added = participant->addVideo(sid, _trackManager, track);
+                break;
+            default:
+                break;
+        }
+        if (!added) {
+            // TODO: log error
+        }
+    }
+}
+
+bool RemoteParticipantsImpl::addToOrphans(std::string sid,
+                                          const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (track && !sid.empty()) {
+        _orphans->insert(std::make_pair(std::move(sid), track));
+        return true;
+    }
+    return false;
 }
 
 } // namespace LiveKitCpp

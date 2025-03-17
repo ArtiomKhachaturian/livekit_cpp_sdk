@@ -31,8 +31,8 @@ public:
     ~AsyncListeners() { clear(); }
     const auto& thread() const noexcept { return _thread; }
     bool async() const noexcept { return !_thread.expired(); }
-    bool add(const TListener& listener) { return _listeners->add(listener); }
-    bool remove(const TListener& listener) { return _listeners->remove(listener); }
+    Bricks::AddResult add(const TListener& listener);
+    Bricks::RemoveResult remove(const TListener& listener);
     void clear() { _listeners->clear(); }
     bool empty() const noexcept { return _listeners->empty(); }
     size_t size() const noexcept { return _listeners->size(); }
@@ -58,6 +58,18 @@ inline AsyncListeners<TListener>::AsyncListeners(const std::weak_ptr<rtc::Thread
     : _thread(thread)
     , _listeners(std::make_shared<Listeners>())
 {
+}
+
+template<class TListener>
+inline Bricks::AddResult AsyncListeners<TListener>::add(const TListener& listener)
+{
+    return _listeners->add(listener);
+}
+
+template<class TListener>
+inline Bricks::RemoveResult AsyncListeners<TListener>::remove(const TListener& listener)
+{
+    return _listeners->remove(listener);
 }
 
 template<class TListener>

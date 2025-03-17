@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "RTCMediaEngine.h"
-#include "RemoteTrack.h"
 #include "LocalParticipantImpl.h"
 #include "RemoteParticipantsImpl.h"
 #include "rtc/AddTrackRequest.h"

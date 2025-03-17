@@ -32,6 +32,15 @@ LocalAudioTrackImpl::LocalAudioTrackImpl(LocalTrackManager* manager, bool microp
 {
 }
 
+LocalAudioTrackImpl::~LocalAudioTrackImpl()
+{
+    if (hasSinks()) {
+        if (const auto track = mediaTrack()) {
+            track->RemoveSink(this);
+        }
+    }
+}
+
 TrackSource LocalAudioTrackImpl::source() const
 {
     return _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
@@ -58,7 +67,11 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrackImpl::
     createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
-        return m->createMic(id);
+        auto track = m->createMic(id);
+        if (track && hasSinks()) {
+            track->AddSink(this);
+        }
+        return track;
     }
     return {};
 }

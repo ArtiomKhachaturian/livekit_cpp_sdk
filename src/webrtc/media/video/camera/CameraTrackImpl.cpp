@@ -23,6 +23,15 @@ CameraTrackImpl::CameraTrackImpl(LocalTrackManager* manager,
 {
 }
 
+CameraTrackImpl::~CameraTrackImpl()
+{
+    if (hasSinks()) {
+        if (const auto track = mediaTrack()) {
+            track->RemoveSink(this);
+        }
+    }
+}
+
 void CameraTrackImpl::setCapability(webrtc::VideoCaptureCapability capability)
 {
     if (const auto track = mediaTrack()) {
@@ -49,7 +58,11 @@ void CameraTrackImpl::fillRequest(AddTrackRequest* request) const
 webrtc::scoped_refptr<CameraVideoTrack> CameraTrackImpl::createMediaTrack(const std::string& id)
 {
     if (const auto m = manager()) {
-        return m->createCamera(id);
+        auto track = m->createCamera(id);
+        if (track && hasSinks()) {
+            track->AddOrUpdateSink(this, {});
+        }
+        return track;
     }
     return {};
 }

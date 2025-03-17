@@ -24,6 +24,7 @@ class CameraTrackImpl : public LocalVideoTrackImpl<CameraVideoTrack, CameraTrack
     using Base = LocalVideoTrackImpl<CameraVideoTrack, CameraTrack>;
 public:
     CameraTrackImpl(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
+    ~CameraTrackImpl();
     void setCapability(webrtc::VideoCaptureCapability capability);
     // impl. of CameraTrack
     void setDevice(MediaDevice device = {}) final;

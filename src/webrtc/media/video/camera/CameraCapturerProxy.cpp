@@ -61,7 +61,8 @@ int32_t CameraCapturerProxy::startCapture(const webrtc::VideoCaptureCapability& 
     int32_t result = -1;
     if (sink) {
         LOCK_WRITE_SAFE_OBJ(_activeCapability);
-        if (capability == _activeCapability->value_or(capability) && _sinks.add(sink)) {
+        if (capability == _activeCapability->value_or(capability) &&
+            Bricks::ok(_sinks.add(sink))) {
             if (!_activeCapability->has_value()) {
                 result = _impl->StartCapture(capability);
                 if (0 == result) {
@@ -89,7 +90,7 @@ int32_t CameraCapturerProxy::startCapture(const webrtc::VideoCaptureCapability& 
 int32_t CameraCapturerProxy::stopCapture(CameraCapturerProxySink* sink)
 {
     int32_t result = -1;
-    if (sink && _sinks.remove(sink) ) {
+    if (Bricks::ok(_sinks.remove(sink))) {
         result = 0;
         sink->onStateChanged(CameraState::Stopping);
         if (_sinks.empty()) {

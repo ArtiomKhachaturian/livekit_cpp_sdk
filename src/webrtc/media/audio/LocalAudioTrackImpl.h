@@ -13,20 +13,23 @@
 // limitations under the License.
 #pragma once // LocalAudioTrack.h
 #include "LocalTrackImpl.h"
-#include "AudioTrack.h"
+#include "AudioTrackImpl.h"
 
 namespace LiveKitCpp
 {
-class LocalAudioTrackImpl : public LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrack>
+class LocalAudioTrackImpl : public LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrackImpl<>>
 {
-    using Base = LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrack>;
+    using Base = LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrackImpl<>>;
 public:
     LocalAudioTrackImpl(LocalTrackManager* manager, bool microphone = true,
-                    const std::shared_ptr<Bricks::Logger>& logger = {});
+                        const std::shared_ptr<Bricks::Logger>& logger = {});
+    ~LocalAudioTrackImpl();
     // impl. of LocalTrack
     TrackSource source() const final;
     void fillRequest(AddTrackRequest* request) const final;
 protected:
+    // impl. of AudioTrackImpl
+    rtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack() const { return mediaTrack(); }
     // impl. LocalTrackImpl
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMediaTrack(const std::string& id) final;
     void requestAuthorization() final;

@@ -11,22 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // RemoteParticipant.h
-#include "Participant.h"
-#include "RemoteAudioTrack.h"
-#include "RemoteVideoTrack.h"
-#include "VideoTrack.h"
+#pragma once // AudioTrackSink.h
+#include <cstdint>
+#include <optional>
 
 namespace LiveKitCpp
 {
 
-class RemoteParticipant : public Participant
+class AudioTrackSink
 {
 public:
-    virtual size_t audioTracksCount() const = 0;
-    virtual size_t videoTracksCount() const = 0;
-    virtual std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const = 0;
-    virtual std::shared_ptr<RemoteVideoTrack> videoTrack(size_t index) const = 0;
+    // In this method, `absolute_capture_timestamp_ms`, when available, is
+    // supposed to deliver the timestamp when this audio frame was originally
+    // captured. This timestamp MUST be based on the same clock as
+    // rtc::TimeMillis().
+    virtual void onData(const void* audioData, int bitsPerSample,
+                        int sampleRate, size_t numberOfChannels,
+                        size_t numberOfFrames,
+                        const std::optional<int64_t>& absoluteCaptureTimestampMs) = 0;
+protected:
+    virtual ~AudioTrackSink() = default;
 };
 
 } // namespace LiveKitCpp

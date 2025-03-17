@@ -13,18 +13,21 @@
 // limitations under the License.
 #pragma once // LocalVideoTrack.h
 #include "LocalTrackImpl.h"
+#include "VideoTrackImpl.h"
 #include "VideoTrack.h"
 
 namespace LiveKitCpp
 {
 
 template<class TRtcTrack = webrtc::VideoTrackInterface, class TTrackApi = VideoTrack>
-class LocalVideoTrackImpl : public LocalTrackImpl<TRtcTrack, TTrackApi>
+class LocalVideoTrackImpl : public LocalTrackImpl<TRtcTrack, VideoTrackImpl<TTrackApi>>
 {
-    using Base = LocalTrackImpl<TRtcTrack, TTrackApi>;
+    using Base = LocalTrackImpl<TRtcTrack, VideoTrackImpl<TTrackApi>>;
 protected:
     LocalVideoTrackImpl(std::string name, LocalTrackManager* manager,
                         const std::shared_ptr<Bricks::Logger>& logger = {});
+    // impl. of VideoTrackImpl<>
+    rtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack() const final;
 };
 
 template<class TRtcTrack, class TTrackApi>
@@ -33,6 +36,13 @@ inline LocalVideoTrackImpl<TRtcTrack, TTrackApi>::
                         const std::shared_ptr<Bricks::Logger>& logger)
     : Base(std::move(name), manager, logger)
 {
+}
+
+template<class TRtcTrack, class TTrackApi>
+inline rtc::scoped_refptr<webrtc::VideoTrackInterface>
+    LocalVideoTrackImpl<TRtcTrack, TTrackApi>::videoTrack() const
+{
+    return Base::mediaTrack();
 }
 
 } // namespace LiveKitCpp

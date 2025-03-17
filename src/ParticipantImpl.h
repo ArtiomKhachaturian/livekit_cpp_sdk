@@ -15,7 +15,6 @@
 #include "Participant.h"
 #include "SafeObj.h"
 #include "rtc/ParticipantInfo.h"
-//#include <optional>
 #include <type_traits>
 
 namespace LiveKitCpp
@@ -26,7 +25,8 @@ class ParticipantImpl : public TParticipant
 {
     static_assert(std::is_base_of_v<Participant, TParticipant>);
 public:
-    void setInfo(const ParticipantInfo& info = {});
+    virtual void setInfo(const ParticipantInfo& info = {});
+    std::vector<std::string> trackSids() const;
     // impl. of Participant
     std::string sid() const override;
     std::string identity() const override;
@@ -35,7 +35,7 @@ public:
     ParticipantState state() const override;
     bool hasActivePublisher() const override;
     ParticipantKind kind() const override;
-private:
+protected:
     Bricks::SafeObj<ParticipantInfo> _info;
 };
 
@@ -44,6 +44,20 @@ inline void ParticipantImpl<TParticipant>::setInfo(const ParticipantInfo& info)
 {
     LOCK_WRITE_SAFE_OBJ(_info);
     _info = info;
+}
+
+template<class TParticipant>
+inline std::vector<std::string> ParticipantImpl<TParticipant>::trackSids() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    if (const auto s = _info->_tracks.size()) {
+        std::vector<std::string> sids;
+        sids.reserve(s);
+        for (size_t i = 0U; i < s; ++i) {
+            sids.push_back(_info->_tracks.at(i)._sid);
+        }
+    }
+    return {};
 }
 
 template<class TParticipant>

@@ -13,15 +13,22 @@
 // limitations under the License.
 #pragma once // AudioTrack.h
 #include "Track.h"
+#include <optional>
 
 namespace LiveKitCpp
 {
+
+class AudioTrackSink;
 
 class AudioTrack : public Track
 {
 public:
     // impl. of Track
     TrackType type() const final { return TrackType::Audio; }
+    virtual void addSink(AudioTrackSink* sink) = 0;
+    virtual void removeSink(AudioTrackSink* sink) = 0;
+    // Get the signal level from the audio track.
+    virtual std::optional<int> signalLevel() const = 0;
 };
 
 } // namespace LiveKitCpp

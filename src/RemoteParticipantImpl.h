@@ -14,18 +14,44 @@
 #pragma once // RemoteParticipantImpl.h
 #include "ParticipantImpl.h"
 #include "RemoteParticipant.h"
+#include "SafeObj.h"
+#include <api/media_types.h>
+#include <api/scoped_refptr.h>
+#include <vector>
+
+namespace webrtc {
+class MediaStreamTrackInterface;
+}
 
 namespace LiveKitCpp
 {
 
+class RemoteAudioTrackImpl;
+class RemoteVideoTrackImpl;
+class TrackManager;
+
 class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipant>
 {
+    using AudioTracks = std::vector<std::shared_ptr<RemoteAudioTrackImpl>>;
+    using VideoTracks = std::vector<std::shared_ptr<RemoteVideoTrackImpl>>;
 public:
-    RemoteParticipantImpl() = default;
+    RemoteParticipantImpl(const ParticipantInfo& info = {});
+    bool addAudio(const std::string& sid, TrackManager* manager,
+                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    bool addVideo(const std::string& sid, TrackManager* manager,
+                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    bool removeMedia(const std::string& sid);
     size_t audioTracksCount() const final;
     size_t videoTracksCount() const final;
-    std::shared_ptr<AudioTrack> audioTrack(size_t index) const final;
-    std::shared_ptr<VideoTrack> videoTrack(size_t index) const final;
+    std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const final;
+    std::shared_ptr<RemoteVideoTrack> videoTrack(size_t index) const final;
+private:
+    const TrackInfo* findBySid(const std::string& sid) const;
+    template<class TCollection>
+    static bool removeTrack(const std::string& sid, TCollection& collection);
+private:
+    Bricks::SafeObj<AudioTracks> _audioTracks;
+    Bricks::SafeObj<VideoTracks> _videoTracks;
 };
 
 } // namespace LiveKitCpp
