@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#ifdef WEBRTC_AVAILABLE
 #include "RemoteParticipantImpl.h"
 #include "RemoteAudioTrackImpl.h"
 #include "RemoteVideoTrackImpl.h"
@@ -128,3 +129,4 @@ bool RemoteParticipantImpl::removeTrack(const std::string& sid, TCollection& col
 }
 
 } // namespace LiveKitCpp
+#endif

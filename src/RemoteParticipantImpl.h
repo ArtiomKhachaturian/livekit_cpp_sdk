@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteParticipantImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "ParticipantImpl.h"
 #include "RemoteParticipant.h"
 #include "SafeObj.h"
@@ -55,3 +56,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

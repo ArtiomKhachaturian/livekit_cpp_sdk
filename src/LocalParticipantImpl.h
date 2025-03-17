@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalParticipantImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "ParticipantImpl.h"
 #include "CameraTrackImpl.h"
 #include "LocalAudioTrackImpl.h"
@@ -71,3 +72,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

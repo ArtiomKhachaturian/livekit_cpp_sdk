@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RTCMediaEngine.h
+#ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
 #include "LocalTrackManager.h"
 #include "SafeScopedRefPtr.h"
@@ -84,3 +85,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#ifdef WEBRTC_AVAILABLE
 #include "RemoteParticipantsImpl.h"
 #include "RemoteParticipantImpl.h"
 #include <api/rtp_transceiver_interface.h>
@@ -199,3 +200,4 @@ bool RemoteParticipantsImpl::addToOrphans(std::string sid,
 }
 
 } // namespace LiveKitCpp
+#endif

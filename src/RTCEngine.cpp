@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#ifdef WEBRTC_AVAILABLE
 #include "RTCEngine.h"
 #include "TransportManager.h"
 #include "PeerConnectionFactory.h"
@@ -421,3 +422,4 @@ std::string_view RTCEngine::logCategory() const
 }
 
 } // namespace LiveKitCpp
+#endif

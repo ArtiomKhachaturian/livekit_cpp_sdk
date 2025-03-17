@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "Participant.h"
 #include "SafeObj.h"
 #include "rtc/ParticipantInfo.h"
@@ -26,7 +27,6 @@ class ParticipantImpl : public TParticipant
     static_assert(std::is_base_of_v<Participant, TParticipant>);
 public:
     virtual void setInfo(const ParticipantInfo& info = {});
-    std::vector<std::string> trackSids() const;
     // impl. of Participant
     std::string sid() const override;
     std::string identity() const override;
@@ -44,20 +44,6 @@ inline void ParticipantImpl<TParticipant>::setInfo(const ParticipantInfo& info)
 {
     LOCK_WRITE_SAFE_OBJ(_info);
     _info = info;
-}
-
-template<class TParticipant>
-inline std::vector<std::string> ParticipantImpl<TParticipant>::trackSids() const
-{
-    LOCK_READ_SAFE_OBJ(_info);
-    if (const auto s = _info->_tracks.size()) {
-        std::vector<std::string> sids;
-        sids.reserve(s);
-        for (size_t i = 0U; i < s; ++i) {
-            sids.push_back(_info->_tracks.at(i)._sid);
-        }
-    }
-    return {};
 }
 
 template<class TParticipant>
@@ -110,3 +96,4 @@ inline ParticipantKind ParticipantImpl<TParticipant>::kind() const
 }
 
 } // namespace LiveKitCpp
+#endif

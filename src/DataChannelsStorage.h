@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DataChannelsStorage.h
+#ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
 #include "DataChannelListener.h"
 #include "DataChannel.h"
@@ -167,3 +168,4 @@ inline void DataChannelsStorage<BaseInterfaces...>::
 }
 
 } // namespace LiveKitCpp
+#endif

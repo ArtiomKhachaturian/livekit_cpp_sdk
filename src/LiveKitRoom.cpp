@@ -21,7 +21,6 @@
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-
 struct LiveKitRoom::Impl
 {
     Impl(std::unique_ptr<Websocket::EndPoint> socket,
