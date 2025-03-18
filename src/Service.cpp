@@ -23,35 +23,18 @@
 #ifdef WEBRTC_AVAILABLE
 #include "CameraManager.h"
 #include "PeerConnectionFactory.h"
+#include "SSLInitiallizer.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
 #elif defined(_WIN32)
 #include "WSAInitializer.h"
 #endif
-#include <api/rtc_event_log/rtc_event_log_factory.h>
-#include <rtc_base/logging.h>
-#include <rtc_base/ssl_adapter.h>
-#include <rtc_base/crypto_random.h>
-#include <rtc_base/time_utils.h>
-#include <system_wrappers/include/field_trial.h>
-#include <libyuv/cpu_id.h>
 #endif
 
 #ifdef WEBRTC_AVAILABLE
 namespace {
 
-static const std::string_view g_logCategory("livekit_service");
-
-class SSLInitiallizer
-{
-public:
-    SSLInitiallizer();
-    ~SSLInitiallizer();
-    bool initialized() const noexcept { return _sslInitialized; }
-    explicit operator bool() const { return initialized(); }
-private:
-    const bool _sslInitialized;
-};
+const std::string_view g_logCategory("livekit_service");
 
 }
 #endif
@@ -410,29 +393,3 @@ ClientInfo ClientInfo::defaultClientInfo()
 }
 
 } // namespace LiveKitCpp
-
-#ifdef WEBRTC_AVAILABLE
-namespace {
-
-SSLInitiallizer::SSLInitiallizer()
-    : _sslInitialized(rtc::InitializeSSL())
-{
-    if (_sslInitialized) {
-        rtc::LogMessage::LogToDebug(rtc::LS_NONE);
-        rtc::LogMessage::LogTimestamps(false);
-        rtc::LogMessage::SetLogToStderr(false);
-        libyuv::MaskCpuFlags(-1); // to enable all cpu specific optimizations
-        rtc::InitRandom(static_cast<int>(rtc::Time()));
-        webrtc::field_trial::InitFieldTrialsFromString("WebRTC-SupportVP9SVC/EnabledByFlag_3SL3TL/");
-    }
-}
-
-SSLInitiallizer::~SSLInitiallizer()
-{
-    if (_sslInitialized) {
-        rtc::CleanupSSL();
-    }
-}
-
-}
-#endif
