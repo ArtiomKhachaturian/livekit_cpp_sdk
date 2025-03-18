@@ -21,6 +21,7 @@
 #include "CameraVideoSource.h"
 #include "CameraManager.h"
 #include "RoomListener.h"
+#include "rtc/JoinResponse.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
