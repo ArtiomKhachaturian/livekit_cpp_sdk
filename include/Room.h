@@ -11,10 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitRoom.h
+#pragma once // Room.h
 #include "LiveKitClientExport.h"
 #include "LocalParticipant.h"
-#include "RemoteParticipants.h"
+#include "RemoteParticipant.h"
 #include <memory>
 
 namespace Websocket {
@@ -28,8 +28,9 @@ class Logger;
 namespace LiveKitCpp
 {
 
-struct Options;
+class RoomListener;
 class PeerConnectionFactory;
+struct Options;
 
 class LIVEKIT_CLIENT_API Room
 {
@@ -39,8 +40,12 @@ public:
     ~Room();
     bool connect(std::string host, std::string authToken);
     void disconnect();
+    void setListener(RoomListener* listener = nullptr);
     std::shared_ptr<LocalParticipant> localParticipant() const;
-    std::shared_ptr<RemoteParticipants> remoteParticipants() const;
+    // given participant by index or server ID
+    std::shared_ptr<RemoteParticipant> remoteParticipant(size_t index) const;
+    std::shared_ptr<RemoteParticipant> remoteParticipant(const std::string& sid) const;
+    size_t remoteParticipantsCount() const;
 private:
     Room(std::unique_ptr<Websocket::EndPoint> socket,
          PeerConnectionFactory* pcf,

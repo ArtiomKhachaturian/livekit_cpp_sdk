@@ -20,6 +20,7 @@
 #include "CameraVideoTrack.h"
 #include "CameraVideoSource.h"
 #include "CameraManager.h"
+#include "RoomListener.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
@@ -411,13 +412,19 @@ void RTCEngine::onPongTimeout()
     //await self.cleanUp(withError: LiveKitError(.serverPingTimedOut))
 }
 
+void RTCEngine::onParticipantAdded(const std::string& sid)
+{
+    _listener.invoke(&RoomListener::onRemoteParticipantAdded, sid);
+}
+
+void RTCEngine::onParticipantRemoved(const std::string& sid)
+{
+    _listener.invoke(&RoomListener::onRemoteParticipantRemoved, sid);
+}
+
 std::string_view RTCEngine::logCategory() const
 {
     static const std::string_view category("rtc_engine");
-    //LOCK_READ_SAFE_OBJ(_latestJoinResponse);
-    /*if (const auto& resp = _latestJoinResponse->value()) {
-        
-    }*/
     return category;
 }
 

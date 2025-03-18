@@ -17,7 +17,6 @@
 #include "PingPongKit.h"
 #include "SafeScopedRefPtr.h"
 #include "TransportListener.h"
-#include "rtc/JoinResponse.h"
 #include <api/peer_connection_interface.h>
 #include <atomic>
 #include <memory>
@@ -28,6 +27,7 @@ namespace LiveKitCpp
 class TransportManagerListener;
 class PeerConnectionFactory;
 class DataChannelObserver;
+struct JoinResponse;
 enum class SignalTarget;
 
 class TransportManager : private Bricks::LoggableS<TransportListener>
@@ -39,7 +39,6 @@ public:
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~TransportManager() final;
-    const JoinResponse& joinResponse() const noexcept { return _joinResponse; }
     bool valid() const noexcept;
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
@@ -95,7 +94,8 @@ private:
 private:
     static constexpr uint8_t _embeddedDCMaxCount = 2U;
     TransportManagerListener* const _listener;
-    const JoinResponse _joinResponse;
+    const bool _subscriberPrimary;
+    const bool _fastPublish;
     Transport _publisher;
     Transport _subscriber;
     PingPongKit _pingPongKit;

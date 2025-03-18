@@ -14,7 +14,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include "RTCMediaEngine.h"
 #include "LocalParticipantImpl.h"
-#include "RemoteParticipantsImpl.h"
+#include "RemoteParticipants.h"
 #include "rtc/AddTrackRequest.h"
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrackPublishedResponse.h"
@@ -28,7 +28,7 @@ namespace LiveKitCpp
 RTCMediaEngine::RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
     , _localParticipant(new LocalParticipantImpl(this, logger))
-    , _remoteParicipants(new RemoteParticipantsImpl(this, logger))
+    , _remoteParicipants(this, this, logger)
 {
 }
 
@@ -43,11 +43,6 @@ std::shared_ptr<LocalParticipant> RTCMediaEngine::localParticipant() const
     return _localParticipant;
 }
 
-std::shared_ptr<RemoteParticipants> RTCMediaEngine::remoteParticipants() const
-{
-    return _remoteParicipants;
-}
-
 void RTCMediaEngine::addLocalResourcesToTransport()
 {
     _localParticipant->addTracksToTransport();
@@ -60,13 +55,13 @@ void RTCMediaEngine::cleanupLocalResources()
 
 void RTCMediaEngine::cleanupRemoteResources()
 {
-    _remoteParicipants->reset();
+    _remoteParicipants.reset();
 }
 
 void RTCMediaEngine::onJoin(const JoinResponse& response)
 {
     _localParticipant->setInfo(response._participant);
-    _remoteParicipants->setInfo(response._otherParticipants);
+    _remoteParicipants.setInfo(response._otherParticipants);
 }
 
 void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
@@ -91,7 +86,7 @@ void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
                 break;
             }
         }
-        _remoteParicipants->updateInfo(infos);
+        _remoteParicipants.updateInfo(infos);
     }
 }
 
@@ -127,12 +122,12 @@ void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaTy
 
 void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    _remoteParicipants->addMedia(transceiver);
+    _remoteParicipants.addMedia(transceiver);
 }
 
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
-    _remoteParicipants->removeMedia(receiver);
+    _remoteParicipants.removeMedia(receiver);
 }
 
 void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
@@ -142,7 +137,7 @@ void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> c
 
 void RTCMediaEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
 {
-    _remoteParicipants->addDataChannel(std::move(channel));
+    _remoteParicipants.addDataChannel(std::move(channel));
 }
 
 void RTCMediaEngine::sendAddTrack(const LocalTrack* track)

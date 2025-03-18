@@ -18,6 +18,8 @@
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
 #include "TransportManagerListener.h"
+#include "RemoteParticipants.h"
+#include "RemoteParticipantsListener.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -28,18 +30,17 @@ namespace LiveKitCpp
 class LocalTrack;
 class LocalParticipant;
 class LocalParticipantImpl;
-class RemoteParticipants;
-class RemoteParticipantsImpl;
 struct AddTrackRequest;
 struct MuteTrackRequest;
 
 class RTCMediaEngine : protected Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
-                       protected LocalTrackManager
+                       protected LocalTrackManager,
+                       protected RemoteParticipantsListener
 {
 public:
     std::shared_ptr<LocalParticipant> localParticipant() const;
-    std::shared_ptr<RemoteParticipants> remoteParticipants() const;
+    const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
 protected:
     enum class SendResult
     {
@@ -81,7 +82,7 @@ private:
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
 private:
     const std::shared_ptr<LocalParticipantImpl> _localParticipant;
-    const std::shared_ptr<RemoteParticipantsImpl> _remoteParicipants;
+    RemoteParticipants _remoteParicipants;
 };
 
 } // namespace LiveKitCpp

@@ -11,26 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // RemoteParticipants.h
-#include "RemoteParticipant.h"
-#include <memory>
+#pragma once // RoomListener.h
 #include <string>
 
 namespace LiveKitCpp
 {
 
-class RemoteParticipantsListener;
-
-class RemoteParticipants
+class RoomListener
 {
 public:
-    virtual ~RemoteParticipants() = default;
-    virtual void addListener(RemoteParticipantsListener* listener) = 0;
-    virtual void removeListener(RemoteParticipantsListener* listener) = 0;
-    virtual size_t count() const = 0;
-    // given participant by index or server ID
-    virtual std::shared_ptr<RemoteParticipant> at(size_t index) const = 0;
-    virtual std::shared_ptr<RemoteParticipant> at(const std::string& sid) const = 0;
+    virtual void onRemoteParticipantAdded(const std::string& /*sid*/) {}
+    virtual void onRemoteParticipantRemoved(const std::string& /*sid*/) {}
+protected:
+    virtual ~RoomListener() = default;
 };
 
 } // namespace LiveKitCpp

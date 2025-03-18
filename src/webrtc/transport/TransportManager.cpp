@@ -17,6 +17,7 @@
 #include "RoomUtils.h"
 #include "DataChannel.h"
 #include "Utils.h"
+#include "rtc/JoinResponse.h"
 
 namespace {
 
@@ -36,7 +37,8 @@ TransportManager::TransportManager(const JoinResponse& joinResponse,
                                    const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportListener>(logger)
     , _listener(listener)
-    , _joinResponse(joinResponse)
+    , _subscriberPrimary(joinResponse._subscriberPrimary)
+    , _fastPublish(joinResponse._fastPublish)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
     , _pingPongKit(listener, positiveOrZero(joinResponse._pingInterval), positiveOrZero(joinResponse._pingTimeout), pcf)
@@ -176,17 +178,17 @@ void TransportManager::createPublisherOffer()
 
 bool TransportManager::canNegotiate() const noexcept
 {
-    return !_joinResponse._subscriberPrimary || _joinResponse._fastPublish;
+    return !_subscriberPrimary || _fastPublish;
 }
 
 Transport& TransportManager::primaryTransport() noexcept
 {
-    return _joinResponse._subscriberPrimary ? _subscriber : _publisher;
+    return _subscriberPrimary ? _subscriber : _publisher;
 }
 
 const Transport& TransportManager::primaryTransport() const noexcept
 {
-    return _joinResponse._subscriberPrimary ? _subscriber : _publisher;
+    return _subscriberPrimary ? _subscriber : _publisher;
 }
 
 bool TransportManager::isPrimary(SignalTarget target) const noexcept

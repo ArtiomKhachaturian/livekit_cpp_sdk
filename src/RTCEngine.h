@@ -14,6 +14,7 @@
 #pragma once // RTCEngine.h
 #ifdef WEBRTC_AVAILABLE
 #include "RTCMediaEngine.h"
+#include "Listener.h"
 #include "Options.h"
 #include "SignalClientWs.h"
 #include "SignalTransportListener.h"
@@ -35,6 +36,7 @@ namespace LiveKitCpp
 {
 
 class PeerConnectionFactory;
+class RoomListener;
 class TransportManager;
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/RTCEngine.ts
@@ -48,6 +50,7 @@ public:
     ~RTCEngine() final;
     bool connect(std::string url, std::string authToken);
     void disconnect();
+    void setListener(RoomListener* listener) { _listener = listener; }
 protected:
     void cleanup(bool error = false);
     // impl. or overrides of RTCMediaEngine
@@ -86,11 +89,15 @@ private:
     // impl. of PingPongKitListener
     bool onPingRequested() final;
     void onPongTimeout() final;
+    // impl. of RemoteParticipantsListener
+    void onParticipantAdded(const std::string& sid) final;
+    void onParticipantRemoved(const std::string& sid) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
     const Options _options;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
+    Bricks::Listener<RoomListener*> _listener;
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
     /** keeps track of how often an initial join connection has been tried */

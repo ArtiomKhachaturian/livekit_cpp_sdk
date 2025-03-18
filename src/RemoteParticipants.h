@@ -14,8 +14,6 @@
 #pragma once // RemoteParticipants.h
 #ifdef WEBRTC_AVAILABLE
 #include "DataChannelsStorage.h"
-#include "Listeners.h"
-#include "RemoteParticipants.h"
 #include "SafeObj.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
@@ -32,19 +30,22 @@ namespace LiveKitCpp
 {
 
 class TrackManager;
+class RemoteParticipantsListener;
 class RemoteParticipantImpl;
+class RemoteParticipant;
 struct ParticipantInfo;
+enum class TrackType;
 
-class RemoteParticipantsImpl : public RemoteParticipants,
-                               protected DataChannelsStorage<>
+class RemoteParticipants : protected DataChannelsStorage<>
 {
     using Participants = std::vector<std::shared_ptr<RemoteParticipantImpl>>;
     // key is sid
     using OrphanedTracks = std::unordered_map<std::string, rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>;
 public:
-    RemoteParticipantsImpl(TrackManager* trackManager,
-                           const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~RemoteParticipantsImpl() final { reset(); }
+    RemoteParticipants(TrackManager* trackManager,
+                       RemoteParticipantsListener* listener,
+                       const std::shared_ptr<Bricks::Logger>& logger = {});
+    ~RemoteParticipants() final { reset(); }
     void setInfo(const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::vector<ParticipantInfo>& infos);
     bool addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver);
@@ -52,12 +53,9 @@ public:
     bool removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     bool addDataChannel(rtc::scoped_refptr<DataChannel> channel);
     void reset();
-    // impl. of RemoteParticipants
-    void addListener(RemoteParticipantsListener* listener) final;
-    void removeListener(RemoteParticipantsListener* listener) final;
-    size_t count() const final;
-    std::shared_ptr<RemoteParticipant> at(size_t index) const final;
-    std::shared_ptr<RemoteParticipant> at(const std::string& sid) const final;
+    size_t count() const;
+    std::shared_ptr<RemoteParticipant> at(size_t index) const;
+    std::shared_ptr<RemoteParticipant> at(const std::string& sid) const;
 protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
@@ -79,7 +77,7 @@ private:
     std::optional<size_t> findBySid(const std::string& sid) const;
 private:
     TrackManager* const _trackManager;
-    Bricks::Listeners<RemoteParticipantsListener*> _listeners;
+    RemoteParticipantsListener* const _listener;
     Bricks::SafeObj<OrphanedTracks> _orphans;
     Bricks::SafeObj<Participants> _participants;
 };

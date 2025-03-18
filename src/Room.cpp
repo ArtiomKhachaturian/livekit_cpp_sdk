@@ -53,14 +53,29 @@ void Room::disconnect()
     _impl->_engine.disconnect();
 }
 
+void Room::setListener(RoomListener* listener)
+{
+    _impl->_engine.setListener(listener);
+}
+
 std::shared_ptr<LocalParticipant> Room::localParticipant() const
 {
     return _impl->_engine.localParticipant();
 }
 
-std::shared_ptr<RemoteParticipants> Room::remoteParticipants() const
+std::shared_ptr<RemoteParticipant> Room::remoteParticipant(size_t index) const
 {
-    return _impl->_engine.remoteParticipants();
+    return _impl->_engine.remoteParticipants().at(index);
+}
+
+std::shared_ptr<RemoteParticipant> Room::remoteParticipant(const std::string& sid) const
+{
+    return _impl->_engine.remoteParticipants().at(sid);
+}
+
+size_t Room::remoteParticipantsCount() const
+{
+    return _impl->_engine.remoteParticipants().count();
 }
 
 Room::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
@@ -83,9 +98,16 @@ bool Room::connect(std::string, std::string) { return false; }
 
 void Room::disconnect() {}
 
+void Room::setListener(RoomListener*) {}
+
 std::shared_ptr<LocalParticipant> Room::localParticipant() const { return {}; }
 
-std::shared_ptr<RemoteParticipants> Room::remoteParticipants() const { return {}; }
+std::shared_ptr<RemoteParticipant> Room::remoteParticipant(size_t) const { return {}; }
+
+std::shared_ptr<RemoteParticipant> Room::remoteParticipant(const std::string&) const { return {}; }
+
+size_t Room::remoteParticipantsCount() const { return 0U; }
+
 #endif
 
 } // namespace LiveKitCpp

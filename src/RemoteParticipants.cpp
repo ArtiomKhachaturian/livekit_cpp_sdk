@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #ifdef WEBRTC_AVAILABLE
-#include "RemoteParticipantsImpl.h"
-#include "RemoteParticipantImpl.h"
+#include "RemoteParticipants.h"
 #include "RemoteParticipantsListener.h"
+#include "RemoteParticipantImpl.h"
 #include "Seq.h"
+#include "rtc/ParticipantInfo.h"
 #include <api/rtp_transceiver_interface.h>
 
 namespace {
@@ -31,14 +32,16 @@ inline bool compareParticipantInfo(const ParticipantInfo& l, const ParticipantIn
 namespace LiveKitCpp
 {
     
-RemoteParticipantsImpl::RemoteParticipantsImpl(TrackManager* trackManager,
-                                               const std::shared_ptr<Bricks::Logger>& logger)
+RemoteParticipants::RemoteParticipants(TrackManager* trackManager,
+                                       RemoteParticipantsListener* listener,
+                                       const std::shared_ptr<Bricks::Logger>& logger)
     : DataChannelsStorage<>(logger)
     , _trackManager(trackManager)
+    , _listener(listener)
 {
 }
 
-void RemoteParticipantsImpl::setInfo(const std::vector<ParticipantInfo>& infos)
+void RemoteParticipants::setInfo(const std::vector<ParticipantInfo>& infos)
 {
     LOCK_WRITE_SAFE_OBJ(_participants);
     clearParticipants();
@@ -52,7 +55,7 @@ void RemoteParticipantsImpl::setInfo(const std::vector<ParticipantInfo>& infos)
     }
 }
 
-void RemoteParticipantsImpl::updateInfo(const std::vector<ParticipantInfo>& infos)
+void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
 {
     if (!infos.empty()) {
         using SeqType = Seq<ParticipantInfo>;
@@ -83,12 +86,12 @@ void RemoteParticipantsImpl::updateInfo(const std::vector<ParticipantInfo>& info
     }
 }
 
-bool RemoteParticipantsImpl::addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver)
+bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver)
 {
     return transceiver && addMedia(transceiver->receiver());
 }
 
-bool RemoteParticipantsImpl::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
     bool added = false;
     if (receiver) {
@@ -109,7 +112,7 @@ bool RemoteParticipantsImpl::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiv
     return added;
 }
 
-bool RemoteParticipantsImpl::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
     if (receiver) {
         const auto sid = receiver->id();
@@ -138,12 +141,12 @@ bool RemoteParticipantsImpl::removeMedia(const rtc::scoped_refptr<webrtc::RtpRec
     return false;
 }
 
-bool RemoteParticipantsImpl::addDataChannel(rtc::scoped_refptr<DataChannel> channel)
+bool RemoteParticipants::addDataChannel(rtc::scoped_refptr<DataChannel> channel)
 {
     return channel && !channel->local() && add(std::move(channel));
 }
 
-void RemoteParticipantsImpl::reset()
+void RemoteParticipants::reset()
 {
     clear();
     _orphans({});
@@ -151,23 +154,13 @@ void RemoteParticipantsImpl::reset()
     clearParticipants();
 }
 
-void RemoteParticipantsImpl::addListener(RemoteParticipantsListener* listener)
-{
-    _listeners.add(listener);
-}
-
-void RemoteParticipantsImpl::removeListener(RemoteParticipantsListener* listener)
-{
-    _listeners.remove(listener);
-}
-
-size_t RemoteParticipantsImpl::count() const
+size_t RemoteParticipants::count() const
 {
     LOCK_READ_SAFE_OBJ(_participants);
     return _participants->size();
 }
 
-std::shared_ptr<RemoteParticipant> RemoteParticipantsImpl::at(size_t index) const
+std::shared_ptr<RemoteParticipant> RemoteParticipants::at(size_t index) const
 {
     LOCK_READ_SAFE_OBJ(_participants);
     if (index < _participants->size()) {
@@ -176,7 +169,7 @@ std::shared_ptr<RemoteParticipant> RemoteParticipantsImpl::at(size_t index) cons
     return {};
 }
 
-std::shared_ptr<RemoteParticipant> RemoteParticipantsImpl::at(const std::string& sid) const
+std::shared_ptr<RemoteParticipant> RemoteParticipants::at(const std::string& sid) const
 {
     if (!sid.empty()) {
         LOCK_READ_SAFE_OBJ(_participants);
@@ -187,13 +180,13 @@ std::shared_ptr<RemoteParticipant> RemoteParticipantsImpl::at(const std::string&
     return {};
 }
 
-std::string_view RemoteParticipantsImpl::logCategory() const
+std::string_view RemoteParticipants::logCategory() const
 {
     static const std::string_view category("remote_participants");
     return category;
 }
 
-std::vector<ParticipantInfo> RemoteParticipantsImpl::infos() const
+std::vector<ParticipantInfo> RemoteParticipants::infos() const
 {
     if (const auto s = _participants->size()) {
         std::vector<ParticipantInfo> output;
@@ -206,8 +199,8 @@ std::vector<ParticipantInfo> RemoteParticipantsImpl::infos() const
     return {};
 }
 
-bool RemoteParticipantsImpl::addMedia(const std::string& sid,
-                                      const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+bool RemoteParticipants::addMedia(const std::string& sid,
+                                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
 {
     if (track && !sid.empty()) {
         std::shared_ptr<RemoteParticipantImpl> target;
@@ -230,9 +223,9 @@ bool RemoteParticipantsImpl::addMedia(const std::string& sid,
     return false;
 }
 
-void RemoteParticipantsImpl::addMedia(const std::shared_ptr<RemoteParticipantImpl>& participant,
-                                      TrackType type, const std::string& sid,
-                                      const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) const
+void RemoteParticipants::addMedia(const std::shared_ptr<RemoteParticipantImpl>& participant,
+                                  TrackType type, const std::string& sid,
+                                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) const
 {
     if (participant && track) {
         bool added = false;
@@ -252,8 +245,8 @@ void RemoteParticipantsImpl::addMedia(const std::shared_ptr<RemoteParticipantImp
     }
 }
 
-bool RemoteParticipantsImpl::addToOrphans(std::string sid,
-                                          const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+bool RemoteParticipants::addToOrphans(std::string sid,
+                                      const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
 {
     if (track && !sid.empty()) {
         _orphans->insert(std::make_pair(std::move(sid), track));
@@ -262,7 +255,7 @@ bool RemoteParticipantsImpl::addToOrphans(std::string sid,
     return false;
 }
 
-void RemoteParticipantsImpl::addParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant)
+void RemoteParticipants::addParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant)
 {
     if (participant) {
         {
@@ -279,11 +272,13 @@ void RemoteParticipantsImpl::addParticipant(const std::shared_ptr<RemoteParticip
             }
         }
         _participants->push_back(participant);
-        _listeners.invoke(&RemoteParticipantsListener::onParticipantAdded, participant->sid());
+        if (_listener) {
+            _listener->onParticipantAdded(participant->sid());
+        }
     }
 }
 
-void RemoteParticipantsImpl::removeParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant)
+void RemoteParticipants::removeParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant)
 {
     if (participant) {
         {
@@ -293,11 +288,13 @@ void RemoteParticipantsImpl::removeParticipant(const std::shared_ptr<RemoteParti
             }
         }
         participant->reset();
-        _listeners.invoke(&RemoteParticipantsListener::onParticipantRemoved, participant->sid());
+        if (_listener) {
+            _listener->onParticipantRemoved(participant->sid());
+        }
     }
 }
 
-void RemoteParticipantsImpl::removeParticipant(const std::string& sid)
+void RemoteParticipants::removeParticipant(const std::string& sid)
 {
     if (!sid.empty()) {
         std::shared_ptr<RemoteParticipantImpl> participant;
@@ -311,14 +308,14 @@ void RemoteParticipantsImpl::removeParticipant(const std::string& sid)
     }
 }
 
-void RemoteParticipantsImpl::clearParticipants()
+void RemoteParticipants::clearParticipants()
 {
     for (const auto& participant : _participants.take()) {
         removeParticipant(participant);
     }
 }
 
-std::optional<size_t> RemoteParticipantsImpl::findBySid(const std::string& sid) const
+std::optional<size_t> RemoteParticipants::findBySid(const std::string& sid) const
 {
     if (!sid.empty()) {
         if (const auto s = _participants->size()) {
