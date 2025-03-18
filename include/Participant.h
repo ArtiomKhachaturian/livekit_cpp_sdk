@@ -14,7 +14,6 @@
 #pragma once // Participant.h
 #include "rtc/ParticipantPermission.h"
 #include "rtc/ParticipantKind.h"
-#include "rtc/ParticipantState.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -28,8 +27,6 @@ public:
     virtual std::string identity() const = 0;
     virtual std::string name() const = 0;
     virtual std::string metadata() const = 0;
-    virtual ParticipantState state() const = 0;
-    virtual bool hasActivePublisher() const = 0;
     virtual ParticipantKind kind() const = 0;
     /* int64_t _joinedAt = {};
     uint32_t _version = {};

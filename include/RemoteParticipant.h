@@ -16,6 +16,7 @@
 #include "RemoteAudioTrack.h"
 #include "RemoteVideoTrack.h"
 #include "VideoTrack.h"
+#include "rtc/ParticipantState.h"
 
 namespace LiveKitCpp
 {
@@ -27,6 +28,8 @@ class RemoteParticipant : public Participant
 public:
     virtual void addListener(RemoteParticipantListener* listener) = 0;
     virtual void removeListener(RemoteParticipantListener* listener) = 0;
+    virtual bool hasActivePublisher() const = 0;
+    virtual ParticipantState state() const = 0;
     virtual size_t audioTracksCount() const = 0;
     virtual size_t videoTracksCount() const = 0;
     // given track by index or server ID

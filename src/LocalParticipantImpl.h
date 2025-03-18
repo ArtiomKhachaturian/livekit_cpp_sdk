@@ -21,6 +21,7 @@
 #include "DataChannelsStorage.h"
 #include "ParticipantListener.h"
 #include "SafeObj.h"
+#include <atomic>
 #include <vector>
 #include <unordered_map>
 
@@ -50,6 +51,14 @@ public:
     LocalTrack* track(const std::string& id, bool cid);
     LocalTrack* track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> pendingLocalMedia();
+    // impl of ParticipantImpl<>
+    void setInfo(const ParticipantInfo& info) final;
+    // impl. of Participant
+    std::string sid() const final { return _sid(); }
+    std::string identity() const final { return _identity(); }
+    std::string name() const final { return _name(); }
+    std::string metadata() const final { return _metadata(); }
+    ParticipantKind kind() const final { return _kind; }
     // impl. of LocalParticipant
     CameraTrackImpl& camera() final { return _camera; }
     const CameraTrackImpl& camera() const final { return _camera; }
@@ -70,6 +79,11 @@ private:
     LocalAudioTrackImpl _microphone;
     CameraTrackImpl _camera;
     Bricks::SafeObj<PendingLocalMedias> _pendingLocalMedias;
+    Bricks::SafeObj<std::string> _sid;
+    Bricks::SafeObj<std::string> _identity;
+    Bricks::SafeObj<std::string> _name;
+    Bricks::SafeObj<std::string> _metadata;
+    std::atomic<ParticipantKind> _kind = ParticipantKind::Standard;
 };
 
 } // namespace LiveKitCpp

@@ -15,6 +15,26 @@
 #include "LocalParticipantImpl.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
+#include "rtc/ParticipantInfo.h"
+
+namespace {
+
+template<typename T>
+inline bool exchange(const T& source, Bricks::SafeObj<T>& dst) {
+    const std::lock_guard guard(dst.mutex());
+    if (source != dst.constRef()) {
+        dst = source;
+        return true;
+    }
+    return false;
+}
+
+template<typename T>
+inline bool exchange(const T& source, std::atomic<T>& dst) {
+    return source != dst.exchange(source);
+}
+
+}
 
 namespace LiveKitCpp
 {
@@ -50,7 +70,7 @@ void LocalParticipantImpl::reset()
     _microphone.resetMedia();
     _camera.resetMedia();
     _pendingLocalMedias({});
-    setInfo({});
+    LocalParticipantImpl::setInfo({});
 }
 
 void LocalParticipantImpl::notifyThatTrackPublished(const TrackPublishedResponse& response)
@@ -107,6 +127,29 @@ std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>
     }
     _pendingLocalMedias->clear();
     return medias;
+}
+
+void LocalParticipantImpl::setInfo(const ParticipantInfo& info)
+{
+    bool changed = false;
+    if (exchange(info._sid, _sid)) {
+        changed = true;
+    }
+    if (exchange(info._identity, _identity)) {
+        changed = true;
+    }
+    if (exchange(info._name, _name)) {
+        changed = true;
+    }
+    if (exchange(info._metadata, _metadata)) {
+        changed = true;
+    }
+    if (exchange(info._kind, _kind)) {
+        changed = true;
+    }
+    if (changed) {
+        fireOnChanged();
+    }
 }
 
 std::string_view LocalParticipantImpl::logCategory() const

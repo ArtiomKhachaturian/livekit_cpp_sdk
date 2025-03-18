@@ -17,6 +17,7 @@
 #include "RemoteParticipant.h"
 #include "RemoteParticipantListener.h"
 #include "SafeObj.h"
+#include "rtc/ParticipantInfo.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
 #include <optional>
@@ -50,9 +51,18 @@ public:
                   const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     bool removeAudio(const std::string& sid);
     bool removeVideo(const std::string& sid);
-    // overrides of ParticipantImpl<>
+    ParticipantInfo info() const { return _info(); }
+    // impl of ParticipantImpl<>
     void setInfo(const ParticipantInfo& info) final;
+    // impl. of Participant
+    std::string sid() const final;
+    std::string identity() const final;
+    std::string name() const final;
+    std::string metadata() const final;
+    ParticipantKind kind() const final;
     // impl. of RemoteParticipant
+    bool hasActivePublisher() const final;
+    ParticipantState state() const final;
     size_t audioTracksCount() const final;
     size_t videoTracksCount() const final;
     std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const final;
@@ -67,6 +77,7 @@ private:
     template<class TTrack>
     static bool removeTrack(const std::string& sid, std::vector<TTrack>& collection);
 private:
+    Bricks::SafeObj<ParticipantInfo> _info;
     Bricks::SafeObj<AudioTracks> _audioTracks;
     Bricks::SafeObj<VideoTracks> _videoTracks;
 };

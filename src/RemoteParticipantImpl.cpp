@@ -34,7 +34,7 @@ namespace LiveKitCpp
 
 RemoteParticipantImpl::RemoteParticipantImpl(const ParticipantInfo& info)
 {
-    Base::setInfo(info);
+    RemoteParticipantImpl::setInfo(info);
 }
 
 void RemoteParticipantImpl::reset()
@@ -130,10 +130,11 @@ bool RemoteParticipantImpl::removeVideo(const std::string& sid)
 
 void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
 {
-    const auto removed = Seq<TrackInfo>::difference(this->info()._tracks,
+    const auto removed = Seq<TrackInfo>::difference(_info()._tracks,
                                                     info._tracks,
                                                     compareTrackInfo);
-    Base::setInfo(info);
+    _info(info);
+    fireOnChanged();
     for (const auto& trackInfo : removed) {
         switch (trackInfo._type) {
             case TrackType::Audio:
@@ -146,6 +147,48 @@ void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
                 break;
         }
     }
+}
+
+std::string RemoteParticipantImpl::sid() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    return _info->_sid;
+}
+
+std::string RemoteParticipantImpl::identity() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    return _info->_identity;
+}
+
+std::string RemoteParticipantImpl::name() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    return _info->_name;
+}
+
+std::string RemoteParticipantImpl::metadata() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    return _info->_metadata;
+}
+
+ParticipantKind RemoteParticipantImpl::kind() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    return _info->_kind;
+}
+
+bool RemoteParticipantImpl::hasActivePublisher() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    return _info->_isPublisher;
+}
+
+ParticipantState RemoteParticipantImpl::state() const
+{
+    LOCK_READ_SAFE_OBJ(_info);
+    return _info->_state;
 }
 
 size_t RemoteParticipantImpl::audioTracksCount() const
