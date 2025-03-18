@@ -15,6 +15,7 @@
 #include "RemoteParticipants.h"
 #include "RemoteParticipantsListener.h"
 #include "RemoteParticipantImpl.h"
+#include "DataChannel.h"
 #include "Seq.h"
 #include "rtc/ParticipantInfo.h"
 #include <api/rtp_transceiver_interface.h>
@@ -35,9 +36,10 @@ namespace LiveKitCpp
 RemoteParticipants::RemoteParticipants(TrackManager* trackManager,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : DataChannelsStorage<>(logger)
+    : Bricks::LoggableS<>(logger)
     , _trackManager(trackManager)
     , _listener(listener)
+    , _dcs(logger)
 {
 }
 
@@ -143,12 +145,12 @@ bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceive
 
 bool RemoteParticipants::addDataChannel(rtc::scoped_refptr<DataChannel> channel)
 {
-    return channel && !channel->local() && add(std::move(channel));
+    return channel && !channel->local() && _dcs.add(std::move(channel));
 }
 
 void RemoteParticipants::reset()
 {
-    clear();
+    _dcs.clear();
     _orphans({});
     LOCK_WRITE_SAFE_OBJ(_participants);
     clearParticipants();

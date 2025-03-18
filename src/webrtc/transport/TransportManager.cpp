@@ -47,8 +47,8 @@ TransportManager::TransportManager(const JoinResponse& joinResponse,
     webrtc::DataChannelInit lossy, reliable;
     lossy.ordered = reliable.ordered = true;
     lossy.maxRetransmits = 0;
-    _publisher.createDataChannel(DataChannel::lossyDCLabel(), lossy);
-    _publisher.createDataChannel(DataChannel::reliableDCLabel(), reliable);
+    _publisher.createDataChannel(DataChannel::lossyLabel(), lossy);
+    _publisher.createDataChannel(DataChannel::reliableLabel(), reliable);
 }
 
 TransportManager::~TransportManager()
@@ -316,7 +316,7 @@ void TransportManager::onLocalDataChannelCreated(SignalTarget target,
 {
     if (SignalTarget::Publisher == target && channel) {
         const auto label = channel->label();
-        if (DataChannel::lossyDCLabel() == label || DataChannel::reliableDCLabel() == label) {
+        if (DataChannel::lossyLabel() == label || DataChannel::reliableLabel() == label) {
             const auto embeddedDCCount = 1U + _embeddedDCCount.fetch_add(1U);
             if (localDataChannelsAreCreated() && _pendingNegotiation.exchange(false)) {
                 logVerbose("all DCs have been create, we have a pending offer - let's try to create it");

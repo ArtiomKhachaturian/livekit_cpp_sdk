@@ -14,158 +14,57 @@
 #pragma once // DataChannelsStorage.h
 #ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
+#include "Listener.h"
 #include "DataChannelListener.h"
-#include "DataChannel.h"
 #include "SafeObj.h"
 #include <unordered_map>
 #include <api/scoped_refptr.h>
 
+namespace Bricks {
+class Blob;
+}
+
 namespace LiveKitCpp
 {
 
-template<class... BaseInterfaces>
-class DataChannelsStorage : public Bricks::LoggableS<BaseInterfaces...>,
-                            protected DataChannelListener
+class DataExchangeListener;
+struct DataPublishOptions;
+
+class DataChannelsStorage : public Bricks::LoggableS<>,
+                            private DataChannelListener
 {
     // key is channel label
     using DataChannels = std::unordered_map<std::string, rtc::scoped_refptr<DataChannel>>;
-    using Base = Bricks::LoggableS<BaseInterfaces...>;
 public:
+    DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger = {});
     ~DataChannelsStorage() override { clear(); }
+    void setSid(const std::string& sid) { _sid(sid); }
+    void setIdentity(const std::string& identity) { _identity(identity); }
+    void setListener(DataExchangeListener* listener = nullptr);
     bool add(rtc::scoped_refptr<DataChannel> channel);
     bool remove(const std::string& label);
     bool remove(const rtc::scoped_refptr<DataChannel>& channel);
     void clear();
-protected:
-    DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger = {});
+    rtc::scoped_refptr<DataChannel> get(const std::string& label) const;
+    bool sendUserPacket(const Bricks::Blob& data, const DataPublishOptions& options) const;
+private:
+    template <class TSetMethod, class TObject>
+    bool send(const rtc::scoped_refptr<DataChannel>& channel,
+              bool reliable, const TSetMethod& setMethod, TObject object) const;
     // impl. of DataChannelListener
-    void onStateChange(DataChannel* channel) override;
-    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) override;
-    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) override;
-    void onSendError(DataChannel* channel, webrtc::RTCError error) override;
+    void onStateChange(DataChannel* channel) final;
+    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
+    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
+    void onSendError(DataChannel* channel, webrtc::RTCError error) final;
 private:
     static std::string dcType(bool local) { return local ? "local" : "remote"; }
 private:
     Bricks::SafeObj<DataChannels> _dataChannels;
+    Bricks::Listener<DataExchangeListener*> _listener;
+    // from owner
+    Bricks::SafeObj<std::string> _identity;
+    Bricks::SafeObj<std::string> _sid;
 };
-
-template <class... BaseInterfaces>
-inline DataChannelsStorage<BaseInterfaces...>::
-    DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger)
-        : Base(logger)
-{
-}
-
-template <class... BaseInterfaces>
-inline bool DataChannelsStorage<BaseInterfaces...>::
-    add(rtc::scoped_refptr<DataChannel> channel)
-{
-    if (channel) {
-        const auto label = channel->label();
-        const auto local = channel->local();
-        if (label.empty()) {
-            Base::logWarning("unnamed " + dcType(local) + " data channel, processing denied");
-        }
-        else {
-            channel->setListener(this);
-            LOCK_WRITE_SAFE_OBJ(_dataChannels);
-            const auto it = _dataChannels->find(label);
-            if (it == _dataChannels->end()) {
-                _dataChannels->insert(std::make_pair(label, std::move(channel)));
-                Base::logVerbose(dcType(local) + " data channel '" + label + "' was added for observation");
-            }
-            else {
-                Base::logWarning(dcType(local) + " data channel '" + label + "' is already present but will be overwritten");
-                if (it->second) {
-                    it->second->setListener(nullptr);
-                }
-                it->second = std::move(channel);
-            }
-        }
-    }
-}
-
-template <class... BaseInterfaces>
-inline bool DataChannelsStorage<BaseInterfaces...>::
-    remove(const std::string& label)
-{
-    bool removed = false;
-    if (!label.empty()) {
-        LOCK_WRITE_SAFE_OBJ(_dataChannels);
-        const auto it = _dataChannels->find(label);
-        if (it != _dataChannels->end()) {
-            const auto local = it->second->local();
-            it->second->setListener(nullptr);
-            _dataChannels->erase(it);
-            Base::logVerbose(dcType(local) + " data channel '" + label + "' has been removed from observation");
-            removed = true;
-        }
-        else {
-            Base::logWarning("data channel '" + label + "' was not found");
-        }
-    }
-    return removed;
-}
-
-template <class... BaseInterfaces>
-inline bool DataChannelsStorage<BaseInterfaces...>::
-    remove(const rtc::scoped_refptr<DataChannel>& channel)
-{
-    return channel && remove(channel->label());
-}
-
-template <class... BaseInterfaces>
-inline void DataChannelsStorage<BaseInterfaces...>::clear()
-{
-    LOCK_WRITE_SAFE_OBJ(_dataChannels);
-    for (auto it = _dataChannels->begin(); it != _dataChannels->end(); ++it) {
-        it->second->setListener(nullptr);
-    }
-    _dataChannels->clear();
-}
-
-template <class... BaseInterfaces>
-inline void DataChannelsStorage<BaseInterfaces...>::onStateChange(DataChannel* channel)
-{
-    if (channel && Base::canLogVerbose()) {
-        Base::logVerbose(dcType(channel->local()) + " data channel '" +
-                         channel->label() + "' state has been changed to " +
-                         dataStateToString(channel->state()));
-    }
-}
-
-template <class... BaseInterfaces>
-inline void DataChannelsStorage<BaseInterfaces...>::
-    onMessage(DataChannel* channel, const webrtc::DataBuffer& /*buffer*/)
-{
-    if (channel && Base::canLogVerbose()) {
-        Base::logVerbose("a message buffer was successfully received for '" +
-                         channel->label() + "' " + dcType(channel->local()) +
-                         " data channel");
-    }
-}
-
-template <class... BaseInterfaces>
-inline void DataChannelsStorage<BaseInterfaces...>::
-    onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize)
-{
-    if (channel && Base::canLogVerbose()) {
-        Base::logVerbose(dcType(channel->local()) + " data channel '" +
-                         channel->label() + "' buffer amout has been changed to " +
-                         std::to_string(sentDataSize) + " bytes");
-    }
-}
-
-template <class... BaseInterfaces>
-inline void DataChannelsStorage<BaseInterfaces...>::
-    onSendError(DataChannel* channel, webrtc::RTCError error)
-{
-    if (channel && Base::canLogError()) {
-        Base::logError("send operation failed for '" + channel->label() + "' " +
-                       dcType(channel->local()) +
-                       " data channel: " + error.message());
-    }
-}
 
 } // namespace LiveKitCpp
 #endif

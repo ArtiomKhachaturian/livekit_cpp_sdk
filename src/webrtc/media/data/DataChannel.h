@@ -33,9 +33,11 @@ public:
     // Those are bytes that have not yet been processed at the SCTP level.
     static uint64_t maxSendQueueSize();
     
-    static std::string lossyDCLabel() { return "_lossy"; }
+    static const std::string& lossyLabel();
     
-    static std::string reliableDCLabel() { return "_reliable"; }
+    static const std::string& reliableLabel();
+    
+    static const std::string& label(bool reliable);
     
     ~DataChannel() override;
     
@@ -89,7 +91,7 @@ public:
     // on the thread the send operation was done on. It's important that
     // `on_complete` implementations do not block the current thread but rather
     // post any expensive operations to other worker threads.
-    void Send(const webrtc::DataBuffer& buffer);
+    void send(const webrtc::DataBuffer& buffer);
 protected:
     DataChannel(bool local, webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
 private:

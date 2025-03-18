@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // RemoteParticipants.h
 #ifdef WEBRTC_AVAILABLE
+#include "Loggable.h"
 #include "DataChannelsStorage.h"
 #include "SafeObj.h"
 #include <api/media_types.h>
@@ -36,7 +37,7 @@ class RemoteParticipant;
 struct ParticipantInfo;
 enum class TrackType;
 
-class RemoteParticipants : protected DataChannelsStorage<>
+class RemoteParticipants : public Bricks::LoggableS<>
 {
     using Participants = std::vector<std::shared_ptr<RemoteParticipantImpl>>;
     // key is sid
@@ -45,7 +46,7 @@ public:
     RemoteParticipants(TrackManager* trackManager,
                        RemoteParticipantsListener* listener,
                        const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~RemoteParticipants() final { reset(); }
+    ~RemoteParticipants() { reset(); }
     void setInfo(const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::vector<ParticipantInfo>& infos);
     bool addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver);
@@ -78,6 +79,7 @@ private:
 private:
     TrackManager* const _trackManager;
     RemoteParticipantsListener* const _listener;
+    DataChannelsStorage _dcs;
     Bricks::SafeObj<OrphanedTracks> _orphans;
     Bricks::SafeObj<Participants> _participants;
 };

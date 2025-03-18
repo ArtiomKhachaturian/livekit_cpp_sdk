@@ -14,7 +14,12 @@
 #pragma once // LocalParticipant.h
 #include "AudioTrack.h"
 #include "CameraTrack.h"
+#include "DataPublishOptions.h"
 #include "Participant.h"
+
+namespace Bricks {
+class Blob;
+}
 
 namespace LiveKitCpp
 {
@@ -30,6 +35,15 @@ public:
     virtual const CameraTrack& camera() const = 0;
     virtual AudioTrack& microphone() = 0;
     virtual const AudioTrack& microphone() const = 0;
+    /**
+      * Publish a new data payload to the room. Data will be forwarded to each
+      * participant in the room if the destination field in publishOptions is empty
+      *
+      * @param data Uint8Array of the payload. To send string data, use TextEncoder.encode
+      * @param options optionally specify a `reliable`, `topic` and `destination`
+      */
+    virtual bool publishData(const Bricks::Blob& data,
+                             const DataPublishOptions& options = {}) = 0;
 };
 
 } // namespace LiveKitCpp

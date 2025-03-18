@@ -36,7 +36,7 @@ struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 
 class LocalParticipantImpl : public ParticipantImpl<ParticipantListener, LocalParticipant>,
-                             protected DataChannelsStorage<LocalTrackManager>
+                             private LocalTrackManager
 {
     // key is cid (track id), for LocalTrackManager [publishMedia] / [unpublishMedia]
     using PendingLocalMedias = std::unordered_map<std::string, webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>;
@@ -64,9 +64,7 @@ public:
     const CameraTrackImpl& camera() const final { return _camera; }
     LocalAudioTrackImpl& microphone() final { return _microphone; }
     const LocalAudioTrackImpl& microphone() const final { return _microphone; }
-protected:
-    // impl. of Bricks::LoggableS<>
-    std::string_view logCategory() const final;
+    bool publishData(const Bricks::Blob& data, const DataPublishOptions& options) final;
 private:
     // impl. of LocalTrackManager
     bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
@@ -76,6 +74,7 @@ private:
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
 private:
     LocalTrackManager* const _manager;
+    DataChannelsStorage _dcs;
     LocalAudioTrackImpl _microphone;
     CameraTrackImpl _camera;
     Bricks::SafeObj<PendingLocalMedias> _pendingLocalMedias;

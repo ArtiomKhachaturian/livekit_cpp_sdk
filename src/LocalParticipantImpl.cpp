@@ -13,6 +13,7 @@
 // limitations under the License.
 #ifdef WEBRTC_AVAILABLE
 #include "LocalParticipantImpl.h"
+#include "DataChannel.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
 #include "rtc/ParticipantInfo.h"
@@ -41,8 +42,8 @@ namespace LiveKitCpp
 
 LocalParticipantImpl::LocalParticipantImpl(LocalTrackManager* manager,
                                            const std::shared_ptr<Bricks::Logger>& logger)
-    : DataChannelsStorage<LocalTrackManager>(logger)
-    , _manager(manager)
+    : _manager(manager)
+    , _dcs(logger)
     , _microphone(this, true, logger)
     , _camera(this, logger)
 {
@@ -51,12 +52,12 @@ LocalParticipantImpl::LocalParticipantImpl(LocalTrackManager* manager,
 LocalParticipantImpl::~LocalParticipantImpl()
 {
     reset();
-    clear();
+    _dcs.clear();
 }
 
 bool LocalParticipantImpl::addDataChannel(rtc::scoped_refptr<DataChannel> channel)
 {
-    return channel && channel->local() && add(std::move(channel));
+    return channel && channel->local() && _dcs.add(std::move(channel));
 }
 
 void LocalParticipantImpl::addTracksToTransport()
@@ -133,9 +134,11 @@ void LocalParticipantImpl::setInfo(const ParticipantInfo& info)
     bool changed = false;
     if (exchange(info._sid, _sid)) {
         changed = true;
+        _dcs.setSid(info._sid);
     }
     if (exchange(info._identity, _identity)) {
         changed = true;
+        _dcs.setIdentity(info._identity);
     }
     if (exchange(info._name, _name)) {
         changed = true;
@@ -151,10 +154,10 @@ void LocalParticipantImpl::setInfo(const ParticipantInfo& info)
     }
 }
 
-std::string_view LocalParticipantImpl::logCategory() const
+bool LocalParticipantImpl::publishData(const Bricks::Blob& data,
+                                       const DataPublishOptions& options)
 {
-    static const std::string_view category("local_participant");
-    return category;
+    return _dcs.sendUserPacket(data, options);
 }
 
 bool LocalParticipantImpl::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)

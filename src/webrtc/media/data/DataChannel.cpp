@@ -63,6 +63,23 @@ uint64_t DataChannel::maxSendQueueSize()
     return webrtc::DataChannelInterface::MaxSendQueueSize();
 }
 
+const std::string& DataChannel::lossyLabel()
+{
+    static const std::string label("_lossy");
+    return label;
+}
+
+const std::string& DataChannel::reliableLabel()
+{
+    static const std::string label("_reliable");
+    return label;
+}
+
+const std::string& DataChannel::label(bool reliable)
+{
+    return reliable ? reliableLabel() : lossyLabel();
+}
+
 void DataChannel::setListener(DataChannelListener* listener)
 {
     if (listener) {
@@ -160,7 +177,7 @@ void DataChannel::close()
     _impl->_channel->Close();
 }
 
-void DataChannel::Send(const webrtc::DataBuffer& buffer)
+void DataChannel::send(const webrtc::DataBuffer& buffer)
 {
     _impl->_channel->SendAsync(buffer, [ref = std::weak_ptr<Impl>()](webrtc::RTCError error){
         if (const auto impl = ref.lock()) {
