@@ -14,8 +14,7 @@
 #include "DataChannelsStorage.h"
 #include "DataExchangeListener.h"
 #include "DataChannel.h"
-#include "DataPublishOptions.h"
-#include "ProtoMarshaller.h"
+#include "ProtoUtils.h"
 #include "livekit_models.pb.h"
 #include "Blob.h"
 
@@ -108,24 +107,34 @@ rtc::scoped_refptr<DataChannel> DataChannelsStorage::get(const std::string& labe
     return {};
 }
 
-bool DataChannelsStorage::sendUserPacket(const Bricks::Blob& data,
-                                         const DataPublishOptions& options) const
+bool DataChannelsStorage::sendUserPacket(std::string payload, bool reliable,
+                                         const std::vector<std::string>& destinationIdentities,
+                                         std::string topic) const
 {
-    if (data) {
+    if (!payload.empty() && hasIdentity()) {
         auto sid = _sid();
         if (!sid.empty()) {
-            const auto& label = DataChannel::label(options._reliable);
+            const auto& label = DataChannel::label(reliable);
             if (const auto dc = get(label)) {
                 livekit::UserPacket packet;
                 packet.set_participant_sid(std::move(sid));
-                packet.set_topic(options._topic);
-                //packet.set_destination_identities(options._destinationIdentities);
-                return send(dc, options._reliable, &livekit::DataPacket::mutable_user,
+                packet.set_topic(std::move(topic));
+                packet.set_payload(std::move(payload));
+                toProtoRepeated(destinationIdentities,
+                                packet.mutable_destination_sids());
+                return send(dc, reliable,
+                            &livekit::DataPacket::mutable_user,
                             std::move(packet));
             }
         }
     }
     return false;
+}
+
+bool DataChannelsStorage::hasIdentity() const noexcept
+{
+    LOCK_READ_SAFE_OBJ(_identity);
+    return !_identity->empty();
 }
 
 template <class TSetMethod, class TObject>
@@ -147,7 +156,7 @@ bool DataChannelsStorage::send(const rtc::scoped_refptr<DataChannel>& dc,
                     packet.set_kind(livekit::DataPacket_Kind_LOSSY);
                 }
                 packet.set_participant_identity(std::move(identity));
-                const auto bytes = ProtoMarshaller(logger().get()).toBytes(packet);
+                const auto bytes = protoToBytes(packet, logger().get(), logCategory());
                 if (const auto size = bytes.size()) {
                     const rtc::CopyOnWriteBuffer data(bytes.data(), size);
                     dc->send(webrtc::DataBuffer(data, true));
@@ -168,7 +177,8 @@ void DataChannelsStorage::onStateChange(DataChannel* channel)
     }
 }
 
-void DataChannelsStorage::onMessage(DataChannel* channel, const webrtc::DataBuffer& /*buffer*/)
+void DataChannelsStorage::onMessage(DataChannel* channel,
+                                    const webrtc::DataBuffer& buffer)
 {
     if (channel) {
         if (canLogVerbose()) {
@@ -177,7 +187,47 @@ void DataChannelsStorage::onMessage(DataChannel* channel, const webrtc::DataBuff
                        " data channel");
         }
         if (_listener) { // parse
-            
+            if (buffer.binary) {
+                using namespace livekit;
+                const auto data = buffer.data.data();
+                const auto size = buffer.data.size();
+                const auto packet = protoFromBytes<DataPacket>(data, size,
+                                                               logger().get(),
+                                                               logCategory());
+                if (packet.has_value()) {
+                    switch (packet->value_case()) {
+                        case livekit::DataPacket::kUser:
+                            break;
+                        case livekit::DataPacket::kSpeaker:
+                            break;
+                        case livekit::DataPacket::kSipDtmf:
+                            break;
+                        case livekit::DataPacket::kTranscription:
+                            break;
+                        case livekit::DataPacket::kMetrics:
+                            break;
+                        case livekit::DataPacket::kChatMessage:
+                            break;
+                        case livekit::DataPacket::kRpcRequest:
+                            break;
+                        case livekit::DataPacket::kRpcAck:
+                            break;
+                        case livekit::DataPacket::kRpcResponse:
+                            break;
+                        case livekit::DataPacket::kStreamHeader:
+                            break;
+                        case livekit::DataPacket::kStreamChunk:
+                            break;
+                        case livekit::DataPacket::kStreamTrailer:
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            else {
+                
+            }
         }
     }
 }

@@ -64,7 +64,9 @@ public:
     const CameraTrackImpl& camera() const final { return _camera; }
     LocalAudioTrackImpl& microphone() final { return _microphone; }
     const LocalAudioTrackImpl& microphone() const final { return _microphone; }
-    bool publishData(const Bricks::Blob& data, const DataPublishOptions& options) final;
+    bool publishData(std::string payload, bool reliable,
+                     const std::vector<std::string>& destinationIdentities,
+                     std::string topic) final;
 private:
     // impl. of LocalTrackManager
     bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;

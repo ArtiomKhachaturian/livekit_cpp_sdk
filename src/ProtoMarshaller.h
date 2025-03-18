@@ -56,9 +56,6 @@ class ProtoMarshaller : public Bricks::LoggableR<>
 {
 public:
     ProtoMarshaller(Bricks::Logger* logger = nullptr);
-    std::vector<uint8_t> toBytes(const google::protobuf::Message& proto) const;
-    template <typename TProto>
-    std::optional<TProto> fromBytes(const void* data, size_t dataLen) const;
     // responses & requests
     JoinResponse map(const livekit::JoinResponse& in) const;
     SessionDescription map(const livekit::SessionDescription& in) const;
@@ -190,18 +187,5 @@ private:
     template<typename K, typename V>
     void mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to) const;
 };
-
-template <typename TProto>
-inline std::optional<TProto> ProtoMarshaller::fromBytes(const void* data,
-                                                        size_t dataLen) const {
-    if (data && dataLen) {
-        TProto proto;
-        if (proto.ParseFromArray(data, int(dataLen))) {
-            return proto;
-        }
-        logError(std::string("failed parse of ") + proto.GetTypeName() + " from blob");
-    }
-    return std::nullopt;
-}
 
 } // namespace LiveKitCpp

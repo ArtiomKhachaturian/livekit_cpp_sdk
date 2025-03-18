@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "ProtoMarshaller.h"
+#include "ProtoUtils.h"
 
 /*#if defined(_MSC_VER) && !defined(__PRETTY_FUNCTION__)
 #define __PRETTY_FUNCTION__ __FUNCSIG__
@@ -36,19 +37,6 @@ namespace LiveKitCpp
 ProtoMarshaller::ProtoMarshaller(Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
 {
-}
-
-std::vector<uint8_t> ProtoMarshaller::toBytes(const google::protobuf::Message& proto) const
-{
-    std::vector<uint8_t> buffer;
-    if (const auto size = proto.ByteSizeLong()) {
-        buffer.resize(size);
-        if (!proto.SerializeToArray(buffer.data(), int(size))) {
-            logError(std::string("failed serialize of ") + proto.GetTypeName() + " to blob");
-            buffer.clear();
-        }
-    }
-    return buffer;
 }
 
 JoinResponse ProtoMarshaller::map(const livekit::JoinResponse& in) const
@@ -1570,51 +1558,28 @@ std::string_view ProtoMarshaller::logCategory() const
 template <typename TOut, typename TIn, class TProtoBufRepeated>
 std::vector<TOut> ProtoMarshaller::rconv(const TProtoBufRepeated& in) const
 {
-    if (const auto size = in.size()) {
-        std::vector<TOut> out;
-        out.reserve(size_t(size));
-        for (const auto& val : in) {
-            out.push_back(map(TIn(val)));
-        }
-        return out;
-    }
-    return {};
+    return fromProtoRepeated<TOut>(in, [this](const auto& v) { return map(TIn(v)); });
 }
 
 template <typename TCppRepeated, class TProtoBufRepeated>
 void ProtoMarshaller::rconv(const TCppRepeated& from, TProtoBufRepeated* to) const
 {
     if (to) {
-        to->Reserve(int(to->size() + from.size()));
-        for (const auto& val : from) {
-            *to->Add() = map(val);
-        }
+        toProtoRepeated(from, to, [this](const auto& v) { return map(v); });
     }
 }
 
 template<typename K, typename V>
 std::unordered_map<K, V> ProtoMarshaller::mconv(const google::protobuf::Map<K, V>& in) const
 {
-    if (const auto size = in.size()) {
-        std::unordered_map<K, V> out;
-        out.reserve(size);
-        for (auto it = in.begin(); it != in.end(); ++it) {
-            out[it->first] = it->second;
-        }
-        return out;
-    }
-    return {};
+    return fromProtoMap(in);
 }
 
 template<typename K, typename V>
 void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
-                    google::protobuf::Map<K, V>* to) const
+                            google::protobuf::Map<K, V>* to) const
 {
-    if (to) {
-        for (auto it = from.begin(); it != from.end(); ++it) {
-            to->insert({it->first, it->second});
-        }
-    }
+    toProtoMap(from, to);
 }
 
 std::string toString(SignalTarget target)

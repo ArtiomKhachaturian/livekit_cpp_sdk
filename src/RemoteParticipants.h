@@ -15,6 +15,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
 #include "DataChannelsStorage.h"
+#include "DataExchangeListener.h"
 #include "SafeObj.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
@@ -37,7 +38,7 @@ class RemoteParticipant;
 struct ParticipantInfo;
 enum class TrackType;
 
-class RemoteParticipants : public Bricks::LoggableS<>
+class RemoteParticipants : private Bricks::LoggableS<DataExchangeListener>
 {
     using Participants = std::vector<std::shared_ptr<RemoteParticipantImpl>>;
     // key is sid
@@ -46,7 +47,7 @@ public:
     RemoteParticipants(TrackManager* trackManager,
                        RemoteParticipantsListener* listener,
                        const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~RemoteParticipants() { reset(); }
+    ~RemoteParticipants() final;
     void setInfo(const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::vector<ParticipantInfo>& infos);
     bool addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver);

@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalParticipant.h
+#include "LiveKitClientExport.h"
 #include "AudioTrack.h"
 #include "CameraTrack.h"
-#include "DataPublishOptions.h"
 #include "Participant.h"
+#include <string>
+#include <vector>
 
 namespace Bricks {
 class Blob;
@@ -42,8 +44,24 @@ public:
       * @param data Uint8Array of the payload. To send string data, use TextEncoder.encode
       * @param options optionally specify a `reliable`, `topic` and `destination`
       */
-    virtual bool publishData(const Bricks::Blob& data,
-                             const DataPublishOptions& options = {}) = 0;
+    /**
+      * whether to send this as reliable or lossy.
+      * For data that you need delivery guarantee (such as chat messages), use Reliable.
+      * For data that should arrive as quickly as possible, but you are ok with dropped
+      * packets, use Lossy.
+      */
+    /**
+      * the identities of participants who will receive the message, will be sent to every one if empty
+      */
+    /** the topic under which the message gets published */
+    virtual bool publishData(std::string payload,
+                             bool reliable = false,
+                             const std::vector<std::string>& destinationIdentities = {},
+                             std::string topic = {}) = 0;
+    LIVEKIT_CLIENT_API bool publishData(const Bricks::Blob& payload,
+                                        bool reliable = false,
+                                        const std::vector<std::string>& destinationIdentities = {},
+                                        std::string topic = {});
 };
 
 } // namespace LiveKitCpp

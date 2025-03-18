@@ -36,11 +36,18 @@ namespace LiveKitCpp
 RemoteParticipants::RemoteParticipants(TrackManager* trackManager,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<>(logger)
+    : Bricks::LoggableS<DataExchangeListener>(logger)
     , _trackManager(trackManager)
     , _listener(listener)
     , _dcs(logger)
 {
+    _dcs.setListener(this);
+}
+
+RemoteParticipants::~RemoteParticipants()
+{
+    _dcs.setListener(nullptr);
+    reset();
 }
 
 void RemoteParticipants::setInfo(const std::vector<ParticipantInfo>& infos)

@@ -14,6 +14,7 @@
 #include "RequestInterceptor.h"
 #include "CommandSender.h"
 #include "MarshalledTypesFwd.h"
+#include "ProtoUtils.h"
 #include "Blob.h"
 
 using Request = livekit::SignalRequest;
@@ -167,7 +168,7 @@ bool RequestInterceptor::send(const TSetMethod& setMethod, const TObject& object
         }
         if (const auto target = (request.*setMethod)()) {
             *target = _marshaller.map(object);
-            const auto bytes = _marshaller.toBytes(request);
+            const auto bytes = protoToBytes(request, logger(), logCategory());
             if (!bytes.empty()) {
                 ok = _commandSender->sendBinary(VectorBlob(bytes));
                 if (ok) {

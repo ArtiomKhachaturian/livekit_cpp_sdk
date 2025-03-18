@@ -14,6 +14,7 @@
 #include "ResponseInterceptor.h"
 #include "SignalServerListener.h"
 #include "MarshalledTypesFwd.h"
+#include "ProtoUtils.h"
 
 namespace {
 
@@ -159,7 +160,7 @@ std::string_view ResponseInterceptor::logCategory() const
 std::optional<livekit::SignalResponse> ResponseInterceptor::
     parse(const void* data, size_t dataLen) const
 {
-    return _marshaller.fromBytes<livekit::SignalResponse>(data, dataLen);
+    return protoFromBytes<livekit::SignalResponse>(data, dataLen, logger(), logCategory());
 }
 
 template <class Method, typename... Args>

@@ -14,6 +14,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include "LocalParticipantImpl.h"
 #include "DataChannel.h"
+#include "Blob.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
 #include "rtc/ParticipantInfo.h"
@@ -154,10 +155,13 @@ void LocalParticipantImpl::setInfo(const ParticipantInfo& info)
     }
 }
 
-bool LocalParticipantImpl::publishData(const Bricks::Blob& data,
-                                       const DataPublishOptions& options)
+bool LocalParticipantImpl::publishData(std::string payload, bool reliable,
+                                       const std::vector<std::string>& destinationIdentities,
+                                       std::string topic)
 {
-    return _dcs.sendUserPacket(data, options);
+    return _dcs.sendUserPacket(std::move(payload), reliable,
+                               destinationIdentities,
+                               std::move(topic));
 }
 
 bool LocalParticipantImpl::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -214,6 +218,20 @@ void LocalParticipantImpl::notifyAboutMuteChanges(const std::string& trackSid, b
     if (_manager) {
         _manager->notifyAboutMuteChanges(trackSid, muted);
     }
+}
+
+bool LocalParticipant::publishData(const Bricks::Blob& payload, bool reliable,
+                                   const std::vector<std::string>& destinationIdentities,
+                                   std::string topic)
+{
+    if (payload) {
+        std::string textPayload((const char*)payload.data(), payload.size());
+        return publishData(std::move(textPayload),
+                           reliable,
+                           destinationIdentities,
+                           std::move(topic));
+    }
+    return false;
 }
 
 } // namespace LiveKitCpp

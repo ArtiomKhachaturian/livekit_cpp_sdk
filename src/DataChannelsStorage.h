@@ -20,15 +20,11 @@
 #include <unordered_map>
 #include <api/scoped_refptr.h>
 
-namespace Bricks {
-class Blob;
-}
 
 namespace LiveKitCpp
 {
 
 class DataExchangeListener;
-struct DataPublishOptions;
 
 class DataChannelsStorage : public Bricks::LoggableS<>,
                             private DataChannelListener
@@ -46,8 +42,12 @@ public:
     bool remove(const rtc::scoped_refptr<DataChannel>& channel);
     void clear();
     rtc::scoped_refptr<DataChannel> get(const std::string& label) const;
-    bool sendUserPacket(const Bricks::Blob& data, const DataPublishOptions& options) const;
+    bool sendUserPacket(std::string payload,
+                        bool reliable = false,
+                        const std::vector<std::string>& destinationIdentities = {},
+                        std::string topic = {}) const;
 private:
+    bool hasIdentity() const noexcept;
     template <class TSetMethod, class TObject>
     bool send(const rtc::scoped_refptr<DataChannel>& channel,
               bool reliable, const TSetMethod& setMethod, TObject object) const;
