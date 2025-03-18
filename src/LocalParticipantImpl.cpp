@@ -70,7 +70,6 @@ void LocalParticipantImpl::reset()
     _microphone.resetMedia();
     _camera.resetMedia();
     _pendingLocalMedias({});
-    LocalParticipantImpl::setInfo({});
 }
 
 void LocalParticipantImpl::notifyThatTrackPublished(const TrackPublishedResponse& response)
