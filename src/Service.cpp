@@ -11,8 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LiveKitService.h"
-#include "LiveKitRoom.h"
+#include "Service.h"
+#include "Room.h"
 #include "Logger.h"
 #include "MediaAuthorization.h"
 #include "WebsocketEndPoint.h"
@@ -25,6 +25,8 @@
 #include "PeerConnectionFactory.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
+#elif defined(_WIN32)
+#include "WSAInitializer.h"
 #endif
 #include <api/rtc_event_log/rtc_event_log_factory.h>
 #include <rtc_base/logging.h>
@@ -33,15 +35,10 @@
 #include <rtc_base/time_utils.h>
 #include <system_wrappers/include/field_trial.h>
 #include <libyuv/cpu_id.h>
-#ifdef _WIN32
-#include <optional>
-#include <rtc_base/win32.h>
 #endif
-#endif
-
-namespace {
 
 #ifdef WEBRTC_AVAILABLE
+namespace {
 
 static const std::string_view g_logCategory("livekit_service");
 
@@ -56,39 +53,13 @@ private:
     const bool _sslInitialized;
 };
 
-#ifdef _WIN32
-class WSAInitializer
-{
-public:
-    enum class Version : WORD
-    {
-        v1_0 = MAKEWORD(1, 0),
-        v1_1 = MAKEWORD(1, 1),
-        v2_0 = MAKEWORD(2, 0),
-        v2_1 = MAKEWORD(2, 1),
-        v2_2 = MAKEWORD(2, 2)
-    };
-public:
-    WSAInitializer();
-    ~WSAInitializer();
-    int GetError() const noexcept { return _error; }
-    const auto& GetSelectedVersion() const noexcept { return _selectedVersion; }
-    static std::string ToString(Version version);
-private:
-    static int WsaStartup(Version version, WSADATA& wsaData);
-private:
-    int _error = 0;
-    std::optional<Version> _selectedVersion;
-};
-#endif
-#endif
-
 }
+#endif
 
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-class LiveKitService::Impl
+class Service::Impl
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -118,50 +89,50 @@ private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
 };
 
-LiveKitService::LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                               const std::shared_ptr<Bricks::Logger>& logger,
-                               bool logWebrtcEvents)
+Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                 const std::shared_ptr<Bricks::Logger>& logger,
+                 bool logWebrtcEvents)
     : _impl(Impl::create(websocketsFactory, logger, logWebrtcEvents))
 {
 }
 
-LiveKitService::~LiveKitService()
+Service::~Service()
 {
 }
 
-LiveKitServiceState LiveKitService::state() const
+ServiceState Service::state() const
 {
     if (Impl::sslInitialized()) {
         if (Impl::wsaInitialized()) {
             if (_impl) {
                 if (_impl->peerConnectionFactory()) {
-                    return LiveKitServiceState::OK;
+                    return ServiceState::OK;
                 }
-                return LiveKitServiceState::WebRTCInitError;
+                return ServiceState::WebRTCInitError;
             }
-            return LiveKitServiceState::NoWebsoketsFactory;
+            return ServiceState::NoWebsoketsFactory;
         }
-        return LiveKitServiceState::WSAFailure;
+        return ServiceState::WSAFailure;
     }
-    return LiveKitServiceState::SSLInitError;
+    return ServiceState::SSLInitError;
 }
 
-LiveKitRoom* LiveKitService::makeRoom(const Options& signalOptions) const
+Room* Service::makeRoom(const Options& signalOptions) const
 {
-    return _impl->makeRoom<LiveKitRoom*>(signalOptions);
+    return _impl->makeRoom<Room*>(signalOptions);
 }
 
-std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const Options& signalOptions) const
+std::shared_ptr<Room> Service::makeRoomS(const Options& signalOptions) const
 {
-    return _impl->makeRoom<std::shared_ptr<LiveKitRoom>>(signalOptions);
+    return _impl->makeRoom<std::shared_ptr<Room>>(signalOptions);
 }
 
-std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options& signalOptions) const
+std::unique_ptr<Room> Service::makeRoomU(const Options& signalOptions) const
 {
-    return _impl->makeRoom<std::unique_ptr<LiveKitRoom>>(signalOptions);
+    return _impl->makeRoom<std::unique_ptr<Room>>(signalOptions);
 }
 
-MediaDevice LiveKitService::defaultRecordingCameraDevice() const
+MediaDevice Service::defaultRecordingCameraDevice() const
 {
     MediaDevice dev;
     if (CameraManager::defaultDevice(dev)) {
@@ -170,53 +141,53 @@ MediaDevice LiveKitService::defaultRecordingCameraDevice() const
     return {};
 }
 
-MediaDevice LiveKitService::defaultRecordingAudioDevice() const
+MediaDevice Service::defaultRecordingAudioDevice() const
 {
     return _impl->defaultRecordingAudioDevice();
 }
 
-MediaDevice LiveKitService::defaultPlayoutAudioDevice() const
+MediaDevice Service::defaultPlayoutAudioDevice() const
 {
     return _impl->defaultPlayoutAudioDevice();
 }
 
-bool LiveKitService::setRecordingAudioDevice(const MediaDevice& device)
+bool Service::setRecordingAudioDevice(const MediaDevice& device)
 {
     return _impl->setRecordingAudioDevice(device);
 }
 
-MediaDevice LiveKitService::recordingAudioDevice() const
+MediaDevice Service::recordingAudioDevice() const
 {
     return _impl->recordingAudioDevice();
 }
 
-bool LiveKitService::setPlayoutAudioDevice(const MediaDevice& device)
+bool Service::setPlayoutAudioDevice(const MediaDevice& device)
 {
     return _impl->setPlayoutAudioDevice(device);
 }
 
-MediaDevice LiveKitService::playoutAudioDevice() const
+MediaDevice Service::playoutAudioDevice() const
 {
     return _impl->playoutAudioDevice();
 }
 
-std::vector<MediaDevice> LiveKitService::recordingAudioDevices() const
+std::vector<MediaDevice> Service::recordingAudioDevices() const
 {
     return _impl->recordingAudioDevices();
 }
 
-std::vector<MediaDevice> LiveKitService::playoutAudioDevices() const
+std::vector<MediaDevice> Service::playoutAudioDevices() const
 {
     return _impl->playoutAudioDevices();
 }
 
-std::vector<MediaDevice> LiveKitService::recordingCameraDevices() const
+std::vector<MediaDevice> Service::recordingCameraDevices() const
 {
     return CameraManager::devices();
 }
 
-LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                           const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents)
+Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                    const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents)
     : _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::Create(true, logWebrtcEvents ? logger : nullptr))
     , _logger(logger)
@@ -231,7 +202,7 @@ LiveKitService::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websockets
     }
 }
 
-MediaDevice LiveKitService::Impl::defaultRecordingAudioDevice() const
+MediaDevice Service::Impl::defaultRecordingAudioDevice() const
 {
     if (_pcf) {
         return _pcf->defaultRecordingAudioDevice();
@@ -239,7 +210,7 @@ MediaDevice LiveKitService::Impl::defaultRecordingAudioDevice() const
     return {};
 }
 
-MediaDevice LiveKitService::Impl::defaultPlayoutAudioDevice() const
+MediaDevice Service::Impl::defaultPlayoutAudioDevice() const
 {
     if (_pcf) {
         return _pcf->defaultPlayoutAudioDevice();
@@ -247,12 +218,12 @@ MediaDevice LiveKitService::Impl::defaultPlayoutAudioDevice() const
     return {};
 }
 
-bool LiveKitService::Impl::setRecordingAudioDevice(const MediaDevice& device)
+bool Service::Impl::setRecordingAudioDevice(const MediaDevice& device)
 {
     return _pcf && _pcf->setRecordingAudioDevice(device);
 }
 
-MediaDevice LiveKitService::Impl::recordingAudioDevice() const
+MediaDevice Service::Impl::recordingAudioDevice() const
 {
     if (_pcf) {
         return _pcf->recordingAudioDevice();
@@ -260,12 +231,12 @@ MediaDevice LiveKitService::Impl::recordingAudioDevice() const
     return {};
 }
 
-bool LiveKitService::Impl::setPlayoutAudioDevice(const MediaDevice& device)
+bool Service::Impl::setPlayoutAudioDevice(const MediaDevice& device)
 {
     return _pcf && _pcf->setPlayoutAudioDevice(device);
 }
 
-MediaDevice LiveKitService::Impl::playoutAudioDevice() const
+MediaDevice Service::Impl::playoutAudioDevice() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevice();
@@ -273,7 +244,7 @@ MediaDevice LiveKitService::Impl::playoutAudioDevice() const
     return {};
 }
 
-std::vector<MediaDevice> LiveKitService::Impl::recordingAudioDevices() const
+std::vector<MediaDevice> Service::Impl::recordingAudioDevices() const
 {
     if (_pcf) {
         return _pcf->recordingAudioDevices();
@@ -281,7 +252,7 @@ std::vector<MediaDevice> LiveKitService::Impl::recordingAudioDevices() const
     return {};
 }
 
-std::vector<MediaDevice> LiveKitService::Impl::playoutAudioDevices() const
+std::vector<MediaDevice> Service::Impl::playoutAudioDevices() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevices();
@@ -290,18 +261,18 @@ std::vector<MediaDevice> LiveKitService::Impl::playoutAudioDevices() const
 }
 
 template <typename TOutput>
-TOutput LiveKitService::Impl::makeRoom(const Options& signalOptions) const
+TOutput Service::Impl::makeRoom(const Options& signalOptions) const
 {
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
-            return TOutput(new LiveKitRoom(std::move(socket), _pcf.get(),
+            return TOutput(new Room(std::move(socket), _pcf.get(),
                                            signalOptions, _logger));
         }
     }
     return TOutput(nullptr);
 }
 
-bool LiveKitService::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>& logger)
+bool Service::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>& logger)
 {
     static const SSLInitiallizer initializer;
     if (!initializer && logger && logger->canLogError()) {
@@ -310,7 +281,7 @@ bool LiveKitService::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>&
     return initializer.initialized();
 }
 
-bool LiveKitService::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger)
+bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger)
 {
 #ifdef _WIN32
     static const WSAInitializer initializer;
@@ -331,7 +302,7 @@ bool LiveKitService::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>&
     return true;
 }
 
-std::unique_ptr<LiveKitService::Impl> LiveKitService::Impl::
+std::unique_ptr<Service::Impl> Service::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
            const std::shared_ptr<Bricks::Logger>& logger,
            bool logWebrtcEvents)
@@ -343,7 +314,7 @@ std::unique_ptr<LiveKitService::Impl> LiveKitService::Impl::
     return {};
 }
 
-void LiveKitService::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger)
+void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger)
 {
     if (logger && logger->canLogWarning()) {
 #ifdef __APPLE__
@@ -369,56 +340,56 @@ void LiveKitService::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logg
 }
 
 #else
-class LiveKitService::Impl {};
+class Service::Impl {};
 
-LiveKitService::LiveKitService(const std::shared_ptr<Websocket::Factory>&,
+Service::Service(const std::shared_ptr<Websocket::Factory>&,
                                const std::shared_ptr<Bricks::Logger>&, bool) {}
 
-LiveKitService::~LiveKitService() {}
+Service::~Service() {}
 
-LiveKitServiceState LiveKitService::state() const
+ServiceState Service::state() const
 {
-    return LiveKitServiceState::NoWebRTC;
+    return ServiceState::NoWebRTC;
 }
 
-LiveKitRoom* LiveKitService::makeRoom(const Options&) const { return nullptr; }
+Room* Service::makeRoom(const Options&) const { return nullptr; }
 
-std::shared_ptr<LiveKitRoom> LiveKitService::makeRoomS(const Options&) const { return {}; }
+std::shared_ptr<Room> Service::makeRoomS(const Options&) const { return {}; }
 
-std::unique_ptr<LiveKitRoom> LiveKitService::makeRoomU(const Options&) const { return {}; }
+std::unique_ptr<Room> Service::makeRoomU(const Options&) const { return {}; }
 
-MediaDevice LiveKitService::defaultRecordingCameraDevice() const { return {}; }
+MediaDevice Service::defaultRecordingCameraDevice() const { return {}; }
 
-MediaDevice LiveKitService::defaultRecordingAudioDevice() const { return {}; }
+MediaDevice Service::defaultRecordingAudioDevice() const { return {}; }
 
-MediaDevice LiveKitService::defaultPlayoutAudioDevice() const { return {}; }
+MediaDevice Service::defaultPlayoutAudioDevice() const { return {}; }
 
-bool LiveKitService::setRecordingAudioDevice(const MediaDevice&) { return false; }
+bool Service::setRecordingAudioDevice(const MediaDevice&) { return false; }
 
-MediaDevice LiveKitService::recordingAudioDevice() const { return {}; }
+MediaDevice Service::recordingAudioDevice() const { return {}; }
 
-bool LiveKitService::setPlayoutAudioDevice(const MediaDevice&) { return false; }
+bool Service::setPlayoutAudioDevice(const MediaDevice&) { return false; }
 
-MediaDevice LiveKitService::playoutAudioDevice() const { return {}; }
+MediaDevice Service::playoutAudioDevice() const { return {}; }
 
-std::vector<MediaDevice> LiveKitService::recordingAudioDevices() const { return {}; }
+std::vector<MediaDevice> Service::recordingAudioDevices() const { return {}; }
 
-std::vector<MediaDevice> LiveKitService::playoutAudioDevices() const { return {}; }
+std::vector<MediaDevice> Service::playoutAudioDevices() const { return {}; }
 
-std::vector<MediaDevice> LiveKitService::recordingCameraDevices() const { return {}; }
+std::vector<MediaDevice> Service::recordingCameraDevices() const { return {}; }
 #endif
 
-NetworkType LiveKitService::activeNetworkType()
+NetworkType Service::activeNetworkType()
 {
     return LiveKitCpp::activeNetworkType();
 }
 
-MediaAuthorizationLevel LiveKitService::mediaAuthorizationLevel()
+MediaAuthorizationLevel Service::mediaAuthorizationLevel()
 {
     return LiveKitCpp::mediaAuthorizationLevel();
 }
 
-void LiveKitService::setMediaAuthorizationLevel(MediaAuthorizationLevel level)
+void Service::setMediaAuthorizationLevel(MediaAuthorizationLevel level)
 {
     LiveKitCpp::setMediaAuthorizationLevel(level);
 }
@@ -440,9 +411,9 @@ ClientInfo ClientInfo::defaultClientInfo()
 
 } // namespace LiveKitCpp
 
+#ifdef WEBRTC_AVAILABLE
 namespace {
 
-#ifdef WEBRTC_AVAILABLE
 SSLInitiallizer::SSLInitiallizer()
     : _sslInitialized(rtc::InitializeSSL())
 {
@@ -463,47 +434,5 @@ SSLInitiallizer::~SSLInitiallizer()
     }
 }
 
-#ifdef _WIN32
-WSAInitializer::WSAInitializer()
-{
-    WSADATA wsaData;
-    // request versions in descending order
-    for (const auto version : {Version::v2_2, Version::v2_1, Version::v2_0,
-                               Version::v1_1, Version::v1_0}) {
-        _error = WsaStartup(version, wsaData);
-        if (0 == _error) {
-            _selectedVersion = version;
-            break;
-        }
-    }
-}
-
-WSAInitializer::~WSAInitializer()
-{
-    if (0 == _error) {
-        ::WSACleanup();
-    }
-}
-
-std::string WSAInitializer::ToString(Version version)
-{
-    // The version of the Windows Sockets specification that the Ws2_32.dll expects the caller to use.
-    // The high-order byte specifies the minor version number;
-    // the low-order byte specifies the major version number.
-    return std::to_string(LOBYTE(version)) + "." + std::to_string(HIBYTE(version));
-}
-
-int WSAInitializer::WsaStartup(Version version, WSADATA& wsaData)
-{
-    int error = ::WSAStartup(static_cast<WORD>(version), &wsaData);
-    if (0 == error && wsaData.wVersion != static_cast<WORD>(version)) {
-        error = WSAVERNOTSUPPORTED;
-        ::WSACleanup();
-    }
-    return error;
 }
 #endif
-
-#endif
-
-}

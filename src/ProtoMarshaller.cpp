@@ -607,9 +607,9 @@ livekit::ClientInfo ProtoMarshaller::map(const ClientInfo& in) const
     return out;
 }
 
-Room ProtoMarshaller::map(const livekit::Room& in) const
+RoomInfo ProtoMarshaller::map(const livekit::Room& in) const
 {
-    Room out;
+    RoomInfo out;
     out._sid = in.sid();
     out._name = in.name();
     out._emptyTimeout = in.empty_timeout();

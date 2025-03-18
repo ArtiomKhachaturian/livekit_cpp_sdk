@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RoomUpdate.h
-#include "rtc/Room.h"
+#include "rtc/RoomInfo.h"
 #include <optional>
 
 namespace LiveKitCpp
@@ -21,7 +21,7 @@ namespace LiveKitCpp
 // sent when metadata of the room has changed
 struct RoomUpdate
 {
-    std::optional<Room> _room;
+    std::optional<RoomInfo> _room;
 };
 
 } // namespace LiveKitCpp

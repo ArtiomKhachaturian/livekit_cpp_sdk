@@ -15,7 +15,7 @@
 #include "rtc/ClientConfiguration.h"
 #include "rtc/Codec.h"
 #include "rtc/ICEServer.h"
-#include "rtc/Room.h"
+#include "rtc/RoomInfo.h"
 #include "rtc/ParticipantInfo.h"
 #include "rtc/ServerInfo.h"
 #include <string>
@@ -27,7 +27,7 @@ namespace LiveKitCpp
 // sent when join is accepted
 struct JoinResponse
 {
-    Room _room;
+    RoomInfo _room;
     ParticipantInfo _participant;
     std::vector<ParticipantInfo> _otherParticipants;
      // deprecated. use server_info.version instead.

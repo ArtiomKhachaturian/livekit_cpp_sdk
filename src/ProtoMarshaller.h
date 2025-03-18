@@ -110,7 +110,7 @@ public:
     ClientInfo map(const livekit::ClientInfo& in) const;
     livekit::ClientInfo map(const ClientInfo& in) const;
     // data
-    Room map(const livekit::Room& in) const;
+    RoomInfo map(const livekit::Room& in) const;
     Codec map(const livekit::Codec& in) const;
     TimedVersion map(const livekit::TimedVersion& in) const;
     livekit::TimedVersion map(const TimedVersion& in) const;

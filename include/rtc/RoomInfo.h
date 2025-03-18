@@ -11,19 +11,32 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LiveKitServiceState.h
+#pragma once // Room.h
+#include "rtc/Codec.h"
+#include "rtc/TimedVersion.h"
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace LiveKitCpp
 {
 
-enum class LiveKitServiceState
+struct RoomInfo
 {
-    OK,
-    WSAFailure, // Windows only
-    SSLInitError,
-    NoWebsoketsFactory,
-    NoWebRTC,
-    WebRTCInitError
+    std::string _sid;
+    std::string _name;
+    uint32_t _emptyTimeout = {};
+    uint32_t _departureTimeout = {};
+    uint32_t _maxParticipants = {};
+    int64_t _creationTime = {};
+    int64_t _creationTimeMs = {};
+    std::string _turnPassword;
+    std::vector<Codec> _enabledCodecs;
+    std::string _metadata;
+    uint32_t _numParticipants = {};
+    uint32_t _numPublishers = {};
+    bool _activeRecording = {};
+    std::optional<TimedVersion> _version;
 };
 
 } // namespace LiveKitCpp

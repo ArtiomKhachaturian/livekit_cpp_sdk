@@ -31,21 +31,21 @@ namespace LiveKitCpp
 struct Options;
 class PeerConnectionFactory;
 
-class LIVEKIT_CLIENT_API LiveKitRoom
+class LIVEKIT_CLIENT_API Room
 {
     struct Impl;
-    friend class LiveKitService;
+    friend class Service;
 public:
-    ~LiveKitRoom();
+    ~Room();
     bool connect(std::string host, std::string authToken);
     void disconnect();
     std::shared_ptr<LocalParticipant> localParticipant() const;
     std::shared_ptr<RemoteParticipants> remoteParticipants() const;
 private:
-    LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
-                PeerConnectionFactory* pcf,
-                const Options& signalOptions,
-                const std::shared_ptr<Bricks::Logger>& logger = {});
+    Room(std::unique_ptr<Websocket::EndPoint> socket,
+         PeerConnectionFactory* pcf,
+         const Options& signalOptions,
+         const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::unique_ptr<Impl> _impl;
 };

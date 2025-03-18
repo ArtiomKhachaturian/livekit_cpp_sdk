@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // LiveKitService.h
 #include "LiveKitClientExport.h"
-#include "LiveKitServiceState.h"
+#include "ServiceState.h"
 #include "MediaDevice.h"
 #include "MediaAuthorizationLevel.h"
 #include "Options.h"
@@ -31,22 +31,22 @@ class Logger;
 namespace LiveKitCpp
 {
 
-class LiveKitRoom;
+class Room;
 enum class NetworkType;
 
-class LIVEKIT_CLIENT_API LiveKitService
+class LIVEKIT_CLIENT_API Service
 {
     class Impl;
 public:
-    LiveKitService(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                   const std::shared_ptr<Bricks::Logger>& logger = {},
-                   bool logWebrtcEvents = false);
-    ~LiveKitService();
-    LiveKitServiceState state() const;
+    Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+            const std::shared_ptr<Bricks::Logger>& logger = {},
+            bool logWebrtcEvents = false);
+    ~Service();
+    ServiceState state() const;
     [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]
-    LiveKitRoom* makeRoom(const Options& signalOptions = {}) const;
-    std::shared_ptr<LiveKitRoom> makeRoomS(const Options& signalOptions = {}) const;
-    std::unique_ptr<LiveKitRoom> makeRoomU(const Options& signalOptions = {}) const;
+    Room* makeRoom(const Options& signalOptions = {}) const;
+    std::shared_ptr<Room> makeRoomS(const Options& signalOptions = {}) const;
+    std::unique_ptr<Room> makeRoomU(const Options& signalOptions = {}) const;
     // media & network devices
     static NetworkType activeNetworkType();
     static MediaAuthorizationLevel mediaAuthorizationLevel();

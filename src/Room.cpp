@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LiveKitRoom.h"
+#include "Room.h"
 #ifdef WEBRTC_AVAILABLE
 #include "RTCEngine.h"
 #include "PeerConnectionFactory.h"
@@ -21,7 +21,7 @@
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-struct LiveKitRoom::Impl
+struct Room::Impl
 {
     Impl(std::unique_ptr<Websocket::EndPoint> socket,
          PeerConnectionFactory* pcf,
@@ -30,64 +30,62 @@ struct LiveKitRoom::Impl
     RTCEngine _engine;
 };
 
-LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint> socket,
-                         PeerConnectionFactory* pcf,
-                         const Options& signalOptions,
-                         const std::shared_ptr<Bricks::Logger>& logger)
+Room::Room(std::unique_ptr<Websocket::EndPoint> socket,
+           PeerConnectionFactory* pcf,
+           const Options& signalOptions,
+           const std::shared_ptr<Bricks::Logger>& logger)
     : _impl(std::make_unique<Impl>(std::move(socket), pcf, signalOptions, logger))
 {
 }
 
-LiveKitRoom::~LiveKitRoom()
+Room::~Room()
 {
     disconnect();
 }
 
-bool LiveKitRoom::connect(std::string host, std::string authToken)
+bool Room::connect(std::string host, std::string authToken)
 {
     return _impl->_engine.connect(std::move(host), std::move(authToken));
 }
 
-void LiveKitRoom::disconnect()
+void Room::disconnect()
 {
     _impl->_engine.disconnect();
 }
 
-std::shared_ptr<LocalParticipant> LiveKitRoom::localParticipant() const
+std::shared_ptr<LocalParticipant> Room::localParticipant() const
 {
     return _impl->_engine.localParticipant();
 }
 
-std::shared_ptr<RemoteParticipants> LiveKitRoom::remoteParticipants() const
+std::shared_ptr<RemoteParticipants> Room::remoteParticipants() const
 {
     return _impl->_engine.remoteParticipants();
 }
 
-LiveKitRoom::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
-                        PeerConnectionFactory* pcf,
-                        const Options& signalOptions,
-                        const std::shared_ptr<Bricks::Logger>& logger)
+Room::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
+                 PeerConnectionFactory* pcf,
+                 const Options& signalOptions,
+                 const std::shared_ptr<Bricks::Logger>& logger)
     : _engine(signalOptions, pcf, std::move(socket), logger)
 {
 }
 
 #else
-struct LiveKitRoom::Impl {};
+struct Room::Impl {};
     
-LiveKitRoom::LiveKitRoom(std::unique_ptr<Websocket::EndPoint>,
-                         PeerConnectionFactory*,
-                         const Options&,
-                         const std::shared_ptr<Bricks::Logger>&) {}
+Room::Room(std::unique_ptr<Websocket::EndPoint>, PeerConnectionFactory*,
+           const Options&, const std::shared_ptr<Bricks::Logger>&) {}
 
-LiveKitRoom::~LiveKitRoom() {}
+Room::~Room() {}
 
-bool LiveKitRoom::connect(std::string, std::string) { return false; }
+bool Room::connect(std::string, std::string) { return false; }
 
-void LiveKitRoom::disconnect() {}
+void Room::disconnect() {}
 
-std::shared_ptr<LocalParticipant> LiveKitRoom::localParticipant() const { return {}; }
+std::shared_ptr<LocalParticipant> Room::localParticipant() const { return {}; }
 
-std::shared_ptr<RemoteParticipants> LiveKitRoom::remoteParticipants() const { return {}; }
+std::shared_ptr<RemoteParticipants> Room::remoteParticipants() const { return {}; }
 #endif
 
 } // namespace LiveKitCpp

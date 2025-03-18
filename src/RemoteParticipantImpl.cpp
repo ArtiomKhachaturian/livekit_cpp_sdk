@@ -15,15 +15,26 @@
 #include "RemoteParticipantImpl.h"
 #include "RemoteAudioTrackImpl.h"
 #include "RemoteVideoTrackImpl.h"
+#include "Seq.h"
 #include <api/media_stream_interface.h>
 #include <optional>
+
+namespace {
+
+using namespace LiveKitCpp;
+
+inline bool compareTrackInfo(const TrackInfo& l, const TrackInfo& r) {
+    return l._sid == r._sid;
+}
+
+}
 
 namespace LiveKitCpp
 {
 
 RemoteParticipantImpl::RemoteParticipantImpl(const ParticipantInfo& info)
 {
-    setInfo(info);
+    Base::setInfo(info);
 }
 
 void RemoteParticipantImpl::reset()
@@ -115,6 +126,26 @@ bool RemoteParticipantImpl::removeVideo(const std::string& sid)
         _listeners.invoke(&RemoteParticipantListener::onVideoTrackRemoved, this, sid);
     }
     return ok;
+}
+
+void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
+{
+    const auto removed = Seq<TrackInfo>::difference(this->info()._tracks,
+                                                    info._tracks,
+                                                    compareTrackInfo);
+    Base::setInfo(info);
+    for (const auto& trackInfo : removed) {
+        switch (trackInfo._type) {
+            case TrackType::Audio:
+                removeAudio(trackInfo._sid);
+                break;
+            case TrackType::Video:
+                removeVideo(trackInfo._sid);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 size_t RemoteParticipantImpl::audioTracksCount() const

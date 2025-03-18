@@ -36,6 +36,7 @@ class TrackManager;
 class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipantListener,
                                                      RemoteParticipant>
 {
+    using Base = ParticipantImpl<RemoteParticipantListener, RemoteParticipant>;
     using AudioTracks = std::vector<std::shared_ptr<RemoteAudioTrackImpl>>;
     using VideoTracks = std::vector<std::shared_ptr<RemoteVideoTrackImpl>>;
 public:
@@ -49,6 +50,9 @@ public:
                   const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     bool removeAudio(const std::string& sid);
     bool removeVideo(const std::string& sid);
+    // overrides of ParticipantImpl<>
+    void setInfo(const ParticipantInfo& info) final;
+    // impl. of RemoteParticipant
     size_t audioTracksCount() const final;
     size_t videoTracksCount() const final;
     std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const final;
