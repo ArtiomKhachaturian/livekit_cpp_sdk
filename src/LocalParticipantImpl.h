@@ -18,7 +18,6 @@
 #include "LocalAudioTrackImpl.h"
 #include "LocalParticipant.h"
 #include "LocalTrackManager.h"
-#include "DataChannelsStorage.h"
 #include "ParticipantListener.h"
 #include "SafeObj.h"
 #include <atomic>
@@ -43,7 +42,6 @@ class LocalParticipantImpl : public ParticipantImpl<ParticipantListener, LocalPa
 public:
     LocalParticipantImpl(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipantImpl() final;
-    bool addDataChannel(rtc::scoped_refptr<DataChannel> channel);
     void addTracksToTransport();
     void reset();
     void notifyThatTrackPublished(const TrackPublishedResponse& response);
@@ -64,9 +62,6 @@ public:
     const CameraTrackImpl& camera() const final { return _camera; }
     LocalAudioTrackImpl& microphone() final { return _microphone; }
     const LocalAudioTrackImpl& microphone() const final { return _microphone; }
-    bool publishData(std::string payload, bool reliable,
-                     const std::vector<std::string>& destinationIdentities,
-                     std::string topic) final;
 private:
     // impl. of LocalTrackManager
     bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
@@ -76,7 +71,6 @@ private:
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
 private:
     LocalTrackManager* const _manager;
-    DataChannelsStorage _dcs;
     LocalAudioTrackImpl _microphone;
     CameraTrackImpl _camera;
     Bricks::SafeObj<PendingLocalMedias> _pendingLocalMedias;

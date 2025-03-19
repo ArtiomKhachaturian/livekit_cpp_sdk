@@ -73,8 +73,6 @@ protected:
     void onLocalTrackRemoved(const std::string& id, cricket::MediaType) override;
     void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
-    void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) override;
-    void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) override;
 private:
     // search by cid or sid
     void sendAddTrack(const LocalTrack* track);

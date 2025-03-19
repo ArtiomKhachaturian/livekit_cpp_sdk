@@ -16,6 +16,8 @@
 #include "LocalParticipant.h"
 #include "RemoteParticipant.h"
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace Websocket {
 class EndPoint;
@@ -30,11 +32,11 @@ namespace LiveKitCpp
 
 class RoomListener;
 class PeerConnectionFactory;
+class RTCEngine;
 struct Options;
 
 class LIVEKIT_CLIENT_API Room
 {
-    struct Impl;
     friend class Service;
 public:
     ~Room();
@@ -46,13 +48,36 @@ public:
     std::shared_ptr<RemoteParticipant> remoteParticipant(size_t index) const;
     std::shared_ptr<RemoteParticipant> remoteParticipant(const std::string& sid) const;
     size_t remoteParticipantsCount() const;
+    /**
+      * Publish a new data payload to the room. Data will be forwarded to each
+      * participant in the room if the destination field in publishOptions is empty
+      *
+      * @param data Uint8Array of the payload. To send string data, use TextEncoder.encode
+      * @param options optionally specify a `reliable`, `topic` and `destination`
+      */
+    /**
+      * whether to send this as reliable or lossy.
+      * For data that you need delivery guarantee (such as chat messages), use Reliable.
+      * For data that should arrive as quickly as possible, but you are ok with dropped
+      * packets, use Lossy.
+      */
+    /**
+      * the identities of participants who will receive the message, will be sent to every one if empty
+      */
+    /** the topic under which the message gets published */
+    bool sendUserPacket(std::string payload,
+                        bool reliable = false,
+                        const std::vector<std::string>& destinationIdentities = {},
+                        const std::string& topic = {});
+    // [deleted] true to remove message
+    bool sendChatMessage(std::string message, bool deleted = false);
 private:
     Room(std::unique_ptr<Websocket::EndPoint> socket,
          PeerConnectionFactory* pcf,
          const Options& signalOptions,
          const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
-    const std::unique_ptr<Impl> _impl;
+    const std::unique_ptr<RTCEngine> _engine;
 };
 
 } // namespace LiveKitCpp

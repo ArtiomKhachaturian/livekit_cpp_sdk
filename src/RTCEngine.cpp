@@ -41,6 +41,8 @@ RTCEngine::RTCEngine(const Options& signalOptions,
     : RTCMediaEngine(logger)
     , _options(signalOptions)
     , _pcf(pcf)
+    , _localDcs(logger)
+    , _remoteDcs(logger)
     , _client(std::move(socket), logger.get())
 {
     _client.setAdaptiveStream(_options._adaptiveStream);
@@ -93,12 +95,27 @@ void RTCEngine::disconnect()
     }
 }
 
+bool RTCEngine::sendUserPacket(std::string payload,
+                               bool reliable,
+                               const std::vector<std::string>& destinationIdentities,
+                               const std::string& topic) const
+{
+    return _localDcs.sendUserPacket(std::move(payload), reliable, destinationIdentities, topic);
+}
+
+bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
+{
+    return _localDcs.sendChatMessage(std::move(message), deleted);
+}
+
 void RTCEngine::cleanup(bool /*error*/)
 {
     std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
     _client.disconnect();
     cleanupLocalResources();
     cleanupRemoteResources();
+    _localDcs.setListener(nullptr);
+    _remoteDcs.setListener(nullptr);
 }
 
 bool RTCEngine::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -309,9 +326,21 @@ void RTCEngine::onIceCandidateGathered(SignalTarget target,
     }
 }
 
+void RTCEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
+{
+    _localDcs.add(std::move(channel));
+}
+
+void RTCEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
+{
+    _remoteDcs.add(std::move(channel));
+}
+
 void RTCEngine::onJoin(const JoinResponse& response)
 {
     RTCMediaEngine::onJoin(response);
+    _localDcs.setSid(response._participant._sid);
+    _localDcs.setIdentity(response._participant._identity);
     TransportManagerListener* listener = this;
     auto pcManager = std::make_shared<TransportManager>(response, listener,
                                                         _pcf, makeConfiguration(response),
@@ -382,6 +411,8 @@ void RTCEngine::onTransportStateChanged(TransportState state)
 {
     switch (state) {
         case TransportState::Connecting:
+            _localDcs.setListener(this);
+            _remoteDcs.setListener(this);
             addLocalResourcesToTransport();
             break;
         case TransportState::Disconnected:
@@ -421,6 +452,29 @@ void RTCEngine::onParticipantAdded(const std::string& sid)
 void RTCEngine::onParticipantRemoved(const std::string& sid)
 {
     _listener.invoke(&RoomListener::onRemoteParticipantRemoved, sid);
+}
+
+void RTCEngine::onUserPacket(const std::string& participantSid,
+                             const std::string& participantIdentity,
+                             const std::string& payload,
+                             const std::vector<std::string>& /*destinationIdentities*/,
+                             const std::string& topic)
+{
+    _listener.invoke(&RoomListener::onUserPacketReceived, participantSid,
+                     participantIdentity, payload, topic);
+}
+
+void RTCEngine::onChatMessage(const std::string& remoteParticipantIdentity,
+                              const std::string& message, const std::string& id,
+                              int64_t timestamp, bool deleted, bool generated)
+{
+    _listener.invoke(&RoomListener::onChatMessageReceived,
+                     remoteParticipantIdentity,
+                     message,
+                     id,
+                     timestamp,
+                     deleted,
+                     generated);
 }
 
 std::string_view RTCEngine::logCategory() const

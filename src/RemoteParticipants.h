@@ -14,8 +14,6 @@
 #pragma once // RemoteParticipants.h
 #ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
-#include "DataChannelsStorage.h"
-#include "DataExchangeListener.h"
 #include "SafeObj.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
@@ -38,7 +36,7 @@ class RemoteParticipant;
 struct ParticipantInfo;
 enum class TrackType;
 
-class RemoteParticipants : private Bricks::LoggableS<DataExchangeListener>
+class RemoteParticipants : private Bricks::LoggableS<>
 {
     using Participants = std::vector<std::shared_ptr<RemoteParticipantImpl>>;
     // key is sid
@@ -47,13 +45,12 @@ public:
     RemoteParticipants(TrackManager* trackManager,
                        RemoteParticipantsListener* listener,
                        const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~RemoteParticipants() final;
+    ~RemoteParticipants();
     void setInfo(const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::vector<ParticipantInfo>& infos);
     bool addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver);
     bool addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     bool removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
-    bool addDataChannel(rtc::scoped_refptr<DataChannel> channel);
     void reset();
     size_t count() const;
     std::shared_ptr<RemoteParticipant> at(size_t index) const;
@@ -80,7 +77,6 @@ private:
 private:
     TrackManager* const _trackManager;
     RemoteParticipantsListener* const _listener;
-    DataChannelsStorage _dcs;
     Bricks::SafeObj<OrphanedTracks> _orphans;
     Bricks::SafeObj<Participants> _participants;
 };

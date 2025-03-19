@@ -36,17 +36,14 @@ namespace LiveKitCpp
 RemoteParticipants::RemoteParticipants(TrackManager* trackManager,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<DataExchangeListener>(logger)
+    : Bricks::LoggableS<>(logger)
     , _trackManager(trackManager)
     , _listener(listener)
-    , _dcs(logger)
 {
-    _dcs.setListener(this);
 }
 
 RemoteParticipants::~RemoteParticipants()
 {
-    _dcs.setListener(nullptr);
     reset();
 }
 
@@ -150,14 +147,8 @@ bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceive
     return false;
 }
 
-bool RemoteParticipants::addDataChannel(rtc::scoped_refptr<DataChannel> channel)
-{
-    return channel && !channel->local() && _dcs.add(std::move(channel));
-}
-
 void RemoteParticipants::reset()
 {
-    _dcs.clear();
     _orphans({});
     LOCK_WRITE_SAFE_OBJ(_participants);
     clearParticipants();

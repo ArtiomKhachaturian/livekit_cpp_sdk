@@ -130,16 +130,6 @@ void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceive
     _remoteParicipants.removeMedia(receiver);
 }
 
-void RTCMediaEngine::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
-{
-    _localParticipant->addDataChannel(std::move(channel));
-}
-
-void RTCMediaEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
-{
-    _remoteParicipants.addDataChannel(std::move(channel));
-}
-
 void RTCMediaEngine::sendAddTrack(const LocalTrack* track)
 {
     if (track && track->canPublish() && !closed()) {

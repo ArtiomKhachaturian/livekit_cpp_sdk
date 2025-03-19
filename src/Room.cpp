@@ -21,20 +21,11 @@
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-struct Room::Impl
-{
-    Impl(std::unique_ptr<Websocket::EndPoint> socket,
-         PeerConnectionFactory* pcf,
-         const Options& signalOptions,
-         const std::shared_ptr<Bricks::Logger>& logger);
-    RTCEngine _engine;
-};
-
 Room::Room(std::unique_ptr<Websocket::EndPoint> socket,
            PeerConnectionFactory* pcf,
            const Options& signalOptions,
            const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(std::make_unique<Impl>(std::move(socket), pcf, signalOptions, logger))
+    : _engine(std::make_unique<RTCEngine>(signalOptions, pcf, std::move(socket), logger))
 {
 }
 
@@ -45,47 +36,51 @@ Room::~Room()
 
 bool Room::connect(std::string host, std::string authToken)
 {
-    return _impl->_engine.connect(std::move(host), std::move(authToken));
+    return _engine->connect(std::move(host), std::move(authToken));
 }
 
 void Room::disconnect()
 {
-    _impl->_engine.disconnect();
+    _engine->disconnect();
 }
 
 void Room::setListener(RoomListener* listener)
 {
-    _impl->_engine.setListener(listener);
+    _engine->setListener(listener);
 }
 
 std::shared_ptr<LocalParticipant> Room::localParticipant() const
 {
-    return _impl->_engine.localParticipant();
+    return _engine->localParticipant();
 }
 
 std::shared_ptr<RemoteParticipant> Room::remoteParticipant(size_t index) const
 {
-    return _impl->_engine.remoteParticipants().at(index);
+    return _engine->remoteParticipants().at(index);
 }
 
 std::shared_ptr<RemoteParticipant> Room::remoteParticipant(const std::string& sid) const
 {
-    return _impl->_engine.remoteParticipants().at(sid);
+    return _engine->remoteParticipants().at(sid);
 }
 
 size_t Room::remoteParticipantsCount() const
 {
-    return _impl->_engine.remoteParticipants().count();
+    return _engine->remoteParticipants().count();
 }
 
-Room::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket,
-                 PeerConnectionFactory* pcf,
-                 const Options& signalOptions,
-                 const std::shared_ptr<Bricks::Logger>& logger)
-    : _engine(signalOptions, pcf, std::move(socket), logger)
+bool Room::sendUserPacket(std::string payload,
+                          bool reliable,
+                          const std::vector<std::string>& destinationIdentities,
+                          const std::string& topic)
 {
+    return _engine->sendUserPacket(std::move(payload), reliable, destinationIdentities, topic);
 }
 
+bool Room::sendChatMessage(std::string message, bool deleted)
+{
+    return _engine->sendChatMessage(std::move(message), deleted);
+}
 #else
 struct Room::Impl {};
     
@@ -107,6 +102,11 @@ std::shared_ptr<RemoteParticipant> Room::remoteParticipant(size_t) const { retur
 std::shared_ptr<RemoteParticipant> Room::remoteParticipant(const std::string&) const { return {}; }
 
 size_t Room::remoteParticipantsCount() const { return 0U; }
+
+bool Room::sendUserPacket(std::string, bool, const std::vector<std::string>&,
+                          const std::string&) { return false; }
+
+bool Room::sendChatMessage(std::string, bool) { return false; }
 
 #endif
 

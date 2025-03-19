@@ -30,7 +30,7 @@ SSLInitiallizer::SSLInitiallizer()
         rtc::LogMessage::LogTimestamps(false);
         rtc::LogMessage::SetLogToStderr(false);
         libyuv::MaskCpuFlags(-1); // to enable all cpu specific optimizations
-        rtc::InitRandom(static_cast<int>(rtc::Time()));
+        rtc::InitRandom(static_cast<int>(rtc::Time32()));
         webrtc::field_trial::InitFieldTrialsFromString("WebRTC-SupportVP9SVC/EnabledByFlag_3SL3TL/");
     }
 }

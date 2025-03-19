@@ -20,19 +20,23 @@
 #include <unordered_map>
 #include <api/scoped_refptr.h>
 
+namespace livekit {
+class UserPacket;
+class ChatMessage;
+}
 
 namespace LiveKitCpp
 {
 
 class DataExchangeListener;
 
-class DataChannelsStorage : public Bricks::LoggableS<>,
-                            private DataChannelListener
+class DataChannelsStorage : private Bricks::LoggableS<DataChannelListener>
 {
     // key is channel label
     using DataChannels = std::unordered_map<std::string, rtc::scoped_refptr<DataChannel>>;
 public:
-    DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger = {});
+    DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger = {},
+                        std::string logCategory = "data_channels");
     ~DataChannelsStorage() override { clear(); }
     void setSid(const std::string& sid) { _sid(sid); }
     void setIdentity(const std::string& identity) { _identity(identity); }
@@ -42,15 +46,19 @@ public:
     bool remove(const rtc::scoped_refptr<DataChannel>& channel);
     void clear();
     rtc::scoped_refptr<DataChannel> get(const std::string& label) const;
-    bool sendUserPacket(std::string payload,
-                        bool reliable = false,
+    bool sendUserPacket(std::string payload, bool reliable,
                         const std::vector<std::string>& destinationIdentities = {},
-                        std::string topic = {}) const;
+                        const std::string& topic = {}) const;
+    bool sendChatMessage(std::string message, bool deleted) const;
 private:
-    bool hasIdentity() const noexcept;
+    rtc::scoped_refptr<DataChannel> getChannelForSend(bool reliable) const;
     template <class TSetMethod, class TObject>
     bool send(const rtc::scoped_refptr<DataChannel>& channel,
-              bool reliable, const TSetMethod& setMethod, TObject object) const;
+              const TSetMethod& setMethod, TObject object) const;
+    void handle(const std::string& senderIdentity, const livekit::UserPacket& packet) const;
+    void handle(const std::string& senderIdentity, const livekit::ChatMessage& message) const;
+    // overrides of Bricks::LoggableS<>
+    std::string_view logCategory() const final { return _logCategory; }
     // impl. of DataChannelListener
     void onStateChange(DataChannel* channel) final;
     void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
@@ -59,6 +67,7 @@ private:
 private:
     static std::string dcType(bool local) { return local ? "local" : "remote"; }
 private:
+    const std::string _logCategory;
     Bricks::SafeObj<DataChannels> _dataChannels;
     Bricks::Listener<DataExchangeListener*> _listener;
     // from owner

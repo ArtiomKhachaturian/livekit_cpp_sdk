@@ -67,6 +67,7 @@ public:
     int id() const;
     webrtc::PriorityValue priority() const;
     webrtc::DataChannelInterface::DataState state() const;
+    bool isOpen() const { return webrtc::DataChannelInterface::kOpen == state(); }
     // When state is kClosed, and the DataChannel was not closed using
     // the closing procedure, returns the error information about the closing.
     // The default implementation returns "no error".

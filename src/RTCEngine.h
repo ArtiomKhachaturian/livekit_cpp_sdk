@@ -14,6 +14,8 @@
 #pragma once // RTCEngine.h
 #ifdef WEBRTC_AVAILABLE
 #include "RTCMediaEngine.h"
+#include "DataChannelsStorage.h"
+#include "DataExchangeListener.h"
 #include "Listener.h"
 #include "Options.h"
 #include "SignalClientWs.h"
@@ -22,6 +24,8 @@
 #include "rtc/DisconnectReason.h"
 #include "rtc/LeaveRequestAction.h"
 #include <atomic>
+#include <string>
+#include <vector>
 
 namespace Websocket {
 class EndPoint;
@@ -40,7 +44,9 @@ class RoomListener;
 class TransportManager;
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/RTCEngine.ts
-class RTCEngine : public RTCMediaEngine, private SignalTransportListener
+class RTCEngine : public RTCMediaEngine,
+                  private SignalTransportListener,
+                  private DataExchangeListener
 {
 public:
     RTCEngine(const Options& signalOptions,
@@ -51,6 +57,10 @@ public:
     bool connect(std::string url, std::string authToken);
     void disconnect();
     void setListener(RoomListener* listener) { _listener = listener; }
+    bool sendUserPacket(std::string payload, bool reliable,
+                        const std::vector<std::string>& destinationIdentities = {},
+                        const std::string& topic = {}) const;
+    bool sendChatMessage(std::string message, bool deleted) const;
 protected:
     void cleanup(bool error = false);
     // impl. or overrides of RTCMediaEngine
@@ -77,6 +87,8 @@ private:
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
     void onIceCandidateGathered(SignalTarget target,
                                 const webrtc::IceCandidateInterface* candidate) final;
+    void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
+    void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) final;
     // impl. of SignalServerListener
     void onJoin(const JoinResponse& response) final;
     void onOffer(const SessionDescription& sdp) final;
@@ -92,12 +104,23 @@ private:
     // impl. of RemoteParticipantsListener
     void onParticipantAdded(const std::string& sid) final;
     void onParticipantRemoved(const std::string& sid) final;
+    // impl. of DataExchangeListener
+    void onUserPacket(const std::string& participantSid,
+                      const std::string& participantIdentity,
+                      const std::string& payload,
+                      const std::vector<std::string>& /*destinationIdentities*/,
+                      const std::string& topic) final;
+    void onChatMessage(const std::string& remoteParticipantIdentity,
+                       const std::string& message, const std::string& id,
+                       int64_t timestamp, bool deleted, bool generated) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
     const Options _options;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     Bricks::Listener<RoomListener*> _listener;
+    DataChannelsStorage _localDcs;
+    DataChannelsStorage _remoteDcs;
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
     /** keeps track of how often an initial join connection has been tried */

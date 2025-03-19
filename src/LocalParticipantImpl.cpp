@@ -44,7 +44,6 @@ namespace LiveKitCpp
 LocalParticipantImpl::LocalParticipantImpl(LocalTrackManager* manager,
                                            const std::shared_ptr<Bricks::Logger>& logger)
     : _manager(manager)
-    , _dcs(logger)
     , _microphone(this, true, logger)
     , _camera(this, logger)
 {
@@ -53,12 +52,6 @@ LocalParticipantImpl::LocalParticipantImpl(LocalTrackManager* manager,
 LocalParticipantImpl::~LocalParticipantImpl()
 {
     reset();
-    _dcs.clear();
-}
-
-bool LocalParticipantImpl::addDataChannel(rtc::scoped_refptr<DataChannel> channel)
-{
-    return channel && channel->local() && _dcs.add(std::move(channel));
 }
 
 void LocalParticipantImpl::addTracksToTransport()
@@ -135,11 +128,9 @@ void LocalParticipantImpl::setInfo(const ParticipantInfo& info)
     bool changed = false;
     if (exchange(info._sid, _sid)) {
         changed = true;
-        _dcs.setSid(info._sid);
     }
     if (exchange(info._identity, _identity)) {
         changed = true;
-        _dcs.setIdentity(info._identity);
     }
     if (exchange(info._name, _name)) {
         changed = true;
@@ -153,15 +144,6 @@ void LocalParticipantImpl::setInfo(const ParticipantInfo& info)
     if (changed) {
         fireOnChanged();
     }
-}
-
-bool LocalParticipantImpl::publishData(std::string payload, bool reliable,
-                                       const std::vector<std::string>& destinationIdentities,
-                                       std::string topic)
-{
-    return _dcs.sendUserPacket(std::move(payload), reliable,
-                               destinationIdentities,
-                               std::move(topic));
 }
 
 bool LocalParticipantImpl::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -218,20 +200,6 @@ void LocalParticipantImpl::notifyAboutMuteChanges(const std::string& trackSid, b
     if (_manager) {
         _manager->notifyAboutMuteChanges(trackSid, muted);
     }
-}
-
-bool LocalParticipant::publishData(const Bricks::Blob& payload, bool reliable,
-                                   const std::vector<std::string>& destinationIdentities,
-                                   std::string topic)
-{
-    if (payload) {
-        std::string textPayload((const char*)payload.data(), payload.size());
-        return publishData(std::move(textPayload),
-                           reliable,
-                           destinationIdentities,
-                           std::move(topic));
-    }
-    return false;
 }
 
 } // namespace LiveKitCpp
