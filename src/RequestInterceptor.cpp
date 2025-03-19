@@ -26,8 +26,8 @@ class VectorBlob : public Bricks::Blob
 public:
     VectorBlob(const std::vector<uint8_t>& data);
     // impl. of Bricks::Blob
-    size_t size() const noexcept final { return _data.size(); }
-    const uint8_t* data() const noexcept final { return _data.data(); }
+    size_t size() const final { return _data.size(); }
+    const uint8_t* data() const final { return _data.data(); }
 private:
     const std::vector<uint8_t>& _data;
 };
