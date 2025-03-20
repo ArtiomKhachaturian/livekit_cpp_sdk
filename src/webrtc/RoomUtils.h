@@ -32,7 +32,7 @@ public:
                                                               webrtc::SdpParseError* error = nullptr);
     static std::unique_ptr<webrtc::IceCandidateInterface> map(const std::string& candidateInit,
                                                               webrtc::SdpParseError* error = nullptr);
-    static bool map(const webrtc::IceCandidateInterface* candidate, std::string& candidateInit);
+    static std::string map(const webrtc::IceCandidateInterface* candidate);
     static std::optional<SessionDescription> map(const webrtc::SessionDescriptionInterface* desc);
     static std::unique_ptr<webrtc::SessionDescriptionInterface> map(const SessionDescription& desc,
                                                                     webrtc::SdpParseError* error = nullptr);

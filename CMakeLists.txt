@@ -213,7 +213,7 @@ if (WEBRTC_AVAILABLE)
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/video/camera
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp 
         ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE -DJSON_HAS_CPP_17)
     if (APPLE)
         target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
         target_link_libraries(${PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")

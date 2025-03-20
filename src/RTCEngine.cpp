@@ -310,17 +310,18 @@ void RTCEngine::onIceCandidateGathered(SignalTarget target,
 {
     RTCMediaEngine::onIceCandidateGathered(target, candidate);
     if (candidate) {
-        TrickleRequest request;
-        if (RoomUtils::map(candidate, request._candidateInit)) {
-            request._target = target;
-            request._final = false;
-            if (!_client.sendTrickle(request)) {
-                logError("failed to send " + candidate->server_url() +
-                         " " + toString(target) + " local ICE candidate");
-            }
-        }
-        else {
+        auto candidateInit = RoomUtils::map(candidate);
+        if (candidateInit.empty()) {
             logError("failed to serialize " + candidate->server_url() +
+                     " " + toString(target) + " local ICE candidate");
+            return;
+        }
+        TrickleRequest request;
+        request._candidateInit = std::move(candidateInit);
+        request._target = target;
+        request._final = false;
+        if (!_client.sendTrickle(request)) {
+            logError("failed to send " + candidate->server_url() +
                      " " + toString(target) + " local ICE candidate");
         }
     }

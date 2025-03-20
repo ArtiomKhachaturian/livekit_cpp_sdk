@@ -15,6 +15,20 @@
 #include "rtc/ICETransportPolicy.h"
 #include <nlohmann/json.hpp>
 
+namespace {
+
+struct IceCandidate
+{
+    std::string candidate;
+    std::string sdpMid;
+    int sdpMLineIndex = {};
+    IceCandidate() = default;
+    IceCandidate(std::string candidate, std::string sdpMid, int sdpMLineIndex);
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(IceCandidate, candidate, sdpMid, sdpMLineIndex)
+};
+
+}
+
 namespace LiveKitCpp
 {
 
@@ -30,11 +44,11 @@ std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const std::string&
     std::unique_ptr<webrtc::IceCandidateInterface> iceCandidate;
     if (!candidateInit.empty()) {
         try {
-            auto json = nlohmann::json::parse(candidateInit);
-            const auto candidate = json["candidate"].get<std::string>();
-            const auto sdpMid = json["sdpMid"].get<std::string>();
-            const auto sdpMLineIndex = json["sdpMLineIndex"].get<int>();
-            iceCandidate.reset(webrtc::CreateIceCandidate(sdpMid, sdpMLineIndex, candidate, error));
+            const auto c = nlohmann::json::parse(candidateInit).get<IceCandidate>();
+            iceCandidate.reset(webrtc::CreateIceCandidate(c.sdpMid,
+                                                          c.sdpMLineIndex,
+                                                          c.candidate,
+                                                          error));
         }
         catch (const std::exception& e) {
             if (error) {
@@ -45,18 +59,19 @@ std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const std::string&
     return iceCandidate;
 }
 
-bool RoomUtils::map(const webrtc::IceCandidateInterface* candidate, std::string& candidateInit)
+std::string RoomUtils::map(const webrtc::IceCandidateInterface* candidate)
 {
-    if (candidate && candidate->ToString(&candidateInit)) {
-        nlohmann::json iceCandidate;
-        iceCandidate["iceCandidate"] = std::move(candidateInit);
-        iceCandidate["sdpMid"] = candidate->sdp_mid();
-        iceCandidate["sdpMLineIndex"] = candidate->sdp_mline_index();
-        iceCandidate["usernameFragment"] = nullptr; // ??
-        candidateInit = nlohmann::to_string(iceCandidate);
-        return true;
+    if (candidate) {
+        std::string sdp;
+        if (candidate->ToString(&sdp)) {
+            nlohmann::json json = IceCandidate(std::move(sdp),
+                                               candidate->sdp_mid(),
+                                               candidate->sdp_mline_index());
+            json["usernameFragment"] = nullptr; // ??
+            return nlohmann::to_string(json);
+        }
     }
-    return false;
+    return {};
 }
 
 std::optional<SessionDescription> RoomUtils::map(const webrtc::SessionDescriptionInterface* desc)
@@ -120,3 +135,14 @@ webrtc::PeerConnectionInterface::IceTransportsType RoomUtils::map(IceTransportPo
 }
 
 } // namespace LiveKitCpp
+
+namespace {
+
+IceCandidate::IceCandidate(std::string candidate, std::string sdpMid, int sdpMLineIndex)
+{
+    this->candidate = std::move(candidate);
+    this->sdpMid = std::move(sdpMid);
+    this->sdpMLineIndex = sdpMLineIndex;
+}
+
+}
