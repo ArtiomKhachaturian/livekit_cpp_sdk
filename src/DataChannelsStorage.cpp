@@ -18,6 +18,7 @@
 #include "Utils.h"
 #include "MarshalledTypesFwd.h"
 #include "livekit_models.pb.h"
+#include <nlohmann/json.hpp>
 #include <rtc_base/time_utils.h>
 
 namespace {
@@ -35,6 +36,15 @@ inline livekit::UserPacket makeUserPacket(std::string payload,
     return packet;
 }
 
+struct NonCompliantChatMessage // usually from Swift client
+{
+    std::string messageId;
+    //std::string senderIdentity;
+    std::string text;
+    //std::string senderSid;
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(NonCompliantChatMessage, messageId, text)
+};
+
 }
 
 namespace LiveKitCpp
@@ -43,6 +53,19 @@ namespace LiveKitCpp
 MARSHALLED_TYPE_NAME_DECL(livekit::DataPacket)
 MARSHALLED_TYPE_NAME_DECL(livekit::UserPacket)
 MARSHALLED_TYPE_NAME_DECL(livekit::ChatMessage)
+
+struct DataChannelsStorage::ChatMessage
+{
+    std::string id;
+    std::string message;
+    int64_t timestamp = {};
+    bool ignore = false;
+    bool deleted = false;
+    bool generated = false;
+    ChatMessage() = default;
+    ChatMessage(std::string id, std::string message, int64_t timestamp = rtc::TimeMillis());
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(ChatMessage, id, message, timestamp, ignore)
+};
 
 DataChannelsStorage::DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger,
                                          std::string logCategory)
@@ -176,6 +199,25 @@ bool DataChannelsStorage::sendChatMessage(std::string message, bool deleted) con
     return false;
 }
 
+std::optional<DataChannelsStorage::ChatMessage> DataChannelsStorage::
+    maybeChatMessage(const livekit::UserPacket& packet)
+{
+    const auto& payload = packet.payload();
+    if (!payload.empty()) {
+        try {
+            // standard chat packet
+            return nlohmann::json::parse(payload).get<ChatMessage>();
+        }
+        catch(const std::exception&) { /* ignore JSON parser errors */ }
+        try {
+            auto message = nlohmann::json::parse(payload).get<NonCompliantChatMessage>();
+            return ChatMessage(std::move(message.messageId), std::move(message.text));
+        }
+        catch(const std::exception&) { /* ignore JSON parser errors */ }
+    }
+    return std::nullopt;
+}
+
 rtc::scoped_refptr<DataChannel> DataChannelsStorage::getChannelForSend(bool reliable) const
 {
     {
@@ -234,27 +276,53 @@ bool DataChannelsStorage::send(const rtc::scoped_refptr<DataChannel>& dc,
     return false;
 }
 
-void DataChannelsStorage::handle(const std::string& /*senderIdentity*/,
-                                 const livekit::UserPacket& packet) const
+void DataChannelsStorage::handle(const std::string& senderIdentity,
+                                 const livekit::UserPacket& packet)
 {
-    _listener.invoke(&DataExchangeListener::onUserPacket,
-                     packet.participant_sid(),
-                     packet.participant_identity(),
-                     packet.payload(),
-                     fromProtoRepeated<std::string>(packet.destination_sids()),
-                     packet.topic());
+    bool defaultCallback = true;
+    if (const auto chatMessage = maybeChatMessage(packet)) {
+        if (updateLastChatMessageId(chatMessage->id)) {
+            handle(senderIdentity, chatMessage.value());
+        }
+        defaultCallback = false;
+    }
+    if (defaultCallback) {
+        _listener.invoke(&DataExchangeListener::onUserPacket,
+                         packet.participant_sid(),
+                         packet.participant_identity(),
+                         packet.payload(),
+                         fromProtoRepeated<std::string>(packet.destination_sids()),
+                         packet.topic());
+    }
 }
 
 void DataChannelsStorage::handle(const std::string& senderIdentity,
-                                 const livekit::ChatMessage& message) const
+                                 const livekit::ChatMessage& message)
+{
+    if (updateLastChatMessageId(message.id())) {
+        ChatMessage msg(message.id(), message.message(), message.timestamp());
+        msg.deleted = message.deleted();
+        msg.generated = message.generated();
+        handle(senderIdentity, msg);
+    }
+}
+
+void DataChannelsStorage::handle(const std::string& senderIdentity, const ChatMessage& message)
 {
     _listener.invoke(&DataExchangeListener::onChatMessage,
                      senderIdentity,
-                     message.message(),
-                     message.id(),
-                     message.timestamp(),
-                     message.deleted(),
-                     message.generated());
+                     message.message,
+                     message.id,
+                     message.timestamp,
+                     message.deleted,
+                     message.generated);
+}
+
+bool DataChannelsStorage::updateLastChatMessageId(const std::string& id)
+{
+    LOCK_WRITE_SAFE_OBJ(_lastChatMessageId);
+    const auto prev = _lastChatMessageId.exchange(id);
+    return prev.empty() || prev != id;
 }
 
 void DataChannelsStorage::onStateChange(DataChannel* channel)
@@ -345,6 +413,14 @@ void DataChannelsStorage::onSendError(DataChannel* channel, webrtc::RTCError err
         }
         _listener.invoke(&DataExchangeListener::onSendError, label, std::move(error));
     }
+}
+
+DataChannelsStorage::ChatMessage::ChatMessage(std::string id, std::string message,
+                                              int64_t timestamp)
+{
+    this->id = std::move(id);
+    this->message = std::move(message);
+    this->timestamp = timestamp;
 }
 
 } // namespace LiveKitCpp

@@ -17,6 +17,7 @@
 #include "Listener.h"
 #include "DataChannelListener.h"
 #include "SafeObj.h"
+#include <optional>
 #include <unordered_map>
 #include <api/scoped_refptr.h>
 
@@ -34,6 +35,7 @@ class DataChannelsStorage : private Bricks::LoggableS<DataChannelListener>
 {
     // key is channel label
     using DataChannels = std::unordered_map<std::string, rtc::scoped_refptr<DataChannel>>;
+    struct ChatMessage;
 public:
     DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger = {},
                         std::string logCategory = "data_channels");
@@ -51,12 +53,16 @@ public:
                         const std::string& topic = {}) const;
     bool sendChatMessage(std::string message, bool deleted) const;
 private:
+    static std::optional<ChatMessage> maybeChatMessage(const livekit::UserPacket& packet);
+    static std::string dcType(bool local) { return local ? "local" : "remote"; }
     rtc::scoped_refptr<DataChannel> getChannelForSend(bool reliable) const;
     template <class TSetMethod, class TObject>
     bool send(const rtc::scoped_refptr<DataChannel>& channel,
               const TSetMethod& setMethod, TObject object) const;
-    void handle(const std::string& senderIdentity, const livekit::UserPacket& packet) const;
-    void handle(const std::string& senderIdentity, const livekit::ChatMessage& message) const;
+    void handle(const std::string& senderIdentity, const livekit::UserPacket& packet);
+    void handle(const std::string& senderIdentity, const livekit::ChatMessage& message);
+    void handle(const std::string& senderIdentity, const ChatMessage& message);
+    bool updateLastChatMessageId(const std::string& id);
     // overrides of Bricks::LoggableS<>
     std::string_view logCategory() const final { return _logCategory; }
     // impl. of DataChannelListener
@@ -65,14 +71,13 @@ private:
     void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
     void onSendError(DataChannel* channel, webrtc::RTCError error) final;
 private:
-    static std::string dcType(bool local) { return local ? "local" : "remote"; }
-private:
     const std::string _logCategory;
     Bricks::SafeObj<DataChannels> _dataChannels;
     Bricks::Listener<DataExchangeListener*> _listener;
     // from owner
     Bricks::SafeObj<std::string> _identity;
     Bricks::SafeObj<std::string> _sid;
+    Bricks::SafeObj<std::string> _lastChatMessageId;
 };
 
 } // namespace LiveKitCpp
