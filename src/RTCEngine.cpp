@@ -23,7 +23,6 @@
 #include "CameraManager.h"
 #include "RoomListener.h"
 #include "Utils.h"
-#include "rtc/JoinResponse.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
 #include "rtc/Ping.h"
@@ -190,7 +189,9 @@ void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
                         const std::string& errorDetails)
 {
     RTCMediaEngine::cleanup(error, errorDetails);
-    std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
+    if (auto pcManager = std::atomic_exchange(&_pcManager, std::shared_ptr<TransportManager>())) {
+        pcManager->setListener(nullptr);
+    }
     _client.disconnect();
     _localDcs.setListener(nullptr);
     _remoteDcs.setListener(nullptr);
@@ -323,6 +324,28 @@ void RTCEngine::changeState(TransportState state)
     }
 }
 
+void RTCEngine::createTransportManager(const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
+{
+    _reconnectAttempts = 0U;
+    std::shared_ptr<TransportManager> pcManager;
+    {
+        LOCK_READ_SAFE_OBJ(_lastJoinResponse);
+        pcManager = std::make_shared<TransportManager>(_lastJoinResponse->_subscriberPrimary,
+                                                       _lastJoinResponse->_fastPublish,
+                                                       _lastJoinResponse->_pingTimeout,
+                                                       _lastJoinResponse->_pingInterval,
+                                                       _pcf, conf,
+                                                       logger());
+    }
+    pcManager->setListener(this);
+    std::atomic_store(&_pcManager, pcManager);
+    for (auto media : pendingLocalMedia()) {
+        pcManager->addTrack(std::move(media));
+    }
+    pcManager->negotiate(false);
+    pcManager->startPing();
+}
+
 void RTCEngine::onSdpOperationFailed(SignalTarget, webrtc::RTCError error)
 {
     sendLeave();
@@ -412,20 +435,17 @@ void RTCEngine::onJoin(const JoinResponse& response)
 {
     RTCMediaEngine::onJoin(response);
     if (DisconnectReason::UnknownReason == response._participant._disconnectReason) {
-        _reconnectAttempts = 0U;
         _localDcs.setSid(response._participant._sid);
         _localDcs.setIdentity(response._participant._identity);
-        TransportManagerListener* listener = this;
-        auto pcManager = std::make_shared<TransportManager>(response, listener,
-                                                            _pcf, makeConfiguration(response),
-                                                            logger());
-        std::atomic_store(&_pcManager, pcManager);
-        for (auto media : pendingLocalMedia()) {
-            pcManager->addTrack(std::move(media));
-        }
-        pcManager->negotiate(false);
-        pcManager->startPing();
+        _lastJoinResponse(response);
+        createTransportManager(makeConfiguration(response));
     }
+}
+
+void RTCEngine::onReconnect(const ReconnectResponse& response)
+{
+    RTCMediaEngine::onReconnect(response);
+    createTransportManager(makeConfiguration(response));
 }
 
 void RTCEngine::onOffer(const SessionDescription& sdp)

@@ -18,11 +18,13 @@
 #include "DataExchangeListener.h"
 #include "Listener.h"
 #include "Options.h"
+#include "SafeObj.h"
 #include "SignalClientWs.h"
 #include "SignalTransportListener.h"
 #include "RoomState.h"
 #include "rtc/ClientConfiguration.h"
 #include "rtc/DisconnectReason.h"
+#include "rtc/JoinResponse.h"
 #include "rtc/LeaveRequestAction.h"
 #include <atomic>
 #include <string>
@@ -87,6 +89,7 @@ private:
     void changeState(RoomState state);
     void changeState(webrtc::PeerConnectionInterface::PeerConnectionState state);
     void changeState(TransportState state);
+    void createTransportManager(const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
     // impl. of TransportManagerListener
     void onSdpOperationFailed(SignalTarget, webrtc::RTCError error) final;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState state,
@@ -101,6 +104,7 @@ private:
     void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) final;
     // impl. of SignalServerListener
     void onJoin(const JoinResponse& response) final;
+    void onReconnect(const ReconnectResponse& response) final;
     void onOffer(const SessionDescription& sdp) final;
     void onAnswer(const SessionDescription& sdp) final;
     void onPong(const Pong& pong) final;
@@ -137,6 +141,7 @@ private:
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _reconnectAttempts = 0U;
     std::atomic<RoomState> _state = RoomState::TransportDisconnected;
+    Bricks::SafeObj<JoinResponse> _lastJoinResponse;
 };
 
 } // namespace LiveKitCpp

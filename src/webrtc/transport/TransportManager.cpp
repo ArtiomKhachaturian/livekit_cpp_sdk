@@ -17,7 +17,6 @@
 #include "RoomUtils.h"
 #include "DataChannel.h"
 #include "Utils.h"
-#include "rtc/JoinResponse.h"
 
 namespace {
 
@@ -30,25 +29,19 @@ inline uint32_t positiveOrZero(T value) {
 
 namespace LiveKitCpp
 {
-TransportManager::TransportManager(const JoinResponse& joinResponse,
-                                   TransportManagerListener* listener,
+TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
+                                   int32_t pingTimeout, int32_t pingInterval,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                    const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<TransportListener>(logger)
-    , _listener(listener)
-    , _subscriberPrimary(joinResponse._subscriberPrimary)
-    , _fastPublish(joinResponse._fastPublish)
+    : Bricks::LoggableS<TransportListener, PingPongKitListener>(logger)
+    , _subscriberPrimary(subscriberPrimary)
+    , _fastPublish(fastPublish)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
-    , _pingPongKit(listener, positiveOrZero(joinResponse._pingInterval), positiveOrZero(joinResponse._pingTimeout), pcf)
+    , _pingPongKit(this, positiveOrZero(pingInterval), positiveOrZero(pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
-    webrtc::DataChannelInit lossy, reliable;
-    lossy.ordered = reliable.ordered = true;
-    lossy.maxRetransmits = 0;
-    _publisher.createDataChannel(DataChannel::lossyLabel(), lossy);
-    _publisher.createDataChannel(DataChannel::reliableLabel(), reliable);
 }
 
 TransportManager::~TransportManager()
@@ -161,6 +154,23 @@ void TransportManager::close()
     updateState();
 }
 
+void TransportManager::setListener(TransportManagerListener* listener)
+{
+    if (listener) {
+        _listener = listener;
+        if (!_embeddedDCRequested.exchange(true)) {
+            webrtc::DataChannelInit lossy, reliable;
+            lossy.ordered = reliable.ordered = true;
+            lossy.maxRetransmits = 0;
+            _publisher.createDataChannel(DataChannel::lossyLabel(), lossy);
+            _publisher.createDataChannel(DataChannel::reliableLabel(), reliable);
+        }
+    }
+    else {
+        _listener.reset();
+    }
+}
+
 void TransportManager::createPublisherOffer()
 {
     if (_publisher) {
@@ -205,17 +215,8 @@ void TransportManager::updateState()
         if (webrtc::PeerConnectionInterface::PeerConnectionState::kClosed == newState) {
             _embeddedDCCount = 0U;
         }
-        invoke(&TransportManagerListener::onStateChange, newState,
-               _publisher.state(), _subscriber.state());
-    }
-}
-
-
-template <class Method, typename... Args>
-void TransportManager::invoke(const Method& method, Args&&... args) const
-{
-    if (_listener) {
-        ((*_listener).*method)(std::forward<Args>(args)...);
+        _listener.invoke(&TransportManagerListener::onStateChange, newState,
+                         _publisher.state(), _subscriber.state());
     }
 }
 
@@ -240,7 +241,8 @@ void TransportManager::onSdpCreationFailure(SignalTarget target, webrtc::SdpType
                  std::string(" SDP for ") + toString(target) +
                  ": " + error.message());
     }
-    invoke(&TransportManagerListener::onSdpOperationFailed, target, std::move(error));
+    _listener.invoke(&TransportManagerListener::onSdpOperationFailed,
+                     target, std::move(error));
 }
 
 void TransportManager::onSdpSet(SignalTarget target, bool local,
@@ -251,10 +253,10 @@ void TransportManager::onSdpSet(SignalTarget target, bool local,
         // answer from subscriber
         switch (target) {
             case SignalTarget::Publisher:
-                invoke(&TransportManagerListener::onPublisherOffer, desc);
+                _listener.invoke(&TransportManagerListener::onPublisherOffer, desc);
                 break;
             case SignalTarget::Subscriber:
-                invoke(&TransportManagerListener::onSubscriberAnswer, desc);
+                _listener.invoke(&TransportManagerListener::onSubscriberAnswer, desc);
                 break;
         }
     }
@@ -280,14 +282,14 @@ void TransportManager::onSdpSetFailure(SignalTarget target, bool local, webrtc::
                  toString(target) + ": " +
                  error.message());
     }
-    invoke(&TransportManagerListener::onSdpOperationFailed, target, std::move(error));
+    _listener.invoke(&TransportManagerListener::onSdpOperationFailed, target, std::move(error));
 }
 
 void TransportManager::onTransceiverAdded(SignalTarget target,
                                           rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (SignalTarget::Publisher == target && transceiver) {
-        invoke(&TransportManagerListener::onLocalTrackAdded, transceiver->sender());
+        _listener.invoke(&TransportManagerListener::onLocalTrackAdded, transceiver->sender());
     }
 }
 
@@ -298,8 +300,8 @@ void TransportManager::onTransceiverAddFailure(SignalTarget target,
                                                webrtc::RTCError error)
 {
     if (SignalTarget::Publisher == target) {
-        invoke(&TransportManagerListener::onLocalTrackAddFailure, id, type,
-               init.stream_ids, std::move(error));
+        _listener.invoke(&TransportManagerListener::onLocalTrackAddFailure, id, type,
+                         init.stream_ids, std::move(error));
     }
 }
 
@@ -309,7 +311,7 @@ void TransportManager::onLocalTrackRemoved(SignalTarget target,
                                            const std::vector<std::string>&)
 {
     if (SignalTarget::Publisher == target) {
-        invoke(&TransportManagerListener::onLocalTrackRemoved, id, type);
+        _listener.invoke(&TransportManagerListener::onLocalTrackRemoved, id, type);
     }
 }
 
@@ -325,7 +327,7 @@ void TransportManager::onLocalDataChannelCreated(SignalTarget target,
                 createPublisherOffer();
             }
         }
-        invoke(&TransportManagerListener::onLocalDataChannelCreated, std::move(channel));
+        _listener.invoke(&TransportManagerListener::onLocalDataChannelCreated, std::move(channel));
     }
 }
 
@@ -356,7 +358,7 @@ void TransportManager::onSignalingChange(SignalTarget target,
 void TransportManager::onNegotiationNeededEvent(SignalTarget target, uint32_t /*eventId*/)
 {
     if (SignalTarget::Publisher == target && localDataChannelsAreCreated()) {
-        invoke(&TransportManagerListener::onNegotiationNeeded);
+        _listener.invoke(&TransportManagerListener::onNegotiationNeeded);
     }
 }
 
@@ -365,7 +367,7 @@ void TransportManager::onRemoteDataChannelOpened(SignalTarget target,
 {
     if (SignalTarget::Subscriber == target) {
         // in subscriber primary mode, server side opens sub data channels
-        invoke(&TransportManagerListener::onRemoteDataChannelOpened, std::move(channel));
+        _listener.invoke(&TransportManagerListener::onRemoteDataChannelOpened, std::move(channel));
     }
 }
 
@@ -373,7 +375,7 @@ void TransportManager::onIceCandidateGathered(SignalTarget target,
                                               const webrtc::IceCandidateInterface* candidate)
 {
     if (candidate) {
-        invoke(&TransportManagerListener::onIceCandidateGathered, target, candidate);
+        _listener.invoke(&TransportManagerListener::onIceCandidateGathered, target, candidate);
     }
 }
 
@@ -381,7 +383,7 @@ void TransportManager::onRemoteTrackAdded(SignalTarget target,
                                           rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (SignalTarget::Subscriber == target) {
-        invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(transceiver));
+        _listener.invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(transceiver));
     }
 }
 
@@ -389,8 +391,18 @@ void TransportManager::onRemotedTrackRemoved(SignalTarget target,
                                              rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     if (SignalTarget::Subscriber == target) {
-        invoke(&TransportManagerListener::onRemotedTrackRemoved, std::move(receiver));
+        _listener.invoke(&TransportManagerListener::onRemotedTrackRemoved, std::move(receiver));
     }
+}
+
+bool TransportManager::onPingRequested()
+{
+    return _listener.invokeR<bool>(&PingPongKitListener::onPingRequested);
+}
+
+void TransportManager::onPongTimeout()
+{
+    _listener.invoke(&PingPongKitListener::onPongTimeout);
 }
 
 std::string_view TransportManager::logCategory() const
