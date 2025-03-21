@@ -33,7 +33,7 @@ const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int width
     return buffer + (width * height);
 }
 
-::rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI420() const
+rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI420() const
 {
     if (const auto i420 = createI420(width(), height())) {
         static thread_local webrtc::NV12ToI420Scaler scaler;

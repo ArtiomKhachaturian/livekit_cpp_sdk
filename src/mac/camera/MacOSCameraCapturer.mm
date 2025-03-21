@@ -17,6 +17,7 @@
 #include "AVCameraCapturer.h"
 #include "CoreVideoPixelBuffer.h"
 #include "VTSupportedPixelFormats.h"
+#include "VideoFrameBuffer.h"
 #include "Utils.h"
 #include <rtc_base/ref_counted_object.h>
 

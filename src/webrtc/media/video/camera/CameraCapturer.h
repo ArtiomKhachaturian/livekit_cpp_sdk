@@ -19,7 +19,6 @@
 #include <modules/video_capture/video_capture_config.h>
 #include <atomic>
 #include <memory>
-#include <optional>
 #include <string>
 
 namespace LiveKitCpp
@@ -53,15 +52,6 @@ protected:
                          int64_t captureTime);
     void discardFrame();
     webrtc::VideoRotation captureRotation() const;
-    // new frames factory
-    static std::optional<webrtc::VideoFrame>
-        createVideoFrame(int srcWidth, int srcHeight, int64_t timeStampMicro = 0LL,
-                         const uint8_t* srcI420Data = nullptr, uint16_t id = 0U,
-                         const std::optional<webrtc::ColorSpace>& colorSpace = {});
-    static std::optional<webrtc::VideoFrame>
-        createVideoFrame(const ::rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
-                         int64_t timeStampMicro = 0LL, uint16_t id = 0U,
-                         const std::optional<webrtc::ColorSpace>& colorSpace = {});
 private:
     const MediaDevice _deviceInfo;
     Bricks::SafeObj<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink = nullptr;

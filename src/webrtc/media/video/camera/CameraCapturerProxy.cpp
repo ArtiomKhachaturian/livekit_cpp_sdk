@@ -18,7 +18,7 @@
 namespace LiveKitCpp
 {
 
-CameraCapturerProxy::CameraCapturerProxy(::rtc::scoped_refptr<CameraCapturer> impl)
+CameraCapturerProxy::CameraCapturerProxy(rtc::scoped_refptr<CameraCapturer> impl)
     : _impl(std::move(impl))
 {
     _impl->RegisterCaptureDataCallback(this);
@@ -31,7 +31,7 @@ CameraCapturerProxy::~CameraCapturerProxy()
     _impl->setObserver(nullptr);
 }
 
-std::shared_ptr<CameraCapturerProxy> CameraCapturerProxy::create(::rtc::scoped_refptr<CameraCapturer> impl)
+std::shared_ptr<CameraCapturerProxy> CameraCapturerProxy::create(rtc::scoped_refptr<CameraCapturer> impl)
 {
     std::shared_ptr<CameraCapturerProxy> proxy;
     if (impl) {

@@ -14,6 +14,7 @@
 #include "CameraVideoSource.h"
 #include "CameraManager.h"
 #include "CameraCapturer.h"
+#include "VideoFrameBuffer.h"
 #include "VideoSinkBroadcast.h"
 #include "CameraCapturerProxySink.h"
 #include "Loggable.h"
@@ -80,6 +81,7 @@ private:
     void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
     void destroyCapturer(); // non-threadsafe
     bool frameWanted() const;
+    void broadcast(const webrtc::VideoFrame& frame);
     // impl. of CameraObserver
     void onStateChanged(CameraState state) final;
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
@@ -93,6 +95,7 @@ private:
     SafeScopedRefPtr<CameraCapturer> _capturer;
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability = CameraManager::defaultCapability();
     std::atomic<uint64_t> _lastResolution = 0ULL;
+    std::atomic<uint16_t> _lastFrameId = 0U;
     std::atomic<webrtc::MediaSourceInterface::SourceState> _state = webrtc::MediaSourceInterface::kEnded;
 };
 
@@ -223,11 +226,29 @@ void CameraVideoSource::Impl::setCapability(webrtc::VideoCaptureCapability capab
 
 void CameraVideoSource::Impl::setEnabled(bool enabled)
 {
-    LOCK_READ_SAFE_OBJ(_broadcasters);
-    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-        it->second->applyBlackFrames(!enabled);
+    {
+        LOCK_READ_SAFE_OBJ(_capturer);
+        if (const auto& capturer = _capturer.constRef()) {
+            if (enabled) {
+                startCapturer(capturer, _capability());
+            }
+            else {
+                webrtc::VideoTrackSourceInterface::Stats s;
+                const auto needBlackFrame = stats(s);
+                const auto lastFrameId = _lastFrameId.load();
+                stopCapturer(capturer);
+                if (needBlackFrame) { // send 'bye-bye' frame
+                    const auto frame = createBlackVideoFrame(s.input_width,
+                                                             s.input_height,
+                                                             0, lastFrameId + 1U);
+                    if (frame.has_value()) {
+                        broadcast(frame.value());
+                    }
+                }
+            }
+        }
     }
-    _observers.invoke(&webrtc::ObserverInterface::OnChanged);
+    notifyAboutChanges();
 }
 
 bool CameraVideoSource::Impl::stats(webrtc::VideoTrackSourceInterface::Stats& s) const
@@ -350,6 +371,7 @@ void CameraVideoSource::Impl::changeState(webrtc::MediaSourceInterface::SourceSt
         switch (state) {
             case webrtc::MediaSourceInterface::SourceState::kEnded:
                 _lastResolution = 0ULL;
+                _lastFrameId = 0U;
                 break;
             default:
                 break;
@@ -426,6 +448,14 @@ bool CameraVideoSource::Impl::frameWanted() const
     return !_broadcasters->empty();
 }
 
+void CameraVideoSource::Impl::broadcast(const webrtc::VideoFrame& frame)
+{
+    LOCK_READ_SAFE_OBJ(_broadcasters);
+    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+        it->second->OnFrame(frame);
+    }
+}
+
 void CameraVideoSource::Impl::onStateChanged(CameraState state)
 {
     switch (state) {
@@ -447,10 +477,8 @@ void CameraVideoSource::Impl::OnFrame(const webrtc::VideoFrame& frame)
 {
     if (frame.video_frame_buffer()) {
         _lastResolution = clueToUint64(frame.width(), frame.height());
-        LOCK_READ_SAFE_OBJ(_broadcasters);
-        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-            it->second->OnFrame(frame);
-        }
+        _lastFrameId = frame.id();
+        broadcast(frame);
     }
 }
 

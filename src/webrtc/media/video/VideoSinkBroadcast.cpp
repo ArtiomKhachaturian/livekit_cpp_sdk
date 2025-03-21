@@ -117,7 +117,6 @@ void VideoSinkBroadcast::broadcast(const webrtc::VideoFrame& frame)
             rotatedFrame.set_rotation(webrtc::kVideoRotation_0);
             _broadcaster.OnFrame(rotatedFrame);
         }
-        
     } else {
         _broadcaster.OnFrame(frame);
     }

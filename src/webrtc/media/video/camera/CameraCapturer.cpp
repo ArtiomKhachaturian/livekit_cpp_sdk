@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraCapturer.h"
-#include <api/video/i420_buffer.h>
-#include <rtc_base/time_utils.h>
 
 namespace LiveKitCpp
 {
@@ -101,56 +99,6 @@ webrtc::VideoRotation CameraCapturer::captureRotation() const
         return _rotateFrame.load(std::memory_order_relaxed);
     }
     return webrtc::VideoRotation::kVideoRotation_0;
-}
-
-std::optional<webrtc::VideoFrame> CameraCapturer::
-    createVideoFrame(int srcWidth, int srcHeight, int64_t timeStampMicro,
-                     const uint8_t* srcI420Data, uint16_t id,
-                     const std::optional<webrtc::ColorSpace>& colorSpace)
-{
-    if (srcWidth > 0 && srcHeight > 0) {
-        ::rtc::scoped_refptr<webrtc::I420BufferInterface> dst;
-        if (!srcI420Data) {
-            dst = webrtc::I420Buffer::Create(srcWidth, srcHeight);
-        } else {
-            /// see also /webrtc/src/api/video/i420_buffer.cc
-            const auto strideY = srcWidth;
-            const auto strideU = (srcWidth + 1) / 2, strideV = strideU;
-            dst = webrtc::I420Buffer::Copy(srcWidth, srcHeight,
-                                           srcI420Data, strideY,
-                                           srcI420Data + strideY * srcHeight, strideU,
-                                           srcI420Data + strideY * srcHeight + strideU * ((srcHeight + 1) / 2), strideV);
-        }
-        return createVideoFrame(dst, timeStampMicro, id, colorSpace);
-    }
-    return std::nullopt;
-}
-
-std::optional<webrtc::VideoFrame> CameraCapturer::
-    createVideoFrame(const ::rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
-                     int64_t timeStampMicro, uint16_t id,
-                     const std::optional<webrtc::ColorSpace>& colorSpace)
-{
-    if (buff) {
-        webrtc::VideoFrame::Builder builder;
-        builder.set_video_frame_buffer(buff);
-        if (timeStampMicro > 0LL) {
-            builder.set_timestamp_us(timeStampMicro);
-        } else {
-            builder.set_timestamp_us(::rtc::TimeMicros());
-        }
-        static thread_local uint16_t nextId = 1U;
-        if (id > 0) {
-            builder.set_id(id);
-            nextId = id;
-        } else {
-            builder.set_id(nextId++);
-        }
-        auto frame = builder.build();
-        frame.set_color_space(colorSpace);
-        return frame;
-    }
-    return std::nullopt;
 }
 
 } // namespace LiveKitCpp
