@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once
 #include "Loggable.h"
-#include "Listeners.h"
+#include "AsyncListeners.h"
 #include "MediaDevice.h"
 #include "SafeScopedRefPtr.h"
 #include <api/function_view.h>
@@ -34,7 +34,7 @@ class AudioDeviceProxyModule : public Bricks::LoggableS<webrtc::AudioDeviceModul
     template<bool recording> class ScopedAudioBlocker;
 public:
     static webrtc::scoped_refptr<AudioDeviceProxyModule>
-        create(rtc::Thread* workingThread,
+        create(const std::shared_ptr<rtc::Thread>& workingThread,
                webrtc::TaskQueueFactory* taskQueueFactory,
                const std::shared_ptr<Bricks::Logger>& logger = {});
     ~AudioDeviceProxyModule() override;
@@ -150,7 +150,7 @@ public:
     std::vector<MediaDevice> recordingDevices() const;
     std::vector<MediaDevice> playoutDevices() const;
 protected:
-    AudioDeviceProxyModule(rtc::Thread* thread,
+    AudioDeviceProxyModule(const std::shared_ptr<rtc::Thread>& thread,
                            rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
                            const std::shared_ptr<Bricks::Logger>& logger);
     // final of Bricks::LoggableS<>
@@ -160,23 +160,30 @@ private:
         get(bool recording, uint16_t ndx,
             const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
     static std::optional<MediaDevice>
-        get(bool recording, WindowsDeviceType device,
+        get(bool recording, WindowsDeviceType type,
             const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
+    static std::optional<uint16_t>
+        get(bool recording, const MediaDevice& device,
+        const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
+    std::shared_ptr<rtc::Thread> workingThread() const;
     std::vector<MediaDevice> enumerate(bool recording) const;
     MediaDevice defaultDevice(bool recording) const;
     void requestRecordingAuthorizationStatus() const;
     // and trigger signals if index or type was changed
     void setRecordingDevice(uint16_t ndx,
                             const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
-    void setRecordingDevice(WindowsDeviceType device,
+    void setRecordingDevice(WindowsDeviceType type,
                             const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
     void setPlayoutDevice(uint16_t ndx,
                           const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
-    void setPlayoutDevice(WindowsDeviceType device,
+    void setPlayoutDevice(WindowsDeviceType type,
                           const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
     void changeRecordingDevice(const MediaDevice& device);
     void changePlayoutDevice(const MediaDevice& device);
-    
+    int32_t changeRecordingDevice(uint16_t index,
+                                  const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
+    int32_t changePlayoutDevice(uint16_t index,
+                                const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm);
     template <typename Handler>
     void threadInvoke(Handler handler) const;
     template <typename Handler, typename R = std::invoke_result_t<Handler>>
@@ -184,9 +191,8 @@ private:
     template <typename Handler>
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
 private:
-    rtc::Thread* const _thread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
-    Bricks::Listeners<AudioDeviceModuleListener*> _listeners;
+    AsyncListeners<AudioDeviceModuleListener*> _listeners;
     Bricks::SafeObj<MediaDevice> _recordingDev;
     Bricks::SafeObj<MediaDevice> _playoutDev;
 };

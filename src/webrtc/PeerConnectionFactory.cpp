@@ -104,6 +104,9 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
 
 PeerConnectionFactory::~PeerConnectionFactory()
 {
+    if (_adm) {
+        _adm->close();
+    }
 }
 
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
@@ -134,7 +137,7 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     dependencies.video_encoder_factory = webrtc::CreateBuiltinVideoEncoderFactory();
     dependencies.audio_decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
     dependencies.audio_encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
-    auto adm = AudioDeviceProxyModule::create(workingThread.get(),
+    auto adm = AudioDeviceProxyModule::create(workingThread,
                                               dependencies.task_queue_factory.get(),
                                               logger);
     if (audioProcessing) {

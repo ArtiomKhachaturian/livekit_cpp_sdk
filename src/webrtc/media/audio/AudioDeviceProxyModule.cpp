@@ -24,17 +24,15 @@ namespace
 
 // helpers
 
-inline void postToThread(rtc::Thread* to,
-                         rtc::FunctionView<void()> handler) {
-    if (to) {
-        to->PostTask(std::move(handler));
-    }
-}
-
 inline void invokeInThread(rtc::Thread* to,
                            rtc::FunctionView<void()> handler) {
     if (to && !to->IsQuitting()) {
-        to->BlockingCall(std::move(handler));
+        if (to->IsCurrent()) {
+            std::move(handler)();
+        }
+        else {
+            to->BlockingCall(std::move(handler));
+        }
     }
 }
 
@@ -42,6 +40,9 @@ template <typename Handler, typename R = std::invoke_result_t<Handler>>
 inline R invokeInThreadR(rtc::Thread* to, Handler handler, R defaultVal = {})
 {
     if (to && !to->IsQuitting()) {
+        if (to->IsCurrent()) {
+            return std::move(handler)();
+        }
         return to->BlockingCall<Handler, R>(std::move(handler));
     }
     return defaultVal;
@@ -62,30 +63,42 @@ inline LiveKitCpp::MediaDevice make(std::string_view name, std::string_view guid
 
 #ifdef WEBRTC_MAC
 // like in webrtc::AudioDeviceMac::GetDeviceName
-inline constexpr const char* defaultPrefix() { return "default ("; }
+inline constexpr const char* defaultPrefix() {
+    return "default (";
+}
+
+inline bool isDefault(const char* name) {
+    return name && name == std::strstr(name, defaultPrefix());
+}
+
+inline bool isDefault(const std::string_view& name) {
+    return isDefault(name.data());
+}
 #endif
 
 } // namespace
 
-namespace LiveKitCpp {
+namespace LiveKitCpp
+{
 
 template<bool recording>
 class AudioDeviceProxyModule::ScopedAudioBlocker
 {
 public:
-    ScopedAudioBlocker(AudioDeviceProxyModule* adm);
+    ScopedAudioBlocker(const AudioDeviceProxyModule& adm);
     ~ScopedAudioBlocker();
 private:
-    AudioDeviceProxyModule* const _adm;
+    const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& _impl;
+    const AudioDeviceProxyModule& _adm;
     bool _needRestart = false;
 };
 
-AudioDeviceProxyModule::AudioDeviceProxyModule(rtc::Thread* thread,
+AudioDeviceProxyModule::AudioDeviceProxyModule(const std::shared_ptr<rtc::Thread>& thread,
                                                rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
                                                const std::shared_ptr<Bricks::Logger>& logger)
     :  Bricks::LoggableS<webrtc::AudioDeviceModule>(logger)
-    , _thread(thread)
     , _impl(std::move(impl))
+    , _listeners(thread)
 {
     if (canLogInfo()) {
         const auto& impl = _impl.constRef();
@@ -111,12 +124,12 @@ AudioDeviceProxyModule::~AudioDeviceProxyModule()
 }
 
 rtc::scoped_refptr<AudioDeviceProxyModule> AudioDeviceProxyModule::
-    create(rtc::Thread* thread,
+    create(const std::shared_ptr<rtc::Thread>& thread,
            webrtc::TaskQueueFactory* taskQueueFactory,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
     if (thread) {
-        auto impl = invokeInThreadR(thread, [taskQueueFactory](){
+        auto impl = invokeInThreadR(thread.get(), [taskQueueFactory](){
             return defaultAdm(taskQueueFactory);
         });
         if (impl) {
@@ -196,15 +209,7 @@ int32_t AudioDeviceProxyModule::RecordingDeviceName(uint16_t index,
 int32_t AudioDeviceProxyModule::SetPlayoutDevice(uint16_t index)
 {
     return threadInvokeI32([this, index](const auto& pm) {
-        int32_t result = -1;
-        {
-            const ScopedAudioBlocker<false> blocker(this);
-            result = pm->SetPlayoutDevice(index);
-        }
-        if (0 == result) {
-            setPlayoutDevice(index, pm);
-        }
-        return result;
+        return changePlayoutDevice(index, pm);
     });
 }
 
@@ -213,7 +218,7 @@ int32_t AudioDeviceProxyModule::SetPlayoutDevice(WindowsDeviceType device)
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
         {
-            const ScopedAudioBlocker<false> blocker(this);
+            const ScopedAudioBlocker<false> blocker(*this);
             result = pm->SetPlayoutDevice(device);
         }
         if (0 == result) {
@@ -226,15 +231,7 @@ int32_t AudioDeviceProxyModule::SetPlayoutDevice(WindowsDeviceType device)
 int32_t AudioDeviceProxyModule::SetRecordingDevice(uint16_t index)
 {
     return threadInvokeI32([this, index](const auto& pm) {
-        int32_t result = -1;
-        {
-            const ScopedAudioBlocker<true> blocker(this);
-            result = pm->SetRecordingDevice(index);
-        }
-        if (0 == result) {
-            setRecordingDevice(index, pm);
-        }
-        return result;
+        return changeRecordingDevice(index, pm);
     });
 }
 
@@ -243,7 +240,7 @@ int32_t AudioDeviceProxyModule::SetRecordingDevice(WindowsDeviceType device)
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
         {
-            const ScopedAudioBlocker<true> blocker(this);
+            const ScopedAudioBlocker<true> blocker(*this);
             result = pm->SetRecordingDevice(device);
         }
         if (0 == result) {
@@ -550,10 +547,14 @@ std::optional<webrtc::AudioDeviceModule::Stats> AudioDeviceProxyModule::GetStats
 
 void AudioDeviceProxyModule::close()
 {
-    LOCK_WRITE_SAFE_OBJ(_impl);
-    if (auto impl = _impl.take()) {
-        _listeners.clear();
-        postToThread(_thread, [impl = std::move(impl)]() mutable {
+    _listeners.clear();
+    webrtc::scoped_refptr<webrtc::AudioDeviceModule> impl;
+    {
+        LOCK_WRITE_SAFE_OBJ(_impl);
+        impl = _impl.take();
+    }
+    if (impl) {
+        invokeInThread(workingThread().get(),  [impl = std::move(impl)]() mutable {
             rtc::scoped_refptr<webrtc::AudioDeviceModule>().swap(impl);
         });
     }
@@ -581,12 +582,22 @@ MediaDevice AudioDeviceProxyModule::defaultPlayoutDevice() const
 
 bool AudioDeviceProxyModule::setRecordingDevice(const MediaDevice& device)
 {
-    return false;
+    return threadInvokeR([this, &device](const auto& pm) {
+        if (const auto ndx = get(true, device, pm)) {
+            return 0 == changeRecordingDevice(ndx.value(), pm);
+        }
+        return false;
+    }, false);
 }
 
 bool AudioDeviceProxyModule::setPlayoutDevice(const MediaDevice& device)
 {
-    return false;
+    return threadInvokeR([this, &device](const auto& pm) {
+        if (const auto ndx = get(false, device, pm)) {
+            return 0 == changePlayoutDevice(ndx.value(), pm);
+        }
+        return false;
+    }, false);
 }
 
 std::vector<MediaDevice> AudioDeviceProxyModule::recordingDevices() const
@@ -636,7 +647,7 @@ std::optional<MediaDevice> AudioDeviceProxyModule::
         enumerator.enumerate([&device](uint16_t,
                                        std::string_view name,
                                        std::string_view guid) {
-            if (name.data() == std::strstr(name.data(), defaultPrefix())) {
+            if (isDefault(name)) {
                 device = make(name, guid);
             }
             return device.has_value();
@@ -644,6 +655,30 @@ std::optional<MediaDevice> AudioDeviceProxyModule::
     }
 #endif
     return device;
+}
+
+std::optional<uint16_t> AudioDeviceProxyModule::
+    get(bool recording, const MediaDevice& device,
+        const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+{
+    std::optional<uint16_t> index;
+    if (!device.empty()) {
+        const AudioDevicesEnumerator enumerator(recording, adm);
+        enumerator.enumerate([&device, &index](uint16_t ndx,
+                                               std::string_view name,
+                                               std::string_view guid) {
+            if (device._name == name && device._guid == guid) {
+                index = ndx;
+            }
+            return index.has_value();
+        });
+    }
+    return index;
+}
+
+std::shared_ptr<rtc::Thread> AudioDeviceProxyModule::workingThread() const
+{
+    return _listeners.thread().lock();
 }
 
 std::vector<MediaDevice> AudioDeviceProxyModule::enumerate(bool recording) const
@@ -679,10 +714,10 @@ void AudioDeviceProxyModule::setRecordingDevice(uint16_t ndx,
     }
 }
 
-void AudioDeviceProxyModule::setRecordingDevice(WindowsDeviceType device,
+void AudioDeviceProxyModule::setRecordingDevice(WindowsDeviceType type,
                                                 const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
-    if (const auto dev = get(true, device, adm)) {
+    if (const auto dev = get(true, type, adm)) {
         changeRecordingDevice(dev.value());
     }
 }
@@ -695,11 +730,11 @@ void AudioDeviceProxyModule::setPlayoutDevice(uint16_t ndx,
     }
 }
 
-void AudioDeviceProxyModule::setPlayoutDevice(WindowsDeviceType device,
+void AudioDeviceProxyModule::setPlayoutDevice(WindowsDeviceType type,
                                               const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     // TODO: implement it
-    if (const auto dev = get(false, device, adm)) {
+    if (const auto dev = get(false, type, adm)) {
         changePlayoutDevice(dev.value());
     }
 }
@@ -738,12 +773,44 @@ void AudioDeviceProxyModule::changePlayoutDevice(const MediaDevice& device)
     }
 }
 
+int32_t AudioDeviceProxyModule::changeRecordingDevice(uint16_t index,
+                                                      const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+{
+    int32_t result = -1;
+    if (adm) {
+        {
+            const ScopedAudioBlocker<true> blocker(*this);
+            result = adm->SetRecordingDevice(index);
+        }
+        if (0 == result) {
+            setRecordingDevice(index, adm);
+        }
+    }
+    return result;
+}
+
+int32_t AudioDeviceProxyModule::changePlayoutDevice(uint16_t index,
+                                                    const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+{
+    int32_t result = -1;
+    if (adm) {
+        {
+            const ScopedAudioBlocker<false> blocker(*this);
+            result = adm->SetPlayoutDevice(index);
+        }
+        if (0 == result) {
+            setPlayoutDevice(index, adm);
+        }
+    }
+    return result;
+}
+
 template <typename Handler>
 void AudioDeviceProxyModule::threadInvoke(Handler handler) const
 {
     LOCK_READ_SAFE_OBJ(_impl);
     if (const auto& impl = _impl.constRef()) {
-        invokeInThread(_thread, [&impl, handler = std::move(handler)]() {
+        invokeInThread(workingThread().get(), [&impl, handler = std::move(handler)]() {
             handler(impl);
         });
     }
@@ -754,7 +821,7 @@ R AudioDeviceProxyModule::threadInvokeR(Handler handler, R defaultVal) const
 {
     LOCK_READ_SAFE_OBJ(_impl);
     if (const auto& impl = _impl.constRef()) {
-        return invokeInThreadR(_thread, [&impl, handler = std::move(handler)]() {
+        return invokeInThreadR(workingThread().get(), [&impl, handler = std::move(handler)]() {
             return handler(impl);
         }, std::move(defaultVal));
     }
@@ -769,65 +836,62 @@ int32_t AudioDeviceProxyModule::threadInvokeI32(Handler handler, int32_t default
 
 template<bool recording>
 AudioDeviceProxyModule::ScopedAudioBlocker<recording>::
-    ScopedAudioBlocker(AudioDeviceProxyModule* adm)
-    : _adm(adm)
+    ScopedAudioBlocker(const AudioDeviceProxyModule& adm)
+    : _impl(adm._impl.constRef())
+    , _adm(adm)
 {
-    _adm->threadInvoke([this](const auto& pm) {
-        if constexpr (recording) {
-            if (pm->Recording()) {
-                const auto res = pm->StopRecording();
-                if (0 == res) {
-                    _needRestart = true;
-                }
-                else {
-                    _adm->logWarning("recording stop failed, error code: " + std::to_string(res));
-                }
+    if constexpr (recording) {
+        if (_impl->Recording()) {
+            const auto res = _impl->StopRecording();
+            if (0 == res) {
+                _needRestart = true;
+            }
+            else {
+                _adm.logWarning("recording stop failed, error code: " + std::to_string(res));
             }
         }
-        else {
-            if (pm->Playing()) {
-                const auto res = pm->StopPlayout();
-                if (0 == res) {
-                    _needRestart = true;
-                }
-                else {
-                    _adm->logWarning("playout stop failed, error code: " + std::to_string(res));
-                }
+    }
+    else {
+        if (_impl->Playing()) {
+            const auto res = _impl->StopPlayout();
+            if (0 == res) {
+                _needRestart = true;
+            }
+            else {
+                _adm.logWarning("playout stop failed, error code: " + std::to_string(res));
             }
         }
-    });
+    }
 }
 
 template<bool recording>
 AudioDeviceProxyModule::ScopedAudioBlocker<recording>::~ScopedAudioBlocker()
 {
     if (_needRestart) {
-        _adm->threadInvoke([this](const auto& pm) {
-            if constexpr (recording) {
-                auto res = pm->InitRecording();
-                if (0 != res) {
-                    _adm->logWarning("failed to re-initialize recording, error code: " + std::to_string(res));
-                }
-                else {
-                    res = pm->StartRecording();
-                    if (0 != res) {
-                        _adm->logWarning("failed to restart recording, error code: " + std::to_string(res));
-                    }
-                }
+        if constexpr (recording) {
+            auto res = _impl->InitRecording();
+            if (0 != res) {
+                _adm.logWarning("failed to re-initialize recording, error code: " + std::to_string(res));
             }
             else {
-                auto res = pm->InitPlayout();
+                res = _impl->StartRecording();
                 if (0 != res) {
-                    _adm->logWarning("failed to re-initialize playout, error code: " + std::to_string(res));
-                }
-                else {
-                    res = pm->StartPlayout();
-                    if (0 != res) {
-                        _adm->logWarning("failed to restart playout, error code: " + std::to_string(res));
-                    }
+                    _adm.logWarning("failed to restart recording, error code: " + std::to_string(res));
                 }
             }
-        });
+        }
+        else {
+            auto res = _impl->InitPlayout();
+            if (0 != res) {
+                _adm.logWarning("failed to re-initialize playout, error code: " + std::to_string(res));
+            }
+            else {
+                res = _impl->StartPlayout();
+                if (0 != res) {
+                    _adm.logWarning("failed to restart playout, error code: " + std::to_string(res));
+                }
+            }
+        }
     }
 }
 
