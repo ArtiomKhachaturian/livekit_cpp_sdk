@@ -41,6 +41,8 @@ class Logger;
 namespace LiveKitCpp
 {
 
+class AudioDeviceModuleListener;
+class AudioDeviceProxyModule;
 class WebRtcLogSink;
 
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
@@ -59,6 +61,8 @@ public:
     MediaDevice playoutAudioDevice() const;
     std::vector<MediaDevice> recordingAudioDevices() const;
     std::vector<MediaDevice> playoutAudioDevices() const;
+    void addAdmListener(AudioDeviceModuleListener* listener);
+    void removeAdmListener(AudioDeviceModuleListener* listener);
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>
@@ -81,7 +85,8 @@ protected:
                           std::shared_ptr<rtc::Thread> networkThread,
                           std::shared_ptr<rtc::Thread> workingThread,
                           std::shared_ptr<rtc::Thread> signalingThread,
-                          webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl);
+                          webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
+                          webrtc::scoped_refptr<AudioDeviceProxyModule> adm);
 private:
     const std::shared_ptr<webrtc::TaskQueueBase> _timersQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;
@@ -89,6 +94,7 @@ private:
     const std::shared_ptr<rtc::Thread> _workingThread;
     const std::shared_ptr<rtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
+    const webrtc::scoped_refptr<AudioDeviceProxyModule> _adm;
 };
 
 } // namespace LiveKitCpp

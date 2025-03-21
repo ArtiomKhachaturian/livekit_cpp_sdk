@@ -43,6 +43,59 @@ std::string fromWideChar(const std::wstring& w)
     return {};
 }
 
+std::vector<std::string> split(const std::string_view& s,
+                               const std::string_view& delim)
+{
+    std::vector<std::string> res;
+    if (!s.empty() && !delim.empty()) {
+        std::string::size_type pos, lastPos = 0U, length = s.length();
+        while (lastPos < length + 1U) {
+            pos = s.find_first_of(delim, lastPos);
+            if (pos == std::string::npos) {
+                pos = length;
+            }
+            if (pos != lastPos)
+                res.emplace_back(s.data() + lastPos, pos - lastPos);
+
+            lastPos = pos + 1U;
+        }
+    }
+    return res;
+}
+
+std::string join(const std::vector<std::string>& strings,
+                 const std::string_view& delim, bool skipEmpty)
+{
+    if (!strings.empty()) {
+        const std::vector<std::string_view> stringViews(strings.begin(), strings.end());
+        return join(stringViews, delim, skipEmpty);
+    }
+    return std::string();
+}
+
+std::string join(const std::vector<std::string_view>& strings,
+                 const std::string_view& delim, bool skipEmpty)
+{
+    if (!strings.empty()) {
+        const auto size = strings.size();
+        if (size > 1U) {
+            std::string result;
+            for (size_t i = 0U, last = size - 1U; i < size; ++i) {
+                const auto& string = strings.at(i);
+                if (!skipEmpty || !string.empty()) {
+                    result += string;
+                    if (i != last) {
+                        result += delim;
+                    }
+                }
+            }
+            return result;
+        }
+        return std::string(strings.front().data(), strings.front().size());
+    }
+    return std::string();
+}
+
 template<typename TPCEnum>
 inline std::string stateToString(TPCEnum state) { return {}; }
 
@@ -170,36 +223,49 @@ std::string makeStateChangesString(webrtc::TaskQueueBase::DelayPrecision from,
     return makeChangesString(from, to);
 }
 
-std::shared_ptr<webrtc::TaskQueueBase> createTaskQueue(webrtc::TaskQueueFactory::Priority priority,
-                                                       absl::string_view queueName,
-                                                       const webrtc::FieldTrialsView* fieldTrials)
+std::unique_ptr<webrtc::TaskQueueFactory> createTaskQueueFactory(const webrtc::FieldTrialsView* fieldTrials)
 {
-#ifdef WIN32
-    // Win32 has limitation for thread name - max 63 symbols
-    if (queueName.size() > 62U) {
-        queueName = queueName.substr(0, 62U);
-    }
-#endif
-    if (auto factory = webrtc::CreateDefaultTaskQueueFactory(fieldTrials)) {
-        using QueueUPtr = std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>;
-        if (QueueUPtr queue = factory->CreateTaskQueue(queueName, priority)) {
-            return std::shared_ptr<webrtc::TaskQueueBase>(queue.release(), [](webrtc::TaskQueueBase* q) {
-                if (q) {
-                    QueueUPtr owned(q);
-                    if (owned->IsCurrent()) {
-                        std::thread([owned = std::move(owned)]() mutable {
-                            owned.reset(); }).detach();
-                    }
-                    else {
-                        owned.reset();
-                    }
+    return webrtc::CreateDefaultTaskQueueFactory(fieldTrials);
+}
+
+std::shared_ptr<webrtc::TaskQueueBase>
+    createTaskQueueS(absl::string_view queueName,
+                     webrtc::TaskQueueFactory::Priority priority,
+                     const webrtc::FieldTrialsView* fieldTrials)
+{
+    if (auto queue = createTaskQueueU(queueName, priority, fieldTrials)) {
+        return std::shared_ptr<webrtc::TaskQueueBase>(queue.release(), [](webrtc::TaskQueueBase* q) {
+            if (q) {
+                std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter> owned(q);
+                if (owned->IsCurrent()) {
+                    std::thread([owned = std::move(owned)]() mutable {
+                        owned.reset(); }).detach();
                 }
-            });
-        }
+                else {
+                    owned.reset();
+                }
+            }
+        });
     }
     return {};
 }
 
+std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
+    createTaskQueueU(absl::string_view queueName,
+                     webrtc::TaskQueueFactory::Priority priority,
+                     const webrtc::FieldTrialsView* fieldTrials)
+{
+    if (auto factory = createTaskQueueFactory(fieldTrials)) {
+#ifdef WIN32
+        // Win32 has limitation for thread name - max 63 symbols
+        if (queueName.size() > 62U) {
+            queueName = queueName.substr(0, 62U);
+        }
+#endif
+        return factory->CreateTaskQueue(queueName, priority);
+    }
+    return {};
+}
 #endif
 
 std::string makeStateChangesString(TransportState from, TransportState to)

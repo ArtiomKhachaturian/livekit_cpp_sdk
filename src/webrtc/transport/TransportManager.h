@@ -93,7 +93,7 @@ private:
     bool onPingRequested() final;
     void onPongTimeout() final;
     // override of Bricks::LoggableS<>
-    std::string_view logCategory() const;
+    std::string_view logCategory() const final;
 private:
     static constexpr uint8_t _embeddedDCMaxCount = 2U;
     const bool _subscriberPrimary;

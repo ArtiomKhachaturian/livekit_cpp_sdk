@@ -64,6 +64,11 @@ std::string modelIdentifier();
 // wifi, wired, cellular, vpn, empty if not known
 NetworkType activeNetworkType();
 std::string fromWideChar(const std::wstring& w);
+std::vector<std::string> split(const std::string_view& s, const std::string_view& delim);
+std::string join(const std::vector<std::string>& strings,
+                 const std::string_view& delim, bool skipEmpty = false);
+std::string join(const std::vector<std::string_view>& strings,
+                 const std::string_view& delim, bool skipEmpty = false);
 
 template <unsigned flag>
 inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }
@@ -90,9 +95,15 @@ std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGathering
 std::string makeStateChangesString(webrtc::TaskQueueBase::DelayPrecision from,
                                    webrtc::TaskQueueBase::DelayPrecision to);
 // task queue helpers
-std::shared_ptr<webrtc::TaskQueueBase> createTaskQueue(webrtc::TaskQueueFactory::Priority priority,
-                                                       absl::string_view queueName = {},
-                                                       const webrtc::FieldTrialsView* fieldTrials = nullptr);
+std::unique_ptr<webrtc::TaskQueueFactory> createTaskQueueFactory(const webrtc::FieldTrialsView* fieldTrials = nullptr);
+std::shared_ptr<webrtc::TaskQueueBase>
+    createTaskQueueS(absl::string_view queueName = {},
+                     webrtc::TaskQueueFactory::Priority priority = webrtc::TaskQueueFactory::Priority::LOW,
+                     const webrtc::FieldTrialsView* fieldTrials = nullptr);
+std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
+    createTaskQueueU(absl::string_view queueName = {},
+                     webrtc::TaskQueueFactory::Priority priority = webrtc::TaskQueueFactory::Priority::LOW,
+                     const webrtc::FieldTrialsView* fieldTrials = nullptr);
 #endif
 
 } // namespace LiveKitCpp

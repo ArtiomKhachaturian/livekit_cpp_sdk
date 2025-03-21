@@ -15,6 +15,7 @@
 #include "WebRtcLogSink.h"
 #include "Logger.h"
 #include "Utils.h"
+#include "AudioDeviceProxyModule.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
 #include <api/audio/builtin_audio_processing_builder.h>
@@ -82,13 +83,15 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              std::shared_ptr<rtc::Thread> networkThread,
                                              std::shared_ptr<rtc::Thread> workingThread,
                                              std::shared_ptr<rtc::Thread> signalingThread,
-                                             webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl)
-    : _timersQueue(createTaskQueue(webrtc::TaskQueueFactory::Priority::LOW, "timers_queue"))
+                                             webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
+                                             webrtc::scoped_refptr<AudioDeviceProxyModule> adm)
+    : _timersQueue(createTaskQueueS("timers_queue"))
     , _webrtcLogSink(std::move(webrtcLogSink))
     , _networkThread(std::move(networkThread))
     , _workingThread(std::move(workingThread))
     , _signalingThread(std::move(signalingThread))
     , _innerImpl(std::move(innerImpl))
+    , _adm(std::move(adm))
 {
     // check GCM suites for DTLS-SRTP are enabled
     webrtc::PeerConnectionFactoryInterface::Options peerConnectionFactoryOptions;
@@ -126,13 +129,18 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     dependencies.network_thread = networkThread.get();
     dependencies.worker_thread = workingThread.get();
     dependencies.signaling_thread = signalingThread.get();
+    dependencies.task_queue_factory = createTaskQueueFactory();
     dependencies.video_decoder_factory = webrtc::CreateBuiltinVideoDecoderFactory();
     dependencies.video_encoder_factory = webrtc::CreateBuiltinVideoEncoderFactory();
     dependencies.audio_decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
     dependencies.audio_encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
+    auto adm = AudioDeviceProxyModule::create(workingThread.get(),
+                                              dependencies.task_queue_factory.get(),
+                                              logger);
     if (audioProcessing) {
         dependencies.audio_processing_builder = std::make_unique<webrtc::BuiltinAudioProcessingBuilder>();
     }
+    dependencies.adm = adm;
     dependencies.event_log_factory = nullptr; // should be NULL or customized and adapted to our log system
     webrtc::EnableMedia(dependencies);
     //create inner factory
@@ -145,49 +153,82 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
                                                                std::move(networkThread),
                                                                std::move(workingThread),
                                                                std::move(signalingThread),
-                                                               std::move(pcf));
+                                                               std::move(pcf),
+                                                               std::move(adm));
     }
     return {};
 }
 
 MediaDevice PeerConnectionFactory::defaultRecordingAudioDevice() const
 {
+    if (_adm) {
+        return _adm->defaultRecordingDevice();
+    }
     return {};
 }
 
 MediaDevice PeerConnectionFactory::defaultPlayoutAudioDevice() const
 {
+    if (_adm) {
+        return _adm->defaultPlayoutDevice();
+    }
     return {};
 }
 
-bool PeerConnectionFactory::setRecordingAudioDevice(const MediaDevice& /*device*/)
+bool PeerConnectionFactory::setRecordingAudioDevice(const MediaDevice& device)
 {
-    return false;
+    return _adm && _adm->setRecordingDevice(device);
 }
 
 MediaDevice PeerConnectionFactory::recordingAudioDevice() const
 {
+    if (_adm) {
+        return _adm->recordingDevice();
+    }
     return {};
 }
 
-bool PeerConnectionFactory::setPlayoutAudioDevice(const MediaDevice& /*device*/)
+bool PeerConnectionFactory::setPlayoutAudioDevice(const MediaDevice& device)
 {
-    return false;
+    return _adm && _adm->setPlayoutDevice(device);
 }
 
 MediaDevice PeerConnectionFactory::playoutAudioDevice() const
 {
+    if (_adm) {
+        return _adm->playoutDevice();
+    }
     return {};
 }
 
 std::vector<MediaDevice> PeerConnectionFactory::recordingAudioDevices() const
 {
+    if (_adm) {
+        return _adm->recordingDevices();
+    }
     return {};
 }
 
 std::vector<MediaDevice> PeerConnectionFactory::playoutAudioDevices() const
 {
+    if (_adm) {
+        return _adm->playoutDevices();
+    }
     return {};
+}
+
+void PeerConnectionFactory::addAdmListener(AudioDeviceModuleListener* listener)
+{
+    if (_adm) {
+        _adm->addListener(listener);
+    }
+}
+
+void PeerConnectionFactory::removeAdmListener(AudioDeviceModuleListener* listener)
+{
+    if (_adm) {
+        _adm->removeListener(listener);
+    }
 }
 
 void PeerConnectionFactory::SetOptions(const Options& options)

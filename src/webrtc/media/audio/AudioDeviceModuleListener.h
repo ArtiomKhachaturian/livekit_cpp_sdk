@@ -11,26 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaDevice.h
-#include <string>
+#pragma once // AudioDeviceModuleListener.h
 
 namespace LiveKitCpp
 {
 
-struct MediaDevice
+struct MediaDevice;
+
+class AudioDeviceModuleListener
 {
-    std::string _name;
-    std::string _guid;
-    bool empty() const noexcept { return _guid.empty() && _name.empty(); }
+public:
+    virtual void onRecordingChanged(const MediaDevice& /*device*/) {}
+    virtual void onPlayoutChanged(const MediaDevice& /*device*/) {}
+protected:
+    virtual ~AudioDeviceModuleListener() = default;
 };
 
 } // namespace LiveKitCpp
-
-inline bool operator == (const LiveKitCpp::MediaDevice& l, const LiveKitCpp::MediaDevice& r) {
-    return l._name == r._name && l._guid == r._guid;
-}
-
-inline bool operator != (const LiveKitCpp::MediaDevice& l, const LiveKitCpp::MediaDevice& r) {
-    return l._name != r._name || l._guid != r._guid;
-}
-
