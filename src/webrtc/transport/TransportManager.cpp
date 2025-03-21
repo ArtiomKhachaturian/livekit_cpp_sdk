@@ -240,6 +240,7 @@ void TransportManager::onSdpCreationFailure(SignalTarget target, webrtc::SdpType
                  std::string(" SDP for ") + toString(target) +
                  ": " + error.message());
     }
+    invoke(&TransportManagerListener::onSdpOperationFailed, target, std::move(error));
 }
 
 void TransportManager::onSdpSet(SignalTarget target, bool local,
@@ -279,6 +280,7 @@ void TransportManager::onSdpSetFailure(SignalTarget target, bool local, webrtc::
                  toString(target) + ": " +
                  error.message());
     }
+    invoke(&TransportManagerListener::onSdpOperationFailed, target, std::move(error));
 }
 
 void TransportManager::onTransceiverAdded(SignalTarget target,

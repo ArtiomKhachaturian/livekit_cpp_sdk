@@ -323,6 +323,12 @@ void RTCEngine::changeState(TransportState state)
     }
 }
 
+void RTCEngine::onSdpOperationFailed(SignalTarget, webrtc::RTCError error)
+{
+    sendLeave();
+    cleanup(LiveKitError::RTC, error.message());
+}
+
 void RTCEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState state,
                               webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                               webrtc::PeerConnectionInterface::PeerConnectionState subscriberState)

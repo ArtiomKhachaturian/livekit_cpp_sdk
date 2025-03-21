@@ -24,6 +24,7 @@ enum class SignalTarget;
 class TransportManagerListener : public PingPongKitListener
 {
 public:
+    virtual void onSdpOperationFailed(SignalTarget /*target*/, webrtc::RTCError /*error*/) {}
     virtual void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState /*state*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*publisherState*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*subscriberState*/) {}

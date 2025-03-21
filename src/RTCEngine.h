@@ -88,6 +88,7 @@ private:
     void changeState(webrtc::PeerConnectionInterface::PeerConnectionState state);
     void changeState(TransportState state);
     // impl. of TransportManagerListener
+    void onSdpOperationFailed(SignalTarget, webrtc::RTCError error) final;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState state,
                        webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                        webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) final;
