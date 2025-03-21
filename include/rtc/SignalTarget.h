@@ -24,6 +24,6 @@ enum class SignalTarget
     Subscriber = 1,
 };
 
-std::string toString(SignalTarget target);
+LIVEKIT_CLIENT_API std::string toString(SignalTarget target);
 
 } // namespace LiveKitCpp

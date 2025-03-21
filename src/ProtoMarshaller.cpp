@@ -1582,17 +1582,4 @@ void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
     toProtoMap(from, to);
 }
 
-std::string toString(SignalTarget target)
-{
-    switch (target) {
-        case SignalTarget::Publisher:
-            return "publisher";
-        case SignalTarget::Subscriber:
-            return "subscriber";
-        default:
-            break;
-    }
-    return {};
-}
-
 } // namespace LiveKitCpp

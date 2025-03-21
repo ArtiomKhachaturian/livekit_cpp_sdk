@@ -27,7 +27,7 @@ class SignalClient::Impl
 {
 public:
     Impl(const SignalClient* client);
-    TransportState transportState() const noexcept;
+    TransportState transportState() const noexcept { return _transportState(); }
     ChangeTransportStateResult changeTransportState(TransportState state);
     void notifyAboutTransportError(std::string error);
     void setListener(SignalTransportListener* listener) { _listener = listener; }
@@ -180,12 +180,6 @@ std::string_view SignalClient::logCategory() const
 SignalClient::Impl::Impl(const SignalClient* client)
     : _client(client)
 {
-}
-
-TransportState SignalClient::Impl::transportState() const noexcept
-{
-    LOCK_READ_SAFE_OBJ(_transportState);
-    return _transportState.constRef();
 }
 
 SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportState(TransportState state)

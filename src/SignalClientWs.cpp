@@ -25,6 +25,8 @@
 
 namespace {
 
+using namespace LiveKitCpp;
+
 const std::string g_libraryVersion(PROJECT_VERSION);
 
 inline std::string urlQueryItem(const std::string& key, const std::string& val) {
@@ -56,8 +58,7 @@ struct UrlData
     std::string _publish;
     bool _autoSubscribe = true;
     bool _adaptiveStream = true;
-    std::optional<LiveKitCpp::ClientInfo> _clientInfo;
-    LiveKitCpp::ReconnectMode _reconnectMode = LiveKitCpp::ReconnectMode::None;
+    std::optional<ClientInfo> _clientInfo;
 };
 
 }
@@ -137,12 +138,6 @@ bool SignalClientWs::adaptiveStream() const noexcept
     return _impl->_urlData->_adaptiveStream;
 }
 
-ReconnectMode SignalClientWs::reconnectMode() const noexcept
-{
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_reconnectMode;
-}
-
 void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
 {
     bool changed = false;
@@ -170,21 +165,6 @@ void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
     }
     if (changed) {
         logVerbose("Adaptive stream policy has been changed");
-    }
-}
-
-void SignalClientWs::setReconnectMode(ReconnectMode reconnectMode)
-{
-    bool changed = false;
-    {
-        LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-        if (reconnectMode != _impl->_urlData->_reconnectMode) {
-            _impl->_urlData->_reconnectMode = reconnectMode;
-            changed = true;
-        }
-    }
-    if (changed) {
-        logVerbose("Reconnect mode has been changed");
     }
 }
 
@@ -351,47 +331,12 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
             options._host += urlQueryItem("network", toString(activeNetworkType()));
         }
         // only for quick-reconnect
-        if (ReconnectMode::Quick == _urlData->_reconnectMode) {
+        if (!_urlData->_participantSid.empty()) {
             options._host += urlQueryItem("reconnect", 1);
             options._host += urlQueryItem("sid", _urlData->_participantSid);
         }
     }
     return options;
-}
-
-std::string toString(SDK sdk)
-{
-    switch (sdk) {
-        case SDK::Unknown:
-            break;
-        case SDK::JS:
-            return "JS";
-        case SDK::Swift:
-            return "SWIFT";
-        case SDK::Android:
-            return "ANDROID";
-        case SDK::Flutter:
-            return "FLUTTER";
-        case SDK::GO:
-            return "GO";
-        case SDK::Unity:
-            return "UNITY";
-        case SDK::ReactNative:
-            return "REACT_NATIVE";
-        case SDK::Rust:
-            return "RUST";
-        case SDK::Python:
-            return "PYTHON";
-        case SDK::CPP:
-            return "CPP";
-        case SDK::UnityWeb:
-            return "UNITY_WEB";
-        case SDK::Node:
-            return "NODE";
-        default:
-            break;
-    }
-    return "UNKNOWN";
 }
 
 } // namespace LiveKitCpp

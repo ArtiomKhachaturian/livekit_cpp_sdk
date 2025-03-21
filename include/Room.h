@@ -15,6 +15,7 @@
 #include "LiveKitClientExport.h"
 #include "LocalParticipant.h"
 #include "RemoteParticipant.h"
+#include "RoomState.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -40,6 +41,7 @@ class LIVEKIT_CLIENT_API Room
     friend class Service;
 public:
     ~Room();
+    RoomState state() const;
     bool connect(std::string host, std::string authToken);
     void disconnect();
     void setListener(RoomListener* listener = nullptr);

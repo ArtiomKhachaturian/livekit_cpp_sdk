@@ -13,7 +13,6 @@
 #pragma once // SignalClientWs.h
 #include "SignalClient.h"
 #include "CommandSender.h"
-#include "ReconnectMode.h"
 #include "rtc/ClientInfo.h"
 #include <memory>
 #include <optional>
@@ -42,14 +41,13 @@ public:
     std::string publish() const noexcept;
     bool autoSubscribe() const noexcept;
     bool adaptiveStream() const noexcept;
-    ReconnectMode reconnectMode() const noexcept;
     void setAutoSubscribe(bool autoSubscribe);
     void setAdaptiveStream(bool adaptiveStream);
-    void setReconnectMode(ReconnectMode reconnectMode);
     void setClientInfo(const std::optional<ClientInfo>& clientInfo = {});
     void setHost(std::string host);
     void setAuthToken(std::string authToken);
-    void setParticipantSid(std::string participantSid = {});
+    void setParticipantSid(std::string participantSid);
+    void resetParticipantSid() { setParticipantSid({}); }
     void setPublish(std::string publish = {});
     // impl. of SignalClient
     bool connect() final;

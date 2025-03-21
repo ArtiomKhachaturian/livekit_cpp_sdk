@@ -13,6 +13,7 @@
 // limitations under the License.
 #ifdef WEBRTC_AVAILABLE
 #include "RTCEngine.h"
+#include "LocalParticipant.h"
 #include "TransportManager.h"
 #include "PeerConnectionFactory.h"
 #include "WebsocketEndPoint.h"
@@ -21,6 +22,7 @@
 #include "CameraVideoSource.h"
 #include "CameraManager.h"
 #include "RoomListener.h"
+#include "Utils.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
@@ -30,6 +32,14 @@
 #include "rtc/LeaveRequest.h"
 #include <modules/video_capture/video_capture_factory.h>
 #include <thread>
+
+namespace {
+
+inline constexpr bool failed(webrtc::PeerConnectionInterface::PeerConnectionState state) {
+    return webrtc::PeerConnectionInterface::PeerConnectionState::kFailed == state;
+}
+
+}
 
 namespace LiveKitCpp
 {
@@ -62,26 +72,17 @@ RTCEngine::~RTCEngine()
 
 bool RTCEngine::connect(std::string url, std::string authToken)
 {
-    bool ok = false;
-    if (!url.empty() && !authToken.empty()) {
-        _joinAttempts.fetch_add(1U);
-        _client.setHost(std::move(url));
-        _client.setAuthToken(std::move(authToken));
-        ok = _client.connect();
-        if (!ok) {
-            if (_joinAttempts < _options._reconnectAttempts) {
-                if (canLogWarning()) {
-                    logWarning("Couldn't connect to server, attempt " +
-                               std::to_string(_joinAttempts) + " of " +
-                               std::to_string(_options._reconnectAttempts));
-                }
-                // TODO: replace to media timer
-                std::this_thread::sleep_for(_options._reconnectAttemptDelay);
-                ok = connect(_client.host(), _client.authToken());
-            }
-        }
+    if (url.empty()) {
+        logError("server URL is empty");
+        return false;
     }
-    return ok;
+    if (authToken.empty()) {
+        logError("authentification token is empty");
+        return false;
+    }
+    _client.setHost(std::move(url));
+    _client.setAuthToken(std::move(authToken));
+    return _client.connect();
 }
 
 void RTCEngine::disconnect()
@@ -106,16 +107,6 @@ bool RTCEngine::sendUserPacket(std::string payload,
 bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
 {
     return _localDcs.sendChatMessage(std::move(message), deleted);
-}
-
-void RTCEngine::cleanup(bool /*error*/)
-{
-    std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
-    _client.disconnect();
-    cleanupLocalResources();
-    cleanupRemoteResources();
-    _localDcs.setListener(nullptr);
-    _remoteDcs.setListener(nullptr);
 }
 
 bool RTCEngine::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -195,6 +186,19 @@ RTCEngine::SendResult RTCEngine::sendMuteTrack(const MuteTrackRequest& request) 
     return SendResult::TransportClosed;
 }
 
+void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
+                        const std::string& errorDetails)
+{
+    RTCMediaEngine::cleanup(error, errorDetails);
+    std::atomic_store(&_pcManager, std::shared_ptr<TransportManager>());
+    _client.disconnect();
+    _localDcs.setListener(nullptr);
+    _remoteDcs.setListener(nullptr);
+    if (error) {
+        _listener.invoke(&RoomListener::onError, error.value(), errorDetails);
+    }
+}
+
 bool RTCEngine::sendLeave(DisconnectReason reason, LeaveRequestAction action) const
 {
     LeaveRequest request;
@@ -272,8 +276,69 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
+void RTCEngine::changeState(RoomState state)
+{
+    if (state != _state.exchange(state)) {
+        _listener.invoke(&RoomListener::onStateChanged, state);
+    }
+}
+
+void RTCEngine::changeState(webrtc::PeerConnectionInterface::PeerConnectionState state)
+{
+    switch (state) {
+        case webrtc::PeerConnectionInterface::PeerConnectionState::kConnecting:
+            changeState(RoomState::RtcConnecting);
+            break;
+        case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
+            changeState(RoomState::RtcConnected);
+            break;
+        case webrtc::PeerConnectionInterface::PeerConnectionState::kDisconnected:
+            changeState(RoomState::RtcDisconnected);
+            break;
+        case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
+            changeState(RoomState::RtcClosed);
+            break;
+        default:
+            break;
+    }
+}
+
+void RTCEngine::changeState(TransportState state)
+{
+    switch (state) {
+        case TransportState::Connecting:
+            changeState(RoomState::TransportConnecting);
+            break;
+        case TransportState::Connected:
+            changeState(RoomState::TransportConnected);
+            break;
+        case TransportState::Disconnecting:
+            changeState(RoomState::TransportDisconnecting);
+            break;
+        case TransportState::Disconnected:
+            changeState(RoomState::TransportDisconnected);
+            break;
+        default:
+            break;
+    }
+}
+
+void RTCEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState state,
+                              webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
+                              webrtc::PeerConnectionInterface::PeerConnectionState subscriberState)
+{
+    RTCMediaEngine::onStateChange(state, publisherState, subscriberState);
+    if (failed(state) || failed(publisherState) || failed(subscriberState)) {
+        cleanup(LiveKitError::RTC);
+    }
+    else {
+        changeState(state);
+    }
+}
+
 void RTCEngine::onNegotiationNeeded()
 {
+    RTCMediaEngine::onNegotiationNeeded();
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         pcManager->negotiate(true);
     }
@@ -340,18 +405,21 @@ void RTCEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channe
 void RTCEngine::onJoin(const JoinResponse& response)
 {
     RTCMediaEngine::onJoin(response);
-    _localDcs.setSid(response._participant._sid);
-    _localDcs.setIdentity(response._participant._identity);
-    TransportManagerListener* listener = this;
-    auto pcManager = std::make_shared<TransportManager>(response, listener,
-                                                        _pcf, makeConfiguration(response),
-                                                        logger());
-    std::atomic_store(&_pcManager, pcManager);
-    for (auto media : pendingLocalMedia()) {
-        pcManager->addTrack(std::move(media));
+    if (DisconnectReason::UnknownReason == response._participant._disconnectReason) {
+        _reconnectAttempts = 0U;
+        _localDcs.setSid(response._participant._sid);
+        _localDcs.setIdentity(response._participant._identity);
+        TransportManagerListener* listener = this;
+        auto pcManager = std::make_shared<TransportManager>(response, listener,
+                                                            _pcf, makeConfiguration(response),
+                                                            logger());
+        std::atomic_store(&_pcManager, pcManager);
+        for (auto media : pendingLocalMedia()) {
+            pcManager->addTrack(std::move(media));
+        }
+        pcManager->negotiate(false);
+        pcManager->startPing();
     }
-    pcManager->negotiate(false);
-    pcManager->startPing();
 }
 
 void RTCEngine::onOffer(const SessionDescription& sdp)
@@ -408,6 +476,36 @@ void RTCEngine::onTrickle(const TrickleRequest& request)
     }
 }
 
+void RTCEngine::onLeave(const LeaveRequest& leave)
+{
+    RTCMediaEngine::onLeave(leave);
+    auto sid = localParticipant()->sid();
+    cleanup(toLiveKitError(leave._reason));
+    if (LeaveRequestAction::Disconnect == leave._action) {
+        _client.resetParticipantSid();
+    }
+    else if (_reconnectAttempts < _options._reconnectAttempts) {
+        // TODO: replace to media timer
+        std::this_thread::sleep_for(_options._reconnectAttemptDelay);
+        if (LeaveRequestAction::Resume == leave._action) {
+            // should attempt a resume with `reconnect=1` in join URL
+            _client.setParticipantSid(std::move(sid));
+        }
+        else {
+            _client.resetParticipantSid();
+        }
+        // attempt to reconnect
+        if (_client.connect()) {
+            _reconnectAttempts.fetch_add(1U);
+        }
+        else if (canLogWarning()) {
+            logWarning("Couldn't reconnect to server, attempt " +
+                       std::to_string(_reconnectAttempts) + " of " +
+                       std::to_string(_options._reconnectAttempts));
+        }
+    }
+}
+
 void RTCEngine::onTransportStateChanged(TransportState state)
 {
     switch (state) {
@@ -417,17 +515,23 @@ void RTCEngine::onTransportStateChanged(TransportState state)
             addLocalResourcesToTransport();
             break;
         case TransportState::Disconnected:
-            cleanup(false);
+            cleanup();
             break;
         default:
             break;
+    }
+    changeState(state);
+    if (TransportState::Connected == state) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            changeState(pcManager->state());
+        }
     }
 }
 
 void RTCEngine::onTransportError(std::string error)
 {
     logError(error);
-    cleanup(true);
+    cleanup(LiveKitError::Transport, error);
 }
 
 bool RTCEngine::onPingRequested()
@@ -441,8 +545,7 @@ bool RTCEngine::onPingRequested()
 void RTCEngine::onPongTimeout()
 {
     logError("ping/pong timed out");
-    cleanup(true);
-    //await self.cleanUp(withError: LiveKitError(.serverPingTimedOut))
+    cleanup(LiveKitError::ServerPingTimedOut);
 }
 
 void RTCEngine::onParticipantAdded(const std::string& sid)

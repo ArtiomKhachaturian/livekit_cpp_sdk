@@ -34,6 +34,11 @@ Room::~Room()
     disconnect();
 }
 
+RoomState Room::state() const
+{
+    return _engine->state();
+}
+
 bool Room::connect(std::string host, std::string authToken)
 {
     return _engine->connect(std::move(host), std::move(authToken));
@@ -88,6 +93,8 @@ Room::Room(std::unique_ptr<Websocket::EndPoint>, PeerConnectionFactory*,
            const Options&, const std::shared_ptr<Bricks::Logger>&) {}
 
 Room::~Room() {}
+
+RoomState Room::state() const { return RoomState::TransportDisconnected; }
 
 bool Room::connect(std::string, std::string) { return false; }
 

@@ -22,6 +22,7 @@
 #elif defined(_WIN32)
 #include <Windows.h>
 #endif // __APPLE__
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,8 @@ namespace LiveKitCpp
 
 enum class TransportState;
 enum class NetworkType;
+enum class LiveKitError;
+enum class DisconnectReason;
 
 #ifdef __APPLE__
 std::string fromNSString(NSString* nsString);
@@ -70,6 +73,7 @@ inline constexpr int32_t extractHiWord(uint64_t i64) { return int32_t(i64 >> 32)
 inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xffffffffUL); }
 
 std::string makeStateChangesString(TransportState from, TransportState to);
+std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
 
 #ifdef WEBRTC_AVAILABLE
 std::string fourccToString(int fourcc);

@@ -19,8 +19,7 @@ namespace LiveKitCpp
 enum class ReconnectMode
 {
     None,
-    Quick,
-    Full
+    Quick
 };
 
 } // namespace LiveKitCpp

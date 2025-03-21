@@ -20,6 +20,7 @@
 #include "Options.h"
 #include "SignalClientWs.h"
 #include "SignalTransportListener.h"
+#include "RoomState.h"
 #include "rtc/ClientConfiguration.h"
 #include "rtc/DisconnectReason.h"
 #include "rtc/LeaveRequestAction.h"
@@ -54,6 +55,7 @@ public:
               std::unique_ptr<Websocket::EndPoint> socket,
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCEngine() final;
+    RoomState state() const noexcept { return _state; }
     bool connect(std::string url, std::string authToken);
     void disconnect();
     void setListener(RoomListener* listener) { _listener = listener; }
@@ -62,7 +64,6 @@ public:
                         const std::string& topic = {}) const;
     bool sendChatMessage(std::string message, bool deleted) const;
 protected:
-    void cleanup(bool error = false);
     // impl. or overrides of RTCMediaEngine
     bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
     bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
@@ -71,6 +72,8 @@ protected:
     SendResult sendAddTrack(const AddTrackRequest& request) const final;
     SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
     bool closed() const final;
+    void cleanup(const std::optional<LiveKitError>& error = {},
+                 const std::string& errorDetails = {}) final;
 private:
     bool sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
@@ -81,7 +84,13 @@ private:
         makeConfiguration(const JoinResponse& response) const;
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const ReconnectResponse& response) const;
+    void changeState(RoomState state);
+    void changeState(webrtc::PeerConnectionInterface::PeerConnectionState state);
+    void changeState(TransportState state);
     // impl. of TransportManagerListener
+    void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState state,
+                       webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
+                       webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) final;
     void onNegotiationNeeded() final;
     void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
     void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
@@ -95,6 +104,7 @@ private:
     void onAnswer(const SessionDescription& sdp) final;
     void onPong(const Pong& pong) final;
     void onTrickle(const TrickleRequest& request) final;
+    void onLeave(const LeaveRequest& leave) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(TransportState state) final;
     void onTransportError(std::string error) final;
@@ -124,7 +134,8 @@ private:
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
     /** keeps track of how often an initial join connection has been tried */
-    std::atomic_uint _joinAttempts = 0U;
+    std::atomic_uint _reconnectAttempts = 0U;
+    std::atomic<RoomState> _state = RoomState::TransportDisconnected;
 };
 
 } // namespace LiveKitCpp

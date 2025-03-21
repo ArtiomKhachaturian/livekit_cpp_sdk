@@ -11,25 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "TransportState.h"
+#pragma once // RoomState.h
 
 namespace LiveKitCpp
 {
 
-std::string toString(TransportState state) {
-    switch (state) {
-        case TransportState::Connecting:
-            return "connecting";
-        case TransportState::Connected:
-            return "connected";
-        case TransportState::Disconnecting:
-            return "disconnecting";
-        case TransportState::Disconnected:
-            return "disconnected";
-        default:
-            break;
-    }
-    return "unknown";
-}
+enum class RoomState
+{
+    TransportConnecting,
+    TransportConnected,
+    TransportDisconnecting,
+    TransportDisconnected,
+    RtcConnecting,
+    RtcConnected,
+    RtcDisconnected,
+    RtcClosed
+};
 
 } // namespace LiveKitCpp

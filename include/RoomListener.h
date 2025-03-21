@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RoomListener.h
+#include "RoomState.h"
+#include "LiveKitError.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -20,6 +22,8 @@ namespace LiveKitCpp
 class RoomListener
 {
 public:
+    virtual void onStateChanged(RoomState /*state*/) {}
+    virtual void onError(LiveKitError /*error*/, const std::string& /*what*/ = {}) {}
     virtual void onRemoteParticipantAdded(const std::string& /*remoteParticipantSid*/) {}
     virtual void onRemoteParticipantRemoved(const std::string& /*remoteParticipantSid*/) {}
     virtual void onUserPacketReceived(const std::string& /*remoteParticipantSid*/,

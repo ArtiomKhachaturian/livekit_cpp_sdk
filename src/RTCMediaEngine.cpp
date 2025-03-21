@@ -15,12 +15,28 @@
 #include "RTCMediaEngine.h"
 #include "LocalParticipantImpl.h"
 #include "RemoteParticipants.h"
+#include "LiveKitError.h"
+#include "Utils.h"
 #include "rtc/AddTrackRequest.h"
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/TrackUnpublishedResponse.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/ParticipantUpdate.h"
+
+namespace {
+
+using namespace LiveKitCpp;
+
+inline std::string formatErrorMsg(LiveKitError error, const std::string& what) {
+    auto msg = toString(error);
+    if (!msg.empty() && !what.empty()) {
+        msg += ": " + what;
+    }
+    return msg;
+}
+
+}
 
 namespace LiveKitCpp
 {
@@ -34,8 +50,7 @@ RTCMediaEngine::RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger)
 
 RTCMediaEngine::~RTCMediaEngine()
 {
-    cleanupLocalResources();
-    cleanupRemoteResources();
+    RTCMediaEngine::cleanup();
 }
 
 std::shared_ptr<LocalParticipant> RTCMediaEngine::localParticipant() const
@@ -48,20 +63,16 @@ void RTCMediaEngine::addLocalResourcesToTransport()
     _localParticipant->addTracksToTransport();
 }
 
-void RTCMediaEngine::cleanupLocalResources()
-{
-    _localParticipant->reset();
-}
-
-void RTCMediaEngine::cleanupRemoteResources()
-{
-    _remoteParicipants.reset();
-}
-
 void RTCMediaEngine::onJoin(const JoinResponse& response)
 {
-    _localParticipant->setInfo(response._participant);
-    _remoteParicipants.setInfo(response._otherParticipants);
+    const auto disconnectReason = response._participant._disconnectReason;
+    if (DisconnectReason::UnknownReason == disconnectReason) {
+        _localParticipant->setInfo(response._participant);
+        _remoteParicipants.setInfo(response._otherParticipants);
+    }
+    else {
+        handleLocalParticipantDisconnection(disconnectReason);
+    }
 }
 
 void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
@@ -78,21 +89,39 @@ void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
 {
     std::vector<ParticipantInfo> infos = update._participants;
     if (const auto s = infos.size()) {
+        DisconnectReason disconnectReason = DisconnectReason::UnknownReason;
         for (size_t i = 0U; i < s; ++i) {
             const auto& info = infos.at(i);
             if (info._sid == _localParticipant->sid()) {
-                _localParticipant->setInfo(info);
-                infos.erase(infos.begin() + i);
+                disconnectReason = info._disconnectReason;
+                if (DisconnectReason::UnknownReason == disconnectReason) {
+                    _localParticipant->setInfo(info);
+                    infos.erase(infos.begin() + i);
+                }
                 break;
             }
         }
-        _remoteParicipants.updateInfo(infos);
+        if (DisconnectReason::UnknownReason == disconnectReason) {
+            _remoteParicipants.updateInfo(infos);
+        }
+        else {
+            handleLocalParticipantDisconnection(disconnectReason);
+        }
     }
 }
 
 std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> RTCMediaEngine::pendingLocalMedia()
 {
     return _localParticipant->pendingLocalMedia();
+}
+
+void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std::string& what)
+{
+    cleanupLocalResources();
+    cleanupRemoteResources();
+    if (error && canLogError()) {
+        logError(formatErrorMsg(error.value(), what));
+    }
 }
 
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
@@ -128,6 +157,23 @@ void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceive
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     _remoteParicipants.removeMedia(receiver);
+}
+
+void RTCMediaEngine::handleLocalParticipantDisconnection(DisconnectReason reason)
+{
+    if (DisconnectReason::UnknownReason != reason) {
+        cleanup(toLiveKitError(reason));
+    }
+}
+
+void RTCMediaEngine::cleanupLocalResources()
+{
+    _localParticipant->reset();
+}
+
+void RTCMediaEngine::cleanupRemoteResources()
+{
+    _remoteParicipants.reset();
 }
 
 void RTCMediaEngine::sendAddTrack(const LocalTrack* track)

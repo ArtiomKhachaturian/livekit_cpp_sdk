@@ -20,7 +20,9 @@
 #include "TransportManagerListener.h"
 #include "RemoteParticipants.h"
 #include "RemoteParticipantsListener.h"
+#include "LiveKitError.h"
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -32,6 +34,7 @@ class LocalParticipant;
 class LocalParticipantImpl;
 struct AddTrackRequest;
 struct MuteTrackRequest;
+enum class DisconnectReason;
 
 class RTCMediaEngine : protected Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
@@ -52,12 +55,12 @@ protected:
     RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
     void addLocalResourcesToTransport();
-    void cleanupLocalResources();
-    void cleanupRemoteResources();
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> pendingLocalMedia();
     virtual SendResult sendAddTrack(const AddTrackRequest& request) const = 0;
     virtual SendResult sendMuteTrack(const MuteTrackRequest& request) const = 0;
     virtual bool closed() const = 0;
+    virtual void cleanup(const std::optional<LiveKitError>& error = {},
+                         const std::string& errorDetails = {});
     // impl. of SignalServerListener
     void onJoin(const JoinResponse& response) override;
     void onTrackPublished(const TrackPublishedResponse& published) final;
@@ -74,6 +77,9 @@ protected:
     void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
+    void handleLocalParticipantDisconnection(DisconnectReason reason);
+    void cleanupLocalResources();
+    void cleanupRemoteResources();
     // search by cid or sid
     void sendAddTrack(const LocalTrack* track);
     // impl. LocalTrackManager

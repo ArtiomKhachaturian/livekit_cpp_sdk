@@ -13,7 +13,8 @@
 // limitations under the License.
 #include "Utils.h"
 #include "TransportState.h"
-#include "NetworkType.h"
+#include "LiveKitError.h"
+#include "rtc/DisconnectReason.h"
 #ifndef _WIN32
 #include <pthread.h>
 #ifndef __APPLE__
@@ -206,21 +207,37 @@ std::string makeStateChangesString(TransportState from, TransportState to)
     return makeChangesString(from, to);
 }
 
-std::string toString(NetworkType state)
+std::optional<LiveKitError> toLiveKitError(DisconnectReason reason)
 {
-    switch (state) {
-        case NetworkType::WiFi:
-            return "wifi";
-        case NetworkType::Wired:
-            return "wired";
-        case NetworkType::Cellular:
-            return "cellular";
-        case NetworkType::Vpn:
-            return "vpn";
+    switch (reason) {
+        case DisconnectReason::DuplicateIdentity:
+            return LiveKitError::ServerDuplicateIdentity;
+        case DisconnectReason::ServerShutdown:
+            return LiveKitError::ServerShutdown;
+        case DisconnectReason::ParticipantRemoved:
+            return LiveKitError::ServerParticipantRemoved;
+        case DisconnectReason::RoomDeleted:
+            return LiveKitError::ServerRoomDeleted;
+        case DisconnectReason::StateMismatch:
+            return LiveKitError::ServerStateMismatch;
+        case DisconnectReason::JoinFailure:
+            return LiveKitError::ServerJoinFailure;
+        case DisconnectReason::Migration:
+            return LiveKitError::ServerMigration;
+        case DisconnectReason::SignalClose:
+            return LiveKitError::ServerSignalClose;
+        case DisconnectReason::RoomClosed:
+            return LiveKitError::ServerRoomClosed;
+        case DisconnectReason::UserUnavailable:
+            return LiveKitError::ServerUserUnavailable;
+        case DisconnectReason::UserRejected:
+            return LiveKitError::ServerUserRejected;
+        case DisconnectReason::SipTrunkFailure:
+            return LiveKitError::ServerSipTrunkFailure;
         default:
             break;
     }
-    return "";
+    return std::nullopt;
 }
 
 } // namespace LiveKitCpp
