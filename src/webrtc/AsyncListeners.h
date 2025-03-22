@@ -20,7 +20,7 @@
 namespace LiveKitCpp
 {
 
-template<class TListener>
+template<class TListener, bool forcePost = false>
 class AsyncListeners
 {
     using Listeners = Bricks::Listeners<TListener, true>;
@@ -53,31 +53,35 @@ private:
     const std::shared_ptr<Listeners> _listeners;
 };
 
-template<class TListener>
-inline AsyncListeners<TListener>::AsyncListeners(const std::weak_ptr<rtc::Thread>& thread)
+template<class TListener, bool forcePost>
+inline AsyncListeners<TListener, forcePost>::
+    AsyncListeners(const std::weak_ptr<rtc::Thread>& thread)
     : _thread(thread)
     , _listeners(std::make_shared<Listeners>())
 {
 }
 
-template<class TListener>
-inline Bricks::AddResult AsyncListeners<TListener>::add(const TListener& listener)
+template<class TListener, bool forcePost>
+inline Bricks::AddResult AsyncListeners<TListener, forcePost>::
+    add(const TListener& listener)
 {
     return _listeners->add(listener);
 }
 
-template<class TListener>
-inline Bricks::RemoveResult AsyncListeners<TListener>::remove(const TListener& listener)
+template<class TListener, bool forcePost>
+inline Bricks::RemoveResult AsyncListeners<TListener, forcePost>::
+    remove(const TListener& listener)
 {
     return _listeners->remove(listener);
 }
 
-template<class TListener>
+template<class TListener, bool forcePost>
 template <class Method, typename... Args>
-inline void AsyncListeners<TListener>::invoke(Method method, Args&&... args) const
+inline void AsyncListeners<TListener, forcePost>::
+    invoke(Method method, Args&&... args) const
 {
     if (const auto thread = _thread.lock()) {
-        if (!thread->IsCurrent()) {
+        if (forcePost || !thread->IsCurrent()) {
             using WeakRef = std::weak_ptr<Listeners>;
             thread->PostTask([method = std::move(method), // deep copy of all arguments
                               args = std::make_tuple((typename std::decay<Args>::type)args...),
@@ -95,26 +99,28 @@ inline void AsyncListeners<TListener>::invoke(Method method, Args&&... args) con
     }
 }
 
-template<class TListener>
+template<class TListener, bool forcePost>
 template <class Method, typename... Args>
-inline void AsyncListeners<TListener>::postOrInvoke(const std::weak_ptr<rtc::Thread>& thread,
-                                                    const std::shared_ptr<TListener>& listener,
-                                                    Method method, Args&&... args)
+inline void AsyncListeners<TListener, forcePost>::
+    postOrInvoke(const std::weak_ptr<rtc::Thread>& thread,
+                 const std::shared_ptr<TListener>& listener,
+                 Method method, Args&&... args)
 {
     if (listener) {
         postOrInvoke(thread.lock(), listener, std::move(method), std::forward<Args>(args)...);
     }
 }
 
-template<class TListener>
+template<class TListener, bool forcePost>
 template <class Method, typename... Args>
-inline void AsyncListeners<TListener>::postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
-                                                    const std::shared_ptr<TListener>& listener,
-                                                    Method method, Args&&... args)
+inline void AsyncListeners<TListener, forcePost>::
+    postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
+                 const std::shared_ptr<TListener>& listener,
+                 Method method, Args&&... args)
 {
     if (thread && listener) {
         using Invoker = Bricks::Invoke<std::shared_ptr<TListener>>;
-        if (!thread->IsCurrent()) {
+        if (forcePost || !thread->IsCurrent()) {
             using WeakRef = std::weak_ptr<TListener>;
             thread->PostTask([method = std::move(method), // deep copy of all arguments
                               args = std::make_tuple((typename std::decay<Args>::type)args...),

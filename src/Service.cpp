@@ -191,6 +191,14 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
         if (!_pcf->timersQueue()) {
             logError("failed to create of queue for media timers");
         }
+        auto dev = _pcf->recordingAudioDevice();
+        if (!dev.empty()) {
+            logInfo("recording audio device is '" + dev._name + "'");
+        }
+        dev = _pcf->playoutAudioDevice();
+        if (!dev.empty()) {
+            logInfo("playout audio device is '" + dev._name + "'");
+        }
     }
 }
 

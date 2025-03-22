@@ -192,7 +192,7 @@ private:
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
 private:
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
-    AsyncListeners<AudioDeviceModuleListener*> _listeners;
+    AsyncListeners<AudioDeviceModuleListener*, true> _listeners;
     Bricks::SafeObj<MediaDevice> _recordingDev;
     Bricks::SafeObj<MediaDevice> _playoutDev;
 };
