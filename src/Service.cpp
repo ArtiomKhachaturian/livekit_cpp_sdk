@@ -21,7 +21,9 @@
 #include "Utils.h"
 #include "rtc/ClientInfo.h"
 #ifdef WEBRTC_AVAILABLE
+#include "AudioDeviceModuleListener.h"
 #include "CameraManager.h"
+#include "Loggable.h"
 #include "PeerConnectionFactory.h"
 #include "SSLInitiallizer.h"
 #ifdef __APPLE__
@@ -34,7 +36,7 @@
 #ifdef WEBRTC_AVAILABLE
 namespace {
 
-const std::string_view g_logCategory("livekit_service");
+const std::string_view g_logCategory("service");
 
 }
 #endif
@@ -42,18 +44,19 @@ const std::string_view g_logCategory("livekit_service");
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-class Service::Impl
+class Service::Impl : public Bricks::LoggableS<AudioDeviceModuleListener>
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
          const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents);
+    ~Impl();
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;
     bool setRecordingAudioDevice(const MediaDevice& device);
     MediaDevice recordingAudioDevice() const;
-    bool setPlayoutAudioDevice(const MediaDevice& deviceId);
+    bool setPlayoutAudioDevice(const MediaDevice& device);
     MediaDevice playoutAudioDevice() const;
     std::vector<MediaDevice> recordingAudioDevices() const;
     std::vector<MediaDevice> playoutAudioDevices() const;
@@ -64,11 +67,16 @@ public:
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
+    // overrides of AudioDeviceModuleListener
+    void onRecordingChanged(const MediaDevice& device) final;
+    void onPlayoutChanged(const MediaDevice& device) final;
+protected:
+    // final of Bricks::LoggableS<>
+    std::string_view logCategory() const final { return g_logCategory; }
 private:
     static void logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
-    const std::shared_ptr<Bricks::Logger> _logger;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
 };
 
@@ -171,17 +179,25 @@ std::vector<MediaDevice> Service::recordingCameraDevices() const
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
                     const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents)
-    : _websocketsFactory(websocketsFactory)
+    : Bricks::LoggableS<AudioDeviceModuleListener>(logger)
+    , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::Create(true, logWebrtcEvents ? logger : nullptr))
-    , _logger(logger)
 {
-    if (logger) {
-        if (!_pcf) {
-            logger->logError("failed to create of peer connection factory", g_logCategory);
+    if (!_pcf) {
+        logError("failed to create of peer connection factory");
+    }
+    else {
+        _pcf->addAdmListener(this);
+        if (!_pcf->timersQueue()) {
+            logError("failed to create of queue for media timers");
         }
-        else if (!_pcf->timersQueue()) {
-            logger->logError("failed to create of queue for media timers", g_logCategory);
-        }
+    }
+}
+
+Service::Impl::~Impl()
+{
+    if (_pcf) {
+        _pcf->removeAdmListener(this);
     }
 }
 
@@ -249,7 +265,7 @@ TOutput Service::Impl::makeRoom(const Options& signalOptions) const
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
             return TOutput(new Room(std::move(socket), _pcf.get(),
-                                           signalOptions, _logger));
+                                    signalOptions, logger()));
         }
     }
     return TOutput(nullptr);
@@ -295,6 +311,20 @@ std::unique_ptr<Service::Impl> Service::Impl::
         return std::make_unique<Impl>(websocketsFactory, logger, logWebrtcEvents);
     }
     return {};
+}
+
+void Service::Impl::onRecordingChanged(const MediaDevice& device)
+{
+    if (!device.empty()) {
+        logInfo("recording audio device has been changed to '" + device._name + "'");
+    }
+}
+
+void Service::Impl::onPlayoutChanged(const MediaDevice& device)
+{
+    if (!device.empty()) {
+        logInfo("playoud audio device has been changed to '" + device._name + "'");
+    }
 }
 
 void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger)

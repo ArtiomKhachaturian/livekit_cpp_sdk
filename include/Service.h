@@ -54,11 +54,11 @@ public:
     MediaDevice defaultRecordingCameraDevice() const;
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;
-    // device for input from micrpohone, pass empty for selection of default
-    bool setRecordingAudioDevice(const MediaDevice& device = {});
+    // device for input from micrpohone
+    bool setRecordingAudioDevice(const MediaDevice& device);
     MediaDevice recordingAudioDevice() const;
-    // device for output from speakers, pass empty for selection of default
-    bool setPlayoutAudioDevice(const MediaDevice& device = {});
+    // device for output from speakers
+    bool setPlayoutAudioDevice(const MediaDevice& device);
     MediaDevice playoutAudioDevice() const;
     // enumeration
     std::vector<MediaDevice> recordingAudioDevices() const;

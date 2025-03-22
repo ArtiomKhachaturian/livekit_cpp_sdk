@@ -582,22 +582,28 @@ MediaDevice AudioDeviceProxyModule::defaultPlayoutDevice() const
 
 bool AudioDeviceProxyModule::setRecordingDevice(const MediaDevice& device)
 {
-    return threadInvokeR([this, &device](const auto& pm) {
-        if (const auto ndx = get(true, device, pm)) {
-            return 0 == changeRecordingDevice(ndx.value(), pm);
-        }
-        return false;
-    }, false);
+    if (!device.empty()) {
+        return threadInvokeR([this, &device](const auto& pm) {
+            if (const auto ndx = get(true, device, pm)) {
+                return 0 == changeRecordingDevice(ndx.value(), pm);
+            }
+            return false;
+        }, false);
+    }
+    return false;
 }
 
 bool AudioDeviceProxyModule::setPlayoutDevice(const MediaDevice& device)
 {
-    return threadInvokeR([this, &device](const auto& pm) {
-        if (const auto ndx = get(false, device, pm)) {
-            return 0 == changePlayoutDevice(ndx.value(), pm);
-        }
-        return false;
-    }, false);
+    if (!device.empty()) {
+        return threadInvokeR([this, &device](const auto& pm) {
+            if (const auto ndx = get(false, device, pm)) {
+                return 0 == changePlayoutDevice(ndx.value(), pm);
+            }
+            return false;
+        }, false);
+    }
+    return false;
 }
 
 std::vector<MediaDevice> AudioDeviceProxyModule::recordingDevices() const
@@ -629,7 +635,7 @@ std::optional<MediaDevice> AudioDeviceProxyModule::
             if (ndx == devNdx) {
                 dev = make(name, guid);
             }
-            return dev.has_value();
+            return !dev.has_value();
         });
     }
     return dev;
@@ -650,7 +656,7 @@ std::optional<MediaDevice> AudioDeviceProxyModule::
             if (isDefault(name)) {
                 device = make(name, guid);
             }
-            return device.has_value();
+            return !device.has_value();
         });
     }
 #endif
@@ -670,7 +676,7 @@ std::optional<uint16_t> AudioDeviceProxyModule::
             if (device._name == name && device._guid == guid) {
                 index = ndx;
             }
-            return index.has_value();
+            return !index.has_value();
         });
     }
     return index;
