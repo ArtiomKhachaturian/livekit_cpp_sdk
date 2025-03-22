@@ -14,7 +14,7 @@
 #pragma once // RTCMediaEngine.h
 #ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
-#include "LocalTrackManager.h"
+#include "TrackManager.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
 #include "TransportManagerListener.h"
@@ -32,14 +32,15 @@ namespace LiveKitCpp
 class LocalTrack;
 class LocalParticipant;
 class LocalParticipantImpl;
+class PeerConnectionFactory;
 struct AddTrackRequest;
 struct MuteTrackRequest;
 enum class DisconnectReason;
 
 class RTCMediaEngine : protected Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
-                       protected LocalTrackManager,
-                       protected RemoteParticipantsListener
+                       protected RemoteParticipantsListener,
+                       private TrackManager
 {
 public:
     std::shared_ptr<LocalParticipant> localParticipant() const;
@@ -52,10 +53,10 @@ protected:
         TransportClosed
     };
 protected:
-    RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger = {});
+    RTCMediaEngine(PeerConnectionFactory* pcf, const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
-    void addLocalResourcesToTransport();
-    std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> pendingLocalMedia();
+    std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> localTracks() const;
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     virtual SendResult sendAddTrack(const AddTrackRequest& request) const = 0;
     virtual SendResult sendMuteTrack(const MuteTrackRequest& request) const = 0;
     virtual bool closed() const = 0;
@@ -63,9 +64,8 @@ protected:
                          const std::string& errorDetails = {});
     // impl. of SignalServerListener
     void onJoin(const JoinResponse& response) override;
-    void onTrackPublished(const TrackPublishedResponse& published) final;
-    void onTrackUnpublished(const TrackUnpublishedResponse& unpublished) final;
     void onUpdate(const ParticipantUpdate& update) final;
+    void onTrackPublished(const TrackPublishedResponse& published) final;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
@@ -78,11 +78,9 @@ protected:
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
     void handleLocalParticipantDisconnection(DisconnectReason reason);
-    void cleanupLocalResources();
-    void cleanupRemoteResources();
     // search by cid or sid
     void sendAddTrack(const LocalTrack* track);
-    // impl. LocalTrackManager
+    // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
 private:
     const std::shared_ptr<LocalParticipantImpl> _localParticipant;

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "LocalAudioTrackImpl.h"
-#include "MediaAuthorization.h"
 
 namespace {
 
@@ -25,11 +24,13 @@ inline std::string audioLabel(bool microphone) {
 namespace LiveKitCpp
 {
 
-LocalAudioTrackImpl::LocalAudioTrackImpl(LocalTrackManager* manager, bool microphone,
+LocalAudioTrackImpl::LocalAudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+                                         TrackManager* manager, bool microphone,
                                          const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(audioLabel(microphone), manager, logger)
+    : Base(audioLabel(microphone), std::move(audioTrack), manager, logger)
     , _microphone(microphone)
 {
+    installSink(true, audioSink());
 }
 
 LocalAudioTrackImpl::~LocalAudioTrackImpl()
@@ -42,21 +43,14 @@ TrackSource LocalAudioTrackImpl::source() const
     return _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
 }
 
-void LocalAudioTrackImpl::fillRequest(AddTrackRequest* request) const
+bool LocalAudioTrackImpl::fillRequest(AddTrackRequest* request) const
 {
-    Base::fillRequest(request);
-    if (request) {
+    if (Base::fillRequest(request)) {
         request->_type = type();
         request->_source = source();
+        return true;
     }
-}
-
-void LocalAudioTrackImpl::requestAuthorization()
-{
-    Base::requestAuthorization();
-    if (_microphone) {
-        MediaAuthorization::query(MediaAuthorizationKind::Microphone, true, logger());
-    }
+    return false;
 }
 
 void LocalAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink)
@@ -72,19 +66,6 @@ bool LocalAudioTrackImpl::signalLevel(int& level) const
         return track->GetSignalLevel(&level);
     }
     return false;
-}
-
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalAudioTrackImpl::
-    createMediaTrack(const std::string& id)
-{
-    if (const auto m = manager()) {
-        auto track = m->createMic(id);
-        if (track) {
-            installSink(true, audioSink(), track);
-        }
-        return track;
-    }
-    return {};
 }
 
 void LocalAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink,

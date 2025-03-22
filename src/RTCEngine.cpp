@@ -18,9 +18,6 @@
 #include "PeerConnectionFactory.h"
 #include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
-#include "CameraVideoTrack.h"
-#include "CameraVideoSource.h"
-#include "CameraManager.h"
 #include "RoomListener.h"
 #include "Utils.h"
 #include "rtc/SignalTarget.h"
@@ -29,7 +26,7 @@
 #include "rtc/TrickleRequest.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/LeaveRequest.h"
-#include <modules/video_capture/video_capture_factory.h>
+#include "rtc/TrackUnpublishedResponse.h"
 #include <thread>
 
 namespace {
@@ -47,7 +44,7 @@ RTCEngine::RTCEngine(const Options& signalOptions,
                      PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : RTCMediaEngine(logger)
+    : RTCMediaEngine(pcf, logger)
     , _options(signalOptions)
     , _pcf(pcf)
     , _localDcs(logger)
@@ -106,61 +103,6 @@ bool RTCEngine::sendUserPacket(std::string payload,
 bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
 {
     return _localDcs.sendChatMessage(std::move(message), deleted);
-}
-
-bool RTCEngine::addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
-{
-    if (const auto pcManager = std::atomic_load(&_pcManager)) {
-        return pcManager->addTrack(track);
-    }
-    return false;
-}
-
-bool RTCEngine::removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
-{
-    if (const auto pcManager = std::atomic_load(&_pcManager)) {
-        return pcManager->removeTrack(track);
-    }
-    return false;
-}
-
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> RTCEngine::createMic(const std::string& label)
-{
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> track;
-    if (_pcf) {
-        cricket::AudioOptions options; // TODO: should be a part of room config
-        logInfo("request to create '" + label + "' audio track (" + options.ToString() + ")");
-        if (const auto source = _pcf->CreateAudioSource(options)) {
-            track = _pcf->CreateAudioTrack(label, source.get());
-            if (track) {
-                logVerbose("audio track '" + label + "' has been created");
-            }
-            else {
-                logError("unable to create audio track '" + label + "'");
-            }
-        }
-        else {
-            logError("unable to create source for audio track '" + label + "'");
-        }
-    }
-    return track;
-}
-
-webrtc::scoped_refptr<CameraVideoTrack> RTCEngine::createCamera(const std::string& label)
-{
-    webrtc::scoped_refptr<CameraVideoTrack> track;
-    if (_pcf) {
-        if (CameraManager::available()) {
-            logInfo("request to create '" + label + "' video track");
-            auto source = webrtc::make_ref_counted<CameraVideoSource>(_pcf->signalingThread(), logger());
-            track = webrtc::make_ref_counted<CameraVideoTrack>(label, std::move(source), logger());
-            logVerbose("video track '" + label + "' has been created");
-        }
-        else {
-            logError("unable to create video track '" + label + "': camera manager is not available");
-        }
-    }
-    return track;
 }
 
 RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const
@@ -339,8 +281,8 @@ void RTCEngine::createTransportManager(const webrtc::PeerConnectionInterface::RT
     }
     pcManager->setListener(this);
     std::atomic_store(&_pcManager, pcManager);
-    for (auto media : pendingLocalMedia()) {
-        pcManager->addTrack(std::move(media));
+    for (auto track : localTracks()) {
+        pcManager->addTrack(std::move(track));
     }
     pcManager->negotiate(false);
     pcManager->startPing();
@@ -532,13 +474,20 @@ void RTCEngine::onLeave(const LeaveRequest& leave)
     }
 }
 
+void RTCEngine::onTrackUnpublished(const TrackUnpublishedResponse& unpublished)
+{
+    RTCMediaEngine::onTrackUnpublished(unpublished);
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        pcManager->removeTrack(localTrack(unpublished._trackSid, false));
+    }
+}
+
 void RTCEngine::onTransportStateChanged(TransportState state)
 {
     switch (state) {
         case TransportState::Connecting:
             _localDcs.setListener(this);
             _remoteDcs.setListener(this);
-            addLocalResourcesToTransport();
             break;
         case TransportState::Disconnected:
             cleanup();

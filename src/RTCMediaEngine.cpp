@@ -23,6 +23,7 @@
 #include "rtc/TrackUnpublishedResponse.h"
 #include "rtc/JoinResponse.h"
 #include "rtc/ParticipantUpdate.h"
+#include "rtc/TrackPublishedResponse.h"
 
 namespace {
 
@@ -41,9 +42,10 @@ inline std::string formatErrorMsg(LiveKitError error, const std::string& what) {
 namespace LiveKitCpp
 {
 
-RTCMediaEngine::RTCMediaEngine(const std::shared_ptr<Bricks::Logger>& logger)
+RTCMediaEngine::RTCMediaEngine(PeerConnectionFactory* pcf,
+                               const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
-    , _localParticipant(new LocalParticipantImpl(this, logger))
+    , _localParticipant(new LocalParticipantImpl(this, pcf, logger))
     , _remoteParicipants(this, this, logger)
 {
 }
@@ -58,9 +60,19 @@ std::shared_ptr<LocalParticipant> RTCMediaEngine::localParticipant() const
     return _localParticipant;
 }
 
-void RTCMediaEngine::addLocalResourcesToTransport()
+std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>
+    RTCMediaEngine::localTracks() const
 {
-    _localParticipant->addTracksToTransport();
+    return _localParticipant->tracks();
+}
+
+webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
+    RTCMediaEngine::localTrack(const std::string& id, bool cid) const
+{
+    if (const auto t = _localParticipant->track(id, cid)) {
+        return t->rtcTrack();
+    }
+    return {};
 }
 
 void RTCMediaEngine::onJoin(const JoinResponse& response)
@@ -73,16 +85,6 @@ void RTCMediaEngine::onJoin(const JoinResponse& response)
     else {
         handleLocalParticipantDisconnection(disconnectReason);
     }
-}
-
-void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
-{
-    _localParticipant->notifyThatTrackPublished(published);
-}
-
-void RTCMediaEngine::onTrackUnpublished(const TrackUnpublishedResponse& unpublished)
-{
-    _localParticipant->notifyThatTrackUnpublished(unpublished);
 }
 
 void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
@@ -110,15 +112,26 @@ void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
     }
 }
 
-std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> RTCMediaEngine::pendingLocalMedia()
+void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
 {
-    return _localParticipant->pendingLocalMedia();
+    if (const auto t = _localParticipant->track(published._cid, true)) {
+        const auto& sid = published._track._sid;
+        t->setSid(sid);
+        // reconcile track mute status.
+        // if server's track mute status doesn't match actual, we'll have to update
+        // the server's copy
+        const auto muted = t->muted();
+        if (muted != published._track._muted) {
+            notifyAboutMuteChanges(sid, muted);
+        }
+    }
 }
 
 void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std::string& what)
 {
-    cleanupLocalResources();
-    cleanupRemoteResources();
+    _localParticipant->microphone().notifyThatMediaAddedToTransport(false);
+    _localParticipant->camera().notifyThatMediaAddedToTransport(false);
+    _remoteParicipants.reset();
     if (error && canLogError()) {
         logError(formatErrorMsg(error.value(), what));
     }
@@ -127,8 +140,7 @@ void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant->track(sender)) {
-        track->notifyThatMediaAddedToTransport();
-        sendAddTrack(track);
+        track->notifyThatMediaAddedToTransport(true);
     }
 }
 
@@ -138,14 +150,14 @@ void RTCMediaEngine::onLocalTrackAddFailure(const std::string& id,
                                             webrtc::RTCError)
 {
     if (const auto track = _localParticipant->track(id, true)) {
-        track->resetMedia();
+        track->notifyThatMediaAddedToTransport(false);
     }
 }
 
 void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
 {
     if (const auto track = _localParticipant->track(id, true)) {
-        track->resetMedia(false);
+        track->notifyThatMediaAddedToTransport(false);
     }
 }
 
@@ -166,23 +178,14 @@ void RTCMediaEngine::handleLocalParticipantDisconnection(DisconnectReason reason
     }
 }
 
-void RTCMediaEngine::cleanupLocalResources()
-{
-    _localParticipant->reset();
-}
-
-void RTCMediaEngine::cleanupRemoteResources()
-{
-    _remoteParicipants.reset();
-}
-
 void RTCMediaEngine::sendAddTrack(const LocalTrack* track)
 {
-    if (track && track->canPublish() && !closed()) {
+    if (track && !closed()) {
         AddTrackRequest request;
-        track->fillRequest(&request);
-        if (SendResult::TransportError == sendAddTrack(request)) {
-            // TODO: log error
+        if (track->fillRequest(&request)) {
+            if (SendResult::TransportError == sendAddTrack(request)) {
+                // TODO: log error
+            }
         }
     }
 }
@@ -197,15 +200,12 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
             sendAddTrack(&_localParticipant->microphone());
             sendAddTrack(&_localParticipant->camera());
             break;
-        case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
-            cleanupLocalResources();
-            break;
         default:
             break;
     }
     switch (subscriberState) {
         case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
-            cleanupRemoteResources();
+            _remoteParicipants.reset();
             break;
         default:
             break;

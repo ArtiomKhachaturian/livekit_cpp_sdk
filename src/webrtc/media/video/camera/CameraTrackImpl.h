@@ -23,16 +23,15 @@ class CameraTrackImpl : public LocalVideoTrackImpl<CameraVideoTrack, CameraTrack
 {
     using Base = LocalVideoTrackImpl<CameraVideoTrack, CameraTrack>;
 public:
-    CameraTrackImpl(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
+    CameraTrackImpl(webrtc::scoped_refptr<CameraVideoTrack> cameraTrack,
+                    TrackManager* manager,
+                    const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraTrackImpl();
     void setCapability(webrtc::VideoCaptureCapability capability);
     // impl. of CameraTrack
     void setDevice(MediaDevice device = {}) final;
     // impl. of LocalTrack
-    void fillRequest(AddTrackRequest* request) const final;
-protected:
-    webrtc::scoped_refptr<CameraVideoTrack> createMediaTrack(const std::string& id) final;
-    void requestAuthorization() final;
+    bool fillRequest(AddTrackRequest* request) const final;
 };
 
 } // namespace LiveKitCpp

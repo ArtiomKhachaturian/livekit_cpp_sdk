@@ -42,7 +42,6 @@ class RtpSenderInterface;
 namespace LiveKitCpp
 {
 
-class PeerConnectionFactory;
 class RoomListener;
 class TransportManager;
 
@@ -67,10 +66,6 @@ public:
     bool sendChatMessage(std::string message, bool deleted) const;
 protected:
     // impl. or overrides of RTCMediaEngine
-    bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
-    bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const std::string& label) final;
-    webrtc::scoped_refptr<CameraVideoTrack> createCamera(const std::string& label) final;
     SendResult sendAddTrack(const AddTrackRequest& request) const final;
     SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
     bool closed() const final;
@@ -110,6 +105,7 @@ private:
     void onPong(const Pong& pong) final;
     void onTrickle(const TrickleRequest& request) final;
     void onLeave(const LeaveRequest& leave) final;
+    void onTrackUnpublished(const TrackUnpublishedResponse& unpublished) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(TransportState state) final;
     void onTransportError(std::string error) final;

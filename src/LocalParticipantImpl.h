@@ -17,12 +17,14 @@
 #include "CameraTrackImpl.h"
 #include "LocalAudioTrackImpl.h"
 #include "LocalParticipant.h"
-#include "LocalTrackManager.h"
 #include "ParticipantListener.h"
 #include "SafeObj.h"
 #include <atomic>
 #include <vector>
-#include <unordered_map>
+
+namespace webrtc {
+class RtpSenderInterface;
+}
 
 namespace Bricks {
 class Logger;
@@ -31,24 +33,21 @@ class Logger;
 namespace LiveKitCpp
 {
 
+class TrackManager;
+class PeerConnectionFactory;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 
-class LocalParticipantImpl : public ParticipantImpl<ParticipantListener, LocalParticipant>,
-                             private LocalTrackManager
+class LocalParticipantImpl : public ParticipantImpl<ParticipantListener, LocalParticipant>
 {
-    // key is cid (track id), for LocalTrackManager [publishMedia] / [unpublishMedia]
-    using PendingLocalMedias = std::unordered_map<std::string, webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>;
 public:
-    LocalParticipantImpl(LocalTrackManager* manager, const std::shared_ptr<Bricks::Logger>& logger = {});
+    LocalParticipantImpl(TrackManager* manager,
+                         PeerConnectionFactory* pcf,
+                         const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipantImpl() final;
-    void addTracksToTransport();
-    void reset();
-    void notifyThatTrackPublished(const TrackPublishedResponse& response);
-    void notifyThatTrackUnpublished(const TrackUnpublishedResponse& response);
+    std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> tracks() const;
     LocalTrack* track(const std::string& id, bool cid);
     LocalTrack* track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
-    std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> pendingLocalMedia();
     // impl of ParticipantImpl<>
     void setInfo(const ParticipantInfo& info) final;
     // impl. of Participant
@@ -63,17 +62,8 @@ public:
     LocalAudioTrackImpl& microphone() final { return _microphone; }
     const LocalAudioTrackImpl& microphone() const final { return _microphone; }
 private:
-    // impl. of LocalTrackManager
-    bool addLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
-    bool removeLocalMedia(const webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) final;
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const std::string& label) final;
-    webrtc::scoped_refptr<CameraVideoTrack> createCamera(const std::string& label) final;
-    void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
-private:
-    LocalTrackManager* const _manager;
     LocalAudioTrackImpl _microphone;
     CameraTrackImpl _camera;
-    Bricks::SafeObj<PendingLocalMedias> _pendingLocalMedias;
     Bricks::SafeObj<std::string> _sid;
     Bricks::SafeObj<std::string> _identity;
     Bricks::SafeObj<std::string> _name;

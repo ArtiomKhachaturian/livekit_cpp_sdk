@@ -21,19 +21,17 @@ class LocalAudioTrackImpl : public LocalTrackImpl<webrtc::AudioTrackInterface, A
 {
     using Base = LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrackImpl<>>;
 public:
-    LocalAudioTrackImpl(LocalTrackManager* manager, bool microphone = true,
+    LocalAudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+                        TrackManager* manager, bool microphone = true,
                         const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalAudioTrackImpl();
     // impl. of LocalTrack
     TrackSource source() const final;
-    void fillRequest(AddTrackRequest* request) const final;
+    bool fillRequest(AddTrackRequest* request) const final;
 protected:
     // impl. of AudioTrackImpl
     void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;
     bool signalLevel(int& level) const final;
-    // impl. LocalTrackImpl
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMediaTrack(const std::string& id) final;
-    void requestAuthorization() final;
 private:
     static void installSink(bool install, webrtc::AudioTrackSinkInterface* sink,
                             const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track);

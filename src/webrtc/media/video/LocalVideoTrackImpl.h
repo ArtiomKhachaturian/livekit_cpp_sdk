@@ -24,7 +24,9 @@ class LocalVideoTrackImpl : public LocalTrackImpl<TRtcTrack, VideoTrackImpl<TTra
 {
     using Base = LocalTrackImpl<TRtcTrack, VideoTrackImpl<TTrackApi>>;
 protected:
-    LocalVideoTrackImpl(std::string name, LocalTrackManager* manager,
+    LocalVideoTrackImpl(std::string name,
+                        webrtc::scoped_refptr<TRtcTrack> videoTrack,
+                        TrackManager* manager,
                         const std::shared_ptr<Bricks::Logger>& logger = {});
     static void installSink(bool install,
                             rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
@@ -35,9 +37,11 @@ protected:
 
 template<class TRtcTrack, class TTrackApi>
 inline LocalVideoTrackImpl<TRtcTrack, TTrackApi>::
-    LocalVideoTrackImpl(std::string name, LocalTrackManager* manager,
+    LocalVideoTrackImpl(std::string name,
+                        webrtc::scoped_refptr<TRtcTrack> videoTrack,
+                        TrackManager* manager,
                         const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(std::move(name), manager, logger)
+    : Base(std::move(name), std::move(videoTrack), manager, logger)
 {
 }
 

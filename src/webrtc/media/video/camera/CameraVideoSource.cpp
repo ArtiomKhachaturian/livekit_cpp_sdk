@@ -47,6 +47,7 @@ public:
     Impl(const std::shared_ptr<Bricks::Logger>& logger,
          const std::weak_ptr<rtc::Thread>& signalingThread);
     ~Impl() final { reset(); }
+    MediaDevice device() const { return _device(); }
     void setDevice(MediaDevice device);
     void setCapability(webrtc::VideoCaptureCapability capability);
     void setEnabled(bool enabled);
@@ -73,15 +74,13 @@ private:
     static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
                                                       const rtc::scoped_refptr<CameraCapturer>& capturer);
     void changeState(webrtc::MediaSourceInterface::SourceState state);
-    bool startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
-                       const webrtc::VideoCaptureCapability& capability) const;
-    bool stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
+    bool startCapturer(const webrtc::VideoCaptureCapability& capability) const; // non-threadsafe
+    bool stopCapturer(bool sendByeFrame) const; // non-threadsafe
     void logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
                   const std::string& message, int code = 0) const;
     void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
-    void destroyCapturer(); // non-threadsafe
     bool frameWanted() const;
-    void broadcast(const webrtc::VideoFrame& frame);
+    void broadcast(const webrtc::VideoFrame& frame) const;
     // impl. of CameraObserver
     void onStateChanged(CameraState state) final;
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
@@ -96,6 +95,7 @@ private:
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability = CameraManager::defaultCapability();
     std::atomic<uint64_t> _lastResolution = 0ULL;
     std::atomic<uint16_t> _lastFrameId = 0U;
+    std::atomic<uint16_t> _enabled = true;
     std::atomic<webrtc::MediaSourceInterface::SourceState> _state = webrtc::MediaSourceInterface::kEnded;
 };
 
@@ -219,36 +219,27 @@ void CameraVideoSource::Impl::setCapability(webrtc::VideoCaptureCapability capab
         }
     }
     if (changed && capturer && capturer->CaptureStarted()) {
-        stopCapturer(capturer);
-        startCapturer(capturer, capability);
+        stopCapturer(false);
+        startCapturer(capability);
     }
 }
 
 void CameraVideoSource::Impl::setEnabled(bool enabled)
 {
-    {
-        LOCK_READ_SAFE_OBJ(_capturer);
-        if (const auto& capturer = _capturer.constRef()) {
-            if (enabled) {
-                startCapturer(capturer, _capability());
-            }
-            else {
-                webrtc::VideoTrackSourceInterface::Stats s;
-                const auto needBlackFrame = stats(s);
-                const auto lastFrameId = _lastFrameId.load();
-                stopCapturer(capturer);
-                if (needBlackFrame) { // send 'bye-bye' frame
-                    const auto frame = createBlackVideoFrame(s.input_width,
-                                                             s.input_height,
-                                                             0, lastFrameId + 1U);
-                    if (frame.has_value()) {
-                        broadcast(frame.value());
-                    }
+    if (enabled != _enabled.exchange(enabled)) {
+        {
+            LOCK_READ_SAFE_OBJ(_capturer);
+            if (_capturer.constRef()) {
+                if (enabled) {
+                    startCapturer(_capability());
+                }
+                else {
+                    stopCapturer(true);
                 }
             }
         }
+        notifyAboutChanges();
     }
-    notifyAboutChanges();
 }
 
 bool CameraVideoSource::Impl::stats(webrtc::VideoTrackSourceInterface::Stats& s) const
@@ -275,15 +266,15 @@ void CameraVideoSource::Impl::requestCapturer()
     if (frameWanted()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer.constRef()) {
-            LOCK_READ_SAFE_OBJ(_device);
-            if (const auto capturer = CameraManager::createCapturer(_device.constRef())) {
-                LOCK_WRITE_SAFE_OBJ(_capability);
-                _capability = bestMatched(_capability.constRef(), capturer);
-                destroyCapturer();
+            if (auto capturer = CameraManager::createCapturer(device())) {
                 capturer->RegisterCaptureDataCallback(this);
                 capturer->setObserver(this);
-                _capturer = capturer;
-                startCapturer(capturer, _capability.constRef());
+                LOCK_WRITE_SAFE_OBJ(_capability);
+                _capability = bestMatched(_capability.constRef(), capturer);
+                _capturer = std::move(capturer);
+                if (_enabled) {
+                    startCapturer(_capability);
+                }
             }
             else {
                 // TODO: log error
@@ -295,7 +286,12 @@ void CameraVideoSource::Impl::requestCapturer()
 void CameraVideoSource::Impl::resetCapturer()
 {
     LOCK_WRITE_SAFE_OBJ(_capturer);
-    destroyCapturer();
+    if (_capturer.constRef()) {
+        stopCapturer(true);
+        auto capturer = _capturer.take();
+        capturer->DeRegisterCaptureDataCallback();
+        capturer->setObserver(nullptr);
+    }
 }
 
 bool CameraVideoSource::Impl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
@@ -380,35 +376,52 @@ void CameraVideoSource::Impl::changeState(webrtc::MediaSourceInterface::SourceSt
     }
 }
 
-bool CameraVideoSource::Impl::startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
-                                            const webrtc::VideoCaptureCapability& capability) const
+bool CameraVideoSource::Impl::startCapturer(const webrtc::VideoCaptureCapability& capability) const
 {
-    if (capturer) {
-        const auto code = capturer->StartCapture(capability);
-        if (0 != code) {
-            logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
+    int32_t code = 0;
+    if (frameWanted()) {
+        if (const auto& capturer = _capturer.constRef()) {
+            code = capturer->StartCapture(capability);
+            if (0 != code) {
+                logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
+            }
+            else {
+                logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
+            }
         }
-        else {
-            logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
-        }
-        return 0 == code;
     }
-    return false;
+    return 0 == code;
 }
 
-bool CameraVideoSource::Impl::stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const
+bool CameraVideoSource::Impl::stopCapturer(bool sendByeFrame) const
 {
-    if (capturer) {
-        const auto code = capturer->StopCapture();
+    int32_t code = 0;
+    if (const auto& capturer = _capturer.constRef()) {
+        uint16_t lastFrameId = 0U;
+        webrtc::VideoTrackSourceInterface::Stats lastStats;
+        if (sendByeFrame) {
+            sendByeFrame = stats(lastStats);
+            if (sendByeFrame) {
+                lastFrameId = _lastFrameId;
+            }
+        }
+        code = capturer->StopCapture();
         if (0 != code) {
             logError(capturer, "failed to stop capturer",  code);
         }
         else {
             logVerbose(capturer, "capturer has been stopped");
         }
-        return 0 == code;
+        if (sendByeFrame) {
+            const auto w = lastStats.input_width;
+            const auto h = lastStats.input_height;
+            const auto frame = createBlackVideoFrame(w, h, 0, lastFrameId + 1U);
+            if (frame.has_value()) {
+                broadcast(frame.value());
+            }
+        }
     }
-    return false;
+    return 0 == code;
 }
 
 void CameraVideoSource::Impl::logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
@@ -433,22 +446,13 @@ void CameraVideoSource::Impl::logVerbose(const rtc::scoped_refptr<CameraCapturer
     }
 }
 
-void CameraVideoSource::Impl::destroyCapturer()
-{
-    if (auto capturer = _capturer.take()) {
-        stopCapturer(capturer);
-        capturer->DeRegisterCaptureDataCallback();
-        capturer->setObserver(nullptr);
-    }
-}
-
 bool CameraVideoSource::Impl::frameWanted() const
 {
     LOCK_READ_SAFE_OBJ(_broadcasters);
     return !_broadcasters->empty();
 }
 
-void CameraVideoSource::Impl::broadcast(const webrtc::VideoFrame& frame)
+void CameraVideoSource::Impl::broadcast(const webrtc::VideoFrame& frame) const
 {
     LOCK_READ_SAFE_OBJ(_broadcasters);
     for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {

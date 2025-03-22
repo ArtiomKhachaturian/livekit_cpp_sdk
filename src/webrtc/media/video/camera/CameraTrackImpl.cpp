@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraTrackImpl.h"
-#include "MediaAuthorization.h"
 
 namespace LiveKitCpp
 {
 
-CameraTrackImpl::CameraTrackImpl(LocalTrackManager* manager,
+CameraTrackImpl::CameraTrackImpl(webrtc::scoped_refptr<CameraVideoTrack> cameraTrack,
+                                 TrackManager* manager,
                                  const std::shared_ptr<Bricks::Logger>& logger)
-    : Base("camera", manager, logger)
+    : Base("camera", std::move(cameraTrack), manager, logger)
 {
+    installSink(true, videoSink());
 }
 
 CameraTrackImpl::~CameraTrackImpl()
@@ -42,31 +43,14 @@ void CameraTrackImpl::setDevice(MediaDevice device)
     }
 }
 
-void CameraTrackImpl::fillRequest(AddTrackRequest* request) const
+bool CameraTrackImpl::fillRequest(AddTrackRequest* request) const
 {
-    Base::fillRequest(request);
-    if (request) {
+    if (Base::fillRequest(request)) {
         request->_type = type();
         request->_source = source();
+        return true;
     }
-}
-
-webrtc::scoped_refptr<CameraVideoTrack> CameraTrackImpl::createMediaTrack(const std::string& id)
-{
-    if (const auto m = manager()) {
-        auto track = m->createCamera(id);
-        if (track) {
-            installSink(true, videoSink(), track);
-        }
-        return track;
-    }
-    return {};
-}
-
-void CameraTrackImpl::requestAuthorization()
-{
-    Base::requestAuthorization();
-    MediaAuthorization::query(MediaAuthorizationKind::Camera, true, logger());
+    return false;
 }
 
 } // namespace LiveKitCpp

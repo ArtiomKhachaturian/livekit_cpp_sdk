@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalTrack.h
+#include <api/media_stream_interface.h>
 #include <string>
 
 namespace LiveKitCpp
@@ -24,12 +25,10 @@ class LocalTrack
 public:
     // for publishing
     virtual void setSid(const std::string& sid) = 0;
-    virtual bool canPublish() const noexcept = 0;
-    virtual void fillRequest(AddTrackRequest* request) const = 0;
+    virtual bool fillRequest(AddTrackRequest* request) const = 0;
     // transport layer
-    virtual void resetMedia(bool remove = true) = 0;
-    virtual void addToTransport() = 0;
-    virtual void notifyThatMediaAddedToTransport() = 0;
+    virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> rtcTrack() const = 0;
+    virtual void notifyThatMediaAddedToTransport(bool added) = 0;
     // state
     virtual bool muted() const = 0;
 protected:
