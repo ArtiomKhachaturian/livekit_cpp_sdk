@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "AsyncListeners.h"
 #include "MediaDevice.h"
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture_defines.h>
@@ -35,7 +34,6 @@ class CameraCapturer;
 class CameraVideoSource : public webrtc::VideoTrackSourceInterface
 {
     class Impl;
-    using ImplCall = AsyncListeners<Impl>;
 public:
     CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
                       const std::shared_ptr<Bricks::Logger>& logger = {});

@@ -16,37 +16,12 @@
 #include "AudioDeviceModuleListener.h"
 #include "MediaAuthorization.h"
 #include "Utils.h"
+#include "ThreadUtils.h"
 #include <api/make_ref_counted.h>
 #include <rtc_base/thread.h>
 
 namespace
 {
-
-// helpers
-
-inline void invokeInThread(rtc::Thread* to,
-                           rtc::FunctionView<void()> handler) {
-    if (to && !to->IsQuitting()) {
-        if (to->IsCurrent()) {
-            std::move(handler)();
-        }
-        else {
-            to->BlockingCall(std::move(handler));
-        }
-    }
-}
-
-template <typename Handler, typename R = std::invoke_result_t<Handler>>
-inline R invokeInThreadR(rtc::Thread* to, Handler handler, R defaultVal = {})
-{
-    if (to && !to->IsQuitting()) {
-        if (to->IsCurrent()) {
-            return std::move(handler)();
-        }
-        return to->BlockingCall<Handler, R>(std::move(handler));
-    }
-    return defaultVal;
-}
 
 inline rtc::scoped_refptr<webrtc::AudioDeviceModule>
     defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory) {

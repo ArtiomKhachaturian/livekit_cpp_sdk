@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraVideoSource.h"
+#include "AsyncListeners.h"
 #include "CameraManager.h"
 #include "CameraCapturer.h"
 #include "VideoFrameBuffer.h"
@@ -19,6 +20,7 @@
 #include "CameraCapturerProxySink.h"
 #include "Loggable.h"
 #include "SafeScopedRefPtr.h"
+#include "ThreadUtils.h"
 #include "Utils.h"
 #include <memory>
 #include <unordered_map>
@@ -108,23 +110,23 @@ CameraVideoSource::CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
 
 CameraVideoSource::~CameraVideoSource()
 {
-    ImplCall::postOrInvoke(_thread, _impl, &Impl::reset);
+    postOrInvoke(_thread, _impl, false, &Impl::reset);
 }
 
 void CameraVideoSource::setDevice(MediaDevice device)
 {
-    ImplCall::postOrInvoke(_thread, _impl, &Impl::setDevice, std::move(device));
+    postOrInvoke(_thread, _impl, false, &Impl::setDevice, std::move(device));
 }
 
 void CameraVideoSource::setCapability(webrtc::VideoCaptureCapability capability)
 {
-    ImplCall::postOrInvoke(_thread, _impl, &Impl::setCapability, std::move(capability));
+    postOrInvoke(_thread, _impl, false, &Impl::setCapability, std::move(capability));
 }
 
 bool CameraVideoSource::setEnabled(bool enabled)
 {
     if (enabled != _enabled.exchange(enabled)) {
-        ImplCall::postOrInvoke(_thread, _impl, &Impl::setEnabled, enabled);
+        postOrInvoke(_thread, _impl, false, &Impl::setEnabled, enabled);
         _impl->notifyAboutChanges();
         return true;
     }
@@ -141,7 +143,7 @@ bool CameraVideoSource::GetStats(Stats* stats)
 
 void CameraVideoSource::ProcessConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
-    ImplCall::postOrInvoke(_thread, _impl, &Impl::processConstraints, c);
+    postOrInvoke(_thread, _impl, false, &Impl::processConstraints, c);
 }
 
 webrtc::MediaSourceInterface::SourceState CameraVideoSource::state() const
@@ -153,14 +155,14 @@ void CameraVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFra
                                         const rtc::VideoSinkWants& wants)
 {
     if (_impl->addOrUpdateSink(sink, wants)) {
-        ImplCall::postOrInvoke(_thread, _impl, &Impl::requestCapturer);
+        postOrInvoke(_thread, _impl, false, &Impl::requestCapturer);
     }
 }
 
 void CameraVideoSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (_impl->removeSink(sink)) {
-        ImplCall::postOrInvoke(_thread, _impl, &Impl::resetCapturer);
+        postOrInvoke(_thread, _impl, false, &Impl::resetCapturer);
     }
 }
 

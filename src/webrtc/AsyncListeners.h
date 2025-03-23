@@ -40,14 +40,6 @@ public:
     void invoke(Method method, Args&&... args) const;
     AsyncListeners& operator = (const AsyncListeners&) = delete;
     AsyncListeners& operator = (AsyncListeners&&) noexcept = delete;
-    template <class Method, typename... Args>
-    static void postOrInvoke(const std::weak_ptr<rtc::Thread>& thread,
-                             const std::shared_ptr<TListener>& listener,
-                             Method method, Args&&... args);
-    template <class Method, typename... Args>
-    static void postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
-                             const std::shared_ptr<TListener>& listener,
-                             Method method, Args&&... args);
 private:
     const std::weak_ptr<rtc::Thread> _thread;
     const std::shared_ptr<Listeners> _listeners;
@@ -95,45 +87,6 @@ inline void AsyncListeners<TListener, forcePost>::
         }
         else {
             _listeners->invoke(method, std::forward<Args>(args)...);
-        }
-    }
-}
-
-template<class TListener, bool forcePost>
-template <class Method, typename... Args>
-inline void AsyncListeners<TListener, forcePost>::
-    postOrInvoke(const std::weak_ptr<rtc::Thread>& thread,
-                 const std::shared_ptr<TListener>& listener,
-                 Method method, Args&&... args)
-{
-    if (listener) {
-        postOrInvoke(thread.lock(), listener, std::move(method), std::forward<Args>(args)...);
-    }
-}
-
-template<class TListener, bool forcePost>
-template <class Method, typename... Args>
-inline void AsyncListeners<TListener, forcePost>::
-    postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
-                 const std::shared_ptr<TListener>& listener,
-                 Method method, Args&&... args)
-{
-    if (thread && listener) {
-        using Invoker = Bricks::Invoke<std::shared_ptr<TListener>>;
-        if (forcePost || !thread->IsCurrent()) {
-            using WeakRef = std::weak_ptr<TListener>;
-            thread->PostTask([method = std::move(method), // deep copy of all arguments
-                              args = std::make_tuple((typename std::decay<Args>::type)args...),
-                              weak = WeakRef(listener)](){
-                if (const auto strong = weak.lock()) {
-                    std::apply([&strong, &method](auto&&... args) {
-                        Invoker::make(strong, method, std::forward<decltype(args)>(args)...);
-                    }, args);
-                }
-            });
-        }
-        else {
-            Invoker::make(listener, method, std::forward<Args>(args)...);
         }
     }
 }
