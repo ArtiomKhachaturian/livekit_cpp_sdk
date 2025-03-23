@@ -188,8 +188,8 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     }
     else {
         _pcf->addAdmListener(this);
-        if (!_pcf->timersQueue()) {
-            logError("failed to create of queue for media timers");
+        if (!_pcf->eventsQueue()) {
+            logError("failed to create of events queue");
         }
         auto dev = _pcf->recordingAudioDevice();
         if (!dev.empty()) {

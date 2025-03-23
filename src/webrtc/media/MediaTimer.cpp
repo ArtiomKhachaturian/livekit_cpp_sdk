@@ -48,7 +48,7 @@ MediaTimer::MediaTimer(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
 
 MediaTimer::MediaTimer(const PeerConnectionFactory* pcf,
                        MediaTimerCallback* callback)
-    : MediaTimer(pcf ? pcf->timersQueue() : nullptr, callback)
+    : MediaTimer(pcf ? pcf->eventsQueue() : nullptr, callback)
 {
 }
 

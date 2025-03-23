@@ -51,7 +51,7 @@ public:
     ~PeerConnectionFactory() override;
     static webrtc::scoped_refptr<PeerConnectionFactory> Create(bool audioProcessing,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
-    const auto& timersQueue() const noexcept { return _timersQueue; }
+    const auto& eventsQueue() const noexcept { return _eventsQueue; }
     std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;
@@ -88,7 +88,7 @@ protected:
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
                           webrtc::scoped_refptr<AudioDeviceProxyModule> adm);
 private:
-    const std::shared_ptr<webrtc::TaskQueueBase> _timersQueue;
+    const std::shared_ptr<webrtc::TaskQueueBase> _eventsQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;
     const std::shared_ptr<rtc::Thread> _networkThread;
     const std::shared_ptr<rtc::Thread> _workingThread;

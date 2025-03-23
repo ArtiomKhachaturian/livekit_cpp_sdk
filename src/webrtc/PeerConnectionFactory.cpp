@@ -85,7 +85,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              std::shared_ptr<rtc::Thread> signalingThread,
                                              webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
                                              webrtc::scoped_refptr<AudioDeviceProxyModule> adm)
-    : _timersQueue(createTaskQueueS("timers_queue"))
+    : _eventsQueue(createTaskQueueS("events_queue"))
     , _webrtcLogSink(std::move(webrtcLogSink))
     , _networkThread(std::move(networkThread))
     , _workingThread(std::move(workingThread))

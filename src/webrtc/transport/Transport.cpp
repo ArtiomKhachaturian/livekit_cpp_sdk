@@ -62,7 +62,6 @@ public:
     webrtc::scoped_refptr<webrtc::PeerConnectionInterface> peerConnection() const noexcept;
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;
-    void resetTransportListener();
     void close();
     void logWebRTCError(const webrtc::RTCError& error, std::string_view prefix = {}) const;
     void removeTrackBySender(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
@@ -463,7 +462,6 @@ void Transport::close()
         _setLocalSdpObserver->setListener(nullptr);
         _setRemoteSdpObserver->setListener(nullptr);
         _impl->close();
-        _impl->resetTransportListener();
     }
 }
 
@@ -544,21 +542,16 @@ void Transport::Impl::invoke(const Method& method, Args&&... args) const
     _listener.invoke(method, _target, std::forward<Args>(args)...);
 }
 
-void Transport::Impl::resetTransportListener()
-{
-    // force
-    OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState::kClosed);
-    _listener.reset();
-}
-
 void Transport::Impl::close()
 {
     if (!_closed.exchange(true)) {
         logInfo("close peer connection");
+        auto self = shared_from_this();
+        // force
+        OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState::kClosed);
+        _listener.reset();
         if (const auto thread = signalingThread()) {
-            thread->PostTask([self = shared_from_this()]() {
-                self->_pc->Close();
-            });
+            thread->PostTask([self = std::move(self)]() { self->_pc->Close(); });
         }
         else {
             _pc->Close();
