@@ -46,7 +46,7 @@ inline R invokeInThreadR(rtc::Thread* to, Handler handler, R defaultVal = {})
 }
 
 template<class TListener, class Method, typename... Args>
-inline void postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
+inline void postOrInvoke(rtc::Thread* thread,
                          const std::shared_ptr<TListener>& listener,
                          bool forcePost, Method method, Args&&... args)
 {
@@ -68,6 +68,14 @@ inline void postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
             Invoker::make(listener, method, std::forward<Args>(args)...);
         }
     }
+}
+
+template<class TListener, class Method, typename... Args>
+inline void postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
+                         const std::shared_ptr<TListener>& listener,
+                         bool forcePost, Method method, Args&&... args)
+{
+    postOrInvoke(thread.get(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
 }
 
 template <class TListener, class Method, typename... Args>

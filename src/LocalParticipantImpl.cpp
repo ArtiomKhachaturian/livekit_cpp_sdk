@@ -26,21 +26,6 @@ namespace {
 
 using namespace LiveKitCpp;
 
-template<typename T>
-inline bool exchange(const T& source, Bricks::SafeObj<T>& dst) {
-    const std::lock_guard guard(dst.mutex());
-    if (source != dst.constRef()) {
-        dst = source;
-        return true;
-    }
-    return false;
-}
-
-template<typename T>
-inline bool exchange(const T& source, std::atomic<T>& dst) {
-    return source != dst.exchange(source);
-}
-
 inline webrtc::scoped_refptr<webrtc::AudioTrackInterface>
     createMic(PeerConnectionFactory* pcf) {
     if (pcf) {

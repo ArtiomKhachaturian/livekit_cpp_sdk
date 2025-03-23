@@ -38,9 +38,9 @@ class SetLocalSdpObserver;
 class SetRemoteSdpObserver;
 class TransportListener;
 
-class Transport : private CreateSdpListener, SetSdpListener, webrtc::PeerConnectionObserver
+class Transport : private CreateSdpListener, SetSdpListener
 {
-    class Holder;
+    class Impl;
 public:
     Transport(SignalTarget target, TransportListener* listener,
               const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
@@ -89,47 +89,20 @@ public:
     // thus the listener object can be safely destroyed.
     void close();
 private:
-    template<typename TState>
-    bool changeAndLogState(TState newState, std::atomic<TState>& holder) const;
     // return NULL if there are not peer connection or peer connection factory
-    std::shared_ptr<rtc::Thread> signalingThread() const noexcept;
+    rtc::Thread* signalingThread() const;
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onFailure(webrtc::SdpType type, webrtc::RTCError error) final;
     // impl. of SetSdpListener
     void onCompleted(bool local) final;
     void onFailure(bool local, webrtc::RTCError error) final;
-    // impl. of webrtc::PeerConnectionObserver
-    void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState) final;
-    void OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
-    void OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
-    void OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
-    void OnNegotiationNeededEvent(uint32_t eventId) final;
-    void OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState) final;
-    void OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState newState) final;
-    void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState newState) final;
-    void OnIceCandidate(const webrtc::IceCandidateInterface* candidate) final;
-    void OnIceCandidateError(const std::string& address, int port, const std::string& url,
-                             int errorCode, const std::string& errorText) final;
-    void OnIceCandidatesRemoved(const std::vector<cricket::Candidate>& candidates) final;
-    void OnIceConnectionReceivingChange(bool receiving) final;
-    void OnIceSelectedCandidatePairChanged(const cricket::CandidatePairChangeEvent& event) final;
-    void OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                    const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) final;
-    void OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
-    void OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
-    void OnInterestingUsage(int usagePattern) final;
 private:
-    const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    const std::shared_ptr<Holder> _holder;
+    const std::shared_ptr<Impl> _impl;
     webrtc::scoped_refptr<CreateSdpObserver> _offerCreationObserver;
     webrtc::scoped_refptr<CreateSdpObserver> _answerCreationObserver;
     webrtc::scoped_refptr<SetLocalSdpObserver> _setLocalSdpObserver;
     webrtc::scoped_refptr<SetRemoteSdpObserver> _setRemoteSdpObserver;
-    std::atomic<webrtc::PeerConnectionInterface::PeerConnectionState> _pcState;
-    std::atomic<webrtc::PeerConnectionInterface::IceConnectionState> _iceConnState;
-    std::atomic<webrtc::PeerConnectionInterface::SignalingState> _signalingState;
-    std::atomic<webrtc::PeerConnectionInterface::IceGatheringState> _iceGatheringState;
 };
 
 } // namespace LiveKitCpp

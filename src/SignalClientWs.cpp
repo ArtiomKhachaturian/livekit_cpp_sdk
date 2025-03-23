@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 #include "SignalClientWs.h"
 #include "Blob.h"
-#include "SafeObj.h"
+#include "SafeObjAliases.h"
 #include "Listener.h"
 #include "NetworkType.h"
 #include "WebsocketEndPoint.h"
@@ -50,21 +50,22 @@ inline std::string urlQueryItem(const std::string& key, bool val) {
     return {};
 }
 
-struct UrlData
-{
-    std::string _host;
-    std::string _authToken;
-    std::string _participantSid;
-    std::string _publish;
-    bool _autoSubscribe = true;
-    bool _adaptiveStream = true;
-    std::optional<ClientInfo> _clientInfo;
-};
-
 }
 
 namespace LiveKitCpp
 {
+
+struct SignalClientWs::UrlData
+{
+    Bricks::SafeObj<std::string> _host;
+    Bricks::SafeObj<std::string> _authToken;
+    Bricks::SafeObj<std::string> _participantSid;
+    Bricks::SafeObj<std::string> _publish;
+    Bricks::SafeOptional<ClientInfo> _clientInfo;
+    std::atomic_bool _autoSubscribe = true;
+    std::atomic_bool _adaptiveStream = true;
+    Websocket::Options buildOptions() const;
+};
 
 class SignalClientWs::Listener : public Websocket::Listener
 {
@@ -80,98 +81,75 @@ private:
     Bricks::Listener<SignalClientWs*> _owner = nullptr;
 };
 
-struct SignalClientWs::Impl
-{
-    Impl(std::unique_ptr<Websocket::EndPoint> socket, SignalClientWs* owner);
-    ~Impl();
-    Websocket::Options buildOptions() const;
-public:
-    const std::shared_ptr<Listener> _listener;
-    const std::unique_ptr<Websocket::EndPoint> _socket;
-    Bricks::SafeObj<UrlData> _urlData;
-};
-
 SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket,
                                Bricks::Logger* logger)
     : SignalClient(this, logger)
-    , _impl(std::make_unique<Impl>(std::move(socket), this))
+    , _urlData(std::make_unique<UrlData>())
+    , _listener(std::make_shared<Listener>())
+    , _socket(std::move(socket))
 {
+    if (_socket) {
+        _listener->setOwner(this);
+        _socket->setListener(_listener);
+    }
 }
 
 SignalClientWs::~SignalClientWs()
 {
+    SignalClientWs::disconnect();
+    if (_socket) {
+        _socket->resetListener();
+        _listener->setOwner(nullptr);
+    }
 }
 
 std::string SignalClientWs::host() const noexcept
 {
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_host;
+    return _urlData->_host();
 }
 
 std::string SignalClientWs::authToken() const noexcept
 {
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_authToken;
+    return _urlData->_authToken();
 }
 
 std::string SignalClientWs::participantSid() const noexcept
 {
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_participantSid;
+    return _urlData->_participantSid();
 }
 
 std::string SignalClientWs::publish() const noexcept
 {
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_publish;
+    return _urlData->_publish();
 }
 
 bool SignalClientWs::autoSubscribe() const noexcept
 {
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_autoSubscribe;
+    return _urlData->_autoSubscribe;
 }
 
 bool SignalClientWs::adaptiveStream() const noexcept
 {
-    LOCK_READ_SAFE_OBJ(_impl->_urlData);
-    return _impl->_urlData->_adaptiveStream;
+    return _urlData->_adaptiveStream;
 }
 
 void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
 {
-    bool changed = false;
-    {
-        LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-        if (autoSubscribe != _impl->_urlData->_autoSubscribe) {
-            _impl->_urlData->_autoSubscribe = autoSubscribe;
-            changed = true;
-        }
-    }
-    if (changed) {
-        logVerbose("Auto subscribe policy has been changed");
+    if (exchange(autoSubscribe, _urlData->_autoSubscribe)) {
+        logVerbose("auto subscribe policy has been changed");
     }
 }
 
 void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
 {
-    bool changed = false;
-    {
-        LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-        if (adaptiveStream != _impl->_urlData->_adaptiveStream) {
-            _impl->_urlData->_adaptiveStream = adaptiveStream;
-            changed = true;
-        }
-    }
-    if (changed) {
-        logVerbose("Adaptive stream policy has been changed");
+    if (exchange(adaptiveStream, _urlData->_adaptiveStream)) {
+        logVerbose("adaptive stream policy has been changed");
     }
 }
 
 void SignalClientWs::setClientInfo(const std::optional<ClientInfo>& clientInfo)
 {
-    LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-    _impl->_urlData->_clientInfo = clientInfo;
+    _urlData->_clientInfo(clientInfo);
     if (clientInfo && LIVEKIT_PROTOCOL_VERSION != clientInfo->_protocol) {
         logWarning("protocol version is not matched to default");
     }
@@ -179,35 +157,31 @@ void SignalClientWs::setClientInfo(const std::optional<ClientInfo>& clientInfo)
 
 void SignalClientWs::setHost(std::string host)
 {
-    LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-    _impl->_urlData->_host = std::move(host);
+    _urlData->_host(std::move(host));
 }
 
 void SignalClientWs::setAuthToken(std::string authToken)
 {
-    LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-    _impl->_urlData->_authToken = std::move(authToken);
+    _urlData->_authToken(std::move(authToken));
 }
 
 void SignalClientWs::setParticipantSid(std::string participantSid)
 {
-    LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-    _impl->_urlData->_participantSid = std::move(participantSid);
+    _urlData->_participantSid(std::move(participantSid));
 }
 
 void SignalClientWs::setPublish(std::string publish)
 {
-    LOCK_WRITE_SAFE_OBJ(_impl->_urlData);
-    _impl->_urlData->_publish = std::move(publish);
+    _urlData->_publish(std::move(publish));
 }
 
 bool SignalClientWs::connect()
 {
     bool ok = false;
-    if (_impl->_socket) {
+    if (_socket) {
         const auto result = changeTransportState(TransportState::Connecting);
         if (ChangeTransportStateResult::Changed == result) {
-            ok = _impl->_socket->open(_impl->buildOptions());
+            ok = _socket->open(_urlData->buildOptions());
             if (!ok) {
                 changeTransportState(TransportState::Disconnected);
             }
@@ -218,14 +192,14 @@ bool SignalClientWs::connect()
 
 void SignalClientWs::disconnect()
 {
-    if (_impl->_socket) {
-        _impl->_socket->close();
+    if (_socket) {
+        _socket->close();
     }
 }
 
 bool SignalClientWs::ping()
 {
-    return _impl->_socket && _impl->_socket->ping();
+    return _socket && _socket->ping();
 }
 
 void SignalClientWs::updateState(Websocket::State state)
@@ -248,10 +222,7 @@ void SignalClientWs::updateState(Websocket::State state)
 
 bool SignalClientWs::sendBinary(const Bricks::Blob& binary)
 {
-    if (_impl->_socket) {
-        return _impl->_socket->sendBinary(binary);
-    }
-    return CommandSender::sendBinary(binary);
+    return _socket && _socket->sendBinary(binary);
 }
 
 void SignalClientWs::Listener::onError(uint64_t, uint64_t, const Websocket::Error& error)
@@ -270,41 +241,29 @@ void SignalClientWs::Listener::onBinaryMessage(uint64_t, uint64_t,
     _owner.invoke(&SignalClientWs::handleServerProtobufMessage, message);
 }
 
-SignalClientWs::Impl::Impl(std::unique_ptr<Websocket::EndPoint> socket, SignalClientWs* owner)
-    : _listener(std::make_shared<Listener>())
-    , _socket(std::move(socket))
-{
-    if (_socket) {
-        _listener->setOwner(owner);
-        _socket->setListener(_listener);
-    }
-}
-
-SignalClientWs::Impl::~Impl()
-{
-    if (_socket) {
-        _socket->close();
-        _socket->resetListener();
-        _listener->setOwner(nullptr);
-    }
-}
-
-Websocket::Options SignalClientWs::Impl::buildOptions() const
+Websocket::Options SignalClientWs::UrlData::buildOptions() const
 {
     Websocket::Options options;
-    LOCK_READ_SAFE_OBJ(_urlData);
-    if (!_urlData->_host.empty() && !_urlData->_authToken.empty()) {
+    auto host = _host();
+    const auto authToken = _authToken();
+    if (!host.empty() && !authToken.empty()) {
         // see example in https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Support/Utils.swift#L138
-        options._host = _urlData->_host;
+        options._host = std::move(host);
         if ('/' != options._host.back()) {
             options._host += '/';
         }
-        using namespace std::string_literals;
-        options._host += "rtc?access_token=" + _urlData->_authToken;
-        options._host += urlQueryItem("auto_subscribe", _urlData->_autoSubscribe);
-        options._host += urlQueryItem("adaptive_stream", _urlData->_adaptiveStream);
-        options._host += urlQueryItem("publish", _urlData->_publish);
-        if (const auto& ci = _urlData->_clientInfo) {
+        options._host += "rtc?access_token=" + authToken;
+        options._host += urlQueryItem("auto_subscribe", _autoSubscribe.load());
+        options._host += urlQueryItem("adaptive_stream", _adaptiveStream.load());
+        options._host += urlQueryItem("publish", _publish());
+        // only for quick-reconnect
+        const auto participantSid = _participantSid();
+        if (!participantSid.empty()) {
+            options._host += urlQueryItem("reconnect", 1);
+            options._host += urlQueryItem("sid", participantSid);
+        }
+        LOCK_READ_SAFE_OBJ(_clientInfo);
+        if (const auto ci = _clientInfo.constRef()) {
             options._host += urlQueryItem("sdk", toString(ci->_sdk));
             options._host += urlQueryItem("version", ci->_version);
             options._host += urlQueryItem("protocol", ci->_protocol > 0 ?
@@ -329,11 +288,6 @@ Websocket::Options SignalClientWs::Impl::buildOptions() const
             options._host += urlQueryItem("os_version", operatingSystemVersion());
             options._host += urlQueryItem("device_model", modelIdentifier());
             options._host += urlQueryItem("network", toString(activeNetworkType()));
-        }
-        // only for quick-reconnect
-        if (!_urlData->_participantSid.empty()) {
-            options._host += urlQueryItem("reconnect", 1);
-            options._host += urlQueryItem("sid", _urlData->_participantSid);
         }
     }
     return options;

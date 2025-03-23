@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Utils.h
+#include "SafeObj.h"
 #ifdef WEBRTC_AVAILABLE
 #include <api/peer_connection_interface.h>
 #include <api/task_queue/task_queue_base.h>
@@ -22,6 +23,7 @@
 #elif defined(_WIN32)
 #include <Windows.h>
 #endif // __APPLE__
+#include <atomic>
 #include <optional>
 #include <string>
 #include <vector>
@@ -79,6 +81,21 @@ inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xff
 
 std::string makeStateChangesString(TransportState from, TransportState to);
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
+
+template<typename T>
+inline bool exchange(T source, Bricks::SafeObj<T>& dst) {
+    const std::lock_guard guard(dst.mutex());
+    if (source != dst.constRef()) {
+        dst = std::move(source);
+        return true;
+    }
+    return false;
+}
+
+template<typename T>
+inline bool exchange(const T& source, std::atomic<T>& dst) {
+    return source != dst.exchange(source);
+}
 
 #ifdef WEBRTC_AVAILABLE
 std::string fourccToString(int fourcc);

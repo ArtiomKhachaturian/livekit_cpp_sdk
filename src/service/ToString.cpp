@@ -89,6 +89,8 @@ std::string toString(NetworkType state)
             return "cellular";
         case NetworkType::Vpn:
             return "vpn";
+        case NetworkType::NoNetwork:
+            break;
         default:
             assert(false);
             break;

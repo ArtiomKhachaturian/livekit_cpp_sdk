@@ -31,6 +31,7 @@ class LIVEKIT_CLIENT_API SignalClientWs : public SignalClient,
 {
     class Listener;
     struct Impl;
+    struct UrlData;
 public:
     SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket,
                    Bricks::Logger* logger = nullptr);
@@ -58,7 +59,9 @@ private:
     // impl. of CommandSender
     bool sendBinary(const Bricks::Blob& binary) final;
 private:
-    const std::unique_ptr<Impl> _impl;
+    const std::shared_ptr<UrlData> _urlData;
+    const std::shared_ptr<Listener> _listener;
+    const std::unique_ptr<Websocket::EndPoint> _socket;
 };
 
 } // namespace LiveKitCpp
