@@ -433,9 +433,7 @@ void RTCEngine::onTrickle(const TrickleRequest& request)
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         webrtc::SdpParseError error;
         if (auto candidate = RoomUtils::map(request, &error)) {
-            if (!pcManager->addIceCandidate(request._target, std::move(candidate))) {
-                // TODO: log error
-            }
+            pcManager->addIceCandidate(request._target, std::move(candidate));
         }
         else {
             logError("failed to parse ICE candidate SDP for " +

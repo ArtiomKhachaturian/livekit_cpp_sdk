@@ -133,17 +133,16 @@ bool TransportManager::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamT
     return _publisher.removeTrack(track);
 }
 
-bool TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate)
+void TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate)
 {
     switch (target) {
         case SignalTarget::Publisher:
-            return _publisher.addIceCandidate(std::move(candidate));
+            _publisher.addIceCandidate(std::move(candidate));
             break;
         case SignalTarget::Subscriber:
-            return _subscriber.addIceCandidate(std::move(candidate));
+            _subscriber.addIceCandidate(std::move(candidate));
             break;
     }
-    return false;
 }
 
 void TransportManager::close()

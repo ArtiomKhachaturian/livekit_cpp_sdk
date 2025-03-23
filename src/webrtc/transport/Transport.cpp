@@ -274,32 +274,39 @@ bool Transport::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInt
     return false;
 }
 
-bool Transport::addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate)
+void Transport::addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate)
 {
     if (candidate) {
-        if (const auto& pc = _impl->peerConnection()) {
+        if (const auto thread = signalingThread()) {
             const auto info = candidate->candidate().ToSensitiveString();
             _impl->logInfo("request to add (" + info + ") ICE candidate");
-            auto handler = [info, implRef = weak(_impl)](webrtc::RTCError error) {
+            thread->PostTask([info, candidate = std::move(candidate),
+                              implRef = weak(_impl)]() mutable {
                 if (const auto impl = implRef.lock()) {
-                    if (error.ok()) {
-                        impl->logVerbose("ICE candidate (" + info +
-                                           ") has been added successfully");
-                        impl->invoke(&TransportListener::onIceCandidateAdded);
+                    const auto pc = impl->peerConnection();
+                    if (!pc) {
+                        return;
                     }
-                    else {
-                        impl->logWebRTCError(error, "failed to add ICE candidate (" +
-                                               info + ")");
-                        impl->invoke(&TransportListener::onIceCandidateAddFailure,
-                                       std::move(error));
-                    }
+                    auto handler = [info, implRef = std::move(implRef)](webrtc::RTCError error) {
+                        if (const auto impl = implRef.lock()) {
+                            if (error.ok()) {
+                                impl->logVerbose("ICE candidate (" + info +
+                                                 ") has been added successfully");
+                                impl->invoke(&TransportListener::onIceCandidateAdded);
+                            }
+                            else {
+                                impl->logWebRTCError(error, "failed to add ICE candidate (" +
+                                                     info + ")");
+                                impl->invoke(&TransportListener::onIceCandidateAddFailure,
+                                               std::move(error));
+                            }
+                        }
+                    };
+                    pc->AddIceCandidate(std::move(candidate), std::move(handler));
                 }
-            };
-            pc->AddIceCandidate(std::move(candidate), std::move(handler));
-            return true;
+            });
         }
     }
-    return false;
 }
 
 bool Transport::addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
@@ -338,26 +345,52 @@ bool Transport::addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterf
 
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
-    if (const auto pc = _impl->peerConnection()) {
+    if (const auto thread = signalingThread()) {
         _impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kOffer));
-        pc->CreateOffer(_offerCreationObserver.get(), options); // non-blocking call
+        thread->PostTask([options, observer = _offerCreationObserver, implRef = weak(_impl)]() {
+            if (const auto impl = implRef.lock()) {
+                const auto pc = impl->peerConnection();
+                if (!pc) {
+                    return;
+                }
+                pc->CreateOffer(observer.get(), options);
+            }
+        });
     }
 }
 
 void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {
-    if (const auto pc = _impl->peerConnection()) {
+    if (const auto thread = signalingThread()) {
         _impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
-        pc->CreateAnswer(_answerCreationObserver.get(), options); // non-blocking call
+        thread->PostTask([options, observer = _answerCreationObserver, implRef = weak(_impl)]() {
+            if (const auto impl = implRef.lock()) {
+                const auto pc = impl->peerConnection();
+                if (!pc) {
+                    return;
+                }
+                pc->CreateAnswer(observer.get(), options);
+            }
+        });
     }
 }
 
 void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (desc) {
-        if (const auto pc = _impl->peerConnection()) {
+        if (const auto thread = signalingThread()) {
             _impl->logInfo("request to set local " + desc->type());
-            pc->SetLocalDescription(std::move(desc), _setLocalSdpObserver);
+            thread->PostTask([desc = std::move(desc),
+                              observer = _setLocalSdpObserver,
+                              implRef = weak(_impl)]() mutable {
+                if (const auto impl = implRef.lock()) {
+                    const auto pc = impl->peerConnection();
+                    if (!pc) {
+                        return;
+                    }
+                    pc->SetLocalDescription(std::move(desc), observer);
+                }
+            });
         }
     }
 }
@@ -365,9 +398,19 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
 void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (desc) {
-        if (const auto pc = _impl->peerConnection()) {
+        if (const auto thread = signalingThread()) {
             _impl->logInfo("request to set remote " + desc->type());
-            pc->SetRemoteDescription(std::move(desc), _setRemoteSdpObserver);
+            thread->PostTask([desc = std::move(desc),
+                              observer = _setRemoteSdpObserver,
+                              implRef = weak(_impl)]() mutable {
+                if (const auto impl = implRef.lock()) {
+                    const auto pc = impl->peerConnection();
+                    if (!pc) {
+                        return;
+                    }
+                    pc->SetRemoteDescription(std::move(desc), observer);
+                }
+            });
         }
     }
 }

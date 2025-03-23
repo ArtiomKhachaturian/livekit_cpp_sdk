@@ -61,16 +61,14 @@ void PingPongKit::onTimeout(MediaTimer* timer)
 {
     if (_listener) {
         if (&_pingIntervalTimer == timer) {
-            /*_pingTimeoutTimer.stop();
+            _pingTimeoutTimer.stop();
             const auto ok = _listener->onPingRequested();
             if (ok && _pingTimeout > 0U) {
                 _pingTimeoutTimer.start(_pingTimeout);
             }
             if (!ok) {
                 _pingIntervalTimer.stop();
-            }*/
-            stop();
-            _listener->onPongTimeout();
+            }
         }
         else if (&_pingTimeoutTimer == timer) {
             stop();

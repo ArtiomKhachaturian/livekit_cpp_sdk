@@ -52,7 +52,7 @@ public:
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
     bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
-    bool addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
+    void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void close();
     void setListener(TransportManagerListener* listener);
 private:

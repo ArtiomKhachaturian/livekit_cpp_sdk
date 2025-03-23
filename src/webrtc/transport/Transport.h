@@ -57,7 +57,7 @@ public:
                   const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings = {});
     bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
     bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
-    bool addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
+    void addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     bool addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
                         const webrtc::RtpTransceiverInit& init = {});
     // SDP manipulations
