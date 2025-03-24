@@ -23,6 +23,7 @@
 #elif defined(_WIN32)
 #include <Windows.h>
 #endif // __APPLE__
+#include <algorithm>
 #include <atomic>
 #include <optional>
 #include <string>
@@ -65,12 +66,19 @@ std::string operatingSystemName();
 std::string modelIdentifier();
 // wifi, wired, cellular, vpn, empty if not known
 NetworkType activeNetworkType();
+
+// string utilities
+// emulation of non-standard [::strcmpi] function, return true if both strings are identical
+bool compareCaseInsensitive(std::string_view s1, std::string_view s2);
+inline bool compareCaseSensitive(std::string_view s1, std::string_view s2) {
+    return 0 == s1.compare(s2);
+}
 std::string fromWideChar(const std::wstring& w);
-std::vector<std::string> split(const std::string_view& s, const std::string_view& delim);
+std::vector<std::string> split(std::string_view s, std::string_view delim);
 std::string join(const std::vector<std::string>& strings,
-                 const std::string_view& delim, bool skipEmpty = false);
+                 std::string_view delim, bool skipEmpty = false);
 std::string join(const std::vector<std::string_view>& strings,
-                 const std::string_view& delim, bool skipEmpty = false);
+                 std::string_view delim, bool skipEmpty = false);
 
 template <unsigned flag>
 inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }
@@ -95,6 +103,12 @@ inline bool exchange(T source, Bricks::SafeObj<T>& dst) {
 template<typename T>
 inline bool exchange(const T& source, std::atomic<T>& dst) {
     return source != dst.exchange(source);
+}
+
+template <typename T> // this function is better than [std::clamp] (constexpr, no dangling references on output)
+inline constexpr T bound(const T& min, const T& val, const T& max)
+{
+    return std::max(min, std::min(max, val));
 }
 
 #ifdef WEBRTC_AVAILABLE

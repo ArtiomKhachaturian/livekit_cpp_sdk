@@ -43,8 +43,21 @@ std::string fromWideChar(const std::wstring& w)
     return {};
 }
 
-std::vector<std::string> split(const std::string_view& s,
-                               const std::string_view& delim)
+bool compareCaseInsensitive(std::string_view s1, std::string_view s2)
+{
+    const size_t size = s1.size();
+    if (size == s2.size()) {
+        for (size_t i = 0U; i < size; ++i) {
+            if (std::tolower(s1[i]) != std::tolower(s2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+std::vector<std::string> split(std::string_view s, std::string_view delim)
 {
     std::vector<std::string> res;
     if (!s.empty() && !delim.empty()) {
@@ -64,7 +77,7 @@ std::vector<std::string> split(const std::string_view& s,
 }
 
 std::string join(const std::vector<std::string>& strings,
-                 const std::string_view& delim, bool skipEmpty)
+                 std::string_view delim, bool skipEmpty)
 {
     if (!strings.empty()) {
         const std::vector<std::string_view> stringViews(strings.begin(), strings.end());
@@ -74,7 +87,7 @@ std::string join(const std::vector<std::string>& strings,
 }
 
 std::string join(const std::vector<std::string_view>& strings,
-                 const std::string_view& delim, bool skipEmpty)
+                 std::string_view delim, bool skipEmpty)
 {
     if (!strings.empty()) {
         const auto size = strings.size();
