@@ -27,21 +27,29 @@ class KeyProvider
 {
 public:
     virtual ~KeyProvider() = default;
-    virtual bool setSharedKey(std::vector<uint8_t> key, const std::optional<size_t>& keyIndex = {}) = 0;
+    virtual bool setSharedKey(std::vector<uint8_t> key,
+                              const std::optional<uint8_t>& keyIndex = {}) = 0;
     virtual std::shared_ptr<ParticipantKeyHandler> sharedKey(const std::string& participantId) = 0;
-    virtual std::vector<uint8_t> ratchetSharedKey(const std::optional<size_t>& keyIndex = {}) = 0;
-    virtual std::vector<uint8_t> exportSharedKey(const std::optional<size_t>& keyIndex = {}) const = 0;
+    virtual std::vector<uint8_t> ratchetSharedKey(const std::optional<uint8_t>& keyIndex = {}) = 0;
+    virtual std::vector<uint8_t> exportSharedKey(const std::optional<uint8_t>& keyIndex = {}) const = 0;
     virtual bool setKey(const std::string& participantId,
                         std::vector<uint8_t> key,
-                        const std::optional<size_t>& keyIndex = {}) = 0;
+                        const std::optional<uint8_t>& keyIndex = {}) = 0;
     virtual std::shared_ptr<ParticipantKeyHandler> key(const std::string& participantId) const = 0;
     virtual std::vector<uint8_t> ratchetKey(const std::string& participantId,
-                                            const std::optional<size_t>& keyIndex = {}) const = 0;
+                                            const std::optional<uint8_t>& keyIndex = {}) const = 0;
     virtual std::vector<uint8_t> exportKey(const std::string& participantId,
-                                           const std::optional<size_t>& keyIndex = {}) const = 0;
+                                           const std::optional<uint8_t>& keyIndex = {}) const = 0;
+    void setSifTrailer(std::string_view trailer);
     virtual void setSifTrailer(std::vector<uint8_t> trailer) = 0;
     virtual std::vector<uint8_t> sifTrailer() const = 0;
     virtual const KeyProviderOptions& options() const = 0;
 };
+
+
+inline void KeyProvider::setSifTrailer(std::string_view trailer)
+{
+    setSifTrailer(std::vector<uint8_t>(trailer.begin(), trailer.end()));
+}
 
 } // namespace LiveKitCpp

@@ -105,19 +105,19 @@ LocalTrack* LocalParticipantImpl::track(const rtc::scoped_refptr<webrtc::RtpSend
 void LocalParticipantImpl::setInfo(const ParticipantInfo& info)
 {
     bool changed = false;
-    if (exchange(info._sid, _sid)) {
+    if (exchangeVal(info._sid, _sid)) {
         changed = true;
     }
-    if (exchange(info._identity, _identity)) {
+    if (exchangeVal(info._identity, _identity)) {
         changed = true;
     }
-    if (exchange(info._name, _name)) {
+    if (exchangeVal(info._name, _name)) {
         changed = true;
     }
-    if (exchange(info._metadata, _metadata)) {
+    if (exchangeVal(info._metadata, _metadata)) {
         changed = true;
     }
-    if (exchange(info._kind, _kind)) {
+    if (exchangeVal(info._kind, _kind)) {
         changed = true;
     }
     if (changed) {

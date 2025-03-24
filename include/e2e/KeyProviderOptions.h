@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // KeyProviderOptions.h
 #include <optional>
+#include <string_view>
 #include <vector>
 
 namespace LiveKitCpp
@@ -28,9 +29,15 @@ struct KeyProviderOptions
     // key ring size should be between 1 and 255
     uint8_t _keyRingSize = _defaultKeyRingSize;
     bool _discardFrameWhenCryptorNotReady = false;
+    void setRatchetSalt(std::string_view salt);
     // constants
     static inline constexpr uint8_t _defaultKeyRingSize = 16;
     static inline constexpr uint8_t _maxKeyRingSize = 255;
 };
+
+inline void KeyProviderOptions::setRatchetSalt(std::string_view salt)
+{
+    _ratchetSalt.assign(std::begin(salt), std::end(salt));
+}
 
 } // namespace LiveKitCpp

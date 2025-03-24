@@ -23,6 +23,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include "AudioDeviceModuleListener.h"
 #include "CameraManager.h"
+#include "DefaultKeyProvider.h"
 #include "Loggable.h"
 #include "PeerConnectionFactory.h"
 #include "SSLInitiallizer.h"
@@ -357,6 +358,16 @@ void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& lo
             }
         }
 #endif
+    }
+}
+
+Options::Options(KeyProviderOptions keyProviderOptions,
+                 EncryptionType encryptionType)
+{
+    if (EncryptionType::None != encryptionType) {
+        auto prov = std::make_unique<DefaultKeyProvider()>(std::move(keyProviderOptions));;
+        _e2eeOptions._keyProvider = std::move(prov);
+        _e2eeOptions._encryptionType = encryptionType;
     }
 }
 

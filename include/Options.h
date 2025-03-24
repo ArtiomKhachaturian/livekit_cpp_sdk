@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ConnectOptions.h
+#include "LiveKitClientExport.h"
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
-#include "rtc/ClientInfo.h"
 #include "e2e/E2EEOptions.h"
 #include <chrono>
 #include <optional>
@@ -34,10 +34,6 @@ struct Options
     bool _autoSubscribe = true;
     
     bool _adaptiveStream = true; // maybe std::optional<>?
-    
-    std::string _publish;
-    
-    std::optional<ClientInfo> _clientsInfo;
     
     // DisabledCodecs            []webrtc.RTPCodecCapability
     
@@ -61,6 +57,10 @@ struct Options
 
     // generally, it's not recommended to change this
     IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::All;
+    
+    Options() = default;
+    LIVEKIT_CLIENT_API Options(KeyProviderOptions keyProviderOptions,
+                               EncryptionType encryptionType = EncryptionType::Gcm);
 };
 
 } // namespace LiveKitCpp

@@ -27,12 +27,12 @@ struct Data
 {
     bool _hasValidKey = false;
     uint64_t _decryptionFailureCount = 0ULL;
-    size_t _currentKeyIndex = 0U;
+    uint8_t _currentKeyIndex = 0;
     std::vector<std::shared_ptr<LiveKitCpp::KeySet>> _cryptoKeyRing;
-    inline size_t boundIndex(size_t index) const {
-        return std::min(_cryptoKeyRing.size(), index);
+    inline size_t boundIndex(uint8_t index) const {
+        return std::min<uint8_t>(_cryptoKeyRing.size(), index);
     }
-    inline size_t index(const std::optional<size_t>& keyIndex) const {
+    inline size_t index(const std::optional<uint8_t>& keyIndex) const {
         return keyIndex ? boundIndex(keyIndex.value()) : _currentKeyIndex;
     }
 };
@@ -101,7 +101,7 @@ std::shared_ptr<ParticipantKeyHandler> ParticipantKeyHandler::clone() const
     return std::shared_ptr<ParticipantKeyHandler>(new ParticipantKeyHandler(_impl->clone()));
 }
 
-std::vector<uint8_t> ParticipantKeyHandler::ratchetKey(const std::optional<size_t>& keyIndex)
+std::vector<uint8_t> ParticipantKeyHandler::ratchetKey(const std::optional<uint8_t>& keyIndex)
 {
     if (const auto keySet = this->keySet(keyIndex)) {
         std::vector<uint8_t> newMaterial;
@@ -116,14 +116,14 @@ std::vector<uint8_t> ParticipantKeyHandler::ratchetKey(const std::optional<size_
     return {};
 }
 
-std::shared_ptr<KeySet> ParticipantKeyHandler::keySet(const std::optional<size_t>& keyIndex) const
+std::shared_ptr<KeySet> ParticipantKeyHandler::keySet(const std::optional<uint8_t>& keyIndex) const
 {
     LOCK_READ_SAFE_OBJ(_impl->_data);
     return _impl->_data->_cryptoKeyRing.at(_impl->_data->index(keyIndex));
 }
 
 void ParticipantKeyHandler::setKey(std::vector<uint8_t> password,
-                                   const std::optional<size_t>& keyIndex)
+                                   const std::optional<uint8_t>& keyIndex)
 {
     setKeyFromMaterial(std::move(password), keyIndex);
     setHasValidKey();
@@ -166,13 +166,13 @@ void ParticipantKeyHandler::setHasValidKey()
 }
 
 void ParticipantKeyHandler::setKeyFromMaterial(std::vector<uint8_t> password,
-                                               const std::optional<size_t>& keyIndex)
+                                               const std::optional<uint8_t>& keyIndex)
 {
     LOCK_WRITE_SAFE_OBJ(_impl->_data);
     auto& data = _impl->_data;
     if (keyIndex.has_value()) {
         const auto index = data->boundIndex(keyIndex.value());
-        data->_currentKeyIndex = index % data->_cryptoKeyRing.size();
+        data->_currentKeyIndex = index % uint8_t(data->_cryptoKeyRing.size());
     }
     data->_cryptoKeyRing[data->_currentKeyIndex] = deriveKeys(_impl->_options._ratchetSalt,
                                                               std::move(password),
@@ -239,7 +239,7 @@ bool ParticipantKeyHandler::Impl::derivePBKDF2KeyFromRawKey(const std::vector<ui
 
 std::string_view ParticipantKeyHandler::Impl::logCategory() const
 {
-    static const std::string_view category("ParticipantKeyHandler");
+    static const std::string_view category("participant_key_handler");
     return category;
 }
 

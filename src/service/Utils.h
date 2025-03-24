@@ -91,7 +91,7 @@ std::string makeStateChangesString(TransportState from, TransportState to);
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
 
 template<typename T>
-inline bool exchange(T source, Bricks::SafeObj<T>& dst) {
+inline bool exchangeVal(T source, Bricks::SafeObj<T>& dst) {
     const std::lock_guard guard(dst.mutex());
     if (source != dst.constRef()) {
         dst = std::move(source);
@@ -101,7 +101,7 @@ inline bool exchange(T source, Bricks::SafeObj<T>& dst) {
 }
 
 template<typename T>
-inline bool exchange(const T& source, std::atomic<T>& dst) {
+inline bool exchangeVal(const T& source, std::atomic<T>& dst) {
     return source != dst.exchange(source);
 }
 

@@ -45,6 +45,7 @@ RTCEngine::RTCEngine(Options options,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
     : RTCMediaEngine(pcf, logger)
+    , _keyProvider(options._e2eeOptions._keyProvider.release())
     , _options(std::move(options))
     , _pcf(pcf)
     , _localDcs(logger)
@@ -266,20 +267,17 @@ void RTCEngine::changeState(TransportState state)
     }
 }
 
-void RTCEngine::createTransportManager(const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
+void RTCEngine::createTransportManager(const JoinResponse& response,
+                                       const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
 {
-    _reconnectAttempts = 0U;
-    std::shared_ptr<TransportManager> pcManager;
-    {
-        LOCK_READ_SAFE_OBJ(_lastJoinResponse);
-        pcManager = std::make_shared<TransportManager>(_lastJoinResponse->_subscriberPrimary,
-                                                       _lastJoinResponse->_fastPublish,
-                                                       _lastJoinResponse->_pingTimeout,
-                                                       _lastJoinResponse->_pingInterval,
-                                                       _pcf, conf,
-                                                       logger());
-    }
+    auto pcManager = std::make_shared<TransportManager>(response._subscriberPrimary,
+                                                        response._fastPublish,
+                                                        response._pingTimeout,
+                                                        response._pingInterval,
+                                                        _pcf, conf,
+                                                        logger());
     pcManager->setListener(this);
+    _reconnectAttempts = 0U;
     std::atomic_store(&_pcManager, pcManager);
     for (auto track : localTracks()) {
         pcManager->addTrack(std::move(track));
@@ -377,17 +375,20 @@ void RTCEngine::onJoin(const JoinResponse& response)
 {
     RTCMediaEngine::onJoin(response);
     if (DisconnectReason::UnknownReason == response._participant._disconnectReason) {
+        if (_keyProvider) {
+            _keyProvider->setSifTrailer(response._sifTrailer);
+        }
         _localDcs.setSid(response._participant._sid);
         _localDcs.setIdentity(response._participant._identity);
         _lastJoinResponse(response);
-        createTransportManager(makeConfiguration(response));
+        createTransportManager(response, makeConfiguration(response));
     }
 }
 
 void RTCEngine::onReconnect(const ReconnectResponse& response)
 {
     RTCMediaEngine::onReconnect(response);
-    createTransportManager(makeConfiguration(response));
+    createTransportManager(_lastJoinResponse(), makeConfiguration(response));
 }
 
 void RTCEngine::onOffer(const SessionDescription& sdp)

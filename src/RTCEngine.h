@@ -84,7 +84,8 @@ private:
     void changeState(RoomState state);
     void changeState(webrtc::PeerConnectionInterface::PeerConnectionState state);
     void changeState(TransportState state);
-    void createTransportManager(const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
+    void createTransportManager(const JoinResponse& response,
+                                const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
     // impl. of TransportManagerListener
     void onSdpOperationFailed(SignalTarget, webrtc::RTCError error) final;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState state,
@@ -127,6 +128,7 @@ private:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
+    const std::shared_ptr<KeyProvider> _keyProvider;
     const Options _options;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     Bricks::Listener<RoomListener*> _listener;

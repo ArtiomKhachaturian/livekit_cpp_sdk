@@ -49,7 +49,7 @@ DefaultKeyProvider::~DefaultKeyProvider()
 }
 
 bool DefaultKeyProvider::setSharedKey(std::vector<uint8_t> key,
-                                      const std::optional<size_t>& keyIndex)
+                                      const std::optional<uint8_t>& keyIndex)
 {
     if (_impl->_options._sharedKey) {
         std::shared_ptr<ParticipantKeyHandler> keyHandler;
@@ -72,7 +72,8 @@ bool DefaultKeyProvider::setSharedKey(std::vector<uint8_t> key,
     return false;
 }
 
-std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::sharedKey(const std::string& participantId)
+std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::
+    sharedKey(const std::string& participantId)
 {
     if (_impl->_options._sharedKey && !participantId.empty()) {
         LOCK_WRITE_SAFE_OBJ(_impl->_keys);
@@ -90,7 +91,7 @@ std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::sharedKey(const std::
     return {};
 }
 
-std::vector<uint8_t> DefaultKeyProvider::ratchetSharedKey(const std::optional<size_t>& keyIndex)
+std::vector<uint8_t> DefaultKeyProvider::ratchetSharedKey(const std::optional<uint8_t>& keyIndex)
 {
     LOCK_READ_SAFE_OBJ(_impl->_keys);
     auto it = _impl->_keys->find(g_shared);
@@ -108,7 +109,7 @@ std::vector<uint8_t> DefaultKeyProvider::ratchetSharedKey(const std::optional<si
     return {};
 }
 
-std::vector<uint8_t> DefaultKeyProvider::exportSharedKey(const std::optional<size_t>& keyIndex) const
+std::vector<uint8_t> DefaultKeyProvider::exportSharedKey(const std::optional<uint8_t>& keyIndex) const
 {
     LOCK_READ_SAFE_OBJ(_impl->_keys);
     auto it = _impl->_keys->find(g_shared);
@@ -120,8 +121,9 @@ std::vector<uint8_t> DefaultKeyProvider::exportSharedKey(const std::optional<siz
     return {};
 }
 
-bool DefaultKeyProvider::setKey(const std::string& participantId, std::vector<uint8_t> key,
-                                const std::optional<size_t>& keyIndex)
+bool DefaultKeyProvider::setKey(const std::string& participantId,
+                                std::vector<uint8_t> key,
+                                const std::optional<uint8_t>& keyIndex)
 {
     if (!participantId.empty()) {
         std::shared_ptr<ParticipantKeyHandler> keyHandler;
@@ -150,7 +152,7 @@ std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::key(const std::string
 }
 
 std::vector<uint8_t> DefaultKeyProvider::ratchetKey(const std::string& participantId,
-                                                    const std::optional<size_t>& keyIndex) const
+                                                    const std::optional<uint8_t>& keyIndex) const
 {
     if (const auto keyHandler = key(participantId)) {
         return keyHandler->ratchetKey(keyIndex);
@@ -159,7 +161,7 @@ std::vector<uint8_t> DefaultKeyProvider::ratchetKey(const std::string& participa
 }
 
 std::vector<uint8_t> DefaultKeyProvider::exportKey(const std::string& participantId,
-                                                   const std::optional<size_t>& keyIndex) const
+                                                   const std::optional<uint8_t>& keyIndex) const
 {
     if (const auto keyHandler = key(participantId)) {
         if (const auto keySet = keyHandler->keySet(keyIndex)) {
