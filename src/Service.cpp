@@ -362,10 +362,12 @@ void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& lo
 }
 
 Options::Options(KeyProviderOptions keyProviderOptions,
-                 EncryptionType encryptionType)
+                 EncryptionType encryptionType,
+                 const std::shared_ptr<Bricks::Logger>& logger)
 {
     if (EncryptionType::None != encryptionType) {
-        _e2eeOptions._keyProvider.reset(new DefaultKeyProvider(std::move(keyProviderOptions)));
+        _e2eeOptions._keyProvider.reset(new DefaultKeyProvider(std::move(keyProviderOptions),
+                                                               logger));
         _e2eeOptions._encryptionType = encryptionType;
     }
 }

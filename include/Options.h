@@ -19,8 +19,13 @@
 #include "e2e/E2EEOptions.h"
 #include <chrono>
 #include <optional>
+#include <memory>
 #include <string>
 #include <vector>
+
+namespace Bricks {
+class Logger;
+}
 
 namespace LiveKitCpp
 {
@@ -64,8 +69,10 @@ struct Options
     IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::All;
     
     Options() = default;
+    // logger for key provider implementation
     LIVEKIT_CLIENT_API Options(KeyProviderOptions keyProviderOptions,
-                               EncryptionType encryptionType = EncryptionType::Gcm);
+                               EncryptionType encryptionType = EncryptionType::Gcm,
+                               const std::shared_ptr<Bricks::Logger>& logger = {});
 };
 
 } // namespace LiveKitCpp
