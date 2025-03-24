@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // ConnectOptions.h
 #include "LiveKitClientExport.h"
+#include "rtc/ClientInfo.h"
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
 #include "e2e/E2EEOptions.h"
@@ -34,6 +35,10 @@ struct Options
     bool _autoSubscribe = true;
     
     bool _adaptiveStream = true; // maybe std::optional<>?
+    
+    std::string _publish;
+    
+    std::optional<ClientInfo> _clientsInfo;
     
     // DisabledCodecs            []webrtc.RTPCodecCapability
     

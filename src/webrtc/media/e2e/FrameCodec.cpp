@@ -346,7 +346,7 @@ namespace
 
 uint8_t unencryptedH264Bytes(const rtc::ArrayView<const uint8_t>& data)
 {
-    const auto indices = webrtc::H264::FindNaluIndices(data);
+    /*const auto indices = webrtc::H264::FindNaluIndices(data);
     for (const auto& index : indices) {
         const auto slice = data.data() + index.payload_start_offset;
         switch (webrtc::H264::ParseNaluType(slice[0])) {
@@ -356,13 +356,13 @@ uint8_t unencryptedH264Bytes(const rtc::ArrayView<const uint8_t>& data)
             default:
                 break;
         }
-    }
+    }*/
     return 12; // ?
 }
 
 uint8_t unencryptedH265Bytes(const rtc::ArrayView<const uint8_t>& data)
 {
-    const auto indices = webrtc::H265::FindNaluIndices(data);
+    /*const auto indices = webrtc::H265::FindNaluIndices(data);
     for (const auto& index : indices) {
         const auto slice = data.data() + index.payload_start_offset;
         switch (webrtc::H265::ParseNaluType(slice[0])) {
@@ -373,7 +373,7 @@ uint8_t unencryptedH265Bytes(const rtc::ArrayView<const uint8_t>& data)
             default:
                 break;
         }
-    }
+    }*/
     return 12; // ?
 }
 

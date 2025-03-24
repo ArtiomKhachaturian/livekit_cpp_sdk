@@ -365,8 +365,7 @@ Options::Options(KeyProviderOptions keyProviderOptions,
                  EncryptionType encryptionType)
 {
     if (EncryptionType::None != encryptionType) {
-        auto prov = std::make_unique<DefaultKeyProvider()>(std::move(keyProviderOptions));;
-        _e2eeOptions._keyProvider = std::move(prov);
+        _e2eeOptions._keyProvider.reset(new DefaultKeyProvider(std::move(keyProviderOptions)));
         _e2eeOptions._encryptionType = encryptionType;
     }
 }
