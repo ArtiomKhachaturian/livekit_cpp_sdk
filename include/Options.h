@@ -15,6 +15,7 @@
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
 #include "rtc/ClientInfo.h"
+#include "e2e/E2EEOptions.h"
 #include <chrono>
 #include <optional>
 #include <string>
@@ -41,7 +42,7 @@ struct Options
     // DisabledCodecs            []webrtc.RTPCodecCapability
     
     /// E2EE Options
-    //std::optional<E2EEOptions> _e2eeOptions;
+    E2EEOptions _e2eeOptions;
     
     /// The number of attempts to reconnect when the network disconnects.
     int _reconnectAttempts = 3;

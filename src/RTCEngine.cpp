@@ -40,12 +40,12 @@ inline constexpr bool failed(webrtc::PeerConnectionInterface::PeerConnectionStat
 namespace LiveKitCpp
 {
 
-RTCEngine::RTCEngine(const Options& signalOptions,
+RTCEngine::RTCEngine(Options options,
                      PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
     : RTCMediaEngine(pcf, logger)
-    , _options(signalOptions)
+    , _options(std::move(options))
     , _pcf(pcf)
     , _localDcs(logger)
     , _remoteDcs(logger)

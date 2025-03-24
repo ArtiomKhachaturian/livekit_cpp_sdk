@@ -14,6 +14,7 @@
 #pragma once // Room.h
 #include "LiveKitClientExport.h"
 #include "LocalParticipant.h"
+#include "Options.h"
 #include "RemoteParticipant.h"
 #include "RoomState.h"
 #include <memory>
@@ -34,7 +35,6 @@ namespace LiveKitCpp
 class RoomListener;
 class PeerConnectionFactory;
 class RTCEngine;
-struct Options;
 
 class LIVEKIT_CLIENT_API Room
 {
@@ -75,8 +75,7 @@ public:
     bool sendChatMessage(std::string message, bool deleted = false);
 private:
     Room(std::unique_ptr<Websocket::EndPoint> socket,
-         PeerConnectionFactory* pcf,
-         const Options& signalOptions,
+         PeerConnectionFactory* pcf, Options options,
          const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::unique_ptr<RTCEngine> _engine;

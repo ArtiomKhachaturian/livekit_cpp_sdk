@@ -44,9 +44,9 @@ public:
     ~Service();
     ServiceState state() const;
     [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]
-    Room* makeRoom(const Options& signalOptions = {}) const;
-    std::shared_ptr<Room> makeRoomS(const Options& signalOptions = {}) const;
-    std::unique_ptr<Room> makeRoomU(const Options& signalOptions = {}) const;
+    Room* makeRoom(Options options = {}) const;
+    std::shared_ptr<Room> makeRoomS(Options options = {}) const;
+    std::unique_ptr<Room> makeRoomU(Options options = {}) const;
     // media & network devices
     static NetworkType activeNetworkType();
     static MediaAuthorizationLevel mediaAuthorizationLevel();

@@ -61,7 +61,7 @@ public:
     std::vector<MediaDevice> recordingAudioDevices() const;
     std::vector<MediaDevice> playoutAudioDevices() const;
     template <typename TOutput>
-    TOutput makeRoom(const Options& signalOptions) const;
+    TOutput makeRoom(Options options) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -108,19 +108,19 @@ ServiceState Service::state() const
     return ServiceState::SSLInitError;
 }
 
-Room* Service::makeRoom(const Options& signalOptions) const
+Room* Service::makeRoom(Options options) const
 {
-    return _impl->makeRoom<Room*>(signalOptions);
+    return _impl->makeRoom<Room*>(std::move(options));
 }
 
-std::shared_ptr<Room> Service::makeRoomS(const Options& signalOptions) const
+std::shared_ptr<Room> Service::makeRoomS(Options options) const
 {
-    return _impl->makeRoom<std::shared_ptr<Room>>(signalOptions);
+    return _impl->makeRoom<std::shared_ptr<Room>>(std::move(options));
 }
 
-std::unique_ptr<Room> Service::makeRoomU(const Options& signalOptions) const
+std::unique_ptr<Room> Service::makeRoomU(Options options) const
 {
-    return _impl->makeRoom<std::unique_ptr<Room>>(signalOptions);
+    return _impl->makeRoom<std::unique_ptr<Room>>(std::move(options));
 }
 
 MediaDevice Service::defaultRecordingCameraDevice() const
@@ -268,12 +268,12 @@ std::vector<MediaDevice> Service::Impl::playoutAudioDevices() const
 }
 
 template <typename TOutput>
-TOutput Service::Impl::makeRoom(const Options& signalOptions) const
+TOutput Service::Impl::makeRoom(Options options) const
 {
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
             return TOutput(new Room(std::move(socket), _pcf.get(),
-                                    signalOptions, logger()));
+                                    std::move(options), logger()));
         }
     }
     return TOutput(nullptr);
@@ -373,11 +373,11 @@ ServiceState Service::state() const
     return ServiceState::NoWebRTC;
 }
 
-Room* Service::makeRoom(const Options&) const { return nullptr; }
+Room* Service::makeRoom(Options) const { return nullptr; }
 
-std::shared_ptr<Room> Service::makeRoomS(const Options&) const { return {}; }
+std::shared_ptr<Room> Service::makeRoomS(Options) const { return {}; }
 
-std::unique_ptr<Room> Service::makeRoomU(const Options&) const { return {}; }
+std::unique_ptr<Room> Service::makeRoomU(Options) const { return {}; }
 
 MediaDevice Service::defaultRecordingCameraDevice() const { return {}; }
 

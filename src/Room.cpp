@@ -22,10 +22,9 @@ namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
 Room::Room(std::unique_ptr<Websocket::EndPoint> socket,
-           PeerConnectionFactory* pcf,
-           const Options& signalOptions,
+           PeerConnectionFactory* pcf, Options options,
            const std::shared_ptr<Bricks::Logger>& logger)
-    : _engine(std::make_unique<RTCEngine>(signalOptions, pcf, std::move(socket), logger))
+    : _engine(std::make_unique<RTCEngine>(std::move(options), pcf, std::move(socket), logger))
 {
 }
 
@@ -90,7 +89,7 @@ bool Room::sendChatMessage(std::string message, bool deleted)
 struct Room::Impl {};
     
 Room::Room(std::unique_ptr<Websocket::EndPoint>, PeerConnectionFactory*,
-           const Options&, const std::shared_ptr<Bricks::Logger>&) {}
+           Options, const std::shared_ptr<Bricks::Logger>&) {}
 
 Room::~Room() {}
 

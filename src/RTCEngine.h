@@ -51,7 +51,7 @@ class RTCEngine : public RTCMediaEngine,
                   private DataExchangeListener
 {
 public:
-    RTCEngine(const Options& signalOptions,
+    RTCEngine(Options options,
               PeerConnectionFactory* pcf,
               std::unique_ptr<Websocket::EndPoint> socket,
               const std::shared_ptr<Bricks::Logger>& logger = {});
