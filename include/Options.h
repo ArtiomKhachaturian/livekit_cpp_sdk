@@ -17,6 +17,7 @@
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
 #include "e2e/E2EEOptions.h"
+#include "e2e/KeyProviderOptions.h"
 #include <chrono>
 #include <optional>
 #include <memory>
