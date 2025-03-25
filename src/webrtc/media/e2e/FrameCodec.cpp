@@ -21,7 +21,7 @@
 #include "Utils.h"
 #include "e2e/KeyProvider.h"
 #include "e2e/KeyProviderOptions.h"
-#include "e2e/ParticipantKeyHandler.h"
+#include "e2e/E2EKeyHandler.h"
 #include <common_video/h264/h264_common.h>
 #include <common_video/h265/h265_common.h>
 #include <openssl/aead.h>
@@ -93,7 +93,7 @@ private:
     void decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
     void setLastEncryptState(FrameCodecState state);
     void setLastDecryptState(FrameCodecState state);
-    std::shared_ptr<ParticipantKeyHandler> keyHandler() const;
+    std::shared_ptr<E2EKeyHandler> keyHandler() const;
     bool aesGcmEncryptDecrypt(bool encrypt,
                               const std::vector<uint8_t>& rawKey,
                               const rtc::ArrayView<uint8_t>& data,
@@ -413,7 +413,7 @@ void FrameCodec::Impl::setLastDecryptState(FrameCodecState state)
     }
 }
 
-std::shared_ptr<ParticipantKeyHandler> FrameCodec::Impl::keyHandler() const
+std::shared_ptr<E2EKeyHandler> FrameCodec::Impl::keyHandler() const
 {
     if (_keyProvider->options()._sharedKey) {
         return _keyProvider->sharedKey(_trackId);

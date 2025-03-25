@@ -32,12 +32,12 @@ public:
     ~DefaultKeyProvider() final;
     // impl. of KeyProvider
     bool setSharedKey(std::vector<uint8_t> key, const std::optional<uint8_t>& keyIndex = {}) final;
-    std::shared_ptr<ParticipantKeyHandler> sharedKey(const std::string& trackId) final;
+    std::shared_ptr<E2EKeyHandler> sharedKey(const std::string& trackId) final;
     std::vector<uint8_t> ratchetSharedKey(const std::optional<uint8_t>& keyIndex = {}) final;
     std::vector<uint8_t> exportSharedKey(const std::optional<uint8_t>& keyIndex = {}) const final;
     bool setKey(const std::string& trackId, std::vector<uint8_t> key,
                 const std::optional<uint8_t>& keyIndex = {}) final;
-    std::shared_ptr<ParticipantKeyHandler> key(const std::string& trackId) const final;
+    std::shared_ptr<E2EKeyHandler> key(const std::string& trackId) const final;
     std::vector<uint8_t> ratchetKey(const std::string& trackId,
                                     const std::optional<uint8_t>& keyIndex = {}) const final;
     std::vector<uint8_t> exportKey(const std::string& trackId,

@@ -111,6 +111,10 @@ inline constexpr T bound(const T& min, const T& val, const T& max)
     return std::max(min, std::min(max, val));
 }
 
+inline std::vector<uint8_t> binaryFromString(std::string_view s) {
+    return {s.begin(), s.end()};
+}
+
 #ifdef WEBRTC_AVAILABLE
 std::string fourccToString(int fourcc);
 std::string makeUuid();

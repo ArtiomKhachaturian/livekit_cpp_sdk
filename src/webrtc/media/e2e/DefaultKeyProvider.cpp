@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "e2e/DefaultKeyProvider.h"
-#include "e2e/ParticipantKeyHandler.h"
+#include "e2e/E2EKeyHandler.h"
 #include "Loggable.h"
 #include "SafeObj.h"
 #include <unordered_map>
@@ -26,7 +26,7 @@ const std::string g_shared("shared");
 namespace LiveKitCpp
 {
 
-using ParticipantKeyHandlers = std::unordered_map<std::string, std::shared_ptr<ParticipantKeyHandler>>;
+using ParticipantKeyHandlers = std::unordered_map<std::string, std::shared_ptr<E2EKeyHandler>>;
 
 struct DefaultKeyProvider::Impl : public Bricks::LoggableS<>
 {
@@ -34,8 +34,8 @@ struct DefaultKeyProvider::Impl : public Bricks::LoggableS<>
     Bricks::SafeObj<ParticipantKeyHandlers> _keys;
     Bricks::SafeObj<std::vector<uint8_t>> _uncryptedMagicBytes; // sif
     Impl(KeyProviderOptions options, const std::shared_ptr<Bricks::Logger>& logger);
-    std::shared_ptr<ParticipantKeyHandler> newKeyHandler() const;
-    std::shared_ptr<ParticipantKeyHandler> emplaceHandler(const std::string& id);
+    std::shared_ptr<E2EKeyHandler> newKeyHandler() const;
+    std::shared_ptr<E2EKeyHandler> emplaceHandler(const std::string& id);
 };
 
 DefaultKeyProvider::DefaultKeyProvider(KeyProviderOptions options,
@@ -52,7 +52,7 @@ bool DefaultKeyProvider::setSharedKey(std::vector<uint8_t> key,
                                       const std::optional<uint8_t>& keyIndex)
 {
     if (_impl->_options._sharedKey) {
-        std::shared_ptr<ParticipantKeyHandler> keyHandler;
+        std::shared_ptr<E2EKeyHandler> keyHandler;
         {
             LOCK_WRITE_SAFE_OBJ(_impl->_keys);
             keyHandler = _impl->emplaceHandler(g_shared);
@@ -72,8 +72,7 @@ bool DefaultKeyProvider::setSharedKey(std::vector<uint8_t> key,
     return false;
 }
 
-std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::
-    sharedKey(const std::string& trackId)
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::sharedKey(const std::string& trackId)
 {
     if (_impl->_options._sharedKey && !trackId.empty()) {
         LOCK_WRITE_SAFE_OBJ(_impl->_keys);
@@ -126,7 +125,7 @@ bool DefaultKeyProvider::setKey(const std::string& trackId,
                                 const std::optional<uint8_t>& keyIndex)
 {
     if (!trackId.empty()) {
-        std::shared_ptr<ParticipantKeyHandler> keyHandler;
+        std::shared_ptr<E2EKeyHandler> keyHandler;
         {
             LOCK_WRITE_SAFE_OBJ(_impl->_keys);
             keyHandler = _impl->emplaceHandler(trackId);
@@ -139,7 +138,7 @@ bool DefaultKeyProvider::setKey(const std::string& trackId,
     return false;
 }
 
-std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::key(const std::string& trackId) const
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::key(const std::string& trackId) const
 {
     if (!trackId.empty()) {
         LOCK_READ_SAFE_OBJ(_impl->_keys);
@@ -193,14 +192,14 @@ DefaultKeyProvider::Impl::Impl(KeyProviderOptions options,
 {
 }
 
-std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::Impl::newKeyHandler() const
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::Impl::newKeyHandler() const
 {
-    return std::make_shared<ParticipantKeyHandler>(_options, logger());
+    return std::make_shared<E2EKeyHandler>(_options, logger());
 }
 
-std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::Impl::emplaceHandler(const std::string& id)
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::Impl::emplaceHandler(const std::string& id)
 {
-    std::shared_ptr<ParticipantKeyHandler> keyHandler;
+    std::shared_ptr<E2EKeyHandler> keyHandler;
     if (!id.empty()) {
         auto it = _keys->find(id);
         if (it == _keys->end()) {

@@ -42,10 +42,6 @@ namespace {
 const std::string_view g_logCategory("service");
 #endif
 
-inline std::vector<uint8_t> fromString(std::string_view s) {
-    return {s.begin(), s.end()};
-}
-
 }
 
 namespace LiveKitCpp
@@ -375,23 +371,23 @@ Options::Options(KeyProviderOptions keyProviderOptions,
 
 bool KeyProvider::setSharedKey(std::string_view key, const std::optional<uint8_t>& keyIndex)
 {
-    return setSharedKey(fromString(std::move(key)), keyIndex);
+    return setSharedKey(binaryFromString(std::move(key)), keyIndex);
 }
 
 bool KeyProvider::setKey(const std::string& participantId, std::string_view key,
                          const std::optional<uint8_t>& keyIndex)
 {
-    return setKey(participantId, fromString(std::move(key)), keyIndex);
+    return setKey(participantId, binaryFromString(std::move(key)), keyIndex);
 }
 
 void KeyProvider::setSifTrailer(std::string_view trailer)
 {
-    setSifTrailer(fromString(std::move(trailer)));
+    setSifTrailer(binaryFromString(std::move(trailer)));
 }
 
 void KeyProviderOptions::setRatchetSalt(std::string_view salt)
 {
-    _ratchetSalt = fromString(std::move(salt));
+    _ratchetSalt = binaryFromString(std::move(salt));
 }
 
 #else

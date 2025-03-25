@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "e2e/ParticipantKeyHandler.h"
+#include "e2e/E2EKeyHandler.h"
 #ifdef WEBRTC_AVAILABLE
 #include "e2e/KeyProviderOptions.h"
 #include "Loggable.h"
@@ -58,7 +58,7 @@ inline std::string toUint8List(const std::vector<uint8_t>& data) {
 namespace LiveKitCpp
 {
 
-struct ParticipantKeyHandler::Impl : public Bricks::LoggableS<>
+struct E2EKeyHandler::Impl : public Bricks::LoggableS<>
 {
     const KeyProviderOptions _options;
     Bricks::SafeObj<Data> _data;
@@ -73,8 +73,8 @@ protected:
     std::string_view logCategory() const final;
 };
 
-ParticipantKeyHandler::ParticipantKeyHandler(const KeyProviderOptions& options,
-                                             const std::shared_ptr<Bricks::Logger>& logger)
+E2EKeyHandler::E2EKeyHandler(const KeyProviderOptions& options,
+                             const std::shared_ptr<Bricks::Logger>& logger)
     : _impl(std::make_unique<Impl>(options, logger))
 {
     auto keyRingSize = options._keyRingSize;
@@ -87,21 +87,21 @@ ParticipantKeyHandler::ParticipantKeyHandler(const KeyProviderOptions& options,
     _impl->_data->_cryptoKeyRing.resize(keyRingSize);
 }
 
-ParticipantKeyHandler::ParticipantKeyHandler(std::unique_ptr<Impl> impl)
+E2EKeyHandler::E2EKeyHandler(std::unique_ptr<Impl> impl)
     : _impl(std::move(impl))
 {
 }
 
-ParticipantKeyHandler::~ParticipantKeyHandler()
+E2EKeyHandler::~E2EKeyHandler()
 {
 }
 
-std::shared_ptr<ParticipantKeyHandler> ParticipantKeyHandler::clone() const
+std::shared_ptr<E2EKeyHandler> E2EKeyHandler::clone() const
 {
-    return std::shared_ptr<ParticipantKeyHandler>(new ParticipantKeyHandler(_impl->clone()));
+    return std::shared_ptr<E2EKeyHandler>(new E2EKeyHandler(_impl->clone()));
 }
 
-std::vector<uint8_t> ParticipantKeyHandler::ratchetKey(const std::optional<uint8_t>& keyIndex)
+std::vector<uint8_t> E2EKeyHandler::ratchetKey(const std::optional<uint8_t>& keyIndex)
 {
     if (const auto keySet = this->keySet(keyIndex)) {
         std::vector<uint8_t> newMaterial;
@@ -116,20 +116,26 @@ std::vector<uint8_t> ParticipantKeyHandler::ratchetKey(const std::optional<uint8
     return {};
 }
 
-std::shared_ptr<KeySet> ParticipantKeyHandler::keySet(const std::optional<uint8_t>& keyIndex) const
+std::shared_ptr<KeySet> E2EKeyHandler::keySet(const std::optional<uint8_t>& keyIndex) const
 {
     LOCK_READ_SAFE_OBJ(_impl->_data);
     return _impl->_data->_cryptoKeyRing.at(_impl->_data->index(keyIndex));
 }
 
-void ParticipantKeyHandler::setKey(std::vector<uint8_t> password,
+void E2EKeyHandler::setKey(std::vector<uint8_t> password,
                                    const std::optional<uint8_t>& keyIndex)
 {
     setKeyFromMaterial(std::move(password), keyIndex);
     setHasValidKey();
 }
 
-std::vector<uint8_t> ParticipantKeyHandler::
+void E2EKeyHandler::setKey(std::string_view password,
+                           const std::optional<uint8_t>& keyIndex)
+{
+    setKey(binaryFromString(std::move(password)), keyIndex);
+}
+
+std::vector<uint8_t> E2EKeyHandler::
     ratchetKeyMaterial(const std::vector<uint8_t>& currentMaterial) const
 {
     std::vector<uint8_t> newMaterial;
@@ -140,9 +146,9 @@ std::vector<uint8_t> ParticipantKeyHandler::
     return {};
 }
 
-std::shared_ptr<KeySet> ParticipantKeyHandler::
-    deriveKeys(const std::vector<uint8_t>& ratchetSalt, std::vector<uint8_t> password,
-               unsigned int optionalLengthBits) const
+std::shared_ptr<KeySet> E2EKeyHandler::deriveKeys(const std::vector<uint8_t>& ratchetSalt,
+                                                  std::vector<uint8_t> password,
+                                                  unsigned int optionalLengthBits) const
 {
     std::vector<uint8_t> derivedKey;
     if (_impl->derivePBKDF2KeyFromRawKey(password, ratchetSalt,
@@ -152,21 +158,28 @@ std::shared_ptr<KeySet> ParticipantKeyHandler::
     return {};
 }
 
-bool ParticipantKeyHandler::hasValidKey() const
+std::shared_ptr<KeySet> E2EKeyHandler::deriveKeys(const std::vector<uint8_t>& ratchetSalt,
+                                                  std::string_view password,
+                                                  unsigned int optionalLengthBits) const
+{
+    return deriveKeys(ratchetSalt, binaryFromString(std::move(password)), optionalLengthBits);
+}
+
+bool E2EKeyHandler::hasValidKey() const
 {
     LOCK_READ_SAFE_OBJ(_impl->_data);
     return _impl->_data->_hasValidKey;
 }
 
-void ParticipantKeyHandler::setHasValidKey()
+void E2EKeyHandler::setHasValidKey()
 {
     LOCK_WRITE_SAFE_OBJ(_impl->_data);
     _impl->_data->_decryptionFailureCount = 0U;
     _impl->_data->_hasValidKey = true;
 }
 
-void ParticipantKeyHandler::setKeyFromMaterial(std::vector<uint8_t> password,
-                                               const std::optional<uint8_t>& keyIndex)
+void E2EKeyHandler::setKeyFromMaterial(std::vector<uint8_t> password,
+                                       const std::optional<uint8_t>& keyIndex)
 {
     LOCK_WRITE_SAFE_OBJ(_impl->_data);
     auto& data = _impl->_data;
@@ -179,7 +192,13 @@ void ParticipantKeyHandler::setKeyFromMaterial(std::vector<uint8_t> password,
                                                               128U);
 }
 
-bool ParticipantKeyHandler::decryptionFailure()
+void E2EKeyHandler::setKeyFromMaterial(std::string_view password,
+                                       const std::optional<uint8_t>& keyIndex)
+{
+    setKeyFromMaterial(binaryFromString(std::move(password)), keyIndex);
+}
+
+bool E2EKeyHandler::decryptionFailure()
 {
     const auto& options = _impl->_options;
     if (!options._failureTolerance.has_value()) {
@@ -194,24 +213,24 @@ bool ParticipantKeyHandler::decryptionFailure()
     return true;
 }
 
-ParticipantKeyHandler::Impl::Impl(const KeyProviderOptions& options,
-                                  const std::shared_ptr<Bricks::Logger>& logger)
+E2EKeyHandler::Impl::Impl(const KeyProviderOptions& options,
+                          const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _options(options)
 {
 }
 
-std::unique_ptr<ParticipantKeyHandler::Impl> ParticipantKeyHandler::Impl::clone() const
+std::unique_ptr<E2EKeyHandler::Impl> E2EKeyHandler::Impl::clone() const
 {
     auto impl = std::make_unique<Impl>(_options, logger());
     impl->_data = _data();
     return impl;
 }
 
-bool ParticipantKeyHandler::Impl::derivePBKDF2KeyFromRawKey(const std::vector<uint8_t>& rawKey,
-                                                            const std::vector<uint8_t>& salt,
-                                                            unsigned int optionalLengthBits,
-                                                            std::vector<uint8_t>& derivedKey) const
+bool E2EKeyHandler::Impl::derivePBKDF2KeyFromRawKey(const std::vector<uint8_t>& rawKey,
+                                                    const std::vector<uint8_t>& salt,
+                                                    unsigned int optionalLengthBits,
+                                                    std::vector<uint8_t>& derivedKey) const
 {
     const size_t keySizeBytes = optionalLengthBits / 8;
     derivedKey.resize(keySizeBytes);
@@ -237,9 +256,9 @@ bool ParticipantKeyHandler::Impl::derivePBKDF2KeyFromRawKey(const std::vector<ui
 }
 
 
-std::string_view ParticipantKeyHandler::Impl::logCategory() const
+std::string_view E2EKeyHandler::Impl::logCategory() const
 {
-    static const std::string_view category("participant_key_handler");
+    static const std::string_view category("e2e_key_handler");
     return category;
 }
 

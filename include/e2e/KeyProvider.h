@@ -21,7 +21,7 @@
 namespace LiveKitCpp
 {
 
-class ParticipantKeyHandler;
+class E2EKeyHandler;
 struct KeyProviderOptions;
 
 class LIVEKIT_CLIENT_API KeyProvider
@@ -30,13 +30,13 @@ public:
     virtual ~KeyProvider() = default;
     virtual bool setSharedKey(std::vector<uint8_t> key,
                               const std::optional<uint8_t>& keyIndex = {}) = 0;
-    virtual std::shared_ptr<ParticipantKeyHandler> sharedKey(const std::string& trackId) = 0;
+    virtual std::shared_ptr<E2EKeyHandler> sharedKey(const std::string& trackId) = 0;
     virtual std::vector<uint8_t> ratchetSharedKey(const std::optional<uint8_t>& keyIndex = {}) = 0;
     virtual std::vector<uint8_t> exportSharedKey(const std::optional<uint8_t>& keyIndex = {}) const = 0;
     virtual bool setKey(const std::string& trackId,
                         std::vector<uint8_t> key,
                         const std::optional<uint8_t>& keyIndex = {}) = 0;
-    virtual std::shared_ptr<ParticipantKeyHandler> key(const std::string& trackId) const = 0;
+    virtual std::shared_ptr<E2EKeyHandler> key(const std::string& trackId) const = 0;
     virtual std::vector<uint8_t> ratchetKey(const std::string& trackId,
                                             const std::optional<uint8_t>& keyIndex = {}) const = 0;
     virtual std::vector<uint8_t> exportKey(const std::string& trackId,
