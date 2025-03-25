@@ -20,6 +20,8 @@
 #include "NetworkType.h"
 #include "Utils.h"
 #include "rtc/ClientInfo.h"
+#include "e2e/KeyProviderOptions.h"
+#include "e2e/KeyProvider.h"
 #ifdef WEBRTC_AVAILABLE
 #include "AudioDeviceModuleListener.h"
 #include "CameraManager.h"
@@ -34,13 +36,17 @@
 #endif
 #endif
 
-#ifdef WEBRTC_AVAILABLE
 namespace {
 
+#ifdef WEBRTC_AVAILABLE
 const std::string_view g_logCategory("service");
+#endif
+
+inline std::vector<uint8_t> fromString(std::string_view s) {
+    return {s.begin(), s.end()};
+}
 
 }
-#endif
 
 namespace LiveKitCpp
 {
@@ -365,6 +371,27 @@ Options::Options(KeyProviderOptions keyProviderOptions,
                  const std::shared_ptr<Bricks::Logger>& logger)
 {
     _e2eKeyProvider.reset(new DefaultKeyProvider(std::move(keyProviderOptions), logger));
+}
+
+bool KeyProvider::setSharedKey(std::string_view key, const std::optional<uint8_t>& keyIndex)
+{
+    return setSharedKey(fromString(std::move(key)), keyIndex);
+}
+
+bool KeyProvider::setKey(const std::string& participantId, std::string_view key,
+                         const std::optional<uint8_t>& keyIndex)
+{
+    return setKey(participantId, fromString(std::move(key)), keyIndex);
+}
+
+void KeyProvider::setSifTrailer(std::string_view trailer)
+{
+    setSifTrailer(fromString(std::move(trailer)));
+}
+
+void KeyProviderOptions::setRatchetSalt(std::string_view salt)
+{
+    _ratchetSalt = fromString(std::move(salt));
 }
 
 #else

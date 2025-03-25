@@ -39,6 +39,7 @@ public:
     void invoke(Method method, Args&&... args) const;
     AsyncListener& operator = (const AsyncListener&) = delete;
     AsyncListener& operator = (AsyncListener&&) noexcept = delete;
+    explicit operator bool() const noexcept { return !_listener->empty(); }
 private:
     const std::weak_ptr<rtc::Thread> _thread;
     const std::shared_ptr<Listener> _listener;

@@ -30,6 +30,7 @@ class RemoteTrackImpl : public TTrackApi
     static_assert(std::is_base_of_v<Track, TTrackApi>);
 public:
     // impl. of Track
+    std::string id() const final { return _info._sid; }
     std::string name() const final { return _info._name; }
     bool remote() const noexcept final { return true; }
     bool live() const final;

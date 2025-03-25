@@ -73,18 +73,18 @@ bool DefaultKeyProvider::setSharedKey(std::vector<uint8_t> key,
 }
 
 std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::
-    sharedKey(const std::string& participantSid)
+    sharedKey(const std::string& trackId)
 {
-    if (_impl->_options._sharedKey && !participantSid.empty()) {
+    if (_impl->_options._sharedKey && !trackId.empty()) {
         LOCK_WRITE_SAFE_OBJ(_impl->_keys);
-        auto it = _impl->_keys->find(participantSid);
+        auto it = _impl->_keys->find(trackId);
         if (it != _impl->_keys->end()) {
             return it->second;
         }
         it = _impl->_keys->find(g_shared);
         if (it != _impl->_keys->end()) {
             const auto keyHandler = it->second->clone();
-            _impl->_keys->insert(std::make_pair(participantSid, keyHandler));
+            _impl->_keys->insert(std::make_pair(trackId, keyHandler));
             return keyHandler;
         }
     }
@@ -121,15 +121,15 @@ std::vector<uint8_t> DefaultKeyProvider::exportSharedKey(const std::optional<uin
     return {};
 }
 
-bool DefaultKeyProvider::setKey(const std::string& participantSid,
+bool DefaultKeyProvider::setKey(const std::string& trackId,
                                 std::vector<uint8_t> key,
                                 const std::optional<uint8_t>& keyIndex)
 {
-    if (!participantSid.empty()) {
+    if (!trackId.empty()) {
         std::shared_ptr<ParticipantKeyHandler> keyHandler;
         {
             LOCK_WRITE_SAFE_OBJ(_impl->_keys);
-            keyHandler = _impl->emplaceHandler(participantSid);
+            keyHandler = _impl->emplaceHandler(trackId);
         }
         if (keyHandler) {
             keyHandler->setKey(std::move(key), keyIndex);
@@ -139,11 +139,11 @@ bool DefaultKeyProvider::setKey(const std::string& participantSid,
     return false;
 }
 
-std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::key(const std::string& participantSid) const
+std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::key(const std::string& trackId) const
 {
-    if (!participantSid.empty()) {
+    if (!trackId.empty()) {
         LOCK_READ_SAFE_OBJ(_impl->_keys);
-        const auto it = _impl->_keys->find(participantSid);
+        const auto it = _impl->_keys->find(trackId);
         if (it != _impl->_keys->end()) {
             return it->second;
         }
@@ -151,19 +151,19 @@ std::shared_ptr<ParticipantKeyHandler> DefaultKeyProvider::key(const std::string
     return {};
 }
 
-std::vector<uint8_t> DefaultKeyProvider::ratchetKey(const std::string& participantSid,
+std::vector<uint8_t> DefaultKeyProvider::ratchetKey(const std::string& trackId,
                                                     const std::optional<uint8_t>& keyIndex) const
 {
-    if (const auto keyHandler = key(participantSid)) {
+    if (const auto keyHandler = key(trackId)) {
         return keyHandler->ratchetKey(keyIndex);
     }
     return {};
 }
 
-std::vector<uint8_t> DefaultKeyProvider::exportKey(const std::string& participantSid,
+std::vector<uint8_t> DefaultKeyProvider::exportKey(const std::string& trackId,
                                                    const std::optional<uint8_t>& keyIndex) const
 {
-    if (const auto keyHandler = key(participantSid)) {
+    if (const auto keyHandler = key(trackId)) {
         if (const auto keySet = keyHandler->keySet(keyIndex)) {
             return keySet->_material;
         }

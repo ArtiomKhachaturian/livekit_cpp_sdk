@@ -45,6 +45,7 @@ public:
     void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
+    std::string id() const final { return cid(); }
     std::string name() const final { return _name; }
     bool live() const final;
     void mute(bool mute) final; // request media track creation if needed

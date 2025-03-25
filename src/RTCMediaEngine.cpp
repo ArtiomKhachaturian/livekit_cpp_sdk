@@ -149,29 +149,7 @@ void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant->track(sender)) {
-        bool encryption = false;
-        if (_e2eKeyProvider) {
-            auto codec = FrameCodec::create(sender->media_type(),
-                                            _localParticipant->sid(),
-                                            _signalingThread,
-                                            _e2eKeyProvider,
-                                            logger());
-            if (codec) {
-                sender->SetEncoderToPacketizerFrameTransformer(std::move(codec));
-                encryption = true;
-            }
-        }
-        track->notifyThatMediaAddedToTransport(encryption);
-    }
-}
-
-void RTCMediaEngine::onLocalTrackAddFailure(const std::string& id,
-                                            cricket::MediaType,
-                                            const std::vector<std::string>&,
-                                            webrtc::RTCError)
-{
-    if (const auto track = _localParticipant->track(id, true)) {
-        track->notifyThatMediaRemovedFromTransport();
+        track->notifyThatMediaAddedToTransport(attachCodec(sender));
     }
 }
 
@@ -184,12 +162,45 @@ void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaTy
 
 void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    _remoteParicipants.addMedia(transceiver);
+    if (_remoteParicipants.addMedia(transceiver)) {
+        
+    }
 }
 
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     _remoteParicipants.removeMedia(receiver);
+}
+
+webrtc::scoped_refptr<FrameCodec> RTCMediaEngine::createCodec(cricket::MediaType mediaType, std::string trackId) const
+{
+    if (_e2eKeyProvider) {
+        return FrameCodec::create(mediaType, std::move(trackId), _signalingThread,
+                                  _e2eKeyProvider, logger());
+    }
+    return {};
+}
+
+bool RTCMediaEngine::attachCodec(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
+{
+    if (sender && _e2eKeyProvider) {
+        if (auto codec = createCodec(sender->media_type(), sender->id())) {
+            sender->SetFrameTransformer(std::move(codec));
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RTCMediaEngine::attachCodec(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
+{
+    if (receiver && _e2eKeyProvider) {
+        if (auto codec = createCodec(receiver->media_type(), receiver->id())) {
+            receiver->SetFrameTransformer(std::move(codec));
+            return true;
+        }
+    }
+    return false;
 }
 
 void RTCMediaEngine::handleLocalParticipantDisconnection(DisconnectReason reason)

@@ -38,6 +38,7 @@ class LocalParticipant;
 class LocalParticipantImpl;
 class PeerConnectionFactory;
 class KeyProvider;
+class FrameCodec;
 struct AddTrackRequest;
 struct MuteTrackRequest;
 enum class DisconnectReason;
@@ -78,12 +79,13 @@ protected:
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
                        webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                        webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) override;
-    void onLocalTrackAddFailure(const std::string& id, cricket::MediaType,
-                                const std::vector<std::string>&, webrtc::RTCError) override;
     void onLocalTrackRemoved(const std::string& id, cricket::MediaType) override;
     void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
+    webrtc::scoped_refptr<FrameCodec> createCodec(cricket::MediaType mediaType, std::string trackId) const;
+    bool attachCodec(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
+    bool attachCodec(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const;
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     // search by cid or sid
     void sendAddTrack(const LocalTrack* track);

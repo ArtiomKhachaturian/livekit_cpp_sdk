@@ -23,6 +23,8 @@ class Track
 {
 public:
     virtual ~Track() = default;
+    // track ID
+    virtual std::string id() const = 0;
     // track name
     virtual std::string name() const = 0;
     // local or remote

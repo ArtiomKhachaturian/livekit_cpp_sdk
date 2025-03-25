@@ -39,7 +39,7 @@ class FrameCodec : public webrtc::FrameTransformerInterface
 public:
     ~FrameCodec() override;
     static webrtc::scoped_refptr<FrameCodec> create(cricket::MediaType mediaType,
-                                                    std::string participantSid,
+                                                    std::string trackId,
                                                     const std::weak_ptr<rtc::Thread>& signalingThread,
                                                     const std::shared_ptr<KeyProvider>& keyProvider,
                                                     const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -57,7 +57,7 @@ public:
     void UnregisterTransformedFrameSinkCallback(uint32_t ssrc) final;
 protected:
     FrameCodec(cricket::MediaType mediaType,
-               std::string participantSid,
+               std::string trackId,
                const std::weak_ptr<rtc::Thread>& signalingThread,
                const std::shared_ptr<KeyProvider>& keyProvider,
                const std::shared_ptr<Bricks::Logger>& logger);

@@ -68,7 +68,7 @@ struct FrameCodec::Impl : public Bricks::LoggableS<>
 {
     // data
     const cricket::MediaType _mediaType;
-    const std::string _participantSid;
+    const std::string _trackId;
     const std::shared_ptr<KeyProvider> _keyProvider;
     const std::string _logCategory;
     std::atomic<uint8_t> _keyIndex = 0;
@@ -78,7 +78,7 @@ struct FrameCodec::Impl : public Bricks::LoggableS<>
     Bricks::SafeObj<Sinks> _sinks;
     // methods
     Impl(cricket::MediaType mediaType,
-         std::string participantSid,
+         std::string trackId,
          const std::weak_ptr<rtc::Thread>& signalingThread,
          const std::shared_ptr<KeyProvider>& keyProvider,
          const std::shared_ptr<Bricks::Logger>& logger);
@@ -109,11 +109,11 @@ private:
 };
 
 FrameCodec::FrameCodec(cricket::MediaType mediaType,
-                       std::string participantSid,
+                       std::string trackId,
                        const std::weak_ptr<rtc::Thread>& signalingThread,
                        const std::shared_ptr<KeyProvider>& keyProvider,
                        const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(std::make_shared<Impl>(mediaType, std::move(participantSid),
+    : _impl(std::make_shared<Impl>(mediaType, std::move(trackId),
                                    signalingThread, keyProvider, logger))
     , _queue(createTaskQueueU(_impl->_logCategory, webrtc::TaskQueueFactory::Priority::HIGH))
 {
@@ -194,7 +194,7 @@ void FrameCodec::UnregisterTransformedFrameSinkCallback(uint32_t ssrc)
 
 webrtc::scoped_refptr<FrameCodec> FrameCodec::
     create(cricket::MediaType mediaType,
-           std::string participantSid,
+           std::string trackId,
            const std::weak_ptr<rtc::Thread>& signalingThread,
            const std::shared_ptr<KeyProvider>& keyProvider,
            const std::shared_ptr<Bricks::Logger>& logger)
@@ -211,25 +211,25 @@ webrtc::scoped_refptr<FrameCodec> FrameCodec::
             logInitError(logger, "unsupported media type: " + cricket::MediaTypeToString(mediaType));
             return {};
     }
-    if (participantSid.empty()) {
-        logInitError(logger, "unknown participant ID");
+    if (trackId.empty()) {
+        logInitError(logger, "unknown track ID");
         return {};
     }
-    return webrtc::make_ref_counted<FrameCodec>(mediaType, std::move(participantSid),
+    return webrtc::make_ref_counted<FrameCodec>(mediaType, std::move(trackId),
                                                 signalingThread,
                                                 keyProvider, logger);
 }
 
 FrameCodec::Impl::Impl(cricket::MediaType mediaType,
-                       std::string participantSid,
+                       std::string trackId,
                        const std::weak_ptr<rtc::Thread>& signalingThread,
                        const std::shared_ptr<KeyProvider>& keyProvider,
                        const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _mediaType(mediaType)
-    , _participantSid(std::move(participantSid))
+    , _trackId(std::move(trackId))
     , _keyProvider(keyProvider)
-    , _logCategory(std::string(g_category) + "_" + _participantSid)
+    , _logCategory(std::string(g_category) + "_" + _trackId)
     , _observer(signalingThread)
 {
 }
@@ -399,26 +399,26 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
 
 void FrameCodec::Impl::setLastEncryptState(FrameCodecState state)
 {
-    if (exchangeVal(state, _lastEncState)) {
+    if (exchangeVal(state, _lastEncState) && _observer) {
         _observer.invoke(&FrameCodecObserver::onEncryptionStateChanged,
-                         _participantSid, state);
+                         _trackId, state);
     }
 }
 
 void FrameCodec::Impl::setLastDecryptState(FrameCodecState state)
 {
-    if (exchangeVal(state, _lastDecState)) {
+    if (exchangeVal(state, _lastDecState) && _observer) {
         _observer.invoke(&FrameCodecObserver::onDecryptionStateChanged,
-                         _participantSid, state);
+                         _trackId, state);
     }
 }
 
 std::shared_ptr<ParticipantKeyHandler> FrameCodec::Impl::keyHandler() const
 {
     if (_keyProvider->options()._sharedKey) {
-        return _keyProvider->sharedKey(_participantSid);
+        return _keyProvider->sharedKey(_trackId);
     }
-    return _keyProvider->key(_participantSid);
+    return _keyProvider->key(_trackId);
 }
 
 bool FrameCodec::Impl::aesGcmEncryptDecrypt(bool encrypt,
