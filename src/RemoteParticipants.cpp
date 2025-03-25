@@ -33,11 +33,11 @@ inline bool compareParticipantInfo(const ParticipantInfo& l, const ParticipantIn
 namespace LiveKitCpp
 {
     
-RemoteParticipants::RemoteParticipants(TrackManager* trackManager,
+RemoteParticipants::RemoteParticipants(FrameCodecFactory* codecFactory,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
-    , _trackManager(trackManager)
+    , _codecFactory(codecFactory)
     , _listener(listener)
 {
 }
@@ -101,18 +101,16 @@ bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverIn
 {
     bool added = false;
     if (receiver) {
-        if (const auto track = receiver->track()) {
-            auto sid = receiver->id();
-            if (!sid.empty()) {
-                LOCK_WRITE_SAFE_OBJ(_orphans);
-                added = addMedia(sid, track);
-                if (!added) {
-                    added = addToOrphans(std::move(sid), track);
-                }
+        auto sid = receiver->id();
+        if (!sid.empty()) {
+            LOCK_WRITE_SAFE_OBJ(_orphans);
+            added = addMedia(sid, receiver);
+            if (!added) {
+                added = addToOrphans(std::move(sid), receiver);
             }
-            else {
-                logWarning("empty ID of track receiver");
-            }
+        }
+        else {
+            logWarning("empty ID of track receiver");
         }
     }
     return added;
@@ -200,9 +198,9 @@ std::vector<ParticipantInfo> RemoteParticipants::infos() const
 }
 
 bool RemoteParticipants::addMedia(const std::string& sid,
-                                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+                                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
-    if (track && !sid.empty()) {
+    if (receiver && !sid.empty()) {
         std::shared_ptr<RemoteParticipantImpl> target;
         TrackType trackType;
         {
@@ -216,7 +214,7 @@ bool RemoteParticipants::addMedia(const std::string& sid,
             }
         }
         if (target) {
-            addMedia(target, trackType, sid, track);
+            addMedia(target, trackType, sid, receiver);
             return true;
         }
     }
@@ -225,16 +223,16 @@ bool RemoteParticipants::addMedia(const std::string& sid,
 
 void RemoteParticipants::addMedia(const std::shared_ptr<RemoteParticipantImpl>& participant,
                                   TrackType type, const std::string& sid,
-                                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) const
+                                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
 {
-    if (participant && track) {
+    if (participant && receiver) {
         bool added = false;
         switch (type) {
             case TrackType::Audio:
-                added = participant->addAudio(sid, _trackManager, track);
+                added = participant->addAudio(sid, _codecFactory, receiver);
                 break;
             case TrackType::Video:
-                added = participant->addVideo(sid, _trackManager, track);
+                added = participant->addVideo(sid, _codecFactory, receiver);
                 break;
             default:
                 break;
@@ -246,10 +244,10 @@ void RemoteParticipants::addMedia(const std::shared_ptr<RemoteParticipantImpl>& 
 }
 
 bool RemoteParticipants::addToOrphans(std::string sid,
-                                      const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+                                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
-    if (track && !sid.empty()) {
-        _orphans->insert(std::make_pair(std::move(sid), track));
+    if (receiver && !sid.empty()) {
+        _orphans->insert(std::make_pair(std::move(sid), receiver));
         return true;
     }
     return false;

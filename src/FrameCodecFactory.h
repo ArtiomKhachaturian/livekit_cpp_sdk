@@ -11,20 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // TrackManager.h
-#include "rtc/EncryptionType.h"
+#pragma once // FrameCodecFactory.h
+#include "TrackManager.h"
+#include <api/media_types.h>
+#include <api/scoped_refptr.h>
 #include <string>
 
 namespace LiveKitCpp
 {
 
-class TrackManager
+class FrameCodec;
+
+class FrameCodecFactory : public TrackManager
 {
 public:
-    virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
-    virtual EncryptionType localEncryptionType() const = 0;
+    virtual webrtc::scoped_refptr<FrameCodec> createCodec(cricket::MediaType mediaType,
+                                                          std::string id) const = 0;
 protected:
-    virtual ~TrackManager() = default;
+    ~FrameCodecFactory() override = default;
 };
 
 } // namespace LiveKitCpp

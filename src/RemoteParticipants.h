@@ -29,7 +29,7 @@ class RtpReceiverInterface;
 namespace LiveKitCpp
 {
 
-class TrackManager;
+class FrameCodecFactory;
 class RemoteParticipantsListener;
 class RemoteParticipantImpl;
 class RemoteParticipant;
@@ -40,9 +40,9 @@ class RemoteParticipants : private Bricks::LoggableS<>
 {
     using Participants = std::vector<std::shared_ptr<RemoteParticipantImpl>>;
     // key is sid
-    using OrphanedTracks = std::unordered_map<std::string, rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>;
+    using OrphanedReceivers = std::unordered_map<std::string, rtc::scoped_refptr<webrtc::RtpReceiverInterface>>;
 public:
-    RemoteParticipants(TrackManager* trackManager,
+    RemoteParticipants(FrameCodecFactory* codecFactory,
                        RemoteParticipantsListener* listener,
                        const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RemoteParticipants();
@@ -62,12 +62,12 @@ private:
     // non thread-safe to [_participants]
     std::vector<ParticipantInfo> infos() const;
     bool addMedia(const std::string& sid,
-                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     void addMedia(const std::shared_ptr<RemoteParticipantImpl>& participant,
                   TrackType type, const std::string& sid,
-                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track) const;
+                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const;
     bool addToOrphans(std::string sid,
-                      const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     // service methods, non thread-safe to [_participants]
     void addParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant);
     void removeParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant);
@@ -75,9 +75,9 @@ private:
     void clearParticipants();
     std::optional<size_t> findBySid(const std::string& sid) const;
 private:
-    TrackManager* const _trackManager;
+    FrameCodecFactory* const _codecFactory;
     RemoteParticipantsListener* const _listener;
-    Bricks::SafeObj<OrphanedTracks> _orphans;
+    Bricks::SafeObj<OrphanedReceivers> _orphans;
     Bricks::SafeObj<Participants> _participants;
 };
 

@@ -14,6 +14,8 @@
 #pragma once // Track.h
 #include "rtc/TrackType.h"
 #include "rtc/TrackSource.h"
+#include "rtc/EncryptionType.h"
+#include "rtc/BackupCodecPolicy.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -23,6 +25,8 @@ class Track
 {
 public:
     virtual ~Track() = default;
+    virtual EncryptionType encryption() const = 0;
+    virtual BackupCodecPolicy backupCodecPolicy() const { return BackupCodecPolicy::Regression; }
     // track ID
     virtual std::string id() const = 0;
     // track name

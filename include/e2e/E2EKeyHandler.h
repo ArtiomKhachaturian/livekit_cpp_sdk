@@ -39,8 +39,7 @@ public:
     virtual std::shared_ptr<KeySet> keySet(const std::optional<uint8_t>& keyIndex = {}) const;
     virtual void setKey(std::vector<uint8_t> password,
                         const std::optional<uint8_t>& keyIndex = {});
-    void setKey(std::string_view password,
-                const std::optional<uint8_t>& keyIndex = {});
+    void setKey(std::string_view password, const std::optional<uint8_t>& keyIndex = {});
     std::vector<uint8_t> ratchetKeyMaterial(const std::vector<uint8_t>& currentMaterial) const;
     std::shared_ptr<KeySet> deriveKeys(const std::vector<uint8_t>& ratchetSalt,
                                        std::vector<uint8_t> password,

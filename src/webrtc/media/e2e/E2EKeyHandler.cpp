@@ -122,21 +122,18 @@ std::shared_ptr<KeySet> E2EKeyHandler::keySet(const std::optional<uint8_t>& keyI
     return _impl->_data->_cryptoKeyRing.at(_impl->_data->index(keyIndex));
 }
 
-void E2EKeyHandler::setKey(std::vector<uint8_t> password,
-                                   const std::optional<uint8_t>& keyIndex)
+void E2EKeyHandler::setKey(std::vector<uint8_t> password, const std::optional<uint8_t>& keyIndex)
 {
     setKeyFromMaterial(std::move(password), keyIndex);
     setHasValidKey();
 }
 
-void E2EKeyHandler::setKey(std::string_view password,
-                           const std::optional<uint8_t>& keyIndex)
+void E2EKeyHandler::setKey(std::string_view password, const std::optional<uint8_t>& keyIndex)
 {
     setKey(binaryFromString(std::move(password)), keyIndex);
 }
 
-std::vector<uint8_t> E2EKeyHandler::
-    ratchetKeyMaterial(const std::vector<uint8_t>& currentMaterial) const
+std::vector<uint8_t> E2EKeyHandler::ratchetKeyMaterial(const std::vector<uint8_t>& currentMaterial) const
 {
     std::vector<uint8_t> newMaterial;
     if (_impl->derivePBKDF2KeyFromRawKey(currentMaterial, _impl->_options._ratchetSalt,

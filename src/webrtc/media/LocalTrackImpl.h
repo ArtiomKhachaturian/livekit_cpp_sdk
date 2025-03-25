@@ -45,6 +45,7 @@ public:
     void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
+    EncryptionType encryption() const final;
     std::string id() const final { return cid(); }
     std::string name() const final { return _name; }
     bool live() const final;
@@ -59,7 +60,6 @@ protected:
     const auto& mediaTrack() const noexcept { return _mediaTrack; }
 private:
     void notifyAboutMuted(bool mute) const;
-    EncryptionType encryption() const;
 private:
     const std::string _name;
     const webrtc::scoped_refptr<TRtcTrack> _mediaTrack;
@@ -126,6 +126,15 @@ inline bool LocalTrackImpl<TRtcTrack, TTrackApi>::
 }
 
 template<class TRtcTrack, class TTrackApi>
+inline EncryptionType LocalTrackImpl<TRtcTrack, TTrackApi>::encryption() const
+{
+    if (_manager && _encryption) {
+        return _manager->localEncryptionType();
+    }
+    return EncryptionType::None;
+}
+
+template<class TRtcTrack, class TTrackApi>
 inline bool LocalTrackImpl<TRtcTrack, TTrackApi>::live() const
 {
     return _mediaTrack && webrtc::MediaStreamTrackInterface::kLive == _mediaTrack->state();
@@ -159,15 +168,6 @@ inline void LocalTrackImpl<TRtcTrack, TTrackApi>::
             _manager->notifyAboutMuteChanges(sid, mute);
         }
     }
-}
-
-template<class TRtcTrack, class TTrackApi>
-inline EncryptionType LocalTrackImpl<TRtcTrack, TTrackApi>::encryption() const
-{
-    if (_manager && _encryption) {
-        return _manager->supportedEncryptionType();
-    }
-    return EncryptionType::None;
 }
 
 } // namespace LiveKitCpp

@@ -162,9 +162,7 @@ void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaTy
 
 void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    if (_remoteParicipants.addMedia(transceiver)) {
-        
-    }
+    _remoteParicipants.addMedia(transceiver);
 }
 
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
@@ -172,31 +170,11 @@ void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceive
     _remoteParicipants.removeMedia(receiver);
 }
 
-webrtc::scoped_refptr<FrameCodec> RTCMediaEngine::createCodec(cricket::MediaType mediaType, std::string trackId) const
-{
-    if (_e2eKeyProvider) {
-        return FrameCodec::create(mediaType, std::move(trackId), _signalingThread,
-                                  _e2eKeyProvider, logger());
-    }
-    return {};
-}
-
 bool RTCMediaEngine::attachCodec(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
 {
     if (sender && _e2eKeyProvider) {
         if (auto codec = createCodec(sender->media_type(), sender->id())) {
             sender->SetFrameTransformer(std::move(codec));
-            return true;
-        }
-    }
-    return false;
-}
-
-bool RTCMediaEngine::attachCodec(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
-{
-    if (receiver && _e2eKeyProvider) {
-        if (auto codec = createCodec(receiver->media_type(), receiver->id())) {
-            receiver->SetFrameTransformer(std::move(codec));
             return true;
         }
     }
@@ -244,6 +222,16 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
     }
 }
 
+webrtc::scoped_refptr<FrameCodec> RTCMediaEngine::createCodec(cricket::MediaType mediaType,
+                                                              std::string id) const
+{
+    if (_e2eKeyProvider) {
+        return FrameCodec::create(mediaType, std::move(id), _signalingThread,
+                                  _e2eKeyProvider, logger());
+    }
+    return {};
+}
+
 void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool muted)
 {
     if (!trackSid.empty()) {
@@ -257,7 +245,7 @@ void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool mu
     }
 }
 
-EncryptionType RTCMediaEngine::supportedEncryptionType() const
+EncryptionType RTCMediaEngine::localEncryptionType() const
 {
     return _e2eKeyProvider ? EncryptionType::Gcm : EncryptionType::None;
 }

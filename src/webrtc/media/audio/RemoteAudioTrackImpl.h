@@ -36,8 +36,6 @@ public:
     bool red() const final { return !info()._disableRed; }
     std::string mime() const final { return info()._mimeType; }
     std::string stream() const final { return info()._stream; }
-    EncryptionType encryption() const final { return info()._encryption; }
-    BackupCodecPolicy backupCodecPolicy() const final { return info()._backupCodecPolicy; }
 protected:
     // impl. of AudioTrackImpl
     void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;

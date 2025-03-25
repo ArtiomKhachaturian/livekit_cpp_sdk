@@ -13,8 +13,6 @@
 // limitations under the License.
 #pragma once // RemoteAudioTrack.h
 #include "AudioTrack.h"
-#include "rtc/EncryptionType.h"
-#include "rtc/BackupCodecPolicy.h"
 
 namespace LiveKitCpp
 {
@@ -29,8 +27,6 @@ public:
     virtual bool red() const = 0;
     virtual std::string mime() const = 0;
     virtual std::string stream() const = 0;
-    virtual EncryptionType encryption() const = 0;
-    virtual BackupCodecPolicy backupCodecPolicy() const = 0;
 };
 
 } // namespace LiveKitCpp

@@ -32,8 +32,6 @@ public:
     virtual std::vector<SimulcastCodecInfo> codecs() const = 0;
     virtual std::string mime() const = 0;
     virtual std::string stream() const = 0;
-    virtual EncryptionType encryption() const = 0;
-    virtual BackupCodecPolicy backupCodecPolicy() const = 0;
 };
 
 } // namespace LiveKitCpp

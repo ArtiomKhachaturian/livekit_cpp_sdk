@@ -15,8 +15,11 @@
 #include "RemoteParticipantImpl.h"
 #include "RemoteAudioTrackImpl.h"
 #include "RemoteVideoTrackImpl.h"
+#include "FrameCodecFactory.h"
+#include "FrameCodec.h"
 #include "Seq.h"
 #include <api/media_stream_interface.h>
+#include <api/rtp_receiver_interface.h>
 #include <optional>
 
 namespace {
@@ -25,6 +28,16 @@ using namespace LiveKitCpp;
 
 inline bool compareTrackInfo(const TrackInfo& l, const TrackInfo& r) {
     return l._sid == r._sid;
+}
+
+template<class TMediaInterace>
+inline webrtc::scoped_refptr<TMediaInterace> mediaTrack(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
+    if (receiver) {
+        if (const auto media = dynamic_cast<TMediaInterace*>(receiver->track().get())) {
+            return webrtc::scoped_refptr<TMediaInterace>(media);
+        }
+    }
+    return {};
 }
 
 }
@@ -66,37 +79,41 @@ std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid
     return std::nullopt;
 }
 
-bool RemoteParticipantImpl::addAudio(const std::string& sid, TrackManager* manager,
-                                     const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+bool RemoteParticipantImpl::addAudio(const std::string& sid, FrameCodecFactory* codecFactory,
+                                     const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
-    if (const auto audioTrack = dynamic_cast<webrtc::AudioTrackInterface*>(track.get())) {
+    if (const auto audioTrack = mediaTrack<webrtc::AudioTrackInterface>(receiver)) {
         LOCK_READ_SAFE_OBJ(_info);
         if (const auto trackInfo = findBySid(sid)) {
-            auto trackImpl = std::make_shared<RemoteAudioTrackImpl>(manager, *trackInfo, audioTrack);
-            {
-                LOCK_WRITE_SAFE_OBJ(_audioTracks);
-                _audioTracks->push_back(std::move(trackImpl));
+            auto trackImpl = std::make_shared<RemoteAudioTrackImpl>(codecFactory, *trackInfo, audioTrack);
+            if (attachCodec(trackImpl, codecFactory, receiver)) {
+                {
+                    LOCK_WRITE_SAFE_OBJ(_audioTracks);
+                    _audioTracks->push_back(std::move(trackImpl));
+                }
+                _listeners.invoke(&RemoteParticipantListener::onAudioTrackAdded, this, sid);
+                return true;
             }
-            _listeners.invoke(&RemoteParticipantListener::onAudioTrackAdded, this, sid);
-            return true;
         }
     }
     return false;
 }
 
-bool RemoteParticipantImpl::addVideo(const std::string& sid, TrackManager* manager,
-                                     const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+bool RemoteParticipantImpl::addVideo(const std::string& sid, FrameCodecFactory* codecFactory,
+                                     const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
-    if (const auto videoTrack = dynamic_cast<webrtc::VideoTrackInterface*>(track.get())) {
+    if (const auto videoTrack = mediaTrack<webrtc::VideoTrackInterface>(receiver)) {
         LOCK_READ_SAFE_OBJ(_info);
         if (const auto trackInfo = findBySid(sid)) {
-            auto trackImpl = std::make_shared<RemoteVideoTrackImpl>(manager, *trackInfo, videoTrack);
-            {
-                LOCK_WRITE_SAFE_OBJ(_videoTracks);
-                _videoTracks->push_back(std::move(trackImpl));
+            auto trackImpl = std::make_shared<RemoteVideoTrackImpl>(codecFactory, *trackInfo, videoTrack);
+            if (attachCodec(trackImpl, codecFactory, receiver)) {
+                {
+                    LOCK_WRITE_SAFE_OBJ(_videoTracks);
+                    _videoTracks->push_back(std::move(trackImpl));
+                }
+                _listeners.invoke(&RemoteParticipantListener::onVideoTrackAdded, this, sid);
+                return true;
             }
-            _listeners.invoke(&RemoteParticipantListener::onVideoTrackAdded, this, sid);
-            return true;
         }
     }
     return false;
@@ -277,6 +294,32 @@ bool RemoteParticipantImpl::removeTrack(const std::string& sid, std::vector<TTra
     if (const auto ndx = findBySid(sid, collection)) {
         collection.erase(collection.begin() + ndx.value());
         return true;
+    }
+    return false;
+}
+
+bool RemoteParticipantImpl::attachCodec(const std::shared_ptr<Track>& track,
+                                        const FrameCodecFactory* codecFactory,
+                                        const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+{
+    if (track) {
+        switch (track->encryption()) {
+            case EncryptionType::None:
+                return true;
+            case EncryptionType::Gcm:
+                if (codecFactory && receiver) {
+                    auto codec = codecFactory->createCodec(receiver->media_type(),
+                                                           receiver->id());
+                    if (codec) {
+                        receiver->SetFrameTransformer(std::move(codec));
+                        return true;
+                    }
+                }
+                break;
+            default:
+                // TODO: log error
+                break;
+        }
     }
     return false;
 }

@@ -14,7 +14,7 @@
 #pragma once // RTCMediaEngine.h
 #ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
-#include "TrackManager.h"
+#include "FrameCodecFactory.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
 #include "TransportManagerListener.h"
@@ -46,7 +46,7 @@ enum class DisconnectReason;
 class RTCMediaEngine : protected Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
                        protected RemoteParticipantsListener,
-                       private TrackManager
+                       private FrameCodecFactory
 {
 public:
     std::shared_ptr<LocalParticipant> localParticipant() const;
@@ -83,15 +83,16 @@ protected:
     void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
-    webrtc::scoped_refptr<FrameCodec> createCodec(cricket::MediaType mediaType, std::string trackId) const;
     bool attachCodec(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
-    bool attachCodec(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const;
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     // search by cid or sid
     void sendAddTrack(const LocalTrack* track);
+    // impl. of FrameCodecFactory
+    webrtc::scoped_refptr<FrameCodec> createCodec(cricket::MediaType mediaType,
+                                                  std::string id) const final;
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
-    EncryptionType supportedEncryptionType() const final;
+    EncryptionType localEncryptionType() const final;
 private:
     const std::weak_ptr<rtc::Thread> _signalingThread;
     const std::shared_ptr<KeyProvider> _e2eKeyProvider;

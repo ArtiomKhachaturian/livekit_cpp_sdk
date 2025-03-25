@@ -24,7 +24,7 @@
 #include <vector>
 
 namespace webrtc {
-class MediaStreamTrackInterface;
+class RtpReceiverInterface;
 }
 
 namespace LiveKitCpp
@@ -32,7 +32,7 @@ namespace LiveKitCpp
 
 class RemoteAudioTrackImpl;
 class RemoteVideoTrackImpl;
-class TrackManager;
+class FrameCodecFactory;
 
 class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipantListener,
                                                      RemoteParticipant>
@@ -45,10 +45,10 @@ public:
     ~RemoteParticipantImpl() final { reset(); }
     void reset();
     std::optional<TrackType> trackType(const std::string& sid) const;
-    bool addAudio(const std::string& sid, TrackManager* manager,
-                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
-    bool addVideo(const std::string& sid, TrackManager* manager,
-                  const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    bool addAudio(const std::string& sid, FrameCodecFactory* codecFactory,
+                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
+    bool addVideo(const std::string& sid, FrameCodecFactory* codecFactory,
+                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     bool removeAudio(const std::string& sid);
     bool removeVideo(const std::string& sid);
     ParticipantInfo info() const { return _info(); }
@@ -76,6 +76,9 @@ private:
                                            const std::vector<TTrack>& collection);
     template<class TTrack>
     static bool removeTrack(const std::string& sid, std::vector<TTrack>& collection);
+    static bool attachCodec(const std::shared_ptr<Track>& track,
+                            const FrameCodecFactory* codecFactory,
+                            const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
 private:
     Bricks::SafeObj<ParticipantInfo> _info;
     Bricks::SafeObj<AudioTracks> _audioTracks;
