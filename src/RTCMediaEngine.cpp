@@ -15,8 +15,10 @@
 #include "RTCMediaEngine.h"
 #include "LocalParticipantImpl.h"
 #include "RemoteParticipants.h"
+#include "PeerConnectionFactory.h"
 #include "LiveKitError.h"
 #include "Utils.h"
+#include "FrameCodec.h"
 #include "rtc/AddTrackRequest.h"
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrackPublishedResponse.h"
@@ -24,6 +26,7 @@
 #include "rtc/JoinResponse.h"
 #include "rtc/ParticipantUpdate.h"
 #include "rtc/TrackPublishedResponse.h"
+#include "e2e/KeyProvider.h"
 
 namespace {
 
@@ -43,8 +46,11 @@ namespace LiveKitCpp
 {
 
 RTCMediaEngine::RTCMediaEngine(PeerConnectionFactory* pcf,
+                               std::shared_ptr<KeyProvider> e2eKeyProvider,
                                const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
+    , _signalingThread(pcf ? pcf->signalingThread() : std::weak_ptr<rtc::Thread>())
+    , _e2eKeyProvider(std::move(e2eKeyProvider))
     , _localParticipant(new LocalParticipantImpl(this, pcf, logger))
     , _remoteParicipants(this, this, logger)
 {
@@ -79,6 +85,9 @@ void RTCMediaEngine::onJoin(const JoinResponse& response)
 {
     const auto disconnectReason = response._participant._disconnectReason;
     if (DisconnectReason::UnknownReason == disconnectReason) {
+        if (_e2eKeyProvider) {
+            _e2eKeyProvider->setSifTrailer(response._sifTrailer);
+        }
         _localParticipant->setInfo(response._participant);
         _remoteParicipants.setInfo(response._otherParticipants);
     }
@@ -129,8 +138,8 @@ void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
 
 void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std::string& what)
 {
-    _localParticipant->microphone().notifyThatMediaAddedToTransport(false);
-    _localParticipant->camera().notifyThatMediaAddedToTransport(false);
+    _localParticipant->microphone().notifyThatMediaRemovedFromTransport();
+    _localParticipant->camera().notifyThatMediaRemovedFromTransport();
     _remoteParicipants.reset();
     if (error && canLogError()) {
         logError(formatErrorMsg(error.value(), what));
@@ -140,7 +149,19 @@ void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant->track(sender)) {
-        track->notifyThatMediaAddedToTransport(true);
+        bool encryption = false;
+        if (_e2eKeyProvider) {
+            auto codec = FrameCodec::create(sender->media_type(),
+                                            _localParticipant->sid(),
+                                            _signalingThread,
+                                            _e2eKeyProvider,
+                                            logger());
+            if (codec) {
+                sender->SetEncoderToPacketizerFrameTransformer(std::move(codec));
+                encryption = true;
+            }
+        }
+        track->notifyThatMediaAddedToTransport(encryption);
     }
 }
 
@@ -150,14 +171,14 @@ void RTCMediaEngine::onLocalTrackAddFailure(const std::string& id,
                                             webrtc::RTCError)
 {
     if (const auto track = _localParticipant->track(id, true)) {
-        track->notifyThatMediaAddedToTransport(false);
+        track->notifyThatMediaRemovedFromTransport();
     }
 }
 
 void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
 {
     if (const auto track = _localParticipant->track(id, true)) {
-        track->notifyThatMediaAddedToTransport(false);
+        track->notifyThatMediaRemovedFromTransport();
     }
 }
 
@@ -223,6 +244,11 @@ void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool mu
             // TODO: log error
         }
     }
+}
+
+EncryptionType RTCMediaEngine::supportedEncryptionType() const
+{
+    return _e2eKeyProvider ? EncryptionType::Gcm : EncryptionType::None;
 }
 
 } // namespace LiveKitCpp

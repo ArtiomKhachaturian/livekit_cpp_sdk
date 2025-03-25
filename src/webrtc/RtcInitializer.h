@@ -11,17 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // E2EEOptions.h
-#include "e2e/KeyProvider.h"
-#include "rtc/EncryptionType.h"
+#pragma once // RtcInitializer.h
 
 namespace LiveKitCpp
 {
 
-struct E2EEOptions
+class RtcInitializer
 {
-    std::unique_ptr<KeyProvider> _keyProvider;
-    EncryptionType _encryptionType = EncryptionType::Gcm;
+public:
+    RtcInitializer();
+    ~RtcInitializer();
+    bool initialized() const noexcept { return _sslInitialized; }
+    explicit operator bool() const { return initialized(); }
+private:
+    const bool _sslInitialized;
 };
 
 } // namespace LiveKitCpp

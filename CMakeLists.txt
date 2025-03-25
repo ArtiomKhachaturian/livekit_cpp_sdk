@@ -95,7 +95,7 @@ protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
     if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
         message(STATUS "Found WebRTC")
-        set(WEBRTC_LIBS "webrtc")
+        set(WEBRTC_LIBS "webrtc" "common_video")
         if (APPLE)
             list(APPEND WEBRTC_LIBS
                 "base_native_additions_objc"
@@ -200,7 +200,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 # WebRTC
 if (WEBRTC_AVAILABLE)
     target_include_directories(${PROJECT_NAME} PRIVATE 
-        ${WEBRTC_INCLUDE_DIR} 
+        ${WEBRTC_INCLUDE_DIR}
+        ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include
         ${NLOHMANN_HDRS_DIR}
         ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}/camera
         ${CMAKE_SOURCE_DIR}/src/webrtc

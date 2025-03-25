@@ -29,14 +29,14 @@ public:
     virtual ~KeyProvider() = default;
     virtual bool setSharedKey(std::vector<uint8_t> key,
                               const std::optional<uint8_t>& keyIndex = {}) = 0;
-    virtual std::shared_ptr<ParticipantKeyHandler> sharedKey(const std::string& participantId) = 0;
+    virtual std::shared_ptr<ParticipantKeyHandler> sharedKey(const std::string& participantSid) = 0;
     virtual std::vector<uint8_t> ratchetSharedKey(const std::optional<uint8_t>& keyIndex = {}) = 0;
     virtual std::vector<uint8_t> exportSharedKey(const std::optional<uint8_t>& keyIndex = {}) const = 0;
     virtual bool setKey(const std::string& participantId,
                         std::vector<uint8_t> key,
                         const std::optional<uint8_t>& keyIndex = {}) = 0;
-    virtual std::shared_ptr<ParticipantKeyHandler> key(const std::string& participantId) const = 0;
-    virtual std::vector<uint8_t> ratchetKey(const std::string& participantId,
+    virtual std::shared_ptr<ParticipantKeyHandler> key(const std::string& participantSid) const = 0;
+    virtual std::vector<uint8_t> ratchetKey(const std::string& participantSid,
                                             const std::optional<uint8_t>& keyIndex = {}) const = 0;
     virtual std::vector<uint8_t> exportKey(const std::string& participantId,
                                            const std::optional<uint8_t>& keyIndex = {}) const = 0;

@@ -26,7 +26,7 @@
 #include "DefaultKeyProvider.h"
 #include "Loggable.h"
 #include "PeerConnectionFactory.h"
-#include "SSLInitiallizer.h"
+#include "RtcInitializer.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
 #elif defined(_WIN32)
@@ -282,7 +282,7 @@ TOutput Service::Impl::makeRoom(Options options) const
 
 bool Service::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>& logger)
 {
-    static const SSLInitiallizer initializer;
+    static const RtcInitializer initializer;
     if (!initializer && logger && logger->canLogError()) {
         logger->logError("Failed to SSL initialization", g_logCategory);
     }
@@ -362,14 +362,9 @@ void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& lo
 }
 
 Options::Options(KeyProviderOptions keyProviderOptions,
-                 EncryptionType encryptionType,
                  const std::shared_ptr<Bricks::Logger>& logger)
 {
-    if (EncryptionType::None != encryptionType) {
-        _e2eeOptions._keyProvider.reset(new DefaultKeyProvider(std::move(keyProviderOptions),
-                                                               logger));
-        _e2eeOptions._encryptionType = encryptionType;
-    }
+    _e2eKeyProvider.reset(new DefaultKeyProvider(std::move(keyProviderOptions), logger));
 }
 
 #else

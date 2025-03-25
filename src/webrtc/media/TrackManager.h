@@ -11,7 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalTrackFactory.h
+#pragma once // TrackManager.h
+#include "rtc/EncryptionType.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -21,6 +22,7 @@ class TrackManager
 {
 public:
     virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
+    virtual EncryptionType supportedEncryptionType() const = 0;
 protected:
     virtual ~TrackManager() = default;
 };

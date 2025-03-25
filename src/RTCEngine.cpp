@@ -44,8 +44,7 @@ RTCEngine::RTCEngine(Options options,
                      PeerConnectionFactory* pcf,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : RTCMediaEngine(pcf, logger)
-    , _keyProvider(options._e2eeOptions._keyProvider.release())
+    : RTCMediaEngine(pcf, std::shared_ptr<KeyProvider>(options._e2eKeyProvider.release()), logger)
     , _options(std::move(options))
     , _pcf(pcf)
     , _localDcs(logger)
@@ -138,8 +137,21 @@ void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
     _client.disconnect();
     _localDcs.setListener(nullptr);
     _remoteDcs.setListener(nullptr);
+    notifyAboutLocalParticipantJoinLeave(false);
     if (error) {
         _listener.invoke(&RoomListener::onError, error.value(), errorDetails);
+    }
+}
+
+void RTCEngine::notifyAboutLocalParticipantJoinLeave(bool join) const
+{
+    if (!localParticipant()->sid().empty()) {
+        if (join) {
+            _listener.invoke(&RoomListener::onLocalParticipantJoined);
+        }
+        else {
+            _listener.invoke(&RoomListener::onLocalParticipantLeaved);
+        }
     }
 }
 
@@ -375,9 +387,7 @@ void RTCEngine::onJoin(const JoinResponse& response)
 {
     RTCMediaEngine::onJoin(response);
     if (DisconnectReason::UnknownReason == response._participant._disconnectReason) {
-        if (_keyProvider) {
-            _keyProvider->setSifTrailer(response._sifTrailer);
-        }
+        notifyAboutLocalParticipantJoinLeave(true);
         _localDcs.setSid(response._participant._sid);
         _localDcs.setIdentity(response._participant._identity);
         _lastJoinResponse(response);
@@ -388,6 +398,7 @@ void RTCEngine::onJoin(const JoinResponse& response)
 void RTCEngine::onReconnect(const ReconnectResponse& response)
 {
     RTCMediaEngine::onReconnect(response);
+    notifyAboutLocalParticipantJoinLeave(true);
     createTransportManager(_lastJoinResponse(), makeConfiguration(response));
 }
 
@@ -446,7 +457,6 @@ void RTCEngine::onTrickle(const TrickleRequest& request)
 void RTCEngine::onLeave(const LeaveRequest& leave)
 {
     RTCMediaEngine::onLeave(leave);
-    auto sid = localParticipant()->sid();
     cleanup(toLiveKitError(leave._reason));
     if (LeaveRequestAction::Disconnect == leave._action) {
         _client.resetParticipantSid();
@@ -456,7 +466,7 @@ void RTCEngine::onLeave(const LeaveRequest& leave)
         std::this_thread::sleep_for(_options._reconnectAttemptDelay);
         if (LeaveRequestAction::Resume == leave._action) {
             // should attempt a resume with `reconnect=1` in join URL
-            _client.setParticipantSid(std::move(sid));
+            _client.setParticipantSid(localParticipant()->sid());
         }
         else {
             _client.resetParticipantSid();

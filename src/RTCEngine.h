@@ -72,6 +72,7 @@ protected:
     void cleanup(const std::optional<LiveKitError>& error = {},
                  const std::string& errorDetails = {}) final;
 private:
+    void notifyAboutLocalParticipantJoinLeave(bool join) const;
     bool sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
     webrtc::PeerConnectionInterface::RTCConfiguration
@@ -128,7 +129,6 @@ private:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
-    const std::shared_ptr<KeyProvider> _keyProvider;
     const Options _options;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     Bricks::Listener<RoomListener*> _listener;

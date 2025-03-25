@@ -24,6 +24,7 @@
 #include "e2e/ParticipantKeyHandler.h"
 #include <common_video/h264/h264_common.h>
 #include <common_video/h265/h265_common.h>
+#include <openssl/aead.h>
 #include <atomic>
 #include <map>
 
@@ -41,7 +42,22 @@ inline void logInitError(const std::shared_ptr<Bricks::Logger>& logger,
     }
 }
 
+inline const EVP_AEAD* aesGcmAlgorithmFromKeySize(size_t keySizeBytes)
+{
+    switch (keySizeBytes) {
+        case 16:
+            return EVP_aead_aes_128_gcm();
+        case 32:
+            return EVP_aead_aes_256_gcm();
+        default:
+            break;
+    }
+    return nullptr;
+}
+
 uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
+bool frameIsH264(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
+bool frameIsH265(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
 
 }
 
@@ -52,18 +68,17 @@ struct FrameCodec::Impl : public Bricks::LoggableS<>
 {
     // data
     const cricket::MediaType _mediaType;
-    const EncryptionType _algorithm;
-    const std::string _participantId;
+    const std::string _participantSid;
     const std::shared_ptr<KeyProvider> _keyProvider;
+    const std::string _logCategory;
     std::atomic<uint8_t> _keyIndex = 0;
-    std::atomic_bool _enabledCryption = false;
+    std::atomic_bool _enabledCryption = true;
     AsyncListener<FrameCodecObserver*, true> _observer;
     SafeScopedRefPtr<webrtc::TransformedFrameCallback> _sink;
     Bricks::SafeObj<Sinks> _sinks;
     // methods
     Impl(cricket::MediaType mediaType,
-         EncryptionType algorithm,
-         std::string participantId,
+         std::string participantSid,
          const std::weak_ptr<rtc::Thread>& signalingThread,
          const std::shared_ptr<KeyProvider>& keyProvider,
          const std::shared_ptr<Bricks::Logger>& logger);
@@ -72,29 +87,35 @@ struct FrameCodec::Impl : public Bricks::LoggableS<>
     void transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
 protected:
     // override of Bricks::LoggableS<>
-    std::string_view logCategory() const final { return g_category; }
+    std::string_view logCategory() const final { return _logCategory; }
 private:
     void encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
     void decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
     void setLastEncryptState(FrameCodecState state);
     void setLastDecryptState(FrameCodecState state);
     std::shared_ptr<ParticipantKeyHandler> keyHandler() const;
-    uint8_t ivSize() const noexcept;
+    bool aesGcmEncryptDecrypt(bool encrypt,
+                              const std::vector<uint8_t>& rawKey,
+                              const rtc::ArrayView<uint8_t>& data,
+                              const rtc::ArrayView<uint8_t>& iv,
+                              const rtc::ArrayView<uint8_t>& additionalData,
+                              std::vector<uint8_t>& buffer) const;
+    static constexpr uint8_t ivSize() noexcept { return 12; }
+    rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
 private:
     std::atomic<FrameCodecState> _lastEncState = FrameCodecState::New;
     std::atomic<FrameCodecState> _lastDecState = FrameCodecState::New;
+    static thread_local inline std::map<uint32_t, uint32_t> _sendCounts;
 };
 
 FrameCodec::FrameCodec(cricket::MediaType mediaType,
-                       EncryptionType algorithm,
-                       std::string participantId,
+                       std::string participantSid,
                        const std::weak_ptr<rtc::Thread>& signalingThread,
                        const std::shared_ptr<KeyProvider>& keyProvider,
                        const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(std::make_shared<Impl>(mediaType, algorithm, std::move(participantId),
+    : _impl(std::make_shared<Impl>(mediaType, std::move(participantSid),
                                    signalingThread, keyProvider, logger))
-        , _queue(createTaskQueueU("FrameCodec_" + _impl->_participantId,
-                                  webrtc::TaskQueueFactory::Priority::NORMAL))
+    , _queue(createTaskQueueU(_impl->_logCategory, webrtc::TaskQueueFactory::Priority::HIGH))
 {
 }
 
@@ -172,8 +193,8 @@ void FrameCodec::UnregisterTransformedFrameSinkCallback(uint32_t ssrc)
 }
 
 webrtc::scoped_refptr<FrameCodec> FrameCodec::
-    create(cricket::MediaType mediaType, EncryptionType algorithm,
-           std::string participantId,
+    create(cricket::MediaType mediaType,
+           std::string participantSid,
            const std::weak_ptr<rtc::Thread>& signalingThread,
            const std::shared_ptr<KeyProvider>& keyProvider,
            const std::shared_ptr<Bricks::Logger>& logger)
@@ -182,34 +203,33 @@ webrtc::scoped_refptr<FrameCodec> FrameCodec::
         logInitError(logger, "no key provider");
         return {};
     }
-    if (EncryptionType::None == algorithm) {
-        logInitError(logger, "encryption algorithm is not specified");
-        return {};
+    switch (mediaType) {
+        case cricket::MEDIA_TYPE_VIDEO:
+        case cricket::MEDIA_TYPE_AUDIO:
+            break;
+        default:
+            logInitError(logger, "unsupported media type: " + cricket::MediaTypeToString(mediaType));
+            return {};
     }
-    if (cricket::MEDIA_TYPE_VIDEO != mediaType || cricket::MEDIA_TYPE_AUDIO != mediaType) {
-        logInitError(logger, "unsupported media type: " + cricket::MediaTypeToString(mediaType));
-        return {};
-    }
-    if (participantId.empty()) {
+    if (participantSid.empty()) {
         logInitError(logger, "unknown participant ID");
         return {};
     }
-    return webrtc::make_ref_counted<FrameCodec>(mediaType, algorithm,
-                                                std::move(participantId),
+    return webrtc::make_ref_counted<FrameCodec>(mediaType, std::move(participantSid),
                                                 signalingThread,
                                                 keyProvider, logger);
 }
 
 FrameCodec::Impl::Impl(cricket::MediaType mediaType,
-                       EncryptionType algorithm,
-                       std::string participantId,
+                       std::string participantSid,
                        const std::weak_ptr<rtc::Thread>& signalingThread,
                        const std::shared_ptr<KeyProvider>& keyProvider,
                        const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _mediaType(mediaType)
-    , _algorithm(algorithm)
+    , _participantSid(std::move(participantSid))
     , _keyProvider(keyProvider)
+    , _logCategory(std::string(g_category) + "_" + _participantSid)
     , _observer(signalingThread)
 {
 }
@@ -262,44 +282,118 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
             setLastEncryptState(FrameCodecState::InternalError);
             return;
         }
+        
         const auto dataIn = frame->GetData();
-        if (dataIn.empty() || !_enabledCryption) {
-            logWarning("no input data or encryption disabled");
+        if (dataIn.empty()) {
+            logWarning("no input data for encrypt");
+            return;
+        }
+        if (!_enabledCryption) {
+            logWarning("encryption disabled");
             if (_keyProvider->options()._discardFrameWhenCryptorNotReady) {
                 return;
             }
             sink->OnTransformedFrame(std::move(frame));
             return;
         }
+        
         const auto keyHandler = this->keyHandler();
         if (!keyHandler) {
-            logError("no keys for participant " + _participantId);
+            logError("no keys for participant");
             setLastEncryptState(FrameCodecState::MissingKey);
             return;
         }
+        
         const auto keyIndex = _keyIndex.load();
         const auto keySet = keyHandler->keySet(keyIndex);
         if (!keySet) {
-            logError("no key set for key index " + std::to_string(keyIndex) +
-                     " and participant " + _participantId);
+            logError("no key set for key index " + std::to_string(keyIndex));
             setLastEncryptState(FrameCodecState::MissingKey);
             return;
         }
+        
         const auto frameHeaderSize = unencryptedBytes(frame.get(), _mediaType);
         rtc::Buffer frameHeader(frameHeaderSize);
         for (size_t i = 0U; i < frameHeaderSize; i++) {
             frameHeader[i] = dataIn[i];
         }
-        rtc::Buffer frameTrailer(2U);
-        frameTrailer[0] = ivSize();
-        frameTrailer[1] = _keyIndex;
+        
+        rtc::Buffer iv = makeIv(frame->GetSsrc(), frame->GetTimestamp());
+        
+        rtc::Buffer payload(dataIn.size() - frameHeaderSize);
+        for (size_t i = frameHeaderSize; i < dataIn.size(); i++) {
+            payload[i - frameHeaderSize] = dataIn[i];
+        }
+        
+        std::vector<uint8_t> buffer;
+        if (aesGcmEncryptDecrypt(true, keySet->_encryptionKey, payload, iv,
+                                 frameHeader, buffer)) {
+            rtc::Buffer frameTrailer(2U);
+            frameTrailer[0] = ivSize();
+            frameTrailer[1] = _keyIndex;
+            
+            rtc::Buffer encryptedPayload(buffer.data(), buffer.size());
+            rtc::Buffer tag(encryptedPayload.data() + encryptedPayload.size() - 16, 16);
+            
+            rtc::Buffer dataWithoutHeader;
+            dataWithoutHeader.AppendData(encryptedPayload);
+            dataWithoutHeader.AppendData(iv);
+            dataWithoutHeader.AppendData(frameTrailer);
+
+            rtc::Buffer dataOut;
+            dataOut.AppendData(frameHeader);
+            if (frameIsH264(frame.get(), _mediaType)) {
+                webrtc::H264::WriteRbsp(dataWithoutHeader, &dataOut);
+            }
+            else if (frameIsH265(frame.get(), _mediaType)) {
+                webrtc::H265::WriteRbsp(dataWithoutHeader, &dataOut);
+            }
+            else {
+                dataOut.AppendData(dataWithoutHeader);
+                RTC_CHECK_EQ(dataOut.size(), frameHeader.size() +
+                             encryptedPayload.size() + iv.size() +
+                             frameTrailer.size());
+            }
+            frame->SetData(dataOut);
+            setLastEncryptState(FrameCodecState::Ok);
+            sink->OnTransformedFrame(std::move(frame));
+        }
+        else {
+            setLastEncryptState(FrameCodecState::EncryptionFailed);
+            logError("encrypt frame failed");
+        }
     }
 }
 
 void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame) {
+        webrtc::scoped_refptr<webrtc::TransformedFrameCallback> sink;
+        if (cricket::MEDIA_TYPE_AUDIO == _mediaType) {
+            sink = _sink();
+        }
+        else {
+            LOCK_READ_SAFE_OBJ(_sinks);
+            const auto it = _sinks->find(frame->GetSsrc());
+            if (it != _sinks->end()) {
+                sink = it->second;
+            }
+        }
+        if (!sink) {
+            logWarning("unable to decrypt frame, sink is NULL");
+            setLastDecryptState(FrameCodecState::InternalError);
+            return;
+        }
         
+        const auto dataIn = frame->GetData();
+        if (dataIn.empty() || !_enabledCryption) {
+            logWarning("no input data for decrypt or decryption disabled");
+            if (_keyProvider->options()._discardFrameWhenCryptorNotReady) {
+                return;
+            }
+            sink->OnTransformedFrame(std::move(frame));
+            return;
+        }
     }
 }
 
@@ -307,7 +401,7 @@ void FrameCodec::Impl::setLastEncryptState(FrameCodecState state)
 {
     if (exchangeVal(state, _lastEncState)) {
         _observer.invoke(&FrameCodecObserver::onEncryptionStateChanged,
-                         _participantId, state);
+                         _participantSid, state);
     }
 }
 
@@ -315,27 +409,84 @@ void FrameCodec::Impl::setLastDecryptState(FrameCodecState state)
 {
     if (exchangeVal(state, _lastDecState)) {
         _observer.invoke(&FrameCodecObserver::onDecryptionStateChanged,
-                         _participantId, state);
+                         _participantSid, state);
     }
 }
 
 std::shared_ptr<ParticipantKeyHandler> FrameCodec::Impl::keyHandler() const
 {
     if (_keyProvider->options()._sharedKey) {
-        return _keyProvider->sharedKey(_participantId);
+        return _keyProvider->sharedKey(_participantSid);
     }
-    return _keyProvider->key(_participantId);
+    return _keyProvider->key(_participantSid);
 }
 
-uint8_t FrameCodec::Impl::ivSize() const noexcept
+bool FrameCodec::Impl::aesGcmEncryptDecrypt(bool encrypt,
+                                            const std::vector<uint8_t>& rawKey,
+                                            const rtc::ArrayView<uint8_t>& data,
+                                            const rtc::ArrayView<uint8_t>& iv,
+                                            const rtc::ArrayView<uint8_t>& additionalData,
+                                            std::vector<uint8_t>& buffer) const
 {
-    switch (_algorithm) {
-        case EncryptionType::Gcm:
-            return 12;
-        default:
-            break;
+    const EVP_AEAD* aeadAlg = aesGcmAlgorithmFromKeySize(rawKey.size());
+    if (!aeadAlg) {
+        logError("invalid AES-GCM key size");
+        return false;
     }
-    return 0;
+    static constexpr unsigned tagLengthBytes = 128U / 8U;
+    
+    bssl::ScopedEVP_AEAD_CTX ctx;
+    if (!EVP_AEAD_CTX_init(ctx.get(), aeadAlg,
+                           rawKey.data(), rawKey.size(),
+                           tagLengthBytes, nullptr)) {
+        logError("failed to initialize AES-GCM context");
+        return false;
+    }
+    size_t len = {};
+    int ok = {};
+    if (encrypt) {
+        buffer.resize(data.size() + EVP_AEAD_max_overhead(aeadAlg));
+        ok = EVP_AEAD_CTX_seal(ctx.get(), buffer.data(), &len, buffer.size(),
+                               iv.data(), iv.size(), data.data(), data.size(),
+                               additionalData.data(), additionalData.size());
+    }
+    else {
+        if (data.size() < tagLengthBytes) {
+            logError("data too small for AES-GCM tag");
+            return false;
+        }
+        buffer.resize(data.size() - tagLengthBytes);
+        ok = EVP_AEAD_CTX_open(ctx.get(), buffer.data(), &len, buffer.size(),
+                               iv.data(), iv.size(), data.data(), data.size(),
+                               additionalData.data(), additionalData.size());
+    }
+    if (!ok) {
+        logWarning("failed to perform AES-GCM operation");
+        return false;
+    }
+
+    buffer.resize(len);
+    return true;
+}
+
+rtc::Buffer FrameCodec::Impl::makeIv(uint32_t ssrc, uint32_t timestamp)
+{
+    uint32_t sendCount = 0U;
+    const auto it = _sendCounts.find(ssrc);
+    if (it == _sendCounts.end()) {
+        srand((unsigned)time(nullptr));
+        _sendCounts[ssrc] = floor(rand() * 0xFFFF);
+    }
+    else {
+        sendCount = it->second;
+    }
+    rtc::ByteBufferWriter buf;
+    buf.WriteUInt32(ssrc);
+    buf.WriteUInt32(timestamp);
+    buf.WriteUInt32(timestamp - (sendCount % 0xFFFF));
+    _sendCounts[ssrc] = sendCount + 1;
+    RTC_CHECK_EQ(buf.Length(), ivSize());
+    return rtc::Buffer(buf.Data(), buf.Length());
 }
 
 } // namespace LiveKitCpp
@@ -346,7 +497,7 @@ namespace
 
 uint8_t unencryptedH264Bytes(const rtc::ArrayView<const uint8_t>& data)
 {
-    /*const auto indices = webrtc::H264::FindNaluIndices(data);
+    const auto indices = webrtc::H264::FindNaluIndices(data);
     for (const auto& index : indices) {
         const auto slice = data.data() + index.payload_start_offset;
         switch (webrtc::H264::ParseNaluType(slice[0])) {
@@ -356,13 +507,13 @@ uint8_t unencryptedH264Bytes(const rtc::ArrayView<const uint8_t>& data)
             default:
                 break;
         }
-    }*/
+    }
     return 12; // ?
 }
 
 uint8_t unencryptedH265Bytes(const rtc::ArrayView<const uint8_t>& data)
 {
-    /*const auto indices = webrtc::H265::FindNaluIndices(data);
+    const auto indices = webrtc::H265::FindNaluIndices(data);
     for (const auto& index : indices) {
         const auto slice = data.data() + index.payload_start_offset;
         switch (webrtc::H265::ParseNaluType(slice[0])) {
@@ -373,7 +524,7 @@ uint8_t unencryptedH265Bytes(const rtc::ArrayView<const uint8_t>& data)
             default:
                 break;
         }
-    }*/
+    }
     return 12; // ?
 }
 
@@ -412,6 +563,27 @@ uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, crick
         }
     }
     return 0;
+}
+
+inline bool checkVideoCodecType(const webrtc::TransformableFrameInterface* frame,
+                                cricket::MediaType mediaType,
+                                webrtc::VideoCodecType codecType)
+{
+    if (frame && cricket::MEDIA_TYPE_VIDEO == mediaType) {
+        const auto videoFrame = static_cast<const webrtc::TransformableVideoFrameInterface*>(frame);
+        return codecType == videoFrame->Metadata().GetCodec();
+    }
+    return false;
+}
+
+bool frameIsH264(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type)
+{
+    return checkVideoCodecType(frame, type, webrtc::kVideoCodecH264);
+}
+
+bool frameIsH265(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type)
+{
+    return checkVideoCodecType(frame, type, webrtc::kVideoCodecH265);
 }
 
 }

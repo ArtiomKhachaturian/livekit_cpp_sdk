@@ -23,12 +23,15 @@ struct AddTrackRequest;
 class LocalTrack
 {
 public:
+    // client track ID, equal to WebRTC track ID
+    virtual std::string cid() const = 0;
     // for publishing
     virtual void setSid(const std::string& sid) = 0;
     virtual bool fillRequest(AddTrackRequest* request) const = 0;
     // transport layer
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> rtcTrack() const = 0;
-    virtual void notifyThatMediaAddedToTransport(bool added) = 0;
+    virtual void notifyThatMediaAddedToTransport(bool encryption) = 0;
+    virtual void notifyThatMediaRemovedFromTransport() = 0;
     // state
     virtual bool muted() const = 0;
 protected:

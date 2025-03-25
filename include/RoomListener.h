@@ -24,6 +24,8 @@ class RoomListener
 public:
     virtual void onStateChanged(RoomState /*state*/) {}
     virtual void onError(LiveKitError /*error*/, const std::string& /*what*/ = {}) {}
+    virtual void onLocalParticipantJoined() {}
+    virtual void onLocalParticipantLeaved() {}
     virtual void onRemoteParticipantAdded(const std::string& /*remoteParticipantSid*/) {}
     virtual void onRemoteParticipantRemoved(const std::string& /*remoteParticipantSid*/) {}
     virtual void onUserPacketReceived(const std::string& /*remoteParticipantSid*/,

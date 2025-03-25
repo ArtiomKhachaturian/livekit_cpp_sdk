@@ -21,9 +21,9 @@ namespace LiveKitCpp
 class FrameCodecObserver
 {
 public:
-    virtual void onEncryptionStateChanged(const std::string& /*participantId*/,
+    virtual void onEncryptionStateChanged(const std::string& /*participantSid*/,
                                           FrameCodecState /*state*/) {}
-    virtual void onDecryptionStateChanged(const std::string& /*participantId*/,
+    virtual void onDecryptionStateChanged(const std::string& /*participantSid*/,
                                           FrameCodecState /*state*/) {}
 protected:
     virtual ~FrameCodecObserver() = default;

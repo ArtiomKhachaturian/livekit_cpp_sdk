@@ -32,15 +32,15 @@ public:
     ~DefaultKeyProvider() final;
     // impl. of KeyProvider
     bool setSharedKey(std::vector<uint8_t> key, const std::optional<uint8_t>& keyIndex = {}) final;
-    std::shared_ptr<ParticipantKeyHandler> sharedKey(const std::string& participantId) final;
+    std::shared_ptr<ParticipantKeyHandler> sharedKey(const std::string& participantSid) final;
     std::vector<uint8_t> ratchetSharedKey(const std::optional<uint8_t>& keyIndex = {}) final;
     std::vector<uint8_t> exportSharedKey(const std::optional<uint8_t>& keyIndex = {}) const final;
-    bool setKey(const std::string& participantId, std::vector<uint8_t> key,
+    bool setKey(const std::string& participantSid, std::vector<uint8_t> key,
                 const std::optional<uint8_t>& keyIndex = {}) final;
-    std::shared_ptr<ParticipantKeyHandler> key(const std::string& participantId) const final;
-    std::vector<uint8_t> ratchetKey(const std::string& participantId,
+    std::shared_ptr<ParticipantKeyHandler> key(const std::string& participantSid) const final;
+    std::vector<uint8_t> ratchetKey(const std::string& participantSid,
                                     const std::optional<uint8_t>& keyIndex = {}) const final;
-    std::vector<uint8_t> exportKey(const std::string& participantId,
+    std::vector<uint8_t> exportKey(const std::string& participantSid,
                                    const std::optional<uint8_t>& keyIndex = {}) const final;
     void setSifTrailer(std::vector<uint8_t> trailer) final;
     std::vector<uint8_t> sifTrailer() const final;

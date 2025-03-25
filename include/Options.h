@@ -16,7 +16,7 @@
 #include "rtc/ClientInfo.h"
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
-#include "e2e/E2EEOptions.h"
+#include "e2e/KeyProvider.h"
 #include "e2e/KeyProviderOptions.h"
 #include <chrono>
 #include <optional>
@@ -49,7 +49,7 @@ struct Options
     // DisabledCodecs            []webrtc.RTPCodecCapability
     
     /// E2EE Options
-    E2EEOptions _e2eeOptions;
+    std::unique_ptr<KeyProvider> _e2eKeyProvider;
     
     /// The number of attempts to reconnect when the network disconnects.
     int _reconnectAttempts = 3;
@@ -72,7 +72,6 @@ struct Options
     Options() = default;
     // logger for key provider implementation
     LIVEKIT_CLIENT_API Options(KeyProviderOptions keyProviderOptions,
-                               EncryptionType encryptionType = EncryptionType::Gcm,
                                const std::shared_ptr<Bricks::Logger>& logger = {});
 };
 

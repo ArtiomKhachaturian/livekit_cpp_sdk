@@ -26,6 +26,10 @@
 #include <unordered_map>
 #include <vector>
 
+namespace rtc {
+class Thread;
+}
+
 namespace LiveKitCpp
 {
 
@@ -33,6 +37,7 @@ class LocalTrack;
 class LocalParticipant;
 class LocalParticipantImpl;
 class PeerConnectionFactory;
+class KeyProvider;
 struct AddTrackRequest;
 struct MuteTrackRequest;
 enum class DisconnectReason;
@@ -53,7 +58,9 @@ protected:
         TransportClosed
     };
 protected:
-    RTCMediaEngine(PeerConnectionFactory* pcf, const std::shared_ptr<Bricks::Logger>& logger = {});
+    RTCMediaEngine(PeerConnectionFactory* pcf,
+                   std::shared_ptr<KeyProvider> e2eKeyProvider = {},
+                   const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> localTracks() const;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
@@ -82,7 +89,10 @@ private:
     void sendAddTrack(const LocalTrack* track);
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
+    EncryptionType supportedEncryptionType() const final;
 private:
+    const std::weak_ptr<rtc::Thread> _signalingThread;
+    const std::shared_ptr<KeyProvider> _e2eKeyProvider;
     const std::shared_ptr<LocalParticipantImpl> _localParticipant;
     RemoteParticipants _remoteParicipants;
 };

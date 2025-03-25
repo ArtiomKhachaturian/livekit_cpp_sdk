@@ -33,16 +33,16 @@ class LocalTrackImpl : public Bricks::LoggableS<TTrackApi>,
     static_assert(std::is_base_of_v<webrtc::MediaStreamTrackInterface, TRtcTrack>);
 public:
     ~LocalTrackImpl() override = default;
-    // client track ID, equal to WebRTC track ID
-    std::string cid() const noexcept;
     // impl. of LocalTrack
+    std::string cid() const final;
     void setSid(const std::string& sid) final { _sid(sid); }
     // server track ID if any
     std::string sid() const { return _sid(); }
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> rtcTrack() const final {
         return _mediaTrack;
     }
-    void notifyThatMediaAddedToTransport(bool added) final;
+    void notifyThatMediaAddedToTransport(bool encryption) final;
+    void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
     std::string name() const final { return _name; }
@@ -58,12 +58,14 @@ protected:
     const auto& mediaTrack() const noexcept { return _mediaTrack; }
 private:
     void notifyAboutMuted(bool mute) const;
+    EncryptionType encryption() const;
 private:
     const std::string _name;
     const webrtc::scoped_refptr<TRtcTrack> _mediaTrack;
     TrackManager* const _manager;
     std::atomic_bool _muted = true;
     std::atomic_bool _added = false;
+    std::atomic_bool _encryption = false;
     Bricks::SafeObj<std::string> _sid;
 };
 
@@ -84,17 +86,26 @@ inline LocalTrackImpl<TRtcTrack, TTrackApi>::
 }
 
 template<class TRtcTrack, class TTrackApi>
-inline std::string LocalTrackImpl<TRtcTrack, TTrackApi>::cid() const noexcept
+inline std::string LocalTrackImpl<TRtcTrack, TTrackApi>::cid() const
 {
     return _mediaTrack ? _mediaTrack->id() : std::string{};
 }
 
 template<class TRtcTrack, class TTrackApi>
 inline void LocalTrackImpl<TRtcTrack, TTrackApi>::
-    notifyThatMediaAddedToTransport(bool added)
+    notifyThatMediaAddedToTransport(bool encryption)
 {
-    if (added != _added.exchange(added) && added) {
+    if (!_added.exchange(true)) {
+        _encryption = encryption;
         notifyAboutMuted(muted());
+    }
+}
+
+template<class TRtcTrack, class TTrackApi>
+inline void LocalTrackImpl<TRtcTrack, TTrackApi>::notifyThatMediaRemovedFromTransport()
+{
+    if (_added.exchange(false)) {
+        _encryption = false;
     }
 }
 
@@ -103,6 +114,7 @@ inline bool LocalTrackImpl<TRtcTrack, TTrackApi>::
     fillRequest(AddTrackRequest* request) const
 {
     if (request && _mediaTrack && _added) {
+        request->_encryption = encryption();
         request->_cid = cid();
         request->_name = name();
         request->_muted = muted();
@@ -146,6 +158,15 @@ inline void LocalTrackImpl<TRtcTrack, TTrackApi>::
             _manager->notifyAboutMuteChanges(sid, mute);
         }
     }
+}
+
+template<class TRtcTrack, class TTrackApi>
+inline EncryptionType LocalTrackImpl<TRtcTrack, TTrackApi>::encryption() const
+{
+    if (_manager && _encryption) {
+        return _manager->supportedEncryptionType();
+    }
+    return EncryptionType::None;
 }
 
 } // namespace LiveKitCpp

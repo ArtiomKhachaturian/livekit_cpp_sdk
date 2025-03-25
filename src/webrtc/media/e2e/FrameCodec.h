@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // FrameCodec.h
-#include "rtc/EncryptionType.h"
 #include <api/media_types.h>
 #include <api/frame_transformer_interface.h>
 #include <api/task_queue/task_queue_base.h>
@@ -32,6 +31,7 @@ namespace LiveKitCpp
 class FrameCodecObserver;
 class KeyProvider;
 
+// AES GGM codec
 class FrameCodec : public webrtc::FrameTransformerInterface
 {
     
@@ -39,8 +39,7 @@ class FrameCodec : public webrtc::FrameTransformerInterface
 public:
     ~FrameCodec() override;
     static webrtc::scoped_refptr<FrameCodec> create(cricket::MediaType mediaType,
-                                                    EncryptionType algorithm,
-                                                    std::string participantId,
+                                                    std::string participantSid,
                                                     const std::weak_ptr<rtc::Thread>& signalingThread,
                                                     const std::shared_ptr<KeyProvider>& keyProvider,
                                                     const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -58,8 +57,7 @@ public:
     void UnregisterTransformedFrameSinkCallback(uint32_t ssrc) final;
 protected:
     FrameCodec(cricket::MediaType mediaType,
-               EncryptionType algorithm,
-               std::string participantId,
+               std::string participantSid,
                const std::weak_ptr<rtc::Thread>& signalingThread,
                const std::shared_ptr<KeyProvider>& keyProvider,
                const std::shared_ptr<Bricks::Logger>& logger);

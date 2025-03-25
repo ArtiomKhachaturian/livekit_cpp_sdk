@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "SSLInitiallizer.h"
+#include "RtcInitializer.h"
 #include <rtc_base/logging.h>
 #include <rtc_base/ssl_adapter.h>
 #include <rtc_base/crypto_random.h>
@@ -22,7 +22,7 @@
 namespace LiveKitCpp
 {
 
-SSLInitiallizer::SSLInitiallizer()
+RtcInitializer::RtcInitializer()
     : _sslInitialized(rtc::InitializeSSL())
 {
     if (_sslInitialized) {
@@ -35,7 +35,7 @@ SSLInitiallizer::SSLInitiallizer()
     }
 }
 
-SSLInitiallizer::~SSLInitiallizer()
+RtcInitializer::~RtcInitializer()
 {
     if (_sslInitialized) {
         rtc::CleanupSSL();

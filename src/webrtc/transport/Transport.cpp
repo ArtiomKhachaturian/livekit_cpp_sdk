@@ -43,6 +43,10 @@ inline cricket::MediaType fromString(const std::string& type) {
     return cricket::MEDIA_TYPE_UNSUPPORTED;
 }
 
+rtc::scoped_refptr<webrtc::RtpSenderInterface>
+    findSender(const webrtc::scoped_refptr<webrtc::PeerConnectionInterface>& pc,
+               const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+
 }
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/PCTransport.ts
@@ -108,7 +112,7 @@ private:
     std::atomic<webrtc::PeerConnectionInterface::IceConnectionState> _iceConnState;
     std::atomic<webrtc::PeerConnectionInterface::SignalingState> _signalingState;
     std::atomic<webrtc::PeerConnectionInterface::IceGatheringState> _iceGatheringState;
-    webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
+    const webrtc::scoped_refptr<webrtc::PeerConnectionInterface> _pc;
 };
 
 Transport::Transport(SignalTarget target, TransportListener* listener,
@@ -256,16 +260,7 @@ bool Transport::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInt
             thread->PostTask([id, kind, track, implRef = weak(_impl)]() {
                 if (const auto impl = implRef.lock()) {
                     const auto pc = impl->peerConnection();
-                    if (!pc) {
-                        return;
-                    }
-                    rtc::scoped_refptr<webrtc::RtpSenderInterface> trackSender;
-                    for (const auto& sender : pc->GetSenders()) {
-                        if (sender->track() == track) {
-                            trackSender = sender;
-                        }
-                    }
-                    impl->removeTrackBySender(trackSender);
+                    impl->removeTrackBySender(findSender(pc, track));
                 }
             });
             return true;
@@ -781,3 +776,22 @@ bool Transport::Impl::changeAndLogState(TState newState, std::atomic<TState>& va
 }
 
 } // namespace LiveKitCpp
+
+
+namespace {
+
+rtc::scoped_refptr<webrtc::RtpSenderInterface>
+    findSender(const webrtc::scoped_refptr<webrtc::PeerConnectionInterface>& pc,
+               const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+{
+    if (pc && track) {
+        for (const auto& sender : pc->GetSenders()) {
+            if (sender->track() == track) {
+                return sender;
+            }
+        }
+    }
+    return {};
+}
+
+}
