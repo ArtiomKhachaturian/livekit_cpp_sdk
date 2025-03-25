@@ -63,6 +63,7 @@ protected:
                    std::shared_ptr<KeyProvider> e2eKeyProvider = {},
                    const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
+    bool e2eEnabled() const { return nullptr != _e2eKeyProvider; }
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> localTracks() const;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     virtual SendResult sendAddTrack(const AddTrackRequest& request) const = 0;

@@ -55,6 +55,17 @@ inline const EVP_AEAD* aesGcmAlgorithmFromKeySize(size_t keySizeBytes)
     return nullptr;
 }
 
+inline bool needsRbspUnescaping(const uint8_t* frameData, size_t frameSize) {
+    for (size_t i = 0; i < frameSize - 3; ++i) {
+        if (frameData[i] == 0 &&
+            frameData[i + 1] == 0 &&
+            frameData[i + 2] == 3) {
+            return true;
+        }
+    }
+    return false;
+}
+
 uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
 bool frameIsH264(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
 bool frameIsH265(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
@@ -96,9 +107,9 @@ private:
     std::shared_ptr<E2EKeyHandler> keyHandler() const;
     bool aesGcmEncryptDecrypt(bool encrypt,
                               const std::vector<uint8_t>& rawKey,
-                              const rtc::ArrayView<uint8_t>& data,
                               const rtc::ArrayView<uint8_t>& iv,
                               const rtc::ArrayView<uint8_t>& additionalData,
+                              const rtc::ArrayView<uint8_t>& data,
                               std::vector<uint8_t>& buffer) const;
     static constexpr uint8_t ivSize() noexcept { return 12; }
     rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
@@ -299,7 +310,7 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         
         const auto keyHandler = this->keyHandler();
         if (!keyHandler) {
-            logError("no keys for participant");
+            logError("no keys for encrypt");
             setLastEncryptState(FrameCodecState::MissingKey);
             return;
         }
@@ -326,8 +337,12 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         }
         
         std::vector<uint8_t> buffer;
-        if (aesGcmEncryptDecrypt(true, keySet->_encryptionKey, payload, iv,
-                                 frameHeader, buffer)) {
+        if (aesGcmEncryptDecrypt(true,
+                                 keySet->_encryptionKey,
+                                 iv,
+                                 frameHeader,
+                                 payload,
+                                 buffer)) {
             rtc::Buffer frameTrailer(2U);
             frameTrailer[0] = ivSize();
             frameTrailer[1] = _keyIndex;
@@ -394,6 +409,159 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
             sink->OnTransformedFrame(std::move(frame));
             return;
         }
+        
+        const auto sif = _keyProvider->sifTrailer();
+        if (!sif.empty() && dataIn.size() >= sif.size()) {
+            auto tmp = dataIn.subview(dataIn.size() - (sif.size()), sif.size());
+            std::vector<uint8_t> data(tmp.begin(), tmp.end());
+            if (data == sif) {
+                // magic bytes detected, this is a non-encrypted frame,
+                // skip frame decryption
+                rtc::Buffer dataOut;
+                dataOut.AppendData(dataIn.subview(0, dataIn.size() - sif.size()));
+                frame->SetData(dataOut);
+                sink->OnTransformedFrame(std::move(frame));
+                return;
+            }
+        }
+        
+        const auto frameHeaderSize = unencryptedBytes(frame.get(), _mediaType);
+        rtc::Buffer frameHeader(frameHeaderSize);
+        for (size_t i = 0U; i < frameHeaderSize; i++) {
+            frameHeader[i] = dataIn[i];
+        }
+        
+        rtc::Buffer frameTrailer(2);
+        frameTrailer[0] = dataIn[dataIn.size() - 2];
+        frameTrailer[1] = dataIn[dataIn.size() - 1];
+        uint8_t ivLength = frameTrailer[0];
+        uint8_t keyIndex = frameTrailer[1];
+        if (ivLength != ivSize()) {
+            logWarning("incorrect IV size for decryption");
+            setLastDecryptState(FrameCodecState::DecryptionFailed);
+            return;
+        }
+        
+        const auto keyHandler = this->keyHandler();
+        if (!keyHandler) {
+            logError("no keys for decrypt");
+            setLastEncryptState(FrameCodecState::MissingKey);
+            return;
+        }
+        
+        if (keyIndex >= _keyProvider->options()._keyRingSize) {
+            logError("decryption key index [" + std::to_string(keyIndex) + "] is out of range ");
+            setLastEncryptState(FrameCodecState::MissingKey);
+            return;
+        }
+
+        const auto keySet = keyHandler->keySet(keyIndex);
+        if (!keySet) {
+            logError("no key set for decryption key index [" +
+                     std::to_string(keyIndex) + "]");
+            setLastEncryptState(FrameCodecState::MissingKey);
+            return;
+        }
+        
+        if (FrameCodecState::DecryptionFailed == _lastDecState && !keyHandler->hasValidKey()) {
+            // if decryption failed and we have an invalid key,
+            // please try to decrypt with the next new key
+            return;
+        }
+        
+        rtc::Buffer iv(ivLength);
+        for (size_t i = 0U; i < ivLength; i++) {
+            iv[i] = dataIn[dataIn.size() - 2 - ivLength + i];
+        }
+        
+        rtc::Buffer encryptedBuffer(dataIn.size() - frameHeaderSize);
+        for (size_t i = frameHeaderSize; i < dataIn.size(); i++) {
+            encryptedBuffer[i - frameHeaderSize] = dataIn[i];
+        }
+        
+        if (frameIsH264(frame.get(), _mediaType)) {
+            if (needsRbspUnescaping(encryptedBuffer.data(), encryptedBuffer.size())) {
+                webrtc::H264::ParseRbsp(encryptedBuffer.data(), encryptedBuffer.size());
+            }
+        }
+        else if (frameIsH265(frame.get(), _mediaType)) {
+            if (needsRbspUnescaping(encryptedBuffer.data(), encryptedBuffer.size())) {
+                webrtc::H265::ParseRbsp(encryptedBuffer.data(), encryptedBuffer.size());
+            }
+        }
+        
+        rtc::Buffer encryptedPayload(encryptedBuffer.size() - ivLength - 2);
+        for (size_t i = 0U; i < encryptedPayload.size(); i++) {
+            encryptedPayload[i] = encryptedBuffer[i];
+        }
+
+        rtc::Buffer tag(encryptedPayload.data() + encryptedPayload.size() - 16, 16);
+        std::vector<uint8_t> buffer;
+        auto initialKeyMaterial = keySet->_material;
+        bool decryptionSuccess = aesGcmEncryptDecrypt(false,
+                                                      keySet->_encryptionKey,
+                                                      iv,
+                                                      frameHeader,
+                                                      encryptedPayload,
+                                                      buffer);
+        if (!decryptionSuccess) {
+            logWarning("decrypt frame failed");
+            std::shared_ptr<KeySet> ratchetedKeySet;
+            int ratchetCount = 0;
+            auto currentKeyMaterial = keySet->_material;
+            if (_keyProvider->options()._ratchetWindowSize > 0) {
+                while (ratchetCount < _keyProvider->options()._ratchetWindowSize) {
+                    ratchetCount++;
+                    logVerbose("ratcheting key attempt " +
+                               std::to_string(ratchetCount) + " of " +
+                               std::to_string(_keyProvider->options()._ratchetWindowSize));
+                    auto newMaterial = keyHandler->ratchetKeyMaterial(currentKeyMaterial);
+                    ratchetedKeySet = keyHandler->deriveKeys(newMaterial,
+                                                             _keyProvider->options()._ratchetSalt,
+                                                             128);
+                    decryptionSuccess = aesGcmEncryptDecrypt(false,
+                                                             ratchetedKeySet->_encryptionKey,
+                                                             iv,
+                                                             frameHeader,
+                                                             encryptedPayload,
+                                                             buffer);
+                    if (decryptionSuccess) {
+                        // success, so we set the new key
+                        keyHandler->setKeyFromMaterial(newMaterial, keyIndex);
+                        keyHandler->setHasValidKey();
+                        setLastDecryptState(FrameCodecState::KeyRatcheted);
+                        break;
+                    }
+                    // for the next ratchet attempt
+                    currentKeyMaterial = newMaterial;
+                } // while (ratchetCount < _keyProvider->options()._ratchetWindowSize)
+                /* Since the key it is first send and only afterwards actually used for
+                   encrypting, there were situations when the decrypting failed due to the
+                   fact that the received frame was not encrypted yet and ratcheting, of
+                   course, did not solve the problem. So if we fail RATCHET_WINDOW_SIZE
+                   times, we come back to the initial key.
+                 */
+                if (!decryptionSuccess && ratchetCount >= _keyProvider->options()._ratchetWindowSize) {
+                    keyHandler->setKeyFromMaterial(std::move(initialKeyMaterial), keyIndex);
+                }
+            } //  if (_keyProvider->options()._ratchetWindowSize > 0)
+        }
+        
+        if (!decryptionSuccess) {
+            if (keyHandler->decryptionFailure()) {
+                setLastDecryptState(FrameCodecState::DecryptionFailed);
+            }
+            return;
+        }
+        
+        rtc::Buffer payload(buffer.data(), buffer.size());
+        rtc::Buffer dataOut;
+        dataOut.AppendData(frameHeader);
+        dataOut.AppendData(payload);
+        frame->SetData(dataOut);
+        
+        setLastDecryptState(FrameCodecState::Ok);
+        sink->OnTransformedFrame(std::move(frame));
     }
 }
 
@@ -423,9 +591,9 @@ std::shared_ptr<E2EKeyHandler> FrameCodec::Impl::keyHandler() const
 
 bool FrameCodec::Impl::aesGcmEncryptDecrypt(bool encrypt,
                                             const std::vector<uint8_t>& rawKey,
-                                            const rtc::ArrayView<uint8_t>& data,
                                             const rtc::ArrayView<uint8_t>& iv,
                                             const rtc::ArrayView<uint8_t>& additionalData,
+                                            const rtc::ArrayView<uint8_t>& data,
                                             std::vector<uint8_t>& buffer) const
 {
     const EVP_AEAD* aeadAlg = aesGcmAlgorithmFromKeySize(rawKey.size());

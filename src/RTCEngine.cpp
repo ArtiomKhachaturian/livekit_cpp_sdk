@@ -180,6 +180,9 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
 {
     webrtc::PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
+    if (e2eEnabled()) {
+        
+    }
     //config.network_preference.emplace(rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
     // set some defaults
     //config.set_cpu_adaptation(true);

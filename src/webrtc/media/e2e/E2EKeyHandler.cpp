@@ -19,7 +19,6 @@
 #include "Utils.h"
 #include <openssl/evp.h>
 #include <cassert>
-#include <sstream>
 
 namespace {
 
@@ -38,15 +37,16 @@ struct Data
 };
 
 inline std::string toUint8List(const uint8_t* data, size_t len) {
-    std::stringstream ss;
-    ss << "[";
+    std::string res = "[";
     if (data && len) {
+        std::vector<std::string> symbols;
+        symbols.reserve(len);
         for (size_t i = 0U; i < len; i++) {
-            ss << static_cast<unsigned>(data[i]) << ",";
+            symbols.push_back(std::to_string(static_cast<unsigned>(data[i])));
         }
+        res += LiveKitCpp::join(symbols, ",");
     }
-    ss << "]";
-    return ss.str();
+    return res + "]";
 }
 
 inline std::string toUint8List(const std::vector<uint8_t>& data) {
@@ -242,11 +242,11 @@ bool E2EKeyHandler::Impl::derivePBKDF2KeyFromRawKey(const std::vector<uint8_t>& 
         return false;
     }
     if (canLogVerbose()) {
-        logVerbose("raw_key " + toUint8List(rawKey) +
-                   " len " + std::to_string(rawKey.size()) +
-                   "salt " + toUint8List(salt) +
+        logVerbose("raw key " + toUint8List(rawKey) +
+                   " len " + std::to_string(rawKey.size()));
+        logVerbose("salt " + toUint8List(salt) +
                    " len " + std::to_string(salt.size()));
-        logVerbose("derived_key " + toUint8List(derivedKey) +
+        logVerbose("derived key " + toUint8List(derivedKey) +
                    " len " + std::to_string(derivedKey.size()));
     }
     return true;
