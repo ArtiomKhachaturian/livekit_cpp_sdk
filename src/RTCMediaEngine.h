@@ -42,6 +42,8 @@ class FrameCodec;
 class SessionListener;
 struct AddTrackRequest;
 struct MuteTrackRequest;
+struct UpdateLocalAudioTrack;
+struct MicrophoneOptions;
 enum class DisconnectReason;
 
 class RTCMediaEngine : public Bricks::LoggableS<SignalServerListener>,
@@ -55,7 +57,7 @@ public:
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    virtual std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack();
+    virtual std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack(const MicrophoneOptions& options);
     virtual std::shared_ptr<CameraTrackImpl> addLocalCameraTrack();
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track);
@@ -81,6 +83,7 @@ protected:
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     virtual SendResult sendAddTrack(const AddTrackRequest& request) const = 0;
     virtual SendResult sendMuteTrack(const MuteTrackRequest& request) const = 0;
+    virtual SendResult sendUpdateLocalAudioTrack(const UpdateLocalAudioTrack& request) const = 0;
     virtual bool closed() const = 0;
     virtual void cleanup(const std::optional<LiveKitError>& error = {},
                          const std::string& errorDetails = {});
@@ -112,6 +115,7 @@ private:
                                                   std::string id) const final;
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
+    std::optional<bool> stereoRecording() const final;
     EncryptionType localEncryptionType() const final;
     // impl. of RemoteParticipantsListener
     void onParticipantAdded(const std::string& sid) final;

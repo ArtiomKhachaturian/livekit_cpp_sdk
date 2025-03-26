@@ -18,6 +18,7 @@
 #include "CameraVideoSource.h"
 #include "CameraManager.h"
 #include "DataChannel.h"
+#include "MicrophoneOptions.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
 #include "rtc/ParticipantInfo.h"
@@ -26,28 +27,14 @@ namespace {
 
 using namespace LiveKitCpp;
 
-inline webrtc::scoped_refptr<webrtc::AudioTrackInterface>
-    createMic(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf) {
-    if (pcf) {
-        cricket::AudioOptions options; // TODO: should be a part of room config
-        if (const auto source = pcf->CreateAudioSource(options)) {
-            return pcf->CreateAudioTrack(makeUuid(), source.get());
-        }
-    }
-    return {};
-}
-
-inline webrtc::scoped_refptr<CameraVideoTrack>
-    createCamera(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
-                 const std::shared_ptr<Bricks::Logger>& logger) {
-    if (pcf && CameraManager::available()) {
-        auto source = webrtc::make_ref_counted<CameraVideoSource>(pcf->signalingThread(),
-                                                                  logger);
-        return webrtc::make_ref_counted<CameraVideoTrack>(makeUuid(),
-                                                          std::move(source),
-                                                          logger);
-    }
-    return {};
+inline cricket::AudioOptions toCricketOptions(const MicrophoneOptions& options) {
+    cricket::AudioOptions audioOptions;
+    audioOptions.echo_cancellation = options._echoCancellation;
+    audioOptions.auto_gain_control = options._autoGainControl;
+    audioOptions.noise_suppression = options._noiseSuppression;
+    audioOptions.highpass_filter = options._highpassFilter;
+    audioOptions.stereo_swapping = options._stereoSwapping;
+    return audioOptions;
 }
 
 }
@@ -64,6 +51,14 @@ LocalParticipant::LocalParticipant(TrackManager* manager,
 {
 }
 
+std::optional<bool> LocalParticipant::stereoRecording() const
+{
+    if (_pcf) {
+        return _pcf->stereoRecording();
+    }
+    return std::nullopt;
+}
+
 size_t LocalParticipant::audioTracksCount() const
 {
     LOCK_READ_SAFE_OBJ(_audioTracks);
@@ -76,9 +71,10 @@ size_t LocalParticipant::videoTracksCount() const
     return _videoTracks->size();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addMicrophoneTrack()
+std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::
+    addMicrophoneTrack(const MicrophoneOptions& options)
 {
-    if (auto mic = createMic(_pcf)) {
+    if (auto mic = createMic(options)) {
         const auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
                                                                  _manager, true,
                                                                  logger());
@@ -90,7 +86,7 @@ std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addMicrophoneTrack()
 
 std::shared_ptr<CameraTrackImpl> LocalParticipant::addCameraTrack()
 {
-    if (auto camera = createCamera(_pcf, logger())) {
+    if (auto camera = createCamera()) {
         const auto track = std::make_shared<CameraTrackImpl>(std::move(camera),
                                                              _manager, logger());
         addTrack(track);
@@ -273,6 +269,29 @@ std::shared_ptr<LocalTrack> LocalParticipant::lookupVideo(const std::string& id,
                 return videoTrack;
             }
         }
+    }
+    return {};
+}
+
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::
+    createMic(const MicrophoneOptions& options) const
+{
+    if (_pcf) {
+        if (const auto source = _pcf->CreateAudioSource(toCricketOptions(options))) {
+            return _pcf->CreateAudioTrack(makeUuid(), source.get());
+        }
+    }
+    return {};
+}
+
+webrtc::scoped_refptr<CameraVideoTrack> LocalParticipant::createCamera() const
+{
+    if (_pcf && CameraManager::available()) {
+        auto source = webrtc::make_ref_counted<CameraVideoSource>(_pcf->signalingThread(),
+                                                                  logger());
+        return webrtc::make_ref_counted<CameraVideoTrack>(makeUuid(),
+                                                          std::move(source),
+                                                          logger());
     }
     return {};
 }

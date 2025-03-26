@@ -63,7 +63,7 @@ public:
                         const std::string& topic = {}) const;
     bool sendChatMessage(std::string message, bool deleted) const;
     // override of RTCMediaEngine
-    std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack() final;
+    std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack(const MicrophoneOptions& options) final;
     std::shared_ptr<CameraTrackImpl> addLocalCameraTrack() final;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track) final;
@@ -73,12 +73,15 @@ protected:
     // impl. or overrides of RTCMediaEngine
     SendResult sendAddTrack(const AddTrackRequest& request) const final;
     SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
+    SendResult sendUpdateLocalAudioTrack(const UpdateLocalAudioTrack& request) const final;
     bool closed() const final;
     void cleanup(const std::optional<LiveKitError>& error = {},
                  const std::string& errorDetails = {}) final;
 private:
-    bool sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
+    void sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
+    template <class ReqMethod, class TReq>
+    SendResult sendRequestToServer(const ReqMethod& method, const TReq& req) const;
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const std::vector<ICEServer>& iceServers = {},
                           const std::optional<ClientConfiguration>& cc = {}) const;

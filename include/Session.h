@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Session.h
-#include "LiveKitClientExport.h"
-#include "Options.h"
-#include "SessionState.h"
 #include "AudioTrack.h"
 #include "CameraTrack.h"
+#include "LiveKitClientExport.h"
+#include "MicrophoneOptions.h"
+#include "Options.h"
+#include "SessionState.h"
 #include "RemoteParticipant.h"
 #include "e2e/KeyProvider.h"
 #include "e2e/KeyProviderOptions.h"
@@ -48,7 +49,7 @@ public:
     // local media
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    std::shared_ptr<AudioTrack> addMicrophoneTrack();
+    std::shared_ptr<AudioTrack> addMicrophoneTrack(const MicrophoneOptions& options = {});
     std::shared_ptr<CameraTrack> addCameraTrack();
     void removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
     void removeVideoTrack(const std::shared_ptr<VideoTrack>& track);

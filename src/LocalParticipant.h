@@ -26,6 +26,7 @@
 #include <vector>
 
 namespace webrtc {
+class AudioTrackInterface;
 class RtpSenderInterface;
 }
 
@@ -36,10 +37,12 @@ class Logger;
 namespace LiveKitCpp
 {
 
+class CameraVideoTrack;
 class TrackManager;
 class PeerConnectionFactory;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
+struct MicrophoneOptions;
 
 class LocalParticipant : public Bricks::LoggableS<Participant>
 {
@@ -49,9 +52,10 @@ public:
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipant() final = default;
+    std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
     size_t videoTracksCount() const;
-    std::shared_ptr<LocalAudioTrackImpl> addMicrophoneTrack();
+    std::shared_ptr<LocalAudioTrackImpl> addMicrophoneTrack(const MicrophoneOptions& options);
     std::shared_ptr<CameraTrackImpl> addCameraTrack();
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
@@ -78,6 +82,8 @@ private:
     void addTrack(const std::shared_ptr<VideoTrack>& track);
     std::shared_ptr<LocalTrack> lookupAudio(const std::string& id, bool cid) const;
     std::shared_ptr<LocalTrack> lookupVideo(const std::string& id, bool cid) const;
+    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const MicrophoneOptions& options) const;
+    webrtc::scoped_refptr<CameraVideoTrack> createCamera() const;
 private:
     TrackManager* const _manager;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;

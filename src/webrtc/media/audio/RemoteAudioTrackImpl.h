@@ -29,6 +29,8 @@ public:
     RemoteAudioTrackImpl(TrackManager* manager, const TrackInfo& info,
                          webrtc::AudioTrackInterface* track);
     ~RemoteAudioTrackImpl() final;
+    // impl. of AudioTrack
+    void setVolume(double volume) final;
     // impl. of RemoteAudioTrack
     std::string sid() const final { return info()._sid; }
     bool dtx() const final { return !info()._disableDtx; }

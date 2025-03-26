@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // LocalTrack.h
 #include <api/media_stream_interface.h>
+#include <api/media_types.h>
 #include <string>
 
 namespace LiveKitCpp
@@ -23,12 +24,8 @@ struct AddTrackRequest;
 class LocalTrack
 {
 public:
-    std::string cid() const {
-        if (const auto& m = media()) {
-            return m->id();
-        }
-        return {};
-    }
+    std::string cid() const;
+    cricket::MediaType mediaType() const;
     // for publishing
     virtual void setSid(const std::string& sid) = 0;
     virtual bool fillRequest(AddTrackRequest* request) const = 0;

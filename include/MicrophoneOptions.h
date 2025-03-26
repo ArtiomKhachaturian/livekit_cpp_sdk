@@ -11,22 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // TrackManager.h
-#include "rtc/EncryptionType.h"
+#pragma once // MicrophoneOptions.h
 #include <optional>
-#include <string>
 
 namespace LiveKitCpp
 {
 
-class TrackManager
+struct MicrophoneOptions
 {
-public:
-    virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
-    virtual std::optional<bool> stereoRecording() const = 0;
-    virtual EncryptionType localEncryptionType() const = 0;
-protected:
-    virtual ~TrackManager() = default;
+    // audio processing that attempts to filter away
+    // the output signal from later inbound pickup.
+    std::optional<bool> _echoCancellation;
+    // audio processing to adjust the sensitivity of the local mic dynamically.
+    std::optional<bool> _autoGainControl;
+    // audio processing to filter out background noise.
+    std::optional<bool> _noiseSuppression;
+    // audio processing to remove background noise of lower frequencies.
+    std::optional<bool> _highpassFilter;
+    // audio processing to swap the left and right channels.
+    std::optional<bool> _stereoSwapping;
 };
 
 } // namespace LiveKitCpp

@@ -11,22 +11,31 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // TrackManager.h
-#include "rtc/EncryptionType.h"
-#include <optional>
-#include <string>
+#include "LocalTrack.h"
 
 namespace LiveKitCpp
 {
 
-class TrackManager
+std::string LocalTrack::cid() const
 {
-public:
-    virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
-    virtual std::optional<bool> stereoRecording() const = 0;
-    virtual EncryptionType localEncryptionType() const = 0;
-protected:
-    virtual ~TrackManager() = default;
-};
+    if (const auto& m = media()) {
+        return m->id();
+    }
+    return {};
+}
+
+cricket::MediaType LocalTrack::mediaType() const
+{
+    if (const auto& m = media()) {
+        const auto kind = m->kind();
+        if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_AUDIO) == kind) {
+            return cricket::MEDIA_TYPE_AUDIO;
+        }
+        if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_VIDEO) == kind) {
+            return cricket::MEDIA_TYPE_VIDEO;
+        }
+    }
+    return cricket::MEDIA_TYPE_UNSUPPORTED;
+}
 
 } // namespace LiveKitCpp

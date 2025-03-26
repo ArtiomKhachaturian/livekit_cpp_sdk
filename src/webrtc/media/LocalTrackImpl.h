@@ -54,6 +54,7 @@ protected:
                    TrackManager* manager,
                    const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& mediaTrack() const noexcept { return _mediaTrack; }
+    TrackManager* manager() const noexcept { return _manager; }
 private:
     void notifyAboutMuted(bool mute) const;
 private:

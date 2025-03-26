@@ -162,6 +162,28 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     return {};
 }
 
+std::optional<bool> PeerConnectionFactory::stereoRecording() const
+{
+    if (_adm) {
+        bool enabled;
+        if (0 == _adm->StereoRecording(&enabled)) {
+            return enabled;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<bool> PeerConnectionFactory::stereoPlayout() const
+{
+    if (_adm) {
+        bool enabled;
+        if (0 == _adm->StereoPlayout(&enabled)) {
+            return enabled;
+        }
+    }
+    return std::nullopt;
+}
+
 MediaDevice PeerConnectionFactory::defaultRecordingAudioDevice() const
 {
     if (_adm) {

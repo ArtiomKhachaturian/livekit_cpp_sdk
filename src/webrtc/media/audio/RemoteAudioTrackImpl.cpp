@@ -33,6 +33,15 @@ RemoteAudioTrackImpl::~RemoteAudioTrackImpl()
     installSink(false, audioSink());
 }
 
+void RemoteAudioTrackImpl::setVolume(double volume)
+{
+    if (const auto& t = track()) {
+        if (const auto source = t->GetSource()) {
+            source->SetVolume(volume);
+        }
+    }
+}
+
 void RemoteAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink)
 {
     if (sink && track()) {

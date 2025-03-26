@@ -25,6 +25,9 @@ public:
                         TrackManager* manager, bool microphone = true,
                         const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalAudioTrackImpl();
+    // impl. of AudioTrack
+    void setVolume(double volume) final;
+    std::vector<AudioTrackFeature> features() const final;
     // impl. of LocalTrack
     TrackSource source() const final;
     bool fillRequest(AddTrackRequest* request) const final;
@@ -33,6 +36,7 @@ protected:
     void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;
     bool signalLevel(int& level) const final;
 private:
+    webrtc::AudioSourceInterface* audioSource() const;
     static void installSink(bool install, webrtc::AudioTrackSinkInterface* sink,
                             const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track);
 private:

@@ -106,9 +106,10 @@ bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
     return _localDcs.sendChatMessage(std::move(message), deleted);
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalMicrophoneTrack()
+std::shared_ptr<LocalAudioTrackImpl> RTCEngine::
+    addLocalMicrophoneTrack(const MicrophoneOptions& options)
 {
-    const auto track = RTCMediaEngine::addLocalMicrophoneTrack();
+    const auto track = RTCMediaEngine::addLocalMicrophoneTrack(options);
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());
@@ -154,24 +155,17 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
 
 RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const
 {
-    if (!closed()) {
-        if (_client.sendAddTrack(request)) {
-            return SendResult::Ok;
-        }
-        return SendResult::TransportError;
-    }
-    return SendResult::TransportClosed;
+    return sendRequestToServer(&SignalClient::sendAddTrack, request);
 }
 
 RTCEngine::SendResult RTCEngine::sendMuteTrack(const MuteTrackRequest& request) const
 {
-    if (!closed()) {
-        if (_client.sendMuteTrack(request)) {
-            return SendResult::Ok;
-        }
-        return SendResult::TransportError;
-    }
-    return SendResult::TransportClosed;
+    return sendRequestToServer(&SignalClient::sendMuteTrack, request);
+}
+
+RTCEngine::SendResult RTCEngine::sendUpdateLocalAudioTrack(const UpdateLocalAudioTrack& request) const
+{
+    return sendRequestToServer(&SignalClient::sendUpdateAudioTrack, request);
 }
 
 void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
@@ -189,12 +183,12 @@ void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
     }
 }
 
-bool RTCEngine::sendLeave(DisconnectReason reason, LeaveRequestAction action) const
+void RTCEngine::sendLeave(DisconnectReason reason, LeaveRequestAction action) const
 {
     LeaveRequest request;
     request._reason = reason;
     request._action = action;
-    return _client.sendLeave(request);
+    sendRequestToServer(&SignalClient::sendLeave, request);
 }
 
 bool RTCEngine::closed() const
@@ -206,6 +200,18 @@ bool RTCEngine::closed() const
         return pcManager->closed();
     }
     return true;
+}
+
+template <class ReqMethod, class TReq>
+RTCEngine::SendResult RTCEngine::sendRequestToServer(const ReqMethod& method, const TReq& req) const
+{
+    if (!closed()) {
+        if ((_client.*method)(req)) {
+            return SendResult::Ok;
+        }
+        return SendResult::TransportError;
+    }
+    return SendResult::TransportClosed;
 }
 
 webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::

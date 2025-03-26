@@ -38,6 +38,37 @@ LocalAudioTrackImpl::~LocalAudioTrackImpl()
     installSink(false, audioSink());
 }
 
+void LocalAudioTrackImpl::setVolume(double volume)
+{
+    if (const auto source = audioSource()) {
+        source->SetVolume(volume);
+    }
+}
+
+std::vector<AudioTrackFeature> LocalAudioTrackImpl::features() const
+{
+    std::vector<AudioTrackFeature> features;
+    features.reserve(4U);
+    if (const auto m = manager()) {
+        if (m->stereoRecording().value_or(false)) {
+            features.push_back(AudioTrackFeature::Stereo);
+        }
+    }
+    if (const auto source = audioSource()) {
+        const auto options = source->options();
+        if (options.echo_cancellation.value_or(false)) {
+            features.push_back(AudioTrackFeature::Echocancellation);
+        }
+        if (options.auto_gain_control.value_or(false)) {
+            features.push_back(AudioTrackFeature::AutoGainControl);
+        }
+        if (options.noise_suppression.value_or(false)) {
+            features.push_back(AudioTrackFeature::NoiseSuppression);
+        }
+    }
+    return features.empty() ? Base::features() : features;
+}
+
 TrackSource LocalAudioTrackImpl::source() const
 {
     return _microphone ? TrackSource::Microphone : TrackSource::ScreenShareAudio;
@@ -62,10 +93,18 @@ void LocalAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterf
 
 bool LocalAudioTrackImpl::signalLevel(int& level) const
 {
-    if (const auto track = mediaTrack()) {
+    if (const auto& track = mediaTrack()) {
         return track->GetSignalLevel(&level);
     }
     return false;
+}
+
+webrtc::AudioSourceInterface* LocalAudioTrackImpl::audioSource() const
+{
+    if (const auto& track = mediaTrack()) {
+        return track->GetSource();
+    }
+    return nullptr;
 }
 
 void LocalAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink,

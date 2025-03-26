@@ -26,6 +26,7 @@
 #include "rtc/JoinResponse.h"
 #include "rtc/ParticipantUpdate.h"
 #include "rtc/TrackPublishedResponse.h"
+#include "rtc/UpdateLocalAudioTrack.h"
 #include "e2e/KeyProvider.h"
 
 namespace {
@@ -71,9 +72,10 @@ size_t RTCMediaEngine::localVideoTracksCount() const
     return _localParticipant.videoTracksCount();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::addLocalMicrophoneTrack()
+std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::
+    addLocalMicrophoneTrack(const MicrophoneOptions& options)
 {
-    return _localParticipant.addMicrophoneTrack();
+    return _localParticipant.addMicrophoneTrack(options);
 }
 
 std::shared_ptr<CameraTrackImpl> RTCMediaEngine::addLocalCameraTrack()
@@ -195,6 +197,23 @@ void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
         const auto muted = t->muted();
         if (muted != published._track._muted) {
             notifyAboutMuteChanges(sid, muted);
+        }
+        switch (t->mediaType()) {
+            case cricket::MEDIA_TYPE_AUDIO:
+                if (const auto audio = std::dynamic_pointer_cast<AudioTrack>(t)) {
+                    auto features = audio->features();
+                    if (!features.empty()) {
+                        UpdateLocalAudioTrack request;
+                        request._trackSid = sid;
+                        request._features = std::move(features);
+                        sendUpdateLocalAudioTrack(request);
+                    }
+                }
+                break;
+            case cricket::MEDIA_TYPE_VIDEO:
+                break;
+            default:
+                break;
         }
     }
 }
@@ -337,6 +356,11 @@ void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool mu
             // TODO: log error
         }
     }
+}
+
+std::optional<bool> RTCMediaEngine::stereoRecording() const
+{
+    return _localParticipant.stereoRecording();
 }
 
 EncryptionType RTCMediaEngine::localEncryptionType() const

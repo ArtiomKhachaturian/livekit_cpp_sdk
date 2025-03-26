@@ -16,6 +16,7 @@
 #include <api/peer_connection_interface.h>
 #include <rtc_base/thread.h>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace rtc {
@@ -53,6 +54,8 @@ public:
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& eventsQueue() const noexcept { return _eventsQueue; }
     std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
+    std::optional<bool> stereoRecording() const;
+    std::optional<bool> stereoPlayout() const;
     MediaDevice defaultRecordingAudioDevice() const;
     MediaDevice defaultPlayoutAudioDevice() const;
     bool setRecordingAudioDevice(const MediaDevice& device);
