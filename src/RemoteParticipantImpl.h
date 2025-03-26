@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // RemoteParticipantImpl.h
 #ifdef WEBRTC_AVAILABLE
-#include "ParticipantImpl.h"
+#include "Listener.h"
 #include "RemoteParticipant.h"
 #include "RemoteParticipantListener.h"
 #include "SafeObj.h"
@@ -34,10 +34,8 @@ class RemoteAudioTrackImpl;
 class RemoteVideoTrackImpl;
 class FrameCodecFactory;
 
-class RemoteParticipantImpl : public ParticipantImpl<RemoteParticipantListener,
-                                                     RemoteParticipant>
+class RemoteParticipantImpl : public RemoteParticipant
 {
-    using Base = ParticipantImpl<RemoteParticipantListener, RemoteParticipant>;
     using AudioTracks = std::vector<std::shared_ptr<RemoteAudioTrackImpl>>;
     using VideoTracks = std::vector<std::shared_ptr<RemoteVideoTrackImpl>>;
 public:
@@ -52,8 +50,7 @@ public:
     bool removeAudio(const std::string& sid);
     bool removeVideo(const std::string& sid);
     ParticipantInfo info() const { return _info(); }
-    // impl of ParticipantImpl<>
-    void setInfo(const ParticipantInfo& info) final;
+    void setInfo(const ParticipantInfo& info);
     // impl. of Participant
     std::string sid() const final;
     std::string identity() const final;
@@ -61,6 +58,7 @@ public:
     std::string metadata() const final;
     ParticipantKind kind() const final;
     // impl. of RemoteParticipant
+    void setListener(RemoteParticipantListener* listener) final { _listener = listener; }
     bool hasActivePublisher() const final;
     ParticipantState state() const final;
     size_t audioTracksCount() const final;
@@ -83,6 +81,7 @@ private:
     Bricks::SafeObj<ParticipantInfo> _info;
     Bricks::SafeObj<AudioTracks> _audioTracks;
     Bricks::SafeObj<VideoTracks> _videoTracks;
+    Bricks::Listener<RemoteParticipantListener*> _listener;
 };
 
 } // namespace LiveKitCpp

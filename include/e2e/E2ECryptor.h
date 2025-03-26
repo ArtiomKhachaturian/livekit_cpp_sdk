@@ -11,21 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // RoomState.h
+#pragma once // E2ECryptor.h
+#include "Blob.h"
+#include "rtc/TrackType.h"
+#include <memory>
+#include <string>
 
 namespace LiveKitCpp
 {
 
-enum class RoomState
+class E2ECryptor
 {
-    TransportConnecting,
-    TransportConnected,
-    TransportDisconnecting,
-    TransportDisconnected,
-    RtcConnecting,
-    RtcConnected,
-    RtcDisconnected,
-    RtcClosed
+public:
+    virtual ~E2ECryptor() = default;
+    /*virtual bool encrypt(TrackType type,
+                         const std::string& participantSid,
+                         const std::string& participantIdentity,
+                         const std::string& trackId)*/
+    
 };
 
 } // namespace LiveKitCpp

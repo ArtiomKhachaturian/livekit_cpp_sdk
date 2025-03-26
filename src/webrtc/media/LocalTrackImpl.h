@@ -34,17 +34,13 @@ class LocalTrackImpl : public Bricks::LoggableS<TTrackApi>,
 public:
     ~LocalTrackImpl() override = default;
     // impl. of LocalTrack
-    std::string cid() const final;
     void setSid(const std::string& sid) final { _sid(sid); }
-    // server track ID if any
-    std::string sid() const { return _sid(); }
-    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> rtcTrack() const final {
-        return _mediaTrack;
-    }
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const final { return _mediaTrack; }
     void notifyThatMediaAddedToTransport(bool encryption) final;
     void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
     // impl. of Track
+    std::string sid() const final { return _sid(); }
     EncryptionType encryption() const final;
     std::string id() const final { return cid(); }
     std::string name() const final { return _name; }
@@ -64,7 +60,7 @@ private:
     const std::string _name;
     const webrtc::scoped_refptr<TRtcTrack> _mediaTrack;
     TrackManager* const _manager;
-    std::atomic_bool _muted = true;
+    std::atomic_bool _muted = false;
     std::atomic_bool _added = false;
     std::atomic_bool _encryption = false;
     Bricks::SafeObj<std::string> _sid;
@@ -84,12 +80,6 @@ inline LocalTrackImpl<TRtcTrack, TTrackApi>::
     if (_mediaTrack) {
         _mediaTrack->set_enabled(!_muted);
     }
-}
-
-template<class TRtcTrack, class TTrackApi>
-inline std::string LocalTrackImpl<TRtcTrack, TTrackApi>::cid() const
-{
-    return _mediaTrack ? _mediaTrack->id() : std::string{};
 }
 
 template<class TRtcTrack, class TTrackApi>

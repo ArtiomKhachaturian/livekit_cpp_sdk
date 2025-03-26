@@ -18,7 +18,7 @@
 #include "PeerConnectionFactory.h"
 #include "WebsocketEndPoint.h"
 #include "RoomUtils.h"
-#include "RoomListener.h"
+#include "SessionListener.h"
 #include "Utils.h"
 #include "rtc/SignalTarget.h"
 #include "rtc/ReconnectResponse.h"
@@ -42,9 +42,10 @@ namespace LiveKitCpp
 
 RTCEngine::RTCEngine(Options options,
                      PeerConnectionFactory* pcf,
+                     const Participant* session,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : RTCMediaEngine(pcf, std::shared_ptr<KeyProvider>(options._e2eKeyProvider.release()), logger)
+    : RTCMediaEngine(pcf, session, logger)
     , _options(std::move(options))
     , _pcf(pcf)
     , _localDcs(logger)
@@ -105,6 +106,52 @@ bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
     return _localDcs.sendChatMessage(std::move(message), deleted);
 }
 
+std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalMicrophoneTrack()
+{
+    const auto track = RTCMediaEngine::addLocalMicrophoneTrack();
+    if (track) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->addTrack(track->media());
+        }
+    }
+    return track;
+}
+
+std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack()
+{
+    const auto track = RTCMediaEngine::addLocalCameraTrack();
+    if (track) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->addTrack(track->media());
+        }
+    }
+    return track;
+}
+
+webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
+    removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track)
+{
+    const auto media = RTCMediaEngine::removeLocalAudioTrack(track);
+    if (media) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->removeTrack(media);
+        }
+    }
+    return media;
+}
+
+webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
+    removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track)
+{
+    const auto media = RTCMediaEngine::removeLocalVideoTrack(track);
+    if (media) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->removeTrack(media);
+        }
+    }
+    return media;
+}
+
 RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const
 {
     if (!closed()) {
@@ -137,21 +184,8 @@ void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
     _client.disconnect();
     _localDcs.setListener(nullptr);
     _remoteDcs.setListener(nullptr);
-    notifyAboutLocalParticipantJoinLeave(false);
     if (error) {
-        _listener.invoke(&RoomListener::onError, error.value(), errorDetails);
-    }
-}
-
-void RTCEngine::notifyAboutLocalParticipantJoinLeave(bool join) const
-{
-    if (!localParticipant()->sid().empty()) {
-        if (join) {
-            _listener.invoke(&RoomListener::onLocalParticipantJoined);
-        }
-        else {
-            _listener.invoke(&RoomListener::onLocalParticipantLeaved);
-        }
+        callback(&SessionListener::onError, error.value(), errorDetails);
     }
 }
 
@@ -180,9 +214,6 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
 {
     webrtc::PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
-    if (e2eEnabled()) {
-        
-    }
     //config.network_preference.emplace(rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
     // set some defaults
     //config.set_cpu_adaptation(true);
@@ -235,10 +266,10 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
     return makeConfiguration(response._iceServers, response._clientConfiguration);
 }
 
-void RTCEngine::changeState(RoomState state)
+void RTCEngine::changeState(SessionState state)
 {
     if (state != _state.exchange(state)) {
-        _listener.invoke(&RoomListener::onStateChanged, state);
+        callback(&SessionListener::onStateChanged, state);
     }
 }
 
@@ -246,16 +277,16 @@ void RTCEngine::changeState(webrtc::PeerConnectionInterface::PeerConnectionState
 {
     switch (state) {
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnecting:
-            changeState(RoomState::RtcConnecting);
+            changeState(SessionState::RtcConnecting);
             break;
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
-            changeState(RoomState::RtcConnected);
+            changeState(SessionState::RtcConnected);
             break;
         case webrtc::PeerConnectionInterface::PeerConnectionState::kDisconnected:
-            changeState(RoomState::RtcDisconnected);
+            changeState(SessionState::RtcDisconnected);
             break;
         case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
-            changeState(RoomState::RtcClosed);
+            changeState(SessionState::RtcClosed);
             break;
         default:
             break;
@@ -266,16 +297,16 @@ void RTCEngine::changeState(TransportState state)
 {
     switch (state) {
         case TransportState::Connecting:
-            changeState(RoomState::TransportConnecting);
+            changeState(SessionState::TransportConnecting);
             break;
         case TransportState::Connected:
-            changeState(RoomState::TransportConnected);
+            changeState(SessionState::TransportConnected);
             break;
         case TransportState::Disconnecting:
-            changeState(RoomState::TransportDisconnecting);
+            changeState(SessionState::TransportDisconnecting);
             break;
         case TransportState::Disconnected:
-            changeState(RoomState::TransportDisconnected);
+            changeState(SessionState::TransportDisconnected);
             break;
         default:
             break;
@@ -290,6 +321,7 @@ void RTCEngine::createTransportManager(const JoinResponse& response,
                                                         response._pingTimeout,
                                                         response._pingInterval,
                                                         _pcf, conf,
+                                                        response._participant._identity,
                                                         logger());
     pcManager->setListener(this);
     _reconnectAttempts = 0U;
@@ -335,6 +367,9 @@ void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc
         if (!_client.sendOffer(sdp.value())) {
             logError("failed to send publisher offer to the server");
         }
+        else {
+            logInfo("publisher offer has been sent to server");
+        }
     }
     else {
         logError("failed to serialize publisher offer into a string");
@@ -347,6 +382,9 @@ void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* de
     if (const auto sdp = RoomUtils::map(desc)) {
         if (!_client.sendAnswer(sdp.value())) {
             logError("failed to send subscriber answer to the server");
+        }
+        else {
+            logInfo("subscriber answer has been sent to server");
         }
     }
     else {
@@ -390,7 +428,6 @@ void RTCEngine::onJoin(const JoinResponse& response)
 {
     RTCMediaEngine::onJoin(response);
     if (DisconnectReason::UnknownReason == response._participant._disconnectReason) {
-        notifyAboutLocalParticipantJoinLeave(true);
         _localDcs.setSid(response._participant._sid);
         _localDcs.setIdentity(response._participant._identity);
         _lastJoinResponse(response);
@@ -401,7 +438,6 @@ void RTCEngine::onJoin(const JoinResponse& response)
 void RTCEngine::onReconnect(const ReconnectResponse& response)
 {
     RTCMediaEngine::onReconnect(response);
-    notifyAboutLocalParticipantJoinLeave(true);
     createTransportManager(_lastJoinResponse(), makeConfiguration(response));
 }
 
@@ -469,7 +505,7 @@ void RTCEngine::onLeave(const LeaveRequest& leave)
         std::this_thread::sleep_for(_options._reconnectAttemptDelay);
         if (LeaveRequestAction::Resume == leave._action) {
             // should attempt a resume with `reconnect=1` in join URL
-            _client.setParticipantSid(localParticipant()->sid());
+            _client.setParticipantSid(localParticipant().sid());
         }
         else {
             _client.resetParticipantSid();
@@ -535,37 +571,22 @@ void RTCEngine::onPongTimeout()
     cleanup(LiveKitError::ServerPingTimedOut);
 }
 
-void RTCEngine::onParticipantAdded(const std::string& sid)
-{
-    _listener.invoke(&RoomListener::onRemoteParticipantAdded, sid);
-}
-
-void RTCEngine::onParticipantRemoved(const std::string& sid)
-{
-    _listener.invoke(&RoomListener::onRemoteParticipantRemoved, sid);
-}
-
 void RTCEngine::onUserPacket(const std::string& participantSid,
                              const std::string& participantIdentity,
                              const std::string& payload,
                              const std::vector<std::string>& /*destinationIdentities*/,
                              const std::string& topic)
 {
-    _listener.invoke(&RoomListener::onUserPacketReceived, participantSid,
-                     participantIdentity, payload, topic);
+    callback(&SessionListener::onUserPacketReceived, participantSid,
+             participantIdentity, payload, topic);
 }
 
 void RTCEngine::onChatMessage(const std::string& remoteParticipantIdentity,
                               const std::string& message, const std::string& id,
                               int64_t timestamp, bool deleted, bool generated)
 {
-    _listener.invoke(&RoomListener::onChatMessageReceived,
-                     remoteParticipantIdentity,
-                     message,
-                     id,
-                     timestamp,
-                     deleted,
-                     generated);
+    callback(&SessionListener::onChatMessageReceived, remoteParticipantIdentity,
+             message, id, timestamp, deleted, generated);
 }
 
 std::string_view RTCEngine::logCategory() const

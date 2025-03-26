@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ConnectOptions.h
-#include "LiveKitClientExport.h"
 #include "rtc/ClientInfo.h"
 #include "rtc/ICEServer.h"
 #include "rtc/ICETransportPolicy.h"
-#include "e2e/KeyProvider.h"
-#include "e2e/KeyProviderOptions.h"
 #include <chrono>
 #include <optional>
 #include <memory>
@@ -48,9 +45,6 @@ struct Options
     
     // DisabledCodecs            []webrtc.RTPCodecCapability
     
-    /// E2EE Options
-    std::unique_ptr<KeyProvider> _e2eKeyProvider;
-    
     /// The number of attempts to reconnect when the network disconnects.
     int _reconnectAttempts = 3;
     
@@ -68,11 +62,6 @@ struct Options
 
     // generally, it's not recommended to change this
     IceTransportPolicy _iceTransportPolicy = IceTransportPolicy::All;
-    
-    Options() = default;
-    // logger for key provider implementation
-    LIVEKIT_CLIENT_API Options(KeyProviderOptions keyProviderOptions,
-                               const std::shared_ptr<Bricks::Logger>& logger = {});
 };
 
 } // namespace LiveKitCpp

@@ -507,9 +507,9 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         if (!decryptionSuccess) {
             logWarning("decrypt frame failed");
             std::shared_ptr<KeySet> ratchetedKeySet;
-            int ratchetCount = 0;
+            size_t ratchetCount = 0U;
             auto currentKeyMaterial = keySet->_material;
-            if (_keyProvider->options()._ratchetWindowSize > 0) {
+            if (_keyProvider->options()._ratchetWindowSize > 0U) {
                 while (ratchetCount < _keyProvider->options()._ratchetWindowSize) {
                     ratchetCount++;
                     logVerbose("ratcheting key attempt " +

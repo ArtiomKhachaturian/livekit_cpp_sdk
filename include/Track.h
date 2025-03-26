@@ -27,6 +27,8 @@ public:
     virtual ~Track() = default;
     virtual EncryptionType encryption() const = 0;
     virtual BackupCodecPolicy backupCodecPolicy() const { return BackupCodecPolicy::Regression; }
+    // server track ID if any
+    virtual std::string sid() const = 0;
     // track ID
     virtual std::string id() const = 0;
     // track name

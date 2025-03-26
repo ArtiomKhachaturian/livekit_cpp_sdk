@@ -13,6 +13,8 @@
 // limitations under the License.
 #pragma once // RTCMediaEngine.h
 #ifdef WEBRTC_AVAILABLE
+#include "Listener.h"
+#include "LocalParticipant.h"
 #include "Loggable.h"
 #include "FrameCodecFactory.h"
 #include "SafeScopedRefPtr.h"
@@ -34,23 +36,36 @@ namespace LiveKitCpp
 {
 
 class LocalTrack;
-class LocalParticipant;
-class LocalParticipantImpl;
 class PeerConnectionFactory;
 class KeyProvider;
 class FrameCodec;
+class SessionListener;
 struct AddTrackRequest;
 struct MuteTrackRequest;
 enum class DisconnectReason;
 
-class RTCMediaEngine : protected Bricks::LoggableS<SignalServerListener>,
+class RTCMediaEngine : public Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
                        protected RemoteParticipantsListener,
                        private FrameCodecFactory
 {
 public:
-    std::shared_ptr<LocalParticipant> localParticipant() const;
+    void setListener(SessionListener* listener) { _listener = listener; }
+    const Participant& localParticipant() const noexcept { return _localParticipant; }
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
+    size_t localAudioTracksCount() const;
+    size_t localVideoTracksCount() const;
+    virtual std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack();
+    virtual std::shared_ptr<CameraTrackImpl> addLocalCameraTrack();
+    virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
+        removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track);
+    virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
+        removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track);
+    std::shared_ptr<AudioTrack> localAudioTrack(size_t index) const;
+    std::shared_ptr<VideoTrack> localVideoTrack(size_t index) const;
+    void enableAesCgmForLocalMedia(bool enable);
+    bool aesCgmEnabledForLocalMedia() const noexcept;
+    void setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider = {});
 protected:
     enum class SendResult
     {
@@ -59,11 +74,9 @@ protected:
         TransportClosed
     };
 protected:
-    RTCMediaEngine(PeerConnectionFactory* pcf,
-                   std::shared_ptr<KeyProvider> e2eKeyProvider = {},
+    RTCMediaEngine(PeerConnectionFactory* pcf, const Participant* session,
                    const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
-    bool e2eEnabled() const { return nullptr != _e2eKeyProvider; }
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> localTracks() const;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     virtual SendResult sendAddTrack(const AddTrackRequest& request) const = 0;
@@ -71,10 +84,15 @@ protected:
     virtual bool closed() const = 0;
     virtual void cleanup(const std::optional<LiveKitError>& error = {},
                          const std::string& errorDetails = {});
+    template <class Method, typename... Args>
+    void callback(const Method& method, Args&&... args) const {
+        _listener.invoke(method, std::forward<Args>(args)...);
+    }
     // impl. of SignalServerListener
     void onJoin(const JoinResponse& response) override;
-    void onUpdate(const ParticipantUpdate& update) final;
-    void onTrackPublished(const TrackPublishedResponse& published) final;
+    void onUpdate(const ParticipantUpdate& update) override;
+    void onTrackPublished(const TrackPublishedResponse& published) override;
+    void onReconnect(const ReconnectResponse& response) override;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
@@ -86,19 +104,27 @@ protected:
 private:
     bool attachCodec(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
     void handleLocalParticipantDisconnection(DisconnectReason reason);
+    void notifyAboutLocalParticipantJoinLeave(bool join) const;
     // search by cid or sid
     void sendAddTrack(const LocalTrack* track);
     // impl. of FrameCodecFactory
-    webrtc::scoped_refptr<FrameCodec> createCodec(cricket::MediaType mediaType,
+    webrtc::scoped_refptr<FrameCodec> createCodec(bool local,
+                                                  cricket::MediaType mediaType,
                                                   std::string id) const final;
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
     EncryptionType localEncryptionType() const final;
+    // impl. of RemoteParticipantsListener
+    void onParticipantAdded(const std::string& sid) final;
+    void onParticipantRemoved(const std::string& sid) final;
 private:
+    const Participant* const _session;
     const std::weak_ptr<rtc::Thread> _signalingThread;
-    const std::shared_ptr<KeyProvider> _e2eKeyProvider;
-    const std::shared_ptr<LocalParticipantImpl> _localParticipant;
+    LocalParticipant _localParticipant;
     RemoteParticipants _remoteParicipants;
+    Bricks::Listener<SessionListener*> _listener;
+    Bricks::SafeObj<std::string> _sifTrailer;
+    std::shared_ptr<KeyProvider> _aesCgmKeyProvider;
 };
 
 } // namespace LiveKitCpp

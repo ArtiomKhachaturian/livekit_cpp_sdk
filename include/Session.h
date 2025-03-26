@@ -11,12 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // Room.h
+#pragma once // Session.h
 #include "LiveKitClientExport.h"
-#include "LocalParticipant.h"
 #include "Options.h"
+#include "SessionState.h"
+#include "AudioTrack.h"
+#include "CameraTrack.h"
 #include "RemoteParticipant.h"
-#include "RoomState.h"
+#include "e2e/KeyProvider.h"
+#include "e2e/KeyProviderOptions.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,24 +35,42 @@ class Logger;
 namespace LiveKitCpp
 {
 
-class RoomListener;
+class RemoteParticipant;
+class SessionListener;
 class PeerConnectionFactory;
 class RTCEngine;
 
-class LIVEKIT_CLIENT_API Room
+class LIVEKIT_CLIENT_API Session : public Participant
 {
     friend class Service;
 public:
-    ~Room();
-    RoomState state() const;
-    bool connect(std::string host, std::string authToken);
-    void disconnect();
-    void setListener(RoomListener* listener = nullptr);
-    std::shared_ptr<LocalParticipant> localParticipant() const;
+    ~Session();
+    // local media
+    size_t localAudioTracksCount() const;
+    size_t localVideoTracksCount() const;
+    std::shared_ptr<AudioTrack> addMicrophoneTrack();
+    std::shared_ptr<CameraTrack> addCameraTrack();
+    void removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
+    void removeVideoTrack(const std::shared_ptr<VideoTrack>& track);
+    std::shared_ptr<AudioTrack> audioTrack(size_t index) const;
+    std::shared_ptr<VideoTrack> videoTrack(size_t index) const;
+    // remote
+    size_t remoteParticipantsCount() const;
     // given participant by index or server ID
     std::shared_ptr<RemoteParticipant> remoteParticipant(size_t index) const;
     std::shared_ptr<RemoteParticipant> remoteParticipant(const std::string& sid) const;
-    size_t remoteParticipantsCount() const;
+    // e2e
+    void setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider = {});
+    void setAesCgmKeyProvider(KeyProviderOptions options);
+    void setAesCgmKeyProvider(KeyProviderOptions options,
+                              std::string_view sharedKey,
+                              const std::optional<uint8_t>& sharedKeyIndex = {});
+    void setAesCgmKeyProvider(KeyProviderOptions options,
+                              std::vector<uint8_t> sharedKey,
+                              const std::optional<uint8_t>& sharedKeyIndex = {});
+    void enableAesCgmForLocalMedia(bool enable);
+    bool aesCgmEnabledForLocalMedia() const; // true by default
+    // chat & data channels
     /**
       * Publish a new data payload to the room. Data will be forwarded to each
       * participant in the room if the destination field in publishOptions is empty
@@ -73,10 +94,22 @@ public:
                         const std::string& topic = {});
     // [deleted] true to remove message
     bool sendChatMessage(std::string message, bool deleted = false);
+    // connect & state
+    SessionState state() const;
+    bool connect(std::string host, std::string authToken);
+    void disconnect();
+    void setListener(SessionListener* listener = nullptr);
+    // impl. of Participant
+    std::string sid() const final;
+    std::string identity() const final;
+    std::string name() const final;
+    std::string metadata() const final;
+    ParticipantKind kind() const final;
 private:
-    Room(std::unique_ptr<Websocket::EndPoint> socket,
-         PeerConnectionFactory* pcf, Options options,
-         const std::shared_ptr<Bricks::Logger>& logger = {});
+    Session(std::unique_ptr<Websocket::EndPoint> socket,
+            PeerConnectionFactory* pcf, Options options,
+            const std::shared_ptr<Bricks::Logger>& logger = {});
+    std::unique_ptr<KeyProvider> createProvider(KeyProviderOptions options) const;
 private:
     const std::unique_ptr<RTCEngine> _engine;
 };

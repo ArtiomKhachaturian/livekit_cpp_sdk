@@ -26,8 +26,7 @@ class RemoteParticipantListener;
 class RemoteParticipant : public Participant
 {
 public:
-    virtual void addListener(RemoteParticipantListener* listener) = 0;
-    virtual void removeListener(RemoteParticipantListener* listener) = 0;
+    virtual void setListener(RemoteParticipantListener* listener = nullptr) = 0;
     virtual bool hasActivePublisher() const = 0;
     virtual ParticipantState state() const = 0;
     virtual size_t audioTracksCount() const = 0;

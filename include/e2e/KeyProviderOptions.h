@@ -25,7 +25,7 @@ struct KeyProviderOptions
 {
     bool _sharedKey = true;
     std::vector<uint8_t> _ratchetSalt;
-    int _ratchetWindowSize = 0;
+    size_t _ratchetWindowSize = 0U;
     std::optional<uint64_t> _failureTolerance;
     // key ring size should be between 1 and 255
     uint8_t _keyRingSize = _defaultKeyRingSize;

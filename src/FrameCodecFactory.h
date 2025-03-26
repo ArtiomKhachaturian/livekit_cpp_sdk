@@ -25,7 +25,8 @@ class FrameCodec;
 class FrameCodecFactory : public TrackManager
 {
 public:
-    virtual webrtc::scoped_refptr<FrameCodec> createCodec(cricket::MediaType mediaType,
+    virtual webrtc::scoped_refptr<FrameCodec> createCodec(bool local,
+                                                          cricket::MediaType mediaType,
                                                           std::string id) const = 0;
 protected:
     ~FrameCodecFactory() override = default;

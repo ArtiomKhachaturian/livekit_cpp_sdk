@@ -16,12 +16,11 @@
 #include "RTCMediaEngine.h"
 #include "DataChannelsStorage.h"
 #include "DataExchangeListener.h"
-#include "Listener.h"
 #include "Options.h"
 #include "SafeObj.h"
 #include "SignalClientWs.h"
 #include "SignalTransportListener.h"
-#include "RoomState.h"
+#include "SessionState.h"
 #include "rtc/ClientConfiguration.h"
 #include "rtc/DisconnectReason.h"
 #include "rtc/JoinResponse.h"
@@ -42,7 +41,6 @@ class RtpSenderInterface;
 namespace LiveKitCpp
 {
 
-class RoomListener;
 class TransportManager;
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/RTCEngine.ts
@@ -53,17 +51,24 @@ class RTCEngine : public RTCMediaEngine,
 public:
     RTCEngine(Options options,
               PeerConnectionFactory* pcf,
+              const Participant* session,
               std::unique_ptr<Websocket::EndPoint> socket,
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCEngine() final;
-    RoomState state() const noexcept { return _state; }
+    SessionState state() const noexcept { return _state; }
     bool connect(std::string url, std::string authToken);
     void disconnect();
-    void setListener(RoomListener* listener) { _listener = listener; }
     bool sendUserPacket(std::string payload, bool reliable,
                         const std::vector<std::string>& destinationIdentities = {},
                         const std::string& topic = {}) const;
     bool sendChatMessage(std::string message, bool deleted) const;
+    // override of RTCMediaEngine
+    std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack() final;
+    std::shared_ptr<CameraTrackImpl> addLocalCameraTrack() final;
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
+        removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track) final;
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
+        removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track) final;
 protected:
     // impl. or overrides of RTCMediaEngine
     SendResult sendAddTrack(const AddTrackRequest& request) const final;
@@ -72,7 +77,6 @@ protected:
     void cleanup(const std::optional<LiveKitError>& error = {},
                  const std::string& errorDetails = {}) final;
 private:
-    void notifyAboutLocalParticipantJoinLeave(bool join) const;
     bool sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
     webrtc::PeerConnectionInterface::RTCConfiguration
@@ -82,7 +86,7 @@ private:
         makeConfiguration(const JoinResponse& response) const;
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const ReconnectResponse& response) const;
-    void changeState(RoomState state);
+    void changeState(SessionState state);
     void changeState(webrtc::PeerConnectionInterface::PeerConnectionState state);
     void changeState(TransportState state);
     void createTransportManager(const JoinResponse& response,
@@ -114,9 +118,6 @@ private:
     // impl. of PingPongKitListener
     bool onPingRequested() final;
     void onPongTimeout() final;
-    // impl. of RemoteParticipantsListener
-    void onParticipantAdded(const std::string& sid) final;
-    void onParticipantRemoved(const std::string& sid) final;
     // impl. of DataExchangeListener
     void onUserPacket(const std::string& participantSid,
                       const std::string& participantIdentity,
@@ -131,14 +132,13 @@ private:
 private:
     const Options _options;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    Bricks::Listener<RoomListener*> _listener;
     DataChannelsStorage _localDcs;
     DataChannelsStorage _remoteDcs;
     SignalClientWs _client;
     std::shared_ptr<TransportManager> _pcManager;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _reconnectAttempts = 0U;
-    std::atomic<RoomState> _state = RoomState::TransportDisconnected;
+    std::atomic<SessionState> _state = SessionState::TransportDisconnected;
     Bricks::SafeObj<JoinResponse> _lastJoinResponse;
 };
 

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Service.h"
-#include "Room.h"
 #include "Logger.h"
 #include "MediaAuthorization.h"
 #include "WebsocketEndPoint.h"
@@ -63,8 +62,7 @@ public:
     MediaDevice playoutAudioDevice() const;
     std::vector<MediaDevice> recordingAudioDevices() const;
     std::vector<MediaDevice> playoutAudioDevices() const;
-    template <typename TOutput>
-    TOutput makeRoom(Options options) const;
+    std::unique_ptr<Session> createSession(Options options) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -111,19 +109,9 @@ ServiceState Service::state() const
     return ServiceState::SSLInitError;
 }
 
-Room* Service::makeRoom(Options options) const
+std::unique_ptr<Session> Service::createSession(Options options) const
 {
-    return _impl->makeRoom<Room*>(std::move(options));
-}
-
-std::shared_ptr<Room> Service::makeRoomS(Options options) const
-{
-    return _impl->makeRoom<std::shared_ptr<Room>>(std::move(options));
-}
-
-std::unique_ptr<Room> Service::makeRoomU(Options options) const
-{
-    return _impl->makeRoom<std::unique_ptr<Room>>(std::move(options));
+    return _impl->createSession(std::move(options));
 }
 
 MediaDevice Service::defaultRecordingCameraDevice() const
@@ -270,16 +258,16 @@ std::vector<MediaDevice> Service::Impl::playoutAudioDevices() const
     return {};
 }
 
-template <typename TOutput>
-TOutput Service::Impl::makeRoom(Options options) const
+std::unique_ptr<Session> Service::Impl::createSession(Options options) const
 {
+    std::unique_ptr<Session> session;
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
-            return TOutput(new Room(std::move(socket), _pcf.get(),
-                                    std::move(options), logger()));
+            session.reset(new Session(std::move(socket), _pcf.get(),
+                                      std::move(options), logger()));
         }
     }
-    return TOutput(nullptr);
+    return session;
 }
 
 bool Service::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>& logger)
@@ -363,12 +351,6 @@ void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& lo
     }
 }
 
-Options::Options(KeyProviderOptions keyProviderOptions,
-                 const std::shared_ptr<Bricks::Logger>& logger)
-{
-    _e2eKeyProvider.reset(new DefaultKeyProvider(std::move(keyProviderOptions), logger));
-}
-
 bool KeyProvider::setSharedKey(std::string_view key, const std::optional<uint8_t>& keyIndex)
 {
     return setSharedKey(binaryFromString(std::move(key)), keyIndex);
@@ -403,11 +385,7 @@ ServiceState Service::state() const
     return ServiceState::NoWebRTC;
 }
 
-Room* Service::makeRoom(Options) const { return nullptr; }
-
-std::shared_ptr<Room> Service::makeRoomS(Options) const { return {}; }
-
-std::unique_ptr<Room> Service::makeRoomU(Options) const { return {}; }
+std::unique_ptr<Session> createSession(Options options) const { return {}; }
 
 MediaDevice Service::defaultRecordingCameraDevice() const { return {}; }
 

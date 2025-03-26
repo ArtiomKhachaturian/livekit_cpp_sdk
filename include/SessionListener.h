@@ -11,18 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // RoomListener.h
-#include "RoomState.h"
+#pragma once // SessionListener.h
 #include "LiveKitError.h"
+#include "ParticipantListener.h"
+#include "SessionState.h"
 #include <string>
 
 namespace LiveKitCpp
 {
 
-class RoomListener
+class SessionListener : public ParticipantListener
 {
 public:
-    virtual void onStateChanged(RoomState /*state*/) {}
+    virtual void onStateChanged(SessionState /*state*/) {}
     virtual void onError(LiveKitError /*error*/, const std::string& /*what*/ = {}) {}
     virtual void onLocalParticipantJoined() {}
     virtual void onLocalParticipantLeaved() {}
@@ -42,7 +43,7 @@ public:
                                        // an agent from a participant's audio transcription
                                        bool /*generated*/) {}
 protected:
-    virtual ~RoomListener() = default;
+    virtual ~SessionListener() = default;
 };
 
 } // namespace LiveKitCpp

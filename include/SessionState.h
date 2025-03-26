@@ -11,29 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalParticipant.h
-#include "AudioTrack.h"
-#include "CameraTrack.h"
-#include "Participant.h"
-
-namespace Bricks {
-class Blob;
-}
+#pragma once // SessionState.h
 
 namespace LiveKitCpp
 {
 
-class ParticipantListener;
-
-class LocalParticipant : public Participant
+enum class SessionState
 {
-public:
-    virtual void addListener(ParticipantListener* listener) = 0;
-    virtual void removeListener(ParticipantListener* listener) = 0;
-    virtual CameraTrack& camera() = 0;
-    virtual const CameraTrack& camera() const = 0;
-    virtual AudioTrack& microphone() = 0;
-    virtual const AudioTrack& microphone() const = 0;
+    TransportConnecting,
+    TransportConnected,
+    TransportDisconnecting,
+    TransportDisconnected,
+    RtcConnecting,
+    RtcConnected,
+    RtcDisconnected,
+    RtcClosed
 };
 
 } // namespace LiveKitCpp

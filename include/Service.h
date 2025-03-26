@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // Service.h
 #include "LiveKitClientExport.h"
+#include "Session.h"
 #include "ServiceState.h"
 #include "MediaDevice.h"
 #include "MediaAuthorizationLevel.h"
@@ -31,7 +32,6 @@ class Logger;
 namespace LiveKitCpp
 {
 
-class Room;
 enum class NetworkType;
 
 class LIVEKIT_CLIENT_API Service
@@ -43,10 +43,7 @@ public:
             bool logWebrtcEvents = false);
     ~Service();
     ServiceState state() const;
-    [[deprecated("use 'makeRoomS' or 'makeRoomU' methods for better safety & control")]]
-    Room* makeRoom(Options options = {}) const;
-    std::shared_ptr<Room> makeRoomS(Options options = {}) const;
-    std::unique_ptr<Room> makeRoomU(Options options = {}) const;
+    std::unique_ptr<Session> createSession(Options options = {}) const;
     // media & network devices
     static NetworkType activeNetworkType();
     static MediaAuthorizationLevel mediaAuthorizationLevel();

@@ -47,7 +47,7 @@ namespace LiveKitCpp
 
 RemoteParticipantImpl::RemoteParticipantImpl(const ParticipantInfo& info)
 {
-    RemoteParticipantImpl::setInfo(info);
+    setInfo(info);
 }
 
 void RemoteParticipantImpl::reset()
@@ -55,15 +55,15 @@ void RemoteParticipantImpl::reset()
     {
         LOCK_WRITE_SAFE_OBJ(_audioTracks);
         for (const auto& track : _audioTracks.take()) {
-            _listeners.invoke(&RemoteParticipantListener::onAudioTrackRemoved,
-                              this, track->sid());
+            _listener.invoke(&RemoteParticipantListener::onAudioTrackRemoved,
+                             this, track->sid());
         }
     }
     {
         LOCK_WRITE_SAFE_OBJ(_videoTracks);
         for (const auto& track : _videoTracks.take()) {
-            _listeners.invoke(&RemoteParticipantListener::onVideoTrackRemoved,
-                              this, track->sid());
+            _listener.invoke(&RemoteParticipantListener::onVideoTrackRemoved,
+                             this, track->sid());
         }
     }
 }
@@ -91,7 +91,7 @@ bool RemoteParticipantImpl::addAudio(const std::string& sid, FrameCodecFactory* 
                     LOCK_WRITE_SAFE_OBJ(_audioTracks);
                     _audioTracks->push_back(std::move(trackImpl));
                 }
-                _listeners.invoke(&RemoteParticipantListener::onAudioTrackAdded, this, sid);
+                _listener.invoke(&RemoteParticipantListener::onAudioTrackAdded, this, sid);
                 return true;
             }
         }
@@ -111,7 +111,7 @@ bool RemoteParticipantImpl::addVideo(const std::string& sid, FrameCodecFactory* 
                     LOCK_WRITE_SAFE_OBJ(_videoTracks);
                     _videoTracks->push_back(std::move(trackImpl));
                 }
-                _listeners.invoke(&RemoteParticipantListener::onVideoTrackAdded, this, sid);
+                _listener.invoke(&RemoteParticipantListener::onVideoTrackAdded, this, sid);
                 return true;
             }
         }
@@ -127,7 +127,7 @@ bool RemoteParticipantImpl::removeAudio(const std::string& sid)
         ok = removeTrack(sid, _audioTracks.ref());
     }
     if (ok) {
-        _listeners.invoke(&RemoteParticipantListener::onAudioTrackRemoved, this, sid);
+        _listener.invoke(&RemoteParticipantListener::onAudioTrackRemoved, this, sid);
     }
     return ok;
 }
@@ -140,7 +140,7 @@ bool RemoteParticipantImpl::removeVideo(const std::string& sid)
         ok = removeTrack(sid, _videoTracks.ref());
     }
     if (ok) {
-        _listeners.invoke(&RemoteParticipantListener::onVideoTrackRemoved, this, sid);
+        _listener.invoke(&RemoteParticipantListener::onVideoTrackRemoved, this, sid);
     }
     return ok;
 }
@@ -151,7 +151,6 @@ void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
                                                     info._tracks,
                                                     compareTrackInfo);
     _info(info);
-    fireOnChanged();
     for (const auto& trackInfo : removed) {
         switch (trackInfo._type) {
             case TrackType::Audio:
@@ -164,6 +163,7 @@ void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
                 break;
         }
     }
+    _listener.invoke(&RemoteParticipantListener::onChanged, this);
 }
 
 std::string RemoteParticipantImpl::sid() const
@@ -308,7 +308,8 @@ bool RemoteParticipantImpl::attachCodec(const std::shared_ptr<Track>& track,
                 return true;
             case EncryptionType::Gcm:
                 if (codecFactory && receiver) {
-                    auto codec = codecFactory->createCodec(receiver->media_type(),
+                    auto codec = codecFactory->createCodec(false,
+                                                           receiver->media_type(),
                                                            receiver->id());
                     if (codec) {
                         receiver->SetFrameTransformer(std::move(codec));
