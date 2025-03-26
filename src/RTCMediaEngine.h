@@ -46,7 +46,7 @@ enum class DisconnectReason;
 
 class RTCMediaEngine : public Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
-                       protected RemoteParticipantsListener,
+                       private RemoteParticipantsListener,
                        private FrameCodecFactory
 {
 public:
@@ -102,11 +102,10 @@ protected:
     void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
-    bool attachCodec(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     void notifyAboutLocalParticipantJoinLeave(bool join) const;
     // search by cid or sid
-    void sendAddTrack(const LocalTrack* track);
+    void sendAddTrack(const std::shared_ptr<LocalTrack>& track);
     // impl. of FrameCodecFactory
     webrtc::scoped_refptr<FrameCodec> createCodec(bool local,
                                                   cricket::MediaType mediaType,

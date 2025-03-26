@@ -219,7 +219,14 @@ void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant.track(sender)) {
-        track->notifyThatMediaAddedToTransport(attachCodec(sender));
+        if (auto codec = createCodec(true, sender->media_type(), sender->id())) {
+            sender->SetFrameTransformer(std::move(codec));
+            track->notifyThatMediaAddedToTransport(true);
+        }
+        else {
+            track->notifyThatMediaAddedToTransport(false);
+        }
+        sendAddTrack(track);
     }
 }
 
@@ -238,17 +245,6 @@ void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceive
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     _remoteParicipants.removeMedia(receiver);
-}
-
-bool RTCMediaEngine::attachCodec(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
-{
-    if (sender) {
-        if (auto codec = createCodec(true, sender->media_type(), sender->id())) {
-            sender->SetFrameTransformer(std::move(codec));
-            return true;
-        }
-    }
-    return false;
 }
 
 void RTCMediaEngine::handleLocalParticipantDisconnection(DisconnectReason reason)
@@ -270,13 +266,22 @@ void RTCMediaEngine::notifyAboutLocalParticipantJoinLeave(bool join) const
     }
 }
 
-void RTCMediaEngine::sendAddTrack(const LocalTrack* track)
+void RTCMediaEngine::sendAddTrack(const std::shared_ptr<LocalTrack>& track)
 {
     if (track && !closed()) {
         AddTrackRequest request;
         if (track->fillRequest(&request)) {
-            if (SendResult::TransportError == sendAddTrack(request)) {
-                // TODO: log error
+            switch (sendAddTrack(request)) {
+                case SendResult::Ok:
+                    logVerbose("add local track '" + track->cid() +
+                               "' request has been sent to server");
+                    break;
+                case SendResult::TransportError:
+                    logError("failed to send add local track '" +
+                             track->cid() + "' request to server");
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -290,7 +295,7 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
             // publish local tracks
             for (const auto& track : _localParticipant.tracks()) {
-                sendAddTrack(track.get());
+                sendAddTrack(track);
             }
             break;
         case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:

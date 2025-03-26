@@ -1058,36 +1058,36 @@ AudioTrackFeature ProtoMarshaller::map(livekit::AudioTrackFeature in) const
         case livekit::TF_STEREO:
             break;
         case livekit::TF_NO_DTX:
-            return AudioTrackFeature::TFNoDtx;
+            return AudioTrackFeature::NoDtx;
         case livekit::TF_AUTO_GAIN_CONTROL:
-            return AudioTrackFeature::TFAutoGainControl;
+            return AudioTrackFeature::AutoGainControl;
         case livekit::TF_ECHO_CANCELLATION:
-            return AudioTrackFeature::TFEchocancellation;
+            return AudioTrackFeature::Echocancellation;
         case livekit::TF_NOISE_SUPPRESSION:
-            return AudioTrackFeature::TFNoiseSuppression;
+            return AudioTrackFeature::NoiseSuppression;
         case livekit::TF_ENHANCED_NOISE_CANCELLATION:
-            return AudioTrackFeature::TFEnhancedNoiseCancellation;
+            return AudioTrackFeature::EnhancedNoiseCancellation;
         default:
             TYPE_CONVERSION_ERROR(livekit::AudioTrackFeature, AudioTrackFeature)
             break;
     }
-    return AudioTrackFeature::TFStereo;
+    return AudioTrackFeature::Stereo;
 }
 
 livekit::AudioTrackFeature ProtoMarshaller::map(AudioTrackFeature in) const
 {
     switch (in) {
-        case AudioTrackFeature::TFStereo:
+        case AudioTrackFeature::Stereo:
             break;
-        case AudioTrackFeature::TFNoDtx:
+        case AudioTrackFeature::NoDtx:
             return livekit::TF_NO_DTX;
-        case AudioTrackFeature::TFAutoGainControl:
+        case AudioTrackFeature::AutoGainControl:
             return livekit::TF_AUTO_GAIN_CONTROL;
-        case AudioTrackFeature::TFEchocancellation:
+        case AudioTrackFeature::Echocancellation:
             return livekit::TF_ECHO_CANCELLATION;
-        case AudioTrackFeature::TFNoiseSuppression:
+        case AudioTrackFeature::NoiseSuppression:
             return livekit::TF_NOISE_SUPPRESSION;
-        case AudioTrackFeature::TFEnhancedNoiseCancellation:
+        case AudioTrackFeature::EnhancedNoiseCancellation:
             return livekit::TF_ENHANCED_NOISE_CANCELLATION;
         default:
             TYPE_CONVERSION_ERROR(AudioTrackFeature, livekit::AudioTrackFeature)

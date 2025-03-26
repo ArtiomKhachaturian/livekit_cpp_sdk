@@ -18,12 +18,12 @@ namespace LiveKitCpp
 
 enum class AudioTrackFeature
 {
-    TFStereo = 0,
-    TFNoDtx = 1,
-    TFAutoGainControl = 2,
-    TFEchocancellation = 3,
-    TFNoiseSuppression = 4,
-    TFEnhancedNoiseCancellation = 5,
+    Stereo = 0,
+    NoDtx = 1,
+    AutoGainControl = 2,
+    Echocancellation = 3,
+    NoiseSuppression = 4,
+    EnhancedNoiseCancellation = 5,
 };
 
 } // namespace LiveKitCpp
