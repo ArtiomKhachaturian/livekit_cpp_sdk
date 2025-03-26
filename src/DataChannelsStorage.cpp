@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "DataChannelsStorage.h"
+#ifdef WEBRTC_AVAILABLE
 #include "DataExchangeListener.h"
 #include "DataChannel.h"
 #include "ProtoUtils.h"
@@ -424,3 +425,4 @@ DataChannelsStorage::ChatMessage::ChatMessage(std::string id, std::string messag
 }
 
 } // namespace LiveKitCpp
+#endif

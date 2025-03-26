@@ -86,8 +86,8 @@ bool Room::sendChatMessage(std::string message, bool deleted)
     return _engine->sendChatMessage(std::move(message), deleted);
 }
 #else
-struct Room::Impl {};
-    
+class RTCEngine {};
+
 Room::Room(std::unique_ptr<Websocket::EndPoint>, PeerConnectionFactory*,
            Options, const std::shared_ptr<Bricks::Logger>&) {}
 

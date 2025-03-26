@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DataExchangeListener.h
+#ifdef WEBRTC_AVAILABLE
 #include "livekit_models.pb.h"
 #include <api/rtc_error.h>
 #include <string>
@@ -45,3 +46,4 @@ protected:
 };
 
 } // namespace LiveKitCpp
+#endif
