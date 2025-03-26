@@ -29,16 +29,19 @@ inline uint32_t positiveOrZero(T value) {
 
 namespace LiveKitCpp
 {
+
 TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
                                    int32_t pingTimeout, int32_t pingInterval,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                                   const std::string& identity,
                                    const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportListener, PingPongKitListener>(logger)
     , _subscriberPrimary(subscriberPrimary)
     , _fastPublish(fastPublish)
-    , _publisher(SignalTarget::Publisher, this, pcf, conf, logger)
-    , _subscriber(SignalTarget::Subscriber, this, pcf, conf, logger)
+    , _logCategory("transport_manager_" + identity)
+    , _publisher(SignalTarget::Publisher, this, pcf, conf, identity, logger)
+    , _subscriber(SignalTarget::Subscriber, this, pcf, conf, identity, logger)
     , _pingPongKit(this, positiveOrZero(pingInterval), positiveOrZero(pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
@@ -402,12 +405,6 @@ bool TransportManager::onPingRequested()
 void TransportManager::onPongTimeout()
 {
     _listener.invoke(&PingPongKitListener::onPongTimeout);
-}
-
-std::string_view TransportManager::logCategory() const
-{
-    static const std::string_view category("transport_manager");
-    return category;
 }
 
 } // namespace LiveKitCpp

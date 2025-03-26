@@ -54,12 +54,15 @@ namespace LiveKitCpp
 {
 
 class Transport::Impl : public Bricks::LoggableS<webrtc::PeerConnectionObserver>,
-                          public std::enable_shared_from_this<Impl>
+                        public std::enable_shared_from_this<Impl>
 {
 public:
-    Impl(SignalTarget target, const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+    Impl(SignalTarget target,
+         const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
          const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
-         TransportListener* listener, const std::shared_ptr<Bricks::Logger>& logger);
+         TransportListener* listener,
+         const std::string& identity,
+         const std::shared_ptr<Bricks::Logger>& logger);
     bool closed() const noexcept { return _closed; }
     SignalTarget target() const { return _target; }
     rtc::Thread* signalingThread() const;
@@ -118,8 +121,9 @@ private:
 Transport::Transport(SignalTarget target, TransportListener* listener,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                     const std::string& identity,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(new Impl(target, pcf, conf, listener, logger))
+    : _impl(new Impl(target, pcf, conf, listener, identity, logger))
 {
     if (_impl->peerConnection()) {
         _offerCreationObserver = webrtc::make_ref_counted<CreateSdpObserver>(webrtc::SdpType::kOffer);
@@ -543,10 +547,11 @@ Transport::Impl::Impl(SignalTarget target,
                       const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                       const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                       TransportListener* listener,
+                      const std::string& identity,
                       const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<webrtc::PeerConnectionObserver>(logger)
     , _target(target)
-    , _logCategory(toString(target))
+    , _logCategory(toString(target) + "_" + identity)
     , _pcState(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
     , _iceConnState(webrtc::PeerConnectionInterface::IceConnectionState::kIceConnectionNew)
     , _signalingState(webrtc::PeerConnectionInterface::SignalingState::kStable)

@@ -38,6 +38,7 @@ public:
                      int32_t pingTimeout, int32_t pingInterval,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                     const std::string& identity,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~TransportManager() final;
     bool valid() const noexcept;
@@ -93,11 +94,12 @@ private:
     bool onPingRequested() final;
     void onPongTimeout() final;
     // override of Bricks::LoggableS<>
-    std::string_view logCategory() const final;
+    std::string_view logCategory() const final { return _logCategory; }
 private:
     static constexpr uint8_t _embeddedDCMaxCount = 2U;
     const bool _subscriberPrimary;
     const bool _fastPublish;
+    const std::string _logCategory;
     Bricks::Listener<TransportManagerListener*> _listener;
     Transport _publisher;
     Transport _subscriber;

@@ -45,6 +45,7 @@ public:
     Transport(SignalTarget target, TransportListener* listener,
               const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
               const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+              const std::string& identity,
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~Transport() override;
     SignalTarget target() const noexcept;
