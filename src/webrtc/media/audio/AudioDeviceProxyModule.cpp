@@ -132,8 +132,19 @@ int32_t AudioDeviceProxyModule::RegisterAudioCallback(webrtc::AudioTransport* au
 // Main initialization and termination
 int32_t AudioDeviceProxyModule::AudioDeviceProxyModule::Init()
 {
-    return threadInvokeI32([](const auto& pm) {
-        return pm->Init(); });
+    return threadInvokeI32([this](const auto& pm) {
+        const auto res = pm->Init();
+        if (0 == res) {
+            bool enabled = false;
+            if (0 == pm->StereoRecording(&enabled)) {
+                _stereoRecording = enabled;
+            }
+            if (0 == pm->StereoPlayout(&enabled)) {
+                _stereoPlayout = enabled;
+            }
+        }
+        return res;
+    });
 }
 
 int32_t AudioDeviceProxyModule::AudioDeviceProxyModule::Terminate()
@@ -434,8 +445,12 @@ int32_t AudioDeviceProxyModule::StereoPlayoutIsAvailable(bool* available) const
 
 int32_t AudioDeviceProxyModule::SetStereoPlayout(bool enable)
 {
-    return threadInvokeI32([enable](const auto& pm) {
+    const auto res = threadInvokeI32([enable](const auto& pm) {
         return pm->SetStereoPlayout(enable); });
+    if (0 == res) {
+        _stereoPlayout = enable;
+    }
+    return res;
 }
 
 int32_t AudioDeviceProxyModule::StereoPlayout(bool* enabled) const
@@ -452,8 +467,12 @@ int32_t AudioDeviceProxyModule::StereoRecordingIsAvailable(bool* available) cons
 
 int32_t AudioDeviceProxyModule::SetStereoRecording(bool enable)
 {
-    return threadInvokeI32([enable](const auto& pm) {
+    const auto res = threadInvokeI32([enable](const auto& pm) {
         return pm->SetStereoRecording(enable); });
+    if (0 == res) {
+        _stereoRecording = enable;
+    }
+    return res;
 }
 
 int32_t AudioDeviceProxyModule::StereoRecording(bool* enabled) const

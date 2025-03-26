@@ -55,6 +55,10 @@ public:
               std::unique_ptr<Websocket::EndPoint> socket,
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCEngine() final;
+    void setAudioPlayout(bool playout);
+    bool audioPlayoutEnabled() const { return _playout; }
+    void setAudioRecording(bool recording);
+    bool audioRecordingEnabled() const { return _recording; }
     SessionState state() const noexcept { return _state; }
     bool connect(std::string url, std::string authToken);
     void disconnect();
@@ -138,6 +142,8 @@ private:
     DataChannelsStorage _localDcs;
     DataChannelsStorage _remoteDcs;
     SignalClientWs _client;
+    std::atomic_bool _playout = true;
+    std::atomic_bool _recording = true;
     std::shared_ptr<TransportManager> _pcManager;
     /** keeps track of how often an initial join connection has been tried */
     std::atomic_uint _reconnectAttempts = 0U;

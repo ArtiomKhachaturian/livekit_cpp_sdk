@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
-#include "NetworkType.h"
 #ifdef WEBRTC_MAC
 #include <rtc_base/time_utils.h>
 #include <api/units/timestamp.h>

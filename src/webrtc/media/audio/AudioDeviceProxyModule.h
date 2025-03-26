@@ -136,8 +136,9 @@ public:
     int32_t GetPlayoutUnderrunCount() const final;
     std::optional<Stats> GetStats() const final;
 
+    bool stereoRecording() const noexcept { return _stereoRecording; }
+    bool stereoPlayout() const noexcept { return _stereoPlayout; }
     void close();
-    
     void addListener(AudioDeviceModuleListener* listener);
     void removeListener(AudioDeviceModuleListener* listener);
     // selection management
@@ -195,6 +196,8 @@ private:
     AsyncListeners<AudioDeviceModuleListener*, true> _listeners;
     Bricks::SafeObj<MediaDevice> _recordingDev;
     Bricks::SafeObj<MediaDevice> _playoutDev;
+    std::atomic_bool _stereoRecording = false;
+    std::atomic_bool _stereoPlayout = false;
 };
 
 } // namespace LiveKitCpp

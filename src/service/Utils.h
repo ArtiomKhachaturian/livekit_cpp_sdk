@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // Utils.h
 #include "SafeObj.h"
+#include "NetworkType.h"
 #ifdef WEBRTC_AVAILABLE
 #include <api/peer_connection_interface.h>
 #include <api/task_queue/task_queue_base.h>
@@ -43,7 +44,6 @@ namespace LiveKitCpp
 {
 
 enum class TransportState;
-enum class NetworkType;
 enum class LiveKitError;
 enum class DisconnectReason;
 

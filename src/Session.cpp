@@ -35,6 +35,26 @@ Session::~Session()
     disconnect();
 }
 
+void Session::setAudioPlayout(bool playout)
+{
+    _engine->setAudioPlayout(playout);
+}
+
+bool Session::audioPlayoutEnabled() const
+{
+    return _engine->audioPlayoutEnabled();
+}
+
+void Session::setAudioRecording(bool recording)
+{
+    _engine->setAudioRecording(recording);
+}
+
+bool Session::audioRecordingEnabled() const
+{
+    return _engine->audioRecordingEnabled();
+}
+
 size_t Session::localAudioTracksCount() const
 {
     return _engine->localAudioTracksCount();
@@ -206,6 +226,14 @@ Session::Session(std::unique_ptr<Websocket::EndPoint>, PeerConnectionFactory*,
                  Options, const std::shared_ptr<Bricks::Logger>&) {}
 
 Session::~Session() {}
+
+void Session::setAudioPlayout(bool) {}
+
+bool Session::audioPlayoutEnabled() const { return false; }
+
+void Session::setAudioRecording(bool) {}
+
+bool Session::audioRecordingEnabled() const { return false; }
 
 size_t Session::localAudioTracksCount() const { return 0U; }
 

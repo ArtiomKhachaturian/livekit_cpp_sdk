@@ -79,6 +79,18 @@ public:
     std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> transceivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> receivers() const;
     std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> senders() const;
+    // audio
+    // Enable/disable playout of received audio streams. Enabled by default. Note
+    // that even if playout is enabled, streams will only be played out if the
+    // appropriate SDP is also applied. Setting `playout` to false will stop
+    // playout of the underlying audio device but starts a task which will poll
+    // for audio data every 10ms to ensure that audio processing happens and the
+    // audio statistics are updated.
+    void setAudioPlayout(bool playout);
+    // Enable/disable recording of transmitted audio streams. Enabled by default.
+    // Note that even if recording is enabled, streams will only be recorded if
+    // the appropriate SDP is also applied.
+    void setAudioRecording(bool recording);
     // getStats()
     bool valid() const;
     explicit operator bool() const { return valid(); }

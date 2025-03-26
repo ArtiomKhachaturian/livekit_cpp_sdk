@@ -153,7 +153,11 @@ bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfi
         _impl->logInfo("request to set peer connection configuration");
         thread->PostTask([config, implRef = weak(_impl)]() {
             if (const auto impl = implRef.lock()) {
-                auto res = impl->peerConnection()->SetConfiguration(config);
+                const auto pc = impl->peerConnection();
+                if (!pc) {
+                    return;
+                }
+                auto res = pc->SetConfiguration(config);
                 if (res.ok()) {
                     impl->logVerbose("set of peer connection configuration successfully completed");
                     impl->invoke(&TransportListener::onConfigurationSet, config);
@@ -175,7 +179,11 @@ bool Transport::createDataChannel(const std::string& label, const webrtc::DataCh
         _impl->logInfo("request to create '" + label + "' data channel");
         thread->PostTask([label, init, implRef = weak(_impl)]() {
             if (const auto impl = implRef.lock()) {
-                auto result = impl->peerConnection()->CreateDataChannelOrError(label, &init);
+                const auto pc = impl->peerConnection();
+                if (!pc) {
+                    return;
+                }
+                auto result = pc->CreateDataChannelOrError(label, &init);
                 if (result.ok()) {
                     impl->logVerbose("data channel '" + label + "' has been created");
                     impl->invoke(&TransportListener::onLocalDataChannelCreated,
@@ -263,8 +271,9 @@ bool Transport::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInt
             _impl->logInfo("request to removal '" + id + "' local " + kind + " track");
             thread->PostTask([id, kind, track, implRef = weak(_impl)]() {
                 if (const auto impl = implRef.lock()) {
-                    const auto pc = impl->peerConnection();
-                    impl->removeTrackBySender(findSender(pc, track));
+                    if (const auto pc = impl->peerConnection()) {
+                        impl->removeTrackBySender(findSender(pc, track));
+                    }
                 }
             });
             return true;
@@ -348,11 +357,9 @@ void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswe
         _impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kOffer));
         thread->PostTask([options, observer = _offerCreationObserver, implRef = weak(_impl)]() {
             if (const auto impl = implRef.lock()) {
-                const auto pc = impl->peerConnection();
-                if (!pc) {
-                    return;
+                if (const auto pc = impl->peerConnection()) {
+                    pc->CreateOffer(observer.get(), options);
                 }
-                pc->CreateOffer(observer.get(), options);
             }
         });
     }
@@ -364,11 +371,9 @@ void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnsw
         _impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
         thread->PostTask([options, observer = _answerCreationObserver, implRef = weak(_impl)]() {
             if (const auto impl = implRef.lock()) {
-                const auto pc = impl->peerConnection();
-                if (!pc) {
-                    return;
+                if (const auto pc = impl->peerConnection()) {
+                    pc->CreateAnswer(observer.get(), options);
                 }
-                pc->CreateAnswer(observer.get(), options);
             }
         });
     }
@@ -383,11 +388,9 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
                               observer = _setLocalSdpObserver,
                               implRef = weak(_impl)]() mutable {
                 if (const auto impl = implRef.lock()) {
-                    const auto pc = impl->peerConnection();
-                    if (!pc) {
-                        return;
+                    if (const auto pc = impl->peerConnection()) {
+                        pc->SetLocalDescription(std::move(desc), observer);
                     }
-                    pc->SetLocalDescription(std::move(desc), observer);
                 }
             });
         }
@@ -403,11 +406,9 @@ void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionI
                               observer = _setRemoteSdpObserver,
                               implRef = weak(_impl)]() mutable {
                 if (const auto impl = implRef.lock()) {
-                    const auto pc = impl->peerConnection();
-                    if (!pc) {
-                        return;
+                    if (const auto pc = impl->peerConnection()) {
+                        pc->SetRemoteDescription(std::move(desc), observer);
                     }
-                    pc->SetRemoteDescription(std::move(desc), observer);
                 }
             });
         }
@@ -489,6 +490,36 @@ std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> Transport::senders()
         return pc->GetSenders();
     }
     return {};
+}
+
+void Transport::setAudioPlayout(bool playout)
+{
+    if (const auto thread = signalingThread()) {
+        _impl->logVerbose(std::string(playout ? "enable" : "disable") +
+                          " playout of received audio streams");
+        thread->PostTask([playout, implRef = weak(_impl)]() {
+            if (const auto impl = implRef.lock()) {
+                if (const auto pc = impl->peerConnection()) {
+                    pc->SetAudioPlayout(playout);
+                }
+            }
+        });
+    }
+}
+
+void Transport::setAudioRecording(bool recording)
+{
+    if (const auto thread = signalingThread()) {
+        _impl->logVerbose(std::string(recording ? "enable" : "disable") +
+                          " recording of transmitted audio streams");
+        thread->PostTask([recording, implRef = weak(_impl)]() {
+            if (const auto impl = implRef.lock()) {
+                if (const auto pc = impl->peerConnection()) {
+                    pc->SetAudioRecording(recording);
+                }
+            }
+        });
+    }
 }
 
 bool Transport::valid() const

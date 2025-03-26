@@ -148,6 +148,18 @@ void TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webr
     }
 }
 
+void TransportManager::setAudioPlayout(bool playout)
+{
+    _publisher.setAudioPlayout(playout);
+    _subscriber.setAudioPlayout(playout);
+}
+
+void TransportManager::setAudioRecording(bool recording)
+{
+    _publisher.setAudioRecording(recording);
+    _subscriber.setAudioRecording(recording);
+}
+
 void TransportManager::close()
 {
     _publisher.close();

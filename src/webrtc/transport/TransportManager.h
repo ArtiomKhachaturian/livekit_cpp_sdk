@@ -54,6 +54,8 @@ public:
     bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
     bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
+    void setAudioPlayout(bool playout);
+    void setAudioRecording(bool recording);
     void close();
     void setListener(TransportManagerListener* listener);
 private:

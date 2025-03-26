@@ -67,6 +67,24 @@ RTCEngine::~RTCEngine()
     cleanup();
 }
 
+void RTCEngine::setAudioPlayout(bool playout)
+{
+    if (playout != _playout.exchange(playout)) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->setAudioPlayout(playout);
+        }
+    }
+}
+
+void RTCEngine::setAudioRecording(bool recording)
+{
+    if (recording != _recording.exchange(recording)) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->setAudioRecording(recording);
+        }
+    }
+}
+
 bool RTCEngine::connect(std::string url, std::string authToken)
 {
     if (url.empty()) {
@@ -220,16 +238,24 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
 {
     webrtc::PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
-    //config.network_preference.emplace(rtc::AdapterType::ADAPTER_TYPE_ETHERNET); // ethernet is preferred
-    // set some defaults
-    //config.set_cpu_adaptation(true);
-    //config.enable_dtls_srtp.emplace(true);
+    switch (activeNetworkType()) {
+        case NetworkType::WiFi:
+            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_WIFI;
+            break;
+        case NetworkType::Wired:
+            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_ETHERNET;
+            break;
+        case NetworkType::Cellular:
+            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_CELLULAR;
+            break;
+        case NetworkType::Vpn:
+            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_VPN;
+            break;
+        default:
+            break;
+    }
     // enable ICE renomination, like on Android (   "a=ice-options:trickle renomination")
     //config.enable_ice_renomination = true;
-    // required for M86:
-    // the issue may because 1 byte rtp header id exahustion, check if you have enabled this option:
-    // https://source.chromium.org/chromium/chromium/src/+/master:third_party/webrtc/api/peer_connection_interface.h;l=625?q=RTCConfiguration%20webrtc&ss=chromium%2Fchromium%2Fsrc
-    config.offer_extmap_allow_mixed = true;
     if (cc.has_value() && ClientConfigSetting::Enabled  == cc->_forceRelay) {
         config.type = webrtc::PeerConnectionInterface::kRelay;
     }
@@ -245,18 +271,6 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
         config.servers = RoomUtils::map(iceServers);
     }
     config.continual_gathering_policy = webrtc::PeerConnectionInterface::ContinualGatheringPolicy::GATHER_CONTINUALLY;
-    // crypto options
-    /*{
-        webrtc::CryptoOptions crypto_options;
-        // enables GCM suites for DTLS-SRTP
-        crypto_options.srtp.enable_gcm_crypto_suites = true;
-        crypto_options.srtp.enable_aes128_sha1_32_crypto_cipher = false;
-        crypto_options.srtp.enable_aes128_sha1_80_crypto_cipher = false;
-        crypto_options.srtp.enable_encrypted_rtp_header_extensions = false;
-        // enforces frame encryption on RTP senders and receivers
-        //crypto_options.sframe.require_frame_encryption = requireFrameEncryption;
-        config.crypto_options.emplace(std::move(crypto_options));
-    }*/
     return config;
 }
 
@@ -330,6 +344,13 @@ void RTCEngine::createTransportManager(const JoinResponse& response,
                                                         response._participant._identity,
                                                         logger());
     pcManager->setListener(this);
+    // both playout & recording are enabled by default
+    if (!audioPlayoutEnabled()) {
+        pcManager->setAudioPlayout(false);
+    }
+    if (!audioRecordingEnabled()) {
+        pcManager->setAudioRecording(false);
+    }
     _reconnectAttempts = 0U;
     std::atomic_store(&_pcManager, pcManager);
     for (auto track : localTracks()) {
