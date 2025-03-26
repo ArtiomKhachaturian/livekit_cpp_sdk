@@ -385,7 +385,7 @@ ServiceState Service::state() const
     return ServiceState::NoWebRTC;
 }
 
-std::unique_ptr<Session> createSession(Options options) const { return {}; }
+std::unique_ptr<Session> Service::createSession(Options options) const { return {}; }
 
 MediaDevice Service::defaultRecordingCameraDevice() const { return {}; }
 

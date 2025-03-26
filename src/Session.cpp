@@ -200,6 +200,8 @@ std::unique_ptr<KeyProvider> Session::createProvider(KeyProviderOptions options)
 }
 
 #else
+class RTCEngine {}; // stub
+
 Session::Session(std::unique_ptr<Websocket::EndPoint>, PeerConnectionFactory*,
                  Options, const std::shared_ptr<Bricks::Logger>&) {}
 
@@ -209,7 +211,7 @@ size_t Session::localAudioTracksCount() const { return 0U; }
 
 size_t Session::localVideoTracksCount() const { return 0U; }
 
-std::shared_ptr<AudioTrack> Session::addMicrophoneTrack() { return {}; }
+std::shared_ptr<AudioTrack> Session::addMicrophoneTrack(const MicrophoneOptions&) { return {}; }
 
 std::shared_ptr<CameraTrack> Session::addCameraTrack() { return {}; }
 
@@ -269,8 +271,8 @@ std::string Session::name() const { return {}; }
 
 std::string Session::metadata() const { return {}; }
 
-ParticipantKind kind() const { return ParticipantKind::Standard; }
+ParticipantKind Session::kind() const { return ParticipantKind::Standard; }
 
-std::unique_ptr<KeyProvider> createProvider(KeyProviderOptions) const { return {}; }
+std::unique_ptr<KeyProvider> Session::createProvider(KeyProviderOptions) const { return {}; }
 #endif
 } // namespace LiveKitCpp
