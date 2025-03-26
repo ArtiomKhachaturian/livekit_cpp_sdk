@@ -32,7 +32,7 @@ namespace LiveKitCpp
 
 class RemoteAudioTrackImpl;
 class RemoteVideoTrackImpl;
-class FrameCodecFactory;
+class E2ESecurityFactory;
 
 class RemoteParticipantImpl : public RemoteParticipant
 {
@@ -43,9 +43,9 @@ public:
     ~RemoteParticipantImpl() final { reset(); }
     void reset();
     std::optional<TrackType> trackType(const std::string& sid) const;
-    bool addAudio(const std::string& sid, FrameCodecFactory* codecFactory,
+    bool addAudio(const std::string& sid, E2ESecurityFactory* securityFactory,
                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
-    bool addVideo(const std::string& sid, FrameCodecFactory* codecFactory,
+    bool addVideo(const std::string& sid, E2ESecurityFactory* securityFactory,
                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     bool removeAudio(const std::string& sid);
     bool removeVideo(const std::string& sid);
@@ -74,9 +74,9 @@ private:
                                            const std::vector<TTrack>& collection);
     template<class TTrack>
     static bool removeTrack(const std::string& sid, std::vector<TTrack>& collection);
-    static bool attachCodec(const std::shared_ptr<Track>& track,
-                            const FrameCodecFactory* codecFactory,
-                            const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
+    static bool attachCryptor(const std::shared_ptr<Track>& track,
+                              const E2ESecurityFactory* securityFactory,
+                              const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
 private:
     Bricks::SafeObj<ParticipantInfo> _info;
     Bricks::SafeObj<AudioTracks> _audioTracks;

@@ -15,8 +15,8 @@
 #include "RemoteParticipantImpl.h"
 #include "RemoteAudioTrackImpl.h"
 #include "RemoteVideoTrackImpl.h"
-#include "FrameCodecFactory.h"
-#include "FrameCodec.h"
+#include "E2ESecurityFactory.h"
+#include "AesCgmCryptor.h"
 #include "Seq.h"
 #include <api/media_stream_interface.h>
 #include <api/rtp_receiver_interface.h>
@@ -79,14 +79,17 @@ std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid
     return std::nullopt;
 }
 
-bool RemoteParticipantImpl::addAudio(const std::string& sid, FrameCodecFactory* codecFactory,
+bool RemoteParticipantImpl::addAudio(const std::string& sid,
+                                     E2ESecurityFactory* securityFactory,
                                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
     if (const auto audioTrack = mediaTrack<webrtc::AudioTrackInterface>(receiver)) {
         LOCK_READ_SAFE_OBJ(_info);
         if (const auto trackInfo = findBySid(sid)) {
-            auto trackImpl = std::make_shared<RemoteAudioTrackImpl>(codecFactory, *trackInfo, audioTrack);
-            if (attachCodec(trackImpl, codecFactory, receiver)) {
+            auto trackImpl = std::make_shared<RemoteAudioTrackImpl>(securityFactory,
+                                                                    *trackInfo,
+                                                                    audioTrack);
+            if (attachCryptor(trackImpl, securityFactory, receiver)) {
                 {
                     LOCK_WRITE_SAFE_OBJ(_audioTracks);
                     _audioTracks->push_back(std::move(trackImpl));
@@ -99,14 +102,17 @@ bool RemoteParticipantImpl::addAudio(const std::string& sid, FrameCodecFactory* 
     return false;
 }
 
-bool RemoteParticipantImpl::addVideo(const std::string& sid, FrameCodecFactory* codecFactory,
+bool RemoteParticipantImpl::addVideo(const std::string& sid,
+                                     E2ESecurityFactory* securityFactory,
                                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
     if (const auto videoTrack = mediaTrack<webrtc::VideoTrackInterface>(receiver)) {
         LOCK_READ_SAFE_OBJ(_info);
         if (const auto trackInfo = findBySid(sid)) {
-            auto trackImpl = std::make_shared<RemoteVideoTrackImpl>(codecFactory, *trackInfo, videoTrack);
-            if (attachCodec(trackImpl, codecFactory, receiver)) {
+            auto trackImpl = std::make_shared<RemoteVideoTrackImpl>(securityFactory,
+                                                                    *trackInfo,
+                                                                    videoTrack);
+            if (attachCryptor(trackImpl, securityFactory, receiver)) {
                 {
                     LOCK_WRITE_SAFE_OBJ(_videoTracks);
                     _videoTracks->push_back(std::move(trackImpl));
@@ -298,21 +304,21 @@ bool RemoteParticipantImpl::removeTrack(const std::string& sid, std::vector<TTra
     return false;
 }
 
-bool RemoteParticipantImpl::attachCodec(const std::shared_ptr<Track>& track,
-                                        const FrameCodecFactory* codecFactory,
-                                        const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+bool RemoteParticipantImpl::attachCryptor(const std::shared_ptr<Track>& track,
+                                          const E2ESecurityFactory* securityFactory,
+                                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
     if (track) {
         switch (track->encryption()) {
             case EncryptionType::None:
                 return true;
             case EncryptionType::Gcm:
-                if (codecFactory && receiver) {
-                    auto codec = codecFactory->createCodec(false,
-                                                           receiver->media_type(),
-                                                           receiver->id());
-                    if (codec) {
-                        receiver->SetFrameTransformer(std::move(codec));
+                if (securityFactory && receiver) {
+                    auto cryptor = securityFactory->createCryptor(false,
+                                                                  receiver->media_type(),
+                                                                  receiver->id());
+                    if (cryptor) {
+                        receiver->SetFrameTransformer(std::move(cryptor));
                         return true;
                     }
                 }

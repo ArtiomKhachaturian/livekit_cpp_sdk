@@ -16,7 +16,7 @@
 #include "Listener.h"
 #include "LocalParticipant.h"
 #include "Loggable.h"
-#include "FrameCodecFactory.h"
+#include "E2ESecurityFactory.h"
 #include "SafeScopedRefPtr.h"
 #include "SignalServerListener.h"
 #include "TransportManagerListener.h"
@@ -38,7 +38,7 @@ namespace LiveKitCpp
 class LocalTrack;
 class PeerConnectionFactory;
 class KeyProvider;
-class FrameCodec;
+class AesCgmCryptor;
 class SessionListener;
 struct AddTrackRequest;
 struct MuteTrackRequest;
@@ -49,7 +49,7 @@ enum class DisconnectReason;
 class RTCMediaEngine : public Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
                        private RemoteParticipantsListener,
-                       private FrameCodecFactory
+                       private E2ESecurityFactory
 {
 public:
     void setListener(SessionListener* listener) { _listener = listener; }
@@ -110,9 +110,9 @@ private:
     // search by cid or sid
     void sendAddTrack(const std::shared_ptr<LocalTrack>& track);
     // impl. of FrameCodecFactory
-    webrtc::scoped_refptr<FrameCodec> createCodec(bool local,
-                                                  cricket::MediaType mediaType,
-                                                  std::string id) const final;
+    webrtc::scoped_refptr<AesCgmCryptor> createCryptor(bool local,
+                                                       cricket::MediaType mediaType,
+                                                       std::string id) const final;
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
     std::optional<bool> stereoRecording() const final;

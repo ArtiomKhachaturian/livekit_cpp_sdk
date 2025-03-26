@@ -11,9 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "FrameCodec.h"
-#include "FrameCodecState.h"
-#include "FrameCodecObserver.h"
+#include "AesCgmCryptor.h"
+#include "AesCgmCryptorState.h"
+#include "AesCgmCryptorObserver.h"
 #include "AsyncListener.h"
 #include "Listener.h"
 #include "Loggable.h"
@@ -75,7 +75,7 @@ bool frameIsH265(const webrtc::TransformableFrameInterface* frame, cricket::Medi
 namespace LiveKitCpp
 {
 
-struct FrameCodec::Impl : public Bricks::LoggableS<>
+struct AesCgmCryptor::Impl : public Bricks::LoggableS<>
 {
     // data
     const cricket::MediaType _mediaType;
@@ -84,7 +84,7 @@ struct FrameCodec::Impl : public Bricks::LoggableS<>
     const std::string _logCategory;
     std::atomic<uint8_t> _keyIndex = 0;
     std::atomic_bool _enabledCryption = true;
-    AsyncListener<FrameCodecObserver*, true> _observer;
+    AsyncListener<AesCgmCryptorObserver*, true> _observer;
     SafeScopedRefPtr<webrtc::TransformedFrameCallback> _sink;
     Bricks::SafeObj<Sinks> _sinks;
     // methods
@@ -102,64 +102,64 @@ protected:
 private:
     void encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
     void decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
-    void setLastEncryptState(FrameCodecState state);
-    void setLastDecryptState(FrameCodecState state);
+    void setLastEncryptState(AesCgmCryptorState state);
+    void setLastDecryptState(AesCgmCryptorState state);
     std::shared_ptr<E2EKeyHandler> keyHandler() const;
-    bool aesGcmEncryptDecrypt(bool encrypt,
-                              const std::vector<uint8_t>& rawKey,
-                              const rtc::ArrayView<uint8_t>& iv,
-                              const rtc::ArrayView<uint8_t>& additionalData,
-                              const rtc::ArrayView<uint8_t>& data,
-                              std::vector<uint8_t>& buffer) const;
+    bool encryptOrDecrypt(bool encrypt,
+                          const std::vector<uint8_t>& rawKey,
+                          const rtc::ArrayView<uint8_t>& iv,
+                          const rtc::ArrayView<uint8_t>& additionalData,
+                          const rtc::ArrayView<uint8_t>& data,
+                          std::vector<uint8_t>& buffer) const;
     static constexpr uint8_t ivSize() noexcept { return 12; }
     rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
 private:
-    std::atomic<FrameCodecState> _lastEncState = FrameCodecState::New;
-    std::atomic<FrameCodecState> _lastDecState = FrameCodecState::New;
+    std::atomic<AesCgmCryptorState> _lastEncState = AesCgmCryptorState::New;
+    std::atomic<AesCgmCryptorState> _lastDecState = AesCgmCryptorState::New;
     static thread_local inline std::map<uint32_t, uint32_t> _sendCounts;
 };
 
-FrameCodec::FrameCodec(cricket::MediaType mediaType,
-                       std::string trackId,
-                       const std::weak_ptr<rtc::Thread>& signalingThread,
-                       const std::shared_ptr<KeyProvider>& keyProvider,
-                       const std::shared_ptr<Bricks::Logger>& logger)
+AesCgmCryptor::AesCgmCryptor(cricket::MediaType mediaType,
+                             std::string trackId,
+                             const std::weak_ptr<rtc::Thread>& signalingThread,
+                             const std::shared_ptr<KeyProvider>& keyProvider,
+                             const std::shared_ptr<Bricks::Logger>& logger)
     : _impl(std::make_shared<Impl>(mediaType, std::move(trackId),
                                    signalingThread, keyProvider, logger))
     , _queue(createTaskQueueU(_impl->_logCategory, webrtc::TaskQueueFactory::Priority::HIGH))
 {
 }
 
-FrameCodec::~FrameCodec()
+AesCgmCryptor::~AesCgmCryptor()
 {
 }
 
-void FrameCodec::setKeyIndex(uint8_t keyIndex)
+void AesCgmCryptor::setKeyIndex(uint8_t keyIndex)
 {
     _impl->_keyIndex = keyIndex;
 }
 
-uint8_t FrameCodec::keyIndex() const
+uint8_t AesCgmCryptor::keyIndex() const
 {
     return _impl->_keyIndex;
 }
 
-void FrameCodec::setEnabled(bool enabled)
+void AesCgmCryptor::setEnabled(bool enabled)
 {
     _impl->_enabledCryption = enabled;
 }
 
-bool FrameCodec::enabled() const
+bool AesCgmCryptor::enabled() const
 {
     return _impl->_enabledCryption;
 }
 
-void FrameCodec::setObserver(FrameCodecObserver* observer)
+void AesCgmCryptor::setObserver(AesCgmCryptorObserver* observer)
 {
     _impl->_observer.set(observer);
 }
 
-void FrameCodec::Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
+void AesCgmCryptor::Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame && _queue) {
         if (!_impl->hasSink() && !_impl->hasSinks()) {
@@ -176,15 +176,15 @@ void FrameCodec::Transform(std::unique_ptr<webrtc::TransformableFrameInterface> 
     }
 }
 
-void FrameCodec::RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback)
+void AesCgmCryptor::RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback)
 {
     if (callback) {
         _impl->_sink(std::move(callback));
     }
 }
 
-void FrameCodec::RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
-                                                      uint32_t ssrc)
+void AesCgmCryptor::RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
+                                                         uint32_t ssrc)
 {
     if (callback) {
         LOCK_WRITE_SAFE_OBJ(_impl->_sinks);
@@ -192,18 +192,18 @@ void FrameCodec::RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc:
     }
 }
 
-void FrameCodec::UnregisterTransformedFrameCallback()
+void AesCgmCryptor::UnregisterTransformedFrameCallback()
 {
     _impl->_sink({});
 }
 
-void FrameCodec::UnregisterTransformedFrameSinkCallback(uint32_t ssrc)
+void AesCgmCryptor::UnregisterTransformedFrameSinkCallback(uint32_t ssrc)
 {
     LOCK_WRITE_SAFE_OBJ(_impl->_sinks);
     _impl->_sinks->erase(ssrc);
 }
 
-webrtc::scoped_refptr<FrameCodec> FrameCodec::
+webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
     create(cricket::MediaType mediaType,
            std::string trackId,
            const std::weak_ptr<rtc::Thread>& signalingThread,
@@ -226,16 +226,16 @@ webrtc::scoped_refptr<FrameCodec> FrameCodec::
         logInitError(logger, "unknown track ID");
         return {};
     }
-    return webrtc::make_ref_counted<FrameCodec>(mediaType, std::move(trackId),
-                                                signalingThread,
-                                                keyProvider, logger);
+    return webrtc::make_ref_counted<AesCgmCryptor>(mediaType, std::move(trackId),
+                                                   signalingThread,
+                                                   keyProvider, logger);
 }
 
-FrameCodec::Impl::Impl(cricket::MediaType mediaType,
-                       std::string trackId,
-                       const std::weak_ptr<rtc::Thread>& signalingThread,
-                       const std::shared_ptr<KeyProvider>& keyProvider,
-                       const std::shared_ptr<Bricks::Logger>& logger)
+AesCgmCryptor::Impl::Impl(cricket::MediaType mediaType,
+                          std::string trackId,
+                          const std::weak_ptr<rtc::Thread>& signalingThread,
+                          const std::shared_ptr<KeyProvider>& keyProvider,
+                          const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _mediaType(mediaType)
     , _trackId(std::move(trackId))
@@ -245,19 +245,19 @@ FrameCodec::Impl::Impl(cricket::MediaType mediaType,
 {
 }
 
-bool FrameCodec::Impl::hasSink() const
+bool AesCgmCryptor::Impl::hasSink() const
 {
     LOCK_READ_SAFE_OBJ(_sink);
     return nullptr != _sink->get();
 }
 
-bool FrameCodec::Impl::hasSinks() const
+bool AesCgmCryptor::Impl::hasSinks() const
 {
     LOCK_READ_SAFE_OBJ(_sinks);
     return !_sinks->empty();
 }
 
-void FrameCodec::Impl::transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
+void AesCgmCryptor::Impl::transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame) {
         switch (frame->GetDirection()) {
@@ -274,7 +274,7 @@ void FrameCodec::Impl::transform(std::unique_ptr<webrtc::TransformableFrameInter
     }
 }
 
-void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
+void AesCgmCryptor::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame) {
         webrtc::scoped_refptr<webrtc::TransformedFrameCallback> sink;
@@ -290,7 +290,7 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         }
         if (!sink) {
             logWarning("unable to encrypt frame, sink is NULL");
-            setLastEncryptState(FrameCodecState::InternalError);
+            setLastEncryptState(AesCgmCryptorState::InternalError);
             return;
         }
         
@@ -311,7 +311,7 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         const auto keyHandler = this->keyHandler();
         if (!keyHandler) {
             logError("no keys for encrypt");
-            setLastEncryptState(FrameCodecState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey);
             return;
         }
         
@@ -319,7 +319,7 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         const auto keySet = keyHandler->keySet(keyIndex);
         if (!keySet) {
             logError("no key set for key index " + std::to_string(keyIndex));
-            setLastEncryptState(FrameCodecState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey);
             return;
         }
         
@@ -337,12 +337,8 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         }
         
         std::vector<uint8_t> buffer;
-        if (aesGcmEncryptDecrypt(true,
-                                 keySet->_encryptionKey,
-                                 iv,
-                                 frameHeader,
-                                 payload,
-                                 buffer)) {
+        if (encryptOrDecrypt(true, keySet->_encryptionKey, iv, frameHeader,
+                             payload, buffer)) {
             rtc::Buffer frameTrailer(2U);
             frameTrailer[0] = ivSize();
             frameTrailer[1] = _keyIndex;
@@ -370,17 +366,17 @@ void FrameCodec::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
                              frameTrailer.size());
             }
             frame->SetData(dataOut);
-            setLastEncryptState(FrameCodecState::Ok);
+            setLastEncryptState(AesCgmCryptorState::Ok);
             sink->OnTransformedFrame(std::move(frame));
         }
         else {
-            setLastEncryptState(FrameCodecState::EncryptionFailed);
+            setLastEncryptState(AesCgmCryptorState::EncryptionFailed);
             logError("encrypt frame failed");
         }
     }
 }
 
-void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
+void AesCgmCryptor::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame) {
         webrtc::scoped_refptr<webrtc::TransformedFrameCallback> sink;
@@ -396,7 +392,7 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         }
         if (!sink) {
             logWarning("unable to decrypt frame, sink is NULL");
-            setLastDecryptState(FrameCodecState::InternalError);
+            setLastDecryptState(AesCgmCryptorState::InternalError);
             return;
         }
         
@@ -438,20 +434,20 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         uint8_t keyIndex = frameTrailer[1];
         if (ivLength != ivSize()) {
             logWarning("incorrect IV size for decryption");
-            setLastDecryptState(FrameCodecState::DecryptionFailed);
+            setLastDecryptState(AesCgmCryptorState::DecryptionFailed);
             return;
         }
         
         const auto keyHandler = this->keyHandler();
         if (!keyHandler) {
             logError("no keys for decrypt");
-            setLastEncryptState(FrameCodecState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey);
             return;
         }
         
         if (keyIndex >= _keyProvider->options()._keyRingSize) {
             logError("decryption key index [" + std::to_string(keyIndex) + "] is out of range ");
-            setLastEncryptState(FrameCodecState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey);
             return;
         }
 
@@ -459,11 +455,11 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         if (!keySet) {
             logError("no key set for decryption key index [" +
                      std::to_string(keyIndex) + "]");
-            setLastEncryptState(FrameCodecState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey);
             return;
         }
         
-        if (FrameCodecState::DecryptionFailed == _lastDecState && !keyHandler->hasValidKey()) {
+        if (AesCgmCryptorState::DecryptionFailed == _lastDecState && !keyHandler->hasValidKey()) {
             // if decryption failed and we have an invalid key,
             // please try to decrypt with the next new key
             return;
@@ -498,12 +494,9 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         rtc::Buffer tag(encryptedPayload.data() + encryptedPayload.size() - 16, 16);
         std::vector<uint8_t> buffer;
         auto initialKeyMaterial = keySet->_material;
-        bool decryptionSuccess = aesGcmEncryptDecrypt(false,
-                                                      keySet->_encryptionKey,
-                                                      iv,
-                                                      frameHeader,
-                                                      encryptedPayload,
-                                                      buffer);
+        bool decryptionSuccess = encryptOrDecrypt(false, keySet->_encryptionKey,
+                                                  iv, frameHeader,
+                                                  encryptedPayload, buffer);
         if (!decryptionSuccess) {
             logWarning("decrypt frame failed");
             std::shared_ptr<KeySet> ratchetedKeySet;
@@ -519,17 +512,15 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
                     ratchetedKeySet = keyHandler->deriveKeys(newMaterial,
                                                              _keyProvider->options()._ratchetSalt,
                                                              128);
-                    decryptionSuccess = aesGcmEncryptDecrypt(false,
-                                                             ratchetedKeySet->_encryptionKey,
-                                                             iv,
-                                                             frameHeader,
-                                                             encryptedPayload,
-                                                             buffer);
+                    decryptionSuccess = encryptOrDecrypt(false,
+                                                         ratchetedKeySet->_encryptionKey,
+                                                         iv, frameHeader,
+                                                         encryptedPayload, buffer);
                     if (decryptionSuccess) {
                         // success, so we set the new key
                         keyHandler->setKeyFromMaterial(newMaterial, keyIndex);
                         keyHandler->setHasValidKey();
-                        setLastDecryptState(FrameCodecState::KeyRatcheted);
+                        setLastDecryptState(AesCgmCryptorState::KeyRatcheted);
                         break;
                     }
                     // for the next ratchet attempt
@@ -549,7 +540,7 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         
         if (!decryptionSuccess) {
             if (keyHandler->decryptionFailure()) {
-                setLastDecryptState(FrameCodecState::DecryptionFailed);
+                setLastDecryptState(AesCgmCryptorState::DecryptionFailed);
             }
             return;
         }
@@ -560,28 +551,28 @@ void FrameCodec::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameIn
         dataOut.AppendData(payload);
         frame->SetData(dataOut);
         
-        setLastDecryptState(FrameCodecState::Ok);
+        setLastDecryptState(AesCgmCryptorState::Ok);
         sink->OnTransformedFrame(std::move(frame));
     }
 }
 
-void FrameCodec::Impl::setLastEncryptState(FrameCodecState state)
+void AesCgmCryptor::Impl::setLastEncryptState(AesCgmCryptorState state)
 {
     if (exchangeVal(state, _lastEncState) && _observer) {
-        _observer.invoke(&FrameCodecObserver::onEncryptionStateChanged,
+        _observer.invoke(&AesCgmCryptorObserver::onEncryptionStateChanged,
                          _trackId, state);
     }
 }
 
-void FrameCodec::Impl::setLastDecryptState(FrameCodecState state)
+void AesCgmCryptor::Impl::setLastDecryptState(AesCgmCryptorState state)
 {
     if (exchangeVal(state, _lastDecState) && _observer) {
-        _observer.invoke(&FrameCodecObserver::onDecryptionStateChanged,
+        _observer.invoke(&AesCgmCryptorObserver::onDecryptionStateChanged,
                          _trackId, state);
     }
 }
 
-std::shared_ptr<E2EKeyHandler> FrameCodec::Impl::keyHandler() const
+std::shared_ptr<E2EKeyHandler> AesCgmCryptor::Impl::keyHandler() const
 {
     if (_keyProvider->options()._sharedKey) {
         return _keyProvider->sharedKey(_trackId);
@@ -589,12 +580,12 @@ std::shared_ptr<E2EKeyHandler> FrameCodec::Impl::keyHandler() const
     return _keyProvider->key(_trackId);
 }
 
-bool FrameCodec::Impl::aesGcmEncryptDecrypt(bool encrypt,
-                                            const std::vector<uint8_t>& rawKey,
-                                            const rtc::ArrayView<uint8_t>& iv,
-                                            const rtc::ArrayView<uint8_t>& additionalData,
-                                            const rtc::ArrayView<uint8_t>& data,
-                                            std::vector<uint8_t>& buffer) const
+bool AesCgmCryptor::Impl::encryptOrDecrypt(bool encrypt,
+                                           const std::vector<uint8_t>& rawKey,
+                                           const rtc::ArrayView<uint8_t>& iv,
+                                           const rtc::ArrayView<uint8_t>& additionalData,
+                                           const rtc::ArrayView<uint8_t>& data,
+                                           std::vector<uint8_t>& buffer) const
 {
     const EVP_AEAD* aeadAlg = aesGcmAlgorithmFromKeySize(rawKey.size());
     if (!aeadAlg) {
@@ -637,7 +628,7 @@ bool FrameCodec::Impl::aesGcmEncryptDecrypt(bool encrypt,
     return true;
 }
 
-rtc::Buffer FrameCodec::Impl::makeIv(uint32_t ssrc, uint32_t timestamp)
+rtc::Buffer AesCgmCryptor::Impl::makeIv(uint32_t ssrc, uint32_t timestamp)
 {
     uint32_t sendCount = 0U;
     const auto it = _sendCounts.find(ssrc);

@@ -11,25 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // FrameCodecFactory.h
-#include "TrackManager.h"
-#include <api/media_types.h>
-#include <api/scoped_refptr.h>
+#pragma once // AesCgmCryptorObserver.h
+#include "AesCgmCryptorState.h"
 #include <string>
 
 namespace LiveKitCpp
 {
 
-class FrameCodec;
-
-class FrameCodecFactory : public TrackManager
+class AesCgmCryptorObserver
 {
 public:
-    virtual webrtc::scoped_refptr<FrameCodec> createCodec(bool local,
-                                                          cricket::MediaType mediaType,
-                                                          std::string id) const = 0;
+    virtual void onEncryptionStateChanged(const std::string& /*trackId*/,
+                                          AesCgmCryptorState /*state*/) {}
+    virtual void onDecryptionStateChanged(const std::string& /*trackId*/,
+                                          AesCgmCryptorState /*state*/) {}
 protected:
-    ~FrameCodecFactory() override = default;
+    virtual ~AesCgmCryptorObserver() = default;
 };
 
 } // namespace LiveKitCpp

@@ -29,7 +29,7 @@ class RtpReceiverInterface;
 namespace LiveKitCpp
 {
 
-class FrameCodecFactory;
+class E2ESecurityFactory;
 class RemoteParticipantsListener;
 class RemoteParticipantImpl;
 class RemoteParticipant;
@@ -42,7 +42,7 @@ class RemoteParticipants : private Bricks::LoggableS<>
     // key is sid
     using OrphanedReceivers = std::unordered_map<std::string, rtc::scoped_refptr<webrtc::RtpReceiverInterface>>;
 public:
-    RemoteParticipants(FrameCodecFactory* codecFactory,
+    RemoteParticipants(E2ESecurityFactory* securityFactory,
                        RemoteParticipantsListener* listener,
                        const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RemoteParticipants();
@@ -75,7 +75,7 @@ private:
     void clearParticipants();
     std::optional<size_t> findBySid(const std::string& sid) const;
 private:
-    FrameCodecFactory* const _codecFactory;
+    E2ESecurityFactory* const _codecFactory;
     RemoteParticipantsListener* const _listener;
     Bricks::SafeObj<OrphanedReceivers> _orphans;
     Bricks::SafeObj<Participants> _participants;

@@ -33,11 +33,11 @@ inline bool compareParticipantInfo(const ParticipantInfo& l, const ParticipantIn
 namespace LiveKitCpp
 {
     
-RemoteParticipants::RemoteParticipants(FrameCodecFactory* codecFactory,
+RemoteParticipants::RemoteParticipants(E2ESecurityFactory* securityFactory,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
-    , _codecFactory(codecFactory)
+    , _codecFactory(securityFactory)
     , _listener(listener)
 {
 }

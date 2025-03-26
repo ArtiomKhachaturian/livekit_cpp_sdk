@@ -18,7 +18,7 @@
 #include "SessionListener.h"
 #include "LiveKitError.h"
 #include "Utils.h"
-#include "FrameCodec.h"
+#include "AesCgmCryptor.h"
 #include "rtc/AddTrackRequest.h"
 #include "rtc/MuteTrackRequest.h"
 #include "rtc/TrackPublishedResponse.h"
@@ -238,8 +238,8 @@ void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant.track(sender)) {
-        if (auto codec = createCodec(true, sender->media_type(), sender->id())) {
-            sender->SetFrameTransformer(std::move(codec));
+        if (auto cryptor = createCryptor(true, sender->media_type(), sender->id())) {
+            sender->SetFrameTransformer(std::move(cryptor));
             track->notifyThatMediaAddedToTransport(true);
         }
         else {
@@ -334,13 +334,12 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
     }
 }
 
-webrtc::scoped_refptr<FrameCodec> RTCMediaEngine::createCodec(bool local,
-                                                              cricket::MediaType mediaType,
-                                                              std::string id) const
+webrtc::scoped_refptr<AesCgmCryptor> RTCMediaEngine::
+    createCryptor(bool local, cricket::MediaType mediaType, std::string id) const
 {
     if (const auto provider = std::atomic_load(&_aesCgmKeyProvider)) {
-        return FrameCodec::create(mediaType, std::move(id), _signalingThread,
-                                  provider, logger());
+        return AesCgmCryptor::create(mediaType, std::move(id), _signalingThread,
+                                     provider, logger());
     }
     return {};
 }

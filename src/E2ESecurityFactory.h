@@ -11,20 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // FrameCodecState.h
+#pragma once // E2ESecurityFactory.h
+#include "TrackManager.h"
+#include <api/media_types.h>
+#include <api/scoped_refptr.h>
+#include <string>
 
 namespace LiveKitCpp
 {
 
-enum class FrameCodecState
+class AesCgmCryptor;
+
+class E2ESecurityFactory : public TrackManager
 {
-    New,
-    Ok,
-    EncryptionFailed,
-    DecryptionFailed,
-    MissingKey,
-    KeyRatcheted,
-    InternalError,
+public:
+    virtual webrtc::scoped_refptr<AesCgmCryptor> createCryptor(bool local,
+                                                               cricket::MediaType mediaType,
+                                                               std::string id) const = 0;
+protected:
+    ~E2ESecurityFactory() override = default;
 };
 
 } // namespace LiveKitCpp

@@ -11,22 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // FrameCodecObserver.h
-#include "FrameCodecState.h"
-#include <string>
+#pragma once // AesCgmCryptorState.h
 
 namespace LiveKitCpp
 {
 
-class FrameCodecObserver
+enum class AesCgmCryptorState
 {
-public:
-    virtual void onEncryptionStateChanged(const std::string& /*trackId*/,
-                                          FrameCodecState /*state*/) {}
-    virtual void onDecryptionStateChanged(const std::string& /*trackId*/,
-                                          FrameCodecState /*state*/) {}
-protected:
-    virtual ~FrameCodecObserver() = default;
+    New,
+    Ok,
+    EncryptionFailed,
+    DecryptionFailed,
+    MissingKey,
+    KeyRatcheted,
+    InternalError,
 };
 
 } // namespace LiveKitCpp
