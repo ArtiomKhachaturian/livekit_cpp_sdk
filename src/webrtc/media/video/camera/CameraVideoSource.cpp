@@ -35,6 +35,10 @@ inline std::string makeCapturerError(int code, const std::string& what = {}) {
     return what + ": " + errorCode;
 }
 
+inline bool isNull(const webrtc::VideoCaptureCapability& cap) {
+    return 0 == cap.width || 0 == cap.height || 0 == cap.maxFPS;
+}
+
 }
 
 namespace LiveKitCpp
@@ -46,12 +50,14 @@ class CameraVideoSource::Impl : public Bricks::LoggableS<CameraCapturerProxySink
     using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
                                             std::unique_ptr<VideoSinkBroadcast>>;
 public:
-    Impl(const std::shared_ptr<Bricks::Logger>& logger,
-         const std::weak_ptr<rtc::Thread>& signalingThread);
+    Impl(const std::weak_ptr<rtc::Thread>& signalingThread,
+         const webrtc::VideoCaptureCapability& initialCapability,
+         const std::shared_ptr<Bricks::Logger>& logger);
     ~Impl() final { reset(); }
     MediaDevice device() const { return _device(); }
     void setDevice(MediaDevice device);
     void setCapability(webrtc::VideoCaptureCapability capability);
+    webrtc::VideoCaptureCapability capability() const { return _capability(); }
     void setEnabled(bool enabled);
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     webrtc::MediaSourceInterface::SourceState state() const noexcept { return _state; }
@@ -94,7 +100,7 @@ private:
     Bricks::SafeObj<Broadcasters> _broadcasters;
     Bricks::SafeObj<MediaDevice> _device;
     SafeScopedRefPtr<CameraCapturer> _capturer;
-    Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability = CameraManager::defaultCapability();
+    Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
     std::atomic<uint64_t> _lastResolution = 0ULL;
     std::atomic<uint16_t> _lastFrameId = 0U;
     std::atomic<uint16_t> _enabled = true;
@@ -102,9 +108,10 @@ private:
 };
 
 CameraVideoSource::CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
+                                     const webrtc::VideoCaptureCapability& initialCapability,
                                      const std::shared_ptr<Bricks::Logger>& logger)
     : _thread(std::move(signalingThread))
-    , _impl(std::make_shared<Impl>(logger, _thread))
+    , _impl(std::make_shared<Impl>(_thread, initialCapability, logger))
 {
 }
 
@@ -118,9 +125,19 @@ void CameraVideoSource::setDevice(MediaDevice device)
     postOrInvoke(_thread, _impl, false, &Impl::setDevice, std::move(device));
 }
 
-void CameraVideoSource::setCapability(webrtc::VideoCaptureCapability capability)
+MediaDevice CameraVideoSource::device() const
 {
-    postOrInvoke(_thread, _impl, false, &Impl::setCapability, std::move(capability));
+    return _impl->device();
+}
+
+void CameraVideoSource::setCapability(const webrtc::VideoCaptureCapability& capability)
+{
+    postOrInvoke(_thread, _impl, false, &Impl::setCapability, capability);
+}
+
+webrtc::VideoCaptureCapability CameraVideoSource::capability() const
+{
+    return _impl->capability();
 }
 
 bool CameraVideoSource::setEnabled(bool enabled)
@@ -176,11 +193,18 @@ void CameraVideoSource::UnregisterObserver(webrtc::ObserverInterface* observer)
     _impl->unregisterObserver(observer);
 }
 
-CameraVideoSource::Impl::Impl(const std::shared_ptr<Bricks::Logger>& logger,
-                              const std::weak_ptr<rtc::Thread>& signalingThread)
+CameraVideoSource::Impl::Impl(const std::weak_ptr<rtc::Thread>& signalingThread,
+                              const webrtc::VideoCaptureCapability& initialCapability,
+                              const std::shared_ptr<Bricks::Logger>& logger)
     : Base(logger)
     , _observers(signalingThread)
 {
+    if (isNull(initialCapability)) {
+        _capability = CameraManager::defaultCapability();
+    }
+    else {
+        _capability = initialCapability;
+    }
     CameraManager::defaultDevice(_device.ref());
 }
 
@@ -207,6 +231,9 @@ void CameraVideoSource::Impl::setDevice(MediaDevice device)
 
 void CameraVideoSource::Impl::setCapability(webrtc::VideoCaptureCapability capability)
 {
+    if (isNull(capability)) {
+        capability = CameraManager::defaultCapability();
+    }
     LOCK_READ_SAFE_OBJ(_capturer);
     const auto& capturer = _capturer.constRef();
     if (capturer) {

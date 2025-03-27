@@ -17,6 +17,7 @@
 #include "WebsocketEndPoint.h"
 #include "WebsocketFactory.h"
 #include "NetworkType.h"
+#include "VideoOptions.h"
 #include "Utils.h"
 #include "rtc/ClientInfo.h"
 #include "e2e/KeyProviderOptions.h"
@@ -166,6 +167,22 @@ std::vector<MediaDevice> Service::playoutAudioDevices() const
 std::vector<MediaDevice> Service::recordingCameraDevices() const
 {
     return CameraManager::devices();
+}
+
+std::vector<CameraOptions> Service::cameraOptions(const MediaDevice& device) const
+{
+    if (const uint32_t number = CameraManager::capabilitiesNumber(device)) {
+        std::vector<CameraOptions> options;
+        options.reserve(number);
+        for (uint32_t i = 0U; i < number; ++i) {
+            webrtc::VideoCaptureCapability capability;
+            if (CameraManager::capability(device, i, capability)) {
+                options.push_back(map(capability));
+            }
+        }
+        return options;
+    }
+    return {};
 }
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -372,6 +389,10 @@ void KeyProviderOptions::setRatchetSalt(std::string_view salt)
     _ratchetSalt = binaryFromString(std::move(salt));
 }
 
+CameraOptions CameraOptions::defaultOptions()
+{
+    return map(CameraManager::defaultCapability());
+}
 #else
 class Service::Impl {};
 
@@ -406,6 +427,8 @@ std::vector<MediaDevice> Service::recordingAudioDevices() const { return {}; }
 std::vector<MediaDevice> Service::playoutAudioDevices() const { return {}; }
 
 std::vector<MediaDevice> Service::recordingCameraDevices() const { return {}; }
+
+CameraOptions CameraOptions::defaultOptions() { return {}; }
 #endif
 
 NetworkType Service::activeNetworkType()

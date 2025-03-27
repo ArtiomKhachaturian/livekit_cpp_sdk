@@ -36,11 +36,14 @@ class CameraVideoSource : public webrtc::VideoTrackSourceInterface
     class Impl;
 public:
     CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
+                      const webrtc::VideoCaptureCapability& initialCapability = {},
                       const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
     const auto& signalingThread() const noexcept { return _thread; }
     void setDevice(MediaDevice device);
-    void setCapability(webrtc::VideoCaptureCapability capability);
+    MediaDevice device() const;
+    void setCapability(const webrtc::VideoCaptureCapability& capability);
+    webrtc::VideoCaptureCapability capability() const;
     bool enabled() const noexcept { return _enabled; }
     bool setEnabled(bool enabled);
     // impl. of webrtc::VideoTrackSourceInterface

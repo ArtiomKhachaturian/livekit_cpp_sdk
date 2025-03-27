@@ -77,20 +77,21 @@ std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::
     addMicrophoneTrack(const MicrophoneOptions& options)
 {
     if (auto mic = createMic(options)) {
-        const auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
-                                                                 _manager, true,
-                                                                 logger());
+        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
+                                                           _manager, true,
+                                                           logger());
         addTrack(track);
         return track;
     }
     return {};
 }
 
-std::shared_ptr<CameraTrackImpl> LocalParticipant::addCameraTrack()
+std::shared_ptr<CameraTrackImpl> LocalParticipant::
+    addCameraTrack(const CameraOptions& options)
 {
-    if (auto camera = createCamera()) {
-        const auto track = std::make_shared<CameraTrackImpl>(std::move(camera),
-                                                             _manager, logger());
+    if (auto camera = createCamera(options)) {
+        auto track = std::make_shared<CameraTrackImpl>(std::move(camera),
+                                                       _manager, logger());
         addTrack(track);
         return track;
     }
@@ -288,10 +289,12 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::
     return {};
 }
 
-webrtc::scoped_refptr<CameraVideoTrack> LocalParticipant::createCamera() const
+webrtc::scoped_refptr<CameraVideoTrack> LocalParticipant::
+    createCamera(const CameraOptions& options) const
 {
     if (_pcf && CameraManager::available()) {
         auto source = webrtc::make_ref_counted<CameraVideoSource>(_pcf->signalingThread(),
+                                                                  map(options),
                                                                   logger());
         return webrtc::make_ref_counted<CameraVideoTrack>(makeUuid(),
                                                           std::move(source),

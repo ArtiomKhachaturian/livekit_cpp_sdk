@@ -14,6 +14,7 @@
 #pragma once // Session.h
 #include "AudioTrack.h"
 #include "CameraTrack.h"
+#include "CameraOptions.h"
 #include "LiveKitClientExport.h"
 #include "MicrophoneOptions.h"
 #include "Options.h"
@@ -63,7 +64,7 @@ public:
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
     std::shared_ptr<AudioTrack> addMicrophoneTrack(const MicrophoneOptions& options = {});
-    std::shared_ptr<CameraTrack> addCameraTrack();
+    std::shared_ptr<CameraTrack> addCameraTrack(const CameraOptions& options = CameraOptions::defaultOptions());
     void removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
     void removeVideoTrack(const std::shared_ptr<VideoTrack>& track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;

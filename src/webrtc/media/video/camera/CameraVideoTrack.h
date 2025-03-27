@@ -31,7 +31,9 @@ public:
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoTrack() override;
     void setDevice(MediaDevice device = {});
-    void setCapability(webrtc::VideoCaptureCapability capability);
+    MediaDevice device() const;
+    void setCapability(const webrtc::VideoCaptureCapability& capability);
+    webrtc::VideoCaptureCapability capability() const;
     // impl. of webrtc::VideoTrackInterface
     void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                          const rtc::VideoSinkWants& wants) final;

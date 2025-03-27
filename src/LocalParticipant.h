@@ -43,9 +43,10 @@ class CameraVideoTrack;
 class TrackManager;
 class ParticipantListener;
 class PeerConnectionFactory;
+struct CameraOptions;
+struct MicrophoneOptions;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
-struct MicrophoneOptions;
 
 class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver>
 {
@@ -61,7 +62,7 @@ public:
     size_t audioTracksCount() const;
     size_t videoTracksCount() const;
     std::shared_ptr<LocalAudioTrackImpl> addMicrophoneTrack(const MicrophoneOptions& options);
-    std::shared_ptr<CameraTrackImpl> addCameraTrack();
+    std::shared_ptr<CameraTrackImpl> addCameraTrack(const CameraOptions& options);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
@@ -89,7 +90,7 @@ private:
     std::shared_ptr<LocalTrack> lookupAudio(const std::string& id, bool cid) const;
     std::shared_ptr<LocalTrack> lookupVideo(const std::string& id, bool cid) const;
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const MicrophoneOptions& options) const;
-    webrtc::scoped_refptr<CameraVideoTrack> createCamera() const;
+    webrtc::scoped_refptr<CameraVideoTrack> createCamera(const CameraOptions& options) const;
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;
     // impl. of AesCgmCryptorObserver

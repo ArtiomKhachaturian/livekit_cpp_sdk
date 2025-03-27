@@ -50,11 +50,27 @@ void CameraVideoTrack::setDevice(MediaDevice device)
     }
 }
 
-void CameraVideoTrack::setCapability(webrtc::VideoCaptureCapability capability)
+MediaDevice CameraVideoTrack::device() const
+{
+    if (_source) {
+        return _source->device();
+    }
+    return {};
+}
+
+void CameraVideoTrack::setCapability(const webrtc::VideoCaptureCapability& capability)
 {
     if (_source) {
         _source->setCapability(capability);
     }
+}
+
+webrtc::VideoCaptureCapability CameraVideoTrack::capability() const
+{
+    if (_source) {
+        return _source->capability();
+    }
+    return {};
 }
 
 void CameraVideoTrack::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,

@@ -16,6 +16,7 @@
 #include "MediaDevice.h"
 #include "Utils.h"
 #include <modules/video_capture/video_capture_config.h>
+#include <cassert>
 
 namespace LiveKitCpp
 {
@@ -42,6 +43,7 @@ bool CameraManager::device(uint32_t number, std::string& name, std::string& guid
                                    deviceUniqueIdUTF8, webrtc::kVideoCaptureProductIdLength)) {
             name = deviceNameUTF8;
             guid = deviceUniqueIdUTF8;
+            return true;
         }
     }
     return false;
@@ -137,42 +139,16 @@ bool CameraManager::capability(std::string_view guid,
 {
     if (!guid.empty()) {
         if (const auto di = deviceInfo()) {
-            return di->GetCapability(guid.data(), number, capability);
+            return 0 == di->GetCapability(guid.data(), number, capability);
         }
     }
     return false;
 }
 
-uint32_t CameraManager::capability(const MediaDevice& device, uint32_t number,
+bool CameraManager::capability(const MediaDevice& device, uint32_t number,
                                    webrtc::VideoCaptureCapability& capability)
 {
     return CameraManager::capability(device._guid, number, capability);
-}
-
-std::vector<webrtc::VideoCaptureCapability> CameraManager::capabilities(std::string_view guid)
-{
-    if (!guid.empty()) {
-        if (const auto di = deviceInfo()) {
-            const auto number = di->NumberOfCapabilities(guid.data());
-            if (number > 0) {
-                std::vector<webrtc::VideoCaptureCapability> capabilities;
-                capabilities.reserve(number);
-                for (uint32_t i = 0; i < number; ++i) {
-                    webrtc::VideoCaptureCapability capability;
-                    if (0 == di->GetCapability(guid.data(), i, capability)) {
-                        capabilities.push_back(std::move(capability));
-                    }
-                }
-                return capabilities;
-            }
-        }
-    }
-    return {};
-}
-
-std::vector<webrtc::VideoCaptureCapability> CameraManager::capabilities(const MediaDevice& device)
-{
-    return capabilities(device._guid);
 }
 
 bool CameraManager::bestMatchedCapability(std::string_view guid,
@@ -253,6 +229,104 @@ std::string toString(const webrtc::VideoCaptureCapability& capability)
     return std::to_string(capability.width) + "x" + std::to_string(capability.height) +
             "/" + std::to_string(capability.maxFPS) + "fps|" + 
             fourccToString(webrtc::ConvertVideoType(capability.videoType));
+}
+
+CameraOptions map(const webrtc::VideoCaptureCapability& capability)
+{
+    CameraOptions options;
+    options._width = capability.width;
+    options._height = capability.height;
+    options._maxFPS = capability.maxFPS;
+    options._interlaced = capability.interlaced;
+    options._type = map(capability.videoType);
+    return options;
+}
+
+webrtc::VideoCaptureCapability map(const CameraOptions& options)
+{
+    webrtc::VideoCaptureCapability capability;
+    capability.width = options._width;
+    capability.height = options._height;
+    capability.maxFPS = options._maxFPS;
+    capability.interlaced = options._interlaced;
+    capability.videoType = map(options._type);
+    return capability;
+}
+
+webrtc::VideoType map(VideoType type)
+{
+    switch (type) {
+        case VideoType::Unknown:
+            break;
+        case VideoType::I420:
+            return webrtc::VideoType::kI420;
+        case VideoType::IYUV:
+            return webrtc::VideoType::kIYUV;
+        case VideoType::RGB24:
+            return webrtc::VideoType::kRGB24;
+        case VideoType::BGR24:
+            return webrtc::VideoType::kBGR24;
+        case VideoType::ARGB:
+            return webrtc::VideoType::kARGB;
+        case VideoType::ABGR:
+            return webrtc::VideoType::kABGR;
+        case VideoType::RGB565:
+            return webrtc::VideoType::kRGB565;
+        case VideoType::YUY2:
+            return webrtc::VideoType::kYUY2;
+        case VideoType::YV12:
+            return webrtc::VideoType::kYV12;
+        case VideoType::UYVY:
+            return webrtc::VideoType::kUYVY;
+        case VideoType::MJPEG:
+            return webrtc::VideoType::kMJPEG;
+        case VideoType::BGRA:
+            return webrtc::VideoType::kBGRA;
+        case VideoType::NV12:
+            return webrtc::VideoType::kNV12;
+        default:
+            assert(false);
+            break;
+    }
+    return webrtc::VideoType::kUnknown;
+}
+
+VideoType map(webrtc::VideoType type)
+{
+    switch (type) {
+        case webrtc::VideoType::kUnknown:
+            break;
+        case webrtc::VideoType::kI420:
+            return VideoType::I420;
+        case webrtc::VideoType::kIYUV:
+            return VideoType::IYUV;
+        case webrtc::VideoType::kRGB24:
+            return VideoType::RGB24;
+        case webrtc::VideoType::kBGR24:
+            return VideoType::BGR24;
+        case webrtc::VideoType::kARGB:
+            return VideoType::ARGB;
+        case webrtc::VideoType::kABGR:
+            return VideoType::ABGR;
+        case webrtc::VideoType::kRGB565:
+            return VideoType::RGB565;
+        case webrtc::VideoType::kYUY2:
+            return VideoType::YUY2;
+        case webrtc::VideoType::kYV12:
+            return VideoType::YV12;
+        case webrtc::VideoType::kUYVY:
+            return VideoType::UYVY;
+        case webrtc::VideoType::kMJPEG:
+            return VideoType::MJPEG;
+        case webrtc::VideoType::kBGRA:
+            return VideoType::BGRA;
+        case webrtc::VideoType::kNV12:
+            return VideoType::NV12;
+        default:
+            assert(false);
+            break;
+    }
+    return VideoType::Unknown;
 }
 
 } // namespace LiveKitCpp

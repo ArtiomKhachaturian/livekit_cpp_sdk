@@ -11,23 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraTrack.h
-#include "VideoTrack.h"
-#include "CameraOptions.h"
-#include "MediaDevice.h"
+#pragma once // VideoType.h
 
 namespace LiveKitCpp
 {
 
-class CameraTrack : public VideoTrack
+enum class VideoType 
 {
-public:
-    virtual void setDevice(MediaDevice device = {}) = 0;
-    virtual MediaDevice device() const = 0;
-    virtual void setOptions(const CameraOptions& options) = 0;
-    virtual CameraOptions options() const = 0;
-    // impl. of Track
-    TrackSource source() const final { return TrackSource::Camera; }
+    Unknown,
+    I420,
+    IYUV,
+    RGB24,
+    BGR24,
+    ARGB,
+    ABGR,
+    RGB565,
+    YUY2,
+    YV12,
+    UYVY,
+    MJPEG,
+    BGRA,
+    NV12,
 };
 
 } // namespace LiveKitCpp

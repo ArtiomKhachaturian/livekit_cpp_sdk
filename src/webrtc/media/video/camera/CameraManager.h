@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraManager.h
+#include "CameraOptions.h"
 #include <api/scoped_refptr.h>
 #include <api/video/video_rotation.h>
 #include <modules/video_capture/video_capture_factory.h> // VideoCaptureFactory & VideoCaptureCapability
 #include <optional>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace Bricks {
 class Logger;
@@ -52,11 +52,8 @@ public:
     // Gets the capability of the named device.
     static bool capability(std::string_view guid, uint32_t number,
                            webrtc::VideoCaptureCapability& capability);
-    static uint32_t capability(const MediaDevice& device, uint32_t number,
-                               webrtc::VideoCaptureCapability& capability);
-    // Gets the capabilities of the named device.
-    static std::vector<webrtc::VideoCaptureCapability> capabilities(std::string_view guid);
-    static std::vector<webrtc::VideoCaptureCapability> capabilities(const MediaDevice& device);
+    static bool capability(const MediaDevice& device, uint32_t number,
+                           webrtc::VideoCaptureCapability& capability);
     static bool bestMatchedCapability(std::string_view guid,
                                       const webrtc::VideoCaptureCapability& requested,
                                       webrtc::VideoCaptureCapability& resulting);
@@ -80,5 +77,9 @@ private:
 };
 
 std::string toString(const webrtc::VideoCaptureCapability& capability);
+CameraOptions map(const webrtc::VideoCaptureCapability& capability);
+webrtc::VideoCaptureCapability map(const CameraOptions& options);
+webrtc::VideoType map(VideoType type);
+VideoType map(webrtc::VideoType type);
 
 } // namespace LiveKitCpp

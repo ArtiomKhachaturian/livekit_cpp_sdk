@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraTrackImpl.h"
+#include "CameraManager.h"
 
 namespace LiveKitCpp
 {
@@ -29,18 +30,34 @@ CameraTrackImpl::~CameraTrackImpl()
     installSink(false, videoSink());
 }
 
-void CameraTrackImpl::setCapability(webrtc::VideoCaptureCapability capability)
+void CameraTrackImpl::setDevice(MediaDevice device)
 {
-    if (const auto track = mediaTrack()) {
-        track->setCapability(std::move(capability));
+    if (const auto& track = mediaTrack()) {
+        track->setDevice(std::move(device));
     }
 }
 
-void CameraTrackImpl::setDevice(MediaDevice device)
+MediaDevice CameraTrackImpl::device() const
 {
-    if (const auto track = mediaTrack()) {
-        track->setDevice(std::move(device));
+    if (const auto& track = mediaTrack()) {
+        return track->device();
     }
+    return {};
+}
+
+void CameraTrackImpl::setOptions(const CameraOptions& options)
+{
+    if (const auto& track = mediaTrack()) {
+        track->setCapability(map(options));
+    }
+}
+
+CameraOptions CameraTrackImpl::options() const
+{
+    if (const auto& track = mediaTrack()) {
+        return map(track->capability());
+    }
+    return {};
 }
 
 bool CameraTrackImpl::fillRequest(AddTrackRequest* request) const

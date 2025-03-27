@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // Service.h
 #include "LiveKitClientExport.h"
+#include "CameraOptions.h"
 #include "Session.h"
 #include "ServiceState.h"
 #include "MediaDevice.h"
@@ -61,6 +62,7 @@ public:
     std::vector<MediaDevice> recordingAudioDevices() const;
     std::vector<MediaDevice> playoutAudioDevices() const;
     std::vector<MediaDevice> recordingCameraDevices() const;
+    std::vector<CameraOptions> cameraOptions(const MediaDevice& device) const;
 private:
     const std::unique_ptr<Impl> _impl;
 };

@@ -27,9 +27,11 @@ public:
                     TrackManager* manager,
                     const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraTrackImpl();
-    void setCapability(webrtc::VideoCaptureCapability capability);
     // impl. of CameraTrack
-    void setDevice(MediaDevice device = {}) final;
+    void setDevice(MediaDevice device) final;
+    MediaDevice device() const final;
+    void setOptions(const CameraOptions& options) final;
+    CameraOptions options() const final;
     // impl. of LocalTrack
     bool fillRequest(AddTrackRequest* request) const final;
 };

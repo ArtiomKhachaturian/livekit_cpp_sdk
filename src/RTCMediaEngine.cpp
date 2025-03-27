@@ -89,9 +89,10 @@ std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::
     return _localParticipant->addMicrophoneTrack(options);
 }
 
-std::shared_ptr<CameraTrackImpl> RTCMediaEngine::addLocalCameraTrack()
+std::shared_ptr<CameraTrackImpl> RTCMediaEngine::
+    addLocalCameraTrack(const CameraOptions& options)
 {
-    return _localParticipant->addCameraTrack();
+    return _localParticipant->addCameraTrack(options);
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCMediaEngine::
