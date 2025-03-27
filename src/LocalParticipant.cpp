@@ -76,14 +76,16 @@ size_t LocalParticipant::videoTracksCount() const
 std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::
     addMicrophoneTrack(const MicrophoneOptions& options)
 {
-    if (auto mic = createMic(options)) {
-        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
-                                                           _manager, true,
-                                                           logger());
-        addTrack(track);
-        return track;
+    LOCK_WRITE_SAFE_OBJ(_micTrack);
+    if (!_micTrack.constRef()) {
+        if (auto mic = createMic(options)) {
+            _micTrack = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
+                                                              _manager, true,
+                                                              logger());
+            addTrack(_micTrack.constRef(), _audioTracks);
+        }
     }
-    return {};
+    return _micTrack.constRef();
 }
 
 std::shared_ptr<CameraTrackImpl> LocalParticipant::
@@ -92,7 +94,7 @@ std::shared_ptr<CameraTrackImpl> LocalParticipant::
     if (auto camera = createCamera(options)) {
         auto track = std::make_shared<CameraTrackImpl>(std::move(camera),
                                                        _manager, logger());
-        addTrack(track);
+        addTrack(track, _videoTracks);
         return track;
     }
     return {};
@@ -102,6 +104,12 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
     removeAudioTrack(const std::shared_ptr<AudioTrack>& track)
 {
     if (const auto local = std::dynamic_pointer_cast<LocalAudioTrackImpl>(track)) {
+        {
+            LOCK_WRITE_SAFE_OBJ(_micTrack);
+            if (_micTrack.constRef() == local) {
+                _micTrack = {};
+            }
+        }
         LOCK_WRITE_SAFE_OBJ(_audioTracks);
         for (auto it = _audioTracks->begin(); it != _audioTracks->end(); ++it) {
             if (*it == local) {
@@ -152,10 +160,14 @@ std::vector<std::shared_ptr<LocalTrack>> LocalParticipant::tracks() const
     LOCK_READ_SAFE_OBJ(_audioTracks);
     LOCK_READ_SAFE_OBJ(_videoTracks);
     tracks.reserve(_audioTracks->size() + _videoTracks->size());
-    tracks.assign(_audioTracks->begin(), _audioTracks->end());
+    for (const auto& track : _audioTracks.constRef()) {
+        if (auto localTrack = std::dynamic_pointer_cast<LocalTrack>(track)) {
+            tracks.push_back(std::move(localTrack));
+        }
+    }
     for (const auto& track : _videoTracks.constRef()) {
-        if (auto videoTrack = std::dynamic_pointer_cast<LocalTrack>(track)) {
-            tracks.push_back(std::move(videoTrack));
+        if (auto localTrack = std::dynamic_pointer_cast<LocalTrack>(track)) {
+            tracks.push_back(std::move(localTrack));
         }
     }
     return tracks;
@@ -182,19 +194,19 @@ std::shared_ptr<LocalTrack> LocalParticipant::track(const std::string& id, bool 
         if (hint.has_value()) {
             switch (hint.value()) {
                 case cricket::MEDIA_TYPE_AUDIO:
-                    result = lookupAudio(id, cid);
+                    result = lookup(id, cid, _audioTracks);
                     break;
                 case cricket::MEDIA_TYPE_VIDEO:
-                    result = lookupVideo(id, cid);
+                    result = lookup(id, cid, _videoTracks);
                     break;
                 default:
                     break;
             }
         }
         else {
-            result = lookupAudio(id, cid);
+            result = lookup(id, cid, _audioTracks);
             if (!result) {
-                result = lookupVideo(id, cid);
+                result = lookup(id, cid, _videoTracks);
             }
         }
     }
@@ -233,49 +245,30 @@ void LocalParticipant::setInfo(const ParticipantInfo& info)
     }
 }
 
-void LocalParticipant::addTrack(const std::shared_ptr<LocalAudioTrackImpl>& track)
-{
-    if (track) {
-        LOCK_WRITE_SAFE_OBJ(_audioTracks);
-        _audioTracks->push_back(track);
-    }
-}
-
-void LocalParticipant::addTrack(const std::shared_ptr<VideoTrack>& track)
-{
-    if (track) {
-        LOCK_WRITE_SAFE_OBJ(_videoTracks);
-        _videoTracks->push_back(track);
-    }
-}
-
-std::shared_ptr<LocalTrack> LocalParticipant::lookupAudio(const std::string& id,
-                                                          bool cid) const
+template<class TTracks>
+std::shared_ptr<LocalTrack> LocalParticipant::lookup(const std::string& id,
+                                                     bool cid,
+                                                     const TTracks& tracks)
 {
     if (!id.empty()) {
-        LOCK_READ_SAFE_OBJ(_audioTracks);
-        for (const auto& track : _audioTracks.constRef()) {
-            if (id == (cid ? track->cid() : track->sid())) {
-                return track;
+        const std::lock_guard guard(tracks.mutex());
+        for (const auto& track : tracks.constRef()) {
+            const auto localTrack = std::dynamic_pointer_cast<LocalTrack>(track);
+            if (localTrack && id == (cid ? localTrack->cid() : track->sid())) {
+                return localTrack;
             }
         }
     }
     return {};
 }
 
-std::shared_ptr<LocalTrack> LocalParticipant::lookupVideo(const std::string& id,
-                                                          bool cid) const
+template<class TTrack, class TTracks>
+void LocalParticipant::addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks)
 {
-    if (!id.empty()) {
-        LOCK_READ_SAFE_OBJ(_videoTracks);
-        for (const auto& track : _videoTracks.constRef()) {
-            const auto videoTrack = std::dynamic_pointer_cast<LocalTrack>(track);
-            if (videoTrack && id == (cid ? videoTrack->cid() : track->sid())) {
-                return videoTrack;
-            }
-        }
+    if (track) {
+        const std::lock_guard guard(tracks.mutex());
+        tracks->push_back(track);
     }
-    return {};
 }
 
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::

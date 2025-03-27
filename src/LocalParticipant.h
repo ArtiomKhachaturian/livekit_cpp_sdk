@@ -21,7 +21,7 @@
 #include "ParticipantListener.h"
 #include "rtc/ParticipantInfo.h"
 #include "AesCgmCryptorObserver.h"
-#include "SafeObj.h"
+#include "SafeObjAliases.h"
 #include <api/media_types.h>
 #include <atomic>
 #include <optional>
@@ -85,10 +85,11 @@ public:
     std::string metadata() const final { return _metadata(); }
     ParticipantKind kind() const final { return _kind; }
 private:
-    void addTrack(const std::shared_ptr<LocalAudioTrackImpl>& track);
-    void addTrack(const std::shared_ptr<VideoTrack>& track);
-    std::shared_ptr<LocalTrack> lookupAudio(const std::string& id, bool cid) const;
-    std::shared_ptr<LocalTrack> lookupVideo(const std::string& id, bool cid) const;
+    template<class TTracks>
+    static std::shared_ptr<LocalTrack> lookup(const std::string& id, bool cid,
+                                              const TTracks& tracks);
+    template<class TTrack, class TTracks>
+    static void addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks);
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const MicrophoneOptions& options) const;
     webrtc::scoped_refptr<CameraVideoTrack> createCamera(const CameraOptions& options) const;
     template <class Method, typename... Args>
@@ -101,7 +102,8 @@ private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     Bricks::SafeObj<const Participant*> _session;
     Bricks::Listener<ParticipantListener*> _listener;
-    Tracks<LocalAudioTrackImpl> _audioTracks;
+    Bricks::SafeSharedPtr<LocalAudioTrackImpl> _micTrack;
+    Tracks<AudioTrack> _audioTracks;
     Tracks<VideoTrack> _videoTracks;
     Bricks::SafeObj<std::string> _sid;
     Bricks::SafeObj<std::string> _identity;
