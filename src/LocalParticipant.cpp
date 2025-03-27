@@ -53,6 +53,13 @@ LocalParticipant::LocalParticipant(TrackManager* manager,
 {
 }
 
+LocalParticipant::~LocalParticipant()
+{
+    _micTrack({});
+    _audioTracks({});
+    _videoTracks({});
+}
+
 std::optional<bool> LocalParticipant::stereoRecording() const
 {
     if (_pcf) {

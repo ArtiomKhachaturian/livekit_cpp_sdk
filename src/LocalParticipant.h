@@ -56,7 +56,7 @@ public:
     LocalParticipant(TrackManager* manager, PeerConnectionFactory* pcf,
                      const Participant* session,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~LocalParticipant() final = default;
+    ~LocalParticipant() final;
     void reset() { _session(nullptr); }
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
