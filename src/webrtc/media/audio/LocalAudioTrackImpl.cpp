@@ -49,10 +49,8 @@ std::vector<AudioTrackFeature> LocalAudioTrackImpl::features() const
 {
     std::vector<AudioTrackFeature> features;
     features.reserve(4U);
-    if (const auto m = manager()) {
-        if (m->stereoRecording().value_or(false)) {
-            features.push_back(AudioTrackFeature::Stereo);
-        }
+    if (stereoRecording().value_or(false)) {
+        features.push_back(AudioTrackFeature::Stereo);
     }
     if (const auto source = audioSource()) {
         const auto options = source->options();
@@ -79,6 +77,11 @@ bool LocalAudioTrackImpl::fillRequest(AddTrackRequest* request) const
     if (Base::fillRequest(request)) {
         request->_type = type();
         request->_source = source();
+        request->_stereo = stereoRecording().value_or(false);
+        if (EncryptionType::None != request->_encryption) {
+            // https://github.com/livekit/client-sdk-js/blob/main/src/room/participant/LocalParticipant.ts#L964
+            request->_disableRed = true;
+        }
         return true;
     }
     return false;
@@ -97,6 +100,14 @@ bool LocalAudioTrackImpl::signalLevel(int& level) const
         return track->GetSignalLevel(&level);
     }
     return false;
+}
+
+std::optional<bool> LocalAudioTrackImpl::stereoRecording() const
+{
+    if (const auto m = manager()) {
+        return m->stereoRecording();
+    }
+    return std::nullopt;
 }
 
 webrtc::AudioSourceInterface* LocalAudioTrackImpl::audioSource() const

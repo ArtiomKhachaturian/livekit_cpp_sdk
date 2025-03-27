@@ -36,6 +36,7 @@ protected:
     void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;
     bool signalLevel(int& level) const final;
 private:
+    std::optional<bool> stereoRecording() const;
     webrtc::AudioSourceInterface* audioSource() const;
     static void installSink(bool install, webrtc::AudioTrackSinkInterface* sink,
                             const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track);
