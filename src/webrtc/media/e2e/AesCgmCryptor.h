@@ -48,7 +48,7 @@ public:
     uint8_t keyIndex() const;
     void setEnabled(bool enabled);
     bool enabled() const;
-    void setObserver(AesCgmCryptorObserver* observer = nullptr);
+    void setObserver(const std::weak_ptr<AesCgmCryptorObserver>& observer = {});
     // impl. of webrtc::FrameTransformerInterface
     void Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame) final;
     void RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback) final;

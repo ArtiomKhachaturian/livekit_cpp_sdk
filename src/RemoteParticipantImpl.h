@@ -39,6 +39,7 @@ class RemoteParticipantImpl : public RemoteParticipant
     template<class T> using Tracks = std::vector<std::shared_ptr<T>>;
     using AudioTracks = Tracks<RemoteAudioTrackImpl>;
     using VideoTracks = Tracks<RemoteVideoTrackImpl>;
+    class ListenerImpl;
 public:
     RemoteParticipantImpl(E2ESecurityFactory* securityFactory,
                           const ParticipantInfo& info = {});
@@ -58,7 +59,7 @@ public:
     std::string metadata() const final;
     ParticipantKind kind() const final;
     // impl. of RemoteParticipant
-    void setListener(RemoteParticipantListener* listener) final { _listener = listener; }
+    void setListener(RemoteParticipantListener* listener) final;
     bool hasActivePublisher() const final;
     ParticipantState state() const final;
     size_t audioTracksCount() const final;
@@ -84,10 +85,10 @@ private:
                                            const Tracks<TTrack>& collection);
 private:
     E2ESecurityFactory* const _securityFactory;
+    const std::shared_ptr<ListenerImpl> _listener;
     Bricks::SafeObj<ParticipantInfo> _info;
     Bricks::SafeObj<AudioTracks> _audioTracks;
     Bricks::SafeObj<VideoTracks> _videoTracks;
-    Bricks::Listener<RemoteParticipantListener*> _listener;
 };
 
 } // namespace LiveKitCpp

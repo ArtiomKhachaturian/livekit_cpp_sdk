@@ -17,6 +17,8 @@
 #include "RemoteVideoTrackImpl.h"
 #include "E2ESecurityFactory.h"
 #include "AesCgmCryptor.h"
+#include "e2e/AesCgmCryptorObserver.h"
+#include "e2e/E2ECryptoError.h"
 #include "Seq.h"
 #include <api/media_stream_interface.h>
 #include <api/rtp_receiver_interface.h>
@@ -60,9 +62,26 @@ struct MediaInteraceType<RemoteVideoTrackImpl>
 namespace LiveKitCpp
 {
 
+class RemoteParticipantImpl::ListenerImpl : public AesCgmCryptorObserver
+{
+public:
+    ListenerImpl(RemoteParticipantImpl* owner);
+    template <class Method, typename... Args>
+    void invoke(const Method& method, Args&&... args) const;
+    void set(RemoteParticipantListener* listener) { _listener = listener; }
+    void reset();
+    // impl. of AesCgmCryptorObserver
+    void onDecryptionStateChanged(cricket::MediaType mediaType, const std::string&,
+                                  const std::string& trackSid, AesCgmCryptorState state) final;
+private:
+    Bricks::SafeObj<RemoteParticipantImpl*> _owner;
+    Bricks::Listener<RemoteParticipantListener*> _listener;
+};
+
 RemoteParticipantImpl::RemoteParticipantImpl(E2ESecurityFactory* securityFactory,
                                              const ParticipantInfo& info)
     : _securityFactory(securityFactory)
+    , _listener(std::make_shared<ListenerImpl>(this))
 {
     setInfo(info);
 }
@@ -71,6 +90,7 @@ void RemoteParticipantImpl::reset()
 {
     clearTracks(_audioTracks);
     clearTracks(_videoTracks);
+    _listener->reset();
 }
 
 std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid) const
@@ -124,7 +144,7 @@ void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
                 break;
         }
     }
-    _listener.invoke(&RemoteParticipantListener::onChanged, this);
+    _listener->invoke(&RemoteParticipantListener::onChanged);
 }
 
 std::string RemoteParticipantImpl::sid() const
@@ -155,6 +175,11 @@ ParticipantKind RemoteParticipantImpl::kind() const
 {
     LOCK_READ_SAFE_OBJ(_info);
     return _info->_kind;
+}
+
+void RemoteParticipantImpl::setListener(RemoteParticipantListener* listener)
+{
+    _listener->set(listener);
 }
 
 bool RemoteParticipantImpl::hasActivePublisher() const
@@ -252,13 +277,14 @@ bool RemoteParticipantImpl::addTrack(const std::string& sid,
                         const std::lock_guard guard(collection.mutex());
                         collection->push_back(std::move(trackImpl));
                     }
-                    _listener.invoke(&RemoteParticipantListener::onRemoteTrackAdded,
-                                     this, trackInfo->_type, trackInfo->_encryption, sid);
+                    _listener->invoke(&RemoteParticipantListener::onRemoteTrackAdded,
+                                      trackInfo->_type, trackInfo->_encryption, sid);
                     added = true;
                 }
                 else {
-                    _listener.invoke(&RemoteParticipantListener::onRemoteTrackNoCrytorError,
-                                     this, trackInfo->_type, trackInfo->_encryption, sid);
+                    _listener->invoke(&RemoteParticipantListener::onTrackCryptoError,
+                                      trackInfo->_type, trackInfo->_encryption,
+                                      sid, E2ECryptoError::CryptorCreationFailure);
                 }
             }
         }
@@ -280,8 +306,8 @@ bool RemoteParticipantImpl::removeTrack(const std::string& sid,
             }
         }
         if (removed) {
-            _listener.invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
-                             this, removed->type(), removed->sid());
+            _listener->invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
+                              removed->type(), removed->sid());
             return true;
         }
     }
@@ -297,8 +323,8 @@ void RemoteParticipantImpl::clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collect
         removed = collection.take();
     }
     for (const auto& track : removed) {
-        _listener.invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
-                         this, track->type(), track->sid());
+        _listener->invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
+                          track->type(), track->sid());
     }
 }
 
@@ -316,6 +342,7 @@ bool RemoteParticipantImpl::attachCryptor(EncryptionType encryption,
                                                                    identity(),
                                                                    receiver->id());
                     if (cryptor) {
+                        cryptor->setObserver(_listener);
                         receiver->SetFrameTransformer(std::move(cryptor));
                         return true;
                     }
@@ -343,6 +370,40 @@ std::optional<size_t> RemoteParticipantImpl::findBySid(const std::string& sid,
         }
     }
     return std::nullopt;
+}
+
+RemoteParticipantImpl::ListenerImpl::ListenerImpl(RemoteParticipantImpl* owner)
+    : _owner(owner)
+{
+}
+
+template <class Method, typename... Args>
+void RemoteParticipantImpl::ListenerImpl::invoke(const Method& method, Args&&... args) const
+{
+    LOCK_READ_SAFE_OBJ(_owner);
+    if (const auto owner = _owner.constRef()) {
+        _listener.invoke(method, owner, std::forward<Args>(args)...);
+    }
+}
+
+void RemoteParticipantImpl::ListenerImpl::reset()
+{
+    _owner(nullptr);
+    _listener.reset();
+}
+
+void RemoteParticipantImpl::ListenerImpl::
+    onDecryptionStateChanged(cricket::MediaType mediaType, const std::string&,
+                             const std::string& trackSid, AesCgmCryptorState state)
+{
+    if (const auto err = toCryptoError(state)) {
+        TrackType type = TrackType::Audio;
+        if (cricket::MEDIA_TYPE_VIDEO == mediaType) {
+            type = TrackType::Video;
+        }
+        invoke(&ParticipantListener::onTrackCryptoError, type,
+               EncryptionType::Gcm, trackSid, err.value());
+    }
 }
 
 } // namespace LiveKitCpp

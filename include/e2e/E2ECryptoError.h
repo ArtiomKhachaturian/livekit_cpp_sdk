@@ -11,24 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AesCgmCryptorState.h
-#include "e2e/E2ECryptoError.h"
-#include <optional>
+#pragma once // E2ECryptoError.h
 
 namespace LiveKitCpp
 {
 
-enum class AesCgmCryptorState
+enum class E2ECryptoError
 {
-    New,
-    Ok,
     EncryptionFailed,
     DecryptionFailed,
     MissingKey,
     KeyRatcheted,
     InternalError,
+    CryptorCreationFailure
 };
-
-std::optional<E2ECryptoError> toCryptoError(AesCgmCryptorState state);
 
 } // namespace LiveKitCpp

@@ -29,10 +29,6 @@ public:
                                     TrackType /*type*/,
                                     EncryptionType /*encryption*/,
                                     const std::string& /*sid*/) {}
-    virtual void onRemoteTrackNoCrytorError(const RemoteParticipant* /*participant*/,
-                                            TrackType /*type*/,
-                                            EncryptionType /*encryption*/,
-                                            const std::string& /*sid*/) {}
     virtual void onRemoteTrackRemoved(const RemoteParticipant* /*participant*/,
                                       TrackType /*type*/,
                                       const std::string& /*sid*/) {}

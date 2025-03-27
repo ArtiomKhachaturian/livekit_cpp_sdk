@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // AesCgmCryptorObserver.h
 #include "AesCgmCryptorState.h"
+#include <api/media_types.h>
 #include <string>
 
 namespace LiveKitCpp
@@ -21,10 +22,12 @@ namespace LiveKitCpp
 class AesCgmCryptorObserver
 {
 public:
-    virtual void onEncryptionStateChanged(const std::string& /*identity*/,
+    virtual void onEncryptionStateChanged(cricket::MediaType /*mediaType*/,
+                                          const std::string& /*identity*/,
                                           const std::string& /*trackId*/,
                                           AesCgmCryptorState /*state*/) {}
-    virtual void onDecryptionStateChanged(const std::string& /*identity*/,
+    virtual void onDecryptionStateChanged(cricket::MediaType /*mediaType*/,
+                                          const std::string& /*identity*/,
                                           const std::string& /*trackId*/,
                                           AesCgmCryptorState /*state*/) {}
 protected:

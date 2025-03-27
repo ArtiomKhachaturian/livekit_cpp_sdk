@@ -12,16 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantListener.h
+#include "rtc/TrackType.h"
+#include "rtc/EncryptionType.h"
 
 namespace LiveKitCpp
 {
 
 class Participant;
+enum class E2ECryptoError;
 
 class ParticipantListener
 {
 public:
     virtual void onChanged(const Participant* /*participant*/) {}
+    // trackId - for local is a track ID, for remotes - SID
+    virtual void onTrackCryptoError(const Participant* /*participant*/,
+                                    TrackType /*type*/,
+                                    EncryptionType /*encryption*/,
+                                    const std::string& /*trackId*/,
+                                    E2ECryptoError /*error*/) {}
 protected:
     virtual ~ParticipantListener() = default;
 };

@@ -85,7 +85,7 @@ struct AesCgmCryptor::Impl : public Bricks::LoggableS<>
     const std::string _logCategory;
     std::atomic<uint8_t> _keyIndex = 0;
     std::atomic_bool _enabledCryption = true;
-    AsyncListener<AesCgmCryptorObserver*, true> _observer;
+    AsyncListener<std::weak_ptr<AesCgmCryptorObserver>, true> _observer;
     SafeScopedRefPtr<webrtc::TransformedFrameCallback> _sink;
     Bricks::SafeObj<Sinks> _sinks;
     // methods
@@ -157,7 +157,7 @@ bool AesCgmCryptor::enabled() const
     return _impl->_enabledCryption;
 }
 
-void AesCgmCryptor::setObserver(AesCgmCryptorObserver* observer)
+void AesCgmCryptor::setObserver(const std::weak_ptr<AesCgmCryptorObserver>& observer)
 {
     _impl->_observer.set(observer);
 }
@@ -571,7 +571,7 @@ void AesCgmCryptor::Impl::setLastEncryptState(AesCgmCryptorState state)
 {
     if (exchangeVal(state, _lastEncState) && _observer) {
         _observer.invoke(&AesCgmCryptorObserver::onEncryptionStateChanged,
-                         _identity, _trackId, state);
+                         _mediaType, _identity, _trackId, state);
     }
 }
 
@@ -579,7 +579,7 @@ void AesCgmCryptor::Impl::setLastDecryptState(AesCgmCryptorState state)
 {
     if (exchangeVal(state, _lastDecState) && _observer) {
         _observer.invoke(&AesCgmCryptorObserver::onDecryptionStateChanged,
-                         _identity, _trackId, state);
+                         _mediaType, _identity, _trackId, state);
     }
 }
 
@@ -659,8 +659,26 @@ rtc::Buffer AesCgmCryptor::Impl::makeIv(uint32_t ssrc, uint32_t timestamp)
     return rtc::Buffer(buf.Data(), buf.Length());
 }
 
-} // namespace LiveKitCpp
+std::optional<E2ECryptoError> toCryptoError(AesCgmCryptorState state)
+{
+    switch (state) {
+        case AesCgmCryptorState::EncryptionFailed:
+            return E2ECryptoError::EncryptionFailed;
+        case AesCgmCryptorState::DecryptionFailed:
+            return E2ECryptoError::DecryptionFailed;
+        case AesCgmCryptorState::MissingKey:
+            return E2ECryptoError::MissingKey;
+        case AesCgmCryptorState::KeyRatcheted:
+            return E2ECryptoError::KeyRatcheted;
+        case AesCgmCryptorState::InternalError:
+            return E2ECryptoError::InternalError;
+        default:
+            break;
+    }
+    return std::nullopt;
+}
 
+} // namespace LiveKitCpp
 
 namespace
 {
