@@ -46,6 +46,7 @@ public:
     webrtc::VideoCaptureCapability capability() const;
     bool enabled() const noexcept { return _enabled; }
     bool setEnabled(bool enabled);
+    void setInactive();
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
     std::optional<bool> needs_denoising() const final { return {}; }
@@ -65,6 +66,9 @@ public:
     // impl. of NotifierInterface
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
+private:
+    template <class Method, typename... Args>
+    void postToImpl(Method method, Args&&... args) const;
 private:
     const std::weak_ptr<rtc::Thread> _thread;
     const std::shared_ptr<Impl> _impl;

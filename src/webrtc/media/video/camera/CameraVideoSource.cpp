@@ -59,6 +59,7 @@ public:
     void setCapability(webrtc::VideoCaptureCapability capability);
     webrtc::VideoCaptureCapability capability() const { return _capability(); }
     void setEnabled(bool enabled);
+    void setInactive();
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     webrtc::MediaSourceInterface::SourceState state() const noexcept { return _state; }
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
@@ -104,6 +105,7 @@ private:
     std::atomic<uint64_t> _lastResolution = 0ULL;
     std::atomic<uint16_t> _lastFrameId = 0U;
     std::atomic_bool _enabled = true;
+    std::atomic_bool _active = true;
     std::atomic<webrtc::MediaSourceInterface::SourceState> _state = webrtc::MediaSourceInterface::kEnded;
 };
 
@@ -117,12 +119,12 @@ CameraVideoSource::CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
 
 CameraVideoSource::~CameraVideoSource()
 {
-    postOrInvoke(_thread, _impl, false, &Impl::reset);
+    postToImpl(&Impl::reset);
 }
 
 void CameraVideoSource::setDevice(MediaDevice device)
 {
-    postOrInvoke(_thread, _impl, false, &Impl::setDevice, std::move(device));
+    postToImpl(&Impl::setDevice, std::move(device));
 }
 
 MediaDevice CameraVideoSource::device() const
@@ -132,7 +134,7 @@ MediaDevice CameraVideoSource::device() const
 
 void CameraVideoSource::setCapability(const webrtc::VideoCaptureCapability& capability)
 {
-    postOrInvoke(_thread, _impl, false, &Impl::setCapability, capability);
+    postToImpl(&Impl::setCapability, capability);
 }
 
 webrtc::VideoCaptureCapability CameraVideoSource::capability() const
@@ -143,11 +145,16 @@ webrtc::VideoCaptureCapability CameraVideoSource::capability() const
 bool CameraVideoSource::setEnabled(bool enabled)
 {
     if (enabled != _enabled.exchange(enabled)) {
-        postOrInvoke(_thread, _impl, false, &Impl::setEnabled, enabled);
+        postToImpl(&Impl::setEnabled, enabled);
         _impl->notifyAboutChanges();
         return true;
     }
     return false;
+}
+
+void CameraVideoSource::setInactive()
+{
+    _impl->setInactive();
 }
 
 bool CameraVideoSource::GetStats(Stats* stats)
@@ -160,7 +167,7 @@ bool CameraVideoSource::GetStats(Stats* stats)
 
 void CameraVideoSource::ProcessConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
-    postOrInvoke(_thread, _impl, false, &Impl::processConstraints, c);
+    postToImpl(&Impl::processConstraints, c);
 }
 
 webrtc::MediaSourceInterface::SourceState CameraVideoSource::state() const
@@ -172,14 +179,14 @@ void CameraVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFra
                                         const rtc::VideoSinkWants& wants)
 {
     if (_impl->addOrUpdateSink(sink, wants)) {
-        postOrInvoke(_thread, _impl, false, &Impl::requestCapturer);
+        postToImpl(&Impl::requestCapturer);
     }
 }
 
 void CameraVideoSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (_impl->removeSink(sink)) {
-        postOrInvoke(_thread, _impl, false, &Impl::resetCapturer);
+        postToImpl(&Impl::resetCapturer);
     }
 }
 
@@ -191,6 +198,12 @@ void CameraVideoSource::RegisterObserver(webrtc::ObserverInterface* observer)
 void CameraVideoSource::UnregisterObserver(webrtc::ObserverInterface* observer)
 {
     _impl->unregisterObserver(observer);
+}
+
+template <class Method, typename... Args>
+void CameraVideoSource::postToImpl(Method method, Args&&... args) const
+{
+    postOrInvoke(_thread, _impl, false, method, std::forward<Args>(args)...);
 }
 
 CameraVideoSource::Impl::Impl(const std::weak_ptr<rtc::Thread>& signalingThread,
@@ -210,53 +223,57 @@ CameraVideoSource::Impl::Impl(const std::weak_ptr<rtc::Thread>& signalingThread,
 
 void CameraVideoSource::Impl::setDevice(MediaDevice device)
 {
-    bool ok = true;
-    if (device._guid.empty()) {
-        ok = CameraManager::defaultDevice(device);
-    }
-    if (ok && !device._guid.empty()) {
-        bool changed = false;
-        if (CameraManager::deviceIsValid(device)) {
-            LOCK_WRITE_SAFE_OBJ(_device);
-            if (_device->_guid != device._guid) {
-                _device = std::move(device);
-                changed = true;
-            }
+    if (_active) {
+        bool ok = true;
+        if (device._guid.empty()) {
+            ok = CameraManager::defaultDevice(device);
         }
-        if (changed) {
-            requestCapturer();
+        if (ok && !device._guid.empty()) {
+            bool changed = false;
+            if (CameraManager::deviceIsValid(device)) {
+                LOCK_WRITE_SAFE_OBJ(_device);
+                if (_device->_guid != device._guid) {
+                    _device = std::move(device);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                requestCapturer();
+            }
         }
     }
 }
 
 void CameraVideoSource::Impl::setCapability(webrtc::VideoCaptureCapability capability)
 {
-    if (isNull(capability)) {
-        capability = CameraManager::defaultCapability();
-    }
-    LOCK_READ_SAFE_OBJ(_capturer);
-    const auto& capturer = _capturer.constRef();
-    if (capturer) {
-        capability = bestMatched(std::move(capability), capturer);
-    }
-    bool changed = false;
-    {
-        LOCK_READ_SAFE_OBJ(_capability);
-        if (capability != _capability.constRef()) {
-            _capability = capability;
-            changed = true;
+    if (_active) {
+        if (isNull(capability)) {
+            capability = CameraManager::defaultCapability();
         }
-    }
-    if (changed && capturer && capturer->CaptureStarted()) {
-        stopCapturer(false);
-        startCapturer(capability);
+        LOCK_READ_SAFE_OBJ(_capturer);
+        const auto& capturer = _capturer.constRef();
+        if (capturer) {
+            capability = bestMatched(std::move(capability), capturer);
+        }
+        bool changed = false;
+        {
+            LOCK_READ_SAFE_OBJ(_capability);
+            if (capability != _capability.constRef()) {
+                _capability = capability;
+                changed = true;
+            }
+        }
+        if (changed && capturer && capturer->CaptureStarted()) {
+            stopCapturer(false);
+            startCapturer(capability);
+        }
     }
 }
 
 void CameraVideoSource::Impl::setEnabled(bool enabled)
 {
     if (enabled != _enabled.exchange(enabled)) {
-        {
+        if (_active) {
             LOCK_READ_SAFE_OBJ(_capturer);
             if (_capturer.constRef()) {
                 if (enabled) {
@@ -271,22 +288,33 @@ void CameraVideoSource::Impl::setEnabled(bool enabled)
     }
 }
 
+void CameraVideoSource::Impl::setInactive()
+{
+    if (_active.exchange(false)) {
+        reset();
+    }
+}
+
 bool CameraVideoSource::Impl::stats(webrtc::VideoTrackSourceInterface::Stats& s) const
 {
-    const auto lastResolution = _lastResolution.load();
-    if (lastResolution) {
-        s.input_width = extractHiWord(lastResolution);
-        s.input_height = extractLoWord(lastResolution);
-        return true;
+    if (_active) {
+        const auto lastResolution = _lastResolution.load();
+        if (lastResolution) {
+            s.input_width = extractHiWord(lastResolution);
+            s.input_height = extractLoWord(lastResolution);
+            return true;
+        }
     }
     return false;
 }
 
 void CameraVideoSource::Impl::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
-    LOCK_READ_SAFE_OBJ(_broadcasters);
-    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-        it->second->OnConstraintsChanged(c);
+    if (_active) {
+        LOCK_READ_SAFE_OBJ(_broadcasters);
+        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+            it->second->OnConstraintsChanged(c);
+        }
     }
 }
 
@@ -326,7 +354,7 @@ void CameraVideoSource::Impl::resetCapturer()
 bool CameraVideoSource::Impl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                                               const rtc::VideoSinkWants& wants)
 {
-    if (sink) {
+    if (sink && _active) {
         LOCK_WRITE_SAFE_OBJ(_broadcasters);
         const auto it = _broadcasters->find(sink);
         if (it != _broadcasters->end()) {
@@ -477,8 +505,11 @@ void CameraVideoSource::Impl::logVerbose(const rtc::scoped_refptr<CameraCapturer
 
 bool CameraVideoSource::Impl::frameWanted() const
 {
-    LOCK_READ_SAFE_OBJ(_broadcasters);
-    return !_broadcasters->empty();
+    if (_enabled && _active) {
+        LOCK_READ_SAFE_OBJ(_broadcasters);
+        return !_broadcasters->empty();
+    }
+    return false;
 }
 
 void CameraVideoSource::Impl::broadcast(const webrtc::VideoFrame& frame) const

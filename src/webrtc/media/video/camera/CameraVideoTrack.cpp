@@ -43,6 +43,13 @@ CameraVideoTrack::~CameraVideoTrack()
     }
 }
 
+void CameraVideoTrack::setInactive()
+{
+    if (_source) {
+        _source->setInactive();
+    }
+}
+
 void CameraVideoTrack::setDevice(MediaDevice device)
 {
     if (_source) {

@@ -85,6 +85,7 @@ protected:
     RTCMediaEngine(PeerConnectionFactory* pcf, const Participant* session,
                    const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
+    void resetLocalParticipant();
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> localTracks() const;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     virtual SendResult sendAddTrack(const AddTrackRequest& request) const = 0;

@@ -53,8 +53,9 @@ LocalParticipant::LocalParticipant(TrackManager* manager,
 {
 }
 
-LocalParticipant::~LocalParticipant()
+void LocalParticipant::reset()
 {
+    _session(nullptr);
     _micTrack({});
     _audioTracks({});
     _videoTracks({});

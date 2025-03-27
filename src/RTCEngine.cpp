@@ -62,6 +62,7 @@ RTCEngine::RTCEngine(Options options,
 
 RTCEngine::~RTCEngine()
 {
+    resetLocalParticipant();
     _client.setServerListener(nullptr);
     _client.setTransportListener(nullptr);
     cleanup();
@@ -103,11 +104,11 @@ bool RTCEngine::connect(std::string url, std::string authToken)
 void RTCEngine::disconnect()
 {
     if (auto pcManager = std::atomic_exchange(&_pcManager, std::shared_ptr<TransportManager>())) {
-        pcManager->stopPing();
         // send leave event
         sendLeave();
         _client.disconnect();
         pcManager->close();
+        pcManager->setListener(nullptr);
     }
 }
 

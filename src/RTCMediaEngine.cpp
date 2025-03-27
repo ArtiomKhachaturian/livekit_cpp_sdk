@@ -59,6 +59,11 @@ RTCMediaEngine::RTCMediaEngine(PeerConnectionFactory* pcf,
 RTCMediaEngine::~RTCMediaEngine()
 {
     RTCMediaEngine::cleanup();
+    resetLocalParticipant();
+}
+
+void RTCMediaEngine::resetLocalParticipant()
+{
     _localParticipant->reset();
 }
 
