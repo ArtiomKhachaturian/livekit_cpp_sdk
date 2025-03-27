@@ -23,22 +23,6 @@
 #include "PeerConnectionFactory.h"
 #include "rtc/ParticipantInfo.h"
 
-namespace {
-
-using namespace LiveKitCpp;
-
-inline cricket::AudioOptions toCricketOptions(const MicrophoneOptions& options) {
-    cricket::AudioOptions audioOptions;
-    audioOptions.echo_cancellation = options._echoCancellation;
-    audioOptions.auto_gain_control = options._autoGainControl;
-    audioOptions.noise_suppression = options._noiseSuppression;
-    audioOptions.highpass_filter = options._highpassFilter;
-    audioOptions.stereo_swapping = options._stereoSwapping;
-    return audioOptions;
-}
-
-}
-
 namespace LiveKitCpp
 {
 
@@ -289,6 +273,17 @@ void LocalParticipant::clear(TTracks& tracks)
         }
     }
     tracks->clear();
+}
+
+cricket::AudioOptions LocalParticipant::toCricketOptions(const MicrophoneOptions& options)
+{
+    cricket::AudioOptions audioOptions;
+    audioOptions.echo_cancellation = options._echoCancellation;
+    audioOptions.auto_gain_control = options._autoGainControl;
+    audioOptions.noise_suppression = options._noiseSuppression;
+    audioOptions.highpass_filter = options._highpassFilter;
+    audioOptions.stereo_swapping = options._stereoSwapping;
+    return audioOptions;
 }
 
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::

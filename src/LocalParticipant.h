@@ -92,6 +92,7 @@ private:
     static void addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks);
     template<class TTracks>
     static void clear(TTracks& tracks);
+    static cricket::AudioOptions toCricketOptions(const MicrophoneOptions& options);
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const MicrophoneOptions& options) const;
     webrtc::scoped_refptr<CameraVideoTrack> createCamera(const CameraOptions& options) const;
     template <class Method, typename... Args>

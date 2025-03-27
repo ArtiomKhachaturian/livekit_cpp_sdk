@@ -24,7 +24,7 @@ CameraVideoTrack::CameraVideoTrack(const std::string& id,
     : Bricks::LoggableS<webrtc::ObserverInterface>(logger)
     , _id(id)
     , _source(std::move(source))
-    , _observers(_source ? _source->signalingThread() : std::weak_ptr<rtc::Thread>())
+    , _observers(_source ? _source->signalingQueue() : std::weak_ptr<webrtc::TaskQueueBase>())
     , _state(webrtc::MediaStreamTrackInterface::TrackState::kEnded)
 {
     if (_source) {

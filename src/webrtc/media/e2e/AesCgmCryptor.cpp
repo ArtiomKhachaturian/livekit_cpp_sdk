@@ -91,7 +91,7 @@ struct AesCgmCryptor::Impl : public Bricks::LoggableS<>
     Impl(cricket::MediaType mediaType,
          std::string identity,
          std::string trackId,
-         const std::weak_ptr<rtc::Thread>& signalingThread,
+         std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
          const std::shared_ptr<KeyProvider>& keyProvider,
          const std::shared_ptr<Bricks::Logger>& logger);
     bool hasSink() const;
@@ -127,11 +127,11 @@ private:
 AesCgmCryptor::AesCgmCryptor(cricket::MediaType mediaType,
                              std::string identity,
                              std::string trackId,
-                             const std::weak_ptr<rtc::Thread>& signalingThread,
+                             std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                              const std::shared_ptr<KeyProvider>& keyProvider,
                              const std::shared_ptr<Bricks::Logger>& logger)
     : _impl(std::make_shared<Impl>(mediaType, std::move(identity), std::move(trackId),
-                                   signalingThread, keyProvider, logger))
+                                   std::move(signalingQueue), keyProvider, logger))
     , _queue(createTaskQueueU(_impl->_logCategory, webrtc::TaskQueueFactory::Priority::HIGH))
 {
 }
@@ -162,7 +162,7 @@ bool AesCgmCryptor::enabled() const
 
 void AesCgmCryptor::setObserver(const std::weak_ptr<AesCgmCryptorObserver>& observer)
 {
-    _impl->_observer.set(observer);
+    _impl->_observer = observer;
 }
 
 void AesCgmCryptor::Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
@@ -213,7 +213,7 @@ webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
     create(cricket::MediaType mediaType,
            std::string identity,
            std::string trackId,
-           const std::weak_ptr<rtc::Thread>& signalingThread,
+           std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
            const std::shared_ptr<KeyProvider>& keyProvider,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
@@ -240,14 +240,14 @@ webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
     return webrtc::make_ref_counted<AesCgmCryptor>(mediaType,
                                                    std::move(identity),
                                                    std::move(trackId),
-                                                   signalingThread,
+                                                   std::move(signalingQueue),
                                                    keyProvider, logger);
 }
 
 AesCgmCryptor::Impl::Impl(cricket::MediaType mediaType,
                           std::string identity,
                           std::string trackId,
-                          const std::weak_ptr<rtc::Thread>& signalingThread,
+                          std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                           const std::shared_ptr<KeyProvider>& keyProvider,
                           const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
@@ -256,7 +256,7 @@ AesCgmCryptor::Impl::Impl(cricket::MediaType mediaType,
     , _trackId(std::move(trackId))
     , _keyProvider(keyProvider)
     , _logCategory(std::string(g_category) + "_" + _trackId)
-    , _observer(signalingThread)
+    , _observer(std::move(signalingQueue))
 {
 }
 

@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // AsyncListener.h
 #include "Listener.h"
-#include <rtc_base/thread.h>
+#include <api/task_queue/task_queue_base.h>
 #include <memory>
 #include <type_traits>
 
@@ -25,12 +25,12 @@ class AsyncListener
 {
     using Listener = Bricks::Listener<TListener>;
 public:
-    AsyncListener(const std::weak_ptr<rtc::Thread>& thread);
+    AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue);
     AsyncListener(AsyncListener&&) = delete;
     AsyncListener(const AsyncListener&) = delete;
     ~AsyncListener() { reset(); }
-    const auto& thread() const noexcept { return _thread; }
-    bool async() const noexcept { return !_thread.expired(); }
+    const auto& queue() const noexcept { return _queue; }
+    bool async() const noexcept { return !queue().expired(); }
     template <typename U = TListener>
     void set(U listener = {}) { _listener->set(std::move(listener)); }
     void reset() { _listener->reset(); }
@@ -39,16 +39,18 @@ public:
     void invoke(Method method, Args&&... args) const;
     AsyncListener& operator = (const AsyncListener&) = delete;
     AsyncListener& operator = (AsyncListener&&) noexcept = delete;
+    template <typename U = TListener>
+    AsyncListener& operator=(U listener) noexcept;
     explicit operator bool() const noexcept { return !_listener->empty(); }
 private:
-    const std::weak_ptr<rtc::Thread> _thread;
+    const std::weak_ptr<webrtc::TaskQueueBase> _queue;
     const std::shared_ptr<Listener> _listener;
 };
 
 template<class TListener, bool forcePost>
 inline AsyncListener<TListener, forcePost>::
-    AsyncListener(const std::weak_ptr<rtc::Thread>& thread)
-    : _thread(thread)
+    AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue)
+    : _queue(std::move(queue))
     , _listener(std::make_shared<Listener>())
 {
 }
@@ -58,12 +60,12 @@ template <class Method, typename... Args>
 inline void AsyncListener<TListener, forcePost>::
     invoke(Method method, Args&&... args) const
 {
-    if (const auto thread = _thread.lock()) {
-        if (forcePost || !thread->IsCurrent()) {
+    if (const auto queue = _queue.lock()) {
+        if (forcePost || !queue->IsCurrent()) {
             using WeakRef = std::weak_ptr<Listener>;
-            thread->PostTask([method = std::move(method), // deep copy of all arguments
-                              args = std::make_tuple((typename std::decay<Args>::type)args...),
-                              weak = WeakRef(_listener)](){
+            queue->PostTask([method = std::move(method), // deep copy of all arguments
+                             args = std::make_tuple((typename std::decay<Args>::type)args...),
+                             weak = WeakRef(_listener)](){
                 if (const auto strong = weak.lock()) {
                     std::apply([&strong, &method](auto&&... args) {
                         strong->invoke(method, std::forward<decltype(args)>(args)...);
@@ -75,6 +77,15 @@ inline void AsyncListener<TListener, forcePost>::
             _listener->invoke(method, std::forward<Args>(args)...);
         }
     }
+}
+
+template<class TListener, bool forcePost>
+template <typename U>
+inline AsyncListener<TListener, forcePost>& AsyncListener<TListener, forcePost>::
+    operator=(U listener) noexcept
+{
+    set(std::move(listener));
+    return *this;
 }
 
 } // namespace LiveKitCpp

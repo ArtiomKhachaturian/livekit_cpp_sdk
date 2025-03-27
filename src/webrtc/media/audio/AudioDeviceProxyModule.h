@@ -192,6 +192,7 @@ private:
     template <typename Handler>
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
 private:
+    const std::weak_ptr<rtc::Thread> _thread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
     AsyncListeners<AudioDeviceModuleListener*, true> _listeners;
     Bricks::SafeObj<MediaDevice> _recordingDev;

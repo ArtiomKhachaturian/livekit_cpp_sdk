@@ -21,8 +21,8 @@ namespace Bricks {
 class Logger;
 }
 
-namespace rtc {
-class Thread;
+namespace webrtc {
+class TaskQueueBase;
 }
 
 namespace LiveKitCpp
@@ -35,11 +35,11 @@ class CameraVideoSource : public webrtc::VideoTrackSourceInterface
 {
     class Impl;
 public:
-    CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
+    CameraVideoSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                       const webrtc::VideoCaptureCapability& initialCapability = {},
                       const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
-    const auto& signalingThread() const noexcept { return _thread; }
+    const std::weak_ptr<webrtc::TaskQueueBase>& signalingQueue() const noexcept;
     void setDevice(MediaDevice device);
     MediaDevice device() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);
@@ -70,7 +70,6 @@ private:
     template <class Method, typename... Args>
     void postToImpl(Method method, Args&&... args) const;
 private:
-    const std::weak_ptr<rtc::Thread> _thread;
     const std::shared_ptr<Impl> _impl;
     std::atomic_bool _enabled = true;
 };

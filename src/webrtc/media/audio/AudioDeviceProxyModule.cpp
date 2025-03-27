@@ -72,6 +72,7 @@ AudioDeviceProxyModule::AudioDeviceProxyModule(const std::shared_ptr<rtc::Thread
                                                rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
                                                const std::shared_ptr<Bricks::Logger>& logger)
     :  Bricks::LoggableS<webrtc::AudioDeviceModule>(logger)
+    , _thread(thread)
     , _impl(std::move(impl))
     , _listeners(thread)
 {
@@ -678,7 +679,7 @@ std::optional<uint16_t> AudioDeviceProxyModule::
 
 std::shared_ptr<rtc::Thread> AudioDeviceProxyModule::workingThread() const
 {
-    return _listeners.thread().lock();
+    return _thread.lock();
 }
 
 std::vector<MediaDevice> AudioDeviceProxyModule::enumerate(bool recording) const

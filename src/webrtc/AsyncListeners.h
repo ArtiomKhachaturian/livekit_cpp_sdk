@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // AsyncListeners.h
 #include "Listeners.h"
-#include <rtc_base/thread.h>
+#include <api/task_queue/task_queue_base.h>
 #include <memory>
 #include <type_traits>
 
@@ -25,12 +25,12 @@ class AsyncListeners
 {
     using Listeners = Bricks::Listeners<TListener, true>;
 public:
-    AsyncListeners(const std::weak_ptr<rtc::Thread>& thread);
+    AsyncListeners(std::weak_ptr<webrtc::TaskQueueBase> queue);
     AsyncListeners(AsyncListeners&&) = delete;
     AsyncListeners(const AsyncListeners&) = delete;
     ~AsyncListeners() { clear(); }
-    const auto& thread() const noexcept { return _thread; }
-    bool async() const noexcept { return !_thread.expired(); }
+    const auto& queue() const noexcept { return _queue; }
+    bool async() const noexcept { return !queue().expired(); }
     Bricks::AddResult add(const TListener& listener);
     Bricks::RemoveResult remove(const TListener& listener);
     void clear() { _listeners->clear(); }
@@ -41,14 +41,14 @@ public:
     AsyncListeners& operator = (const AsyncListeners&) = delete;
     AsyncListeners& operator = (AsyncListeners&&) noexcept = delete;
 private:
-    const std::weak_ptr<rtc::Thread> _thread;
+    const std::weak_ptr<webrtc::TaskQueueBase> _queue;
     const std::shared_ptr<Listeners> _listeners;
 };
 
 template<class TListener, bool forcePost>
 inline AsyncListeners<TListener, forcePost>::
-    AsyncListeners(const std::weak_ptr<rtc::Thread>& thread)
-    : _thread(thread)
+    AsyncListeners(std::weak_ptr<webrtc::TaskQueueBase> queue)
+    : _queue(std::move(queue))
     , _listeners(std::make_shared<Listeners>())
 {
 }
@@ -72,12 +72,12 @@ template <class Method, typename... Args>
 inline void AsyncListeners<TListener, forcePost>::
     invoke(Method method, Args&&... args) const
 {
-    if (const auto thread = _thread.lock()) {
-        if (forcePost || !thread->IsCurrent()) {
+    if (const auto queue = _queue.lock()) {
+        if (forcePost || !queue->IsCurrent()) {
             using WeakRef = std::weak_ptr<Listeners>;
-            thread->PostTask([method = std::move(method), // deep copy of all arguments
-                              args = std::make_tuple((typename std::decay<Args>::type)args...),
-                              weak = WeakRef(_listeners)](){
+            queue->PostTask([method = std::move(method), // deep copy of all arguments
+                             args = std::make_tuple((typename std::decay<Args>::type)args...),
+                             weak = WeakRef(_listeners)](){
                 if (const auto strong = weak.lock()) {
                     std::apply([&strong, &method](auto&&... args) {
                         strong->invoke(method, std::forward<decltype(args)>(args)...);

@@ -46,17 +46,17 @@ inline R invokeInThreadR(rtc::Thread* to, Handler handler, R defaultVal = {})
 }
 
 template<class TListener, class Method, typename... Args>
-inline void postOrInvoke(rtc::Thread* thread,
+inline void postOrInvoke(webrtc::TaskQueueBase* queue,
                          const std::shared_ptr<TListener>& listener,
                          bool forcePost, Method method, Args&&... args)
 {
-    if (thread && listener) {
+    if (queue && listener) {
         using Invoker = Bricks::Invoke<std::shared_ptr<TListener>>;
-        if (forcePost || !thread->IsCurrent()) {
+        if (forcePost || !queue->IsCurrent()) {
             using WeakRef = std::weak_ptr<TListener>;
-            thread->PostTask([method = std::move(method), // deep copy of all arguments
-                              args = std::make_tuple((typename std::decay<Args>::type)args...),
-                              weak = WeakRef(listener)](){
+            queue->PostTask([method = std::move(method), // deep copy of all arguments
+                             args = std::make_tuple((typename std::decay<Args>::type)args...),
+                             weak = WeakRef(listener)](){
                 if (const auto strong = weak.lock()) {
                     std::apply([&strong, &method](auto&&... args) {
                         Invoker::make(strong, method, std::forward<decltype(args)>(args)...);
@@ -71,20 +71,20 @@ inline void postOrInvoke(rtc::Thread* thread,
 }
 
 template<class TListener, class Method, typename... Args>
-inline void postOrInvoke(const std::shared_ptr<rtc::Thread>& thread,
+inline void postOrInvoke(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
                          const std::shared_ptr<TListener>& listener,
                          bool forcePost, Method method, Args&&... args)
 {
-    postOrInvoke(thread.get(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
+    postOrInvoke(queue.get(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
 }
 
 template <class TListener, class Method, typename... Args>
-inline void postOrInvoke(const std::weak_ptr<rtc::Thread>& thread,
+inline void postOrInvoke(const std::weak_ptr<webrtc::TaskQueueBase>& queue,
                          const std::shared_ptr<TListener>& listener,
                          bool forcePost, Method method, Args&&... args)
 {
     if (listener) {
-        postOrInvoke(thread.lock(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
+        postOrInvoke(queue.lock(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
     }
 }
 

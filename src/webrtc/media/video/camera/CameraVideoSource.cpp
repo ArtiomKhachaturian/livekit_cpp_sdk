@@ -50,15 +50,17 @@ class CameraVideoSource::Impl : public Bricks::LoggableS<CameraCapturerProxySink
     using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
                                             std::unique_ptr<VideoSinkBroadcast>>;
 public:
-    Impl(const std::weak_ptr<rtc::Thread>& signalingThread,
+    Impl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
          const webrtc::VideoCaptureCapability& initialCapability,
          const std::shared_ptr<Bricks::Logger>& logger);
     ~Impl() final { reset(); }
+    const auto& signalingQueue() const noexcept { return _observers.queue(); }
     MediaDevice device() const { return _device(); }
     void setDevice(MediaDevice device);
     void setCapability(webrtc::VideoCaptureCapability capability);
     webrtc::VideoCaptureCapability capability() const { return _capability(); }
     void setEnabled(bool enabled);
+    bool active() const noexcept { return _active; }
     void close();
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     webrtc::MediaSourceInterface::SourceState state() const noexcept { return _state; }
@@ -109,11 +111,10 @@ private:
     std::atomic<webrtc::MediaSourceInterface::SourceState> _state = webrtc::MediaSourceInterface::kEnded;
 };
 
-CameraVideoSource::CameraVideoSource(std::weak_ptr<rtc::Thread> signalingThread,
+CameraVideoSource::CameraVideoSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                      const webrtc::VideoCaptureCapability& initialCapability,
                                      const std::shared_ptr<Bricks::Logger>& logger)
-    : _thread(std::move(signalingThread))
-    , _impl(std::make_shared<Impl>(_thread, initialCapability, logger))
+    : _impl(std::make_shared<Impl>(std::move(signalingQueue), initialCapability, logger))
 {
 }
 
@@ -122,9 +123,16 @@ CameraVideoSource::~CameraVideoSource()
     postToImpl(&Impl::reset);
 }
 
+const std::weak_ptr<webrtc::TaskQueueBase>& CameraVideoSource::signalingQueue() const noexcept
+{
+    return _impl->signalingQueue();
+}
+
 void CameraVideoSource::setDevice(MediaDevice device)
 {
-    postToImpl(&Impl::setDevice, std::move(device));
+    if (_impl->active()) {
+        postToImpl(&Impl::setDevice, std::move(device));
+    }
 }
 
 MediaDevice CameraVideoSource::device() const
@@ -134,7 +142,9 @@ MediaDevice CameraVideoSource::device() const
 
 void CameraVideoSource::setCapability(const webrtc::VideoCaptureCapability& capability)
 {
-    postToImpl(&Impl::setCapability, capability);
+    if (_impl->active()) {
+        postToImpl(&Impl::setCapability, capability);
+    }
 }
 
 webrtc::VideoCaptureCapability CameraVideoSource::capability() const
@@ -144,7 +154,7 @@ webrtc::VideoCaptureCapability CameraVideoSource::capability() const
 
 bool CameraVideoSource::setEnabled(bool enabled)
 {
-    if (enabled != _enabled.exchange(enabled)) {
+    if (_impl->active() && enabled != _enabled.exchange(enabled)) {
         postToImpl(&Impl::setEnabled, enabled);
         _impl->notifyAboutChanges();
         return true;
@@ -167,7 +177,9 @@ bool CameraVideoSource::GetStats(Stats* stats)
 
 void CameraVideoSource::ProcessConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
-    postToImpl(&Impl::processConstraints, c);
+    if (_impl->active()) {
+        postToImpl(&Impl::processConstraints, c);
+    }
 }
 
 webrtc::MediaSourceInterface::SourceState CameraVideoSource::state() const
@@ -203,14 +215,14 @@ void CameraVideoSource::UnregisterObserver(webrtc::ObserverInterface* observer)
 template <class Method, typename... Args>
 void CameraVideoSource::postToImpl(Method method, Args&&... args) const
 {
-    postOrInvoke(_thread, _impl, false, method, std::forward<Args>(args)...);
+    postOrInvoke(signalingQueue(), _impl, false, method, std::forward<Args>(args)...);
 }
 
-CameraVideoSource::Impl::Impl(const std::weak_ptr<rtc::Thread>& signalingThread,
+CameraVideoSource::Impl::Impl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                               const webrtc::VideoCaptureCapability& initialCapability,
                               const std::shared_ptr<Bricks::Logger>& logger)
     : Base(logger)
-    , _observers(signalingThread)
+    , _observers(std::move(signalingQueue))
 {
     if (isNull(initialCapability)) {
         _capability = CameraManager::defaultCapability();

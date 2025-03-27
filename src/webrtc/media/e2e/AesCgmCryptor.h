@@ -41,7 +41,7 @@ public:
     static webrtc::scoped_refptr<AesCgmCryptor> create(cricket::MediaType mediaType,
                                                        std::string identity,
                                                        std::string trackId,
-                                                       const std::weak_ptr<rtc::Thread>& signalingThread,
+                                                       std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                                        const std::shared_ptr<KeyProvider>& keyProvider,
                                                        const std::shared_ptr<Bricks::Logger>& logger = {});
     void setKeyIndex(uint8_t keyIndex);
@@ -60,7 +60,7 @@ protected:
     AesCgmCryptor(cricket::MediaType mediaType,
                   std::string identity,
                   std::string trackId,
-                  const std::weak_ptr<rtc::Thread>& signalingThread,
+                  std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                   const std::shared_ptr<KeyProvider>& keyProvider,
                   const std::shared_ptr<Bricks::Logger>& logger);
 private:
