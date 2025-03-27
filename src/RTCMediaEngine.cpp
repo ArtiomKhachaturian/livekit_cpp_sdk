@@ -238,7 +238,9 @@ void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant.track(sender)) {
-        if (auto cryptor = createCryptor(true, sender->media_type(), sender->id())) {
+        if (auto cryptor = createCryptor(true, sender->media_type(),
+                                         _localParticipant.identity(),
+                                         sender->id())) {
             sender->SetFrameTransformer(std::move(cryptor));
             track->notifyThatMediaAddedToTransport(true);
         }
@@ -335,10 +337,12 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
 }
 
 webrtc::scoped_refptr<AesCgmCryptor> RTCMediaEngine::
-    createCryptor(bool local, cricket::MediaType mediaType, std::string id) const
+    createCryptor(bool local, cricket::MediaType mediaType,
+                  std::string identity, std::string trackId) const
 {
     if (const auto provider = std::atomic_load(&_aesCgmKeyProvider)) {
-        return AesCgmCryptor::create(mediaType, std::move(id), _signalingThread,
+        return AesCgmCryptor::create(mediaType, std::move(identity),
+                                     std::move(trackId), _signalingThread,
                                      provider, logger());
     }
     return {};

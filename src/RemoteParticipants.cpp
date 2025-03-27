@@ -37,7 +37,7 @@ RemoteParticipants::RemoteParticipants(E2ESecurityFactory* securityFactory,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
-    , _codecFactory(securityFactory)
+    , _securityFactory(securityFactory)
     , _listener(listener)
 {
 }
@@ -55,7 +55,7 @@ void RemoteParticipants::setInfo(const std::vector<ParticipantInfo>& infos)
         _participants->reserve(infos.size());
         for (const auto& info : infos) {
             if (ParticipantState::Disconnected != info._state) {
-                addParticipant(std::make_shared<RemoteParticipantImpl>(info));
+                addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory, info));
             }
         }
     }
@@ -72,7 +72,7 @@ void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
         const auto updated = SeqType::intersection(current, infos, compareParticipantInfo);
         // add new
         for (const auto& info : added) {
-            addParticipant(std::make_shared<RemoteParticipantImpl>(info));
+            addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory, info));
         }
         // remove
         for (const auto& info : removed) {
@@ -229,10 +229,10 @@ void RemoteParticipants::addMedia(const std::shared_ptr<RemoteParticipantImpl>& 
         bool added = false;
         switch (type) {
             case TrackType::Audio:
-                added = participant->addAudio(sid, _codecFactory, receiver);
+                added = participant->addAudio(sid, receiver);
                 break;
             case TrackType::Video:
-                added = participant->addVideo(sid, _codecFactory, receiver);
+                added = participant->addVideo(sid, receiver);
                 break;
             default:
                 break;

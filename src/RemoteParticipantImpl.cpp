@@ -40,32 +40,37 @@ inline webrtc::scoped_refptr<TMediaInterace> mediaTrack(const rtc::scoped_refptr
     return {};
 }
 
+template <class TTrack>
+struct MediaInteraceType {};
+
+template <>
+struct MediaInteraceType<RemoteAudioTrackImpl>
+{
+    using MediaInterace = webrtc::AudioTrackInterface;
+};
+
+template <>
+struct MediaInteraceType<RemoteVideoTrackImpl>
+{
+    using MediaInterace = webrtc::VideoTrackInterface;
+};
+
 }
 
 namespace LiveKitCpp
 {
 
-RemoteParticipantImpl::RemoteParticipantImpl(const ParticipantInfo& info)
+RemoteParticipantImpl::RemoteParticipantImpl(E2ESecurityFactory* securityFactory,
+                                             const ParticipantInfo& info)
+    : _securityFactory(securityFactory)
 {
     setInfo(info);
 }
 
 void RemoteParticipantImpl::reset()
 {
-    {
-        LOCK_WRITE_SAFE_OBJ(_audioTracks);
-        for (const auto& track : _audioTracks.take()) {
-            _listener.invoke(&RemoteParticipantListener::onAudioTrackRemoved,
-                             this, track->sid());
-        }
-    }
-    {
-        LOCK_WRITE_SAFE_OBJ(_videoTracks);
-        for (const auto& track : _videoTracks.take()) {
-            _listener.invoke(&RemoteParticipantListener::onVideoTrackRemoved,
-                             this, track->sid());
-        }
-    }
+    clearTracks(_audioTracks);
+    clearTracks(_videoTracks);
 }
 
 std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid) const
@@ -80,75 +85,25 @@ std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid
 }
 
 bool RemoteParticipantImpl::addAudio(const std::string& sid,
-                                     E2ESecurityFactory* securityFactory,
                                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
-    if (const auto audioTrack = mediaTrack<webrtc::AudioTrackInterface>(receiver)) {
-        LOCK_READ_SAFE_OBJ(_info);
-        if (const auto trackInfo = findBySid(sid)) {
-            auto trackImpl = std::make_shared<RemoteAudioTrackImpl>(securityFactory,
-                                                                    *trackInfo,
-                                                                    audioTrack);
-            if (attachCryptor(trackImpl, securityFactory, receiver)) {
-                {
-                    LOCK_WRITE_SAFE_OBJ(_audioTracks);
-                    _audioTracks->push_back(std::move(trackImpl));
-                }
-                _listener.invoke(&RemoteParticipantListener::onAudioTrackAdded, this, sid);
-                return true;
-            }
-        }
-    }
-    return false;
+    return addTrack<RemoteAudioTrackImpl>(sid, receiver, _audioTracks);
 }
 
 bool RemoteParticipantImpl::addVideo(const std::string& sid,
-                                     E2ESecurityFactory* securityFactory,
                                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
-    if (const auto videoTrack = mediaTrack<webrtc::VideoTrackInterface>(receiver)) {
-        LOCK_READ_SAFE_OBJ(_info);
-        if (const auto trackInfo = findBySid(sid)) {
-            auto trackImpl = std::make_shared<RemoteVideoTrackImpl>(securityFactory,
-                                                                    *trackInfo,
-                                                                    videoTrack);
-            if (attachCryptor(trackImpl, securityFactory, receiver)) {
-                {
-                    LOCK_WRITE_SAFE_OBJ(_videoTracks);
-                    _videoTracks->push_back(std::move(trackImpl));
-                }
-                _listener.invoke(&RemoteParticipantListener::onVideoTrackAdded, this, sid);
-                return true;
-            }
-        }
-    }
-    return false;
+    return addTrack<RemoteVideoTrackImpl>(sid, receiver, _videoTracks);
 }
 
 bool RemoteParticipantImpl::removeAudio(const std::string& sid)
 {
-    bool ok = false;
-    if (!sid.empty()) {
-        LOCK_WRITE_SAFE_OBJ(_audioTracks);
-        ok = removeTrack(sid, _audioTracks.ref());
-    }
-    if (ok) {
-        _listener.invoke(&RemoteParticipantListener::onAudioTrackRemoved, this, sid);
-    }
-    return ok;
+    return removeTrack(sid, _audioTracks);
 }
 
 bool RemoteParticipantImpl::removeVideo(const std::string& sid)
 {
-    bool ok = false;
-    if (!sid.empty()) {
-        LOCK_WRITE_SAFE_OBJ(_videoTracks);
-        ok = removeTrack(sid, _videoTracks.ref());
-    }
-    if (ok) {
-        _listener.invoke(&RemoteParticipantListener::onVideoTrackRemoved, this, sid);
-    }
-    return ok;
+    return removeTrack(sid, _videoTracks);
 }
 
 void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
@@ -279,44 +234,87 @@ const TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid) const
 }
 
 template<class TTrack>
-std::optional<size_t> RemoteParticipantImpl::findBySid(const std::string& sid,
-                                                       const std::vector<TTrack>& collection)
+bool RemoteParticipantImpl::addTrack(const std::string& sid,
+                                     const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                     Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
+    bool added = false;
     if (!sid.empty()) {
-        if (const auto s = collection.size()) {
-            for (size_t i = 0U; i < s; ++i) {
-                if (sid == collection[i]->sid()) {
-                    return i;
+        using MediaInterace = typename MediaInteraceType<TTrack>::MediaInterace;
+        if (const auto rtcTrack = mediaTrack<MediaInterace>(receiver)) {
+            LOCK_READ_SAFE_OBJ(_info);
+            if (const auto trackInfo = findBySid(sid)) {
+                auto trackImpl = std::make_shared<TTrack>(_securityFactory,
+                                                          *trackInfo,
+                                                          rtcTrack);
+                if (attachCryptor(trackInfo->_encryption, receiver)) {
+                    {
+                        const std::lock_guard guard(collection.mutex());
+                        collection->push_back(std::move(trackImpl));
+                    }
+                    _listener.invoke(&RemoteParticipantListener::onRemoteTrackAdded,
+                                     this, trackInfo->_type, trackInfo->_encryption, sid);
+                    added = true;
+                }
+                else {
+                    _listener.invoke(&RemoteParticipantListener::onRemoteTrackNoCrytorError,
+                                     this, trackInfo->_type, trackInfo->_encryption, sid);
                 }
             }
         }
     }
-    return std::nullopt;
+    return added;
 }
 
 template<class TTrack>
-bool RemoteParticipantImpl::removeTrack(const std::string& sid, std::vector<TTrack>& collection)
+bool RemoteParticipantImpl::removeTrack(const std::string& sid,
+                                        Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
-    if (const auto ndx = findBySid(sid, collection)) {
-        collection.erase(collection.begin() + ndx.value());
-        return true;
+    if (!sid.empty()) {
+        std::shared_ptr<TTrack> removed;
+        {
+            const std::lock_guard guard(collection.mutex());
+            if (const auto ndx = findBySid(sid, collection.constRef())) {
+                removed = collection->at(ndx.value());
+                collection->erase(collection->begin() + ndx.value());
+            }
+        }
+        if (removed) {
+            _listener.invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
+                             this, removed->type(), removed->sid());
+            return true;
+        }
     }
     return false;
 }
 
-bool RemoteParticipantImpl::attachCryptor(const std::shared_ptr<Track>& track,
-                                          const E2ESecurityFactory* securityFactory,
-                                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+template<class TTrack>
+void RemoteParticipantImpl::clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
-    if (track) {
-        switch (track->encryption()) {
+    Tracks<TTrack> removed;
+    {
+        const std::lock_guard guard(collection.mutex());
+        removed = collection.take();
+    }
+    for (const auto& track : removed) {
+        _listener.invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
+                         this, track->type(), track->sid());
+    }
+}
+
+bool RemoteParticipantImpl::attachCryptor(EncryptionType encryption,
+                                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
+{
+    if (receiver) {
+        switch (encryption) {
             case EncryptionType::None:
                 return true;
             case EncryptionType::Gcm:
-                if (securityFactory && receiver) {
-                    auto cryptor = securityFactory->createCryptor(false,
-                                                                  receiver->media_type(),
-                                                                  receiver->id());
+                if (_securityFactory && receiver) {
+                    auto cryptor = _securityFactory->createCryptor(false,
+                                                                   receiver->media_type(),
+                                                                   identity(),
+                                                                   receiver->id());
                     if (cryptor) {
                         receiver->SetFrameTransformer(std::move(cryptor));
                         return true;
@@ -329,6 +327,22 @@ bool RemoteParticipantImpl::attachCryptor(const std::shared_ptr<Track>& track,
         }
     }
     return false;
+}
+
+template<class TTrack>
+std::optional<size_t> RemoteParticipantImpl::findBySid(const std::string& sid,
+                                                       const Tracks<TTrack>& collection)
+{
+    if (!sid.empty()) {
+        if (const auto s = collection.size()) {
+            for (size_t i = 0U; i < s; ++i) {
+                if (sid == collection[i]->sid()) {
+                    return i;
+                }
+            }
+        }
+    }
+    return std::nullopt;
 }
 
 } // namespace LiveKitCpp

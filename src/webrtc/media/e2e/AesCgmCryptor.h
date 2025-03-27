@@ -39,6 +39,7 @@ class AesCgmCryptor : public webrtc::FrameTransformerInterface
 public:
     ~AesCgmCryptor() override;
     static webrtc::scoped_refptr<AesCgmCryptor> create(cricket::MediaType mediaType,
+                                                       std::string identity,
                                                        std::string trackId,
                                                        const std::weak_ptr<rtc::Thread>& signalingThread,
                                                        const std::shared_ptr<KeyProvider>& keyProvider,
@@ -57,6 +58,7 @@ public:
     void UnregisterTransformedFrameSinkCallback(uint32_t ssrc) final;
 protected:
     AesCgmCryptor(cricket::MediaType mediaType,
+                  std::string identity,
                   std::string trackId,
                   const std::weak_ptr<rtc::Thread>& signalingThread,
                   const std::shared_ptr<KeyProvider>& keyProvider,

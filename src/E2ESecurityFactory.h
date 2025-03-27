@@ -27,7 +27,8 @@ class E2ESecurityFactory : public TrackManager
 public:
     virtual webrtc::scoped_refptr<AesCgmCryptor> createCryptor(bool local,
                                                                cricket::MediaType mediaType,
-                                                               std::string id) const = 0;
+                                                               std::string identity,
+                                                               std::string trackId) const = 0;
 protected:
     ~E2ESecurityFactory() override = default;
 };

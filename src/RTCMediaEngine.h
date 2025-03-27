@@ -112,7 +112,8 @@ private:
     // impl. of FrameCodecFactory
     webrtc::scoped_refptr<AesCgmCryptor> createCryptor(bool local,
                                                        cricket::MediaType mediaType,
-                                                       std::string id) const final;
+                                                       std::string identity,
+                                                       std::string trackId) const final;
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
     std::optional<bool> stereoRecording() const final;

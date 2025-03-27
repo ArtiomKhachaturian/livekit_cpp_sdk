@@ -21,9 +21,11 @@ namespace LiveKitCpp
 class AesCgmCryptorObserver
 {
 public:
-    virtual void onEncryptionStateChanged(const std::string& /*trackId*/,
+    virtual void onEncryptionStateChanged(const std::string& /*identity*/,
+                                          const std::string& /*trackId*/,
                                           AesCgmCryptorState /*state*/) {}
-    virtual void onDecryptionStateChanged(const std::string& /*trackId*/,
+    virtual void onDecryptionStateChanged(const std::string& /*identity*/,
+                                          const std::string& /*trackId*/,
                                           AesCgmCryptorState /*state*/) {}
 protected:
     virtual ~AesCgmCryptorObserver() = default;

@@ -13,6 +13,8 @@
 // limitations under the License.
 #pragma once // RemoteParticipantListener.h
 #include "ParticipantListener.h"
+#include "rtc/TrackType.h"
+#include "rtc/EncryptionType.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -23,14 +25,17 @@ class RemoteParticipant;
 class RemoteParticipantListener : public ParticipantListener
 {
 public:
-    virtual void onAudioTrackAdded(const RemoteParticipant* /*participant*/,
-                                   const std::string& /*sid*/) {}
-    virtual void onAudioTrackRemoved(const RemoteParticipant* /*participant*/,
-                                     const std::string& /*sid*/) {}
-    virtual void onVideoTrackAdded(const RemoteParticipant* /*participant*/,
-                                   const std::string& /*sid*/) {}
-    virtual void onVideoTrackRemoved(const RemoteParticipant* /*participant*/,
-                                     const std::string& /*sid*/) {}
+    virtual void onRemoteTrackAdded(const RemoteParticipant* /*participant*/,
+                                    TrackType /*type*/,
+                                    EncryptionType /*encryption*/,
+                                    const std::string& /*sid*/) {}
+    virtual void onRemoteTrackNoCrytorError(const RemoteParticipant* /*participant*/,
+                                            TrackType /*type*/,
+                                            EncryptionType /*encryption*/,
+                                            const std::string& /*sid*/) {}
+    virtual void onRemoteTrackRemoved(const RemoteParticipant* /*participant*/,
+                                      TrackType /*type*/,
+                                      const std::string& /*sid*/) {}
 protected:
     virtual ~RemoteParticipantListener() = default;
 };

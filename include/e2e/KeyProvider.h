@@ -24,29 +24,30 @@ namespace LiveKitCpp
 class E2EKeyHandler;
 struct KeyProviderOptions;
 
+// [identity] is a participant identity (Participant::identity)
 class LIVEKIT_CLIENT_API KeyProvider
 {
 public:
     virtual ~KeyProvider() = default;
     virtual bool setSharedKey(std::vector<uint8_t> key,
                               const std::optional<uint8_t>& keyIndex = {}) = 0;
-    virtual std::shared_ptr<E2EKeyHandler> sharedKey(const std::string& trackId) = 0;
+    virtual std::shared_ptr<E2EKeyHandler> sharedKey(const std::string& identity) = 0;
     virtual std::vector<uint8_t> ratchetSharedKey(const std::optional<uint8_t>& keyIndex = {}) = 0;
     virtual std::vector<uint8_t> exportSharedKey(const std::optional<uint8_t>& keyIndex = {}) const = 0;
-    virtual bool setKey(const std::string& trackId,
+    virtual bool setKey(const std::string& identity,
                         std::vector<uint8_t> key,
                         const std::optional<uint8_t>& keyIndex = {}) = 0;
-    virtual std::shared_ptr<E2EKeyHandler> key(const std::string& trackId) const = 0;
-    virtual std::vector<uint8_t> ratchetKey(const std::string& trackId,
+    virtual std::shared_ptr<E2EKeyHandler> key(const std::string& identity) const = 0;
+    virtual std::vector<uint8_t> ratchetKey(const std::string& identity,
                                             const std::optional<uint8_t>& keyIndex = {}) const = 0;
-    virtual std::vector<uint8_t> exportKey(const std::string& trackId,
+    virtual std::vector<uint8_t> exportKey(const std::string& identity,
                                            const std::optional<uint8_t>& keyIndex = {}) const = 0;
     virtual void setSifTrailer(std::vector<uint8_t> trailer) = 0;
     virtual std::vector<uint8_t> sifTrailer() const = 0;
     virtual const KeyProviderOptions& options() const = 0;
     // string based setters API
     bool setSharedKey(std::string_view key, const std::optional<uint8_t>& keyIndex = {});
-    bool setKey(const std::string& trackId, std::string_view key,
+    bool setKey(const std::string& identity, std::string_view key,
                 const std::optional<uint8_t>& keyIndex = {});
     void setSifTrailer(std::string_view trailer);
 };

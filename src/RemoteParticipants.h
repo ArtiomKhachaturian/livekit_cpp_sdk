@@ -75,7 +75,7 @@ private:
     void clearParticipants();
     std::optional<size_t> findBySid(const std::string& sid) const;
 private:
-    E2ESecurityFactory* const _codecFactory;
+    E2ESecurityFactory* const _securityFactory;
     RemoteParticipantsListener* const _listener;
     Bricks::SafeObj<OrphanedReceivers> _orphans;
     Bricks::SafeObj<Participants> _participants;

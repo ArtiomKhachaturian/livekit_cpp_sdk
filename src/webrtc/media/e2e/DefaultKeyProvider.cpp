@@ -13,34 +13,14 @@
 // limitations under the License.
 #include "e2e/DefaultKeyProvider.h"
 #include "e2e/E2EKeyHandler.h"
-#include "Loggable.h"
-#include "SafeObj.h"
-#include <unordered_map>
-
-namespace  {
-
-const std::string g_shared("shared");
-
-}
 
 namespace LiveKitCpp
 {
 
-using ParticipantKeyHandlers = std::unordered_map<std::string, std::shared_ptr<E2EKeyHandler>>;
-
-struct DefaultKeyProvider::Impl : public Bricks::LoggableS<>
-{
-    const KeyProviderOptions _options;
-    Bricks::SafeObj<ParticipantKeyHandlers> _keys;
-    Bricks::SafeObj<std::vector<uint8_t>> _uncryptedMagicBytes; // sif
-    Impl(KeyProviderOptions options, const std::shared_ptr<Bricks::Logger>& logger);
-    std::shared_ptr<E2EKeyHandler> newKeyHandler() const;
-    std::shared_ptr<E2EKeyHandler> emplaceHandler(const std::string& id);
-};
-
 DefaultKeyProvider::DefaultKeyProvider(KeyProviderOptions options,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(std::make_unique<Impl>(std::move(options), logger))
+    : Bricks::LoggableS<KeyProvider>(logger)
+    , _options(std::move(options))
 {
 }
 
@@ -51,14 +31,14 @@ DefaultKeyProvider::~DefaultKeyProvider()
 bool DefaultKeyProvider::setSharedKey(std::vector<uint8_t> key,
                                       const std::optional<uint8_t>& keyIndex)
 {
-    if (_impl->_options._sharedKey) {
+    if (_options._sharedKey) {
         std::shared_ptr<E2EKeyHandler> keyHandler;
         {
-            LOCK_WRITE_SAFE_OBJ(_impl->_keys);
-            keyHandler = _impl->emplaceHandler(g_shared);
+            LOCK_WRITE_SAFE_OBJ(_keys);
+            keyHandler = emplaceHandler(_shared);
             if (keyHandler) {
-                for (auto it = _impl->_keys->begin(); it != _impl->_keys->end(); ++it) {
-                    if (it->first != g_shared) {
+                for (auto it = _keys->begin(); it != _keys->end(); ++it) {
+                    if (it->first != _shared) {
                         it->second->setKey(key, keyIndex);
                     }
                 }
@@ -72,18 +52,18 @@ bool DefaultKeyProvider::setSharedKey(std::vector<uint8_t> key,
     return false;
 }
 
-std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::sharedKey(const std::string& trackId)
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::sharedKey(const std::string& identity)
 {
-    if (_impl->_options._sharedKey && !trackId.empty()) {
-        LOCK_WRITE_SAFE_OBJ(_impl->_keys);
-        auto it = _impl->_keys->find(trackId);
-        if (it != _impl->_keys->end()) {
+    if (_options._sharedKey && !identity.empty()) {
+        LOCK_WRITE_SAFE_OBJ(_keys);
+        auto it = _keys->find(identity);
+        if (it != _keys->end()) {
             return it->second;
         }
-        it = _impl->_keys->find(g_shared);
-        if (it != _impl->_keys->end()) {
+        it = _keys->find(_shared);
+        if (it != _keys->end()) {
             const auto keyHandler = it->second->clone();
-            _impl->_keys->insert(std::make_pair(trackId, keyHandler));
+            _keys->insert(std::make_pair(identity, keyHandler));
             return keyHandler;
         }
     }
@@ -92,13 +72,13 @@ std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::sharedKey(const std::string& 
 
 std::vector<uint8_t> DefaultKeyProvider::ratchetSharedKey(const std::optional<uint8_t>& keyIndex)
 {
-    LOCK_READ_SAFE_OBJ(_impl->_keys);
-    auto it = _impl->_keys->find(g_shared);
-    if (it != _impl->_keys->end()) {
+    LOCK_READ_SAFE_OBJ(_keys);
+    auto it = _keys->find(_shared);
+    if (it != _keys->end()) {
         auto newKey = it->second->ratchetKey(keyIndex);
-        if (_impl->_options._sharedKey) {
-            for (it = _impl->_keys->begin(); it != _impl->_keys->end(); ++it) {
-                if (it->first != g_shared) {
+        if (_options._sharedKey) {
+            for (it = _keys->begin(); it != _keys->end(); ++it) {
+                if (it->first != _shared) {
                     it->second->setKey(newKey, keyIndex);
                 }
             }
@@ -110,9 +90,9 @@ std::vector<uint8_t> DefaultKeyProvider::ratchetSharedKey(const std::optional<ui
 
 std::vector<uint8_t> DefaultKeyProvider::exportSharedKey(const std::optional<uint8_t>& keyIndex) const
 {
-    LOCK_READ_SAFE_OBJ(_impl->_keys);
-    auto it = _impl->_keys->find(g_shared);
-    if (it != _impl->_keys->end()) {
+    LOCK_READ_SAFE_OBJ(_keys);
+    auto it = _keys->find(_shared);
+    if (it != _keys->end()) {
         if (const auto keySet = it->second->keySet(keyIndex)) {
             return keySet->_material;
         }
@@ -120,15 +100,15 @@ std::vector<uint8_t> DefaultKeyProvider::exportSharedKey(const std::optional<uin
     return {};
 }
 
-bool DefaultKeyProvider::setKey(const std::string& trackId,
+bool DefaultKeyProvider::setKey(const std::string& identity,
                                 std::vector<uint8_t> key,
                                 const std::optional<uint8_t>& keyIndex)
 {
-    if (!trackId.empty()) {
+    if (!identity.empty()) {
         std::shared_ptr<E2EKeyHandler> keyHandler;
         {
-            LOCK_WRITE_SAFE_OBJ(_impl->_keys);
-            keyHandler = _impl->emplaceHandler(trackId);
+            LOCK_WRITE_SAFE_OBJ(_keys);
+            keyHandler = emplaceHandler(identity);
         }
         if (keyHandler) {
             keyHandler->setKey(std::move(key), keyIndex);
@@ -138,31 +118,31 @@ bool DefaultKeyProvider::setKey(const std::string& trackId,
     return false;
 }
 
-std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::key(const std::string& trackId) const
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::key(const std::string& identity) const
 {
-    if (!trackId.empty()) {
-        LOCK_READ_SAFE_OBJ(_impl->_keys);
-        const auto it = _impl->_keys->find(trackId);
-        if (it != _impl->_keys->end()) {
+    if (!identity.empty()) {
+        LOCK_READ_SAFE_OBJ(_keys);
+        const auto it = _keys->find(identity);
+        if (it != _keys->end()) {
             return it->second;
         }
     }
     return {};
 }
 
-std::vector<uint8_t> DefaultKeyProvider::ratchetKey(const std::string& trackId,
+std::vector<uint8_t> DefaultKeyProvider::ratchetKey(const std::string& identity,
                                                     const std::optional<uint8_t>& keyIndex) const
 {
-    if (const auto keyHandler = key(trackId)) {
+    if (const auto keyHandler = key(identity)) {
         return keyHandler->ratchetKey(keyIndex);
     }
     return {};
 }
 
-std::vector<uint8_t> DefaultKeyProvider::exportKey(const std::string& trackId,
+std::vector<uint8_t> DefaultKeyProvider::exportKey(const std::string& identity,
                                                    const std::optional<uint8_t>& keyIndex) const
 {
-    if (const auto keyHandler = key(trackId)) {
+    if (const auto keyHandler = key(identity)) {
         if (const auto keySet = keyHandler->keySet(keyIndex)) {
             return keySet->_material;
         }
@@ -170,41 +150,19 @@ std::vector<uint8_t> DefaultKeyProvider::exportKey(const std::string& trackId,
     return {};
 }
 
-void DefaultKeyProvider::setSifTrailer(std::vector<uint8_t> trailer)
-{
-    _impl->_uncryptedMagicBytes(std::move(trailer));
-}
-
-std::vector<uint8_t> DefaultKeyProvider::sifTrailer() const
-{
-    return _impl->_uncryptedMagicBytes();
-}
-
-const KeyProviderOptions& DefaultKeyProvider::options() const
-{
-    return _impl->_options;
-}
-
-DefaultKeyProvider::Impl::Impl(KeyProviderOptions options,
-                               const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<>(logger)
-    , _options(std::move(options))
-{
-}
-
-std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::Impl::newKeyHandler() const
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::newKeyHandler() const
 {
     return std::make_shared<E2EKeyHandler>(_options, logger());
 }
 
-std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::Impl::emplaceHandler(const std::string& id)
+std::shared_ptr<E2EKeyHandler> DefaultKeyProvider::emplaceHandler(const std::string& identity)
 {
     std::shared_ptr<E2EKeyHandler> keyHandler;
-    if (!id.empty()) {
-        auto it = _keys->find(id);
+    if (!identity.empty()) {
+        auto it = _keys->find(identity);
         if (it == _keys->end()) {
             keyHandler = newKeyHandler();
-            _keys->insert(std::make_pair(id, keyHandler));
+            _keys->insert(std::make_pair(identity, keyHandler));
         }
         else {
             keyHandler = it->second;

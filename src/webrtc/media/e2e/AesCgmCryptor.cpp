@@ -79,6 +79,7 @@ struct AesCgmCryptor::Impl : public Bricks::LoggableS<>
 {
     // data
     const cricket::MediaType _mediaType;
+    const std::string _identity;
     const std::string _trackId;
     const std::shared_ptr<KeyProvider> _keyProvider;
     const std::string _logCategory;
@@ -89,6 +90,7 @@ struct AesCgmCryptor::Impl : public Bricks::LoggableS<>
     Bricks::SafeObj<Sinks> _sinks;
     // methods
     Impl(cricket::MediaType mediaType,
+         std::string identity,
          std::string trackId,
          const std::weak_ptr<rtc::Thread>& signalingThread,
          const std::shared_ptr<KeyProvider>& keyProvider,
@@ -120,11 +122,12 @@ private:
 };
 
 AesCgmCryptor::AesCgmCryptor(cricket::MediaType mediaType,
+                             std::string identity,
                              std::string trackId,
                              const std::weak_ptr<rtc::Thread>& signalingThread,
                              const std::shared_ptr<KeyProvider>& keyProvider,
                              const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(std::make_shared<Impl>(mediaType, std::move(trackId),
+    : _impl(std::make_shared<Impl>(mediaType, std::move(identity), std::move(trackId),
                                    signalingThread, keyProvider, logger))
     , _queue(createTaskQueueU(_impl->_logCategory, webrtc::TaskQueueFactory::Priority::HIGH))
 {
@@ -205,6 +208,7 @@ void AesCgmCryptor::UnregisterTransformedFrameSinkCallback(uint32_t ssrc)
 
 webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
     create(cricket::MediaType mediaType,
+           std::string identity,
            std::string trackId,
            const std::weak_ptr<rtc::Thread>& signalingThread,
            const std::shared_ptr<KeyProvider>& keyProvider,
@@ -222,22 +226,30 @@ webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
             logInitError(logger, "unsupported media type: " + cricket::MediaTypeToString(mediaType));
             return {};
     }
+    if (identity.empty()) {
+        logInitError(logger, "unknown identity");
+        return {};
+    }
     if (trackId.empty()) {
         logInitError(logger, "unknown track ID");
         return {};
     }
-    return webrtc::make_ref_counted<AesCgmCryptor>(mediaType, std::move(trackId),
+    return webrtc::make_ref_counted<AesCgmCryptor>(mediaType,
+                                                   std::move(identity),
+                                                   std::move(trackId),
                                                    signalingThread,
                                                    keyProvider, logger);
 }
 
 AesCgmCryptor::Impl::Impl(cricket::MediaType mediaType,
+                          std::string identity,
                           std::string trackId,
                           const std::weak_ptr<rtc::Thread>& signalingThread,
                           const std::shared_ptr<KeyProvider>& keyProvider,
                           const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _mediaType(mediaType)
+    , _identity(std::move(identity))
     , _trackId(std::move(trackId))
     , _keyProvider(keyProvider)
     , _logCategory(std::string(g_category) + "_" + _trackId)
@@ -296,7 +308,6 @@ void AesCgmCryptor::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFram
         
         const auto dataIn = frame->GetData();
         if (dataIn.empty()) {
-            logWarning("no input data for encrypt");
             return;
         }
         if (!_enabledCryption) {
@@ -560,7 +571,7 @@ void AesCgmCryptor::Impl::setLastEncryptState(AesCgmCryptorState state)
 {
     if (exchangeVal(state, _lastEncState) && _observer) {
         _observer.invoke(&AesCgmCryptorObserver::onEncryptionStateChanged,
-                         _trackId, state);
+                         _identity, _trackId, state);
     }
 }
 
@@ -568,16 +579,16 @@ void AesCgmCryptor::Impl::setLastDecryptState(AesCgmCryptorState state)
 {
     if (exchangeVal(state, _lastDecState) && _observer) {
         _observer.invoke(&AesCgmCryptorObserver::onDecryptionStateChanged,
-                         _trackId, state);
+                         _identity, _trackId, state);
     }
 }
 
 std::shared_ptr<E2EKeyHandler> AesCgmCryptor::Impl::keyHandler() const
 {
     if (_keyProvider->options()._sharedKey) {
-        return _keyProvider->sharedKey(_trackId);
+        return _keyProvider->sharedKey(_identity);
     }
-    return _keyProvider->key(_trackId);
+    return _keyProvider->key(_identity);
 }
 
 bool AesCgmCryptor::Impl::encryptOrDecrypt(bool encrypt,

@@ -356,10 +356,10 @@ bool KeyProvider::setSharedKey(std::string_view key, const std::optional<uint8_t
     return setSharedKey(binaryFromString(std::move(key)), keyIndex);
 }
 
-bool KeyProvider::setKey(const std::string& participantId, std::string_view key,
+bool KeyProvider::setKey(const std::string& identity, std::string_view key,
                          const std::optional<uint8_t>& keyIndex)
 {
-    return setKey(participantId, binaryFromString(std::move(key)), keyIndex);
+    return setKey(identity, binaryFromString(std::move(key)), keyIndex);
 }
 
 void KeyProvider::setSifTrailer(std::string_view trailer)
