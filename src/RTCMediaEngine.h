@@ -93,7 +93,7 @@ protected:
     virtual void cleanup(const std::optional<LiveKitError>& error = {},
                          const std::string& errorDetails = {});
     template <class Method, typename... Args>
-    void callback(const Method& method, Args&&... args) const {
+    void invoke(const Method& method, Args&&... args) const {
         _listener.invoke(method, std::forward<Args>(args)...);
     }
     // impl. of SignalServerListener

@@ -287,10 +287,10 @@ void RTCMediaEngine::notifyAboutLocalParticipantJoinLeave(bool join) const
 {
     if (!_localParticipant->sid().empty()) {
         if (join) {
-            callback(&SessionListener::onLocalParticipantJoined);
+            invoke(&SessionListener::onLocalParticipantJoined);
         }
         else {
-            callback(&SessionListener::onLocalParticipantLeaved);
+            invoke(&SessionListener::onLocalParticipantLeaved);
         }
     }
 }
@@ -386,12 +386,12 @@ EncryptionType RTCMediaEngine::localEncryptionType() const
 
 void RTCMediaEngine::onParticipantAdded(const std::string& sid)
 {
-    callback(&SessionListener::onRemoteParticipantAdded, sid);
+    invoke(&SessionListener::onRemoteParticipantAdded, sid);
 }
 
 void RTCMediaEngine::onParticipantRemoved(const std::string& sid)
 {
-    callback(&SessionListener::onRemoteParticipantRemoved, sid);
+    invoke(&SessionListener::onRemoteParticipantRemoved, sid);
 }
 
 } // namespace LiveKitCpp

@@ -197,7 +197,7 @@ void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
     _localDcs.setListener(nullptr);
     _remoteDcs.setListener(nullptr);
     if (error) {
-        callback(&SessionListener::onError, error.value(), errorDetails);
+        invoke(&SessionListener::onError, error.value(), errorDetails);
     }
 }
 
@@ -289,7 +289,7 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngine::
 void RTCEngine::changeState(SessionState state)
 {
     if (state != _state.exchange(state)) {
-        callback(&SessionListener::onStateChanged, state);
+        invoke(&SessionListener::onStateChanged, state);
     }
 }
 
@@ -604,16 +604,16 @@ void RTCEngine::onUserPacket(const std::string& participantSid,
                              const std::vector<std::string>& /*destinationIdentities*/,
                              const std::string& topic)
 {
-    callback(&SessionListener::onUserPacketReceived, participantSid,
-             participantIdentity, payload, topic);
+    invoke(&SessionListener::onUserPacketReceived, participantSid,
+           participantIdentity, payload, topic);
 }
 
 void RTCEngine::onChatMessage(const std::string& remoteParticipantIdentity,
                               const std::string& message, const std::string& id,
                               int64_t timestamp, bool deleted, bool generated)
 {
-    callback(&SessionListener::onChatMessageReceived, remoteParticipantIdentity,
-             message, id, timestamp, deleted, generated);
+    invoke(&SessionListener::onChatMessageReceived, remoteParticipantIdentity,
+           message, id, timestamp, deleted, generated);
 }
 
 std::string_view RTCEngine::logCategory() const
