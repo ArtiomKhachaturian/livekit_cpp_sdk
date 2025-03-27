@@ -49,11 +49,17 @@ public:
     // ignored if already started
     void start(uint64_t intervalMs);
     void stop();
-    void singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);
+    // ID of event or 0 for non-cancellable single shots
+    void singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL,
+                    uint64_t id = 0ULL);
     [[deprecated("use single shot methods with smart pointers for better safety")]]
-    void singleShot(MediaTimerCallback* callback, uint64_t delayMs = 0ULL);
-    void singleShot(const std::shared_ptr<MediaTimerCallback>& callback, uint64_t delayMs = 0ULL);
-    void singleShot(std::unique_ptr<MediaTimerCallback> callback, uint64_t delayMs = 0ULL);
+    void singleShot(MediaTimerCallback* callback, uint64_t delayMs = 0ULL,
+                    uint64_t id = 0ULL);
+    void singleShot(const std::shared_ptr<MediaTimerCallback>& callback,
+                    uint64_t delayMs = 0ULL, uint64_t id = 0ULL);
+    void singleShot(std::unique_ptr<MediaTimerCallback> callback,
+                    uint64_t delayMs = 0ULL, uint64_t id = 0ULL);
+    void cancelSingleShot(uint64_t id);
 private:
     const std::shared_ptr<Impl> _impl;
 };

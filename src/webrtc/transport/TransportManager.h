@@ -36,6 +36,7 @@ class TransportManager : private Bricks::LoggableS<TransportListener, PingPongKi
 public:
     TransportManager(bool subscriberPrimary, bool fastPublish,
                      int32_t pingTimeout, int32_t pingInterval,
+                     uint64_t negotiationDelay, // ms
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::string& identity,
@@ -99,9 +100,12 @@ private:
     std::string_view logCategory() const final { return _logCategory; }
 private:
     static constexpr uint8_t _embeddedDCMaxCount = 2U;
+    const uint64_t _negotiationTimerId;
+    const uint64_t _negotiationDelay;
     const bool _subscriberPrimary;
     const bool _fastPublish;
     const std::string _logCategory;
+    const std::unique_ptr<MediaTimer> _negotiationTimer;
     Bricks::Listener<TransportManagerListener*> _listener;
     Transport _publisher;
     Transport _subscriber;

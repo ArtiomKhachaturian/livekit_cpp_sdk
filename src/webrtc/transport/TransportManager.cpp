@@ -32,14 +32,18 @@ namespace LiveKitCpp
 
 TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
                                    int32_t pingTimeout, int32_t pingInterval,
+                                   uint64_t negotiationDelay,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                    const std::string& identity,
                                    const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportListener, PingPongKitListener>(logger)
+    , _negotiationTimerId(reinterpret_cast<uint64_t>(this))
+    , _negotiationDelay(negotiationDelay)
     , _subscriberPrimary(subscriberPrimary)
     , _fastPublish(fastPublish)
     , _logCategory("transport_manager_" + identity)
+    , _negotiationTimer(_negotiationDelay ? new MediaTimer(pcf) : nullptr)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, identity, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, identity, logger)
     , _pingPongKit(this, positiveOrZero(pingInterval), positiveOrZero(pingTimeout), pcf)
@@ -49,9 +53,7 @@ TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
 
 TransportManager::~TransportManager()
 {
-    _subscriber.close();
-    _publisher.close();
-    stopPing();
+    close();
 }
 
 bool TransportManager::valid() const noexcept
@@ -226,8 +228,16 @@ void TransportManager::updateState()
     const auto oldState = _state.exchange(newState);
     if (oldState != newState) {
         logInfo(makeStateChangesString(oldState, newState));
-        if (webrtc::PeerConnectionInterface::PeerConnectionState::kClosed == newState) {
-            _embeddedDCCount = 0U;
+        switch (newState) {
+            case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
+                _embeddedDCCount = 0U;
+            case webrtc::PeerConnectionInterface::PeerConnectionState::kDisconnected:
+                if (_negotiationTimer) {
+                    _negotiationTimer->cancelSingleShot(_negotiationTimerId);
+                }
+                break;
+            default:
+                break;
         }
         _listener.invoke(&TransportManagerListener::onStateChange, newState,
                          _publisher.state(), _subscriber.state());
@@ -371,8 +381,16 @@ void TransportManager::onSignalingChange(SignalTarget target,
 
 void TransportManager::onNegotiationNeededEvent(SignalTarget target, uint32_t /*eventId*/)
 {
-    if (SignalTarget::Publisher == target && localDataChannelsAreCreated()) {
-        _listener.invoke(&TransportManagerListener::onNegotiationNeeded);
+    if (SignalTarget::Publisher == target && localDataChannelsAreCreated() && !closed()) {
+        if (_negotiationTimer) {
+            _negotiationTimer->cancelSingleShot(_negotiationTimerId);
+            _negotiationTimer->singleShot([this](){
+                _listener.invoke(&TransportManagerListener::onNegotiationNeeded);
+            }, _negotiationDelay, _negotiationTimerId);
+        }
+        else {
+            _listener.invoke(&TransportManagerListener::onNegotiationNeeded);
+        }
     }
 }
 

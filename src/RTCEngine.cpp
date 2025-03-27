@@ -27,6 +27,7 @@
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/LeaveRequest.h"
 #include "rtc/TrackUnpublishedResponse.h"
+#include <algorithm> // for std::min
 #include <thread>
 
 namespace {
@@ -337,10 +338,12 @@ void RTCEngine::changeState(TransportState state)
 void RTCEngine::createTransportManager(const JoinResponse& response,
                                        const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
 {
+    const auto negotiationDelay = std::min<uint64_t>(_options._negotiationDelay.count(), 100ULL);
     auto pcManager = std::make_shared<TransportManager>(response._subscriberPrimary,
                                                         response._fastPublish,
                                                         response._pingTimeout,
                                                         response._pingInterval,
+                                                        negotiationDelay,
                                                         _pcf, conf,
                                                         response._participant._identity,
                                                         logger());

@@ -14,6 +14,7 @@
 #include "MediaTimer.h"
 #include "Listener.h"
 #include "PeerConnectionFactory.h"
+#include <unordered_set>
 
 namespace {
 
@@ -37,6 +38,10 @@ struct MediaTimer::Impl : public std::enable_shared_from_this<Impl>
     std::atomic_bool _started = false;
     void post(uint64_t intervalMs);
     bool valid(bool queueOnly) const noexcept;
+    void pushSingleShot(uint64_t id);
+    bool popSingleShot(uint64_t id);
+private:
+    Bricks::SafeObj<std::unordered_set<uint64_t>> _singleShotIds;
 };
 
 MediaTimer::MediaTimer(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
@@ -102,12 +107,14 @@ void MediaTimer::stop()
     _impl->_started = false;
 }
 
-void MediaTimer::singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs)
+void MediaTimer::singleShot(absl::AnyInvocable<void()&&> task,
+                            uint64_t delayMs, uint64_t id)
 {
     if (const auto q = _impl->_queue.lock()) {
-        auto fn = [task = std::move(task), weak = _impl->weak_from_this()]() mutable {
+        _impl->pushSingleShot(id);
+        auto fn = [id, task = std::move(task), weak = _impl->weak_from_this()]() mutable {
             const auto self = weak.lock();
-            if (self && self->valid(false)) {
+            if (self && self->valid(false) && self->popSingleShot(id)) {
                 std::move(task)();
             }
         };
@@ -115,7 +122,8 @@ void MediaTimer::singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs)
     }
 }
 
-void MediaTimer::singleShot(MediaTimerCallback* callback, uint64_t delayMs)
+void MediaTimer::singleShot(MediaTimerCallback* callback,
+                            uint64_t delayMs, uint64_t id)
 {
     if (callback && valid()) {
         singleShot([callback, weak = _impl->weak_from_this()]() {
@@ -126,11 +134,12 @@ void MediaTimer::singleShot(MediaTimerCallback* callback, uint64_t delayMs)
                     callback->onTimeout(self->_timer);
                 }
             }
-        }, delayMs);
+        }, delayMs, id);
     }
 }
 
-void MediaTimer::singleShot(const std::shared_ptr<MediaTimerCallback>& callback, uint64_t delayMs)
+void MediaTimer::singleShot(const std::shared_ptr<MediaTimerCallback>& callback,
+                            uint64_t delayMs, uint64_t id)
 {
     if (callback && valid()) {
         singleShot([callback, weak = _impl->weak_from_this()]() {
@@ -141,11 +150,12 @@ void MediaTimer::singleShot(const std::shared_ptr<MediaTimerCallback>& callback,
                     callback->onTimeout(self->_timer);
                 }
             }
-        }, delayMs);
+        }, delayMs, id);
     }
 }
 
-void MediaTimer::singleShot(std::unique_ptr<MediaTimerCallback> callback, uint64_t delayMs)
+void MediaTimer::singleShot(std::unique_ptr<MediaTimerCallback> callback,
+                            uint64_t delayMs, uint64_t id)
 {
     if (callback && valid()) {
         singleShot([callback = std::move(callback), weak = _impl->weak_from_this()]() {
@@ -156,8 +166,13 @@ void MediaTimer::singleShot(std::unique_ptr<MediaTimerCallback> callback, uint64
                     callback->onTimeout(self->_timer);
                 }
             }
-        }, delayMs);
+        }, delayMs, id);
     }
+}
+
+void MediaTimer::cancelSingleShot(uint64_t id)
+{
+    _impl->popSingleShot(id);
 }
 
 MediaTimer::Impl::Impl(MediaTimer* timer, const std::shared_ptr<webrtc::TaskQueueBase>& queue)
@@ -191,6 +206,23 @@ void MediaTimer::Impl::post(uint64_t intervalMs)
 bool MediaTimer::Impl::valid(bool queueOnly) const noexcept
 {
     return !_queue.expired() && (queueOnly || _valid());
+}
+
+void MediaTimer::Impl::pushSingleShot(uint64_t id)
+{
+    if (id) {
+        LOCK_WRITE_SAFE_OBJ(_singleShotIds);
+        _singleShotIds->insert(id);
+    }
+}
+
+bool MediaTimer::Impl::popSingleShot(uint64_t id)
+{
+    if (id) {
+        LOCK_WRITE_SAFE_OBJ(_singleShotIds);
+        return _singleShotIds->erase(id) > 0U;
+    }
+    return true;
 }
 
 } // namespace LiveKitCpp
