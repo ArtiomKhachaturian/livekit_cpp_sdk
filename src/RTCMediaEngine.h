@@ -14,7 +14,6 @@
 #pragma once // RTCMediaEngine.h
 #ifdef WEBRTC_AVAILABLE
 #include "Listener.h"
-#include "LocalParticipant.h"
 #include "Loggable.h"
 #include "E2ESecurityFactory.h"
 #include "SafeScopedRefPtr.h"
@@ -35,11 +34,17 @@ class Thread;
 namespace LiveKitCpp
 {
 
-class LocalTrack;
-class PeerConnectionFactory;
-class KeyProvider;
+class AudioTrack;
 class AesCgmCryptor;
+class CameraTrackImpl;
+class KeyProvider;
+class LocalParticipant;
+class LocalTrack;
+class LocalAudioTrackImpl;
+class Participant;
+class PeerConnectionFactory;
 class SessionListener;
+class VideoTrack;
 struct AddTrackRequest;
 struct MuteTrackRequest;
 struct UpdateLocalAudioTrack;
@@ -52,8 +57,8 @@ class RTCMediaEngine : public Bricks::LoggableS<SignalServerListener>,
                        private E2ESecurityFactory
 {
 public:
-    void setListener(SessionListener* listener) { _listener = listener; }
-    const Participant& localParticipant() const noexcept { return _localParticipant; }
+    void setListener(SessionListener* listener);
+    const Participant& localParticipant() const noexcept;
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
@@ -122,9 +127,8 @@ private:
     void onParticipantAdded(const std::string& sid) final;
     void onParticipantRemoved(const std::string& sid) final;
 private:
-    const Participant* const _session;
     const std::weak_ptr<rtc::Thread> _signalingThread;
-    LocalParticipant _localParticipant;
+    const std::shared_ptr<LocalParticipant> _localParticipant;
     RemoteParticipants _remoteParicipants;
     Bricks::Listener<SessionListener*> _listener;
     Bricks::SafeObj<std::string> _sifTrailer;

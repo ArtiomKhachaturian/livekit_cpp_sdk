@@ -14,11 +14,13 @@
 #pragma once // LocalParticipant.h
 #ifdef WEBRTC_AVAILABLE
 #include "Loggable.h"
+#include "Listener.h"
 #include "Participant.h"
 #include "CameraTrackImpl.h"
 #include "LocalAudioTrackImpl.h"
 #include "ParticipantListener.h"
 #include "rtc/ParticipantInfo.h"
+#include "AesCgmCryptorObserver.h"
 #include "SafeObj.h"
 #include <api/media_types.h>
 #include <atomic>
@@ -39,19 +41,22 @@ namespace LiveKitCpp
 
 class CameraVideoTrack;
 class TrackManager;
+class ParticipantListener;
 class PeerConnectionFactory;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 struct MicrophoneOptions;
 
-class LocalParticipant : public Bricks::LoggableS<Participant>
+class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver>
 {
+    using Base = Bricks::LoggableS<Participant, AesCgmCryptorObserver>;
     template<class T> using Tracks = Bricks::SafeObj<std::vector<std::shared_ptr<T>>>;
 public:
-    LocalParticipant(TrackManager* manager,
-                     const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+    LocalParticipant(TrackManager* manager, PeerConnectionFactory* pcf,
+                     const Participant* session,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipant() final = default;
+    void reset() { _session(nullptr); }
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
     size_t videoTracksCount() const;
@@ -68,7 +73,8 @@ public:
     std::shared_ptr<LocalTrack> track(const std::string& id, bool cid,
                                       const std::optional<cricket::MediaType>& hint = {}) const;
     std::shared_ptr<LocalTrack> track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
-    bool setInfo(const ParticipantInfo& info);
+    void setListener(ParticipantListener* listener) { _listener = listener; }
+    void setInfo(const ParticipantInfo& info);
     void enableAesCgmForLocalMedia(bool enable) { _aesCgmEnabledForLocalMedia = enable; }
     bool aesCgmEnabledForLocalMedia() const { return _aesCgmEnabledForLocalMedia; }
     // impl. of Participant
@@ -84,9 +90,16 @@ private:
     std::shared_ptr<LocalTrack> lookupVideo(const std::string& id, bool cid) const;
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const MicrophoneOptions& options) const;
     webrtc::scoped_refptr<CameraVideoTrack> createCamera() const;
+    template <class Method, typename... Args>
+    void invoke(const Method& method, Args&&... args) const;
+    // impl. of AesCgmCryptorObserver
+    void onEncryptionStateChanged(cricket::MediaType mediaType, const std::string&,
+                                  const std::string& trackId, AesCgmCryptorState state) final;
 private:
     TrackManager* const _manager;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
+    Bricks::SafeObj<const Participant*> _session;
+    Bricks::Listener<ParticipantListener*> _listener;
     Tracks<LocalAudioTrackImpl> _audioTracks;
     Tracks<VideoTrack> _videoTracks;
     Bricks::SafeObj<std::string> _sid;

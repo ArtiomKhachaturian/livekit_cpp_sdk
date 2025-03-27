@@ -21,7 +21,6 @@ enum class E2ECryptoError
     EncryptionFailed,
     DecryptionFailed,
     MissingKey,
-    KeyRatcheted,
     InternalError,
     CryptorCreationFailure
 };

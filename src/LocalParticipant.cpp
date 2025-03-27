@@ -43,11 +43,13 @@ namespace LiveKitCpp
 {
 
 LocalParticipant::LocalParticipant(TrackManager* manager,
-                                   const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                                   PeerConnectionFactory* pcf,
+                                   const Participant* session,
                                    const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<Participant>(logger)
+    : Base(logger)
     , _manager(manager)
     , _pcf(pcf)
+    , _session(session)
 {
 }
 
@@ -207,7 +209,7 @@ std::shared_ptr<LocalTrack> LocalParticipant::
     return {};
 }
 
-bool LocalParticipant::setInfo(const ParticipantInfo& info)
+void LocalParticipant::setInfo(const ParticipantInfo& info)
 {
     bool changed = false;
     if (exchangeVal(info._sid, _sid)) {
@@ -225,7 +227,9 @@ bool LocalParticipant::setInfo(const ParticipantInfo& info)
     if (exchangeVal(info._kind, _kind)) {
         changed = true;
     }
-    return changed;
+    if (changed) {
+        invoke(&ParticipantListener::onChanged);
+    }
 }
 
 void LocalParticipant::addTrack(const std::shared_ptr<LocalAudioTrackImpl>& track)
@@ -294,6 +298,27 @@ webrtc::scoped_refptr<CameraVideoTrack> LocalParticipant::createCamera() const
                                                           logger());
     }
     return {};
+}
+
+template <class Method, typename... Args>
+void LocalParticipant::invoke(const Method& method, Args&&... args) const
+{
+    LOCK_READ_SAFE_OBJ(_session);
+    if (const auto session = _session.constRef()) {
+        _listener.invoke(method, session, std::forward<Args>(args)...);
+    }
+}
+
+void LocalParticipant::onEncryptionStateChanged(cricket::MediaType mediaType,
+                                                const std::string&,
+                                                const std::string& trackId,
+                                                AesCgmCryptorState state)
+{
+    if (const auto err = toCryptoError(state)) {
+        invoke(&ParticipantListener::onTrackCryptoError,
+               mediaTypeToTrackType(mediaType),
+               EncryptionType::Gcm, trackId, err.value());
+    }
 }
 
 } // namespace LiveKitCpp

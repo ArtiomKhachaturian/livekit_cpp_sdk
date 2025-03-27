@@ -22,6 +22,7 @@
 #endif
 #endif
 #ifdef WEBRTC_AVAILABLE
+#include "rtc/TrackType.h"
 #include <api/task_queue/default_task_queue_factory.h>
 #include <rtc_base/crypto_random.h>
 #include <thread>
@@ -193,6 +194,22 @@ inline std::string stateToString(webrtc::TaskQueueBase::DelayPrecision precision
             break;
     }
     return {};
+}
+
+TrackType mediaTypeToTrackType(cricket::MediaType type)
+{
+    switch (type) {
+        case cricket::MEDIA_TYPE_AUDIO:
+            return TrackType::Audio;
+        case cricket::MEDIA_TYPE_VIDEO:
+            return TrackType::Video;
+        case cricket::MEDIA_TYPE_DATA:
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    return TrackType::Data;
 }
 
 std::string fourccToString(int fourcc)

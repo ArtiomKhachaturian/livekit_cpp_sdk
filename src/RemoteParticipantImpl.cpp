@@ -20,6 +20,7 @@
 #include "e2e/AesCgmCryptorObserver.h"
 #include "e2e/E2ECryptoError.h"
 #include "Seq.h"
+#include "Utils.h"
 #include <api/media_stream_interface.h>
 #include <api/rtp_receiver_interface.h>
 #include <optional>
@@ -397,11 +398,8 @@ void RemoteParticipantImpl::ListenerImpl::
                              const std::string& trackSid, AesCgmCryptorState state)
 {
     if (const auto err = toCryptoError(state)) {
-        TrackType type = TrackType::Audio;
-        if (cricket::MEDIA_TYPE_VIDEO == mediaType) {
-            type = TrackType::Video;
-        }
-        invoke(&ParticipantListener::onTrackCryptoError, type,
+        invoke(&ParticipantListener::onTrackCryptoError,
+               mediaTypeToTrackType(mediaType),
                EncryptionType::Gcm, trackSid, err.value());
     }
 }

@@ -540,7 +540,10 @@ void Transport::close()
 
 rtc::Thread* Transport::signalingThread() const
 {
-    return _impl->signalingThread();
+    if (!closed()) {
+        return _impl->signalingThread();
+    }
+    return nullptr;
 }
 
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)

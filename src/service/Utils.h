@@ -15,6 +15,7 @@
 #include "SafeObj.h"
 #include "NetworkType.h"
 #ifdef WEBRTC_AVAILABLE
+#include <api/media_types.h>
 #include <api/peer_connection_interface.h>
 #include <api/task_queue/task_queue_base.h>
 #include <memory>
@@ -46,6 +47,7 @@ namespace LiveKitCpp
 enum class TransportState;
 enum class LiveKitError;
 enum class DisconnectReason;
+enum class TrackType;
 
 #ifdef __APPLE__
 std::string fromNSString(NSString* nsString);
@@ -116,6 +118,7 @@ inline std::vector<uint8_t> binaryFromString(std::string_view s) {
 }
 
 #ifdef WEBRTC_AVAILABLE
+TrackType mediaTypeToTrackType(cricket::MediaType type);
 std::string fourccToString(int fourcc);
 std::string makeUuid();
 // human readable string for reflect of changes for some types

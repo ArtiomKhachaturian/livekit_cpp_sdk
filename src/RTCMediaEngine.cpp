@@ -13,7 +13,7 @@
 // limitations under the License.
 #ifdef WEBRTC_AVAILABLE
 #include "RTCMediaEngine.h"
-#include "RemoteParticipants.h"
+#include "LocalParticipant.h"
 #include "PeerConnectionFactory.h"
 #include "SessionListener.h"
 #include "LiveKitError.h"
@@ -50,9 +50,8 @@ RTCMediaEngine::RTCMediaEngine(PeerConnectionFactory* pcf,
                                const Participant* session,
                                const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
-    , _session(session)
     , _signalingThread(pcf ? pcf->signalingThread() : std::weak_ptr<rtc::Thread>())
-    , _localParticipant(this, webrtc::scoped_refptr<PeerConnectionFactory>(pcf), logger)
+    , _localParticipant(new LocalParticipant(this, pcf, session, logger))
     , _remoteParicipants(this, this, logger)
 {
 }
@@ -60,59 +59,71 @@ RTCMediaEngine::RTCMediaEngine(PeerConnectionFactory* pcf,
 RTCMediaEngine::~RTCMediaEngine()
 {
     RTCMediaEngine::cleanup();
+    _localParticipant->reset();
+}
+
+const Participant& RTCMediaEngine::localParticipant() const noexcept
+{
+    return *_localParticipant;
+}
+
+void RTCMediaEngine::setListener(SessionListener* listener)
+{
+    _listener = listener;
+    _localParticipant->setListener(listener);
 }
 
 size_t RTCMediaEngine::localAudioTracksCount() const
 {
-    return _localParticipant.audioTracksCount();
+    return _localParticipant->audioTracksCount();
 }
 
 size_t RTCMediaEngine::localVideoTracksCount() const
 {
-    return _localParticipant.videoTracksCount();
+    return _localParticipant->videoTracksCount();
 }
 
 std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::
     addLocalMicrophoneTrack(const MicrophoneOptions& options)
 {
-    return _localParticipant.addMicrophoneTrack(options);
+    return _localParticipant->addMicrophoneTrack(options);
 }
 
 std::shared_ptr<CameraTrackImpl> RTCMediaEngine::addLocalCameraTrack()
 {
-    return _localParticipant.addCameraTrack();
+    return _localParticipant->addCameraTrack();
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCMediaEngine::
     removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track)
 {
-    return _localParticipant.removeAudioTrack(track);
+    return _localParticipant->removeAudioTrack(track);
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCMediaEngine::
     removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track)
 {
-    return _localParticipant.removeVideoTrack(track);
+    return _localParticipant->removeVideoTrack(track);
 }
 
 std::shared_ptr<AudioTrack> RTCMediaEngine::localAudioTrack(size_t index) const
 {
-    return _localParticipant.audioTrack(index);
+    return _localParticipant->audioTrack(index);
 }
 
 std::shared_ptr<VideoTrack> RTCMediaEngine::localVideoTrack(size_t index) const
 {
-    return _localParticipant.videoTrack(index);
+    return _localParticipant->videoTrack(index);
 }
 
 void RTCMediaEngine::enableAesCgmForLocalMedia(bool enable)
 {
-    _localParticipant.enableAesCgmForLocalMedia(enable);
+    _localParticipant->enableAesCgmForLocalMedia(enable);
 }
 
 bool RTCMediaEngine::aesCgmEnabledForLocalMedia() const noexcept
 {
-    return _localParticipant.aesCgmEnabledForLocalMedia();
+    return _localParticipant->aesCgmEnabledForLocalMedia();
 }
 
 void RTCMediaEngine::setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider)
@@ -128,13 +139,13 @@ void RTCMediaEngine::setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider)
 std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>>
     RTCMediaEngine::localTracks() const
 {
-    return _localParticipant.media();
+    return _localParticipant->media();
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
     RTCMediaEngine::localTrack(const std::string& id, bool cid) const
 {
-    if (const auto t = _localParticipant.track(id, cid)) {
+    if (const auto t = _localParticipant->track(id, cid)) {
         return t->media();
     }
     return {};
@@ -148,9 +159,7 @@ void RTCMediaEngine::onJoin(const JoinResponse& response)
         if (const auto provider = std::atomic_load(&_aesCgmKeyProvider)) {
             provider->setSifTrailer(response._sifTrailer);
         }
-        if (_localParticipant.setInfo(response._participant)) {
-            callback(&ParticipantListener::onChanged, _session);
-        }
+        _localParticipant->setInfo(response._participant);
         _remoteParicipants.setInfo(response._otherParticipants);
         notifyAboutLocalParticipantJoinLeave(true);
     }
@@ -166,12 +175,10 @@ void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
         DisconnectReason disconnectReason = DisconnectReason::UnknownReason;
         for (size_t i = 0U; i < s; ++i) {
             const auto& info = infos.at(i);
-            if (info._sid == _localParticipant.sid()) {
+            if (info._sid == _localParticipant->sid()) {
                 disconnectReason = info._disconnectReason;
                 if (DisconnectReason::UnknownReason == disconnectReason) {
-                    if (_localParticipant.setInfo(info)) {
-                        callback(&ParticipantListener::onChanged, _session);
-                    }
+                    _localParticipant->setInfo(info);
                     infos.erase(infos.begin() + i);
                 }
                 break;
@@ -188,7 +195,7 @@ void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
 
 void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
 {
-    if (const auto t = _localParticipant.track(published._cid, true)) {
+    if (const auto t = _localParticipant->track(published._cid, true)) {
         const auto& sid = published._track._sid;
         t->setSid(sid);
         // reconcile track mute status.
@@ -225,7 +232,7 @@ void RTCMediaEngine::onReconnect(const ReconnectResponse& response)
 
 void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std::string& what)
 {
-    for (const auto& track : _localParticipant.tracks()) {
+    for (const auto& track : _localParticipant->tracks()) {
         track->notifyThatMediaRemovedFromTransport();
     }
     _remoteParicipants.reset();
@@ -237,10 +244,11 @@ void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std
 
 void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
-    if (const auto track = _localParticipant.track(sender)) {
+    if (const auto track = _localParticipant->track(sender)) {
         if (auto cryptor = createCryptor(true, sender->media_type(),
-                                         _localParticipant.identity(),
+                                         _localParticipant->identity(),
                                          sender->id())) {
+            cryptor->setObserver(_localParticipant);
             sender->SetFrameTransformer(std::move(cryptor));
             track->notifyThatMediaAddedToTransport(true);
         }
@@ -253,7 +261,7 @@ void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInter
 
 void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
 {
-    if (const auto track = _localParticipant.track(id, true)) {
+    if (const auto track = _localParticipant->track(id, true)) {
         track->notifyThatMediaRemovedFromTransport();
     }
 }
@@ -277,7 +285,7 @@ void RTCMediaEngine::handleLocalParticipantDisconnection(DisconnectReason reason
 
 void RTCMediaEngine::notifyAboutLocalParticipantJoinLeave(bool join) const
 {
-    if (!_localParticipant.sid().empty()) {
+    if (!_localParticipant->sid().empty()) {
         if (join) {
             callback(&SessionListener::onLocalParticipantJoined);
         }
@@ -315,12 +323,12 @@ void RTCMediaEngine::onStateChange(webrtc::PeerConnectionInterface::PeerConnecti
     switch (publisherState) {
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
             // publish local tracks
-            for (const auto& track : _localParticipant.tracks()) {
+            for (const auto& track : _localParticipant->tracks()) {
                 sendAddTrack(track);
             }
             break;
         case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
-            for (const auto& track : _localParticipant.tracks()) {
+            for (const auto& track : _localParticipant->tracks()) {
                 track->notifyThatMediaRemovedFromTransport();
             }
             break;
@@ -341,9 +349,10 @@ webrtc::scoped_refptr<AesCgmCryptor> RTCMediaEngine::
                   std::string identity, std::string trackId) const
 {
     if (const auto provider = std::atomic_load(&_aesCgmKeyProvider)) {
-        return AesCgmCryptor::create(mediaType, std::move(identity),
-                                     std::move(trackId), _signalingThread,
-                                     provider, logger());
+        return AesCgmCryptor::create(mediaType,
+                                     std::move(identity), std::move(trackId),
+                                     _signalingThread, provider,
+                                     logger());
     }
     return {};
 }
@@ -363,12 +372,12 @@ void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool mu
 
 std::optional<bool> RTCMediaEngine::stereoRecording() const
 {
-    return _localParticipant.stereoRecording();
+    return _localParticipant->stereoRecording();
 }
 
 EncryptionType RTCMediaEngine::localEncryptionType() const
 {
-    if (_localParticipant.aesCgmEnabledForLocalMedia() &&
+    if (_localParticipant->aesCgmEnabledForLocalMedia() &&
         std::atomic_load(&_aesCgmKeyProvider)) {
         return EncryptionType::Gcm;
     }

@@ -14,6 +14,8 @@
 #include "Session.h"
 #ifdef WEBRTC_AVAILABLE
 #include "DefaultKeyProvider.h"
+#include "audio/LocalAudioTrackImpl.h"
+#include "camera/CameraTrackImpl.h"
 #include "RTCEngine.h"
 #include "PeerConnectionFactory.h"
 #endif

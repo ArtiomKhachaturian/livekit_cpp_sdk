@@ -15,7 +15,6 @@
 #include "AesCgmCryptorState.h"
 #include "AesCgmCryptorObserver.h"
 #include "AsyncListener.h"
-#include "Listener.h"
 #include "Loggable.h"
 #include "SafeScopedRefPtr.h"
 #include "Utils.h"
@@ -104,8 +103,12 @@ protected:
 private:
     void encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
     void decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
-    void setLastEncryptState(AesCgmCryptorState state);
-    void setLastDecryptState(AesCgmCryptorState state);
+    void setLastEncryptState(AesCgmCryptorState state,
+                             const std::string& comment = {},
+                             Bricks::LoggingSeverity severity = Bricks::LoggingSeverity::Verbose);
+    void setLastDecryptState(AesCgmCryptorState state,
+                             const std::string& comment = {},
+                             Bricks::LoggingSeverity severity = Bricks::LoggingSeverity::Verbose);
     std::shared_ptr<E2EKeyHandler> keyHandler() const;
     bool encryptOrDecrypt(bool encrypt,
                           const std::vector<uint8_t>& rawKey,
@@ -113,8 +116,8 @@ private:
                           const rtc::ArrayView<uint8_t>& additionalData,
                           const rtc::ArrayView<uint8_t>& data,
                           std::vector<uint8_t>& buffer) const;
-    static constexpr uint8_t ivSize() noexcept { return 12; }
     rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
+    static constexpr uint8_t ivSize() noexcept { return 12; }
 private:
     std::atomic<AesCgmCryptorState> _lastEncState = AesCgmCryptorState::New;
     std::atomic<AesCgmCryptorState> _lastDecState = AesCgmCryptorState::New;
@@ -301,8 +304,9 @@ void AesCgmCryptor::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFram
             }
         }
         if (!sink) {
-            logWarning("unable to encrypt frame, sink is NULL");
-            setLastEncryptState(AesCgmCryptorState::InternalError);
+            setLastEncryptState(AesCgmCryptorState::InternalError,
+                                "unable to encrypt frame, sink is NULL",
+                                Bricks::LoggingSeverity::Warning);
             return;
         }
         
@@ -321,16 +325,18 @@ void AesCgmCryptor::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFram
         
         const auto keyHandler = this->keyHandler();
         if (!keyHandler) {
-            logError("no keys for encrypt");
-            setLastEncryptState(AesCgmCryptorState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey,
+                                "no keys for encrypt",
+                                Bricks::LoggingSeverity::Error);
             return;
         }
         
         const auto keyIndex = _keyIndex.load();
         const auto keySet = keyHandler->keySet(keyIndex);
         if (!keySet) {
-            logError("no key set for key index " + std::to_string(keyIndex));
-            setLastEncryptState(AesCgmCryptorState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey,
+                                "no key set for key index " + std::to_string(keyIndex),
+                                Bricks::LoggingSeverity::Error);
             return;
         }
         
@@ -381,8 +387,9 @@ void AesCgmCryptor::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFram
             sink->OnTransformedFrame(std::move(frame));
         }
         else {
-            setLastEncryptState(AesCgmCryptorState::EncryptionFailed);
-            logError("encrypt frame failed");
+            setLastEncryptState(AesCgmCryptorState::EncryptionFailed,
+                                "encrypt frame failed",
+                                Bricks::LoggingSeverity::Error);
         }
     }
 }
@@ -402,8 +409,9 @@ void AesCgmCryptor::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFram
             }
         }
         if (!sink) {
-            logWarning("unable to decrypt frame, sink is NULL");
-            setLastDecryptState(AesCgmCryptorState::InternalError);
+            setLastDecryptState(AesCgmCryptorState::InternalError,
+                                "unable to decrypt frame, sink is NULL",
+                                Bricks::LoggingSeverity::Warning);
             return;
         }
         
@@ -444,29 +452,35 @@ void AesCgmCryptor::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFram
         uint8_t ivLength = frameTrailer[0];
         uint8_t keyIndex = frameTrailer[1];
         if (ivLength != ivSize()) {
-            logWarning("incorrect IV size for decryption");
-            setLastDecryptState(AesCgmCryptorState::DecryptionFailed);
+            setLastDecryptState(AesCgmCryptorState::DecryptionFailed,
+                                "incorrect IV size for decryption",
+                                Bricks::LoggingSeverity::Warning);
             return;
         }
         
         const auto keyHandler = this->keyHandler();
         if (!keyHandler) {
-            logError("no keys for decrypt");
-            setLastEncryptState(AesCgmCryptorState::MissingKey);
+            setLastEncryptState(AesCgmCryptorState::MissingKey,
+                                "no keys for decrypt",
+                                Bricks::LoggingSeverity::Error);
             return;
         }
         
         if (keyIndex >= _keyProvider->options()._keyRingSize) {
-            logError("decryption key index [" + std::to_string(keyIndex) + "] is out of range ");
-            setLastEncryptState(AesCgmCryptorState::MissingKey);
+            setLastDecryptState(AesCgmCryptorState::MissingKey,
+                                "decryption key index [" +
+                                std::to_string(keyIndex) +
+                                "] is out of range ",
+                                Bricks::LoggingSeverity::Error);
             return;
         }
 
         const auto keySet = keyHandler->keySet(keyIndex);
         if (!keySet) {
-            logError("no key set for decryption key index [" +
-                     std::to_string(keyIndex) + "]");
-            setLastEncryptState(AesCgmCryptorState::MissingKey);
+            setLastDecryptState(AesCgmCryptorState::MissingKey,
+                                "no key set for decryption key index [" +
+                                std::to_string(keyIndex) + "]",
+                                Bricks::LoggingSeverity::Error);
             return;
         }
         
@@ -567,17 +581,27 @@ void AesCgmCryptor::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFram
     }
 }
 
-void AesCgmCryptor::Impl::setLastEncryptState(AesCgmCryptorState state)
+void AesCgmCryptor::Impl::setLastEncryptState(AesCgmCryptorState state,
+                                              const std::string& comment,
+                                              Bricks::LoggingSeverity severity)
 {
-    if (exchangeVal(state, _lastEncState) && _observer) {
+    if (exchangeVal(state, _lastEncState)) {
+        if (!comment.empty() && canLog(severity)) {
+            log(severity, comment);
+        }
         _observer.invoke(&AesCgmCryptorObserver::onEncryptionStateChanged,
                          _mediaType, _identity, _trackId, state);
     }
 }
 
-void AesCgmCryptor::Impl::setLastDecryptState(AesCgmCryptorState state)
+void AesCgmCryptor::Impl::setLastDecryptState(AesCgmCryptorState state,
+                                              const std::string& comment,
+                                              Bricks::LoggingSeverity severity)
 {
-    if (exchangeVal(state, _lastDecState) && _observer) {
+    if (exchangeVal(state, _lastDecState)) {
+        if (!comment.empty() && canLog(severity)) {
+            log(severity, comment);
+        }
         _observer.invoke(&AesCgmCryptorObserver::onDecryptionStateChanged,
                          _mediaType, _identity, _trackId, state);
     }
@@ -668,8 +692,6 @@ std::optional<E2ECryptoError> toCryptoError(AesCgmCryptorState state)
             return E2ECryptoError::DecryptionFailed;
         case AesCgmCryptorState::MissingKey:
             return E2ECryptoError::MissingKey;
-        case AesCgmCryptorState::KeyRatcheted:
-            return E2ECryptoError::KeyRatcheted;
         case AesCgmCryptorState::InternalError:
             return E2ECryptoError::InternalError;
         default:
