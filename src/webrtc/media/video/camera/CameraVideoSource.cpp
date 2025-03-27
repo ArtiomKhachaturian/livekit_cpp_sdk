@@ -59,7 +59,7 @@ public:
     void setCapability(webrtc::VideoCaptureCapability capability);
     webrtc::VideoCaptureCapability capability() const { return _capability(); }
     void setEnabled(bool enabled);
-    void setInactive();
+    void close();
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     webrtc::MediaSourceInterface::SourceState state() const noexcept { return _state; }
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
@@ -152,9 +152,9 @@ bool CameraVideoSource::setEnabled(bool enabled)
     return false;
 }
 
-void CameraVideoSource::setInactive()
+void CameraVideoSource::close()
 {
-    _impl->setInactive();
+    _impl->close();
 }
 
 bool CameraVideoSource::GetStats(Stats* stats)
@@ -288,7 +288,7 @@ void CameraVideoSource::Impl::setEnabled(bool enabled)
     }
 }
 
-void CameraVideoSource::Impl::setInactive()
+void CameraVideoSource::Impl::close()
 {
     if (_active.exchange(false)) {
         reset();

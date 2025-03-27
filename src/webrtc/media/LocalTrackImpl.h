@@ -34,6 +34,7 @@ class LocalTrackImpl : public Bricks::LoggableS<TTrackApi>,
 public:
     ~LocalTrackImpl() override = default;
     // impl. of LocalTrack
+    void close() override;
     void setSid(const std::string& sid) final { _sid(sid); }
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const final { return _mediaTrack; }
     void notifyThatMediaAddedToTransport(bool encryption) final;
@@ -81,6 +82,13 @@ inline LocalTrackImpl<TRtcTrack, TTrackApi>::
     if (_mediaTrack) {
         _mediaTrack->set_enabled(!_muted);
     }
+}
+
+template<class TRtcTrack, class TTrackApi>
+void LocalTrackImpl<TRtcTrack, TTrackApi>::close()
+{
+    LocalTrack::close();
+    _added = _encryption = false;
 }
 
 template<class TRtcTrack, class TTrackApi>

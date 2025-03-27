@@ -57,8 +57,8 @@ void LocalParticipant::reset()
 {
     _session(nullptr);
     _micTrack({});
-    _audioTracks({});
-    _videoTracks({});
+    clear(_audioTracks);
+    clear(_videoTracks);
 }
 
 std::optional<bool> LocalParticipant::stereoRecording() const
@@ -261,9 +261,9 @@ std::shared_ptr<LocalTrack> LocalParticipant::lookup(const std::string& id,
     if (!id.empty()) {
         const std::lock_guard guard(tracks.mutex());
         for (const auto& track : tracks.constRef()) {
-            const auto localTrack = std::dynamic_pointer_cast<LocalTrack>(track);
-            if (localTrack && id == (cid ? localTrack->cid() : track->sid())) {
-                return localTrack;
+            const auto local = std::dynamic_pointer_cast<LocalTrack>(track);
+            if (local && id == (cid ? local->cid() : track->sid())) {
+                return local;
             }
         }
     }
@@ -277,6 +277,18 @@ void LocalParticipant::addTrack(const std::shared_ptr<TTrack>& track, TTracks& t
         const std::lock_guard guard(tracks.mutex());
         tracks->push_back(track);
     }
+}
+
+template<class TTracks>
+void LocalParticipant::clear(TTracks& tracks)
+{
+    const std::lock_guard guard(tracks.mutex());
+    for (const auto& track : tracks.constRef()) {
+        if (const auto local = std::dynamic_pointer_cast<LocalTrack>(track)) {
+            local->close();
+        }
+    }
+    tracks->clear();
 }
 
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::

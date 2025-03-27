@@ -30,7 +30,7 @@ public:
                      webrtc::scoped_refptr<CameraVideoSource> source,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoTrack() override;
-    void setInactive();
+    void close();
     void setDevice(MediaDevice device = {});
     MediaDevice device() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);

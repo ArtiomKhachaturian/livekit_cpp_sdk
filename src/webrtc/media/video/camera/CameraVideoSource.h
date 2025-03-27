@@ -46,7 +46,7 @@ public:
     webrtc::VideoCaptureCapability capability() const;
     bool enabled() const noexcept { return _enabled; }
     bool setEnabled(bool enabled);
-    void setInactive();
+    void close();
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
     std::optional<bool> needs_denoising() const final { return {}; }

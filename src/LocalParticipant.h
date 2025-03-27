@@ -90,6 +90,8 @@ private:
                                               const TTracks& tracks);
     template<class TTrack, class TTracks>
     static void addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks);
+    template<class TTracks>
+    static void clear(TTracks& tracks);
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const MicrophoneOptions& options) const;
     webrtc::scoped_refptr<CameraVideoTrack> createCamera(const CameraOptions& options) const;
     template <class Method, typename... Args>

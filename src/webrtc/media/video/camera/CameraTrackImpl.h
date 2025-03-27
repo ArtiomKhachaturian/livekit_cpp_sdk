@@ -33,6 +33,7 @@ public:
     void setOptions(const CameraOptions& options) final;
     CameraOptions options() const final;
     // impl. of LocalTrack
+    void close() final;
     bool fillRequest(AddTrackRequest* request) const final;
 };
 

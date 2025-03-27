@@ -41,12 +41,13 @@ CameraVideoTrack::~CameraVideoTrack()
         _source->UnregisterObserver(this);
         changeState(webrtc::MediaStreamTrackInterface::TrackState::kEnded);
     }
+    close();
 }
 
-void CameraVideoTrack::setInactive()
+void CameraVideoTrack::close()
 {
     if (_source) {
-        _source->setInactive();
+        _source->close();
     }
 }
 

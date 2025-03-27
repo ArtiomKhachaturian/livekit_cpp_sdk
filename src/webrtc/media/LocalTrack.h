@@ -26,6 +26,9 @@ class LocalTrack
 public:
     std::string cid() const;
     cricket::MediaType mediaType() const;
+    // Terminates all media, closes the capturers, and in general releases any
+    // resources used by the local track. This is an irreversible operation.
+    virtual void close() {}
     // for publishing
     virtual void setSid(const std::string& sid) = 0;
     virtual bool fillRequest(AddTrackRequest* request) const = 0;

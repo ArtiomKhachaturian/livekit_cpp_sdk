@@ -28,9 +28,7 @@ CameraTrackImpl::CameraTrackImpl(webrtc::scoped_refptr<CameraVideoTrack> cameraT
 CameraTrackImpl::~CameraTrackImpl()
 {
     installSink(false, videoSink());
-    if (const auto& track = mediaTrack()) {
-        track->setInactive();
-    }
+    CameraTrackImpl::close();
 }
 
 void CameraTrackImpl::setDevice(MediaDevice device)
@@ -61,6 +59,14 @@ CameraOptions CameraTrackImpl::options() const
         return map(track->capability());
     }
     return {};
+}
+
+void CameraTrackImpl::close()
+{
+    Base::close();
+    if (const auto& track = mediaTrack()) {
+        track->close();
+    }
 }
 
 bool CameraTrackImpl::fillRequest(AddTrackRequest* request) const
