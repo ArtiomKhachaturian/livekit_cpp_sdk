@@ -45,6 +45,19 @@ inline R invokeInThreadR(rtc::Thread* to, Handler handler, R defaultVal = {})
     return defaultVal;
 }
 
+inline void postTask(webrtc::TaskQueueBase* queue, absl::AnyInvocable<void()&&> task)
+{
+    if (queue) {
+        queue->PostTask(std::move(task));
+    }
+}
+
+inline void postTask(const std::weak_ptr<webrtc::TaskQueueBase>& queue,
+                     absl::AnyInvocable<void()&&> task)
+{
+    postTask(queue.lock().get(), std::move(task));
+}
+
 template<class TListener, class Method, typename... Args>
 inline void postOrInvoke(webrtc::TaskQueueBase* queue,
                          const std::shared_ptr<TListener>& listener,

@@ -23,8 +23,9 @@
 namespace
 {
 
-inline rtc::scoped_refptr<webrtc::AudioDeviceModule>
-    defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory) {
+using AdmPtr = webrtc::scoped_refptr<webrtc::AudioDeviceModule>;
+
+inline AdmPtr defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory) {
     return webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::kPlatformDefaultAudio,
                                              taskQueueFactory);
 }
@@ -63,7 +64,7 @@ public:
     ScopedAudioBlocker(const AudioDeviceProxyModule& adm);
     ~ScopedAudioBlocker();
 private:
-    const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& _impl;
+    const AdmPtr& _impl;
     const AudioDeviceProxyModule& _adm;
     bool _needRestart = false;
 };
@@ -543,14 +544,14 @@ std::optional<webrtc::AudioDeviceModule::Stats> AudioDeviceProxyModule::GetStats
 void AudioDeviceProxyModule::close()
 {
     _listeners.clear();
-    webrtc::scoped_refptr<webrtc::AudioDeviceModule> impl;
+    AdmPtr impl;
     {
         LOCK_WRITE_SAFE_OBJ(_impl);
         impl = _impl.take();
     }
     if (impl) {
-        invokeInThread(workingThread().get(),  [impl = std::move(impl)]() mutable {
-            rtc::scoped_refptr<webrtc::AudioDeviceModule>().swap(impl);
+        postTask(workingThread(), [impl = std::move(impl)]() mutable {
+            AdmPtr().swap(impl);
         });
     }
 }
