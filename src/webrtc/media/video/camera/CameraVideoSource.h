@@ -12,41 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "AsyncMediaSource.h"
+#include "CameraVideoSourceImpl.h"
 #include "MediaDevice.h"
-#include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture_defines.h>
-#include <atomic>
-
-namespace Bricks {
-class Logger;
-}
-
-namespace webrtc {
-class TaskQueueBase;
-}
 
 namespace LiveKitCpp
 {
 
-class VideoSinkBroadcast;
-class CameraCapturer;
-
-class CameraVideoSource : public webrtc::VideoTrackSourceInterface
+class CameraVideoSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, CameraVideoSourceImpl>
 {
-    class Impl;
+    using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, CameraVideoSourceImpl>;
 public:
     CameraVideoSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                       const webrtc::VideoCaptureCapability& initialCapability = {},
                       const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
-    const std::weak_ptr<webrtc::TaskQueueBase>& signalingQueue() const noexcept;
     void setDevice(MediaDevice device);
     MediaDevice device() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);
     webrtc::VideoCaptureCapability capability() const;
-    bool enabled() const noexcept { return _enabled; }
-    bool setEnabled(bool enabled);
-    void close();
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
     std::optional<bool> needs_denoising() const final { return {}; }
@@ -56,22 +41,10 @@ public:
     void AddEncodedSink(rtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>*) final {}
     void RemoveEncodedSink(rtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>*) final {}
     void ProcessConstraints(const webrtc::VideoTrackSourceConstraints& constraints) final;
-    // impl. of MediaSourceInterface
-    webrtc::MediaSourceInterface::SourceState state() const final;
-    bool remote() const final { return false; }
     // impl. of rtc::VideoSourceInterface<VideoFrame>
     void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                          const rtc::VideoSinkWants& wants) final;
     void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
-    // impl. of NotifierInterface
-    void RegisterObserver(webrtc::ObserverInterface* observer) final;
-    void UnregisterObserver(webrtc::ObserverInterface* observer) final;
-private:
-    template <class Method, typename... Args>
-    void postToImpl(Method method, Args&&... args) const;
-private:
-    const std::shared_ptr<Impl> _impl;
-    std::atomic_bool _enabled = true;
 };
 
 } // namespace LiveKitCpp
