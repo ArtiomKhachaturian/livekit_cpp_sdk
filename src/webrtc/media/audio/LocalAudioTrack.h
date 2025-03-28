@@ -32,7 +32,7 @@ public:
     bool GetSignalLevel(int* level) final;
     rtc::scoped_refptr<webrtc::AudioProcessorInterface> GetAudioProcessor() final;
     // impl. of MediaStreamTrackInterface
-    std::string kind() const final { return webrtc::VideoTrackInterface::kAudioKind; }
+    std::string kind() const final { return webrtc::AudioTrackInterface::kAudioKind; }
     std::string id() const final { return _id; }
     bool enabled() const final;
     bool set_enabled(bool enable) final;
