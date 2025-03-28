@@ -16,47 +16,12 @@
 namespace LiveKitCpp
 {
 
-RemoteAudioTrackImpl::RemoteAudioTrackImpl(TrackManager* manager, const TrackInfo& info,
-                                           const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track)
-    : Base(manager, info, track)
+RemoteAudioTrackImpl::RemoteAudioTrackImpl(const TrackInfo& info,
+                                           webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+                                           TrackManager* manager,
+                                           const std::shared_ptr<Bricks::Logger>& logger)
+    : Base(info, std::move(audioTrack), manager, logger)
 {
-}
-
-RemoteAudioTrackImpl::RemoteAudioTrackImpl(TrackManager* manager, const TrackInfo& info,
-                                           webrtc::AudioTrackInterface* track)
-    : RemoteAudioTrackImpl(manager, info, webrtc::scoped_refptr<webrtc::AudioTrackInterface>(track))
-{
-}
-
-RemoteAudioTrackImpl::~RemoteAudioTrackImpl()
-{
-    installSink(false, audioSink());
-}
-
-void RemoteAudioTrackImpl::setVolume(double volume)
-{
-    if (const auto& t = track()) {
-        if (const auto source = t->GetSource()) {
-            source->SetVolume(volume);
-        }
-    }
-}
-
-void RemoteAudioTrackImpl::installSink(bool install, webrtc::AudioTrackSinkInterface* sink)
-{
-    if (sink && track()) {
-        if (install) {
-            track()->AddSink(sink);
-        }
-        else {
-            track()->RemoveSink(sink);
-        }
-    }
-}
-
-bool RemoteAudioTrackImpl::signalLevel(int& level) const
-{
-    return track() && track()->GetSignalLevel(&level);
 }
 
 } // namespace LiveKitCpp

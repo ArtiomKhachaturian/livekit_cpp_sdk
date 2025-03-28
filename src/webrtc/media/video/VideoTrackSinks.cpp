@@ -11,16 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "RemoteVideoTrackImpl.h"
+#include "VideoTrackSinks.h"
 
 namespace LiveKitCpp
 {
 
-RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
-                                           webrtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack,
-                                           TrackManager* manager,
-                                           const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(info, std::move(videoTrack), manager, logger)
+void VideoTrackSinks::OnFrame(const webrtc::VideoFrame& /*frame*/)
 {
 }
 

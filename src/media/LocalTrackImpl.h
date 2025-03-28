@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalTrack.h
-#include "Loggable.h"
-#include "SafeScopedRefPtr.h"
+#include "Logger.h"
+#include "LocalTrack.h"
+#include "SafeObj.h"
 #include "rtc/AddTrackRequest.h"
 #include "Track.h"
-#include "LocalTrack.h"
 #include "TrackManager.h"
 #include <api/media_stream_interface.h>
 #include <atomic>
@@ -25,75 +25,66 @@
 namespace LiveKitCpp
 {
 
-template<class TRtcTrack, class TTrackApi>
-class LocalTrackImpl : public Bricks::LoggableS<TTrackApi>,
-                       public LocalTrack
+template<class TBaseImpl>
+class LocalTrackImpl : public TBaseImpl, public LocalTrack
 {
-    static_assert(std::is_base_of_v<Track, TTrackApi>);
-    static_assert(std::is_base_of_v<webrtc::MediaStreamTrackInterface, TRtcTrack>);
+    static_assert(std::is_base_of_v<Track, TBaseImpl>);
 public:
     ~LocalTrackImpl() override = default;
     // impl. of LocalTrack
     void close() override;
     void setSid(const std::string& sid) final { _sid(sid); }
-    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const final { return _mediaTrack; }
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const final;
     void notifyThatMediaAddedToTransport(bool encryption) final;
     void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
+    bool muted() const final { return TBaseImpl::muted(); }
     // impl. of Track
     std::string sid() const final { return _sid(); }
     EncryptionType encryption() const final;
     std::string id() const final { return cid(); }
     std::string name() const final { return _name; }
-    bool live() const final;
-    void mute(bool mute) final; // request media track creation if needed
-    bool muted() const final { return _muted; }
     bool remote() const noexcept final { return false; }
 protected:
+    template<class TWebRtcTrack>
     LocalTrackImpl(std::string name,
-                   webrtc::scoped_refptr<TRtcTrack> mediaTrack,
+                   webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
                    TrackManager* manager,
-                   const std::shared_ptr<Bricks::Logger>& logger = {});
-    const auto& mediaTrack() const noexcept { return _mediaTrack; }
-    TrackManager* manager() const noexcept { return _manager; }
-private:
-    void notifyAboutMuted(bool mute) const;
+                   const std::shared_ptr<Bricks::Logger>& logger);
+    void notifyAboutMuted(bool mute) const override;
 private:
     const std::string _name;
-    const webrtc::scoped_refptr<TRtcTrack> _mediaTrack;
-    TrackManager* const _manager;
-    std::atomic_bool _muted = false;
     std::atomic_bool _added = false;
     std::atomic_bool _encryption = false;
     Bricks::SafeObj<std::string> _sid;
 };
 
-template<class TRtcTrack, class TTrackApi>
-inline LocalTrackImpl<TRtcTrack, TTrackApi>::
-    LocalTrackImpl(std::string name,
-                   webrtc::scoped_refptr<TRtcTrack> mediaTrack,
-                   TrackManager* manager,
-                   const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<TTrackApi>(logger)
+template<class TBaseImpl>
+template<class TWebRtcTrack>
+inline LocalTrackImpl<TBaseImpl>::LocalTrackImpl(std::string name,
+                                                 webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
+                                                 TrackManager* manager,
+                                                 const std::shared_ptr<Bricks::Logger>& logger)
+    : TBaseImpl(std::move(mediaTrack), manager, logger)
     , _name(std::move(name))
-    , _mediaTrack(std::move(mediaTrack))
-    , _manager(manager)
 {
-    if (_mediaTrack) {
-        _mediaTrack->set_enabled(!_muted);
-    }
 }
 
-template<class TRtcTrack, class TTrackApi>
-void LocalTrackImpl<TRtcTrack, TTrackApi>::close()
+template<class TBaseImpl>
+void LocalTrackImpl<TBaseImpl>::close()
 {
     LocalTrack::close();
     _added = _encryption = false;
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline void LocalTrackImpl<TRtcTrack, TTrackApi>::
-    notifyThatMediaAddedToTransport(bool encryption)
+template<class TBaseImpl>
+inline webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalTrackImpl<TBaseImpl>::media() const
+{
+    return TBaseImpl::mediaTrack();
+}
+
+template<class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::notifyThatMediaAddedToTransport(bool encryption)
 {
     if (!_added.exchange(true)) {
         _encryption = encryption;
@@ -101,19 +92,18 @@ inline void LocalTrackImpl<TRtcTrack, TTrackApi>::
     }
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline void LocalTrackImpl<TRtcTrack, TTrackApi>::notifyThatMediaRemovedFromTransport()
+template<class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::notifyThatMediaRemovedFromTransport()
 {
     if (_added.exchange(false)) {
         _encryption = false;
     }
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline bool LocalTrackImpl<TRtcTrack, TTrackApi>::
-    fillRequest(AddTrackRequest* request) const
+template<class TBaseImpl>
+inline bool LocalTrackImpl<TBaseImpl>::fillRequest(AddTrackRequest* request) const
 {
-    if (request && _mediaTrack && _added) {
+    if (request && media() && _added) {
         request->_encryption = encryption();
         request->_cid = cid();
         request->_name = name();
@@ -124,47 +114,23 @@ inline bool LocalTrackImpl<TRtcTrack, TTrackApi>::
     return false;
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline EncryptionType LocalTrackImpl<TRtcTrack, TTrackApi>::encryption() const
+template<class TBaseImpl>
+inline EncryptionType LocalTrackImpl<TBaseImpl>::encryption() const
 {
-    if (_manager && _encryption) {
-        return _manager->localEncryptionType();
+    if (TBaseImpl::manager() && _encryption) {
+        return TBaseImpl::manager()->localEncryptionType();
     }
     return EncryptionType::None;
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline bool LocalTrackImpl<TRtcTrack, TTrackApi>::live() const
+template<class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::notifyAboutMuted(bool mute) const
 {
-    return _mediaTrack && webrtc::MediaStreamTrackInterface::kLive == _mediaTrack->state();
-}
-
-template<class TRtcTrack, class TTrackApi>
-inline void LocalTrackImpl<TRtcTrack, TTrackApi>::mute(bool mute)
-{
-    if (mute != _muted.exchange(mute)) {
-        bool sendNotification = false;
-        if (_mediaTrack) {
-            const auto wasEnabled = _mediaTrack->enabled();
-            if (wasEnabled == mute) {
-                _mediaTrack->set_enabled(!mute);
-                sendNotification = _added;
-            }
-        }
-        if (sendNotification) {
-            notifyAboutMuted(mute);
-        }
-    }
-}
-
-template<class TRtcTrack, class TTrackApi>
-inline void LocalTrackImpl<TRtcTrack, TTrackApi>::
-    notifyAboutMuted(bool mute) const
-{
-    if (_manager && _added) {
+    TBaseImpl::notifyAboutMuted(mute);
+    if (TBaseImpl::manager() && _added) {
         const auto sid = this->sid();
         if (!sid.empty()) {
-            _manager->notifyAboutMuteChanges(sid, mute);
+            TBaseImpl::manager()->notifyAboutMuteChanges(sid, mute);
         }
     }
 }

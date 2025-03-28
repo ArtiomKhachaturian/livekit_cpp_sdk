@@ -267,12 +267,13 @@ bool RemoteParticipantImpl::addTrack(const std::string& sid,
     bool added = false;
     if (!sid.empty()) {
         using MediaInterace = typename MediaInteraceType<TTrack>::MediaInterace;
-        if (const auto rtcTrack = mediaTrack<MediaInterace>(receiver)) {
+        if (auto rtcTrack = mediaTrack<MediaInterace>(receiver)) {
             LOCK_READ_SAFE_OBJ(_info);
             if (const auto trackInfo = findBySid(sid)) {
-                auto trackImpl = std::make_shared<TTrack>(_securityFactory,
-                                                          *trackInfo,
-                                                          rtcTrack);
+                auto trackImpl = std::make_shared<TTrack>(*trackInfo,
+                                                          std::move(rtcTrack),
+                                                          _securityFactory
+                                                          /*, logger()*/);
                 if (attachCryptor(trackInfo->_encryption, receiver)) {
                     {
                         const std::lock_guard guard(collection.mutex());

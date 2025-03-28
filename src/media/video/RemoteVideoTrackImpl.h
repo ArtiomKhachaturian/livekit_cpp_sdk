@@ -20,16 +20,14 @@
 namespace LiveKitCpp
 {
 
-class RemoteVideoTrackImpl : public RemoteTrackImpl<webrtc::VideoTrackInterface,
-                                                    VideoTrackImpl<RemoteVideoTrack>>
+class RemoteVideoTrackImpl : public RemoteTrackImpl<VideoTrackImpl<RemoteVideoTrack>>
 {
-    using Base = RemoteTrackImpl<webrtc::VideoTrackInterface, VideoTrackImpl<RemoteVideoTrack>>;
+    using Base = RemoteTrackImpl<VideoTrackImpl<RemoteVideoTrack>>;
 public:
-    RemoteVideoTrackImpl(TrackManager* manager, const TrackInfo& info,
-                         const webrtc::scoped_refptr<webrtc::VideoTrackInterface>& track);
-    RemoteVideoTrackImpl(TrackManager* manager, const TrackInfo& info,
-                         webrtc::VideoTrackInterface* track);
-    ~RemoteVideoTrackImpl() final;
+    RemoteVideoTrackImpl(const TrackInfo& info,
+                         webrtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack,
+                         TrackManager* manager,
+                         const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of RemoteVideoTrack
     std::string sid() const final { return info()._sid; }
     uint32_t originalWidth() const final { return info()._width; }
@@ -38,9 +36,6 @@ public:
     std::vector<SimulcastCodecInfo> codecs() const final { return info()._codecs; }
     std::string mime() const final { return info()._mimeType; }
     std::string stream() const final { return info()._stream; }
-protected:
-    // impl. of VideoTrackImpl<>
-    void installSink(bool install, rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
 };
 
 } // namespace LiveKitCpp

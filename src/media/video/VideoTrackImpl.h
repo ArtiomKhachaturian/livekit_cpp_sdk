@@ -12,69 +12,70 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoTrackImpl.h
+#include "TrackImpl.h"
 #include "VideoTrack.h"
-#include "VideoTrackSink.h"
-#include "Listeners.h"
-#include <api/media_stream_interface.h>
-#include <api/video/video_sink_interface.h>
-#include <api/video/video_frame.h>
+#include "VideoTrackSinks.h"
 #include <type_traits>
 
 namespace LiveKitCpp
 {
 
-template<class TTrackApi = VideoTrack>
-class VideoTrackImpl : public TTrackApi,
-                       private rtc::VideoSinkInterface<webrtc::VideoFrame>
+template<class TTrackApi = VideoTrack, class TWebRtcTrack = webrtc::VideoTrackInterface>
+class VideoTrackImpl : public TrackImpl<TWebRtcTrack, TTrackApi>
 {
     static_assert(std::is_base_of_v<VideoTrack, TTrackApi>);
+    static_assert(std::is_base_of_v<webrtc::VideoTrackInterface, TWebRtcTrack>);
+    using Base = TrackImpl<TWebRtcTrack, TTrackApi>;
 public:
-    ~VideoTrackImpl() override { _sinks.clear(); }
+    ~VideoTrackImpl() override;
     // impl. of VideoTrack
     void addSink(VideoTrackSink* sink) final;
     void removeSink(VideoTrackSink* sink) final;
 protected:
-    VideoTrackImpl() = default;
-    rtc::VideoSinkInterface<webrtc::VideoFrame>* videoSink();
-    virtual void installSink(bool install, rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) = 0;
+    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack,
+                   TrackManager* manager,
+                   const std::shared_ptr<Bricks::Logger>& logger);
 private:
-    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
-    void OnFrame(const webrtc::VideoFrame& frame) final;
-private:
-    Bricks::Listeners<VideoTrackSink*> _sinks;
+    VideoTrackSinks _sinks;
 };
 
-template<class TTrackApi>
-inline void VideoTrackImpl<TTrackApi>::addSink(VideoTrackSink* sink)
+template<class TTrackApi, class TWebRtcTrack>
+inline VideoTrackImpl<TTrackApi, TWebRtcTrack>::
+    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack,
+                   TrackManager* manager,
+                   const std::shared_ptr<Bricks::Logger>& logger)
+    : Base(std::move(videoTrack), manager, logger)
 {
-    if (sink) {
-        const auto res = _sinks.add(sink);
-        if (Bricks::AddResult::OkFirst == res) {
-            installSink(true, this);
+}
+
+template<class TTrackApi, class TWebRtcTrack>
+inline VideoTrackImpl<TTrackApi, TWebRtcTrack>::~VideoTrackImpl()
+{
+    if (_sinks.clear()) {
+        if (const auto& t = Base::mediaTrack()) {
+            t->RemoveSink(&_sinks);
         }
     }
 }
 
-template<class TTrackApi>
-inline void VideoTrackImpl<TTrackApi>::removeSink(VideoTrackSink* sink)
+template<class TTrackApi, class TWebRtcTrack>
+inline void VideoTrackImpl<TTrackApi, TWebRtcTrack>::addSink(VideoTrackSink* sink)
 {
-    if (sink) {
-        const auto res = _sinks.remove(sink);
-        if (Bricks::RemoveResult::OkLast == res) {
-            installSink(false, this);
+    if (Bricks::AddResult::OkFirst == _sinks.add(sink)) {
+        if (const auto& t = Base::mediaTrack()) {
+            t->AddOrUpdateSink(&_sinks, {});
         }
     }
 }
 
-template<class TTrackApi>
-inline rtc::VideoSinkInterface<webrtc::VideoFrame>* VideoTrackImpl<TTrackApi>::videoSink()
+template<class TTrackApi, class TWebRtcTrack>
+inline void VideoTrackImpl<TTrackApi, TWebRtcTrack>::removeSink(VideoTrackSink* sink)
 {
-    return _sinks.empty() ? nullptr : this;
-}
-
-template<class TTrackApi>
-inline void VideoTrackImpl<TTrackApi>::OnFrame(const webrtc::VideoFrame& /*frame*/)
-{
+    if (Bricks::RemoveResult::OkLast == _sinks.remove(sink)) {
+        if (const auto& t = Base::mediaTrack()) {
+            t->RemoveSink(&_sinks);
+        }
+    }
 }
 
 } // namespace LiveKitCpp

@@ -22,12 +22,10 @@ CameraTrackImpl::CameraTrackImpl(webrtc::scoped_refptr<CameraVideoTrack> cameraT
                                  const std::shared_ptr<Bricks::Logger>& logger)
     : Base("camera", std::move(cameraTrack), manager, logger)
 {
-    installSink(true, videoSink());
 }
 
 CameraTrackImpl::~CameraTrackImpl()
 {
-    installSink(false, videoSink());
     CameraTrackImpl::close();
 }
 

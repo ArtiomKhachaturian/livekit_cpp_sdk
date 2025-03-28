@@ -11,17 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "RemoteVideoTrackImpl.h"
+#pragma once // AudioTrackSinks.h
+#include "AudioTrackSink.h"
+#include "TrackSinks.h"
+#include <api/media_stream_interface.h>
 
 namespace LiveKitCpp
 {
 
-RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
-                                           webrtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack,
-                                           TrackManager* manager,
-                                           const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(info, std::move(videoTrack), manager, logger)
+class AudioTrackSinks : public TrackSinks<AudioTrackSink, webrtc::AudioTrackSinkInterface>
 {
-}
+public:
+    // impl. of webrtc::AudioTrackSinkInterface
+    void OnData(const void* audioData, int bitsPerSample, int sampleRate,
+                size_t numberOfChannels, size_t numberOfFrames,
+                std::optional<int64_t> absoluteCaptureTimestampMs) final;
+};
 
 } // namespace LiveKitCpp

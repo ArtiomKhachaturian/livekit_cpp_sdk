@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraTrack.h
-#include "LocalVideoTrackImpl.h"
 #include "CameraVideoTrack.h"
 #include "CameraTrack.h"
+#include "LocalTrackImpl.h"
+#include "VideoTrackImpl.h"
 
 namespace LiveKitCpp
 {
 
-class CameraTrackImpl : public LocalVideoTrackImpl<CameraVideoTrack, CameraTrack>
+class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraVideoTrack>>
 {
-    using Base = LocalVideoTrackImpl<CameraVideoTrack, CameraTrack>;
+    using Base = LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraVideoTrack>>;
 public:
     CameraTrackImpl(webrtc::scoped_refptr<CameraVideoTrack> cameraTrack,
                     TrackManager* manager,

@@ -19,18 +19,14 @@
 namespace LiveKitCpp
 {
 
-class RemoteAudioTrackImpl : public RemoteTrackImpl<webrtc::AudioTrackInterface,
-                                                    AudioTrackImpl<RemoteAudioTrack>>
+class RemoteAudioTrackImpl : public RemoteTrackImpl<AudioTrackImpl<RemoteAudioTrack>>
 {
-    using Base = RemoteTrackImpl<webrtc::AudioTrackInterface, AudioTrackImpl<RemoteAudioTrack>>;
+    using Base = RemoteTrackImpl<AudioTrackImpl<RemoteAudioTrack>>;
 public:
-    RemoteAudioTrackImpl(TrackManager* manager, const TrackInfo& info,
-                         const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track);
-    RemoteAudioTrackImpl(TrackManager* manager, const TrackInfo& info,
-                         webrtc::AudioTrackInterface* track);
-    ~RemoteAudioTrackImpl() final;
-    // impl. of AudioTrack
-    void setVolume(double volume) final;
+    RemoteAudioTrackImpl(const TrackInfo& info,
+                         webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+                         TrackManager* manager,
+                         const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of RemoteAudioTrack
     std::string sid() const final { return info()._sid; }
     bool dtx() const final { return !info()._disableDtx; }
@@ -38,10 +34,6 @@ public:
     bool red() const final { return !info()._disableRed; }
     std::string mime() const final { return info()._mimeType; }
     std::string stream() const final { return info()._stream; }
-protected:
-    // impl. of AudioTrackImpl
-    void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;
-    bool signalLevel(int& level) const final;
 };
 
 } // namespace LiveKitCpp

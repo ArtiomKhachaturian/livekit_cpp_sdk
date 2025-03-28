@@ -17,29 +17,20 @@
 
 namespace LiveKitCpp
 {
-class LocalAudioTrackImpl : public LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrackImpl<>>
+class LocalAudioTrackImpl : public LocalTrackImpl<AudioTrackImpl<>>
 {
-    using Base = LocalTrackImpl<webrtc::AudioTrackInterface, AudioTrackImpl<>>;
+    using Base = LocalTrackImpl<AudioTrackImpl<>>;
 public:
     LocalAudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
                         TrackManager* manager, bool microphone = true,
                         const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~LocalAudioTrackImpl();
     // impl. of AudioTrack
-    void setVolume(double volume) final;
     std::vector<AudioTrackFeature> features() const final;
     // impl. of LocalTrack
     TrackSource source() const final;
     bool fillRequest(AddTrackRequest* request) const final;
-protected:
-    // impl. of AudioTrackImpl
-    void installSink(bool install, webrtc::AudioTrackSinkInterface* sink) final;
-    bool signalLevel(int& level) const final;
 private:
     std::optional<bool> stereoRecording() const;
-    webrtc::AudioSourceInterface* audioSource() const;
-    static void installSink(bool install, webrtc::AudioTrackSinkInterface* sink,
-                            const webrtc::scoped_refptr<webrtc::AudioTrackInterface>& track);
 private:
     const bool _microphone;
 };
