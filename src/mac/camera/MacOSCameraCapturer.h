@@ -72,7 +72,7 @@ private:
     template <typename Callback>
     static void enumerateFramerates(AVCaptureDeviceFormat* format, Callback callback);
 private:
-    static inline int32_t _frameRateStep = 1;
+    static inline int32_t _frameRateStep = 10;
     AVCaptureDevice* const _device;
     MacOSCameraCapturerDelegate* const _delegate;
     AVCameraCapturer* const _impl;

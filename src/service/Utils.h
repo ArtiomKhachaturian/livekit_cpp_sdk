@@ -117,6 +117,31 @@ inline std::vector<uint8_t> binaryFromString(std::string_view s) {
     return {s.begin(), s.end()};
 }
 
+// hash support
+template <typename T>
+inline size_t hashCombine(const T& v)
+{
+    return std::hash<T>()(v);
+}
+
+template <typename T, typename... Rest>
+inline size_t hashCombine(const T& v, Rest... rest)
+{
+    size_t seed = hashCombine(rest...);
+    seed ^= hashCombine<T>(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+}
+
+template <class InputIt>
+inline size_t hashCombineRange(InputIt first, InputIt last)
+{
+    size_t seed = 0UL;
+    for (; first != last; ++first) {
+        seed = hashCombine(*first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    return seed;
+}
+
 #ifdef WEBRTC_AVAILABLE
 TrackType mediaTypeToTrackType(cricket::MediaType type);
 std::string fourccToString(int fourcc);

@@ -19,7 +19,10 @@
 #include "VTSupportedPixelFormats.h"
 #include "VideoFrameBuffer.h"
 #include "Utils.h"
+#include <modules/video_capture/video_capture_config.h>
 #include <rtc_base/ref_counted_object.h>
+#include <set>
+#include <unordered_set>
 
 namespace
 {
@@ -28,6 +31,12 @@ NSArray<AVCaptureDeviceFormat*>* eligibleDeviceFormats(const AVCaptureDevice* de
                                                        int32_t supportedFps);
 int32_t minFrameRate(AVFrameRateRange* range);
 int32_t maxFrameRate(AVFrameRateRange* range);
+
+inline size_t hashCode(const webrtc::VideoCaptureCapability& cap) {
+    return LiveKitCpp::hashCombine(cap.width, cap.height,
+                                   cap.interlaced, cap.maxFPS,
+                                   cap.videoType);
+}
 
 }
 
@@ -84,44 +93,53 @@ void MacOSCameraCapturer::deliverFrame(int64_t timestampMicro, CMSampleBufferRef
 
 std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(AVCaptureDevice* device)
 {
-    std::vector<webrtc::VideoCaptureCapability> capabilities;
     if (device) {
         @autoreleasepool {
             if (auto formats = [AVCameraCapturer formatsForDevice:device]) {
-                // calculate expected count of capabilities
-                size_t expectedCount = 0UL;
-                for (AVCaptureDeviceFormat* format in formats) {
-                    enumerateFramerates(format, [&expectedCount](AVFrameRateRange* range){
-                        expectedCount += 1 + ((maxFrameRate(range) - minFrameRate(range)) / _frameRateStep);
-                    });
-                }
                 // fill
-                if (expectedCount > 0UL) {
+                std::list<webrtc::VideoCaptureCapability> caps;
+                std::unordered_set<size_t> enumerated;
+                // reserve memory
+                for (AVCaptureDeviceFormat* format in formats) {
                     webrtc::VideoCaptureCapability pattern;
-                    // reserve memory
-                    capabilities.reserve(expectedCount);
-                    for (AVCaptureDeviceFormat* format in formats) {
-                        pattern.videoType = fromMediaSubType(format.formatDescription);
-                        if (webrtc::VideoType::kUnknown != pattern.videoType) {
-                            const auto dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription);
-                            pattern.width = dimensions.width;
-                            pattern.height = dimensions.height;
-                            pattern.interlaced = interlaced(format.formatDescription);
-                            enumerateFramerates(format, [&capabilities, &pattern](AVFrameRateRange* range) {
-                                for (int32_t fps = minFrameRate(range), maxFps = maxFrameRate(range);
-                                     fps <= maxFps; fps += _frameRateStep) {
-                                    pattern.maxFPS = fps;
-                                    capabilities.push_back(pattern);
+                    pattern.videoType = fromMediaSubType(format.formatDescription);
+                    if (webrtc::VideoType::kUnknown != pattern.videoType) {
+                        const auto dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription);
+                        pattern.width = dimensions.width;
+                        pattern.height = dimensions.height;
+                        pattern.interlaced = interlaced(format.formatDescription);
+                        const auto code = hashCode(pattern);
+                        if (!enumerated.count(code)) {
+                            std::set<int32_t> availableFps;
+                            enumerateFramerates(format, [&availableFps](AVFrameRateRange* range) {
+                                const auto minFps = minFrameRate(range);
+                                const auto maxFps = maxFrameRate(range);
+                                for (int32_t fps = minFps; fps <= maxFps; ++fps) {
+                                    availableFps.insert(fps);
                                 }
                             });
+                            if (availableFps.empty()) {
+                                pattern.maxFPS = webrtc::videocapturemodule::kDefaultFrameRate;
+                            }
+                            else {
+                                size_t step = 0U;
+                                for (auto fps : availableFps) {
+                                    if (0 == (++step % _frameRateStep)) {
+                                        pattern.maxFPS = fps;
+                                        caps.push_back(pattern);
+                                    }
+                                }
+                            }
+                            enumerated.insert(code);
                         }
                     }
-                    capabilities.shrink_to_fit();
                 }
+                return {std::make_move_iterator(caps.begin()),
+                        std::make_move_iterator(caps.end())};
             }
         }
     }
-    return capabilities;
+    return {};
 }
 
 std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(const char* deviceUniqueIdUTF8)
