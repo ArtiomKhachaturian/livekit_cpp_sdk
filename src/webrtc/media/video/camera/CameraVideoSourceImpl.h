@@ -38,7 +38,7 @@ protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
     // impl. of MediaSourceImpl
-    void onClose() final;
+    void onClosed() final;
     void onEnabled(bool enabled) final;
 private:
     static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,

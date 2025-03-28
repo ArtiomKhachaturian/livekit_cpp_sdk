@@ -37,14 +37,16 @@ protected:
     AsyncMediaSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                     const std::shared_ptr<Bricks::Logger>& logger = {});
     void changeState(webrtc::MediaSourceInterface::SourceState state);
-    virtual void onEnded() {}
-    virtual void onClose() {}
+    virtual void onClosed() {}
     virtual void onEnabled(bool /*enabled*/) {}
+    virtual void onMuted() {}
+    virtual void onLive() {}
 private:
+    static constexpr auto _ended = webrtc::MediaSourceInterface::kEnded;
     AsyncListeners<webrtc::ObserverInterface*> _observers;
     std::atomic_bool _enabled = true;
     std::atomic_bool _active = true;
-    std::atomic<webrtc::MediaSourceInterface::SourceState> _state = webrtc::MediaSourceInterface::kEnded;
+    std::atomic<webrtc::MediaSourceInterface::SourceState> _state;
 };
 
 } // namespace LiveKitCpp

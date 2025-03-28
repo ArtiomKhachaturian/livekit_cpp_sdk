@@ -301,11 +301,9 @@ webrtc::scoped_refptr<CameraVideoTrack> LocalParticipant::
     createCamera(const CameraOptions& options) const
 {
     if (_pcf && CameraManager::available()) {
-        auto source = webrtc::make_ref_counted<CameraVideoSource>(_pcf->signalingThread(),
-                                                                  map(options),
-                                                                  logger());
         return webrtc::make_ref_counted<CameraVideoTrack>(makeUuid(),
-                                                          std::move(source),
+                                                          _pcf->signalingThread(),
+                                                          map(options),
                                                           logger());
     }
     return {};

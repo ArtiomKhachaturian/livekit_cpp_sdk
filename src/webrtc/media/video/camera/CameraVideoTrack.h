@@ -22,12 +22,12 @@
 namespace LiveKitCpp
 {
 
-class CameraVideoTrack : public webrtc::VideoTrackInterface,
-                         private Bricks::LoggableS<webrtc::ObserverInterface>
+class CameraVideoTrack : public webrtc::VideoTrackInterface
 {
 public:
     CameraVideoTrack(const std::string& id,
-                     webrtc::scoped_refptr<CameraVideoSource> source,
+                     std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                     const webrtc::VideoCaptureCapability& initialCapability = {},
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoTrack() override;
     void close();
@@ -45,21 +45,13 @@ public:
     std::string id() const final { return _id; }
     bool enabled() const final;
     bool set_enabled(bool enable) final;
-    webrtc::MediaStreamTrackInterface::TrackState state() const final { return _state; }
+    webrtc::MediaStreamTrackInterface::TrackState state() const final;
     // impl. of NotifierInterface
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
-    void changeState(webrtc::MediaStreamTrackInterface::TrackState state);
-    // impl. of Bricks::LoggableS<>
-    std::string_view logCategory() const final;
-    // impl. of webrtc::ObserverInterface
-    void OnChanged() final;
-private:
     const std::string _id;
     const webrtc::scoped_refptr<CameraVideoSource> _source;
-    AsyncListeners<webrtc::ObserverInterface*> _observers;
-    std::atomic<webrtc::MediaStreamTrackInterface::TrackState> _state;
 };
 
 } // namespace LiveKitCpp

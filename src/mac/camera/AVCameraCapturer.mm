@@ -101,9 +101,9 @@ typedef NS_ENUM(NSInteger, Error) {
                 [captureSession addOutput:videoDataOutput];
                 _captureSession = captureSession;
                 _videoDataOutput = videoDataOutput;
-                _frameQueue =  RTCDispatchQueueCreateWithTarget(CAPTURER_DOMAIN,
-                                                                DISPATCH_QUEUE_SERIAL,
-                                                                dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0));
+                _frameQueue = RTCDispatchQueueCreateWithTarget(CAPTURER_DOMAIN,
+                                                               DISPATCH_QUEUE_SERIAL,
+                                                               dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0));
                 {
                     NSNumber* prefferedPixelFormat = availablePixelFormats.firstObject;
                     _preferredOutputPixelFormat = [prefferedPixelFormat unsignedIntValue];
@@ -111,6 +111,12 @@ typedef NS_ENUM(NSInteger, Error) {
                 }
                 _videoDataOutput.alwaysDiscardsLateVideoFrames = NO;
                 [_videoDataOutput setSampleBufferDelegate:self queue:_frameQueue];
+                // direct subscribe to running state
+                // https://developer.apple.com/documentation/avfoundation/avcapturesession/isrunning?language=objc
+                [_captureSession addObserver:self
+                                  forKeyPath:@"running"
+                                     options:NSKeyValueObservingOptionNew
+                                     context:nil];
                 // subscribe to capturer session notifications
                 NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
                 [center addObserver:self
@@ -201,6 +207,21 @@ typedef NS_ENUM(NSInteger, Error) {
         [_delegate didCapture:sampleBuffer
                timestampMicro:[AVCameraCapturer timestampMicro:sampleBuffer]
                      capturer:self];
+    }
+}
+
+- (void) observeValueForKeyPath:(NSString*) keyPath
+                       ofObject:(id) object
+                         change:(NSDictionary<NSKeyValueChangeKey,id>*) change
+                        context:(void*) context {
+    if ([keyPath isEqualToString:@"running"]) {
+        BOOL running = [change[NSKeyValueChangeNewKey] boolValue];
+        if (running) {
+            [_delegate didStarted:self];
+        }
+        else {
+            [_delegate didStopped:self];
+        }
     }
 }
 

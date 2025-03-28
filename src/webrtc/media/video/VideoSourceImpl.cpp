@@ -115,17 +115,17 @@ void VideoSourceImpl::discard()
     }
 }
 
-void VideoSourceImpl::onEnded()
+void VideoSourceImpl::onClosed()
 {
-    AsyncMediaSourceImpl::onEnded();
-    _lastResolution = 0ULL;
-    _lastFrameId = 0U;
+    AsyncMediaSourceImpl::onClosed();
+    _broadcasters({});
 }
 
-void VideoSourceImpl::onClose()
+void VideoSourceImpl::onMuted()
 {
-    AsyncMediaSourceImpl::onClose();
-    _broadcasters({});
+    AsyncMediaSourceImpl::onMuted();
+    _lastResolution = 0ULL;
+    _lastFrameId = 0U;
 }
 
 } // namespace LiveKitCpp

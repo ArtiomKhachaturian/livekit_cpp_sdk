@@ -135,9 +135,9 @@ std::string_view CameraVideoSourceImpl::logCategory() const
     return CameraManager::logCategory();
 }
 
-void CameraVideoSourceImpl::onClose()
+void CameraVideoSourceImpl::onClosed()
 {
-    VideoSourceImpl::onClose();
+    VideoSourceImpl::onClosed();
     resetCapturer();
 }
 
@@ -197,7 +197,8 @@ bool CameraVideoSourceImpl::startCapturer(const webrtc::VideoCaptureCapability& 
 bool CameraVideoSourceImpl::stopCapturer(bool sendByeFrame)
 {
     int32_t code = 0;
-    if (const auto& capturer = _capturer.constRef()) {
+    const auto& capturer = _capturer.constRef();
+    if (capturer && capturer->CaptureStarted()) {
         uint16_t frameId = 0U;
         int w = 0, h = 0;
         if (sendByeFrame) {
@@ -251,7 +252,7 @@ void CameraVideoSourceImpl::onStateChanged(CameraState state)
 {
     switch (state) {
         case CameraState::Stopped:
-            changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
+            changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
             break;
         case CameraState::Starting:
             changeState(webrtc::MediaSourceInterface::SourceState::kInitializing);

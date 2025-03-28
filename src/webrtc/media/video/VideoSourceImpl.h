@@ -43,8 +43,8 @@ protected:
     void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
     void discard();
     // impl. of MediaSourceImpl
-    void onEnded() override;
-    void onClose() override;
+    void onClosed() override;
+    void onMuted() override;
 private:
     Bricks::SafeObj<Broadcasters> _broadcasters;
     std::atomic<uint64_t> _lastResolution = 0ULL;

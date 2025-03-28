@@ -20,6 +20,7 @@ AsyncMediaSourceImpl::AsyncMediaSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
                                            const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _observers(std::move(signalingQueue))
+    , _state(webrtc::MediaSourceInterface::kInitializing)
 {
 }
 
@@ -32,14 +33,13 @@ void AsyncMediaSourceImpl::setEnabled(bool enabled)
 {
     if (active() && enabled != _enabled.exchange(enabled)) {
         onEnabled(enabled);
-        notifyAboutChanges();
     }
 }
 
 void AsyncMediaSourceImpl::close()
 {
-    if (_active.exchange(true)) {
-        onClose();
+    if (_active.exchange(false)) {
+        onClosed();
         changeState(webrtc::MediaSourceInterface::kEnded);
     }
 }
@@ -58,14 +58,26 @@ void AsyncMediaSourceImpl::unregisterObserver(webrtc::ObserverInterface* observe
 
 void AsyncMediaSourceImpl::changeState(webrtc::MediaSourceInterface::SourceState state)
 {
-    if (state != _state.exchange(state)) {
-        switch (state) {
-            case webrtc::MediaSourceInterface::SourceState::kEnded:
-                onEnded();
-                break;
-            default:
-                break;
+    bool changed = false;
+    if (active()) {
+        changed = state != _state.exchange(state);
+        if (changed) {
+            switch (state) {
+                case webrtc::MediaSourceInterface::kLive:
+                    onLive();
+                    break;
+                case webrtc::MediaSourceInterface::kMuted:
+                    onMuted();
+                    break;
+                default:
+                    break;
+            }
         }
+    }
+    else {
+        changed = _ended != _state.exchange(_ended);
+    }
+    if (changed) {
         notifyAboutChanges();
     }
 }
