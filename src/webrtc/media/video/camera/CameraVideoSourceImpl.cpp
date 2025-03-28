@@ -37,7 +37,7 @@ namespace LiveKitCpp
 CameraVideoSourceImpl::CameraVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                              const std::shared_ptr<Bricks::Logger>& logger,
                                              const webrtc::VideoCaptureCapability& initialCapability)
-    : VideoSourceImpl(std::move(signalingQueue), logger)
+    : VideoSourceImpl(std::move(signalingQueue), logger, false)
 {
     if (isNull(initialCapability)) {
         _capability = CameraManager::defaultCapability();

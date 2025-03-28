@@ -38,7 +38,8 @@ public:
     bool removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
 protected:
     VideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                    const std::shared_ptr<Bricks::Logger>& logger = {});
+                    const std::shared_ptr<Bricks::Logger>& logger = {},
+                    bool liveImmediately = false);
     bool frameWanted() const;
     void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
     void discard();

@@ -18,6 +18,7 @@
 #include "CameraVideoSource.h"
 #include "CameraManager.h"
 #include "DataChannel.h"
+#include "LocalAudioTrack.h"
 #include "MicrophoneOptions.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
@@ -290,9 +291,10 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::
     createMic(const MicrophoneOptions& options) const
 {
     if (_pcf) {
-        if (const auto source = _pcf->CreateAudioSource(toCricketOptions(options))) {
-            return _pcf->CreateAudioTrack(makeUuid(), source.get());
-        }
+        return webrtc::make_ref_counted<LocalAudioTrack>(makeUuid(),
+                                                         _pcf->signalingThread(),
+                                                         toCricketOptions(options),
+                                                         logger());
     }
     return {};
 }

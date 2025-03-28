@@ -35,7 +35,8 @@ public:
     void unregisterObserver(webrtc::ObserverInterface* observer);
 protected:
     AsyncMediaSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                    const std::shared_ptr<Bricks::Logger>& logger = {});
+                         const std::shared_ptr<Bricks::Logger>& logger = {},
+                         bool liveImmediately = false);
     void changeState(webrtc::MediaSourceInterface::SourceState state);
     virtual void onClosed() {}
     virtual void onEnabled(bool /*enabled*/) {}

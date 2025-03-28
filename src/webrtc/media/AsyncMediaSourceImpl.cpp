@@ -17,10 +17,11 @@ namespace LiveKitCpp
 {
 
 AsyncMediaSourceImpl::AsyncMediaSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                                           const std::shared_ptr<Bricks::Logger>& logger)
+                                           const std::shared_ptr<Bricks::Logger>& logger,
+                                           bool liveImmediately)
     : Bricks::LoggableS<>(logger)
     , _observers(std::move(signalingQueue))
-    , _state(webrtc::MediaSourceInterface::kInitializing)
+    , _state(liveImmediately ? webrtc::MediaSourceInterface::kLive : webrtc::MediaSourceInterface::kInitializing)
 {
 }
 

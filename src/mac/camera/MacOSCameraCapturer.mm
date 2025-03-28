@@ -122,9 +122,8 @@ std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(AV
                                 pattern.maxFPS = webrtc::videocapturemodule::kDefaultFrameRate;
                             }
                             else {
-                                size_t step = 0U;
                                 for (auto fps : availableFps) {
-                                    if (0 == (++step % _frameRateStep)) {
+                                    if (0 == (fps % _frameRateStep)) {
                                         pattern.maxFPS = fps;
                                         caps.push_back(pattern);
                                     }
