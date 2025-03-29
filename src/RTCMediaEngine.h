@@ -48,7 +48,6 @@ class VideoTrack;
 struct AddTrackRequest;
 struct CameraOptions;
 struct MuteTrackRequest;
-struct MicrophoneOptions;
 struct UpdateLocalAudioTrack;
 enum class DisconnectReason;
 
@@ -63,7 +62,7 @@ public:
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    virtual std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack(const MicrophoneOptions& options);
+    virtual std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack();
     virtual std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(const CameraOptions& options);
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track);

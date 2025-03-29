@@ -23,10 +23,10 @@
 #include "e2e/KeyProviderOptions.h"
 #include "e2e/KeyProvider.h"
 #ifdef WEBRTC_AVAILABLE
-#include "AudioDeviceModuleListener.h"
+#include "AdmProxyListener.h"
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
-#include "LocalAudioDevice.h"
+#include "MicAudioDevice.h"
 #include "Loggable.h"
 #include "PeerConnectionFactory.h"
 #include "RtcInitializer.h"
@@ -48,10 +48,11 @@ const std::string_view g_logCategory("service");
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-class Service::Impl : public Bricks::LoggableS<AudioDeviceModuleListener>
+class Service::Impl : public Bricks::LoggableS<AdmProxyListener>
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+         const MicrophoneOptions& microphoneOptions,
          const std::shared_ptr<Bricks::Logger>& logger,
          bool logWebrtcEvents);
     ~Impl();
@@ -69,6 +70,7 @@ public:
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                                        const MicrophoneOptions& microphoneOptions,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
     // overrides of AudioDeviceModuleListener
@@ -85,9 +87,10 @@ private:
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                 const MicrophoneOptions& microphoneOptions,
                  const std::shared_ptr<Bricks::Logger>& logger,
                  bool logWebrtcEvents)
-    : _impl(Impl::create(websocketsFactory, logger, logWebrtcEvents))
+    : _impl(Impl::create(websocketsFactory, microphoneOptions, logger, logWebrtcEvents))
 {
 }
 
@@ -179,17 +182,18 @@ std::vector<CameraOptions> Service::cameraOptions(const MediaDeviceInfo& info) c
 }
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                    const MicrophoneOptions& microphoneOptions,
                     const std::shared_ptr<Bricks::Logger>& logger,
                     bool logWebrtcEvents)
-    : Bricks::LoggableS<AudioDeviceModuleListener>(logger)
+    : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
-    , _pcf(PeerConnectionFactory::Create(true, logWebrtcEvents ? logger : nullptr))
+    , _pcf(PeerConnectionFactory::create(true, microphoneOptions, logWebrtcEvents ? logger : nullptr))
 {
     if (!_pcf) {
         logError("failed to create of peer connection factory");
     }
     else {
-        _pcf->addAdmListener(this);
+        _pcf->registerAdmListener(this, true);
         if (!_pcf->eventsQueue()) {
             logError("failed to create of events queue");
         }
@@ -207,7 +211,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
 Service::Impl::~Impl()
 {
     if (_pcf) {
-        _pcf->removeAdmListener(this);
+        _pcf->registerAdmListener(this, false);
     }
 }
 
@@ -313,12 +317,14 @@ bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger
 
 std::unique_ptr<Service::Impl> Service::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+           const MicrophoneOptions& microphoneOptions,
            const std::shared_ptr<Bricks::Logger>& logger,
            bool logWebrtcEvents)
 {
     if (wsaInitialized(logger) && sslInitialized(logger) && websocketsFactory) {
         logPlatformDefects(logger);
-        return std::make_unique<Impl>(websocketsFactory, logger, logWebrtcEvents);
+        return std::make_unique<Impl>(websocketsFactory, microphoneOptions,
+                                      logger, logWebrtcEvents);
     }
     return {};
 }
@@ -391,6 +397,7 @@ CameraOptions CameraOptions::defaultOptions()
 class Service::Impl {};
 
 Service::Service(const std::shared_ptr<Websocket::Factory>&,
+                 const MicrophoneOptions&
                  const std::shared_ptr<Bricks::Logger>&, bool) {}
 
 Service::~Service() {}

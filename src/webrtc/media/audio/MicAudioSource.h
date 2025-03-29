@@ -11,22 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalAudioSource.h
+#pragma once // MicAudioSource.h
 #include "AsyncMediaSource.h"
 #include "AudioSourceImpl.h"
 #include <api/media_stream_interface.h>
+#include <rtc_base/weak_ptr.h>
 
 namespace LiveKitCpp
 {
 
-class LocalAudioSource : public AsyncMediaSource<webrtc::AudioSourceInterface, AudioSourceImpl>
+class AdmProxy;
+
+class MicAudioSource : public AsyncMediaSource<webrtc::AudioSourceInterface, AudioSourceImpl>
 {
     using Base = AsyncMediaSource<webrtc::AudioSourceInterface, AudioSourceImpl>;
 public:
-    LocalAudioSource(cricket::AudioOptions options = {},
-                     std::weak_ptr<webrtc::TaskQueueBase> signalingQueue = {},
-                     const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~LocalAudioSource() override;
+    MicAudioSource(rtc::WeakPtr<AdmProxy> admProxyRef,
+                   cricket::AudioOptions options = {},
+                   std::weak_ptr<webrtc::TaskQueueBase> signalingQueue = {},
+                   const std::shared_ptr<Bricks::Logger>& logger = {});
+    MicAudioSource(const webrtc::scoped_refptr<AdmProxy>& adm,
+                   cricket::AudioOptions options = {},
+                   std::weak_ptr<webrtc::TaskQueueBase> signalingQueue = {});
+    ~MicAudioSource() override;
     // impl. of webrtc::AudioSourceInterface
     void SetVolume(double volume) final;
     void RegisterAudioObserver(AudioObserver* observer) final;
@@ -35,6 +42,7 @@ public:
     void RemoveSink(webrtc::AudioTrackSinkInterface* sink) final;
     const cricket::AudioOptions options() const final;
 private:
+    const rtc::WeakPtr<AdmProxy> _admProxyRef;
     const cricket::AudioOptions _options;
 };
 

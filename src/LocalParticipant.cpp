@@ -17,8 +17,8 @@
 #include "CameraVideoDevice.h"
 #include "CameraManager.h"
 #include "DataChannel.h"
-#include "LocalAudioDevice.h"
-#include "MicrophoneOptions.h"
+#include "MicAudioDevice.h"
+#include "MicAudioSource.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
 #include "rtc/ParticipantInfo.h"
@@ -65,12 +65,11 @@ size_t LocalParticipant::videoTracksCount() const
     return _videoTracks->size();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::
-    addMicrophoneTrack(const MicrophoneOptions& options)
+std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addMicrophoneTrack()
 {
     LOCK_WRITE_SAFE_OBJ(_micTrack);
     if (!_micTrack.constRef()) {
-        if (auto mic = createMic(options)) {
+        if (auto mic = createMic()) {
             _micTrack = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
                                                               _manager, true,
                                                               logger());
@@ -275,25 +274,11 @@ void LocalParticipant::clear(TTracks& tracks)
     tracks->clear();
 }
 
-cricket::AudioOptions LocalParticipant::toCricketOptions(const MicrophoneOptions& options)
+webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::createMic() const
 {
-    cricket::AudioOptions audioOptions;
-    audioOptions.echo_cancellation = options._echoCancellation;
-    audioOptions.auto_gain_control = options._autoGainControl;
-    audioOptions.noise_suppression = options._noiseSuppression;
-    audioOptions.highpass_filter = options._highpassFilter;
-    audioOptions.stereo_swapping = options._stereoSwapping;
-    return audioOptions;
-}
-
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::
-    createMic(const MicrophoneOptions& options) const
-{
-    if (_pcf) {
-        return webrtc::make_ref_counted<LocalAudioDevice>(makeUuid(),
-                                                          _pcf->signalingThread(),
-                                                          toCricketOptions(options),
-                                                          logger());
+    if (_pcf && _pcf->micAudioSource()) {
+        return webrtc::make_ref_counted<MicAudioDevice>(makeUuid(),
+                                                        _pcf->micAudioSource());
     }
     return {};
 }

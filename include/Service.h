@@ -14,6 +14,7 @@
 #pragma once // Service.h
 #include "LiveKitClientExport.h"
 #include "CameraOptions.h"
+#include "MicrophoneOptions.h"
 #include "Session.h"
 #include "ServiceState.h"
 #include "MediaDeviceInfo.h"
@@ -40,6 +41,7 @@ class LIVEKIT_CLIENT_API Service
     class Impl;
 public:
     Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+            const MicrophoneOptions& microphoneOptions = {},
             const std::shared_ptr<Bricks::Logger>& logger = {},
             bool logWebrtcEvents = false);
     ~Service();

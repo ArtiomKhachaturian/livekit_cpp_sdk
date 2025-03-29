@@ -67,7 +67,7 @@ public:
                         const std::string& topic = {}) const;
     bool sendChatMessage(std::string message, bool deleted) const;
     // override of RTCMediaEngine
-    std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack(const MicrophoneOptions& options) final;
+    std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack() final;
     std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(const CameraOptions& options) final;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track) final;

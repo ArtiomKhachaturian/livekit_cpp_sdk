@@ -11,13 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#pragma once // AdmProxyModule.h
 #include "Loggable.h"
 #include "AsyncListeners.h"
 #include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
 #include <api/function_view.h>
 #include <modules/audio_device/include/audio_device.h> //AudioDeviceModule
+#include <rtc_base/weak_ptr.h>
 #include <type_traits>
 
 namespace rtc {
@@ -27,18 +28,20 @@ class Thread;
 namespace LiveKitCpp
 {
 
-class AudioDeviceModuleListener;
+class AdmProxyListener;
 
-class AudioDeviceProxyModule : public Bricks::LoggableS<webrtc::AudioDeviceModule>
+class AdmProxy : public Bricks::LoggableS<webrtc::AudioDeviceModule>
 {
     template<bool recording> class ScopedAudioBlocker;
 public:
-    static webrtc::scoped_refptr<AudioDeviceProxyModule>
+    AdmProxy(const std::shared_ptr<rtc::Thread>& thread,
+             rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
+             const std::shared_ptr<Bricks::Logger>& logger);
+    ~AdmProxy() override;
+    static webrtc::scoped_refptr<AdmProxy>
         create(const std::shared_ptr<rtc::Thread>& workingThread,
                webrtc::TaskQueueFactory* taskQueueFactory,
                const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~AudioDeviceProxyModule() override;
-
     // impl. of webrtc::AudioDeviceModule
     // Retrieve the currently utilized audio layer
     int32_t ActiveAudioLayer(AudioLayer* audioLayer) const final;
@@ -139,8 +142,7 @@ public:
     bool stereoRecording() const noexcept { return _stereoRecording; }
     bool stereoPlayout() const noexcept { return _stereoPlayout; }
     void close();
-    void addListener(AudioDeviceModuleListener* listener);
-    void removeListener(AudioDeviceModuleListener* listener);
+    void registerListener(AdmProxyListener* listener, bool reg);
     // selection management
     MediaDeviceInfo defaultRecordingDevice() const;
     MediaDeviceInfo defaultPlayoutDevice() const;
@@ -150,10 +152,8 @@ public:
     MediaDeviceInfo playoutDevice() const { return _playoutDev(); }
     std::vector<MediaDeviceInfo> recordingDevices() const;
     std::vector<MediaDeviceInfo> playoutDevices() const;
+    rtc::WeakPtr<AdmProxy> weakRef() { return _weakFactory.GetWeakPtr(); }
 protected:
-    AudioDeviceProxyModule(const std::shared_ptr<rtc::Thread>& thread,
-                           rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
-                           const std::shared_ptr<Bricks::Logger>& logger);
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
@@ -194,11 +194,12 @@ private:
 private:
     const std::weak_ptr<rtc::Thread> _thread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
-    AsyncListeners<AudioDeviceModuleListener*, true> _listeners;
+    AsyncListeners<AdmProxyListener*, true> _listeners;
     Bricks::SafeObj<MediaDeviceInfo> _recordingDev;
     Bricks::SafeObj<MediaDeviceInfo> _playoutDev;
     std::atomic_bool _stereoRecording = false;
     std::atomic_bool _stereoPlayout = false;
+    rtc::WeakPtrFactory<AdmProxy> _weakFactory;
 };
 
 } // namespace LiveKitCpp

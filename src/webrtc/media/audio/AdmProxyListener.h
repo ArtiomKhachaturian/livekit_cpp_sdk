@@ -11,20 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AudioDeviceModuleListener.h
+#pragma once // AdmProxyListener.h
+#include <cstdint>
 
 namespace LiveKitCpp
 {
 
 struct MediaDeviceInfo;
 
-class AudioDeviceModuleListener
+class AdmProxyListener
 {
 public:
-    virtual void onRecordingChanged(const MediaDeviceInfo& /*device*/) {}
-    virtual void onPlayoutChanged(const MediaDeviceInfo& /*device*/) {}
+    virtual void onMicrophoneVolumeChanged(uint32_t /*volume*/) {}
+    virtual void onMicrophoneMuteChanged(bool /*mute*/) {}
+    virtual void onRecordingStarted() {}
+    virtual void onRecordingStopped() {}
+    virtual void onRecordingChanged(const MediaDeviceInfo& /*info*/) {}
+    virtual void onPlayoutStarted() {}
+    virtual void onPlayoutStopped() {}
+    virtual void onPlayoutChanged(const MediaDeviceInfo& /*info*/) {}
 protected:
-    virtual ~AudioDeviceModuleListener() = default;
+    virtual ~AdmProxyListener() = default;
 };
 
 } // namespace LiveKitCpp

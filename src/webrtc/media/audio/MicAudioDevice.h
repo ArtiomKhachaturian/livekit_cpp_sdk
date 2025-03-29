@@ -11,26 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalAudioDevice.h
-#include "LocalAudioSource.h"
+#pragma once // MicAudioDevice.h
 #include <api/media_stream_interface.h>
 
 namespace LiveKitCpp
 {
 
-class LocalAudioDevice : public webrtc::AudioTrackInterface
+class MicAudioSource;
+
+class MicAudioDevice : public webrtc::AudioTrackInterface
 {
 public:
-    LocalAudioDevice(const std::string& id,
-                     std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                     cricket::AudioOptions options = {},
-                     const std::shared_ptr<Bricks::Logger>& logger = {});
+    MicAudioDevice(const std::string& id, webrtc::scoped_refptr<MicAudioSource> source);
     // impl. of webrtc::AudioTrackInterface
     webrtc::AudioSourceInterface* GetSource() const final;
     void AddSink(webrtc::AudioTrackSinkInterface* sink) final;
     void RemoveSink(webrtc::AudioTrackSinkInterface* sink) final;
     bool GetSignalLevel(int* level) final;
-    rtc::scoped_refptr<webrtc::AudioProcessorInterface> GetAudioProcessor() final;
     // impl. of MediaStreamTrackInterface
     std::string kind() const final { return webrtc::AudioTrackInterface::kAudioKind; }
     std::string id() const final { return _id; }
@@ -42,7 +39,8 @@ public:
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
     const std::string _id;
-    const webrtc::scoped_refptr<LocalAudioSource> _source;
+    const webrtc::scoped_refptr<MicAudioSource> _source;
+    std::atomic_bool _enabled;
 };
 
 } // namespace LiveKitCpp

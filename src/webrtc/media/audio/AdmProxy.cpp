@@ -11,9 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "AudioDeviceProxyModule.h"
+#include "AdmProxy.h"
 #include "AudioDevicesEnumerator.h"
-#include "AudioDeviceModuleListener.h"
+#include "AdmProxyListener.h"
 #include "MediaAuthorization.h"
 #include "Utils.h"
 #include "ThreadUtils.h"
@@ -24,14 +24,15 @@ namespace
 {
 
 using AdmPtr = webrtc::scoped_refptr<webrtc::AudioDeviceModule>;
+using namespace LiveKitCpp;
 
 inline AdmPtr defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory) {
     return webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::kPlatformDefaultAudio,
                                              taskQueueFactory);
 }
 
-inline LiveKitCpp::MediaDeviceInfo make(std::string_view name, std::string_view guid) {
-    LiveKitCpp::MediaDeviceInfo info;
+inline MediaDeviceInfo make(std::string_view name, std::string_view guid) {
+    MediaDeviceInfo info;
     info._name = name;
     info._guid = guid;
     return info;
@@ -58,24 +59,25 @@ namespace LiveKitCpp
 {
 
 template<bool recording>
-class AudioDeviceProxyModule::ScopedAudioBlocker
+class AdmProxy::ScopedAudioBlocker
 {
 public:
-    ScopedAudioBlocker(const AudioDeviceProxyModule& adm);
+    ScopedAudioBlocker(const AdmProxy& adm);
     ~ScopedAudioBlocker();
 private:
     const AdmPtr& _impl;
-    const AudioDeviceProxyModule& _adm;
+    const AdmProxy& _adm;
     bool _needRestart = false;
 };
 
-AudioDeviceProxyModule::AudioDeviceProxyModule(const std::shared_ptr<rtc::Thread>& thread,
-                                               rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
-                                               const std::shared_ptr<Bricks::Logger>& logger)
+AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& thread,
+                   rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
+                   const std::shared_ptr<Bricks::Logger>& logger)
     :  Bricks::LoggableS<webrtc::AudioDeviceModule>(logger)
     , _thread(thread)
     , _impl(std::move(impl))
     , _listeners(thread)
+    , _weakFactory(this)
 {
     if (canLogInfo()) {
         const auto& impl = _impl.constRef();
@@ -95,12 +97,12 @@ AudioDeviceProxyModule::AudioDeviceProxyModule(const std::shared_ptr<rtc::Thread
     }
 }
 
-AudioDeviceProxyModule::~AudioDeviceProxyModule()
+AdmProxy::~AdmProxy()
 {
     close();
 }
 
-rtc::scoped_refptr<AudioDeviceProxyModule> AudioDeviceProxyModule::
+rtc::scoped_refptr<AdmProxy> AdmProxy::
     create(const std::shared_ptr<rtc::Thread>& thread,
            webrtc::TaskQueueFactory* taskQueueFactory,
            const std::shared_ptr<Bricks::Logger>& logger)
@@ -110,29 +112,27 @@ rtc::scoped_refptr<AudioDeviceProxyModule> AudioDeviceProxyModule::
             return defaultAdm(taskQueueFactory);
         });
         if (impl) {
-            return rtc::make_ref_counted<AudioDeviceProxyModule>(thread,
-                                                                 std::move(impl),
-                                                                 logger);
+            return rtc::make_ref_counted<AdmProxy>(thread, std::move(impl), logger);
         }
     }
     return nullptr;
 }
 
-int32_t AudioDeviceProxyModule::ActiveAudioLayer(AudioLayer* audioLayer) const
+int32_t AdmProxy::ActiveAudioLayer(AudioLayer* audioLayer) const
 {
     return threadInvokeI32([audioLayer](const auto& pm) {
         return pm->ActiveAudioLayer(audioLayer); });
 }
 
 // Full-duplex transportation of PCM audio
-int32_t AudioDeviceProxyModule::RegisterAudioCallback(webrtc::AudioTransport* audioCallback)
+int32_t AdmProxy::RegisterAudioCallback(webrtc::AudioTransport* audioCallback)
 {
     return threadInvokeI32([audioCallback](const auto& pm) {
         return pm->RegisterAudioCallback(audioCallback); });
 }
 
 // Main initialization and termination
-int32_t AudioDeviceProxyModule::AudioDeviceProxyModule::Init()
+int32_t AdmProxy::AdmProxy::Init()
 {
     return threadInvokeI32([this](const auto& pm) {
         const auto res = pm->Init();
@@ -149,13 +149,13 @@ int32_t AudioDeviceProxyModule::AudioDeviceProxyModule::Init()
     });
 }
 
-int32_t AudioDeviceProxyModule::AudioDeviceProxyModule::Terminate()
+int32_t AdmProxy::AdmProxy::Terminate()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->Terminate(); });
 }
 
-bool AudioDeviceProxyModule::Initialized() const
+bool AdmProxy::Initialized() const
 {
     return threadInvokeR([](const auto& pm) {
         return pm->Initialized();
@@ -163,45 +163,45 @@ bool AudioDeviceProxyModule::Initialized() const
 }
 
 // Device enumeration
-int16_t AudioDeviceProxyModule::PlayoutDevices()
+int16_t AdmProxy::PlayoutDevices()
 {
     return threadInvokeR([](const auto& pm) {
         return pm->PlayoutDevices();
     }, int16_t(0));
 }
 
-int16_t AudioDeviceProxyModule::RecordingDevices()
+int16_t AdmProxy::RecordingDevices()
 {
     return threadInvokeR([](const auto& pm) {
         return pm->RecordingDevices();
     }, int16_t(0));
 }
 
-int32_t AudioDeviceProxyModule::PlayoutDeviceName(uint16_t index,
-                                                  char name[webrtc::kAdmMaxDeviceNameSize],
-                                                  char guid[webrtc::kAdmMaxGuidSize])
+int32_t AdmProxy::PlayoutDeviceName(uint16_t index,
+                                    char name[webrtc::kAdmMaxDeviceNameSize],
+                                    char guid[webrtc::kAdmMaxGuidSize])
 {
     return threadInvokeI32([index, &name, &guid](const auto& pm) {
         return pm->PlayoutDeviceName(index, name, guid); });
 }
 
-int32_t AudioDeviceProxyModule::RecordingDeviceName(uint16_t index,
-                                                    char name[webrtc::kAdmMaxDeviceNameSize],
-                                                    char guid[webrtc::kAdmMaxGuidSize])
+int32_t AdmProxy::RecordingDeviceName(uint16_t index,
+                                      char name[webrtc::kAdmMaxDeviceNameSize],
+                                      char guid[webrtc::kAdmMaxGuidSize])
 {
     return threadInvokeI32([index, &name, &guid](const auto& pm) {
         return pm->RecordingDeviceName(index, name, guid); });
 }
 
 // Device selection
-int32_t AudioDeviceProxyModule::SetPlayoutDevice(uint16_t index)
+int32_t AdmProxy::SetPlayoutDevice(uint16_t index)
 {
     return threadInvokeI32([this, index](const auto& pm) {
         return changePlayoutDevice(index, pm);
     });
 }
 
-int32_t AudioDeviceProxyModule::SetPlayoutDevice(WindowsDeviceType device)
+int32_t AdmProxy::SetPlayoutDevice(WindowsDeviceType device)
 {
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
@@ -216,14 +216,14 @@ int32_t AudioDeviceProxyModule::SetPlayoutDevice(WindowsDeviceType device)
     });
 }
 
-int32_t AudioDeviceProxyModule::SetRecordingDevice(uint16_t index)
+int32_t AdmProxy::SetRecordingDevice(uint16_t index)
 {
     return threadInvokeI32([this, index](const auto& pm) {
         return changeRecordingDevice(index, pm);
     });
 }
 
-int32_t AudioDeviceProxyModule::SetRecordingDevice(WindowsDeviceType device)
+int32_t AdmProxy::SetRecordingDevice(WindowsDeviceType device)
 {
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
@@ -239,213 +239,213 @@ int32_t AudioDeviceProxyModule::SetRecordingDevice(WindowsDeviceType device)
 }
 
 // Audio transport initialization
-int32_t AudioDeviceProxyModule::PlayoutIsAvailable(bool* available)
+int32_t AdmProxy::PlayoutIsAvailable(bool* available)
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->PlayoutIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::InitPlayout()
+int32_t AdmProxy::InitPlayout()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->InitPlayout(); });
 }
 
-bool AudioDeviceProxyModule::PlayoutIsInitialized() const
+bool AdmProxy::PlayoutIsInitialized() const
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->PlayoutIsInitialized(); });
 }
 
-int32_t AudioDeviceProxyModule::RecordingIsAvailable(bool* available)
+int32_t AdmProxy::RecordingIsAvailable(bool* available)
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->RecordingIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::InitRecording()
+int32_t AdmProxy::InitRecording()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->InitRecording(); });
 }
 
-bool AudioDeviceProxyModule::RecordingIsInitialized() const
+bool AdmProxy::RecordingIsInitialized() const
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->RecordingIsInitialized(); });
 }
 
 // Audio transport control
-int32_t AudioDeviceProxyModule::StartPlayout()
+int32_t AdmProxy::StartPlayout()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->StartPlayout(); });
 }
 
-int32_t AudioDeviceProxyModule::StopPlayout()
+int32_t AdmProxy::StopPlayout()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->StopPlayout(); });
 }
 
-bool AudioDeviceProxyModule::Playing() const
+bool AdmProxy::Playing() const
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->Playing(); });
 }
 
-int32_t AudioDeviceProxyModule::StartRecording()
+int32_t AdmProxy::StartRecording()
 {
     return threadInvokeI32([this](const auto& pm) {
         requestRecordingAuthorizationStatus();
         return pm->StartRecording(); });
 }
 
-int32_t AudioDeviceProxyModule::StopRecording()
+int32_t AdmProxy::StopRecording()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->StopRecording(); });
 }
 
-bool AudioDeviceProxyModule::Recording() const
+bool AdmProxy::Recording() const
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->Recording(); });
 }
 
 // Audio mixer initialization
-int32_t AudioDeviceProxyModule::InitSpeaker()
+int32_t AdmProxy::InitSpeaker()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->InitSpeaker(); });
 }
 
-bool AudioDeviceProxyModule::SpeakerIsInitialized() const
+bool AdmProxy::SpeakerIsInitialized() const
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->SpeakerIsInitialized(); });
 }
 
-int32_t AudioDeviceProxyModule::InitMicrophone()
+int32_t AdmProxy::InitMicrophone()
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->InitMicrophone(); });
 }
 
-bool AudioDeviceProxyModule::MicrophoneIsInitialized() const
+bool AdmProxy::MicrophoneIsInitialized() const
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->MicrophoneIsInitialized(); });
 }
 
 // Speaker volume controls
-int32_t AudioDeviceProxyModule::SpeakerVolumeIsAvailable(bool* available)
+int32_t AdmProxy::SpeakerVolumeIsAvailable(bool* available)
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->SpeakerVolumeIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::SetSpeakerVolume(uint32_t volume)
+int32_t AdmProxy::SetSpeakerVolume(uint32_t volume)
 {
     return threadInvokeI32([volume](const auto& pm) {
         return pm->SetSpeakerVolume(volume); });
 }
 
-int32_t AudioDeviceProxyModule::SpeakerVolume(uint32_t* volume) const
+int32_t AdmProxy::SpeakerVolume(uint32_t* volume) const
 {
     return threadInvokeI32([volume](const auto& pm) {
         return pm->SpeakerVolume(volume); });
 }
 
-int32_t AudioDeviceProxyModule::MaxSpeakerVolume(uint32_t* maxVolume) const
+int32_t AdmProxy::MaxSpeakerVolume(uint32_t* maxVolume) const
 {
     return threadInvokeI32([maxVolume](const auto& pm) {
         return pm->MaxSpeakerVolume(maxVolume); });
 }
 
-int32_t AudioDeviceProxyModule::MinSpeakerVolume(uint32_t* minVolume) const
+int32_t AdmProxy::MinSpeakerVolume(uint32_t* minVolume) const
 {
     return threadInvokeI32([minVolume](const auto& pm) {
         return pm->MinSpeakerVolume(minVolume); });
 }
 
 // Microphone volume controls
-int32_t AudioDeviceProxyModule::MicrophoneVolumeIsAvailable(bool* available)
+int32_t AdmProxy::MicrophoneVolumeIsAvailable(bool* available)
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->MicrophoneVolumeIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::SetMicrophoneVolume(uint32_t volume)
+int32_t AdmProxy::SetMicrophoneVolume(uint32_t volume)
 {
     return threadInvokeI32([volume](const auto& pm) {
         return pm->SetMicrophoneVolume(volume); });
 }
 
-int32_t AudioDeviceProxyModule::MicrophoneVolume(uint32_t* volume) const
+int32_t AdmProxy::MicrophoneVolume(uint32_t* volume) const
 {
     return threadInvokeI32([volume](const auto& pm) {
         return pm->MicrophoneVolume(volume); });
 }
 
-int32_t AudioDeviceProxyModule::MaxMicrophoneVolume(uint32_t* maxVolume) const
+int32_t AdmProxy::MaxMicrophoneVolume(uint32_t* maxVolume) const
 {
     return threadInvokeI32([maxVolume](const auto& pm) {
         return pm->MaxMicrophoneVolume(maxVolume); });
 }
 
-int32_t AudioDeviceProxyModule::MinMicrophoneVolume(uint32_t* minVolume) const
+int32_t AdmProxy::MinMicrophoneVolume(uint32_t* minVolume) const
 {
     return threadInvokeI32([minVolume](const auto& pm) {
         return pm->MinMicrophoneVolume(minVolume); });
 }
 
 // Speaker mute control
-int32_t AudioDeviceProxyModule::SpeakerMuteIsAvailable(bool* available)
+int32_t AdmProxy::SpeakerMuteIsAvailable(bool* available)
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->SpeakerMuteIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::SetSpeakerMute(bool enable)
+int32_t AdmProxy::SetSpeakerMute(bool enable)
 {
     return threadInvokeI32([enable](const auto& pm) {
         return pm->SetSpeakerMute(enable); });
 }
 
-int32_t AudioDeviceProxyModule::SpeakerMute(bool* enabled) const
+int32_t AdmProxy::SpeakerMute(bool* enabled) const
 {
     return threadInvokeI32([enabled](const auto& pm) {
         return pm->SpeakerMute(enabled); });
 }
 
 // Microphone mute control
-int32_t AudioDeviceProxyModule::MicrophoneMuteIsAvailable(bool* available)
+int32_t AdmProxy::MicrophoneMuteIsAvailable(bool* available)
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->MicrophoneMuteIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::SetMicrophoneMute(bool enable)
+int32_t AdmProxy::SetMicrophoneMute(bool enable)
 {
     return threadInvokeI32([enable](const auto& pm) {
         return pm->SetMicrophoneMute(enable); });
 }
 
-int32_t AudioDeviceProxyModule::MicrophoneMute(bool* enabled) const
+int32_t AdmProxy::MicrophoneMute(bool* enabled) const
 {
     return threadInvokeI32([enabled](const auto& pm) {
         return pm->MicrophoneMute(enabled); });
 }
 
 // Stereo support
-int32_t AudioDeviceProxyModule::StereoPlayoutIsAvailable(bool* available) const
+int32_t AdmProxy::StereoPlayoutIsAvailable(bool* available) const
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->StereoPlayoutIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::SetStereoPlayout(bool enable)
+int32_t AdmProxy::SetStereoPlayout(bool enable)
 {
     const auto res = threadInvokeI32([enable](const auto& pm) {
         return pm->SetStereoPlayout(enable); });
@@ -455,19 +455,19 @@ int32_t AudioDeviceProxyModule::SetStereoPlayout(bool enable)
     return res;
 }
 
-int32_t AudioDeviceProxyModule::StereoPlayout(bool* enabled) const
+int32_t AdmProxy::StereoPlayout(bool* enabled) const
 {
     return threadInvokeI32([enabled](const auto& pm) {
         return pm->StereoPlayout(enabled); });
 }
 
-int32_t AudioDeviceProxyModule::StereoRecordingIsAvailable(bool* available) const
+int32_t AdmProxy::StereoRecordingIsAvailable(bool* available) const
 {
     return threadInvokeI32([available](const auto& pm) {
         return pm->StereoRecordingIsAvailable(available); });
 }
 
-int32_t AudioDeviceProxyModule::SetStereoRecording(bool enable)
+int32_t AdmProxy::SetStereoRecording(bool enable)
 {
     const auto res = threadInvokeI32([enable](const auto& pm) {
         return pm->SetStereoRecording(enable); });
@@ -477,71 +477,71 @@ int32_t AudioDeviceProxyModule::SetStereoRecording(bool enable)
     return res;
 }
 
-int32_t AudioDeviceProxyModule::StereoRecording(bool* enabled) const
+int32_t AdmProxy::StereoRecording(bool* enabled) const
 {
     return threadInvokeI32([enabled](const auto& pm) {
         return pm->StereoRecording(enabled); });
 }
 
-int32_t AudioDeviceProxyModule::PlayoutDelay(uint16_t* delayMS) const
+int32_t AdmProxy::PlayoutDelay(uint16_t* delayMS) const
 {
     return threadInvokeI32([delayMS](const auto& pm) {
         return pm->PlayoutDelay(delayMS); });
 }
 
-bool AudioDeviceProxyModule::BuiltInAECIsAvailable() const
+bool AdmProxy::BuiltInAECIsAvailable() const
 {
     return threadInvokeR([](const auto& pm) {
         return pm->BuiltInAECIsAvailable();
     }, false);
 }
 
-bool AudioDeviceProxyModule::BuiltInAGCIsAvailable() const
+bool AdmProxy::BuiltInAGCIsAvailable() const
 {
     return threadInvokeR([](const auto& pm) {
         return pm->BuiltInAGCIsAvailable();
     }, false);
 }
 
-bool AudioDeviceProxyModule::BuiltInNSIsAvailable() const
+bool AdmProxy::BuiltInNSIsAvailable() const
 {
     return threadInvokeR([](const auto& pm) {
         return pm->BuiltInNSIsAvailable();
     }, false);
 }
 
-int32_t AudioDeviceProxyModule::EnableBuiltInAEC(bool enable)
+int32_t AdmProxy::EnableBuiltInAEC(bool enable)
 {
     return threadInvokeI32([enable](const auto& pm) {
         return pm->EnableBuiltInAEC(enable); });
 }
 
-int32_t AudioDeviceProxyModule::EnableBuiltInAGC(bool enable)
+int32_t AdmProxy::EnableBuiltInAGC(bool enable)
 {
     return threadInvokeI32([enable](const auto& pm) {
         return pm->EnableBuiltInAGC(enable); });
 }
 
-int32_t AudioDeviceProxyModule::EnableBuiltInNS(bool enable)
+int32_t AdmProxy::EnableBuiltInNS(bool enable)
 {
     return threadInvokeI32([enable](const auto& pm) {
         return pm->EnableBuiltInNS(enable); });
 }
 
-int32_t AudioDeviceProxyModule::GetPlayoutUnderrunCount() const
+int32_t AdmProxy::GetPlayoutUnderrunCount() const
 {
     return threadInvokeI32([](const auto& pm) {
         return pm->GetPlayoutUnderrunCount(); });
 }
 
-std::optional<webrtc::AudioDeviceModule::Stats> AudioDeviceProxyModule::GetStats() const
+std::optional<webrtc::AudioDeviceModule::Stats> AdmProxy::GetStats() const
 {
     return threadInvokeR([](const auto& pm) {
         return pm->GetStats();
     }, std::optional<Stats>{});
 }
 
-void AudioDeviceProxyModule::close()
+void AdmProxy::close()
 {
     _listeners.clear();
     AdmPtr impl;
@@ -556,27 +556,27 @@ void AudioDeviceProxyModule::close()
     }
 }
 
-void AudioDeviceProxyModule::addListener(AudioDeviceModuleListener* listener)
+void AdmProxy::registerListener(AdmProxyListener* listener, bool reg)
 {
-    _listeners.add(listener);
+    if (reg) {
+        _listeners.add(listener);
+    }
+    else {
+        _listeners.remove(listener);
+    }
 }
 
-void AudioDeviceProxyModule::removeListener(AudioDeviceModuleListener* listener)
-{
-    _listeners.remove(listener);
-}
-
-MediaDeviceInfo AudioDeviceProxyModule::defaultRecordingDevice() const
+MediaDeviceInfo AdmProxy::defaultRecordingDevice() const
 {
     return defaultDevice(true);
 }
 
-MediaDeviceInfo AudioDeviceProxyModule::defaultPlayoutDevice() const
+MediaDeviceInfo AdmProxy::defaultPlayoutDevice() const
 {
     return defaultDevice(false);
 }
 
-bool AudioDeviceProxyModule::setRecordingDevice(const MediaDeviceInfo& info)
+bool AdmProxy::setRecordingDevice(const MediaDeviceInfo& info)
 {
     if (!info.empty()) {
         return threadInvokeR([this, &info](const auto& pm) {
@@ -589,7 +589,7 @@ bool AudioDeviceProxyModule::setRecordingDevice(const MediaDeviceInfo& info)
     return false;
 }
 
-bool AudioDeviceProxyModule::setPlayoutDevice(const MediaDeviceInfo& info)
+bool AdmProxy::setPlayoutDevice(const MediaDeviceInfo& info)
 {
     if (!info.empty()) {
         return threadInvokeR([this, &info](const auto& pm) {
@@ -602,25 +602,24 @@ bool AudioDeviceProxyModule::setPlayoutDevice(const MediaDeviceInfo& info)
     return false;
 }
 
-std::vector<MediaDeviceInfo> AudioDeviceProxyModule::recordingDevices() const
+std::vector<MediaDeviceInfo> AdmProxy::recordingDevices() const
 {
     return enumerate(true);
 }
 
-std::vector<MediaDeviceInfo> AudioDeviceProxyModule::playoutDevices() const
+std::vector<MediaDeviceInfo> AdmProxy::playoutDevices() const
 {
     return enumerate(false);
 }
 
-std::string_view AudioDeviceProxyModule::logCategory() const
+std::string_view AdmProxy::logCategory() const
 {
     static const std::string_view category("adm_proxy");
     return category;
 }
 
-std::optional<MediaDeviceInfo> AudioDeviceProxyModule::
-    get(bool recording, uint16_t ndx,
-        const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+std::optional<MediaDeviceInfo> AdmProxy::get(bool recording, uint16_t ndx,
+                                             const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     std::optional<MediaDeviceInfo> dev;
     if (adm) {
@@ -637,10 +636,9 @@ std::optional<MediaDeviceInfo> AudioDeviceProxyModule::
     return dev;
 }
 
-std::optional<MediaDeviceInfo> AudioDeviceProxyModule::
-    get(bool recording,
-        [[maybe_unused]] WindowsDeviceType type,
-        [[maybe_unused]] const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+std::optional<MediaDeviceInfo> AdmProxy::get(bool recording,
+                                             [[maybe_unused]] WindowsDeviceType type,
+                                             [[maybe_unused]] const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     std::optional<MediaDeviceInfo> device;
 #ifdef WEBRTC_MAC
@@ -659,9 +657,8 @@ std::optional<MediaDeviceInfo> AudioDeviceProxyModule::
     return device;
 }
 
-std::optional<uint16_t> AudioDeviceProxyModule::
-    get(bool recording, const MediaDeviceInfo& info,
-        const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+std::optional<uint16_t> AdmProxy::get(bool recording, const MediaDeviceInfo& info,
+                                      const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     std::optional<uint16_t> index;
     if (!info.empty()) {
@@ -678,12 +675,12 @@ std::optional<uint16_t> AudioDeviceProxyModule::
     return index;
 }
 
-std::shared_ptr<rtc::Thread> AudioDeviceProxyModule::workingThread() const
+std::shared_ptr<rtc::Thread> AdmProxy::workingThread() const
 {
     return _thread.lock();
 }
 
-std::vector<MediaDeviceInfo> AudioDeviceProxyModule::enumerate(bool recording) const
+std::vector<MediaDeviceInfo> AdmProxy::enumerate(bool recording) const
 {
     return threadInvokeR([recording](const auto& pm) {
         std::vector<MediaDeviceInfo> devices;
@@ -695,7 +692,7 @@ std::vector<MediaDeviceInfo> AudioDeviceProxyModule::enumerate(bool recording) c
     }, std::vector<MediaDeviceInfo>{});
 }
 
-MediaDeviceInfo AudioDeviceProxyModule::defaultDevice(bool recording) const
+MediaDeviceInfo AdmProxy::defaultDevice(bool recording) const
 {
     return threadInvokeR([recording](const auto& pm) {
         static constexpr auto type = WindowsDeviceType::kDefaultCommunicationDevice;
@@ -703,37 +700,37 @@ MediaDeviceInfo AudioDeviceProxyModule::defaultDevice(bool recording) const
     }, MediaDeviceInfo{});
 }
 
-void AudioDeviceProxyModule::requestRecordingAuthorizationStatus() const
+void AdmProxy::requestRecordingAuthorizationStatus() const
 {
     MediaAuthorization::query(MediaAuthorizationKind::Microphone, true, logger());
 }
 
-void AudioDeviceProxyModule::setRecordingDevice(uint16_t ndx,
-                                                const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+void AdmProxy::setRecordingDevice(uint16_t ndx,
+                                  const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     if (const auto dev = get(true, ndx, adm)) {
         changeRecordingDevice(dev.value());
     }
 }
 
-void AudioDeviceProxyModule::setRecordingDevice(WindowsDeviceType type,
-                                                const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+void AdmProxy::setRecordingDevice(WindowsDeviceType type,
+                                  const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     if (const auto dev = get(true, type, adm)) {
         changeRecordingDevice(dev.value());
     }
 }
 
-void AudioDeviceProxyModule::setPlayoutDevice(uint16_t ndx,
-                                              const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+void AdmProxy::setPlayoutDevice(uint16_t ndx,
+                                const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     if (const auto dev = get(false, ndx, adm)) {
         changePlayoutDevice(dev.value());
     }
 }
 
-void AudioDeviceProxyModule::setPlayoutDevice(WindowsDeviceType type,
-                                              const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+void AdmProxy::setPlayoutDevice(WindowsDeviceType type,
+                                const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     // TODO: implement it
     if (const auto dev = get(false, type, adm)) {
@@ -741,7 +738,7 @@ void AudioDeviceProxyModule::setPlayoutDevice(WindowsDeviceType type,
     }
 }
 
-void AudioDeviceProxyModule::changeRecordingDevice(const MediaDeviceInfo& info)
+void AdmProxy::changeRecordingDevice(const MediaDeviceInfo& info)
 {
     if (!info.empty()) {
         bool changed = false;
@@ -753,12 +750,12 @@ void AudioDeviceProxyModule::changeRecordingDevice(const MediaDeviceInfo& info)
             }
         }
         if (changed) {
-            _listeners.invoke(&AudioDeviceModuleListener::onRecordingChanged, info);
+            _listeners.invoke(&AdmProxyListener::onRecordingChanged, info);
         }
     }
 }
 
-void AudioDeviceProxyModule::changePlayoutDevice(const MediaDeviceInfo& info)
+void AdmProxy::changePlayoutDevice(const MediaDeviceInfo& info)
 {
     if (!info.empty()) {
         bool changed = false;
@@ -770,13 +767,13 @@ void AudioDeviceProxyModule::changePlayoutDevice(const MediaDeviceInfo& info)
             }
         }
         if (changed) {
-            _listeners.invoke(&AudioDeviceModuleListener::onPlayoutChanged, info);
+            _listeners.invoke(&AdmProxyListener::onPlayoutChanged, info);
         }
     }
 }
 
-int32_t AudioDeviceProxyModule::changeRecordingDevice(uint16_t index,
-                                                      const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+int32_t AdmProxy::changeRecordingDevice(uint16_t index,
+                                        const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     int32_t result = -1;
     if (adm) {
@@ -791,8 +788,8 @@ int32_t AudioDeviceProxyModule::changeRecordingDevice(uint16_t index,
     return result;
 }
 
-int32_t AudioDeviceProxyModule::changePlayoutDevice(uint16_t index,
-                                                    const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
+int32_t AdmProxy::changePlayoutDevice(uint16_t index,
+                                      const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     int32_t result = -1;
     if (adm) {
@@ -808,7 +805,7 @@ int32_t AudioDeviceProxyModule::changePlayoutDevice(uint16_t index,
 }
 
 template <typename Handler>
-void AudioDeviceProxyModule::threadInvoke(Handler handler) const
+void AdmProxy::threadInvoke(Handler handler) const
 {
     LOCK_READ_SAFE_OBJ(_impl);
     if (const auto& impl = _impl.constRef()) {
@@ -819,7 +816,7 @@ void AudioDeviceProxyModule::threadInvoke(Handler handler) const
 }
 
 template <typename Handler, typename R>
-R AudioDeviceProxyModule::threadInvokeR(Handler handler, R defaultVal) const
+R AdmProxy::threadInvokeR(Handler handler, R defaultVal) const
 {
     LOCK_READ_SAFE_OBJ(_impl);
     if (const auto& impl = _impl.constRef()) {
@@ -831,14 +828,13 @@ R AudioDeviceProxyModule::threadInvokeR(Handler handler, R defaultVal) const
 }
 
 template <typename Handler>
-int32_t AudioDeviceProxyModule::threadInvokeI32(Handler handler, int32_t defaultVal) const
+int32_t AdmProxy::threadInvokeI32(Handler handler, int32_t defaultVal) const
 {
     return threadInvokeR(std::move(handler), defaultVal);
 }
 
 template<bool recording>
-AudioDeviceProxyModule::ScopedAudioBlocker<recording>::
-    ScopedAudioBlocker(const AudioDeviceProxyModule& adm)
+AdmProxy::ScopedAudioBlocker<recording>::ScopedAudioBlocker(const AdmProxy& adm)
     : _impl(adm._impl.constRef())
     , _adm(adm)
 {
@@ -867,7 +863,7 @@ AudioDeviceProxyModule::ScopedAudioBlocker<recording>::
 }
 
 template<bool recording>
-AudioDeviceProxyModule::ScopedAudioBlocker<recording>::~ScopedAudioBlocker()
+AdmProxy::ScopedAudioBlocker<recording>::~ScopedAudioBlocker()
 {
     if (_needRestart) {
         if constexpr (recording) {

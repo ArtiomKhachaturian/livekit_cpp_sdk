@@ -88,10 +88,9 @@ size_t RTCMediaEngine::localVideoTracksCount() const
     return _localParticipant->videoTracksCount();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::
-    addLocalMicrophoneTrack(const MicrophoneOptions& options)
+std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::addLocalMicrophoneTrack()
 {
-    return _localParticipant->addMicrophoneTrack(options);
+    return _localParticipant->addMicrophoneTrack();
 }
 
 std::shared_ptr<CameraTrackImpl> RTCMediaEngine::

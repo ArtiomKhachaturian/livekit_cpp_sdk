@@ -16,7 +16,6 @@
 #include "CameraTrack.h"
 #include "CameraOptions.h"
 #include "LiveKitClientExport.h"
-#include "MicrophoneOptions.h"
 #include "Options.h"
 #include "SessionState.h"
 #include "RemoteParticipant.h"
@@ -63,7 +62,7 @@ public:
     bool audioRecordingEnabled() const;
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    std::shared_ptr<AudioTrack> addMicrophoneTrack(const MicrophoneOptions& options = {});
+    std::shared_ptr<AudioTrack> addMicrophoneTrack();
     std::shared_ptr<CameraTrack> addCameraTrack(const CameraOptions& options = CameraOptions::defaultOptions());
     void removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
     void removeVideoTrack(const std::shared_ptr<VideoTrack>& track);

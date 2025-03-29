@@ -126,10 +126,9 @@ bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
     return _localDcs.sendChatMessage(std::move(message), deleted);
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCEngine::
-    addLocalMicrophoneTrack(const MicrophoneOptions& options)
+std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalMicrophoneTrack()
 {
-    const auto track = RTCMediaEngine::addLocalMicrophoneTrack(options);
+    auto track = RTCMediaEngine::addLocalMicrophoneTrack();
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());
@@ -140,7 +139,7 @@ std::shared_ptr<LocalAudioTrackImpl> RTCEngine::
 
 std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(const CameraOptions& options)
 {
-    const auto track = RTCMediaEngine::addLocalCameraTrack(options);
+    auto track = RTCMediaEngine::addLocalCameraTrack(options);
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());
@@ -152,7 +151,7 @@ std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(const CameraOpti
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
     removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track)
 {
-    const auto media = RTCMediaEngine::removeLocalAudioTrack(track);
+    auto media = RTCMediaEngine::removeLocalAudioTrack(track);
     if (media) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->removeTrack(media);
@@ -164,7 +163,7 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
     removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track)
 {
-    const auto media = RTCMediaEngine::removeLocalVideoTrack(track);
+    auto media = RTCMediaEngine::removeLocalVideoTrack(track);
     if (media) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->removeTrack(media);

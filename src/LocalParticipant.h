@@ -44,7 +44,6 @@ class TrackManager;
 class ParticipantListener;
 class PeerConnectionFactory;
 struct CameraOptions;
-struct MicrophoneOptions;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 
@@ -61,7 +60,7 @@ public:
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
     size_t videoTracksCount() const;
-    std::shared_ptr<LocalAudioTrackImpl> addMicrophoneTrack(const MicrophoneOptions& options);
+    std::shared_ptr<LocalAudioTrackImpl> addMicrophoneTrack();
     std::shared_ptr<CameraTrackImpl> addCameraTrack(const CameraOptions& options);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
@@ -92,8 +91,7 @@ private:
     static void addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks);
     template<class TTracks>
     static void clear(TTracks& tracks);
-    static cricket::AudioOptions toCricketOptions(const MicrophoneOptions& options);
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic(const MicrophoneOptions& options) const;
+    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic() const;
     webrtc::scoped_refptr<CameraVideoDevice> createCamera(const CameraOptions& options) const;
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;

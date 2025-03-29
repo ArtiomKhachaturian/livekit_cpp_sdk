@@ -67,9 +67,9 @@ size_t Session::localVideoTracksCount() const
     return _engine->localVideoTracksCount();
 }
 
-std::shared_ptr<AudioTrack> Session::addMicrophoneTrack(const MicrophoneOptions& options)
+std::shared_ptr<AudioTrack> Session::addMicrophoneTrack()
 {
-    return _engine->addLocalMicrophoneTrack(options);
+    return _engine->addLocalMicrophoneTrack();
 }
 
 std::shared_ptr<CameraTrack> Session::addCameraTrack(const CameraOptions& options)
