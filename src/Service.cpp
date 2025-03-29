@@ -73,8 +73,16 @@ public:
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
     // overrides of AudioDeviceModuleListener
-    void onRecordingChanged(const MediaDeviceInfo& info) final;
-    void onPlayoutChanged(const MediaDeviceInfo& info) final;
+    void onRecordingChanged(const MediaDeviceInfo& info,
+                            const std::optional<bool>&,
+                            const std::optional<uint32_t>&,
+                            const std::optional<uint32_t>&,
+                            const std::optional<uint32_t>&) final;
+    void onPlayoutChanged(const MediaDeviceInfo& info,
+                          const std::optional<bool>&,
+                          const std::optional<uint32_t>&,
+                          const std::optional<uint32_t>&,
+                          const std::optional<uint32_t>&) final;
 protected:
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final { return g_logCategory; }
@@ -335,14 +343,22 @@ std::unique_ptr<Service::Impl> Service::Impl::
     return {};
 }
 
-void Service::Impl::onRecordingChanged(const MediaDeviceInfo& info)
+void Service::Impl::onRecordingChanged(const MediaDeviceInfo& info,
+                                       const std::optional<bool>&,
+                                       const std::optional<uint32_t>&,
+                                       const std::optional<uint32_t>&,
+                                       const std::optional<uint32_t>&)
 {
     if (!info.empty()) {
         logInfo("recording audio device has been changed to '" + info._name + "'");
     }
 }
 
-void Service::Impl::onPlayoutChanged(const MediaDeviceInfo& info)
+void Service::Impl::onPlayoutChanged(const MediaDeviceInfo& info,
+                                     const std::optional<bool>&,
+                                     const std::optional<uint32_t>&,
+                                     const std::optional<uint32_t>&,
+                                     const std::optional<uint32_t>&)
 {
     if (!info.empty()) {
         logInfo("playoud audio device has been changed to '" + info._name + "'");

@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // AdmProxyModule.h
 #include "Loggable.h"
+#include "AdmProxyListener.h"
 #include "AsyncListeners.h"
 #include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
@@ -28,11 +29,11 @@ class Thread;
 namespace LiveKitCpp
 {
 
-class AdmProxyListener;
-
-class AdmProxy : public Bricks::LoggableS<webrtc::AudioDeviceModule>
+class AdmProxy : public Bricks::LoggableS<webrtc::AudioDeviceModule>,
+                 private AdmProxyListener
 {
     template<bool recording> class ScopedAudioBlocker;
+    struct DeviceMetrics;
     using AdmPtr = webrtc::scoped_refptr<webrtc::AudioDeviceModule>;
 public:
     ~AdmProxy() override;
@@ -108,13 +109,13 @@ public:
 
     // Speaker mute control
     int32_t SpeakerMuteIsAvailable(bool* available) final;
-    int32_t SetSpeakerMute(bool enable) final;
-    int32_t SpeakerMute(bool* enabled) const final;
+    int32_t SetSpeakerMute(bool mute) final;
+    int32_t SpeakerMute(bool* muted) const final;
 
     // Microphone mute control
     int32_t MicrophoneMuteIsAvailable(bool* available) final;
-    int32_t SetMicrophoneMute(bool enable) final;
-    int32_t MicrophoneMute(bool* enabled) const final;
+    int32_t SetMicrophoneMute(bool mute) final;
+    int32_t MicrophoneMute(bool* muted) const final;
 
     // Stereo support
     int32_t StereoPlayoutIsAvailable(bool* available) const final;
@@ -160,6 +161,7 @@ private:
     static std::optional<MediaDeviceInfo> get(bool recording, uint16_t ndx, const AdmPtr& adm);
     static std::optional<MediaDeviceInfo> get(bool recording, WindowsDeviceType type, const AdmPtr& adm);
     static std::optional<uint16_t> get(bool recording, const MediaDeviceInfo& info, const AdmPtr& adm);
+    static void metrics(const AdmPtr& adm, bool recording, DeviceMetrics& metrics);
     static AdmPtr defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory);
     std::shared_ptr<rtc::Thread> workingThread() const;
     std::vector<MediaDeviceInfo> enumerate(bool recording) const;
@@ -174,12 +176,19 @@ private:
     void changePlayoutDevice(const MediaDeviceInfo& info, const AdmPtr& adm);
     int32_t changeRecordingDevice(uint16_t index, const AdmPtr& adm);
     int32_t changePlayoutDevice(uint16_t index, const AdmPtr& adm);
+    void setStereoRecording(bool stereo);
+    void setStereoPlayout(bool stereo);
     template <typename Handler>
     void threadInvoke(Handler handler) const;
     template <typename Handler, typename R = std::invoke_result_t<Handler>>
     R threadInvokeR(Handler handler, R defaultVal = {}) const;
     template <typename Handler>
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
+    // impl. of AdmProxyListener
+    void onRecordingStarted() final;
+    void onRecordingStopped() final;
+    void onPlayoutStarted() final;
+    void onPlayoutStopped() final;
 private:
     static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
     const std::weak_ptr<rtc::Thread> _thread;

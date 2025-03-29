@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // AdmProxyListener.h
 #include <cstdint>
+#include <optional>
 
 namespace LiveKitCpp
 {
@@ -22,14 +23,36 @@ struct MediaDeviceInfo;
 class AdmProxyListener
 {
 public:
-    virtual void onMicrophoneVolumeChanged(uint32_t /*volume*/) {}
-    virtual void onMicrophoneMuteChanged(bool /*mute*/) {}
+    virtual void onRecordingVolumeChanged(uint32_t /*volume*/) {}
+    virtual void onRecordingMuteChanged(bool /*mute*/) {}
+    virtual void onRecordingInitialized(const MediaDeviceInfo& /*info*/,
+                                        const std::optional<bool>& /*stereo*/,
+                                        const std::optional<uint32_t>& /*minVolume*/,
+                                        const std::optional<uint32_t>& /*maxVolume*/,
+                                        const std::optional<uint32_t>& /*currentVolume*/) {}
     virtual void onRecordingStarted() {}
     virtual void onRecordingStopped() {}
-    virtual void onRecordingChanged(const MediaDeviceInfo& /*info*/) {}
+    virtual void onRecordingChanged(const MediaDeviceInfo& /*info*/,
+                                    const std::optional<bool>& /*stereo*/,
+                                    const std::optional<uint32_t>& /*minVolume*/,
+                                    const std::optional<uint32_t>& /*maxVolume*/,
+                                    const std::optional<uint32_t>& /*currentVolume*/) {}
+    virtual void onRecordingStereoChanged(bool /*stereo*/) {}
+    virtual void onPlayoutVolumeChanged(uint32_t /*volume*/) {}
+    virtual void onPlayoutMuteChanged(bool /*mute*/) {}
+    virtual void onPlayoutInitialized(const MediaDeviceInfo& /*info*/,
+                                      const std::optional<bool>& /*stereo*/,
+                                      const std::optional<uint32_t>& /*minVolume*/,
+                                      const std::optional<uint32_t>& /*maxVolume*/,
+                                      const std::optional<uint32_t>& /*currentVolume*/) {}
     virtual void onPlayoutStarted() {}
     virtual void onPlayoutStopped() {}
-    virtual void onPlayoutChanged(const MediaDeviceInfo& /*info*/) {}
+    virtual void onPlayoutChanged(const MediaDeviceInfo& /*info*/,
+                                  const std::optional<bool>& /*stereo*/,
+                                  const std::optional<uint32_t>& /*minVolume*/,
+                                  const std::optional<uint32_t>& /*maxVolume*/,
+                                  const std::optional<uint32_t>& /*currentVolume*/) {}
+    virtual void onPlayoutStereoChanged(bool /*stereo*/) {}
 protected:
     virtual ~AdmProxyListener() = default;
 };
