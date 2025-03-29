@@ -16,13 +16,13 @@
 namespace LiveKitCpp
 {
 
-struct MediaDevice;
+struct MediaDeviceInfo;
 
 class AudioDeviceModuleListener
 {
 public:
-    virtual void onRecordingChanged(const MediaDevice& /*device*/) {}
-    virtual void onPlayoutChanged(const MediaDevice& /*device*/) {}
+    virtual void onRecordingChanged(const MediaDeviceInfo& /*device*/) {}
+    virtual void onPlayoutChanged(const MediaDeviceInfo& /*device*/) {}
 protected:
     virtual ~AudioDeviceModuleListener() = default;
 };

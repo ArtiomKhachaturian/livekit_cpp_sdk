@@ -30,11 +30,11 @@ inline AdmPtr defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory) {
                                              taskQueueFactory);
 }
 
-inline LiveKitCpp::MediaDevice make(std::string_view name, std::string_view guid) {
-    LiveKitCpp::MediaDevice device;
-    device._name = name;
-    device._guid = guid;
-    return device;
+inline LiveKitCpp::MediaDeviceInfo make(std::string_view name, std::string_view guid) {
+    LiveKitCpp::MediaDeviceInfo info;
+    info._name = name;
+    info._guid = guid;
+    return info;
 }
 
 #ifdef WEBRTC_MAC
@@ -566,21 +566,21 @@ void AudioDeviceProxyModule::removeListener(AudioDeviceModuleListener* listener)
     _listeners.remove(listener);
 }
 
-MediaDevice AudioDeviceProxyModule::defaultRecordingDevice() const
+MediaDeviceInfo AudioDeviceProxyModule::defaultRecordingDevice() const
 {
     return defaultDevice(true);
 }
 
-MediaDevice AudioDeviceProxyModule::defaultPlayoutDevice() const
+MediaDeviceInfo AudioDeviceProxyModule::defaultPlayoutDevice() const
 {
     return defaultDevice(false);
 }
 
-bool AudioDeviceProxyModule::setRecordingDevice(const MediaDevice& device)
+bool AudioDeviceProxyModule::setRecordingDevice(const MediaDeviceInfo& info)
 {
-    if (!device.empty()) {
-        return threadInvokeR([this, &device](const auto& pm) {
-            if (const auto ndx = get(true, device, pm)) {
+    if (!info.empty()) {
+        return threadInvokeR([this, &info](const auto& pm) {
+            if (const auto ndx = get(true, info, pm)) {
                 return 0 == changeRecordingDevice(ndx.value(), pm);
             }
             return false;
@@ -589,11 +589,11 @@ bool AudioDeviceProxyModule::setRecordingDevice(const MediaDevice& device)
     return false;
 }
 
-bool AudioDeviceProxyModule::setPlayoutDevice(const MediaDevice& device)
+bool AudioDeviceProxyModule::setPlayoutDevice(const MediaDeviceInfo& info)
 {
-    if (!device.empty()) {
-        return threadInvokeR([this, &device](const auto& pm) {
-            if (const auto ndx = get(false, device, pm)) {
+    if (!info.empty()) {
+        return threadInvokeR([this, &info](const auto& pm) {
+            if (const auto ndx = get(false, info, pm)) {
                 return 0 == changePlayoutDevice(ndx.value(), pm);
             }
             return false;
@@ -602,12 +602,12 @@ bool AudioDeviceProxyModule::setPlayoutDevice(const MediaDevice& device)
     return false;
 }
 
-std::vector<MediaDevice> AudioDeviceProxyModule::recordingDevices() const
+std::vector<MediaDeviceInfo> AudioDeviceProxyModule::recordingDevices() const
 {
     return enumerate(true);
 }
 
-std::vector<MediaDevice> AudioDeviceProxyModule::playoutDevices() const
+std::vector<MediaDeviceInfo> AudioDeviceProxyModule::playoutDevices() const
 {
     return enumerate(false);
 }
@@ -618,11 +618,11 @@ std::string_view AudioDeviceProxyModule::logCategory() const
     return category;
 }
 
-std::optional<MediaDevice> AudioDeviceProxyModule::
+std::optional<MediaDeviceInfo> AudioDeviceProxyModule::
     get(bool recording, uint16_t ndx,
         const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
-    std::optional<MediaDevice> dev;
+    std::optional<MediaDeviceInfo> dev;
     if (adm) {
         const AudioDevicesEnumerator enumerator(recording, adm);
         enumerator.enumerate([ndx, &dev](uint16_t devNdx,
@@ -637,12 +637,12 @@ std::optional<MediaDevice> AudioDeviceProxyModule::
     return dev;
 }
 
-std::optional<MediaDevice> AudioDeviceProxyModule::
+std::optional<MediaDeviceInfo> AudioDeviceProxyModule::
     get(bool recording,
         [[maybe_unused]] WindowsDeviceType type,
         [[maybe_unused]] const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
-    std::optional<MediaDevice> device;
+    std::optional<MediaDeviceInfo> device;
 #ifdef WEBRTC_MAC
     if (adm) {
         const AudioDevicesEnumerator enumerator(recording, adm);
@@ -660,16 +660,16 @@ std::optional<MediaDevice> AudioDeviceProxyModule::
 }
 
 std::optional<uint16_t> AudioDeviceProxyModule::
-    get(bool recording, const MediaDevice& device,
+    get(bool recording, const MediaDeviceInfo& info,
         const webrtc::scoped_refptr<webrtc::AudioDeviceModule>& adm)
 {
     std::optional<uint16_t> index;
-    if (!device.empty()) {
+    if (!info.empty()) {
         const AudioDevicesEnumerator enumerator(recording, adm);
-        enumerator.enumerate([&device, &index](uint16_t ndx,
-                                               std::string_view name,
-                                               std::string_view guid) {
-            if (device._name == name && device._guid == guid) {
+        enumerator.enumerate([&info, &index](uint16_t ndx,
+                                             std::string_view name,
+                                             std::string_view guid) {
+            if (info._name == name && info._guid == guid) {
                 index = ndx;
             }
             return !index.has_value();
@@ -683,24 +683,24 @@ std::shared_ptr<rtc::Thread> AudioDeviceProxyModule::workingThread() const
     return _thread.lock();
 }
 
-std::vector<MediaDevice> AudioDeviceProxyModule::enumerate(bool recording) const
+std::vector<MediaDeviceInfo> AudioDeviceProxyModule::enumerate(bool recording) const
 {
     return threadInvokeR([recording](const auto& pm) {
-        std::vector<MediaDevice> devices;
+        std::vector<MediaDeviceInfo> devices;
         const AudioDevicesEnumerator enumerator(recording, pm);
         enumerator.enumerate([&devices](std::string_view name, std::string_view guid) {
             devices.push_back(make(name, guid));
         });
         return devices;
-    }, std::vector<MediaDevice>{});
+    }, std::vector<MediaDeviceInfo>{});
 }
 
-MediaDevice AudioDeviceProxyModule::defaultDevice(bool recording) const
+MediaDeviceInfo AudioDeviceProxyModule::defaultDevice(bool recording) const
 {
     return threadInvokeR([recording](const auto& pm) {
         static constexpr auto type = WindowsDeviceType::kDefaultCommunicationDevice;
-        return get(recording, type, pm).value_or(MediaDevice{});
-    }, MediaDevice{});
+        return get(recording, type, pm).value_or(MediaDeviceInfo{});
+    }, MediaDeviceInfo{});
 }
 
 void AudioDeviceProxyModule::requestRecordingAuthorizationStatus() const
@@ -741,36 +741,36 @@ void AudioDeviceProxyModule::setPlayoutDevice(WindowsDeviceType type,
     }
 }
 
-void AudioDeviceProxyModule::changeRecordingDevice(const MediaDevice& device)
+void AudioDeviceProxyModule::changeRecordingDevice(const MediaDeviceInfo& info)
 {
-    if (!device.empty()) {
+    if (!info.empty()) {
         bool changed = false;
         {
             LOCK_WRITE_SAFE_OBJ(_recordingDev);
-            if (device != _recordingDev.constRef()) {
-                _recordingDev = device;
+            if (info != _recordingDev.constRef()) {
+                _recordingDev = info;
                 changed = true;
             }
         }
         if (changed) {
-            _listeners.invoke(&AudioDeviceModuleListener::onRecordingChanged, device);
+            _listeners.invoke(&AudioDeviceModuleListener::onRecordingChanged, info);
         }
     }
 }
 
-void AudioDeviceProxyModule::changePlayoutDevice(const MediaDevice& device)
+void AudioDeviceProxyModule::changePlayoutDevice(const MediaDeviceInfo& info)
 {
-    if (!device.empty()) {
+    if (!info.empty()) {
         bool changed = false;
         {
             LOCK_WRITE_SAFE_OBJ(_playoutDev);
-            if (device != _playoutDev.constRef()) {
-                _playoutDev = device;
+            if (info != _playoutDev.constRef()) {
+                _playoutDev = info;
                 changed = true;
             }
         }
         if (changed) {
-            _listeners.invoke(&AudioDeviceModuleListener::onPlayoutChanged, device);
+            _listeners.invoke(&AudioDeviceModuleListener::onPlayoutChanged, info);
         }
     }
 }

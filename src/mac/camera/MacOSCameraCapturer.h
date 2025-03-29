@@ -44,7 +44,7 @@ class MacOSCameraCapturer : public CameraCapturer
 public:
     ~MacOSCameraCapturer() override;
     static rtc::scoped_refptr<MacOSCameraCapturer>
-        create(const MediaDevice& deviceInfo,
+        create(const MediaDeviceInfo& deviceInfo,
                const std::shared_ptr<Bricks::Logger>& logger = {});
     void deliverFrame(int64_t timestampMicro, CMSampleBufferRef sampleBuffer);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
@@ -59,7 +59,7 @@ public:
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
     bool CaptureStarted() final;
 protected:
-    MacOSCameraCapturer(const MediaDevice& deviceInfo,
+    MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo,
                         AVCaptureDevice* device,
                         const std::shared_ptr<Bricks::Logger>& logger = {});
 private:

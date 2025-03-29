@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "CameraManager.h"
 #include "CameraCapturer.h"
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 #include "Utils.h"
 #include <modules/video_capture/video_capture_config.h>
 #include <cassert>
@@ -49,7 +49,7 @@ bool CameraManager::device(uint32_t number, std::string& name, std::string& guid
     return false;
 }
 
-bool CameraManager::device(uint32_t number, MediaDevice& out)
+bool CameraManager::device(uint32_t number, MediaDeviceInfo& out)
 {
     return device(number, out._name, out._guid);
 }
@@ -59,18 +59,18 @@ bool CameraManager::defaultdevice(uint32_t number, std::string& name, std::strin
     return device(0U, name, guid);
 }
 
-bool CameraManager::defaultDevice(MediaDevice& out)
+bool CameraManager::defaultDevice(MediaDeviceInfo& out)
 {
     return device(0U, out);
 }
 
-std::vector<MediaDevice> CameraManager::devices()
+std::vector<MediaDeviceInfo> CameraManager::devices()
 {
     if (const auto count = devicesNumber()) {
-        std::vector<MediaDevice> devicesInfo;
+        std::vector<MediaDeviceInfo> devicesInfo;
         devicesInfo.reserve(count);
         for (uint32_t i = 0u; i < count; ++i) {
-            MediaDevice deviceInfo;
+            MediaDeviceInfo deviceInfo;
             if (device(i, deviceInfo)) {
                 devicesInfo.push_back(std::move(deviceInfo));
             }
@@ -85,7 +85,7 @@ bool CameraManager::deviceIsValid(std::string_view guid)
     if (!guid.empty()) {
         if (const auto count = devicesNumber()) {
             for (uint32_t i = 0u; i < count; ++i) {
-                MediaDevice deviceInfo;
+                MediaDeviceInfo deviceInfo;
                 if (device(i, deviceInfo) && guid == deviceInfo._guid) {
                     return true;
                 }
@@ -95,9 +95,9 @@ bool CameraManager::deviceIsValid(std::string_view guid)
     return false;
 }
 
-bool CameraManager::deviceIsValid(const MediaDevice& device)
+bool CameraManager::deviceIsValid(const MediaDeviceInfo& info)
 {
-    return deviceIsValid(device._guid);
+    return deviceIsValid(info._guid);
 }
 
 webrtc::VideoCaptureCapability CameraManager::defaultCapability()
@@ -128,9 +128,9 @@ uint32_t CameraManager::capabilitiesNumber(std::string_view guid)
     return 0U;
 }
 
-uint32_t CameraManager::capabilitiesNumber(const MediaDevice& device)
+uint32_t CameraManager::capabilitiesNumber(const MediaDeviceInfo& info)
 {
-    return capabilitiesNumber(device._guid);
+    return capabilitiesNumber(info._guid);
 }
 
 bool CameraManager::capability(std::string_view guid,
@@ -145,10 +145,10 @@ bool CameraManager::capability(std::string_view guid,
     return false;
 }
 
-bool CameraManager::capability(const MediaDevice& device, uint32_t number,
-                                   webrtc::VideoCaptureCapability& capability)
+bool CameraManager::capability(const MediaDeviceInfo& info, uint32_t number,
+                               webrtc::VideoCaptureCapability& capability)
 {
-    return CameraManager::capability(device._guid, number, capability);
+    return CameraManager::capability(info._guid, number, capability);
 }
 
 bool CameraManager::bestMatchedCapability(std::string_view guid,
@@ -163,11 +163,11 @@ bool CameraManager::bestMatchedCapability(std::string_view guid,
     return false;
 }
 
-bool CameraManager::bestMatchedCapability(const MediaDevice& device,
+bool CameraManager::bestMatchedCapability(const MediaDeviceInfo& info,
                                           const webrtc::VideoCaptureCapability& requested,
                                           webrtc::VideoCaptureCapability& resulting)
 {
-    return bestMatchedCapability(device._guid, requested, resulting);
+    return bestMatchedCapability(info._guid, requested, resulting);
 }
 
 std::string_view CameraManager::logCategory()
@@ -186,9 +186,9 @@ std::string CameraManager::formatLogMessage(std::string_view deviceName, const s
     return message;
 }
 
-std::string CameraManager::formatLogMessage(const MediaDevice& device, const std::string& message)
+std::string CameraManager::formatLogMessage(const MediaDeviceInfo& info, const std::string& message)
 {
-    return formatLogMessage(device._name, message);
+    return formatLogMessage(info._name, message);
 }
 
 bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& orientation)
@@ -201,9 +201,9 @@ bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& or
     return false;
 }
 
-bool CameraManager::orientation(const MediaDevice& device, webrtc::VideoRotation& orientation)
+bool CameraManager::orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation)
 {
-    return CameraManager::orientation(device._guid, orientation);
+    return CameraManager::orientation(info._guid, orientation);
 }
 
 rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_view guid,
@@ -212,7 +212,7 @@ rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_vie
     if (!guid.empty()) {
         if (const auto di = deviceInfo()) {
             if (const uint32_t count = di->NumberOfDevices()) {
-                MediaDevice deviceInfo;
+                MediaDeviceInfo deviceInfo;
                 for (uint32_t i = 0U; i < count; ++i) {
                     if (CameraManager::device(i, deviceInfo) && deviceInfo._guid == guid) {
                         return createCapturer(deviceInfo, logger);

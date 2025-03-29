@@ -30,16 +30,16 @@ CameraVideoSource::~CameraVideoSource()
     postToImpl(&CameraVideoSourceImpl::close);
 }
 
-void CameraVideoSource::setDevice(MediaDevice device)
+void CameraVideoSource::setDeviceInfo(const MediaDeviceInfo& info)
 {
     if (_impl->active()) {
-        postToImpl(&CameraVideoSourceImpl::setDevice, std::move(device));
+        postToImpl(&CameraVideoSourceImpl::setDeviceInfo, info);
     }
 }
 
-MediaDevice CameraVideoSource::device() const
+MediaDeviceInfo CameraVideoSource::deviceInfo() const
 {
-    return _impl->device();
+    return _impl->deviceInfo();
 }
 
 void CameraVideoSource::setCapability(const webrtc::VideoCaptureCapability& capability)

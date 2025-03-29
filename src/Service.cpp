@@ -25,7 +25,10 @@
 #ifdef WEBRTC_AVAILABLE
 #include "AudioDeviceModuleListener.h"
 #include "CameraManager.h"
+#include "CameraVideoTrack.h"
+#include "CameraTrackImpl.h"
 #include "DefaultKeyProvider.h"
+#include "LocalAudioTrack.h"
 #include "Loggable.h"
 #include "PeerConnectionFactory.h"
 #include "RtcInitializer.h"
@@ -51,27 +54,32 @@ class Service::Impl : public Bricks::LoggableS<AudioDeviceModuleListener>
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-         const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents);
+         const MicrophoneOptions& microphoneOptions,
+         const std::shared_ptr<Bricks::Logger>& logger,
+         bool logWebrtcEvents);
     ~Impl();
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
-    MediaDevice defaultRecordingAudioDevice() const;
-    MediaDevice defaultPlayoutAudioDevice() const;
-    bool setRecordingAudioDevice(const MediaDevice& device);
-    MediaDevice recordingAudioDevice() const;
-    bool setPlayoutAudioDevice(const MediaDevice& device);
-    MediaDevice playoutAudioDevice() const;
-    std::vector<MediaDevice> recordingAudioDevices() const;
-    std::vector<MediaDevice> playoutAudioDevices() const;
+    MediaDeviceInfo defaultRecordingAudioDevice() const;
+    MediaDeviceInfo defaultPlayoutAudioDevice() const;
+    bool setRecordingAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo recordingAudioDevice() const;
+    bool setPlayoutAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo playoutAudioDevice() const;
+    std::vector<MediaDeviceInfo> recordingAudioDevices() const;
+    std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     std::unique_ptr<Session> createSession(Options options) const;
+    std::shared_ptr<AudioTrack> createMicrophoneTrack() const;
+    std::shared_ptr<CameraTrack> createCameraTrack(const CameraOptions& options) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                                        const MicrophoneOptions& microphoneOptions,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
     // overrides of AudioDeviceModuleListener
-    void onRecordingChanged(const MediaDevice& device) final;
-    void onPlayoutChanged(const MediaDevice& device) final;
+    void onRecordingChanged(const MediaDeviceInfo& info) final;
+    void onPlayoutChanged(const MediaDeviceInfo& info) final;
 protected:
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final { return g_logCategory; }
@@ -79,13 +87,15 @@ private:
     static void logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
+    const MicrophoneOptions _microphoneOptions;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                 const MicrophoneOptions& microphoneOptions,
                  const std::shared_ptr<Bricks::Logger>& logger,
                  bool logWebrtcEvents)
-    : _impl(Impl::create(websocketsFactory, logger, logWebrtcEvents))
+    : _impl(Impl::create(websocketsFactory, microphoneOptions, logger, logWebrtcEvents))
 {
 }
 
@@ -115,68 +125,59 @@ std::unique_ptr<Session> Service::createSession(Options options) const
     return _impl->createSession(std::move(options));
 }
 
-MediaDevice Service::defaultRecordingCameraDevice() const
-{
-    MediaDevice dev;
-    if (CameraManager::defaultDevice(dev)) {
-        return dev;
-    }
-    return {};
-}
-
-MediaDevice Service::defaultRecordingAudioDevice() const
+MediaDeviceInfo Service::defaultRecordingAudioDevice() const
 {
     return _impl->defaultRecordingAudioDevice();
 }
 
-MediaDevice Service::defaultPlayoutAudioDevice() const
+MediaDeviceInfo Service::defaultPlayoutAudioDevice() const
 {
     return _impl->defaultPlayoutAudioDevice();
 }
 
-bool Service::setRecordingAudioDevice(const MediaDevice& device)
+bool Service::setRecordingAudioDevice(const MediaDeviceInfo& info)
 {
-    return _impl->setRecordingAudioDevice(device);
+    return _impl->setRecordingAudioDevice(info);
 }
 
-MediaDevice Service::recordingAudioDevice() const
+MediaDeviceInfo Service::recordingAudioDevice() const
 {
     return _impl->recordingAudioDevice();
 }
 
-bool Service::setPlayoutAudioDevice(const MediaDevice& device)
+bool Service::setPlayoutAudioDevice(const MediaDeviceInfo& info)
 {
-    return _impl->setPlayoutAudioDevice(device);
+    return _impl->setPlayoutAudioDevice(info);
 }
 
-MediaDevice Service::playoutAudioDevice() const
+MediaDeviceInfo Service::playoutAudioDevice() const
 {
     return _impl->playoutAudioDevice();
 }
 
-std::vector<MediaDevice> Service::recordingAudioDevices() const
+std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const
 {
     return _impl->recordingAudioDevices();
 }
 
-std::vector<MediaDevice> Service::playoutAudioDevices() const
+std::vector<MediaDeviceInfo> Service::playoutAudioDevices() const
 {
     return _impl->playoutAudioDevices();
 }
 
-std::vector<MediaDevice> Service::recordingCameraDevices() const
+std::vector<MediaDeviceInfo> Service::cameraDevices() const
 {
     return CameraManager::devices();
 }
 
-std::vector<CameraOptions> Service::cameraOptions(const MediaDevice& device) const
+std::vector<CameraOptions> Service::cameraOptions(const MediaDeviceInfo& info) const
 {
-    if (const uint32_t number = CameraManager::capabilitiesNumber(device)) {
+    if (const uint32_t number = CameraManager::capabilitiesNumber(info)) {
         std::vector<CameraOptions> options;
         options.reserve(number);
         for (uint32_t i = 0U; i < number; ++i) {
             webrtc::VideoCaptureCapability capability;
-            if (CameraManager::capability(device, i, capability)) {
+            if (CameraManager::capability(info, i, capability)) {
                 options.push_back(map(capability));
             }
         }
@@ -185,10 +186,23 @@ std::vector<CameraOptions> Service::cameraOptions(const MediaDevice& device) con
     return {};
 }
 
+std::shared_ptr<AudioTrack> Service::createMicrophoneTrack() const
+{
+    return _impl->createMicrophoneTrack();
+}
+
+std::shared_ptr<CameraTrack> Service::createCameraTrack(const CameraOptions& options) const
+{
+    return _impl->createCameraTrack(options);
+}
+
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                    const std::shared_ptr<Bricks::Logger>& logger, bool logWebrtcEvents)
+                    const MicrophoneOptions& microphoneOptions,
+                    const std::shared_ptr<Bricks::Logger>& logger,
+                    bool logWebrtcEvents)
     : Bricks::LoggableS<AudioDeviceModuleListener>(logger)
     , _websocketsFactory(websocketsFactory)
+    , _microphoneOptions(microphoneOptions)
     , _pcf(PeerConnectionFactory::Create(true, logWebrtcEvents ? logger : nullptr))
 {
     if (!_pcf) {
@@ -217,7 +231,7 @@ Service::Impl::~Impl()
     }
 }
 
-MediaDevice Service::Impl::defaultRecordingAudioDevice() const
+MediaDeviceInfo Service::Impl::defaultRecordingAudioDevice() const
 {
     if (_pcf) {
         return _pcf->defaultRecordingAudioDevice();
@@ -225,7 +239,7 @@ MediaDevice Service::Impl::defaultRecordingAudioDevice() const
     return {};
 }
 
-MediaDevice Service::Impl::defaultPlayoutAudioDevice() const
+MediaDeviceInfo Service::Impl::defaultPlayoutAudioDevice() const
 {
     if (_pcf) {
         return _pcf->defaultPlayoutAudioDevice();
@@ -233,12 +247,12 @@ MediaDevice Service::Impl::defaultPlayoutAudioDevice() const
     return {};
 }
 
-bool Service::Impl::setRecordingAudioDevice(const MediaDevice& device)
+bool Service::Impl::setRecordingAudioDevice(const MediaDeviceInfo& info)
 {
-    return _pcf && _pcf->setRecordingAudioDevice(device);
+    return _pcf && _pcf->setRecordingAudioDevice(info);
 }
 
-MediaDevice Service::Impl::recordingAudioDevice() const
+MediaDeviceInfo Service::Impl::recordingAudioDevice() const
 {
     if (_pcf) {
         return _pcf->recordingAudioDevice();
@@ -246,12 +260,12 @@ MediaDevice Service::Impl::recordingAudioDevice() const
     return {};
 }
 
-bool Service::Impl::setPlayoutAudioDevice(const MediaDevice& device)
+bool Service::Impl::setPlayoutAudioDevice(const MediaDeviceInfo& info)
 {
-    return _pcf && _pcf->setPlayoutAudioDevice(device);
+    return _pcf && _pcf->setPlayoutAudioDevice(info);
 }
 
-MediaDevice Service::Impl::playoutAudioDevice() const
+MediaDeviceInfo Service::Impl::playoutAudioDevice() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevice();
@@ -259,7 +273,7 @@ MediaDevice Service::Impl::playoutAudioDevice() const
     return {};
 }
 
-std::vector<MediaDevice> Service::Impl::recordingAudioDevices() const
+std::vector<MediaDeviceInfo> Service::Impl::recordingAudioDevices() const
 {
     if (_pcf) {
         return _pcf->recordingAudioDevices();
@@ -267,7 +281,7 @@ std::vector<MediaDevice> Service::Impl::recordingAudioDevices() const
     return {};
 }
 
-std::vector<MediaDevice> Service::Impl::playoutAudioDevices() const
+std::vector<MediaDeviceInfo> Service::Impl::playoutAudioDevices() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevices();
@@ -285,6 +299,25 @@ std::unique_ptr<Session> Service::Impl::createSession(Options options) const
         }
     }
     return session;
+}
+
+std::shared_ptr<AudioTrack> Service::Impl::createMicrophoneTrack() const
+{
+    if (_pcf) {
+        
+    }
+    return {};
+}
+
+std::shared_ptr<CameraTrack> Service::Impl::createCameraTrack(const CameraOptions& options) const
+{
+    if (_pcf && CameraManager::available()) {
+        auto rtcTrack = webrtc::make_ref_counted<CameraVideoTrack>(makeUuid(),
+                                                                   _pcf->signalingThread(),
+                                                                   map(options),
+                                                                   logger());
+    }
+    return {};
 }
 
 bool Service::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>& logger)
@@ -319,27 +352,29 @@ bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger
 
 std::unique_ptr<Service::Impl> Service::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+           const MicrophoneOptions& microphoneOptions,
            const std::shared_ptr<Bricks::Logger>& logger,
            bool logWebrtcEvents)
 {
     if (wsaInitialized(logger) && sslInitialized(logger) && websocketsFactory) {
         logPlatformDefects(logger);
-        return std::make_unique<Impl>(websocketsFactory, logger, logWebrtcEvents);
+        return std::make_unique<Impl>(websocketsFactory, microphoneOptions,
+                                      logger, logWebrtcEvents);
     }
     return {};
 }
 
-void Service::Impl::onRecordingChanged(const MediaDevice& device)
+void Service::Impl::onRecordingChanged(const MediaDeviceInfo& info)
 {
-    if (!device.empty()) {
-        logInfo("recording audio device has been changed to '" + device._name + "'");
+    if (!info.empty()) {
+        logInfo("recording audio device has been changed to '" + info._name + "'");
     }
 }
 
-void Service::Impl::onPlayoutChanged(const MediaDevice& device)
+void Service::Impl::onPlayoutChanged(const MediaDeviceInfo& info)
 {
-    if (!device.empty()) {
-        logInfo("playoud audio device has been changed to '" + device._name + "'");
+    if (!info.empty()) {
+        logInfo("playoud audio device has been changed to '" + info._name + "'");
     }
 }
 
@@ -397,7 +432,8 @@ CameraOptions CameraOptions::defaultOptions()
 class Service::Impl {};
 
 Service::Service(const std::shared_ptr<Websocket::Factory>&,
-                               const std::shared_ptr<Bricks::Logger>&, bool) {}
+                 const MicrophoneOptions&,
+                 const std::shared_ptr<Bricks::Logger>&, bool) {}
 
 Service::~Service() {}
 
@@ -408,25 +444,30 @@ ServiceState Service::state() const
 
 std::unique_ptr<Session> Service::createSession(Options options) const { return {}; }
 
-MediaDevice Service::defaultRecordingCameraDevice() const { return {}; }
+MediaDeviceInfo Service::defaultRecordingAudioDevice() const { return {}; }
 
-MediaDevice Service::defaultRecordingAudioDevice() const { return {}; }
+MediaDeviceInfo Service::defaultPlayoutAudioDevice() const { return {}; }
 
-MediaDevice Service::defaultPlayoutAudioDevice() const { return {}; }
+bool Service::setRecordingAudioDevice(const MediaDeviceInfo&) { return false; }
 
-bool Service::setRecordingAudioDevice(const MediaDevice&) { return false; }
+MediaDeviceInfo Service::recordingAudioDevice() const { return {}; }
 
-MediaDevice Service::recordingAudioDevice() const { return {}; }
+bool Service::setPlayoutAudioDevice(const MediaDeviceInfo&) { return false; }
 
-bool Service::setPlayoutAudioDevice(const MediaDevice&) { return false; }
+MediaDeviceInfo Service::playoutAudioDevice() const { return {}; }
 
-MediaDevice Service::playoutAudioDevice() const { return {}; }
+std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const { return {}; }
 
-std::vector<MediaDevice> Service::recordingAudioDevices() const { return {}; }
+std::vector<MediaDeviceInfo> Service::playoutAudioDevices() const { return {}; }
 
-std::vector<MediaDevice> Service::playoutAudioDevices() const { return {}; }
+std::vector<MediaDeviceInfo> Service::cameraDevices() const { return {}; }
 
-std::vector<MediaDevice> Service::recordingCameraDevices() const { return {}; }
+std::shared_ptr<AudioTrack> Service::createMicrophoneTrack() const { return {}; }
+
+std::shared_ptr<CameraTrack> Service::createCameraTrack(const CameraOptions&) const
+{
+    return {};
+}
 
 CameraOptions CameraOptions::defaultOptions() { return {}; }
 #endif

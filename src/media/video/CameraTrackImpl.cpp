@@ -29,17 +29,17 @@ CameraTrackImpl::~CameraTrackImpl()
     CameraTrackImpl::close();
 }
 
-void CameraTrackImpl::setDevice(MediaDevice device)
+void CameraTrackImpl::setDeviceInfo(const MediaDeviceInfo& info)
 {
     if (const auto& track = mediaTrack()) {
-        track->setDevice(std::move(device));
+        track->setDeviceInfo(info);
     }
 }
 
-MediaDevice CameraTrackImpl::device() const
+MediaDeviceInfo CameraTrackImpl::deviceInfo() const
 {
     if (const auto& track = mediaTrack()) {
-        return track->device();
+        return track->deviceInfo();
     }
     return {};
 }

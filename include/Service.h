@@ -14,9 +14,10 @@
 #pragma once // Service.h
 #include "LiveKitClientExport.h"
 #include "CameraOptions.h"
+#include "MicrophoneOptions.h"
 #include "Session.h"
 #include "ServiceState.h"
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 #include "MediaAuthorizationLevel.h"
 #include "Options.h"
 #include <memory>
@@ -33,6 +34,8 @@ class Logger;
 namespace LiveKitCpp
 {
 
+class CameraTrack;
+class AudioTrack;
 enum class NetworkType;
 
 class LIVEKIT_CLIENT_API Service
@@ -40,6 +43,7 @@ class LIVEKIT_CLIENT_API Service
     class Impl;
 public:
     Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+            const MicrophoneOptions& microphoneOptions = {},
             const std::shared_ptr<Bricks::Logger>& logger = {},
             bool logWebrtcEvents = false);
     ~Service();
@@ -49,20 +53,22 @@ public:
     static NetworkType activeNetworkType();
     static MediaAuthorizationLevel mediaAuthorizationLevel();
     void setMediaAuthorizationLevel(MediaAuthorizationLevel level);
-    MediaDevice defaultRecordingCameraDevice() const;
-    MediaDevice defaultRecordingAudioDevice() const;
-    MediaDevice defaultPlayoutAudioDevice() const;
+    MediaDeviceInfo defaultRecordingAudioDevice() const;
+    MediaDeviceInfo defaultPlayoutAudioDevice() const;
     // device for input from micrpohone
-    bool setRecordingAudioDevice(const MediaDevice& device);
-    MediaDevice recordingAudioDevice() const;
+    bool setRecordingAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo recordingAudioDevice() const;
     // device for output from speakers
-    bool setPlayoutAudioDevice(const MediaDevice& device);
-    MediaDevice playoutAudioDevice() const;
+    bool setPlayoutAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo playoutAudioDevice() const;
     // enumeration
-    std::vector<MediaDevice> recordingAudioDevices() const;
-    std::vector<MediaDevice> playoutAudioDevices() const;
-    std::vector<MediaDevice> recordingCameraDevices() const;
-    std::vector<CameraOptions> cameraOptions(const MediaDevice& device) const;
+    std::vector<MediaDeviceInfo> recordingAudioDevices() const;
+    std::vector<MediaDeviceInfo> playoutAudioDevices() const;
+    std::vector<MediaDeviceInfo> cameraDevices() const;
+    std::vector<CameraOptions> cameraOptions(const MediaDeviceInfo& info) const;
+    // tracks
+    std::shared_ptr<AudioTrack> createMicrophoneTrack() const;
+    std::shared_ptr<CameraTrack> createCameraTrack(const CameraOptions& options = CameraOptions::defaultOptions()) const;
 private:
     const std::unique_ptr<Impl> _impl;
 };

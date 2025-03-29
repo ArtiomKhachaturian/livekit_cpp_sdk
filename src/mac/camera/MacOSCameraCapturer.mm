@@ -43,7 +43,7 @@ inline size_t hashCode(const webrtc::VideoCaptureCapability& cap) {
 namespace LiveKitCpp
 {
 
-MacOSCameraCapturer::MacOSCameraCapturer(const MediaDevice& deviceInfo,
+MacOSCameraCapturer::MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo,
                                          AVCaptureDevice* device,
                                          const std::shared_ptr<Bricks::Logger>& logger)
     : CameraCapturer(deviceInfo)
@@ -60,7 +60,7 @@ MacOSCameraCapturer::~MacOSCameraCapturer()
 }
 
 rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
-    create(const MediaDevice& deviceInfo,
+    create(const MediaDeviceInfo& deviceInfo,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
     if (!deviceInfo._guid.empty()) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 #include <api/peer_connection_interface.h>
 #include <rtc_base/thread.h>
 #include <memory>
@@ -56,14 +56,14 @@ public:
     std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
     std::optional<bool> stereoRecording() const;
     std::optional<bool> stereoPlayout() const;
-    MediaDevice defaultRecordingAudioDevice() const;
-    MediaDevice defaultPlayoutAudioDevice() const;
-    bool setRecordingAudioDevice(const MediaDevice& device);
-    MediaDevice recordingAudioDevice() const;
-    bool setPlayoutAudioDevice(const MediaDevice& device);
-    MediaDevice playoutAudioDevice() const;
-    std::vector<MediaDevice> recordingAudioDevices() const;
-    std::vector<MediaDevice> playoutAudioDevices() const;
+    MediaDeviceInfo defaultRecordingAudioDevice() const;
+    MediaDeviceInfo defaultPlayoutAudioDevice() const;
+    bool setRecordingAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo recordingAudioDevice() const;
+    bool setPlayoutAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo playoutAudioDevice() const;
+    std::vector<MediaDeviceInfo> recordingAudioDevices() const;
+    std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     void addAdmListener(AudioDeviceModuleListener* listener);
     void removeAdmListener(AudioDeviceModuleListener* listener);
     // impl. of webrtc::PeerConnectionFactoryInterface

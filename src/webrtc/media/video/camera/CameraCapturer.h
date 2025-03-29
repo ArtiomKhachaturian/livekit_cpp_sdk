@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once
 #include "SafeObj.h"
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture.h>
 #include <modules/video_capture/video_capture_config.h>
@@ -41,7 +41,7 @@ public:
     bool GetApplyRotation() final { return _applyRotation; }
     const char* CurrentDeviceName() const final { return _deviceInfo._name.c_str(); }
 protected:
-    CameraCapturer(const MediaDevice& deviceInfo);
+    CameraCapturer(const MediaDeviceInfo& deviceInfo);
     bool hasSink() const { return nullptr != _sink(); }
     bool hasRawSink() const { return nullptr != _rawSink(); }
     virtual bool doApplyRotation(bool enable);
@@ -53,7 +53,7 @@ protected:
     void discardFrame();
     webrtc::VideoRotation captureRotation() const;
 private:
-    const MediaDevice _deviceInfo;
+    const MediaDeviceInfo _deviceInfo;
     Bricks::SafeObj<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink = nullptr;
     Bricks::SafeObj<webrtc::RawVideoSinkInterface*> _rawSink = nullptr;
     // set if the frame should be rotated by the capture module

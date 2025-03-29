@@ -15,7 +15,7 @@
 #include "AsyncListeners.h"
 #include "CameraVideoSource.h"
 #include "Loggable.h"
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 #include <api/media_stream_interface.h>
 #include <memory>
 
@@ -31,8 +31,8 @@ public:
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoTrack() override;
     void close();
-    void setDevice(MediaDevice device = {});
-    MediaDevice device() const;
+    void setDeviceInfo(const MediaDeviceInfo& info);
+    MediaDeviceInfo deviceInfo() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);
     webrtc::VideoCaptureCapability capability() const;
     // impl. of webrtc::VideoTrackInterface

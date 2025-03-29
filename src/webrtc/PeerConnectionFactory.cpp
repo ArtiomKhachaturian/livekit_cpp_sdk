@@ -178,7 +178,7 @@ std::optional<bool> PeerConnectionFactory::stereoPlayout() const
     return std::nullopt;
 }
 
-MediaDevice PeerConnectionFactory::defaultRecordingAudioDevice() const
+MediaDeviceInfo PeerConnectionFactory::defaultRecordingAudioDevice() const
 {
     if (_adm) {
         return _adm->defaultRecordingDevice();
@@ -186,7 +186,7 @@ MediaDevice PeerConnectionFactory::defaultRecordingAudioDevice() const
     return {};
 }
 
-MediaDevice PeerConnectionFactory::defaultPlayoutAudioDevice() const
+MediaDeviceInfo PeerConnectionFactory::defaultPlayoutAudioDevice() const
 {
     if (_adm) {
         return _adm->defaultPlayoutDevice();
@@ -194,12 +194,12 @@ MediaDevice PeerConnectionFactory::defaultPlayoutAudioDevice() const
     return {};
 }
 
-bool PeerConnectionFactory::setRecordingAudioDevice(const MediaDevice& device)
+bool PeerConnectionFactory::setRecordingAudioDevice(const MediaDeviceInfo& info)
 {
-    return _adm && _adm->setRecordingDevice(device);
+    return _adm && _adm->setRecordingDevice(info);
 }
 
-MediaDevice PeerConnectionFactory::recordingAudioDevice() const
+MediaDeviceInfo PeerConnectionFactory::recordingAudioDevice() const
 {
     if (_adm) {
         return _adm->recordingDevice();
@@ -207,12 +207,12 @@ MediaDevice PeerConnectionFactory::recordingAudioDevice() const
     return {};
 }
 
-bool PeerConnectionFactory::setPlayoutAudioDevice(const MediaDevice& device)
+bool PeerConnectionFactory::setPlayoutAudioDevice(const MediaDeviceInfo& info)
 {
-    return _adm && _adm->setPlayoutDevice(device);
+    return _adm && _adm->setPlayoutDevice(info);
 }
 
-MediaDevice PeerConnectionFactory::playoutAudioDevice() const
+MediaDeviceInfo PeerConnectionFactory::playoutAudioDevice() const
 {
     if (_adm) {
         return _adm->playoutDevice();
@@ -220,7 +220,7 @@ MediaDevice PeerConnectionFactory::playoutAudioDevice() const
     return {};
 }
 
-std::vector<MediaDevice> PeerConnectionFactory::recordingAudioDevices() const
+std::vector<MediaDeviceInfo> PeerConnectionFactory::recordingAudioDevices() const
 {
     if (_adm) {
         return _adm->recordingDevices();
@@ -228,7 +228,7 @@ std::vector<MediaDevice> PeerConnectionFactory::recordingAudioDevices() const
     return {};
 }
 
-std::vector<MediaDevice> PeerConnectionFactory::playoutAudioDevices() const
+std::vector<MediaDeviceInfo> PeerConnectionFactory::playoutAudioDevices() const
 {
     if (_adm) {
         return _adm->playoutDevices();

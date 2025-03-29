@@ -14,7 +14,7 @@
 #pragma once // CameraVideoSourceImpl.h
 #include "CameraCapturerProxySink.h"
 #include "CameraCapturer.h"
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
 #include "VideoSourceImpl.h"
 
@@ -28,8 +28,8 @@ public:
                           const std::shared_ptr<Bricks::Logger>& logger,
                           const webrtc::VideoCaptureCapability& initialCapability);
     ~CameraVideoSourceImpl() final { close(); }
-    MediaDevice device() const { return _device(); }
-    void setDevice(MediaDevice device);
+    MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }
+    void setDeviceInfo(const MediaDeviceInfo& info);
     void setCapability(webrtc::VideoCaptureCapability capability);
     webrtc::VideoCaptureCapability capability() const { return _capability(); }
     void requestCapturer();
@@ -57,7 +57,7 @@ private:
     void OnDiscardedFrame() final { discard(); }
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) final;
 private:
-    Bricks::SafeObj<MediaDevice> _device;
+    Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
     SafeScopedRefPtr<CameraCapturer> _capturer;
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
 };

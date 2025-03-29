@@ -45,22 +45,23 @@ CameraVideoSourceImpl::CameraVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase
     else {
         _capability = initialCapability;
     }
-    CameraManager::defaultDevice(_device.ref());
+    CameraManager::defaultDevice(_deviceInfo.ref());
 }
 
-void CameraVideoSourceImpl::setDevice(MediaDevice device)
+void CameraVideoSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)
 {
     if (active()) {
         bool ok = true;
-        if (device._guid.empty()) {
-            ok = CameraManager::defaultDevice(device);
+        MediaDeviceInfo deviceInfo(info);
+        if (info._guid.empty()) {
+            ok = CameraManager::defaultDevice(deviceInfo);
         }
-        if (ok && !device._guid.empty()) {
+        if (ok && !deviceInfo._guid.empty()) {
             bool changed = false;
-            if (CameraManager::deviceIsValid(device)) {
-                LOCK_WRITE_SAFE_OBJ(_device);
-                if (_device->_guid != device._guid) {
-                    _device = std::move(device);
+            if (CameraManager::deviceIsValid(deviceInfo)) {
+                LOCK_WRITE_SAFE_OBJ(_deviceInfo);
+                if (_deviceInfo->_guid != deviceInfo._guid) {
+                    _deviceInfo = std::move(deviceInfo);
                     changed = true;
                 }
             }
@@ -102,7 +103,7 @@ void CameraVideoSourceImpl::requestCapturer()
     if (frameWanted()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer.constRef()) {
-            if (auto capturer = CameraManager::createCapturer(device())) {
+            if (auto capturer = CameraManager::createCapturer(deviceInfo())) {
                 capturer->RegisterCaptureDataCallback(this);
                 capturer->setObserver(this);
                 LOCK_WRITE_SAFE_OBJ(_capability);

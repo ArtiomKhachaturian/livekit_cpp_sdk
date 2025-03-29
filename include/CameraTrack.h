@@ -14,7 +14,7 @@
 #pragma once // CameraTrack.h
 #include "VideoTrack.h"
 #include "CameraOptions.h"
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 
 namespace LiveKitCpp
 {
@@ -22,8 +22,8 @@ namespace LiveKitCpp
 class CameraTrack : public VideoTrack
 {
 public:
-    virtual void setDevice(MediaDevice device = {}) = 0;
-    virtual MediaDevice device() const = 0;
+    virtual void setDeviceInfo(const MediaDeviceInfo& info = {}) = 0;
+    virtual MediaDeviceInfo deviceInfo() const = 0;
     virtual void setOptions(const CameraOptions& options) = 0;
     virtual CameraOptions options() const = 0;
     // impl. of Track

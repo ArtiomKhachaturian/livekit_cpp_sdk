@@ -36,14 +36,14 @@ void CameraVideoTrack::close()
     _source->close();
 }
 
-void CameraVideoTrack::setDevice(MediaDevice device)
+void CameraVideoTrack::setDeviceInfo(const MediaDeviceInfo& info)
 {
-    _source->setDevice(std::move(device));
+    _source->setDeviceInfo(info);
 }
 
-MediaDevice CameraVideoTrack::device() const
+MediaDeviceInfo CameraVideoTrack::deviceInfo() const
 {
-    return _source->device();
+    return _source->deviceInfo();
 }
 
 void CameraVideoTrack::setCapability(const webrtc::VideoCaptureCapability& capability)

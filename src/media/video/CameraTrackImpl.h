@@ -29,8 +29,8 @@ public:
                     const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraTrackImpl();
     // impl. of CameraTrack
-    void setDevice(MediaDevice device) final;
-    MediaDevice device() const final;
+    void setDeviceInfo(const MediaDeviceInfo& info) final;
+    MediaDeviceInfo deviceInfo() const final;
     void setOptions(const CameraOptions& options) final;
     CameraOptions options() const final;
     // impl. of LocalTrack

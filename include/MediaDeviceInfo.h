@@ -11,13 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MediaDevice.h
+#pragma once // MediaDeviceInfo.h
 #include <string>
 
 namespace LiveKitCpp
 {
 
-struct MediaDevice
+struct MediaDeviceInfo
 {
     std::string _name;
     std::string _guid;
@@ -26,11 +26,11 @@ struct MediaDevice
 
 } // namespace LiveKitCpp
 
-inline bool operator == (const LiveKitCpp::MediaDevice& l, const LiveKitCpp::MediaDevice& r) {
+inline bool operator == (const LiveKitCpp::MediaDeviceInfo& l, const LiveKitCpp::MediaDeviceInfo& r) {
     return l._name == r._name && l._guid == r._guid;
 }
 
-inline bool operator != (const LiveKitCpp::MediaDevice& l, const LiveKitCpp::MediaDevice& r) {
+inline bool operator != (const LiveKitCpp::MediaDeviceInfo& l, const LiveKitCpp::MediaDeviceInfo& r) {
     return l._name != r._name || l._guid != r._guid;
 }
 

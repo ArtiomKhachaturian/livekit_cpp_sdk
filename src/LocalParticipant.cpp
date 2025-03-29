@@ -15,7 +15,6 @@
 #include "LocalParticipant.h"
 #include "Blob.h"
 #include "CameraVideoTrack.h"
-#include "CameraVideoSource.h"
 #include "CameraManager.h"
 #include "DataChannel.h"
 #include "LocalAudioTrack.h"

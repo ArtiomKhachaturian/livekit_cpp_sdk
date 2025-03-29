@@ -14,7 +14,7 @@
 #pragma once
 #include "AsyncMediaSource.h"
 #include "CameraVideoSourceImpl.h"
-#include "MediaDevice.h"
+#include "MediaDeviceInfo.h"
 #include <modules/video_capture/video_capture_defines.h>
 
 namespace LiveKitCpp
@@ -28,8 +28,8 @@ public:
                       const webrtc::VideoCaptureCapability& initialCapability = {},
                       const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraVideoSource() override;
-    void setDevice(MediaDevice device);
-    MediaDevice device() const;
+    void setDeviceInfo(const MediaDeviceInfo& info);
+    MediaDeviceInfo deviceInfo() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);
     webrtc::VideoCaptureCapability capability() const;
     // impl. of webrtc::VideoTrackSourceInterface
