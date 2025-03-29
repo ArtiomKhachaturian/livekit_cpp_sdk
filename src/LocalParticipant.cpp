@@ -40,7 +40,6 @@ LocalParticipant::LocalParticipant(TrackManager* manager,
 void LocalParticipant::reset()
 {
     _session(nullptr);
-    _micTrack({});
     clear(_audioTracks);
     clear(_videoTracks);
 }
@@ -67,16 +66,14 @@ size_t LocalParticipant::videoTracksCount() const
 
 std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addMicrophoneTrack()
 {
-    LOCK_WRITE_SAFE_OBJ(_micTrack);
-    if (!_micTrack.constRef()) {
-        if (auto mic = createMic()) {
-            _micTrack = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
-                                                              _manager, true,
-                                                              logger());
-            addTrack(_micTrack.constRef(), _audioTracks);
-        }
+    if (auto mic = createMic()) {
+        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
+                                                          _manager, true,
+                                                          logger());
+        addTrack(track, _audioTracks);
+        return track;
     }
-    return _micTrack.constRef();
+    return {};
 }
 
 std::shared_ptr<CameraTrackImpl> LocalParticipant::
@@ -95,12 +92,6 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
     removeAudioTrack(const std::shared_ptr<AudioTrack>& track)
 {
     if (const auto local = std::dynamic_pointer_cast<LocalAudioTrackImpl>(track)) {
-        {
-            LOCK_WRITE_SAFE_OBJ(_micTrack);
-            if (_micTrack.constRef() == local) {
-                _micTrack = {};
-            }
-        }
         LOCK_WRITE_SAFE_OBJ(_audioTracks);
         for (auto it = _audioTracks->begin(); it != _audioTracks->end(); ++it) {
             if (*it == local) {

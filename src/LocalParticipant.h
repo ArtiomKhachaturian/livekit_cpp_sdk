@@ -103,7 +103,6 @@ private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     Bricks::SafeObj<const Participant*> _session;
     Bricks::Listener<ParticipantListener*> _listener;
-    Bricks::SafeSharedPtr<LocalAudioTrackImpl> _micTrack;
     Tracks<AudioTrack> _audioTracks;
     Tracks<VideoTrack> _videoTracks;
     Bricks::SafeObj<std::string> _sid;
