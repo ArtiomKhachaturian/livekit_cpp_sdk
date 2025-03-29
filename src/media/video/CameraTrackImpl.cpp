@@ -17,7 +17,7 @@
 namespace LiveKitCpp
 {
 
-CameraTrackImpl::CameraTrackImpl(webrtc::scoped_refptr<CameraVideoTrack> cameraTrack,
+CameraTrackImpl::CameraTrackImpl(webrtc::scoped_refptr<CameraVideoDevice> cameraTrack,
                                  TrackManager* manager,
                                  const std::shared_ptr<Bricks::Logger>& logger)
     : Base("camera", std::move(cameraTrack), manager, logger)

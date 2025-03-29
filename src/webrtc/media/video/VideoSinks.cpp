@@ -11,20 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // VideoTrackSinks.h
-#include "VideoTrackSink.h"
-#include "TrackSinks.h"
-#include <api/video/video_frame.h>
-#include <api/video/video_sink_interface.h>
+#include "VideoSinks.h"
 
 namespace LiveKitCpp
 {
 
-class VideoTrackSinks : public TrackSinks<VideoTrackSink, rtc::VideoSinkInterface<webrtc::VideoFrame>>
+void VideoSinks::OnFrame(const webrtc::VideoFrame& /*frame*/)
 {
-public:
-    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
-    void OnFrame(const webrtc::VideoFrame& frame) final;
-};
+}
 
 } // namespace LiveKitCpp

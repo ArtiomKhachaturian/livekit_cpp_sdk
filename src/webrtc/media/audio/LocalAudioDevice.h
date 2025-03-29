@@ -11,20 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // LocalAudioTrack.h
+#pragma once // LocalAudioDevice.h
 #include "LocalAudioSource.h"
 #include <api/media_stream_interface.h>
 
 namespace LiveKitCpp
 {
 
-class LocalAudioTrack : public webrtc::AudioTrackInterface
+class LocalAudioDevice : public webrtc::AudioTrackInterface
 {
 public:
-    LocalAudioTrack(const std::string& id,
-                    std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                    cricket::AudioOptions options = {},
-                    const std::shared_ptr<Bricks::Logger>& logger = {});
+    LocalAudioDevice(const std::string& id,
+                     std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                     cricket::AudioOptions options = {},
+                     const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of webrtc::AudioTrackInterface
     webrtc::AudioSourceInterface* GetSource() const final;
     void AddSink(webrtc::AudioTrackSinkInterface* sink) final;

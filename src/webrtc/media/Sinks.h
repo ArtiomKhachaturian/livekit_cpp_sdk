@@ -11,14 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // TrackSinks.h
+#pragma once // Sinks.h
 #include "Listeners.h"
 
 namespace LiveKitCpp
 {
 
-template<class TSink, class TListener>
-class TrackSinks : public TListener
+template<class TSink, class TRtcSink>
+class Sinks : public TRtcSink
 {
 public:
     bool clear() { return _sinks.clear(); }
@@ -27,29 +27,28 @@ public:
     Bricks::AddResult add(TSink* sink);
     Bricks::RemoveResult remove(TSink* sink);
 protected:
-    TrackSinks() = default;
+    Sinks() = default;
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;
 private:
     Bricks::Listeners<TSink*> _sinks;
 };
 
-template<class TSink, class TListener>
-inline Bricks::AddResult TrackSinks<TSink, TListener>::add(TSink* sink)
+template<class TSink, class TRtcSink>
+inline Bricks::AddResult Sinks<TSink, TRtcSink>::add(TSink* sink)
 {
     return _sinks.add(sink);
 }
 
-template<class TSink, class TListener>
-inline Bricks::RemoveResult TrackSinks<TSink, TListener>::remove(TSink* sink)
+template<class TSink, class TRtcSink>
+inline Bricks::RemoveResult Sinks<TSink, TRtcSink>::remove(TSink* sink)
 {
     return _sinks.remove(sink);
 }
 
-template<class TSink, class TListener>
+template<class TSink, class TRtcSink>
 template <class Method, typename... Args>
-inline void TrackSinks<TSink, TListener>::invoke(const Method& method,
-                                                 Args&&... args) const
+inline void Sinks<TSink, TRtcSink>::invoke(const Method& method, Args&&... args) const
 {
     _sinks.invoke(method, std::forward<Args>(args)...);
 }

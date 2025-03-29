@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraVideoTrack.h
+#pragma once // CameraVideoDevice.h
 #include "AsyncListeners.h"
 #include "CameraVideoSource.h"
 #include "Loggable.h"
@@ -22,14 +22,14 @@
 namespace LiveKitCpp
 {
 
-class CameraVideoTrack : public webrtc::VideoTrackInterface
+class CameraVideoDevice : public webrtc::VideoTrackInterface
 {
 public:
-    CameraVideoTrack(const std::string& id,
-                     std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                     const webrtc::VideoCaptureCapability& initialCapability = {},
-                     const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~CameraVideoTrack() override;
+    CameraVideoDevice(const std::string& id,
+                      std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                      const webrtc::VideoCaptureCapability& initialCapability = {},
+                      const std::shared_ptr<Bricks::Logger>& logger = {});
+    ~CameraVideoDevice() override;
     void close();
     void setDeviceInfo(const MediaDeviceInfo& info);
     MediaDeviceInfo deviceInfo() const;

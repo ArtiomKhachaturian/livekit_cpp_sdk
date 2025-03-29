@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraTrack.h
-#include "CameraVideoTrack.h"
+#include "CameraVideoDevice.h"
 #include "CameraTrack.h"
 #include "LocalTrackImpl.h"
 #include "VideoTrackImpl.h"
@@ -20,11 +20,11 @@
 namespace LiveKitCpp
 {
 
-class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraVideoTrack>>
+class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraVideoDevice>>
 {
-    using Base = LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraVideoTrack>>;
+    using Base = LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraVideoDevice>>;
 public:
-    CameraTrackImpl(webrtc::scoped_refptr<CameraVideoTrack> cameraTrack,
+    CameraTrackImpl(webrtc::scoped_refptr<CameraVideoDevice> cameraTrack,
                     TrackManager* manager,
                     const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraTrackImpl();

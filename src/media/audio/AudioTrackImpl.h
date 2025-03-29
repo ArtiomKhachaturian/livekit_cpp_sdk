@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // AudioTrackImpl.h
 #include "AudioTrack.h"
-#include "AudioTrackSinks.h"
+#include "AudioSinks.h"
 #include "TrackImpl.h"
 #include <type_traits>
 
@@ -38,7 +38,7 @@ protected:
                    const std::shared_ptr<Bricks::Logger>& logger);
     webrtc::AudioSourceInterface* audioSource() const;
 private:
-    AudioTrackSinks _sinks;
+    AudioSinks _sinks;
 };
 
 template<class TTrackApi>

@@ -14,10 +14,10 @@
 #ifdef WEBRTC_AVAILABLE
 #include "LocalParticipant.h"
 #include "Blob.h"
-#include "CameraVideoTrack.h"
+#include "CameraVideoDevice.h"
 #include "CameraManager.h"
 #include "DataChannel.h"
-#include "LocalAudioTrack.h"
+#include "LocalAudioDevice.h"
 #include "MicrophoneOptions.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
@@ -290,22 +290,22 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::
     createMic(const MicrophoneOptions& options) const
 {
     if (_pcf) {
-        return webrtc::make_ref_counted<LocalAudioTrack>(makeUuid(),
-                                                         _pcf->signalingThread(),
-                                                         toCricketOptions(options),
-                                                         logger());
+        return webrtc::make_ref_counted<LocalAudioDevice>(makeUuid(),
+                                                          _pcf->signalingThread(),
+                                                          toCricketOptions(options),
+                                                          logger());
     }
     return {};
 }
 
-webrtc::scoped_refptr<CameraVideoTrack> LocalParticipant::
+webrtc::scoped_refptr<CameraVideoDevice> LocalParticipant::
     createCamera(const CameraOptions& options) const
 {
     if (_pcf && CameraManager::available()) {
-        return webrtc::make_ref_counted<CameraVideoTrack>(makeUuid(),
-                                                          _pcf->signalingThread(),
-                                                          map(options),
-                                                          logger());
+        return webrtc::make_ref_counted<CameraVideoDevice>(makeUuid(),
+                                                           _pcf->signalingThread(),
+                                                           map(options),
+                                                           logger());
     }
     return {};
 }

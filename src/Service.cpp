@@ -25,10 +25,8 @@
 #ifdef WEBRTC_AVAILABLE
 #include "AudioDeviceModuleListener.h"
 #include "CameraManager.h"
-#include "CameraVideoTrack.h"
-#include "CameraTrackImpl.h"
 #include "DefaultKeyProvider.h"
-#include "LocalAudioTrack.h"
+#include "LocalAudioDevice.h"
 #include "Loggable.h"
 #include "PeerConnectionFactory.h"
 #include "RtcInitializer.h"
@@ -54,7 +52,6 @@ class Service::Impl : public Bricks::LoggableS<AudioDeviceModuleListener>
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-         const MicrophoneOptions& microphoneOptions,
          const std::shared_ptr<Bricks::Logger>& logger,
          bool logWebrtcEvents);
     ~Impl();
@@ -69,12 +66,9 @@ public:
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     std::unique_ptr<Session> createSession(Options options) const;
-    std::shared_ptr<AudioTrack> createMicrophoneTrack() const;
-    std::shared_ptr<CameraTrack> createCameraTrack(const CameraOptions& options) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                                        const MicrophoneOptions& microphoneOptions,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
     // overrides of AudioDeviceModuleListener
@@ -87,15 +81,13 @@ private:
     static void logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
-    const MicrophoneOptions _microphoneOptions;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                 const MicrophoneOptions& microphoneOptions,
                  const std::shared_ptr<Bricks::Logger>& logger,
                  bool logWebrtcEvents)
-    : _impl(Impl::create(websocketsFactory, microphoneOptions, logger, logWebrtcEvents))
+    : _impl(Impl::create(websocketsFactory, logger, logWebrtcEvents))
 {
 }
 
@@ -186,23 +178,11 @@ std::vector<CameraOptions> Service::cameraOptions(const MediaDeviceInfo& info) c
     return {};
 }
 
-std::shared_ptr<AudioTrack> Service::createMicrophoneTrack() const
-{
-    return _impl->createMicrophoneTrack();
-}
-
-std::shared_ptr<CameraTrack> Service::createCameraTrack(const CameraOptions& options) const
-{
-    return _impl->createCameraTrack(options);
-}
-
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                    const MicrophoneOptions& microphoneOptions,
                     const std::shared_ptr<Bricks::Logger>& logger,
                     bool logWebrtcEvents)
     : Bricks::LoggableS<AudioDeviceModuleListener>(logger)
     , _websocketsFactory(websocketsFactory)
-    , _microphoneOptions(microphoneOptions)
     , _pcf(PeerConnectionFactory::Create(true, logWebrtcEvents ? logger : nullptr))
 {
     if (!_pcf) {
@@ -301,25 +281,6 @@ std::unique_ptr<Session> Service::Impl::createSession(Options options) const
     return session;
 }
 
-std::shared_ptr<AudioTrack> Service::Impl::createMicrophoneTrack() const
-{
-    if (_pcf) {
-        
-    }
-    return {};
-}
-
-std::shared_ptr<CameraTrack> Service::Impl::createCameraTrack(const CameraOptions& options) const
-{
-    if (_pcf && CameraManager::available()) {
-        auto rtcTrack = webrtc::make_ref_counted<CameraVideoTrack>(makeUuid(),
-                                                                   _pcf->signalingThread(),
-                                                                   map(options),
-                                                                   logger());
-    }
-    return {};
-}
-
 bool Service::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>& logger)
 {
     static const RtcInitializer initializer;
@@ -352,14 +313,12 @@ bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger
 
 std::unique_ptr<Service::Impl> Service::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-           const MicrophoneOptions& microphoneOptions,
            const std::shared_ptr<Bricks::Logger>& logger,
            bool logWebrtcEvents)
 {
     if (wsaInitialized(logger) && sslInitialized(logger) && websocketsFactory) {
         logPlatformDefects(logger);
-        return std::make_unique<Impl>(websocketsFactory, microphoneOptions,
-                                      logger, logWebrtcEvents);
+        return std::make_unique<Impl>(websocketsFactory, logger, logWebrtcEvents);
     }
     return {};
 }
@@ -432,7 +391,6 @@ CameraOptions CameraOptions::defaultOptions()
 class Service::Impl {};
 
 Service::Service(const std::shared_ptr<Websocket::Factory>&,
-                 const MicrophoneOptions&,
                  const std::shared_ptr<Bricks::Logger>&, bool) {}
 
 Service::~Service() {}
@@ -461,13 +419,6 @@ std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const { return {};
 std::vector<MediaDeviceInfo> Service::playoutAudioDevices() const { return {}; }
 
 std::vector<MediaDeviceInfo> Service::cameraDevices() const { return {}; }
-
-std::shared_ptr<AudioTrack> Service::createMicrophoneTrack() const { return {}; }
-
-std::shared_ptr<CameraTrack> Service::createCameraTrack(const CameraOptions&) const
-{
-    return {};
-}
 
 CameraOptions CameraOptions::defaultOptions() { return {}; }
 #endif

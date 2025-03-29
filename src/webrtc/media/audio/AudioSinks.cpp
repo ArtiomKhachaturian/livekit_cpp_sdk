@@ -11,21 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AudioTrackSinks.h
-#include "AudioTrackSink.h"
-#include "TrackSinks.h"
-#include <api/media_stream_interface.h>
+#include "AudioSinks.h"
 
 namespace LiveKitCpp
 {
 
-class AudioTrackSinks : public TrackSinks<AudioTrackSink, webrtc::AudioTrackSinkInterface>
+void AudioSinks::OnData(const void* audioData, int bitsPerSample, int sampleRate,
+                        size_t numberOfChannels, size_t numberOfFrames,
+                        std::optional<int64_t> absoluteCaptureTimestampMs)
 {
-public:
-    // impl. of webrtc::AudioTrackSinkInterface
-    void OnData(const void* audioData, int bitsPerSample, int sampleRate,
-                size_t numberOfChannels, size_t numberOfFrames,
-                std::optional<int64_t> absoluteCaptureTimestampMs) final;
-};
+    if (audioData) {
+        invoke(&AudioTrackSink::onData, audioData, bitsPerSample,
+               sampleRate, numberOfChannels, numberOfFrames,
+               absoluteCaptureTimestampMs);
+    }
+}
 
 } // namespace LiveKitCpp

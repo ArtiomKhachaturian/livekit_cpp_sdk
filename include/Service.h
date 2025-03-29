@@ -14,7 +14,6 @@
 #pragma once // Service.h
 #include "LiveKitClientExport.h"
 #include "CameraOptions.h"
-#include "MicrophoneOptions.h"
 #include "Session.h"
 #include "ServiceState.h"
 #include "MediaDeviceInfo.h"
@@ -34,8 +33,6 @@ class Logger;
 namespace LiveKitCpp
 {
 
-class CameraTrack;
-class AudioTrack;
 enum class NetworkType;
 
 class LIVEKIT_CLIENT_API Service
@@ -43,7 +40,6 @@ class LIVEKIT_CLIENT_API Service
     class Impl;
 public:
     Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-            const MicrophoneOptions& microphoneOptions = {},
             const std::shared_ptr<Bricks::Logger>& logger = {},
             bool logWebrtcEvents = false);
     ~Service();
@@ -66,9 +62,6 @@ public:
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     std::vector<MediaDeviceInfo> cameraDevices() const;
     std::vector<CameraOptions> cameraOptions(const MediaDeviceInfo& info) const;
-    // tracks
-    std::shared_ptr<AudioTrack> createMicrophoneTrack() const;
-    std::shared_ptr<CameraTrack> createCameraTrack(const CameraOptions& options = CameraOptions::defaultOptions()) const;
 private:
     const std::unique_ptr<Impl> _impl;
 };

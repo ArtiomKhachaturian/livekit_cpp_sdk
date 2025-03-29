@@ -14,7 +14,7 @@
 #pragma once // VideoTrackImpl.h
 #include "TrackImpl.h"
 #include "VideoTrack.h"
-#include "VideoTrackSinks.h"
+#include "VideoSinks.h"
 #include <type_traits>
 
 namespace LiveKitCpp
@@ -36,7 +36,7 @@ protected:
                    TrackManager* manager,
                    const std::shared_ptr<Bricks::Logger>& logger);
 private:
-    VideoTrackSinks _sinks;
+    VideoSinks _sinks;
 };
 
 template<class TTrackApi, class TWebRtcTrack>
