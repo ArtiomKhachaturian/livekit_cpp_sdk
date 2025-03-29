@@ -42,9 +42,10 @@ class Logger;
 namespace LiveKitCpp
 {
 
-class AdmProxyListener;
 class AdmProxy;
 class AdmProxyFacade;
+class AdmRecordingListener;
+class AdmPlayoutListener;
 class MicAudioSource;
 class WebRtcLogSink;
 struct MicrophoneOptions;
@@ -70,7 +71,8 @@ public:
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
-    void registerAdmListener(AdmProxyListener* listener, bool reg);
+    void registerAdmRecordingListener(AdmRecordingListener* l, bool reg);
+    void registerAdmPlayoutListener(AdmPlayoutListener* l, bool reg);
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>

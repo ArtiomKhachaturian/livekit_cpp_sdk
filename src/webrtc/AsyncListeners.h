@@ -40,6 +40,7 @@ public:
     void invoke(Method method, Args&&... args) const;
     AsyncListeners& operator = (const AsyncListeners&) = delete;
     AsyncListeners& operator = (AsyncListeners&&) noexcept = delete;
+    explicit operator bool() const noexcept { return !_listeners->empty(); }
 private:
     const std::weak_ptr<webrtc::TaskQueueBase> _queue;
     const std::shared_ptr<Listeners> _listeners;

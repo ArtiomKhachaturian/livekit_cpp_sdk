@@ -96,7 +96,8 @@ class PeerConnectionFactory::AdmProxyFacadeImpl : public AdmProxyFacade
 public:
     AdmProxyFacadeImpl(rtc::WeakPtr<AdmProxy> admProxyRef, cricket::AudioOptions options);
     // impl. of AdmProxyFacade
-    void registerListener(AdmProxyListener* listener, bool reg) final;
+    void registerRecordingListener(AdmRecordingListener* l, bool reg) final;
+    void registerPlayoutListener(AdmPlayoutListener* l, bool reg) final;
     cricket::AudioOptions options() const final { return _options; }
 private:
     const rtc::WeakPtr<AdmProxy> _admProxyRef;
@@ -271,10 +272,17 @@ std::vector<MediaDeviceInfo> PeerConnectionFactory::playoutAudioDevices() const
     return {};
 }
 
-void PeerConnectionFactory::registerAdmListener(AdmProxyListener* listener, bool reg)
+void PeerConnectionFactory::registerAdmRecordingListener(AdmRecordingListener* l, bool reg)
 {
     if (_admProxy) {
-        _admProxy->registerListener(listener, reg);
+        _admProxy->registerRecordingListener(l, reg);
+    }
+}
+
+void PeerConnectionFactory::registerAdmPlayoutListener(AdmPlayoutListener* l, bool reg)
+{
+    if (_admProxy) {
+        _admProxy->registerPlayoutListener(l, reg);
     }
 }
 
@@ -348,12 +356,22 @@ PeerConnectionFactory::AdmProxyFacadeImpl::AdmProxyFacadeImpl(rtc::WeakPtr<AdmPr
 {
 }
 
-void PeerConnectionFactory::AdmProxyFacadeImpl::registerListener(AdmProxyListener* listener,
-                                                                 bool reg)
+void PeerConnectionFactory::AdmProxyFacadeImpl::
+    registerRecordingListener(AdmRecordingListener* l, bool reg)
 {
-    if (listener) {
+    if (l) {
         if (const auto adm = _admProxyRef.get()) {
-            adm->registerListener(listener, reg);
+            adm->registerRecordingListener(l, reg);
+        }
+    }
+}
+
+void PeerConnectionFactory::AdmProxyFacadeImpl::
+    registerPlayoutListener(AdmPlayoutListener* l, bool reg)
+{
+    if (l) {
+        if (const auto adm = _admProxyRef.get()) {
+            adm->registerPlayoutListener(l, reg);
         }
     }
 }

@@ -17,12 +17,14 @@
 namespace LiveKitCpp
 {
 
-class AdmProxyListener;
+class AdmRecordingListener;
+class AdmPlayoutListener;
 
 class AdmProxyFacade
 {
 public:
-    virtual void registerListener(AdmProxyListener* listener, bool reg) = 0;
+    virtual void registerRecordingListener(AdmRecordingListener* l, bool reg) = 0;
+    virtual void registerPlayoutListener(AdmPlayoutListener* l, bool reg) = 0;
     virtual cricket::AudioOptions options() const = 0;
 protected:
     virtual ~AdmProxyFacade() = default;

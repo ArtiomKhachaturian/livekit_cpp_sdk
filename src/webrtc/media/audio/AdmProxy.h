@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once // AdmProxyModule.h
 #include "Loggable.h"
-#include "AdmProxyListener.h"
 #include "AsyncListeners.h"
 #include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
@@ -29,8 +28,10 @@ class Thread;
 namespace LiveKitCpp
 {
 
-class AdmProxy : public Bricks::LoggableS<webrtc::AudioDeviceModule>,
-                 private AdmProxyListener
+class AdmRecordingListener;
+class AdmPlayoutListener;
+
+class AdmProxy : public Bricks::LoggableS<webrtc::AudioDeviceModule>
 {
     template<bool recording> class ScopedAudioBlocker;
     struct DeviceMetrics;
@@ -141,7 +142,8 @@ public:
     bool stereoRecording() const noexcept { return _stereoRecording; }
     bool stereoPlayout() const noexcept { return _stereoPlayout; }
     void close();
-    void registerListener(AdmProxyListener* listener, bool reg);
+    void registerRecordingListener(AdmRecordingListener* l, bool reg);
+    void registerPlayoutListener(AdmPlayoutListener* l, bool reg);
     // selection management
     MediaDeviceInfo defaultRecordingDevice() const;
     MediaDeviceInfo defaultPlayoutDevice() const;
@@ -162,6 +164,7 @@ private:
     static std::optional<MediaDeviceInfo> get(bool recording, WindowsDeviceType type, const AdmPtr& adm);
     static std::optional<uint16_t> get(bool recording, const MediaDeviceInfo& info, const AdmPtr& adm);
     static void metrics(const AdmPtr& adm, bool recording, DeviceMetrics& metrics);
+    static std::optional<bool> stereo(const AdmPtr& adm, bool recording);
     static AdmPtr defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory);
     std::shared_ptr<rtc::Thread> workingThread() const;
     std::vector<MediaDeviceInfo> enumerate(bool recording) const;
@@ -184,16 +187,12 @@ private:
     R threadInvokeR(Handler handler, R defaultVal = {}) const;
     template <typename Handler>
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
-    // impl. of AdmProxyListener
-    void onRecordingStarted() final;
-    void onRecordingStopped() final;
-    void onPlayoutStarted() final;
-    void onPlayoutStopped() final;
 private:
     static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
     const std::weak_ptr<rtc::Thread> _thread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
-    AsyncListeners<AdmProxyListener*, true> _listeners;
+    AsyncListeners<AdmRecordingListener*, true> _recListeners;
+    AsyncListeners<AdmPlayoutListener*, true> _playListeners;
     Bricks::SafeObj<MediaDeviceInfo> _recordingDev;
     Bricks::SafeObj<MediaDeviceInfo> _playoutDev;
     std::atomic_bool _stereoRecording = false;

@@ -23,7 +23,8 @@
 #include "e2e/KeyProviderOptions.h"
 #include "e2e/KeyProvider.h"
 #ifdef WEBRTC_AVAILABLE
-#include "AdmProxyListener.h"
+#include "AdmRecordingListener.h"
+#include "AdmPlayoutListener.h"
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
 #include "Loggable.h"
@@ -47,7 +48,9 @@ const std::string_view g_logCategory("service");
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-class Service::Impl : public Bricks::LoggableS<AdmProxyListener>
+class Service::Impl : public Bricks::LoggableS<>,
+                      private AdmRecordingListener,
+                      private AdmPlayoutListener
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -72,12 +75,13 @@ public:
                                         const MicrophoneOptions& microphoneOptions,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
-    // overrides of AudioDeviceModuleListener
+    // overrides of AdmRecordingListener
     void onRecordingChanged(const MediaDeviceInfo& info,
                             const std::optional<bool>&,
                             const std::optional<uint32_t>&,
                             const std::optional<uint32_t>&,
                             const std::optional<uint32_t>&) final;
+    // overrides of AdmPlayoutListener
     void onPlayoutChanged(const MediaDeviceInfo& info,
                           const std::optional<bool>&,
                           const std::optional<uint32_t>&,
@@ -199,7 +203,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
                     const MicrophoneOptions& microphoneOptions,
                     const std::shared_ptr<Bricks::Logger>& logger,
                     bool logWebrtcEvents)
-    : Bricks::LoggableS<AdmProxyListener>(logger)
+    : Bricks::LoggableS<>(logger)
     , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::create(true, microphoneOptions, logWebrtcEvents ? logger : nullptr))
 {
@@ -207,7 +211,8 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
         logError("failed to create of peer connection factory");
     }
     else {
-        _pcf->registerAdmListener(this, true);
+        _pcf->registerAdmRecordingListener(this, true);
+        _pcf->registerAdmPlayoutListener(this, true);
         if (!_pcf->eventsQueue()) {
             logError("failed to create of events queue");
         }
@@ -225,7 +230,8 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
 Service::Impl::~Impl()
 {
     if (_pcf) {
-        _pcf->registerAdmListener(this, false);
+        _pcf->registerAdmRecordingListener(this, false);
+        _pcf->registerAdmPlayoutListener(this, false);
     }
 }
 

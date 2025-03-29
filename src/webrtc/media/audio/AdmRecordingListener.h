@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AdmProxyListener.h
+#pragma once // AdmRecordingListener.h
 #include <cstdint>
 #include <optional>
 
@@ -20,7 +20,7 @@ namespace LiveKitCpp
 
 struct MediaDeviceInfo;
 
-class AdmProxyListener
+class AdmRecordingListener
 {
 public:
     virtual void onRecordingVolumeChanged(uint32_t /*volume*/) {}
@@ -38,23 +38,8 @@ public:
                                     const std::optional<uint32_t>& /*maxVolume*/,
                                     const std::optional<uint32_t>& /*currentVolume*/) {}
     virtual void onRecordingStereoChanged(bool /*stereo*/) {}
-    virtual void onPlayoutVolumeChanged(uint32_t /*volume*/) {}
-    virtual void onPlayoutMuteChanged(bool /*mute*/) {}
-    virtual void onPlayoutInitialized(const MediaDeviceInfo& /*info*/,
-                                      const std::optional<bool>& /*stereo*/,
-                                      const std::optional<uint32_t>& /*minVolume*/,
-                                      const std::optional<uint32_t>& /*maxVolume*/,
-                                      const std::optional<uint32_t>& /*currentVolume*/) {}
-    virtual void onPlayoutStarted() {}
-    virtual void onPlayoutStopped() {}
-    virtual void onPlayoutChanged(const MediaDeviceInfo& /*info*/,
-                                  const std::optional<bool>& /*stereo*/,
-                                  const std::optional<uint32_t>& /*minVolume*/,
-                                  const std::optional<uint32_t>& /*maxVolume*/,
-                                  const std::optional<uint32_t>& /*currentVolume*/) {}
-    virtual void onPlayoutStereoChanged(bool /*stereo*/) {}
 protected:
-    virtual ~AdmProxyListener() = default;
+    virtual ~AdmRecordingListener() = default;
 };
 
 } // namespace LiveKitCpp
