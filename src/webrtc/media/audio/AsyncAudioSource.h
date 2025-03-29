@@ -14,52 +14,54 @@
 #pragma once // AsyncAudioSource.h
 #include "AsyncMediaSource.h"
 #include "AsyncAudioSourceImpl.h"
-#include "LocalAudioSource.h"
 
 namespace LiveKitCpp
 {
 
 template<class TAsyncImpl>
-class AsyncAudioSource : public AsyncMediaSource<LocalAudioSource, TAsyncImpl>
+class AsyncAudioSource : public AsyncMediaSource<webrtc::AudioSourceInterface, TAsyncImpl>
 {
     static_assert(std::is_base_of_v<AsyncAudioSourceImpl, TAsyncImpl>);
-    using Base = AsyncMediaSource<LocalAudioSource, TAsyncImpl>;
+    using Base = AsyncMediaSource<webrtc::AudioSourceInterface, TAsyncImpl>;
 public:
-    // impl. of LocalAudioSource
-    bool setAudioEnabled(bool enabled) final { return Base::setEnabled(enabled); }
-    bool audioEnabled() const final { return Base::enabled(); }
-    // impl. of webrtc::AudioSourceInterface
-    void SetVolume(double volume) override;
-    void RegisterAudioObserver(LocalAudioSource::AudioObserver* observer) override;
-    void UnregisterAudioObserver(LocalAudioSource::AudioObserver* observer) override;
-    void AddSink(webrtc::AudioTrackSinkInterface*  sink) override;
-    void RemoveSink(webrtc::AudioTrackSinkInterface* sink) override;
-protected:
     template<typename... Args>
-    AsyncAudioSource(Args&&... args);
+    AsyncAudioSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                     const std::shared_ptr<Bricks::Logger>& logger,
+                     Args&&... args);
+    // impl. of webrtc::AudioSourceInterface
+    void SetVolume(double volume) final;
+    void RegisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer) final;
+    void UnregisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer) final;
+    void AddSink(webrtc::AudioTrackSinkInterface*  sink) final;
+    void RemoveSink(webrtc::AudioTrackSinkInterface* sink) final;
+    const cricket::AudioOptions options() const final;
 };
 
 template<class TAsyncImpl>
 template<typename... Args>
-inline AsyncAudioSource<TAsyncImpl>::AsyncAudioSource(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+inline AsyncAudioSource<TAsyncImpl>::AsyncAudioSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                                                      const std::shared_ptr<Bricks::Logger>& logger,
+                                                      Args&&... args)
+    : Base(std::move(signalingQueue), logger, std::forward<Args>(args)...)
 {
 }
 
 template<class TAsyncImpl>
 void AsyncAudioSource<TAsyncImpl>::SetVolume(double volume)
 {
-    
+    Base::postToImpl(&AsyncAudioSourceImpl::setVolume, volume);
 }
 
 template<class TAsyncImpl>
-inline void AsyncAudioSource<TAsyncImpl>::RegisterAudioObserver(LocalAudioSource::AudioObserver* observer)
+inline void AsyncAudioSource<TAsyncImpl>::
+    RegisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer)
 {
     Base::_impl->addAudioObserver(observer);
 }
 
 template<class TAsyncImpl>
-inline void AsyncAudioSource<TAsyncImpl>::UnregisterAudioObserver(LocalAudioSource::AudioObserver* observer)
+inline void AsyncAudioSource<TAsyncImpl>::
+    UnregisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer)
 {
     Base::_impl->removeAudioObserver(observer);
 }
@@ -74,6 +76,12 @@ template<class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::RemoveSink(webrtc::AudioTrackSinkInterface* sink)
 {
     Base::_impl->removeSink(sink);
+}
+
+template<class TAsyncImpl>
+inline const cricket::AudioOptions AsyncAudioSource<TAsyncImpl>::options() const
+{
+    return Base::_impl->options();
 }
 
 } // namespace LiveKitCpp

@@ -26,7 +26,7 @@ AsyncAudioSourceImpl::AsyncAudioSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
 
 void AsyncAudioSourceImpl::setVolume(double volume)
 {
-    changeVolume(volume);
+    onVolumeChanged(volume);
 }
 
 void AsyncAudioSourceImpl::addAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer)
@@ -60,14 +60,14 @@ void AsyncAudioSourceImpl::onEnabled(bool enabled)
     }
 }
 
-void AsyncAudioSourceImpl::changeVolume(double volume)
+void AsyncAudioSourceImpl::onVolumeChanged(double volume)
 {
     _observers.invoke(&webrtc::AudioSourceInterface::AudioObserver::OnSetVolume, volume);
 }
 
-void AsyncAudioSourceImpl::sendData(const void* audioData,
-                                    int bitsPerSample, int sampleRate,
-                                    size_t numberOfChannels, size_t numberOfFrames) const
+void AsyncAudioSourceImpl::onData(const void* audioData,
+                                  int bitsPerSample, int sampleRate,
+                                  size_t numberOfChannels, size_t numberOfFrames) const
 {
     if (audioData && bitsPerSample > 0 && sampleRate > 0 && numberOfChannels && numberOfFrames) {
         using methodType = void(webrtc::AudioTrackSinkInterface::*)(const void*, int, int,

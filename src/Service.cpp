@@ -93,6 +93,13 @@ Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
 {
 }
 
+Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
+                 const std::shared_ptr<Bricks::Logger>& logger,
+                 bool logWebrtcEvents)
+    : Service(websocketsFactory, {}, logger, logWebrtcEvents)
+{
+}
+
 Service::~Service()
 {
 }
@@ -398,6 +405,10 @@ class Service::Impl {};
 Service::Service(const std::shared_ptr<Websocket::Factory>&,
                  const MicrophoneOptions&
                  const std::shared_ptr<Bricks::Logger>&, bool) {}
+
+Service::Service(const std::shared_ptr<Websocket::Factory>&,
+                 const std::shared_ptr<Bricks::Logger>&,
+                 bool) {}
 
 Service::~Service() {}
 

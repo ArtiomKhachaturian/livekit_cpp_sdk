@@ -18,7 +18,7 @@
 #include "CameraManager.h"
 #include "DataChannel.h"
 #include "LocalAudioDevice.h"
-#include "MicAudioSource.h"
+#include "AsyncMicSourceImpl.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
 #include "rtc/ParticipantInfo.h"
@@ -269,10 +269,9 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::createMic()
 {
     if (_pcf) {
         if (auto adm = _pcf->admProxy()) {
-            auto source = webrtc::make_ref_counted<MicAudioSource>(std::move(adm),
-                                                                   _pcf->signalingThread(),
-                                                                   logger());
-            return webrtc::make_ref_counted<LocalAudioDevice>(makeUuid(), std::move(source));
+            return LocalAudioDevice<AsyncMicSourceImpl>::create(_pcf->signalingThread(),
+                                                                logger(),
+                                                                std::move(adm));
         }
     }
     return {};

@@ -11,8 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MicAudioSource.h
-#include "AsyncAudioSource.h"
+#pragma once // AsyncMicSourceImpl.h
 #include "AsyncAudioSourceImpl.h"
 #include <memory>
 
@@ -21,16 +20,17 @@ namespace LiveKitCpp
 
 class AdmProxyFacade;
 
-class MicAudioSource : public AsyncAudioSource<AsyncAudioSourceImpl>
+class AsyncMicSourceImpl : public AsyncAudioSourceImpl
 {
-    using Base = AsyncAudioSource<AsyncAudioSourceImpl>;
 public:
-    MicAudioSource(std::shared_ptr<AdmProxyFacade> admProxy,
-                   std::weak_ptr<webrtc::TaskQueueBase> signalingQueue = {},
-                   const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~MicAudioSource() override;
-    // impl. of webrtc::AudioSourceInterface
-    const cricket::AudioOptions options() const final;
+    AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                       const std::shared_ptr<Bricks::Logger>& logger,
+                       std::shared_ptr<AdmProxyFacade> admProxy);
+    ~AsyncMicSourceImpl() override;
+    // impl. of AsyncAudioSourceImpl
+    void addSink(webrtc::AudioTrackSinkInterface* sink) final;
+    void removeSink(webrtc::AudioTrackSinkInterface* sink) final;
+    cricket::AudioOptions options() const final;
 private:
     const std::shared_ptr<AdmProxyFacade> _admProxy;
 };
