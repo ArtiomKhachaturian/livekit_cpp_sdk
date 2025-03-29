@@ -13,21 +13,21 @@
 // limitations under the License.
 #pragma once
 #include "AsyncMediaSource.h"
-#include "CameraVideoSourceImpl.h"
+#include "AsyncCameraSourceImpl.h"
 #include "MediaDeviceInfo.h"
 #include <modules/video_capture/video_capture_defines.h>
 
 namespace LiveKitCpp
 {
 
-class CameraVideoSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, CameraVideoSourceImpl>
+class CameraSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncCameraSourceImpl>
 {
-    using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, CameraVideoSourceImpl>;
+    using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncCameraSourceImpl>;
 public:
-    CameraVideoSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                      const webrtc::VideoCaptureCapability& initialCapability = {},
-                      const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~CameraVideoSource() override;
+    CameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                 const webrtc::VideoCaptureCapability& initialCapability = {},
+                 const std::shared_ptr<Bricks::Logger>& logger = {});
+    ~CameraSource() override;
     void setDeviceInfo(const MediaDeviceInfo& info);
     MediaDeviceInfo deviceInfo() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);

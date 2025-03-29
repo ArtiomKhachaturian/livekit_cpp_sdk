@@ -28,7 +28,7 @@ public:
     const auto& signalingQueue() const noexcept { return _observers.queue(); }
     void notifyAboutChanges();
     void setEnabled(bool enabled);
-    bool enabled() const noexcept { return _enabled; }
+    bool enabled() const { return _enabled; }
     bool active() const noexcept { return _active; }
     void close();
     void registerObserver(webrtc::ObserverInterface* observer);

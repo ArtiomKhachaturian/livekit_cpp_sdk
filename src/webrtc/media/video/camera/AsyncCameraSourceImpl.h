@@ -16,18 +16,18 @@
 #include "CameraCapturer.h"
 #include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
-#include "VideoSourceImpl.h"
+#include "AsyncVideoSourceImpl.h"
 
 namespace LiveKitCpp
 {
 
-class CameraVideoSourceImpl : public VideoSourceImpl, private CameraCapturerProxySink
+class AsyncCameraSourceImpl : public AsyncVideoSourceImpl, private CameraCapturerProxySink
 {
 public:
-    CameraVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+    AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                           const std::shared_ptr<Bricks::Logger>& logger,
                           const webrtc::VideoCaptureCapability& initialCapability);
-    ~CameraVideoSourceImpl() final { close(); }
+    ~AsyncCameraSourceImpl() final { close(); }
     MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }
     void setDeviceInfo(const MediaDeviceInfo& info);
     void setCapability(webrtc::VideoCaptureCapability capability);

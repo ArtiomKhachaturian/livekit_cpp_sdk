@@ -26,7 +26,6 @@
 #include "AdmProxyListener.h"
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
-#include "MicAudioDevice.h"
 #include "Loggable.h"
 #include "PeerConnectionFactory.h"
 #include "RtcInitializer.h"

@@ -21,12 +21,12 @@ namespace LiveKitCpp
 
 class VideoSinkBroadcast;
 
-class VideoSourceImpl : public AsyncMediaSourceImpl
+class AsyncVideoSourceImpl : public AsyncMediaSourceImpl
 {
     using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
                                             std::unique_ptr<VideoSinkBroadcast>>;
 public:
-    ~VideoSourceImpl() override;
+    ~AsyncVideoSourceImpl() override;
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     bool stats(int& inputWidth, int& inputHeight) const;
@@ -37,9 +37,9 @@ public:
     // return true if need to reset capturer
     bool removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
 protected:
-    VideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                    const std::shared_ptr<Bricks::Logger>& logger = {},
-                    bool liveImmediately = false);
+    AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                         const std::shared_ptr<Bricks::Logger>& logger = {},
+                         bool liveImmediately = false);
     bool frameWanted() const;
     void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
     void discard();

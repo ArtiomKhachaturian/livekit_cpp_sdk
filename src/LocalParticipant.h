@@ -39,7 +39,7 @@ class Logger;
 namespace LiveKitCpp
 {
 
-class CameraVideoDevice;
+class CameraDevice;
 class TrackManager;
 class ParticipantListener;
 class PeerConnectionFactory;
@@ -92,7 +92,7 @@ private:
     template<class TTracks>
     static void clear(TTracks& tracks);
     webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic() const;
-    webrtc::scoped_refptr<CameraVideoDevice> createCamera(const CameraOptions& options) const;
+    webrtc::scoped_refptr<CameraDevice> createCamera(const CameraOptions& options) const;
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;
     // impl. of AesCgmCryptorObserver

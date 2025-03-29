@@ -11,25 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "VideoSourceImpl.h"
+#include "AsyncVideoSourceImpl.h"
 #include "VideoSinkBroadcast.h"
 #include "Utils.h"
 
 namespace LiveKitCpp
 {
 
-VideoSourceImpl::VideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                                 const std::shared_ptr<Bricks::Logger>& logger,
-                                 bool liveImmediately)
+AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                                           const std::shared_ptr<Bricks::Logger>& logger,
+                                           bool liveImmediately)
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
 {
 }
 
-VideoSourceImpl::~VideoSourceImpl()
+AsyncVideoSourceImpl::~AsyncVideoSourceImpl()
 {
 }
 
-void VideoSourceImpl::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
+void AsyncVideoSourceImpl::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
     if (active()) {
         LOCK_READ_SAFE_OBJ(_broadcasters);
@@ -39,12 +39,12 @@ void VideoSourceImpl::processConstraints(const webrtc::VideoTrackSourceConstrain
     }
 }
 
-bool VideoSourceImpl::stats(webrtc::VideoTrackSourceInterface::Stats& s) const
+bool AsyncVideoSourceImpl::stats(webrtc::VideoTrackSourceInterface::Stats& s) const
 {
     return stats(s.input_width, s.input_height);
 }
 
-bool VideoSourceImpl::stats(int& inputWidth, int& inputHeight) const
+bool AsyncVideoSourceImpl::stats(int& inputWidth, int& inputHeight) const
 {
     if (active()) {
         if (const auto resolution = _lastResolution.load()) {
@@ -56,8 +56,8 @@ bool VideoSourceImpl::stats(int& inputWidth, int& inputHeight) const
     return false;
 }
 
-bool VideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                                      const rtc::VideoSinkWants& wants)
+bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                                           const rtc::VideoSinkWants& wants)
 {
     if (sink && active()) {
         LOCK_WRITE_SAFE_OBJ(_broadcasters);
@@ -74,7 +74,7 @@ bool VideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame
     return false;
 }
 
-bool VideoSourceImpl::removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+bool AsyncVideoSourceImpl::removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (sink) {
         LOCK_WRITE_SAFE_OBJ(_broadcasters);
@@ -85,7 +85,7 @@ bool VideoSourceImpl::removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* si
     return false;
 }
 
-bool VideoSourceImpl::frameWanted() const
+bool AsyncVideoSourceImpl::frameWanted() const
 {
     if (enabled() && active()) {
         LOCK_READ_SAFE_OBJ(_broadcasters);
@@ -94,7 +94,7 @@ bool VideoSourceImpl::frameWanted() const
     return false;
 }
 
-void VideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updateStats)
+void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updateStats)
 {
     if (active() && frame.video_frame_buffer()) {
         if (updateStats) {
@@ -108,7 +108,7 @@ void VideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updateStat
     }
 }
 
-void VideoSourceImpl::discard()
+void AsyncVideoSourceImpl::discard()
 {
     LOCK_READ_SAFE_OBJ(_broadcasters);
     for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
@@ -116,13 +116,13 @@ void VideoSourceImpl::discard()
     }
 }
 
-void VideoSourceImpl::onClosed()
+void AsyncVideoSourceImpl::onClosed()
 {
     AsyncMediaSourceImpl::onClosed();
     _broadcasters({});
 }
 
-void VideoSourceImpl::onMuted()
+void AsyncVideoSourceImpl::onMuted()
 {
     AsyncMediaSourceImpl::onMuted();
     _lastResolution = 0ULL;

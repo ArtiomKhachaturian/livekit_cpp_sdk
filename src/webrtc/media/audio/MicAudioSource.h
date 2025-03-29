@@ -12,38 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MicAudioSource.h
-#include "AsyncMediaSource.h"
-#include "AudioSourceImpl.h"
-#include <api/media_stream_interface.h>
-#include <rtc_base/weak_ptr.h>
+#include "AsyncAudioSource.h"
+#include "AsyncAudioSourceImpl.h"
+#include <memory>
 
 namespace LiveKitCpp
 {
 
-class AdmProxy;
+class AdmProxyFacade;
 
-class MicAudioSource : public AsyncMediaSource<webrtc::AudioSourceInterface, AudioSourceImpl>
+class MicAudioSource : public AsyncAudioSource<AsyncAudioSourceImpl>
 {
-    using Base = AsyncMediaSource<webrtc::AudioSourceInterface, AudioSourceImpl>;
+    using Base = AsyncAudioSource<AsyncAudioSourceImpl>;
 public:
-    MicAudioSource(rtc::WeakPtr<AdmProxy> admProxyRef,
-                   cricket::AudioOptions options = {},
+    MicAudioSource(std::shared_ptr<AdmProxyFacade> admProxy,
                    std::weak_ptr<webrtc::TaskQueueBase> signalingQueue = {},
                    const std::shared_ptr<Bricks::Logger>& logger = {});
-    MicAudioSource(const webrtc::scoped_refptr<AdmProxy>& adm,
-                   cricket::AudioOptions options = {},
-                   std::weak_ptr<webrtc::TaskQueueBase> signalingQueue = {});
     ~MicAudioSource() override;
     // impl. of webrtc::AudioSourceInterface
-    void SetVolume(double volume) final;
-    void RegisterAudioObserver(AudioObserver* observer) final;
-    void UnregisterAudioObserver(AudioObserver* observer) final;
-    void AddSink(webrtc::AudioTrackSinkInterface*  sink) final;
-    void RemoveSink(webrtc::AudioTrackSinkInterface* sink) final;
     const cricket::AudioOptions options() const final;
 private:
-    const rtc::WeakPtr<AdmProxy> _admProxyRef;
-    const cricket::AudioOptions _options;
+    const std::shared_ptr<AdmProxyFacade> _admProxy;
 };
 
 } // namespace LiveKitCpp

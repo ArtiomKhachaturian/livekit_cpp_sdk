@@ -16,8 +16,8 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "AdmProxy.h"
+#include "AdmProxyFacade.h"
 #include "MicrophoneOptions.h"
-#include "MicAudioSource.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
 #include <api/audio/builtin_audio_processing_builder.h>
@@ -91,6 +91,18 @@ std::unique_ptr<VideoEncoderFactory> CreateBuiltinVideoEncoderFactory() {
 namespace LiveKitCpp
 {
 
+class PeerConnectionFactory::AdmProxyFacadeImpl : public AdmProxyFacade
+{
+public:
+    AdmProxyFacadeImpl(rtc::WeakPtr<AdmProxy> admProxyRef, cricket::AudioOptions options);
+    // impl. of AdmProxyFacade
+    void registerListener(AdmProxyListener* listener, bool reg) final;
+    cricket::AudioOptions options() const final { return _options; }
+private:
+    const rtc::WeakPtr<AdmProxy> _admProxyRef;
+    const cricket::AudioOptions _options;
+};
+
 PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webrtcLogSink,
                                              std::shared_ptr<rtc::Thread> networkThread,
                                              std::shared_ptr<rtc::Thread> workingThread,
@@ -114,9 +126,9 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     _workingThread->AllowInvokesToThread(_workingThread.get());
     _signalingThread->AllowInvokesToThread(_signalingThread.get());
     if (_admProxy) {
-        _micAudioSource = webrtc::make_ref_counted<MicAudioSource>(_admProxy,
-                                                                    toCricketOptions(microphoneOptions),
-                                                                    _signalingThread);
+        auto admRef = _admProxy->weakRef();
+        auto options = toCricketOptions(microphoneOptions);
+        _admProxyFacade.reset(new AdmProxyFacadeImpl(std::move(admRef), std::move(options)));
     }
 }
 
@@ -194,6 +206,11 @@ std::optional<bool> PeerConnectionFactory::stereoPlayout() const
         return _admProxy->stereoPlayout();
     }
     return std::nullopt;
+}
+                              
+std::shared_ptr<AdmProxyFacade> PeerConnectionFactory::admProxy() const
+{
+    return _admProxyFacade;
 }
 
 MediaDeviceInfo PeerConnectionFactory::defaultRecordingAudioDevice() const
@@ -322,6 +339,23 @@ bool PeerConnectionFactory::StartAecDump(FILE* file, int64_t maxSizeBytes)
 void PeerConnectionFactory::StopAecDump()
 {
     _innerImpl->StopAecDump();
+}
+
+PeerConnectionFactory::AdmProxyFacadeImpl::AdmProxyFacadeImpl(rtc::WeakPtr<AdmProxy> admProxyRef,
+                                                              cricket::AudioOptions options)
+    : _admProxyRef(std::move(admProxyRef))
+    , _options(std::move(options))
+{
+}
+
+void PeerConnectionFactory::AdmProxyFacadeImpl::registerListener(AdmProxyListener* listener,
+                                                                 bool reg)
+{
+    if (listener) {
+        if (const auto adm = _admProxyRef.get()) {
+            adm->registerListener(listener, reg);
+        }
+    }
 }
 
 } // namespace LiveKitCpp

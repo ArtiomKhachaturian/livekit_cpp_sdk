@@ -11,30 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "MicAudioSource.h"
-#include "AdmProxyFacade.h"
+#pragma once // LocalAudioSource.h
+#include <api/media_stream_interface.h>
 
 namespace LiveKitCpp
 {
 
-MicAudioSource::MicAudioSource(std::shared_ptr<AdmProxyFacade> admProxy,
-                               std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                               const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(std::move(signalingQueue), logger, true)
-    , _admProxy(std::move(admProxy))
+class LocalAudioSource : public webrtc::AudioSourceInterface
 {
-}
-
-MicAudioSource::~MicAudioSource()
-{
-}
-
-const cricket::AudioOptions MicAudioSource::options() const
-{
-    if (_admProxy) {
-        return _admProxy->options();
-    }
-    return {};
-}
+public:
+    virtual bool setAudioEnabled(bool enabled) = 0;
+    virtual bool audioEnabled() const = 0;
+};
 
 } // namespace LiveKitCpp

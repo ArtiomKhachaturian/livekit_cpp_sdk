@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CameraVideoSourceImpl.h"
+#include "AsyncCameraSourceImpl.h"
 #include "CameraManager.h"
 #include "VideoFrameBuffer.h"
 
@@ -34,10 +34,10 @@ inline bool isNull(const webrtc::VideoCaptureCapability& cap) {
 namespace LiveKitCpp
 {
 
-CameraVideoSourceImpl::CameraVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+AsyncCameraSourceImpl::AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                              const std::shared_ptr<Bricks::Logger>& logger,
                                              const webrtc::VideoCaptureCapability& initialCapability)
-    : VideoSourceImpl(std::move(signalingQueue), logger, false)
+    : AsyncVideoSourceImpl(std::move(signalingQueue), logger, false)
 {
     if (isNull(initialCapability)) {
         _capability = CameraManager::defaultCapability();
@@ -48,7 +48,7 @@ CameraVideoSourceImpl::CameraVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase
     CameraManager::defaultDevice(_deviceInfo.ref());
 }
 
-void CameraVideoSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)
+void AsyncCameraSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)
 {
     if (active()) {
         bool ok = true;
@@ -72,7 +72,7 @@ void CameraVideoSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)
     }
 }
 
-void CameraVideoSourceImpl::setCapability(webrtc::VideoCaptureCapability capability)
+void AsyncCameraSourceImpl::setCapability(webrtc::VideoCaptureCapability capability)
 {
     if (active()) {
         if (isNull(capability)) {
@@ -98,7 +98,7 @@ void CameraVideoSourceImpl::setCapability(webrtc::VideoCaptureCapability capabil
     }
 }
 
-void CameraVideoSourceImpl::requestCapturer()
+void AsyncCameraSourceImpl::requestCapturer()
 {
     if (frameWanted()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
@@ -120,7 +120,7 @@ void CameraVideoSourceImpl::requestCapturer()
     }
 }
 
-void CameraVideoSourceImpl::resetCapturer()
+void AsyncCameraSourceImpl::resetCapturer()
 {
     LOCK_WRITE_SAFE_OBJ(_capturer);
     if (_capturer.constRef()) {
@@ -131,20 +131,20 @@ void CameraVideoSourceImpl::resetCapturer()
     }
 }
 
-std::string_view CameraVideoSourceImpl::logCategory() const
+std::string_view AsyncCameraSourceImpl::logCategory() const
 {
     return CameraManager::logCategory();
 }
 
-void CameraVideoSourceImpl::onClosed()
+void AsyncCameraSourceImpl::onClosed()
 {
-    VideoSourceImpl::onClosed();
+    AsyncVideoSourceImpl::onClosed();
     resetCapturer();
 }
 
-void CameraVideoSourceImpl::onEnabled(bool enabled)
+void AsyncCameraSourceImpl::onEnabled(bool enabled)
 {
-    VideoSourceImpl::onEnabled(enabled);
+    AsyncVideoSourceImpl::onEnabled(enabled);
     LOCK_READ_SAFE_OBJ(_capturer);
     if (_capturer.constRef()) {
         if (enabled) {
@@ -156,7 +156,7 @@ void CameraVideoSourceImpl::onEnabled(bool enabled)
     }
 }
 
-webrtc::VideoCaptureCapability CameraVideoSourceImpl::
+webrtc::VideoCaptureCapability AsyncCameraSourceImpl::
     bestMatched(webrtc::VideoCaptureCapability capability, std::string_view guid)
 {
     if (!guid.empty()) {
@@ -168,7 +168,7 @@ webrtc::VideoCaptureCapability CameraVideoSourceImpl::
     return capability;
 }
 
-webrtc::VideoCaptureCapability CameraVideoSourceImpl::
+webrtc::VideoCaptureCapability AsyncCameraSourceImpl::
     bestMatched(webrtc::VideoCaptureCapability capability,
                 const rtc::scoped_refptr<CameraCapturer>& capturer)
 {
@@ -178,7 +178,7 @@ webrtc::VideoCaptureCapability CameraVideoSourceImpl::
     return bestMatched(std::move(capability));
 }
 
-bool CameraVideoSourceImpl::startCapturer(const webrtc::VideoCaptureCapability& capability)
+bool AsyncCameraSourceImpl::startCapturer(const webrtc::VideoCaptureCapability& capability)
 {
     int32_t code = 0;
     if (frameWanted()) {
@@ -195,7 +195,7 @@ bool CameraVideoSourceImpl::startCapturer(const webrtc::VideoCaptureCapability& 
     return 0 == code;
 }
 
-bool CameraVideoSourceImpl::stopCapturer(bool sendByeFrame)
+bool AsyncCameraSourceImpl::stopCapturer(bool sendByeFrame)
 {
     int32_t code = 0;
     const auto& capturer = _capturer.constRef();
@@ -225,31 +225,31 @@ bool CameraVideoSourceImpl::stopCapturer(bool sendByeFrame)
     return 0 == code;
 }
 
-void CameraVideoSourceImpl::logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
+void AsyncCameraSourceImpl::logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
                                      const std::string& message, int code) const
 {
     if (capturer && canLogError()) {
         const auto name = capturer->CurrentDeviceName();
         if (0 == code) {
-            VideoSourceImpl::logError(CameraManager::formatLogMessage(name, message));
+            AsyncVideoSourceImpl::logError(CameraManager::formatLogMessage(name, message));
         }
         else {
             const auto error = makeCapturerError(code, message);
-            VideoSourceImpl::logError(CameraManager::formatLogMessage(name, error));
+            AsyncVideoSourceImpl::logError(CameraManager::formatLogMessage(name, error));
         }
     }
 }
 
-void CameraVideoSourceImpl::logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer,
+void AsyncCameraSourceImpl::logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer,
                                        const std::string& message) const
 {
     if (capturer && canLogVerbose()) {
         const auto error = CameraManager::formatLogMessage(capturer->CurrentDeviceName(), message);
-        VideoSourceImpl::logVerbose(error);
+        AsyncVideoSourceImpl::logVerbose(error);
     }
 }
 
-void CameraVideoSourceImpl::onStateChanged(CameraState state)
+void AsyncCameraSourceImpl::onStateChanged(CameraState state)
 {
     switch (state) {
         case CameraState::Stopped:
@@ -266,7 +266,7 @@ void CameraVideoSourceImpl::onStateChanged(CameraState state)
     }
 }
 
-void CameraVideoSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
+void AsyncCameraSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
 {
     if (active()) {
         processConstraints(c);

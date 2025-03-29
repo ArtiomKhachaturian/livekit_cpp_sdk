@@ -11,18 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // MicAudioDevice.h
+#pragma once // LocalAudioDevice.h
 #include <api/media_stream_interface.h>
 
 namespace LiveKitCpp
 {
 
-class MicAudioSource;
+class LocalAudioSource;
 
-class MicAudioDevice : public webrtc::AudioTrackInterface
+class LocalAudioDevice : public webrtc::AudioTrackInterface
 {
 public:
-    MicAudioDevice(const std::string& id, webrtc::scoped_refptr<MicAudioSource> source);
+    LocalAudioDevice(const std::string& id, webrtc::scoped_refptr<LocalAudioSource> source);
     // impl. of webrtc::AudioTrackInterface
     webrtc::AudioSourceInterface* GetSource() const final;
     void AddSink(webrtc::AudioTrackSinkInterface* sink) final;
@@ -39,8 +39,7 @@ public:
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
     const std::string _id;
-    const webrtc::scoped_refptr<MicAudioSource> _source;
-    std::atomic_bool _enabled;
+    const webrtc::scoped_refptr<LocalAudioSource> _source;
 };
 
 } // namespace LiveKitCpp

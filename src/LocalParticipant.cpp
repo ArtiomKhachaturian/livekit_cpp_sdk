@@ -14,10 +14,10 @@
 #ifdef WEBRTC_AVAILABLE
 #include "LocalParticipant.h"
 #include "Blob.h"
-#include "CameraVideoDevice.h"
+#include "CameraDevice.h"
 #include "CameraManager.h"
 #include "DataChannel.h"
-#include "MicAudioDevice.h"
+#include "LocalAudioDevice.h"
 #include "MicAudioSource.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
@@ -267,21 +267,25 @@ void LocalParticipant::clear(TTracks& tracks)
 
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::createMic() const
 {
-    if (_pcf && _pcf->micAudioSource()) {
-        return webrtc::make_ref_counted<MicAudioDevice>(makeUuid(),
-                                                        _pcf->micAudioSource());
+    if (_pcf) {
+        if (auto adm = _pcf->admProxy()) {
+            auto source = webrtc::make_ref_counted<MicAudioSource>(std::move(adm),
+                                                                   _pcf->signalingThread(),
+                                                                   logger());
+            return webrtc::make_ref_counted<LocalAudioDevice>(makeUuid(), std::move(source));
+        }
     }
     return {};
 }
 
-webrtc::scoped_refptr<CameraVideoDevice> LocalParticipant::
+webrtc::scoped_refptr<CameraDevice> LocalParticipant::
     createCamera(const CameraOptions& options) const
 {
     if (_pcf && CameraManager::available()) {
-        return webrtc::make_ref_counted<CameraVideoDevice>(makeUuid(),
-                                                           _pcf->signalingThread(),
-                                                           map(options),
-                                                           logger());
+        return webrtc::make_ref_counted<CameraDevice>(makeUuid(),
+                                                      _pcf->signalingThread(),
+                                                      map(options),
+                                                      logger());
     }
     return {};
 }

@@ -11,78 +11,78 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "CameraVideoDevice.h"
+#include "CameraDevice.h"
 
 namespace LiveKitCpp
 {
 
-CameraVideoDevice::CameraVideoDevice(const std::string& id,
-                                     std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                                     const webrtc::VideoCaptureCapability& initialCapability,
-                                     const std::shared_ptr<Bricks::Logger>& logger)
+CameraDevice::CameraDevice(const std::string& id,
+                           std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                           const webrtc::VideoCaptureCapability& initialCapability,
+                           const std::shared_ptr<Bricks::Logger>& logger)
     : _id(id)
-    , _source(webrtc::make_ref_counted<CameraVideoSource>(std::move(signalingQueue),
+    , _source(webrtc::make_ref_counted<CameraSource>(std::move(signalingQueue),
                                                           initialCapability, logger))
 {
 }
 
-CameraVideoDevice::~CameraVideoDevice()
+CameraDevice::~CameraDevice()
 {
     close();
 }
 
-void CameraVideoDevice::close()
+void CameraDevice::close()
 {
     _source->close();
 }
 
-void CameraVideoDevice::setDeviceInfo(const MediaDeviceInfo& info)
+void CameraDevice::setDeviceInfo(const MediaDeviceInfo& info)
 {
     _source->setDeviceInfo(info);
 }
 
-MediaDeviceInfo CameraVideoDevice::deviceInfo() const
+MediaDeviceInfo CameraDevice::deviceInfo() const
 {
     return _source->deviceInfo();
 }
 
-void CameraVideoDevice::setCapability(const webrtc::VideoCaptureCapability& capability)
+void CameraDevice::setCapability(const webrtc::VideoCaptureCapability& capability)
 {
     _source->setCapability(capability);
 }
 
-webrtc::VideoCaptureCapability CameraVideoDevice::capability() const
+webrtc::VideoCaptureCapability CameraDevice::capability() const
 {
     return _source->capability();
 }
 
-void CameraVideoDevice::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                                        const rtc::VideoSinkWants& wants)
+void CameraDevice::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                                   const rtc::VideoSinkWants& wants)
 {
     _source->AddOrUpdateSink(sink, wants);
 }
 
-void CameraVideoDevice::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+void CameraDevice::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     _source->RemoveSink(sink);
 }
 
-webrtc::VideoTrackSourceInterface* CameraVideoDevice::GetSource() const
+webrtc::VideoTrackSourceInterface* CameraDevice::GetSource() const
 {
     return _source.get();
 }
 
-bool CameraVideoDevice::enabled() const
+bool CameraDevice::enabled() const
 {
     return _source->enabled();
 }
 
-bool CameraVideoDevice::set_enabled(bool enable)
+bool CameraDevice::set_enabled(bool enable)
 {
     return _source->setEnabled(enable);
 }
 
-webrtc::MediaStreamTrackInterface::TrackState CameraVideoDevice::state() const
+webrtc::MediaStreamTrackInterface::TrackState CameraDevice::state() const
 {
     switch (_source->state()) {
         case webrtc::MediaSourceInterface::kEnded:
@@ -93,12 +93,12 @@ webrtc::MediaStreamTrackInterface::TrackState CameraVideoDevice::state() const
     return webrtc::MediaStreamTrackInterface::TrackState::kLive;
 }
 
-void CameraVideoDevice::RegisterObserver(webrtc::ObserverInterface* observer)
+void CameraDevice::RegisterObserver(webrtc::ObserverInterface* observer)
 {
     _source->RegisterObserver(observer);
 }
 
-void CameraVideoDevice::UnregisterObserver(webrtc::ObserverInterface* observer)
+void CameraDevice::UnregisterObserver(webrtc::ObserverInterface* observer)
 {
     _source->UnregisterObserver(observer);
 }

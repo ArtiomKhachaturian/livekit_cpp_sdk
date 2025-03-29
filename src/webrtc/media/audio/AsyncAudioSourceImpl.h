@@ -11,21 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AudioSourceImpl.h
+#pragma once // AsyncAudioSourceImpl.h
 #include "AsyncMediaSourceImpl.h"
 
 namespace LiveKitCpp
 {
 
-class AudioSourceImpl : public AsyncMediaSourceImpl
+class AsyncAudioSourceImpl : public AsyncMediaSourceImpl
 {
 public:
-    AudioSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                    const std::shared_ptr<Bricks::Logger>& logger = {},
-                    bool liveImmediately = false);
+    AsyncAudioSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                         const std::shared_ptr<Bricks::Logger>& logger = {},
+                         bool liveImmediately = false);
     void setVolume(double volume);
-    void registerAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
-    void UnregisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
+    void addAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
+    void removeAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
     void addSink(webrtc::AudioTrackSinkInterface*  sink);
     void removeSink(webrtc::AudioTrackSinkInterface* sink);
 protected:

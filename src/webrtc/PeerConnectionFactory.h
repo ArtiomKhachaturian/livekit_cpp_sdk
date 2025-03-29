@@ -44,12 +44,14 @@ namespace LiveKitCpp
 
 class AdmProxyListener;
 class AdmProxy;
+class AdmProxyFacade;
 class MicAudioSource;
 class WebRtcLogSink;
 struct MicrophoneOptions;
 
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 {
+    class AdmProxyFacadeImpl;
 public:
     ~PeerConnectionFactory() override;
     static webrtc::scoped_refptr<PeerConnectionFactory> create(bool audioProcessing,
@@ -59,7 +61,7 @@ public:
     std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
     std::optional<bool> stereoRecording() const;
     std::optional<bool> stereoPlayout() const;
-    const auto& micAudioSource() const noexcept { return _micAudioSource; }
+    std::shared_ptr<AdmProxyFacade> admProxy() const;
     MediaDeviceInfo defaultRecordingAudioDevice() const;
     MediaDeviceInfo defaultPlayoutAudioDevice() const;
     bool setRecordingAudioDevice(const MediaDeviceInfo& info);
@@ -102,7 +104,7 @@ private:
     const std::shared_ptr<rtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
     const webrtc::scoped_refptr<AdmProxy> _admProxy;
-    webrtc::scoped_refptr<MicAudioSource> _micAudioSource;
+    std::shared_ptr<AdmProxyFacadeImpl> _admProxyFacade;
 };
 
 } // namespace LiveKitCpp
