@@ -67,6 +67,11 @@ cricket::AudioOptions AsyncMicSourceImpl::options() const
     return {};
 }
 
+void AsyncMicSourceImpl::onEnabled(bool enabled)
+{
+    AsyncAudioSourceImpl::onEnabled(enabled);
+}
+
 void AsyncMicSourceImpl::handleVolumeChanges() const
 {
     const auto mmv = minMaxVolume();
@@ -112,25 +117,37 @@ void AsyncMicSourceImpl::onStarted(bool)
 
 void AsyncMicSourceImpl::onStopped(bool)
 {
-    changeState(webrtc::MediaSourceInterface::SourceState::kInitializing);
+    if (enabled()) {
+        changeState(webrtc::MediaSourceInterface::SourceState::kInitializing);
+    }
+    else {
+        changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
+    }
 }
 
 void AsyncMicSourceImpl::onMuteChanged(bool, bool mute)
 {
+    webrtc::MediaSourceInterface::SourceState newState = state();
     if (mute) {
-        changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
+        newState = webrtc::MediaSourceInterface::SourceState::kMuted;
     }
     else if (const auto admp = adm()) {
-        if (admp->recordingState().started()) {
-            changeState(webrtc::MediaSourceInterface::SourceState::kLive);
+        if (enabled()) {
+            if (admp->recordingState().started()) {
+                newState = webrtc::MediaSourceInterface::SourceState::kLive;
+            }
+            else {
+                newState = webrtc::MediaSourceInterface::SourceState::kInitializing;
+            }
         }
         else {
-            changeState(webrtc::MediaSourceInterface::SourceState::kInitializing);
+            newState = webrtc::MediaSourceInterface::SourceState::kMuted;
         }
     }
     else {
-        changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
+        newState = webrtc::MediaSourceInterface::SourceState::kEnded;
     }
+    changeState(newState);
 }
 
 } // namespace LiveKitCpp

@@ -34,6 +34,9 @@ public:
     void addSink(webrtc::AudioTrackSinkInterface* sink) final;
     void removeSink(webrtc::AudioTrackSinkInterface* sink) final;
     cricket::AudioOptions options() const final;
+protected:
+    // overrides of AsyncAudioSourceImpl
+    void onEnabled(bool enabled) final;
 private:
     std::shared_ptr<AdmProxyFacade> adm() const noexcept { return _admProxy.lock(); }
     void handleVolumeChanges() const;

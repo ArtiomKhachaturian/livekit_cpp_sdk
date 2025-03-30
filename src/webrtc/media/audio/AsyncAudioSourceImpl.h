@@ -36,7 +36,7 @@ protected:
                 size_t numberOfChannels, size_t numberOfFrames) const;
 protected:
     // override of AsyncMediaSourceImpl
-    void onEnabled(bool enabled) final;
+    void onEnabled(bool enabled) override;
 private:
     AsyncListeners<webrtc::AudioSourceInterface::AudioObserver*> _observers;
     Bricks::Listeners<webrtc::AudioTrackSinkInterface*> _sinks;

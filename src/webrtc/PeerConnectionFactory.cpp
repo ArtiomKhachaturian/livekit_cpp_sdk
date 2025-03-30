@@ -178,8 +178,7 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     dependencies.audio_decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
     dependencies.audio_encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
     auto admProxy = AdmProxy::create(workingThread, signalingThread,
-                                     dependencies.task_queue_factory.get(),
-                                     logger);
+                                     dependencies.task_queue_factory.get());
     if (audioProcessing) {
         dependencies.audio_processing_builder = std::make_unique<webrtc::BuiltinAudioProcessingBuilder>();
     }

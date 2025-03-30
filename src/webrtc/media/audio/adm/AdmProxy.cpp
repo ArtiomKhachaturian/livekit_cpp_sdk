@@ -15,10 +15,12 @@
 #include "AudioDevicesEnumerator.h"
 #include "AdmProxyListener.h"
 #include "MediaAuthorization.h"
+#include "Logger.h"
 #include "Utils.h"
 #include "ThreadUtils.h"
 #include <api/make_ref_counted.h>
 #include <rtc_base/thread.h>
+#include <rtc_base/logging.h>
 
 namespace
 {
@@ -47,7 +49,18 @@ inline bool isDefault(const std::string_view& name) {
 }
 #endif
 
-const std::string_view g_logcategory("adm_proxy");
+// TODO: expose this class for public
+class RtcLogger : public Bricks::Logger
+{
+public:
+    RtcLogger() = default;
+    bool canLog(Bricks::LoggingSeverity severity) const final;
+    void log(Bricks::LoggingSeverity severity,
+             std::string_view message,
+             std::string_view category) final;
+private:
+    static std::optional<rtc::LoggingSeverity> map(Bricks::LoggingSeverity sev);
+};
 
 } // namespace
 
@@ -55,15 +68,11 @@ namespace LiveKitCpp
 {
 
 template<bool recording>
-class AdmProxy::ScopedAudioBlocker : public Bricks::LoggableS<>
+class AdmProxy::ScopedAudioBlocker
 {
 public:
-    ScopedAudioBlocker(const AdmPtr& adm,
-                       const std::shared_ptr<Bricks::Logger>& logger);
+    ScopedAudioBlocker(const AdmPtr& adm);
     ~ScopedAudioBlocker();
-protected:
-    // impl. of Bricks::LoggableS<>
-    std::string_view logCategory() const final { return g_logcategory; }
 private:
     const AdmPtr& _adm;
     bool _needRestart = false;
@@ -71,15 +80,13 @@ private:
 
 AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
                    const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
-                   rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
-                   const std::shared_ptr<Bricks::Logger>& logger)
-    :  Bricks::LoggableS<webrtc::AudioDeviceModule>(logger)
-    , _workingThread(workingThread)
+                   rtc::scoped_refptr<webrtc::AudioDeviceModule> impl)
+    : _workingThread(workingThread)
     , _impl(std::move(impl))
     , _recState(true, signalingQueue)
     , _playState(false, signalingQueue)
 {
-    if (canLogInfo()) {
+    if (RTC_LOG_CHECK_LEVEL(LS_INFO)) {
         const auto& impl = _impl.constRef();
         std::vector<std::string_view> info;
         if (impl->BuiltInAECIsAvailable()) {
@@ -92,7 +99,7 @@ AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
             info.push_back("NS");
         }
         if (!info.empty()) {
-            logInfo("accessibility of built-in audio processing: " + join(info, ", "));
+            RTC_LOG(LS_INFO) << "accessibility of built-in audio processing: " << join(info, ", ");
         }
     }
 }
@@ -105,8 +112,7 @@ AdmProxy::~AdmProxy()
 rtc::scoped_refptr<AdmProxy> AdmProxy::
     create(const std::shared_ptr<rtc::Thread>& workingThread,
            const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
-           webrtc::TaskQueueFactory* taskQueueFactory,
-           const std::shared_ptr<Bricks::Logger>& logger)
+           webrtc::TaskQueueFactory* taskQueueFactory)
 {
     if (workingThread && signalingQueue) {
         auto impl = invokeInThreadR(workingThread.get(), [taskQueueFactory](){
@@ -115,8 +121,7 @@ rtc::scoped_refptr<AdmProxy> AdmProxy::
         if (impl) {
             return rtc::make_ref_counted<AdmProxy>(workingThread,
                                                    signalingQueue,
-                                                   std::move(impl),
-                                                   logger);
+                                                   std::move(impl));
         }
     }
     return {};
@@ -203,7 +208,7 @@ int32_t AdmProxy::SetPlayoutDevice(WindowsDeviceType device)
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
         {
-            const ScopedAudioBlocker<false> blocker(pm, logger());
+            const ScopedAudioBlocker<false> blocker(pm);
             result = pm->SetPlayoutDevice(device);
         }
         if (0 == result) {
@@ -225,7 +230,7 @@ int32_t AdmProxy::SetRecordingDevice(WindowsDeviceType device)
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
         {
-            const ScopedAudioBlocker<true> blocker(pm, logger());
+            const ScopedAudioBlocker<true> blocker(pm);
             result = pm->SetRecordingDevice(device);
         }
         if (0 == result) {
@@ -707,11 +712,6 @@ std::vector<MediaDeviceInfo> AdmProxy::playoutDevices() const
     return enumerate(false);
 }
 
-std::string_view AdmProxy::logCategory() const
-{
-    return g_logcategory;
-}
-
 std::optional<MediaDeviceInfo> AdmProxy::get(bool recording, uint16_t ndx,
                                              const AdmPtr& adm)
 {
@@ -801,7 +801,8 @@ MediaDeviceInfo AdmProxy::defaultDevice(bool recording) const
 
 void AdmProxy::requestRecordingAuthorizationStatus() const
 {
-    MediaAuthorization::query(MediaAuthorizationKind::Microphone, true, logger());
+    MediaAuthorization::query(MediaAuthorizationKind::Microphone, true,
+                              std::make_shared<RtcLogger>());
 }
 
 void AdmProxy::setRecordingDevice(uint16_t ndx, const AdmPtr& adm)
@@ -852,7 +853,7 @@ int32_t AdmProxy::changeRecordingDevice(uint16_t index, const AdmPtr& adm)
     int32_t result = -1;
     if (adm) {
         {
-            const ScopedAudioBlocker<true> blocker(adm, logger());
+            const ScopedAudioBlocker<true> blocker(adm);
             result = adm->SetRecordingDevice(index);
         }
         if (0 == result) {
@@ -867,7 +868,7 @@ int32_t AdmProxy::changePlayoutDevice(uint16_t index, const AdmPtr& adm)
     int32_t result = -1;
     if (adm) {
         {
-            const ScopedAudioBlocker<false> blocker(adm, logger());
+            const ScopedAudioBlocker<false> blocker(adm);
             result = adm->SetPlayoutDevice(index);
         }
         if (0 == result) {
@@ -907,10 +908,8 @@ int32_t AdmProxy::threadInvokeI32(Handler handler, int32_t defaultVal) const
 }
 
 template<bool recording>
-AdmProxy::ScopedAudioBlocker<recording>::ScopedAudioBlocker(const AdmPtr& adm,
-                                                            const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<>(logger)
-    , _adm(adm)
+AdmProxy::ScopedAudioBlocker<recording>::ScopedAudioBlocker(const AdmPtr& adm)
+    : _adm(adm)
 {
     if constexpr (recording) {
         if (_adm->Recording()) {
@@ -919,7 +918,7 @@ AdmProxy::ScopedAudioBlocker<recording>::ScopedAudioBlocker(const AdmPtr& adm,
                 _needRestart = true;
             }
             else {
-                logWarning("recording stop failed, error code: " + std::to_string(res));
+                RTC_LOG(LS_WARNING) << "recording stop failed, error code: " << res;
             }
         }
     }
@@ -930,7 +929,7 @@ AdmProxy::ScopedAudioBlocker<recording>::ScopedAudioBlocker(const AdmPtr& adm,
                 _needRestart = true;
             }
             else {
-                logWarning("playout stop failed, error code: " + std::to_string(res));
+                RTC_LOG(LS_WARNING) << "playout stop failed, error code: " << res;
             }
         }
     }
@@ -943,24 +942,24 @@ AdmProxy::ScopedAudioBlocker<recording>::~ScopedAudioBlocker()
         if constexpr (recording) {
             auto res = _adm->InitRecording();
             if (0 != res) {
-                logWarning("failed to re-initialize recording, error code: " + std::to_string(res));
+                RTC_LOG(LS_WARNING) << "failed to re-initialize recording, error code: " << res;
             }
             else {
                 res = _adm->StartRecording();
                 if (0 != res) {
-                    logWarning("failed to restart recording, error code: " + std::to_string(res));
+                    RTC_LOG(LS_WARNING) << "failed to restart recording, error code: " << res;
                 }
             }
         }
         else {
             auto res = _adm->InitPlayout();
             if (0 != res) {
-                logWarning("failed to re-initialize playout, error code: " + std::to_string(res));
+                RTC_LOG(LS_WARNING) << "failed to re-initialize playout, error code: " << res;
             }
             else {
                 res = _adm->StartPlayout();
                 if (0 != res) {
-                    logWarning("failed to restart playout, error code: " + std::to_string(res));
+                    RTC_LOG(LS_WARNING) << "failed to restart playout, error code: " << res;
                 }
             }
         }
@@ -968,3 +967,49 @@ AdmProxy::ScopedAudioBlocker<recording>::~ScopedAudioBlocker()
 }
 
 } // namespace LiveKitCpp
+
+namespace
+{
+
+bool RtcLogger::canLog(Bricks::LoggingSeverity severity) const
+{
+    if (const auto sev = map(severity)) {
+        return RTC_LOG_CHECK_LEVEL_V(sev.value());
+    }
+    return false;
+}
+
+void RtcLogger::log(Bricks::LoggingSeverity severity,
+                    std::string_view message,
+                    std::string_view category)
+{
+    if (!message.empty()) {
+        if (const auto sev = map(severity)) {
+            if (!category.empty()) {
+                RTC_LOG_V(sev.value()) << category << "/" << message;
+            }
+            else {
+                RTC_LOG_V(sev.value()) << message;
+            }
+        }
+    }
+}
+
+std::optional<rtc::LoggingSeverity> RtcLogger::map(Bricks::LoggingSeverity sev)
+{
+    switch (sev) {
+        case Bricks::LoggingSeverity::Verbose:
+            return rtc::LS_VERBOSE;
+        case Bricks::LoggingSeverity::Info:
+            return rtc::LS_INFO;
+        case Bricks::LoggingSeverity::Warning:
+            return rtc::LS_WARNING;
+        case Bricks::LoggingSeverity::Error:
+            return rtc::LS_ERROR;
+        default:
+            break;
+    }
+    return std::nullopt;
+}
+
+}

@@ -71,6 +71,11 @@ void AsyncMediaSourceImpl::changeState(webrtc::MediaSourceInterface::SourceState
                 case webrtc::MediaSourceInterface::kMuted:
                     onMuted();
                     break;
+                case webrtc::MediaSourceInterface::kEnded:
+                    if (_active.exchange(false)) {
+                        onClosed();
+                    }
+                    break;
                 default:
                     break;
             }

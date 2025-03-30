@@ -38,6 +38,7 @@ public:
                         const std::shared_ptr<MediaAuthorizationCallback>& callback);
     static void query(MediaAuthorizationKind kind, bool askPermissions,
                       const std::shared_ptr<Bricks::Logger>& logger);
+    static void query(MediaAuthorizationKind kind, bool askPermissions);
     // helper function, suitable for most cases
     static bool maybeAuthorized(MediaAuthorizationKind kind,
                                 const std::shared_ptr<Bricks::Logger>& logger = {});

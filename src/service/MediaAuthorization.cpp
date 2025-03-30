@@ -29,13 +29,13 @@ const std::string_view g_category = "media_authorization";
 class SyncCallback : public MediaAuthorizationCallback
 {
 public:
-    SyncCallback();
+    SyncCallback() = default;
     MediaAuthorizationStatus waitStatus();
     // impl. of MediaAuthorizationCallback
     void completed(MediaAuthorizationStatus status) final;
 private:
-    std::atomic<MediaAuthorizationStatus> _status;
-    std::atomic_bool _completed;
+    std::atomic<MediaAuthorizationStatus> _status = MediaAuthorizationStatus::NotDetermined;
+    std::atomic_bool _completed = false;
 };
 
 class LoggedCallback : public Bricks::LoggableS<MediaAuthorizationCallback>
@@ -46,6 +46,14 @@ public:
     void completed(MediaAuthorizationStatus status) final;
 private:
     const MediaAuthorizationKind _kind;
+};
+
+class NullCallback : public MediaAuthorizationCallback
+{
+public:
+    NullCallback() = default;
+    // impl. of MediaAuthorizationCallback
+    void completed(MediaAuthorizationStatus) final {}
 };
 
 void logAuthorizationStatus(MediaAuthorizationKind kind,
@@ -101,6 +109,11 @@ void MediaAuthorization::query(MediaAuthorizationKind kind, bool askPermissions,
     }
 }
 
+void MediaAuthorization::query(MediaAuthorizationKind kind, bool askPermissions)
+{
+    query(kind, askPermissions, std::make_shared<NullCallback>());
+}
+
 bool MediaAuthorization::maybeAuthorized(MediaAuthorizationKind kind,
                                          const std::shared_ptr<Bricks::Logger>& logger)
 {
@@ -146,12 +159,6 @@ void setMediaAuthorizationLevel(MediaAuthorizationLevel level)
 } // namespace LiveKitCpp
 
 namespace {
-
-SyncCallback::SyncCallback()
-    : _status(MediaAuthorizationStatus::NotDetermined)
-    , _completed(false)
-{
-}
 
 MediaAuthorizationStatus SyncCallback::waitStatus()
 {

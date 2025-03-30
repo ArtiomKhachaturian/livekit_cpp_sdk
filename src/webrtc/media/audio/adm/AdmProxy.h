@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // AdmProxyModule.h
-#include "Loggable.h"
 #include "AdmProxyTypedefs.h"
 #include "AdmProxyState.h"
 #include "AsyncListeners.h"
@@ -31,7 +30,7 @@ namespace LiveKitCpp
 
 class AdmProxyListener;
 
-class AdmProxy : public Bricks::LoggableS<webrtc::AudioDeviceModule>
+class AdmProxy : public webrtc::AudioDeviceModule
 {
     template<bool recording> class ScopedAudioBlocker;
 public:
@@ -39,8 +38,7 @@ public:
     static webrtc::scoped_refptr<AdmProxy>
         create(const std::shared_ptr<rtc::Thread>& workingThread,
                const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
-               webrtc::TaskQueueFactory* taskQueueFactory,
-               const std::shared_ptr<Bricks::Logger>& logger = {});
+               webrtc::TaskQueueFactory* taskQueueFactory);
     // impl. of webrtc::AudioDeviceModule
     // Retrieve the currently utilized audio layer
     int32_t ActiveAudioLayer(AudioLayer* audioLayer) const final;
@@ -153,10 +151,7 @@ public:
 protected:
     AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
              const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
-             AdmPtr impl,
-             const std::shared_ptr<Bricks::Logger>& logger);
-    // impl. of Bricks::LoggableS<>
-    std::string_view logCategory() const final;
+             AdmPtr impl);
 private:
     static std::optional<MediaDeviceInfo> get(bool recording, uint16_t ndx, const AdmPtr& adm);
     static std::optional<MediaDeviceInfo> get(bool recording, WindowsDeviceType type, const AdmPtr& adm);
