@@ -14,14 +14,14 @@
 #include "AdmProxy.h"
 #include "AudioDevicesEnumerator.h"
 #include "AdmProxyListener.h"
+#include "AdmScopedBlocker.h"
+#include "AdmProxyTransport.h"
 #include "MediaAuthorization.h"
 #include "Logger.h"
 #include "Utils.h"
 #include "ThreadUtils.h"
 #include <api/make_ref_counted.h>
-#include <api/media_stream_interface.h>
 #include <rtc_base/thread.h>
-#include <rtc_base/logging.h>
 
 namespace
 {
@@ -68,70 +68,11 @@ private:
 namespace LiveKitCpp
 {
 
-template<bool recording>
-class AdmProxy::ScopedAudioBlocker
-{
-public:
-    ScopedAudioBlocker(const AdmPtr& adm);
-    ~ScopedAudioBlocker();
-private:
-    const AdmPtr& _adm;
-    bool _needRestart = false;
-};
-
-class AdmProxy::ProxyTransport : public webrtc::AudioTransport
-{
-    using SinkRender = void(webrtc::AudioTrackSinkInterface::*)(const void* /*audio_data*/,
-                                                                int /*bits_per_sample*/,
-                                                                int /*sample_rate*/,
-                                                                size_t /*number_of_channels*/,
-                                                                size_t /*number_of_frames*/,
-                                                                std::optional<int64_t> /* absolute_capture_timestamp_ms */);
-public:
-    ProxyTransport() = default;
-    void setTargetTransport(webrtc::AudioTransport* transport);
-    void addSink(webrtc::AudioTrackSinkInterface* sink);
-    void removeSink(webrtc::AudioTrackSinkInterface* sink);
-    void close();
-    // impl. of webrtc::AudioTransport
-    int32_t RecordedDataIsAvailable(const void* audioSamples,
-                                    size_t nSamples,
-                                    size_t nBytesPerSample,
-                                    size_t nChannels,
-                                    uint32_t samplesPerSec,
-                                    uint32_t totalDelayMS,
-                                    int32_t clockDrift,
-                                    uint32_t currentMicLevel,
-                                    bool keyPressed,
-                                    uint32_t& newMicLevel) final;
-    int32_t RecordedDataIsAvailable(const void* audioSamples,
-                                    size_t nSamples,
-                                    size_t nBytesPerSample,
-                                    size_t nChannels,
-                                    uint32_t samplesPerSec,
-                                    uint32_t totalDelayMS,
-                                    int32_t clockDrift,
-                                    uint32_t currentMicLevel,
-                                    bool keyPressed,
-                                    uint32_t& newMicLevel,
-                                    std::optional<int64_t> estimatedCaptureTimeNS) final;
-    int32_t NeedMorePlayData(size_t nSamples, size_t nBytesPerSample,
-                             size_t nChannels, uint32_t samplesPerSec,
-                             void* audioSamples, size_t& nSamplesOut,  // NOLINT
-                             int64_t* elapsedTimeMs, int64_t* ntpTimeMs) final;
-    void PullRenderData(int bitsPerSample, int sampleRate, size_t numberOfChannels,
-                        size_t numberOfFrames, void* audioData,
-                        int64_t* elapsedTimeMs, int64_t* ntpTimeMs) final;
-private:
-    Bricks::SafeObj<webrtc::AudioTransport*> _targetTransport = nullptr;
-    Bricks::Listeners<webrtc::AudioTrackSinkInterface*> _sinks;
-};
-
 AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
                    const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
                    rtc::scoped_refptr<webrtc::AudioDeviceModule> impl)
     : _workingThread(workingThread)
-    , _transport(std::make_unique<ProxyTransport>())
+    , _transport(std::make_unique<AdmProxyTransport>())
     , _impl(std::move(impl))
     , _recState(true, signalingQueue)
     , _playState(false, signalingQueue)
@@ -273,7 +214,7 @@ int32_t AdmProxy::SetPlayoutDevice(WindowsDeviceType device)
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
         {
-            const ScopedAudioBlocker<false> blocker(pm);
+            const AdmScopedBlocker<false> blocker(pm);
             result = pm->SetPlayoutDevice(device);
         }
         if (0 == result) {
@@ -295,7 +236,7 @@ int32_t AdmProxy::SetRecordingDevice(WindowsDeviceType device)
     return threadInvokeI32([this, device](const auto& pm) {
         int32_t result = -1;
         {
-            const ScopedAudioBlocker<true> blocker(pm);
+            const AdmScopedBlocker<true> blocker(pm);
             result = pm->SetRecordingDevice(device);
         }
         if (0 == result) {
@@ -938,7 +879,7 @@ int32_t AdmProxy::changeRecordingDevice(uint16_t index, const AdmPtr& adm)
     int32_t result = -1;
     if (adm) {
         {
-            const ScopedAudioBlocker<true> blocker(adm);
+            const AdmScopedBlocker<true> blocker(adm);
             result = adm->SetRecordingDevice(index);
         }
         if (0 == result) {
@@ -953,7 +894,7 @@ int32_t AdmProxy::changePlayoutDevice(uint16_t index, const AdmPtr& adm)
     int32_t result = -1;
     if (adm) {
         {
-            const ScopedAudioBlocker<false> blocker(adm);
+            const AdmScopedBlocker<false> blocker(adm);
             result = adm->SetPlayoutDevice(index);
         }
         if (0 == result) {
@@ -990,171 +931,6 @@ template <typename Handler>
 int32_t AdmProxy::threadInvokeI32(Handler handler, int32_t defaultVal) const
 {
     return threadInvokeR(std::move(handler), defaultVal);
-}
-
-template<bool recording>
-AdmProxy::ScopedAudioBlocker<recording>::ScopedAudioBlocker(const AdmPtr& adm)
-    : _adm(adm)
-{
-    if constexpr (recording) {
-        if (_adm->Recording()) {
-            const auto res = _adm->StopRecording();
-            if (0 == res) {
-                _needRestart = true;
-            }
-            else {
-                RTC_LOG(LS_WARNING) << "recording stop failed, error code: " << res;
-            }
-        }
-    }
-    else {
-        if (_adm->Playing()) {
-            const auto res = _adm->StopPlayout();
-            if (0 == res) {
-                _needRestart = true;
-            }
-            else {
-                RTC_LOG(LS_WARNING) << "playout stop failed, error code: " << res;
-            }
-        }
-    }
-}
-
-template<bool recording>
-AdmProxy::ScopedAudioBlocker<recording>::~ScopedAudioBlocker()
-{
-    if (_needRestart) {
-        if constexpr (recording) {
-            auto res = _adm->InitRecording();
-            if (0 != res) {
-                RTC_LOG(LS_WARNING) << "failed to re-initialize recording, error code: " << res;
-            }
-            else {
-                res = _adm->StartRecording();
-                if (0 != res) {
-                    RTC_LOG(LS_WARNING) << "failed to restart recording, error code: " << res;
-                }
-            }
-        }
-        else {
-            auto res = _adm->InitPlayout();
-            if (0 != res) {
-                RTC_LOG(LS_WARNING) << "failed to re-initialize playout, error code: " << res;
-            }
-            else {
-                res = _adm->StartPlayout();
-                if (0 != res) {
-                    RTC_LOG(LS_WARNING) << "failed to restart playout, error code: " << res;
-                }
-            }
-        }
-    }
-}
-
-void AdmProxy::ProxyTransport::setTargetTransport(webrtc::AudioTransport* transport)
-{
-    _targetTransport(transport);
-}
-
-void AdmProxy::ProxyTransport::addSink(webrtc::AudioTrackSinkInterface* sink)
-{
-    _sinks.add(sink);
-}
-
-void AdmProxy::ProxyTransport::removeSink(webrtc::AudioTrackSinkInterface* sink)
-{
-    _sinks.remove(sink);
-}
-
-void AdmProxy::ProxyTransport::close()
-{
-    _targetTransport(nullptr);
-    _sinks.clear();
-}
-
-int32_t AdmProxy::ProxyTransport::RecordedDataIsAvailable(const void* audioSamples,
-                                                          size_t nSamples,
-                                                          size_t nBytesPerSample,
-                                                          size_t nChannels,
-                                                          uint32_t samplesPerSec,
-                                                          uint32_t totalDelayMS,
-                                                          int32_t clockDrift,
-                                                          uint32_t currentMicLevel,
-                                                          bool keyPressed,
-                                                          uint32_t& newMicLevel)
-{
-    return RecordedDataIsAvailable(audioSamples, nSamples, nBytesPerSample,
-                                   nChannels, samplesPerSec,
-                                   totalDelayMS, clockDrift, currentMicLevel,
-                                   keyPressed, newMicLevel,
-                                   /*capture_timestamp_ns=*/std::nullopt);
-}
-
-int32_t AdmProxy::ProxyTransport::RecordedDataIsAvailable(const void* audioSamples,
-                                                          size_t nSamples,
-                                                          size_t nBytesPerSample,
-                                                          size_t nChannels,
-                                                          uint32_t samplesPerSec,
-                                                          uint32_t totalDelayMS,
-                                                          int32_t clockDrift,
-                                                          uint32_t currentMicLevel,
-                                                          bool keyPressed,
-                                                          uint32_t& newMicLevel,
-                                                          std::optional<int64_t> estimatedCaptureTimeNS)
-{
-    int32_t res = -1;
-    LOCK_READ_SAFE_OBJ(_targetTransport);
-    if (const auto transport = _targetTransport.constRef()) {
-        res = transport->RecordedDataIsAvailable(audioSamples, nSamples,
-                                                 nBytesPerSample, nChannels,
-                                                 samplesPerSec, totalDelayMS,
-                                                 clockDrift, currentMicLevel,
-                                                 keyPressed, newMicLevel,
-                                                 estimatedCaptureTimeNS);
-    }
-    if (0 == res) {
-        std::optional<int64_t> absoluteCaptureTimestampMs;
-        if (estimatedCaptureTimeNS.has_value()) {
-            absoluteCaptureTimestampMs = estimatedCaptureTimeNS.value() / 1000000U;
-        }
-        _sinks.invoke<SinkRender>(&webrtc::AudioTrackSinkInterface::OnData,
-                                  audioSamples, int(nBytesPerSample * 8U),
-                                  int(samplesPerSec), nChannels, nSamples,
-                                  absoluteCaptureTimestampMs);
-    }
-    return res;
-}
-
-int32_t AdmProxy::ProxyTransport::NeedMorePlayData(size_t nSamples,
-                                                   size_t nBytesPerSample,
-                                                   size_t nChannels,
-                                                   uint32_t samplesPerSec,
-                                                   void* audioSamples,
-                                                   size_t& nSamplesOut,
-                                                   int64_t* elapsedTimeMs,
-                                                   int64_t* ntpTimeMs)
-{
-    LOCK_READ_SAFE_OBJ(_targetTransport);
-    if (const auto transport = _targetTransport.constRef()) {
-        return transport->NeedMorePlayData(nSamples, nBytesPerSample,
-                                           nChannels, samplesPerSec,
-                                           audioSamples, nSamplesOut,
-                                           elapsedTimeMs, ntpTimeMs);
-    }
-    return -1;
-}
-
-void AdmProxy::ProxyTransport::PullRenderData(int bitsPerSample, int sampleRate,
-                                              size_t numberOfChannels,
-                                              size_t numberOfFrames, void* audioData,
-                                              int64_t* elapsedTimeMs, int64_t* ntpTimeMs)
-{
-    LOCK_READ_SAFE_OBJ(_targetTransport);
-    if (const auto transport = _targetTransport.constRef()) {
-        transport->PullRenderData(bitsPerSample, sampleRate,
-                                  numberOfChannels, numberOfFrames,
-                                  audioData, elapsedTimeMs, ntpTimeMs);
-    }
 }
 
 } // namespace LiveKitCpp

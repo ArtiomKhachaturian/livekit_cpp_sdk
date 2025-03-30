@@ -24,6 +24,7 @@ class AdmProxyFacade;
 
 class AsyncMicSourceImpl : public AsyncAudioSourceImpl, private AdmProxyListener
 {
+    class VolumeControl;
 public:
     AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                        const std::shared_ptr<Bricks::Logger>& logger,
@@ -39,8 +40,7 @@ protected:
     void onEnabled(bool enabled) final;
 private:
     std::shared_ptr<AdmProxyFacade> adm() const noexcept { return _admProxy.lock(); }
-    void handleVolumeChanges() const;
-    std::pair<uint32_t, uint32_t> minMaxVolume() const;
+    void requestVolumeChanges(double volume);
     // impl. of AdmProxyListener
     void onMinMaxVolumeChanged(bool, uint32_t minVolume, uint32_t maxVolume) final;
     void onVolumeChanged(bool, uint32_t volume) final;
@@ -49,9 +49,7 @@ private:
     void onMuteChanged(bool, bool mute) final;
 private:
     const std::weak_ptr<AdmProxyFacade> _admProxy;
-    std::atomic<uint32_t> _minVolume = 0U;
-    std::atomic<uint32_t> _maxVolume = 0U;
-    std::atomic<uint32_t> _volume = 0U;
+    const std::unique_ptr<VolumeControl> _volumeControl;
 };
 
 } // namespace LiveKitCpp

@@ -34,10 +34,10 @@ namespace LiveKitCpp
 {
 
 class AdmProxyListener;
+class AdmProxyTransport;
 
 class AdmProxy : public webrtc::AudioDeviceModule
 {
-    template<bool recording> class ScopedAudioBlocker;
     class ProxyTransport;
 public:
     ~AdmProxy() override;
@@ -187,7 +187,7 @@ private:
     static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
     const std::weak_ptr<rtc::Thread> _workingThread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
-    Bricks::SafeUniquePtr<ProxyTransport> _transport;
+    Bricks::SafeUniquePtr<AdmProxyTransport> _transport;
     AdmProxyState _recState;
     AdmProxyState _playState;
 };
