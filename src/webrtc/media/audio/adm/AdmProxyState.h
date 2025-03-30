@@ -16,6 +16,7 @@
 #include "AsyncListeners.h"
 #include "MediaDeviceInfo.h"
 #include "SafeObjAliases.h"
+#include "VolumeControl.h"
 #include <atomic>
 #include <optional>
 
@@ -37,25 +38,26 @@ public:
     bool setStarted(bool started = true);
     bool setStopped() { return setStarted(false); }
     bool setMute(bool mute);
-    bool setMute(const AdmPtr& adm);
+    bool setMuteFrom(const AdmPtr& adm);
     bool setStereo(bool stereo);
-    bool setStereo(const AdmPtr& adm);
+    bool setStereoFrom(const AdmPtr& adm);
     bool setMinMaxVolume(uint32_t minVolume, uint32_t maxVolume);
-    bool setMinMaxVolume(const AdmPtr& adm);
-    bool setMinVolume(uint32_t minVolume);
-    bool setMinVolume(const AdmPtr& adm);
-    bool setMaxVolume(uint32_t maxVolume);
-    bool setMaxVolume(const AdmPtr& adm);
+    bool setMinMaxVolumeFrom(const AdmPtr& adm);
     bool setVolume(uint32_t volume);
-    bool setVolume(const AdmPtr& adm);
+    bool setVolumeFrom(const AdmPtr& adm);
+    bool setNormalizedVolume(double normalizedVolume);
     MediaDeviceInfo currentDevice() const { return _dev(); }
     bool started() const noexcept { return _started; }
     bool mute() const noexcept { return _mute; }
     bool stereo() const noexcept { return _stereo; }
+    void minMaxVolume(uint32_t* minVolume = nullptr, uint32_t* maxVolume = nullptr) const;
     uint32_t minVolume() const;
     uint32_t maxVolume() const;
+    std::optional<uint32_t> volume(double normalizedVolume) const;
     uint32_t volume() const noexcept { return _volume; }
+    std::optional<double> normalizedVolume() const;
 private:
+    VolumeControl makeVolumeControl() const;
     template<class Method, typename... Args>
     void invoke(Method method, Args&&... args) const;
     template<typename T, class Getter>

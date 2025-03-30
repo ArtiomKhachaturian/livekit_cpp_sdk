@@ -50,8 +50,9 @@ public:
     ~Service();
     ServiceState state() const;
     std::unique_ptr<Session> createSession(Options options = {}) const;
-    // media & network devices
+    // network
     static NetworkType activeNetworkType();
+    // media
     static MediaAuthorizationLevel mediaAuthorizationLevel();
     void setMediaAuthorizationLevel(MediaAuthorizationLevel level);
     MediaDeviceInfo defaultRecordingAudioDevice() const;
@@ -59,9 +60,15 @@ public:
     // device for input from micrpohone
     bool setRecordingAudioDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo recordingAudioDevice() const;
+    // normalized volume in range [0...1]
+    double recordingVolume() const;
+    void setRecordingVolume(double volume);
     // device for output from speakers
     bool setPlayoutAudioDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo playoutAudioDevice() const;
+    // normalized volume in range [0...1]
+    double playoutVolume() const;
+    void setPlayoutVolume(double volume);
     // enumeration
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;

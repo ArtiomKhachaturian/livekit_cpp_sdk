@@ -30,6 +30,11 @@ inline bool exchangeVolumeVal(const T& source, T& dst) {
 namespace LiveKitCpp
 {
 
+VolumeControl::VolumeControl(uint32_t minVolume, uint32_t maxVolume)
+{
+    setRange(minVolume, maxVolume);
+}
+
 bool VolumeControl::setRange(uint32_t minVolume, uint32_t maxVolume)
 {
     const auto minv = std::min(minVolume, maxVolume);

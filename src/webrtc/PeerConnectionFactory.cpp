@@ -15,6 +15,7 @@
 #include "WebRtcLogSink.h"
 #include "Logger.h"
 #include "Utils.h"
+#include "ThreadUtils.h"
 #include "AdmProxy.h"
 #include "AdmProxyFacade.h"
 #include "MicrophoneOptions.h"
@@ -103,6 +104,8 @@ public:
     auto defaultPlayoutDevice() const { return _admProxy->defaultPlayoutDevice(); }
     bool setRecordingAudioDevice(const MediaDeviceInfo& info);
     bool setPlayoutDevice(const MediaDeviceInfo& info);
+    bool setMicrophoneVolume(double volume);
+    bool setSpeakerVolume(double volume);
     // impl. of AdmProxyFacade
     void registerRecordingSink(webrtc::AudioTrackSinkInterface* sink, bool reg) final;
     void registerRecordingListener(AdmProxyListener* l, bool reg) final;
@@ -266,6 +269,28 @@ std::vector<MediaDeviceInfo> PeerConnectionFactory::playoutAudioDevices() const
     return {};
 }
 
+void PeerConnectionFactory::setMicrophoneVolume(double volume)
+{
+    if (_admProxy) {
+        postTask(_workingThread, [volume, admRef = AdmFW(_admProxy)]() {
+            if (const auto adm = admRef.lock()) {
+                adm->setMicrophoneVolume(volume);
+            }
+        });
+    }
+}
+
+void PeerConnectionFactory::setSpeakerVolume(double volume)
+{
+    if (_admProxy) {
+        postTask(_workingThread, [volume, admRef = AdmFW(_admProxy)]() {
+            if (const auto adm = admRef.lock()) {
+                adm->setSpeakerVolume(volume);
+            }
+        });
+    }
+}
+
 void PeerConnectionFactory::registerAdmRecordingListener(AdmProxyListener* l, bool reg)
 {
     if (_admProxy) {
@@ -358,6 +383,16 @@ bool PeerConnectionFactory::AdmFacade::setRecordingAudioDevice(const MediaDevice
 bool PeerConnectionFactory::AdmFacade::setPlayoutDevice(const MediaDeviceInfo& info)
 {
     return _admProxy->setPlayoutDevice(info);
+}
+
+bool PeerConnectionFactory::AdmFacade::setMicrophoneVolume(double volume)
+{
+    return _admProxy->setMicrophoneVolume(volume);
+}
+
+bool PeerConnectionFactory::AdmFacade::setSpeakerVolume(double volume)
+{
+    return _admProxy->setSpeakerVolume(volume);
 }
 
 void PeerConnectionFactory::AdmFacade::registerRecordingSink(webrtc::AudioTrackSinkInterface* sink,

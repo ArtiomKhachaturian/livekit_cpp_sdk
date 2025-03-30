@@ -13,7 +13,6 @@
 // limitations under the License.
 #include "AdmProxyState.h"
 #include "AdmProxyListener.h"
-#include "VolumeControl.h"
 #include "Utils.h"
 #include <modules/audio_device/include/audio_device.h> //AudioDeviceModule
 
@@ -43,10 +42,10 @@ bool AdmProxyState::registered(AdmProxyListener* listener) const
 
 void AdmProxyState::update(const AdmPtr& adm)
 {
-    setMute(adm);
-    setStereo(adm);
-    setMinMaxVolume(adm);
-    setVolume(adm);
+    setMuteFrom(adm);
+    setStereoFrom(adm);
+    setMinMaxVolumeFrom(adm);
+    setVolumeFrom(adm);
 }
 
 bool AdmProxyState::setCurrentDevice(const MediaDeviceInfo& info, const AdmPtr& adm)
@@ -80,7 +79,7 @@ bool AdmProxyState::setMute(bool mute)
     return false;
 }
 
-bool AdmProxyState::setMute(const AdmPtr& adm)
+bool AdmProxyState::setMuteFrom(const AdmPtr& adm)
 {
     if (adm) {
         const auto method = _recording ? &AdmT::MicrophoneMute : &AdmT::SpeakerMute;
@@ -100,7 +99,7 @@ bool AdmProxyState::setStereo(bool stereo)
     return false;
 }
 
-bool AdmProxyState::setStereo(const AdmPtr& adm)
+bool AdmProxyState::setStereoFrom(const AdmPtr& adm)
 {
     if (adm) {
         const auto method = _recording ? &AdmT::StereoRecording : &AdmT::StereoPlayout;
@@ -121,7 +120,7 @@ bool AdmProxyState::setMinMaxVolume(uint32_t minVolume, uint32_t maxVolume)
     return false;
 }
 
-bool AdmProxyState::setMinMaxVolume(const AdmPtr& adm)
+bool AdmProxyState::setMinMaxVolumeFrom(const AdmPtr& adm)
 {
     if (adm) {
         const auto minM = _recording ? &AdmT::MinMicrophoneVolume : &AdmT::MinSpeakerVolume;
@@ -130,38 +129,6 @@ bool AdmProxyState::setMinMaxVolume(const AdmPtr& adm)
             if (const auto maxV = admProperty<uint32_t>(adm, maxM)) {
                 return setMinMaxVolume(minV.value(), maxV.value());
             }
-        }
-    }
-    return false;
-}
-
-bool AdmProxyState::setMinVolume(uint32_t minVolume)
-{
-    return setMinMaxVolume(minVolume, maxVolume());
-}
-
-bool AdmProxyState::setMinVolume(const AdmPtr& adm)
-{
-    if (adm) {
-        const auto method = _recording ? &AdmT::MinMicrophoneVolume : &AdmT::MinSpeakerVolume;
-        if (const auto volume = admProperty<uint32_t>(adm, method)) {
-            return setMinVolume(volume.value());
-        }
-    }
-    return false;
-}
-
-bool AdmProxyState::setMaxVolume(uint32_t maxVolume)
-{
-    return setMinMaxVolume(minVolume(), maxVolume);
-}
-
-bool AdmProxyState::setMaxVolume(const AdmPtr& adm)
-{
-    if (adm) {
-        const auto method = _recording ? &AdmT::MaxMicrophoneVolume : &AdmT::MaxSpeakerVolume;
-        if (const auto volume = admProperty<uint32_t>(adm, method)) {
-            return setMaxVolume(volume.value());
         }
     }
     return false;
@@ -176,7 +143,7 @@ bool AdmProxyState::setVolume(uint32_t volume)
     return false;
 }
 
-bool AdmProxyState::setVolume(const AdmPtr& adm)
+bool AdmProxyState::setVolumeFrom(const AdmPtr& adm)
 {
     if (adm) {
         const auto method = _recording ? &AdmT::MicrophoneVolume : &AdmT::SpeakerVolume;
@@ -187,14 +154,64 @@ bool AdmProxyState::setVolume(const AdmPtr& adm)
     return false;
 }
 
+bool AdmProxyState::setNormalizedVolume(double normalizedVolume)
+{
+    const auto volume = this->volume(normalizedVolume);
+    return volume && setVolume(volume.value());
+}
+
+void AdmProxyState::minMaxVolume(uint32_t* minVolume, uint32_t* maxVolume) const
+{
+    if (minVolume || maxVolume) {
+        const auto minMaxVolume = _minMaxVolume.load();
+        if (minVolume) {
+            *minVolume = extractHiWord(minMaxVolume);
+        }
+        if (maxVolume) {
+            *maxVolume = extractLoWord(minMaxVolume);
+        }
+    }
+}
+
 uint32_t AdmProxyState::minVolume() const
 {
-    return extractHiWord(_minMaxVolume);
+    uint32_t minv = 0U;
+    minMaxVolume(&minv);
+    return minv;
 }
 
 uint32_t AdmProxyState::maxVolume() const
 {
-    return extractLoWord(_minMaxVolume);
+    uint32_t maxv = 0U;
+    minMaxVolume(nullptr, &maxv);
+    return maxv;
+}
+
+std::optional<uint32_t> AdmProxyState::volume(double normalizedVolume) const
+{
+    auto control = makeVolumeControl();
+    if (control) {
+        control.setNormalizedVolume(normalizedVolume);
+        return control.volume();
+    }
+    return std::nullopt;
+}
+
+std::optional<double> AdmProxyState::normalizedVolume() const
+{
+    auto control = makeVolumeControl();
+    if (control) {
+        control.setVolume(volume());
+        return control.normalizedVolume();
+    }
+    return std::nullopt;
+}
+
+VolumeControl AdmProxyState::makeVolumeControl() const
+{
+    uint32_t minv, maxv;
+    minMaxVolume(&minv, &maxv);
+    return VolumeControl{minv, maxv};
 }
 
 template<class Method, typename... Args>

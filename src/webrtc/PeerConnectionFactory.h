@@ -52,6 +52,7 @@ struct MicrophoneOptions;
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 {
     class AdmFacade;
+    using AdmFW = std::weak_ptr<AdmFacade>;
 public:
     ~PeerConnectionFactory() override;
     static webrtc::scoped_refptr<PeerConnectionFactory> create(bool audioProcessing,
@@ -68,6 +69,9 @@ public:
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
+    // volume in range [0...1]
+    void setMicrophoneVolume(double volume);
+    void setSpeakerVolume(double volume);
     void registerAdmRecordingListener(AdmProxyListener* l, bool reg);
     void registerAdmPlayoutListener(AdmProxyListener* l, bool reg);
     // impl. of webrtc::PeerConnectionFactoryInterface

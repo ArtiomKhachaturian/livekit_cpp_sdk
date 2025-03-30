@@ -650,6 +650,22 @@ std::optional<webrtc::AudioDeviceModule::Stats> AdmProxy::GetStats() const
     }, std::optional<Stats>{});
 }
 
+bool AdmProxy::setMicrophoneVolume(double normalizedVolume)
+{
+    if (const auto volume = _recState.volume(normalizedVolume)) {
+        return 0 == SetMicrophoneVolume(volume.value());
+    }
+    return false;
+}
+
+bool AdmProxy::setSpeakerVolume(double normalizedVolume)
+{
+    if (const auto volume = _playState.volume(normalizedVolume)) {
+        return 0 == SetSpeakerVolume(volume.value());
+    }
+    return false;
+}
+
 void AdmProxy::close()
 {
     _recState.clearListeners();
