@@ -47,15 +47,19 @@ void AsyncMicSourceImpl::setVolume(double /*volume*/)
 
 void AsyncMicSourceImpl::addSink(webrtc::AudioTrackSinkInterface* sink)
 {
-    if (dynamic_cast<AudioSinks*>(sink)) {
-        AsyncAudioSourceImpl::addSink(sink);
+    if (const auto sinks = dynamic_cast<AudioSinks*>(sink)) {
+        if (const auto admp = adm()) {
+            admp->registerRecordingSink(sink, true);
+        }
     }
 }
 
 void AsyncMicSourceImpl::removeSink(webrtc::AudioTrackSinkInterface* sink)
 {
-    if (dynamic_cast<AudioSinks*>(sink)) {
-        AsyncAudioSourceImpl::removeSink(sink);
+    if (const auto sinks = dynamic_cast<AudioSinks*>(sink)) {
+        if (const auto admp = adm()) {
+            admp->registerRecordingSink(sink, false);
+        }
     }
 }
 

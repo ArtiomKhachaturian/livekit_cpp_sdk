@@ -104,6 +104,7 @@ public:
     bool setRecordingAudioDevice(const MediaDeviceInfo& info);
     bool setPlayoutDevice(const MediaDeviceInfo& info);
     // impl. of AdmProxyFacade
+    void registerRecordingSink(webrtc::AudioTrackSinkInterface* sink, bool reg) final;
     void registerRecordingListener(AdmProxyListener* l, bool reg) final;
     void registerPlayoutListener(AdmProxyListener* l, bool reg) final;
     cricket::AudioOptions options() const final { return _options; }
@@ -357,6 +358,12 @@ bool PeerConnectionFactory::AdmFacade::setRecordingAudioDevice(const MediaDevice
 bool PeerConnectionFactory::AdmFacade::setPlayoutDevice(const MediaDeviceInfo& info)
 {
     return _admProxy->setPlayoutDevice(info);
+}
+
+void PeerConnectionFactory::AdmFacade::registerRecordingSink(webrtc::AudioTrackSinkInterface* sink,
+                                                             bool reg)
+{
+    _admProxy->registerRecordingSink(sink, reg);
 }
 
 void PeerConnectionFactory::AdmFacade::registerRecordingListener(AdmProxyListener* l,

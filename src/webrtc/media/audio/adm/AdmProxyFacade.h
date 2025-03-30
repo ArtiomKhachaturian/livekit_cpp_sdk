@@ -15,6 +15,10 @@
 #include "AdmProxyState.h"
 #include <api/audio_options.h>
 
+namespace webrtc {
+class AudioTrackSinkInterface;
+}
+
 namespace LiveKitCpp
 {
 
@@ -23,6 +27,7 @@ class AdmProxyListener;
 class AdmProxyFacade
 {
 public:
+    virtual void registerRecordingSink(webrtc::AudioTrackSinkInterface* sink, bool reg) = 0;
     virtual void registerRecordingListener(AdmProxyListener* l, bool reg) = 0;
     virtual void registerPlayoutListener(AdmProxyListener* l, bool reg) = 0;
     virtual cricket::AudioOptions options() const = 0;

@@ -17,12 +17,17 @@
 #include "AsyncListeners.h"
 #include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
+#include "SafeObjAliases.h"
 #include <api/function_view.h>
 #include <modules/audio_device/include/audio_device.h> //AudioDeviceModule
 #include <type_traits>
 
 namespace rtc {
 class Thread;
+}
+
+namespace webrtc {
+class AudioTrackSinkInterface;
 }
 
 namespace LiveKitCpp
@@ -33,6 +38,7 @@ class AdmProxyListener;
 class AdmProxy : public webrtc::AudioDeviceModule
 {
     template<bool recording> class ScopedAudioBlocker;
+    class ProxyTransport;
 public:
     ~AdmProxy() override;
     static webrtc::scoped_refptr<AdmProxy>
@@ -139,6 +145,7 @@ public:
     const AdmProxyState& recordingState() const noexcept { return _recState; }
     const AdmProxyState& playoutState() const noexcept { return _playState; }
     void close();
+    void registerRecordingSink(webrtc::AudioTrackSinkInterface* sink, bool reg);
     void registerRecordingListener(AdmProxyListener* l, bool reg);
     void registerPlayoutListener(AdmProxyListener* l, bool reg);
     // selection management
@@ -180,6 +187,7 @@ private:
     static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
     const std::weak_ptr<rtc::Thread> _workingThread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
+    Bricks::SafeUniquePtr<ProxyTransport> _transport;
     AdmProxyState _recState;
     AdmProxyState _playState;
 };

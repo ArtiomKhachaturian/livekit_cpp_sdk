@@ -39,16 +39,6 @@ void AsyncAudioSourceImpl::removeAudioObserver(webrtc::AudioSourceInterface::Aud
     _observers.remove(observer);
 }
 
-void AsyncAudioSourceImpl::addSink(webrtc::AudioTrackSinkInterface* sink)
-{
-    _sinks.add(sink);
-}
-
-void AsyncAudioSourceImpl::removeSink(webrtc::AudioTrackSinkInterface* sink)
-{
-    _sinks.remove(sink);
-}
-
 void AsyncAudioSourceImpl::onEnabled(bool enabled)
 {
     AsyncMediaSourceImpl::onEnabled(enabled);
@@ -63,18 +53,6 @@ void AsyncAudioSourceImpl::onEnabled(bool enabled)
 void AsyncAudioSourceImpl::onVolumeChanged(double volume) const
 {
     _observers.invoke(&webrtc::AudioSourceInterface::AudioObserver::OnSetVolume, volume);
-}
-
-void AsyncAudioSourceImpl::onData(const void* audioData,
-                                  int bitsPerSample, int sampleRate,
-                                  size_t numberOfChannels, size_t numberOfFrames) const
-{
-    if (audioData && bitsPerSample > 0 && sampleRate > 0 && numberOfChannels && numberOfFrames) {
-        using methodType = void(webrtc::AudioTrackSinkInterface::*)(const void*, int, int,
-                                                                    size_t, size_t);
-        _sinks.invoke<methodType>(&webrtc::AudioTrackSinkInterface::OnData, audioData,
-                      bitsPerSample, sampleRate, numberOfChannels, numberOfFrames);
-    }
 }
 
 } // namespace LiveKitCpp

@@ -27,19 +27,16 @@ public:
     virtual void setVolume(double volume);
     virtual void addAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
     virtual void removeAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
-    virtual void addSink(webrtc::AudioTrackSinkInterface* sink);
-    virtual void removeSink(webrtc::AudioTrackSinkInterface* sink);
+    virtual void addSink(webrtc::AudioTrackSinkInterface* /*sink*/) {}
+    virtual void removeSink(webrtc::AudioTrackSinkInterface* /*sink*/) {}
     virtual cricket::AudioOptions options() const { return {}; }
 protected:
     void onVolumeChanged(double volume) const;
-    void onData(const void* audioData, int bitsPerSample, int sampleRate,
-                size_t numberOfChannels, size_t numberOfFrames) const;
 protected:
     // override of AsyncMediaSourceImpl
     void onEnabled(bool enabled) override;
 private:
     AsyncListeners<webrtc::AudioSourceInterface::AudioObserver*> _observers;
-    Bricks::Listeners<webrtc::AudioTrackSinkInterface*> _sinks;
 };
 
 } // namespace LiveKitCpp
