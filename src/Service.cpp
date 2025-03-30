@@ -23,8 +23,7 @@
 #include "e2e/KeyProviderOptions.h"
 #include "e2e/KeyProvider.h"
 #ifdef WEBRTC_AVAILABLE
-#include "AdmRecordingListener.h"
-#include "AdmPlayoutListener.h"
+#include "AdmProxyListener.h"
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
 #include "Loggable.h"
@@ -48,9 +47,7 @@ const std::string_view g_logCategory("service");
 namespace LiveKitCpp
 {
 #ifdef WEBRTC_AVAILABLE
-class Service::Impl : public Bricks::LoggableS<>,
-                      private AdmRecordingListener,
-                      private AdmPlayoutListener
+class Service::Impl : public Bricks::LoggableS<AdmProxyListener>
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -75,18 +72,8 @@ public:
                                         const MicrophoneOptions& microphoneOptions,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
-    // overrides of AdmRecordingListener
-    void onRecordingChanged(const MediaDeviceInfo& info,
-                            const std::optional<bool>&,
-                            const std::optional<uint32_t>&,
-                            const std::optional<uint32_t>&,
-                            const std::optional<uint32_t>&) final;
-    // overrides of AdmPlayoutListener
-    void onPlayoutChanged(const MediaDeviceInfo& info,
-                          const std::optional<bool>&,
-                          const std::optional<uint32_t>&,
-                          const std::optional<uint32_t>&,
-                          const std::optional<uint32_t>&) final;
+    // overrides of AdmProxyListener
+    void onDeviceChanged(bool recording, const MediaDeviceInfo& info);
 protected:
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final { return g_logCategory; }
@@ -203,7 +190,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
                     const MicrophoneOptions& microphoneOptions,
                     const std::shared_ptr<Bricks::Logger>& logger,
                     bool logWebrtcEvents)
-    : Bricks::LoggableS<>(logger)
+    : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::create(true, microphoneOptions, logWebrtcEvents ? logger : nullptr))
 {
@@ -349,25 +336,15 @@ std::unique_ptr<Service::Impl> Service::Impl::
     return {};
 }
 
-void Service::Impl::onRecordingChanged(const MediaDeviceInfo& info,
-                                       const std::optional<bool>&,
-                                       const std::optional<uint32_t>&,
-                                       const std::optional<uint32_t>&,
-                                       const std::optional<uint32_t>&)
+void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
 {
     if (!info.empty()) {
-        logInfo("recording audio device has been changed to '" + info._name + "'");
-    }
-}
-
-void Service::Impl::onPlayoutChanged(const MediaDeviceInfo& info,
-                                     const std::optional<bool>&,
-                                     const std::optional<uint32_t>&,
-                                     const std::optional<uint32_t>&,
-                                     const std::optional<uint32_t>&)
-{
-    if (!info.empty()) {
-        logInfo("playoud audio device has been changed to '" + info._name + "'");
+        if (recording) {
+            logInfo("recording audio device has been changed to '" + info._name + "'");
+        }
+        else {
+            logInfo("playoud audio device has been changed to '" + info._name + "'");
+        }
     }
 }
 

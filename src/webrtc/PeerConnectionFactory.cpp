@@ -91,16 +91,26 @@ std::unique_ptr<VideoEncoderFactory> CreateBuiltinVideoEncoderFactory() {
 namespace LiveKitCpp
 {
 
-class PeerConnectionFactory::AdmProxyFacadeImpl : public AdmProxyFacade
+class PeerConnectionFactory::AdmFacade : public AdmProxyFacade
 {
 public:
-    AdmProxyFacadeImpl(rtc::WeakPtr<AdmProxy> admProxyRef, cricket::AudioOptions options);
+    AdmFacade(webrtc::scoped_refptr<AdmProxy> admProxy, cricket::AudioOptions options);
+    ~AdmFacade() final { close(); }
+    void close() { _admProxy->close(); }
+    auto playoutDevices() const { return _admProxy->playoutDevices(); }
+    auto recordingDevices() const { return _admProxy->recordingDevices(); }
+    auto defaultRecordingDevice() const { return _admProxy->defaultRecordingDevice(); }
+    auto defaultPlayoutDevice() const { return _admProxy->defaultPlayoutDevice(); }
+    bool setRecordingAudioDevice(const MediaDeviceInfo& info);
+    bool setPlayoutDevice(const MediaDeviceInfo& info);
     // impl. of AdmProxyFacade
-    void registerRecordingListener(AdmRecordingListener* l, bool reg) final;
-    void registerPlayoutListener(AdmPlayoutListener* l, bool reg) final;
+    void registerRecordingListener(AdmProxyListener* l, bool reg) final;
+    void registerPlayoutListener(AdmProxyListener* l, bool reg) final;
     cricket::AudioOptions options() const final { return _options; }
+    const AdmProxyState& recordingState() const final { return _admProxy->recordingState(); }
+    const AdmProxyState& playoutState() const final { return _admProxy->playoutState(); }
 private:
-    const rtc::WeakPtr<AdmProxy> _admProxyRef;
+    const webrtc::scoped_refptr<AdmProxy> _admProxy;
     const cricket::AudioOptions _options;
 };
 
@@ -117,7 +127,6 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     , _workingThread(std::move(workingThread))
     , _signalingThread(std::move(signalingThread))
     , _innerImpl(std::move(innerImpl))
-    , _admProxy(std::move(admProxy))
 {
     // check GCM suites for DTLS-SRTP are enabled
     webrtc::PeerConnectionFactoryInterface::Options peerConnectionFactoryOptions;
@@ -126,10 +135,9 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     _networkThread->AllowInvokesToThread(_networkThread.get());
     _workingThread->AllowInvokesToThread(_workingThread.get());
     _signalingThread->AllowInvokesToThread(_signalingThread.get());
-    if (_admProxy) {
-        auto admRef = _admProxy->weakRef();
+    if (admProxy) {
         auto options = toCricketOptions(microphoneOptions);
-        _admProxyFacade.reset(new AdmProxyFacadeImpl(std::move(admRef), std::move(options)));
+        _admProxy.reset(new AdmFacade(std::move(admProxy), std::move(options)));
     }
 }
 
@@ -192,26 +200,10 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     }
     return {};
 }
-
-std::optional<bool> PeerConnectionFactory::stereoRecording() const
-{
-    if (_admProxy) {
-        return _admProxy->stereoRecording();
-    }
-    return std::nullopt;
-}
-
-std::optional<bool> PeerConnectionFactory::stereoPlayout() const
-{
-    if (_admProxy) {
-        return _admProxy->stereoPlayout();
-    }
-    return std::nullopt;
-}
                               
-std::shared_ptr<AdmProxyFacade> PeerConnectionFactory::admProxy() const
+std::weak_ptr<AdmProxyFacade> PeerConnectionFactory::admProxy() const
 {
-    return _admProxyFacade;
+    return _admProxy;
 }
 
 MediaDeviceInfo PeerConnectionFactory::defaultRecordingAudioDevice() const
@@ -232,13 +224,13 @@ MediaDeviceInfo PeerConnectionFactory::defaultPlayoutAudioDevice() const
 
 bool PeerConnectionFactory::setRecordingAudioDevice(const MediaDeviceInfo& info)
 {
-    return _admProxy && _admProxy->setRecordingDevice(info);
+    return _admProxy && _admProxy->setRecordingAudioDevice(info);
 }
 
 MediaDeviceInfo PeerConnectionFactory::recordingAudioDevice() const
 {
     if (_admProxy) {
-        return _admProxy->recordingDevice();
+        return _admProxy->recordingState().currentDevice();
     }
     return {};
 }
@@ -251,7 +243,7 @@ bool PeerConnectionFactory::setPlayoutAudioDevice(const MediaDeviceInfo& info)
 MediaDeviceInfo PeerConnectionFactory::playoutAudioDevice() const
 {
     if (_admProxy) {
-        return _admProxy->playoutDevice();
+        return _admProxy->playoutState().currentDevice();
     }
     return {};
 }
@@ -272,14 +264,14 @@ std::vector<MediaDeviceInfo> PeerConnectionFactory::playoutAudioDevices() const
     return {};
 }
 
-void PeerConnectionFactory::registerAdmRecordingListener(AdmRecordingListener* l, bool reg)
+void PeerConnectionFactory::registerAdmRecordingListener(AdmProxyListener* l, bool reg)
 {
     if (_admProxy) {
         _admProxy->registerRecordingListener(l, reg);
     }
 }
 
-void PeerConnectionFactory::registerAdmPlayoutListener(AdmPlayoutListener* l, bool reg)
+void PeerConnectionFactory::registerAdmPlayoutListener(AdmProxyListener* l, bool reg)
 {
     if (_admProxy) {
         _admProxy->registerPlayoutListener(l, reg);
@@ -349,31 +341,33 @@ void PeerConnectionFactory::StopAecDump()
     _innerImpl->StopAecDump();
 }
 
-PeerConnectionFactory::AdmProxyFacadeImpl::AdmProxyFacadeImpl(rtc::WeakPtr<AdmProxy> admProxyRef,
-                                                              cricket::AudioOptions options)
-    : _admProxyRef(std::move(admProxyRef))
+PeerConnectionFactory::AdmFacade::AdmFacade(webrtc::scoped_refptr<AdmProxy> admProxy,
+                                            cricket::AudioOptions options)
+    : _admProxy(std::move(admProxy))
     , _options(std::move(options))
 {
 }
 
-void PeerConnectionFactory::AdmProxyFacadeImpl::
-    registerRecordingListener(AdmRecordingListener* l, bool reg)
+bool PeerConnectionFactory::AdmFacade::setRecordingAudioDevice(const MediaDeviceInfo& info)
 {
-    if (l) {
-        if (const auto adm = _admProxyRef.get()) {
-            adm->registerRecordingListener(l, reg);
-        }
-    }
+    return _admProxy->setRecordingDevice(info);
 }
 
-void PeerConnectionFactory::AdmProxyFacadeImpl::
-    registerPlayoutListener(AdmPlayoutListener* l, bool reg)
+bool PeerConnectionFactory::AdmFacade::setPlayoutDevice(const MediaDeviceInfo& info)
 {
-    if (l) {
-        if (const auto adm = _admProxyRef.get()) {
-            adm->registerPlayoutListener(l, reg);
-        }
-    }
+    return _admProxy->setPlayoutDevice(info);
+}
+
+void PeerConnectionFactory::AdmFacade::registerRecordingListener(AdmProxyListener* l,
+                                                                 bool reg)
+{
+    _admProxy->registerRecordingListener(l, reg);
+}
+
+void PeerConnectionFactory::AdmFacade::registerPlayoutListener(AdmProxyListener* l,
+                                                               bool reg)
+{
+    _admProxy->registerPlayoutListener(l, reg);
 }
 
 } // namespace LiveKitCpp

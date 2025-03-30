@@ -13,12 +13,13 @@
 // limitations under the License.
 #pragma once // AdmProxyModule.h
 #include "Loggable.h"
+#include "AdmProxyTypedefs.h"
+#include "AdmProxyState.h"
 #include "AsyncListeners.h"
 #include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
 #include <api/function_view.h>
 #include <modules/audio_device/include/audio_device.h> //AudioDeviceModule
-#include <rtc_base/weak_ptr.h>
 #include <type_traits>
 
 namespace rtc {
@@ -28,14 +29,11 @@ class Thread;
 namespace LiveKitCpp
 {
 
-class AdmRecordingListener;
-class AdmPlayoutListener;
+class AdmProxyListener;
 
 class AdmProxy : public Bricks::LoggableS<webrtc::AudioDeviceModule>
 {
     template<bool recording> class ScopedAudioBlocker;
-    struct DeviceMetrics;
-    using AdmPtr = webrtc::scoped_refptr<webrtc::AudioDeviceModule>;
 public:
     ~AdmProxy() override;
     static webrtc::scoped_refptr<AdmProxy>
@@ -138,22 +136,19 @@ public:
     
     int32_t GetPlayoutUnderrunCount() const final;
     std::optional<Stats> GetStats() const final;
-
-    bool stereoRecording() const noexcept { return _stereoRecording; }
-    bool stereoPlayout() const noexcept { return _stereoPlayout; }
+    
+    const AdmProxyState& recordingState() const noexcept { return _recState; }
+    const AdmProxyState& playoutState() const noexcept { return _playState; }
     void close();
-    void registerRecordingListener(AdmRecordingListener* l, bool reg);
-    void registerPlayoutListener(AdmPlayoutListener* l, bool reg);
+    void registerRecordingListener(AdmProxyListener* l, bool reg);
+    void registerPlayoutListener(AdmProxyListener* l, bool reg);
     // selection management
     MediaDeviceInfo defaultRecordingDevice() const;
     MediaDeviceInfo defaultPlayoutDevice() const;
     bool setRecordingDevice(const MediaDeviceInfo& info);
-    MediaDeviceInfo recordingDevice() const { return _recordingDev(); }
     bool setPlayoutDevice(const MediaDeviceInfo& info);
-    MediaDeviceInfo playoutDevice() const { return _playoutDev(); }
     std::vector<MediaDeviceInfo> recordingDevices() const;
     std::vector<MediaDeviceInfo> playoutDevices() const;
-    rtc::WeakPtr<AdmProxy> weakRef() { return _weakFactory.GetWeakPtr(); }
 protected:
     AdmProxy(const std::shared_ptr<rtc::Thread>& thread, AdmPtr impl,
              const std::shared_ptr<Bricks::Logger>& logger);
@@ -163,8 +158,6 @@ private:
     static std::optional<MediaDeviceInfo> get(bool recording, uint16_t ndx, const AdmPtr& adm);
     static std::optional<MediaDeviceInfo> get(bool recording, WindowsDeviceType type, const AdmPtr& adm);
     static std::optional<uint16_t> get(bool recording, const MediaDeviceInfo& info, const AdmPtr& adm);
-    static void metrics(const AdmPtr& adm, bool recording, DeviceMetrics& metrics);
-    static std::optional<bool> stereo(const AdmPtr& adm, bool recording);
     static AdmPtr defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory);
     std::shared_ptr<rtc::Thread> workingThread() const;
     std::vector<MediaDeviceInfo> enumerate(bool recording) const;
@@ -179,8 +172,6 @@ private:
     void changePlayoutDevice(const MediaDeviceInfo& info, const AdmPtr& adm);
     int32_t changeRecordingDevice(uint16_t index, const AdmPtr& adm);
     int32_t changePlayoutDevice(uint16_t index, const AdmPtr& adm);
-    void setStereoRecording(bool stereo);
-    void setStereoPlayout(bool stereo);
     template <typename Handler>
     void threadInvoke(Handler handler) const;
     template <typename Handler, typename R = std::invoke_result_t<Handler>>
@@ -191,13 +182,8 @@ private:
     static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
     const std::weak_ptr<rtc::Thread> _thread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
-    AsyncListeners<AdmRecordingListener*, true> _recListeners;
-    AsyncListeners<AdmPlayoutListener*, true> _playListeners;
-    Bricks::SafeObj<MediaDeviceInfo> _recordingDev;
-    Bricks::SafeObj<MediaDeviceInfo> _playoutDev;
-    std::atomic_bool _stereoRecording = false;
-    std::atomic_bool _stereoPlayout = false;
-    rtc::WeakPtrFactory<AdmProxy> _weakFactory;
+    AdmProxyState _recState;
+    AdmProxyState _playState;
 };
 
 } // namespace LiveKitCpp

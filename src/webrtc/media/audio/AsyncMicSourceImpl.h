@@ -25,14 +25,14 @@ class AsyncMicSourceImpl : public AsyncAudioSourceImpl
 public:
     AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                        const std::shared_ptr<Bricks::Logger>& logger,
-                       std::shared_ptr<AdmProxyFacade> admProxy);
+                       std::weak_ptr<AdmProxyFacade> admProxy);
     ~AsyncMicSourceImpl() override;
     // impl. of AsyncAudioSourceImpl
     void addSink(webrtc::AudioTrackSinkInterface* sink) final;
     void removeSink(webrtc::AudioTrackSinkInterface* sink) final;
     cricket::AudioOptions options() const final;
 private:
-    const std::shared_ptr<AdmProxyFacade> _admProxy;
+    const std::weak_ptr<AdmProxyFacade> _admProxy;
 };
 
 } // namespace LiveKitCpp

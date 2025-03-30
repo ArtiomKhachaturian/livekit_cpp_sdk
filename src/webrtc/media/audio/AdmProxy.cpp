@@ -13,8 +13,7 @@
 // limitations under the License.
 #include "AdmProxy.h"
 #include "AudioDevicesEnumerator.h"
-#include "AdmRecordingListener.h"
-#include "AdmPlayoutListener.h"
+#include "AdmProxyListener.h"
 #include "MediaAuthorization.h"
 #include "Utils.h"
 #include "ThreadUtils.h"
@@ -70,23 +69,14 @@ private:
     bool _needRestart = false;
 };
 
-struct AdmProxy::DeviceMetrics
-{
-    std::optional<bool> _stereo;
-    std::optional<uint32_t> _minVolume;
-    std::optional<uint32_t> _maxVolume;
-    std::optional<uint32_t> _currentVolume;
-};
-
 AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& thread,
                    rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
                    const std::shared_ptr<Bricks::Logger>& logger)
     :  Bricks::LoggableS<webrtc::AudioDeviceModule>(logger)
     , _thread(thread)
     , _impl(std::move(impl))
-    , _recListeners(thread)
-    , _playListeners(thread)
-    , _weakFactory(this)
+    , _recState(true, thread)
+    , _playState(false, thread)
 {
     if (canLogInfo()) {
         const auto& impl = _impl.constRef();
@@ -254,15 +244,8 @@ int32_t AdmProxy::InitPlayout()
 {
     return threadInvokeI32([this](const auto& pm) {
         const auto res = pm->InitPlayout();
-        if (0 == res && _playListeners) {
-            DeviceMetrics metrics;
-            AdmProxy::metrics(pm, false, metrics);
-            _playListeners.invoke(&AdmPlayoutListener::onPlayoutInitialized,
-                                  _playoutDev(),
-                                  metrics._stereo,
-                                  metrics._minVolume,
-                                  metrics._maxVolume,
-                                  metrics._currentVolume);
+        if (0 == res) {
+            _playState.update(pm);
         }
         return res;
     });
@@ -287,15 +270,8 @@ int32_t AdmProxy::InitRecording()
 {
     return threadInvokeI32([this](const auto& pm) {
         const auto res = pm->InitRecording();
-        if (0 == res && _recListeners) {
-            DeviceMetrics metrics;
-            AdmProxy::metrics(pm, true, metrics);
-            _recListeners.invoke(&AdmRecordingListener::onRecordingInitialized,
-                                 _recordingDev(),
-                                 metrics._stereo,
-                                 metrics._minVolume,
-                                 metrics._maxVolume,
-                                 metrics._currentVolume);
+        if (0 == res) {
+            _recState.update(pm);
         }
         return res;
     });
@@ -313,7 +289,7 @@ int32_t AdmProxy::StartPlayout()
     const auto res = threadInvokeI32([](const auto& pm) {
         return pm->StartPlayout(); });
     if (0 == res) {
-        _playListeners.invoke(&AdmPlayoutListener::onPlayoutStarted);
+        _playState.setStarted();
     }
     return res;
 }
@@ -323,7 +299,7 @@ int32_t AdmProxy::StopPlayout()
     const auto res = threadInvokeI32([](const auto& pm) {
         return pm->StopPlayout(); });
     if (0 == res) {
-        _playListeners.invoke(&AdmPlayoutListener::onPlayoutStopped);
+        _playState.setStopped();
     }
     return res;
 }
@@ -341,7 +317,7 @@ int32_t AdmProxy::StartRecording()
         return pm->StartRecording();
     });
     if (0 == res) {
-        _recListeners.invoke(&AdmRecordingListener::onRecordingStarted);
+        _recState.setStarted();
     }
     return res;
 }
@@ -352,7 +328,7 @@ int32_t AdmProxy::StopRecording()
         return pm->StopRecording();
     });
     if (0 == res) {
-        _recListeners.invoke(&AdmRecordingListener::onRecordingStopped);
+        _recState.setStopped();
     }
     return res;
 }
@@ -403,7 +379,7 @@ int32_t AdmProxy::SetSpeakerVolume(uint32_t volume)
     const auto res = threadInvokeI32([volume](const auto& pm) {
         return pm->SetSpeakerVolume(volume); });
     if (0 == res) {
-        _playListeners.invoke(&AdmPlayoutListener::onPlayoutVolumeChanged, volume);
+        _playState.setVolume(volume);
     }
     return res;
 }
@@ -450,7 +426,7 @@ int32_t AdmProxy::SetMicrophoneVolume(uint32_t volume)
     const auto res = threadInvokeI32([volume](const auto& pm) {
         return pm->SetMicrophoneVolume(volume); });
     if (0 == res) {
-        _recListeners.invoke(&AdmRecordingListener::onRecordingVolumeChanged, volume);
+        _recState.setVolume(volume);
     }
     return res;
 }
@@ -497,7 +473,7 @@ int32_t AdmProxy::SetSpeakerMute(bool mute)
     const auto res = threadInvokeI32([mute](const auto& pm) {
         return pm->SetSpeakerMute(mute); });
     if (0 == res) {
-        _playListeners.invoke(&AdmPlayoutListener::onPlayoutMuteChanged, mute);
+        _playState.setMute(mute);
     }
     return res;
 }
@@ -526,7 +502,7 @@ int32_t AdmProxy::SetMicrophoneMute(bool mute)
     const auto res = threadInvokeI32([mute](const auto& pm) {
         return pm->SetMicrophoneMute(mute); });
     if (0 == res) {
-        _recListeners.invoke(&AdmRecordingListener::onRecordingMuteChanged, mute);
+        _recState.setMute(mute);
     }
     return res;
 }
@@ -555,7 +531,7 @@ int32_t AdmProxy::SetStereoPlayout(bool enable)
     const auto res = threadInvokeI32([enable](const auto& pm) {
         return pm->SetStereoPlayout(enable); });
     if (0 == res) {
-        setStereoPlayout(enable);
+        _playState.setStereo(enable);
     }
     return res;
 }
@@ -583,7 +559,7 @@ int32_t AdmProxy::SetStereoRecording(bool enable)
     const auto res = threadInvokeI32([enable](const auto& pm) {
         return pm->SetStereoRecording(enable); });
     if (0 == res) {
-        setStereoRecording(enable);
+        _recState.setStereo(enable);
     }
     return res;
 }
@@ -660,8 +636,8 @@ std::optional<webrtc::AudioDeviceModule::Stats> AdmProxy::GetStats() const
 
 void AdmProxy::close()
 {
-    _recListeners.clear();
-    _playListeners.clear();
+    _recState.clearListeners();
+    _playState.clearListeners();
     LOCK_WRITE_SAFE_OBJ(_impl);
     if (auto impl = _impl.take()) {
         postTask(workingThread(), [impl = std::move(impl)]() mutable {
@@ -670,28 +646,14 @@ void AdmProxy::close()
     }
 }
 
-void AdmProxy::registerRecordingListener(AdmRecordingListener* l, bool reg)
+void AdmProxy::registerRecordingListener(AdmProxyListener* l, bool reg)
 {
-    if (l) {
-        if (reg) {
-            _recListeners.add(l);
-        }
-        else {
-            _recListeners.remove(l);
-        }
-    }
+    _recState.registereListener(l, reg);
 }
 
-void AdmProxy::registerPlayoutListener(AdmPlayoutListener* l, bool reg)
+void AdmProxy::registerPlayoutListener(AdmProxyListener* l, bool reg)
 {
-    if (l) {
-        if (reg) {
-            _playListeners.add(l);
-        }
-        else {
-            _playListeners.remove(l);
-        }
-    }
+    _playState.registereListener(l, reg);
 }
 
 MediaDeviceInfo AdmProxy::defaultRecordingDevice() const
@@ -802,37 +764,7 @@ std::optional<uint16_t> AdmProxy::get(bool recording, const MediaDeviceInfo& inf
     return index;
 }
 
-void AdmProxy::metrics(const AdmPtr& adm, bool recording, DeviceMetrics& metrics)
-{
-    if (adm) {
-        metrics._stereo = stereo(adm, recording);
-        if (recording ? adm->MicrophoneIsInitialized() : adm->SpeakerIsInitialized()) {
-            uint32_t v;
-            if (0 == (recording ? adm->MinMicrophoneVolume(&v) : adm->MinSpeakerVolume(&v))) {
-                metrics._minVolume = v;
-            }
-            if (0 == (recording ? adm->MaxMicrophoneVolume(&v) : adm->MaxSpeakerVolume(&v))) {
-                metrics._maxVolume = v;
-            }
-            if (0 == (recording ? adm->MicrophoneVolume(&v) : adm->SpeakerVolume(&v))) {
-                metrics._currentVolume = v;
-            }
-        }
-    }
-}
-
-std::optional<bool> AdmProxy::stereo(const AdmPtr& adm, bool recording)
-{
-    if (adm) {
-        bool s;
-        if (0 == (recording ? adm->StereoRecording(&s) : adm->StereoPlayout(&s))) {
-            return s;
-        }
-    }
-    return std::nullopt;
-}
-
-AdmProxy::AdmPtr AdmProxy::defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory)
+AdmPtr AdmProxy::defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory)
 {
     return webrtc::AudioDeviceModule::Create(_layer, taskQueueFactory);
 }
@@ -899,62 +831,14 @@ void AdmProxy::setPlayoutDevice(WindowsDeviceType type, const AdmPtr& adm)
 void AdmProxy::changeRecordingDevice(const MediaDeviceInfo& info, const AdmPtr& adm)
 {
     if (!info.empty()) {
-        bool changed = false;
-        {
-            LOCK_WRITE_SAFE_OBJ(_recordingDev);
-            if (info != _recordingDev.constRef()) {
-                _recordingDev = info;
-                changed = true;
-            }
-        }
-        if (changed) {
-            if (_recListeners) {
-                DeviceMetrics metrics;
-                AdmProxy::metrics(adm, true, metrics);
-                if (metrics._stereo) {
-                    setStereoRecording(metrics._stereo.value());
-                }
-                _recListeners.invoke(&AdmRecordingListener::onRecordingChanged, info,
-                                     metrics._stereo,
-                                     metrics._minVolume,
-                                     metrics._maxVolume,
-                                     metrics._currentVolume);
-            }
-            else if (const auto stereo = AdmProxy::stereo(adm, true)) {
-                setStereoRecording(stereo.value());
-            }
-        }
+        _recState.setCurrentDevice(info, adm);
     }
 }
 
 void AdmProxy::changePlayoutDevice(const MediaDeviceInfo& info, const AdmPtr& adm)
 {
     if (!info.empty()) {
-        bool ok = false;
-        {
-            LOCK_WRITE_SAFE_OBJ(_playoutDev);
-            if (info != _playoutDev.constRef()) {
-                _playoutDev = info;
-                ok = true;
-            }
-        }
-        if (ok) {
-            if (_playListeners) {
-                DeviceMetrics metrics;
-                AdmProxy::metrics(adm, false, metrics);
-                if (metrics._stereo) {
-                    setStereoPlayout(metrics._stereo.value());
-                }
-                _playListeners.invoke(&AdmPlayoutListener::onPlayoutChanged, info,
-                                      metrics._stereo,
-                                      metrics._minVolume,
-                                      metrics._maxVolume,
-                                      metrics._currentVolume);
-            }
-            else if (const auto stereo = AdmProxy::stereo(adm, false)) {
-                setStereoPlayout(stereo.value());
-            }
-        }
+        _playState.setCurrentDevice(info, adm);
     }
 }
 
@@ -986,20 +870,6 @@ int32_t AdmProxy::changePlayoutDevice(uint16_t index, const AdmPtr& adm)
         }
     }
     return result;
-}
-
-void AdmProxy::setStereoRecording(bool stereo)
-{
-    if (exchangeVal(stereo, _stereoRecording)) {
-        _recListeners.invoke(&AdmRecordingListener::onRecordingStereoChanged, stereo);
-    }
-}
-
-void AdmProxy::setStereoPlayout(bool stereo)
-{
-    if (exchangeVal(stereo, _stereoPlayout)) {
-        _playListeners.invoke(&AdmPlayoutListener::onPlayoutStereoChanged, stereo);
-    }
 }
 
 template <typename Handler>

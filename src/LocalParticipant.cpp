@@ -13,6 +13,7 @@
 // limitations under the License.
 #ifdef WEBRTC_AVAILABLE
 #include "LocalParticipant.h"
+#include "AdmProxyFacade.h"
 #include "Blob.h"
 #include "CameraDevice.h"
 #include "CameraManager.h"
@@ -47,7 +48,9 @@ void LocalParticipant::reset()
 std::optional<bool> LocalParticipant::stereoRecording() const
 {
     if (_pcf) {
-        return _pcf->stereoRecording();
+        if (const auto admProxy = _pcf->admProxy().lock()) {
+            return admProxy->recordingState().stereo();
+        }
     }
     return std::nullopt;
 }
@@ -268,10 +271,11 @@ void LocalParticipant::clear(TTracks& tracks)
 webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::createMic() const
 {
     if (_pcf) {
-        if (auto adm = _pcf->admProxy()) {
+        auto admProxy = _pcf->admProxy();
+        if (!admProxy.expired()) {
             return LocalAudioDevice<AsyncMicSourceImpl>::create(_pcf->signalingThread(),
                                                                 logger(),
-                                                                std::move(adm));
+                                                                std::move(admProxy));
         }
     }
     return {};

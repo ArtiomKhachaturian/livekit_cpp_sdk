@@ -11,25 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AdmProxyFacade.h
-#include "AdmProxyState.h"
-#include <api/audio_options.h>
+#pragma once // AdmProxyTypedefs.h
+#include <api/scoped_refptr.h>
+
+namespace webrtc {
+class AudioDeviceModule;
+}
 
 namespace LiveKitCpp
 {
 
-class AdmProxyListener;
-
-class AdmProxyFacade
-{
-public:
-    virtual void registerRecordingListener(AdmProxyListener* l, bool reg) = 0;
-    virtual void registerPlayoutListener(AdmProxyListener* l, bool reg) = 0;
-    virtual cricket::AudioOptions options() const = 0;
-    virtual const AdmProxyState& recordingState() const = 0;
-    virtual const AdmProxyState& playoutState() const = 0;
-protected:
-    virtual ~AdmProxyFacade() = default;
-};
+using AdmPtr = webrtc::scoped_refptr<webrtc::AudioDeviceModule>;
 
 } // namespace LiveKitCpp

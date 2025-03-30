@@ -44,15 +44,14 @@ namespace LiveKitCpp
 
 class AdmProxy;
 class AdmProxyFacade;
-class AdmRecordingListener;
-class AdmPlayoutListener;
+class AdmProxyListener;
 class MicAudioSource;
 class WebRtcLogSink;
 struct MicrophoneOptions;
 
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 {
-    class AdmProxyFacadeImpl;
+    class AdmFacade;
 public:
     ~PeerConnectionFactory() override;
     static webrtc::scoped_refptr<PeerConnectionFactory> create(bool audioProcessing,
@@ -60,9 +59,7 @@ public:
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& eventsQueue() const noexcept { return _eventsQueue; }
     std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
-    std::optional<bool> stereoRecording() const;
-    std::optional<bool> stereoPlayout() const;
-    std::shared_ptr<AdmProxyFacade> admProxy() const;
+    std::weak_ptr<AdmProxyFacade> admProxy() const;
     MediaDeviceInfo defaultRecordingAudioDevice() const;
     MediaDeviceInfo defaultPlayoutAudioDevice() const;
     bool setRecordingAudioDevice(const MediaDeviceInfo& info);
@@ -71,8 +68,8 @@ public:
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
-    void registerAdmRecordingListener(AdmRecordingListener* l, bool reg);
-    void registerAdmPlayoutListener(AdmPlayoutListener* l, bool reg);
+    void registerAdmRecordingListener(AdmProxyListener* l, bool reg);
+    void registerAdmPlayoutListener(AdmProxyListener* l, bool reg);
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>
@@ -105,8 +102,7 @@ private:
     const std::shared_ptr<rtc::Thread> _workingThread;
     const std::shared_ptr<rtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
-    const webrtc::scoped_refptr<AdmProxy> _admProxy;
-    std::shared_ptr<AdmProxyFacadeImpl> _admProxyFacade;
+    std::shared_ptr<AdmFacade> _admProxy;
 };
 
 } // namespace LiveKitCpp
