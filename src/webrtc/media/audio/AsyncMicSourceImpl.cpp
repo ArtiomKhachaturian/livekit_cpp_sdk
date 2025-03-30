@@ -14,34 +14,15 @@
 #include "AsyncMicSourceImpl.h"
 #include "AdmProxyFacade.h"
 #include "AudioSinks.h"
-#include "Utils.h"
 
 namespace LiveKitCpp
 {
-
-class AsyncMicSourceImpl::VolumeControl
-{
-public:
-    VolumeControl() = default;
-    void reset() { _minVolume = _maxVolume = 0U; }
-    bool setRange(uint32_t minVolume, uint32_t maxVolume);
-    bool valid() const;
-    bool setNormalizedVolume(double volume);
-    bool setVolume(uint32_t volume);
-    uint32_t volume() const;
-    double normalizedVolume() const noexcept { return _normalizedVolume; }
-private:
-    std::atomic<uint32_t> _minVolume = 0U;
-    std::atomic<uint32_t> _maxVolume = 0U;
-    std::atomic<double> _normalizedVolume = 0.;
-};
 
 AsyncMicSourceImpl::AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                        const std::shared_ptr<Bricks::Logger>& logger,
                                        std::weak_ptr<AdmProxyFacade> admProxy)
     : AsyncAudioSourceImpl(std::move(signalingQueue), logger, false)
     , _admProxy(std::move(admProxy))
-    , _volumeControl(std::make_unique<VolumeControl>())
 {
     if (const auto admp = adm()) {
         const auto& state = admp->recordingState();
@@ -55,13 +36,6 @@ AsyncMicSourceImpl::~AsyncMicSourceImpl()
 {
     if (const auto admp = adm()) {
         admp->registerRecordingListener(this, false);
-    }
-}
-
-void AsyncMicSourceImpl::setVolume(double volume)
-{
-    if (_volumeControl->setNormalizedVolume(volume)) {
-        requestVolumeChanges(_volumeControl->normalizedVolume());
     }
 }
 
@@ -91,31 +65,23 @@ cricket::AudioOptions AsyncMicSourceImpl::options() const
     return {};
 }
 
-void AsyncMicSourceImpl::onEnabled(bool enabled)
-{
-    AsyncAudioSourceImpl::onEnabled(enabled);
-    if (enabled) {
-        requestVolumeChanges(_volumeControl->normalizedVolume());
-    }
-}
-
-void AsyncMicSourceImpl::requestVolumeChanges(double volume)
-{
-    if (enabled() && _volumeControl->valid()) {
-        if (const auto admp = adm()) {
-        }
-    }
-}
-
 void AsyncMicSourceImpl::onMinMaxVolumeChanged(bool, uint32_t minVolume, uint32_t maxVolume)
 {
+    LOCK_WRITE_SAFE_OBJ(_volumeControl);
     _volumeControl->setRange(minVolume, maxVolume);
 }
 
 void AsyncMicSourceImpl::onVolumeChanged(bool, uint32_t volume)
 {
-    if (_volumeControl->setVolume(volume)) {
-        AsyncAudioSourceImpl::onVolumeChanged(_volumeControl->normalizedVolume());
+    std::optional<double> normalized;
+    {
+        LOCK_WRITE_SAFE_OBJ(_volumeControl);
+        if (_volumeControl->setVolume(volume)) {
+            normalized = _volumeControl->normalizedVolume();
+        }
+    }
+    if (normalized) {
+        AsyncAudioSourceImpl::onVolumeChanged(normalized.value());
     }
 }
 
@@ -123,7 +89,6 @@ void AsyncMicSourceImpl::onStarted(bool)
 {
     if (enabled()) {
         changeState(webrtc::MediaSourceInterface::SourceState::kLive);
-        requestVolumeChanges(_volumeControl->normalizedVolume());
     }
     else {
         changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
@@ -163,46 +128,6 @@ void AsyncMicSourceImpl::onMuteChanged(bool, bool mute)
         newState = webrtc::MediaSourceInterface::SourceState::kEnded;
     }
     changeState(newState);
-}
-
-bool AsyncMicSourceImpl::VolumeControl::setRange(uint32_t minVolume, uint32_t maxVolume)
-{
-    const auto minv = std::min(minVolume, maxVolume);
-    const auto maxv = std::max(minVolume, maxVolume);
-    const auto b1 = exchangeVal(minv, _minVolume);
-    const auto b2 = exchangeVal(maxv, _maxVolume);
-    return b1 || b2;
-}
-
-bool AsyncMicSourceImpl::VolumeControl::valid() const
-{
-    return (_maxVolume - _minVolume) > 0U;
-}
-
-bool AsyncMicSourceImpl::VolumeControl::setNormalizedVolume(double volume)
-{
-    return exchangeVal(bound(0., volume, 1.), _normalizedVolume);
-}
-
-bool AsyncMicSourceImpl::VolumeControl::setVolume(uint32_t volume)
-{
-    const auto minv = _minVolume.load();
-    const auto maxv = _maxVolume.load();
-    if (const auto range = maxv - minv) {
-        volume = bound(minv, volume, maxv);
-        const double normv = (volume - minv) / double(range);
-        return setNormalizedVolume(normv);
-    }
-    return false;
-}
-
-uint32_t AsyncMicSourceImpl::VolumeControl::volume() const
-{
-    const auto minv = _minVolume.load();
-    if (const auto range = _maxVolume - minv) {
-        return minv + uint32_t(std::round(normalizedVolume() * range));
-    }
-    return 0U;
 }
 
 } // namespace LiveKitCpp

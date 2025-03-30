@@ -36,8 +36,11 @@ public:
     void clear() { _listeners->clear(); }
     bool empty() const noexcept { return _listeners->empty(); }
     size_t size() const noexcept { return _listeners->size(); }
+    bool contains(const TListener& listener) const;
     template <class Method, typename... Args>
     void invoke(Method method, Args&&... args) const;
+    template <class Functor>
+    void foreach(const Functor& functor) const;
     AsyncListeners& operator = (const AsyncListeners&) = delete;
     AsyncListeners& operator = (AsyncListeners&&) noexcept = delete;
     explicit operator bool() const noexcept { return !_listeners->empty(); }
@@ -69,6 +72,12 @@ inline Bricks::RemoveResult AsyncListeners<TListener, forcePost>::
 }
 
 template<class TListener, bool forcePost>
+inline bool AsyncListeners<TListener, forcePost>::contains(const TListener& listener) const
+{
+    return _listeners->contains(listener);
+}
+
+template<class TListener, bool forcePost>
 template <class Method, typename... Args>
 inline void AsyncListeners<TListener, forcePost>::
     invoke(Method method, Args&&... args) const
@@ -90,6 +99,13 @@ inline void AsyncListeners<TListener, forcePost>::
             _listeners->invoke(method, std::forward<Args>(args)...);
         }
     }
+}
+
+template<class TListener, bool forcePost>
+template <class Functor>
+inline void AsyncListeners<TListener, forcePost>::foreach(const Functor& functor) const
+{
+    _listeners->foreach(functor);
 }
 
 } // namespace LiveKitCpp

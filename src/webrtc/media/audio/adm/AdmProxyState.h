@@ -31,6 +31,7 @@ public:
     AdmProxyState(bool recording, std::weak_ptr<webrtc::TaskQueueBase> queue);
     void clearListeners() { _listeners.clear(); }
     void registereListener(AdmProxyListener* listener, bool reg);
+    bool registered(AdmProxyListener* listener) const;
     void update(const AdmPtr& adm);
     bool setCurrentDevice(const MediaDeviceInfo& info, const AdmPtr& adm = {});
     bool setStarted(bool started = true);

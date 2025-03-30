@@ -14,6 +14,8 @@
 #pragma once // AsyncMicSourceImpl.h
 #include "AsyncAudioSourceImpl.h"
 #include "AdmProxyListener.h"
+#include "SafeObj.h"
+#include "VolumeControl.h"
 #include <atomic>
 #include <memory>
 
@@ -24,23 +26,18 @@ class AdmProxyFacade;
 
 class AsyncMicSourceImpl : public AsyncAudioSourceImpl, private AdmProxyListener
 {
-    class VolumeControl;
 public:
     AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                        const std::shared_ptr<Bricks::Logger>& logger,
                        std::weak_ptr<AdmProxyFacade> admProxy);
     ~AsyncMicSourceImpl() override;
     // impl. of AsyncAudioSourceImpl
-    void setVolume(double volume) final;
+    void setVolume(double) final {}
     void addSink(webrtc::AudioTrackSinkInterface* sink) final;
     void removeSink(webrtc::AudioTrackSinkInterface* sink) final;
     cricket::AudioOptions options() const final;
-protected:
-    // overrides of AsyncAudioSourceImpl
-    void onEnabled(bool enabled) final;
 private:
     std::shared_ptr<AdmProxyFacade> adm() const noexcept { return _admProxy.lock(); }
-    void requestVolumeChanges(double volume);
     // impl. of AdmProxyListener
     void onMinMaxVolumeChanged(bool, uint32_t minVolume, uint32_t maxVolume) final;
     void onVolumeChanged(bool, uint32_t volume) final;
@@ -49,7 +46,7 @@ private:
     void onMuteChanged(bool, bool mute) final;
 private:
     const std::weak_ptr<AdmProxyFacade> _admProxy;
-    const std::unique_ptr<VolumeControl> _volumeControl;
+    Bricks::SafeObj<VolumeControl> _volumeControl;
 };
 
 } // namespace LiveKitCpp

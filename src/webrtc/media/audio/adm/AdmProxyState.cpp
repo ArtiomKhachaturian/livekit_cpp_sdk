@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "AdmProxyState.h"
 #include "AdmProxyListener.h"
+#include "VolumeControl.h"
 #include "Utils.h"
 #include <modules/audio_device/include/audio_device.h> //AudioDeviceModule
 
@@ -33,6 +34,11 @@ void AdmProxyState::registereListener(AdmProxyListener* listener, bool reg)
     else {
         _listeners.remove(listener);
     }
+}
+
+bool AdmProxyState::registered(AdmProxyListener* listener) const
+{
+    return _listeners.contains(listener);
 }
 
 void AdmProxyState::update(const AdmPtr& adm)
