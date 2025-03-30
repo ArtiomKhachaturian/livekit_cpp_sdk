@@ -60,7 +60,7 @@ void AsyncAudioSourceImpl::onEnabled(bool enabled)
     }
 }
 
-void AsyncAudioSourceImpl::onVolumeChanged(double volume)
+void AsyncAudioSourceImpl::onVolumeChanged(double volume) const
 {
     _observers.invoke(&webrtc::AudioSourceInterface::AudioObserver::OnSetVolume, volume);
 }

@@ -216,6 +216,7 @@ if (WEBRTC_AVAILABLE)
         ${CMAKE_SOURCE_DIR}/src/webrtc/media
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/e2e
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/audio
+        ${CMAKE_SOURCE_DIR}/src/webrtc/media/audio/adm
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/data
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/video
         ${CMAKE_SOURCE_DIR}/src/webrtc/media/video/camera

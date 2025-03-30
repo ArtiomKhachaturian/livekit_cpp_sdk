@@ -28,6 +28,7 @@ public:
     AsyncAudioSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                      const std::shared_ptr<Bricks::Logger>& logger,
                      Args&&... args);
+    bool signalLevel(int& level) const;
     // impl. of webrtc::AudioSourceInterface
     void SetVolume(double volume) final;
     void RegisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer) final;
@@ -44,6 +45,12 @@ inline AsyncAudioSource<TAsyncImpl>::AsyncAudioSource(std::weak_ptr<webrtc::Task
                                                       Args&&... args)
     : Base(std::move(signalingQueue), logger, std::forward<Args>(args)...)
 {
+}
+
+template<class TAsyncImpl>
+bool AsyncAudioSource<TAsyncImpl>::signalLevel(int& level) const
+{
+    return Base::_impl->signalLevel(level);
 }
 
 template<class TAsyncImpl>

@@ -23,6 +23,7 @@ public:
     AsyncAudioSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                          const std::shared_ptr<Bricks::Logger>& logger = {},
                          bool liveImmediately = false);
+    virtual bool signalLevel(int& /*level*/) const { return false; }
     virtual void setVolume(double volume);
     virtual void addAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
     virtual void removeAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
@@ -30,7 +31,7 @@ public:
     virtual void removeSink(webrtc::AudioTrackSinkInterface* sink);
     virtual cricket::AudioOptions options() const { return {}; }
 protected:
-    void onVolumeChanged(double volume);
+    void onVolumeChanged(double volume) const;
     void onData(const void* audioData, int bitsPerSample, int sampleRate,
                 size_t numberOfChannels, size_t numberOfFrames) const;
 protected:

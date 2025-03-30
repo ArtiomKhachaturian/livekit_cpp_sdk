@@ -38,6 +38,7 @@ public:
     ~AdmProxy() override;
     static webrtc::scoped_refptr<AdmProxy>
         create(const std::shared_ptr<rtc::Thread>& workingThread,
+               const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
                webrtc::TaskQueueFactory* taskQueueFactory,
                const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of webrtc::AudioDeviceModule
@@ -150,7 +151,9 @@ public:
     std::vector<MediaDeviceInfo> recordingDevices() const;
     std::vector<MediaDeviceInfo> playoutDevices() const;
 protected:
-    AdmProxy(const std::shared_ptr<rtc::Thread>& thread, AdmPtr impl,
+    AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
+             const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
+             AdmPtr impl,
              const std::shared_ptr<Bricks::Logger>& logger);
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
@@ -180,7 +183,7 @@ private:
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
 private:
     static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
-    const std::weak_ptr<rtc::Thread> _thread;
+    const std::weak_ptr<rtc::Thread> _workingThread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
     AdmProxyState _recState;
     AdmProxyState _playState;

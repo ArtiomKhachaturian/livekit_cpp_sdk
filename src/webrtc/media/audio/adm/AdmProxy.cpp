@@ -69,14 +69,15 @@ private:
     bool _needRestart = false;
 };
 
-AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& thread,
+AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
+                   const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
                    rtc::scoped_refptr<webrtc::AudioDeviceModule> impl,
                    const std::shared_ptr<Bricks::Logger>& logger)
     :  Bricks::LoggableS<webrtc::AudioDeviceModule>(logger)
-    , _thread(thread)
+    , _workingThread(workingThread)
     , _impl(std::move(impl))
-    , _recState(true, thread)
-    , _playState(false, thread)
+    , _recState(true, signalingQueue)
+    , _playState(false, signalingQueue)
 {
     if (canLogInfo()) {
         const auto& impl = _impl.constRef();
@@ -102,19 +103,23 @@ AdmProxy::~AdmProxy()
 }
 
 rtc::scoped_refptr<AdmProxy> AdmProxy::
-    create(const std::shared_ptr<rtc::Thread>& thread,
+    create(const std::shared_ptr<rtc::Thread>& workingThread,
+           const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
            webrtc::TaskQueueFactory* taskQueueFactory,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
-    if (thread) {
-        auto impl = invokeInThreadR(thread.get(), [taskQueueFactory](){
+    if (workingThread && signalingQueue) {
+        auto impl = invokeInThreadR(workingThread.get(), [taskQueueFactory](){
             return defaultAdm(taskQueueFactory);
         });
         if (impl) {
-            return rtc::make_ref_counted<AdmProxy>(thread, std::move(impl), logger);
+            return rtc::make_ref_counted<AdmProxy>(workingThread,
+                                                   signalingQueue,
+                                                   std::move(impl),
+                                                   logger);
         }
     }
-    return nullptr;
+    return {};
 }
 
 int32_t AdmProxy::ActiveAudioLayer(AudioLayer* audioLayer) const
@@ -771,7 +776,7 @@ AdmPtr AdmProxy::defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory)
 
 std::shared_ptr<rtc::Thread> AdmProxy::workingThread() const
 {
-    return _thread.lock();
+    return _workingThread.lock();
 }
 
 std::vector<MediaDeviceInfo> AdmProxy::enumerate(bool recording) const

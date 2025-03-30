@@ -98,10 +98,7 @@ void LocalAudioDevice<TAsyncImpl>::RemoveSink(webrtc::AudioTrackSinkInterface* s
 template<class TAsyncImpl>
 bool LocalAudioDevice<TAsyncImpl>::GetSignalLevel(int* level)
 {
-    if (level) {
-        
-    }
-    return false;
+    return level && _source->signalLevel(*level);
 }
 
 template<class TAsyncImpl>

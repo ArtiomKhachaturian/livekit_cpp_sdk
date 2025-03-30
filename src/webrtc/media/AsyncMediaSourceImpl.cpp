@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "AsyncMediaSourceImpl.h"
+#include "Utils.h"
 
 namespace LiveKitCpp
 {
@@ -61,7 +62,7 @@ void AsyncMediaSourceImpl::changeState(webrtc::MediaSourceInterface::SourceState
 {
     bool changed = false;
     if (active()) {
-        changed = state != _state.exchange(state);
+        changed = exchangeVal(state, _state);
         if (changed) {
             switch (state) {
                 case webrtc::MediaSourceInterface::kLive:
@@ -76,7 +77,7 @@ void AsyncMediaSourceImpl::changeState(webrtc::MediaSourceInterface::SourceState
         }
     }
     else {
-        changed = _ended != _state.exchange(_ended);
+        changed = exchangeVal(_ended, _state);
     }
     if (changed) {
         notifyAboutChanges();
