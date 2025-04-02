@@ -150,6 +150,30 @@ void TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webr
     }
 }
 
+void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+{
+    if (callback && !closed()) {
+        _publisher.querySenderStats(callback);
+        _subscriber.queryReceiverStats(callback);
+    }
+}
+
+void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                  const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+{
+    if (receiver && callback && !closed()) {
+        _subscriber.queryReceiverStats(callback, receiver);
+    }
+}
+
+void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                                  const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+{
+    if (sender && callback && !closed()) {
+        _publisher.querySenderStats(callback, sender);
+    }
+}
+
 void TransportManager::setAudioPlayout(bool playout)
 {
     _publisher.setAudioPlayout(playout);

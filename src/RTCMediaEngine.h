@@ -53,8 +53,8 @@ enum class DisconnectReason;
 
 class RTCMediaEngine : public Bricks::LoggableS<SignalServerListener>,
                        protected TransportManagerListener,
-                       private RemoteParticipantsListener,
-                       private E2ESecurityFactory
+                       protected E2ESecurityFactory,
+                       private RemoteParticipantsListener
 {
 public:
     void setListener(SessionListener* listener);

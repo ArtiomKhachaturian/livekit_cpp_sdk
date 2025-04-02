@@ -70,9 +70,7 @@ size_t LocalParticipant::videoTracksCount() const
 std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addMicrophoneTrack()
 {
     if (auto mic = createMic()) {
-        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),
-                                                          _manager, true,
-                                                          logger());
+        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),  _manager, true);
         addTrack(track, _audioTracks);
         return track;
     }
@@ -83,8 +81,7 @@ std::shared_ptr<CameraTrackImpl> LocalParticipant::
     addCameraTrack(const CameraOptions& options)
 {
     if (auto camera = createCamera(options)) {
-        auto track = std::make_shared<CameraTrackImpl>(std::move(camera),
-                                                       _manager, logger());
+        auto track = std::make_shared<CameraTrackImpl>(std::move(camera), _manager);
         addTrack(track, _videoTracks);
         return track;
     }

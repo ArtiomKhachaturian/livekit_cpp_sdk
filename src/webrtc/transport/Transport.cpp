@@ -350,6 +350,37 @@ bool Transport::addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterf
     return false;
 }
 
+void Transport::queryReceiverStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
+{
+    if (callback) {
+        if (const auto thread = signalingThread()) {
+            thread->PostTask([receiver, callback, implRef = weak(_impl)]() {
+                if (const auto impl = implRef.lock()) {
+                    if (const auto pc = impl->peerConnection()) {
+                        pc->GetStats(receiver, callback);
+                    }
+                }
+            });
+        }
+    }
+}
+
+void Transport::querySenderStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                                 const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
+{
+    if (callback) {
+        if (const auto thread = signalingThread()) {
+            thread->PostTask([sender, callback, implRef = weak(_impl)]() {
+                if (const auto impl = implRef.lock()) {
+                    if (const auto pc = impl->peerConnection()) {
+                        pc->GetStats(sender, callback);
+                    }
+                }
+            });
+        }
+    }
+}
 
 void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options)
 {

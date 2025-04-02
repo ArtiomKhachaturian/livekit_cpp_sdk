@@ -25,9 +25,9 @@ class RemoteVideoTrackImpl : public RemoteTrackImpl<VideoTrackImpl<RemoteVideoTr
     using Base = RemoteTrackImpl<VideoTrackImpl<RemoteVideoTrack>>;
 public:
     RemoteVideoTrackImpl(const TrackInfo& info,
+                         const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                          webrtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack,
-                         TrackManager* manager,
-                         const std::shared_ptr<Bricks::Logger>& logger = {});
+                         TrackManager* manager);
     // impl. of RemoteVideoTrack
     std::string sid() const final { return info()._sid; }
     uint32_t originalWidth() const final { return info()._width; }

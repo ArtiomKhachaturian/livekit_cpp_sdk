@@ -24,9 +24,7 @@ class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraTrack, Camera
 {
     using Base = LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraDevice>>;
 public:
-    CameraTrackImpl(webrtc::scoped_refptr<CameraDevice> cameraTrack,
-                    TrackManager* manager,
-                    const std::shared_ptr<Bricks::Logger>& logger = {});
+    CameraTrackImpl(webrtc::scoped_refptr<CameraDevice> cameraTrack, TrackManager* manager);
     ~CameraTrackImpl();
     // impl. of CameraTrack
     void setDeviceInfo(const MediaDeviceInfo& info) final;

@@ -270,10 +270,9 @@ bool RemoteParticipantImpl::addTrack(const std::string& sid,
         if (auto rtcTrack = mediaTrack<MediaInterace>(receiver)) {
             LOCK_READ_SAFE_OBJ(_info);
             if (const auto trackInfo = findBySid(sid)) {
-                auto trackImpl = std::make_shared<TTrack>(*trackInfo,
+                auto trackImpl = std::make_shared<TTrack>(*trackInfo, receiver,
                                                           std::move(rtcTrack),
-                                                          _securityFactory
-                                                          /*, logger()*/);
+                                                          _securityFactory);
                 if (attachCryptor(trackInfo->_encryption, receiver)) {
                     {
                         const std::lock_guard guard(collection.mutex());

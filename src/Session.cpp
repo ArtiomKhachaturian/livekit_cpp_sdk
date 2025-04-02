@@ -17,6 +17,7 @@
 #include "LocalAudioTrackImpl.h"
 #include "CameraTrackImpl.h"
 #include "RTCEngine.h"
+#include "StatsSourceImpl.h"
 #include "PeerConnectionFactory.h"
 #endif
 #include "WebsocketEndPoint.h"
@@ -25,10 +26,23 @@ namespace LiveKitCpp
 {
 
 #ifdef WEBRTC_AVAILABLE
+struct Session::Impl
+{
+    const webrtc::scoped_refptr<StatsSourceImpl> _statsCollector;
+    RTCEngine _engine;
+    Impl(Options options,
+         PeerConnectionFactory* pcf,
+         const Participant* session,
+         std::unique_ptr<Websocket::EndPoint> socket,
+         const std::shared_ptr<Bricks::Logger>& logger);
+    ~Impl() { _statsCollector->clearListeners(); }
+    void queryStats() const { _engine.queryStats(_statsCollector); }
+};
+
 Session::Session(std::unique_ptr<Websocket::EndPoint> socket,
                  PeerConnectionFactory* pcf, Options options,
                  const std::shared_ptr<Bricks::Logger>& logger)
-    : _engine(std::make_unique<RTCEngine>(std::move(options), pcf, this, std::move(socket), logger))
+    : _impl(std::make_unique<Impl>(std::move(options), pcf, this, std::move(socket), logger))
 {
 }
 
@@ -39,82 +53,82 @@ Session::~Session()
 
 void Session::setAudioPlayout(bool playout)
 {
-    _engine->setAudioPlayout(playout);
+    _impl->_engine.setAudioPlayout(playout);
 }
 
 bool Session::audioPlayoutEnabled() const
 {
-    return _engine->audioPlayoutEnabled();
+    return _impl->_engine.audioPlayoutEnabled();
 }
 
 void Session::setAudioRecording(bool recording)
 {
-    _engine->setAudioRecording(recording);
+    _impl->_engine.setAudioRecording(recording);
 }
 
 bool Session::audioRecordingEnabled() const
 {
-    return _engine->audioRecordingEnabled();
+    return _impl->_engine.audioRecordingEnabled();
 }
 
 size_t Session::localAudioTracksCount() const
 {
-    return _engine->localAudioTracksCount();
+    return _impl->_engine.localAudioTracksCount();
 }
 
 size_t Session::localVideoTracksCount() const
 {
-    return _engine->localVideoTracksCount();
+    return _impl->_engine.localVideoTracksCount();
 }
 
 std::shared_ptr<AudioTrack> Session::addMicrophoneTrack()
 {
-    return _engine->addLocalMicrophoneTrack();
+    return _impl->_engine.addLocalMicrophoneTrack();
 }
 
 std::shared_ptr<CameraTrack> Session::addCameraTrack(const CameraOptions& options)
 {
-    return _engine->addLocalCameraTrack(options);
+    return _impl->_engine.addLocalCameraTrack(options);
 }
 
 void Session::removeAudioTrack(const std::shared_ptr<AudioTrack>& track)
 {
-    _engine->removeLocalAudioTrack(track);
+    _impl->_engine.removeLocalAudioTrack(track);
 }
 
 void Session::removeVideoTrack(const std::shared_ptr<VideoTrack>& track)
 {
-    _engine->removeLocalVideoTrack(track);
+    _impl->_engine.removeLocalVideoTrack(track);
 }
 
 std::shared_ptr<AudioTrack> Session::audioTrack(size_t index) const
 {
-    return _engine->localAudioTrack(index);
+    return _impl->_engine.localAudioTrack(index);
 }
 
 std::shared_ptr<VideoTrack> Session::videoTrack(size_t index) const
 {
-    return _engine->localVideoTrack(index);
+    return _impl->_engine.localVideoTrack(index);
 }
 
 size_t Session::remoteParticipantsCount() const
 {
-    return _engine->remoteParticipants().count();
+    return _impl->_engine.remoteParticipants().count();
 }
 
 std::shared_ptr<RemoteParticipant> Session::remoteParticipant(size_t index) const
 {
-    return _engine->remoteParticipants().at(index);
+    return _impl->_engine.remoteParticipants().at(index);
 }
 
 std::shared_ptr<RemoteParticipant> Session::remoteParticipant(const std::string& sid) const
 {
-    return _engine->remoteParticipants().at(sid);
+    return _impl->_engine.remoteParticipants().at(sid);
 }
 
 void Session::setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider)
 {
-    _engine->setAesCgmKeyProvider(std::move(provider));
+    _impl->_engine.setAesCgmKeyProvider(std::move(provider));
 }
 
 void Session::setAesCgmKeyProvider(KeyProviderOptions options)
@@ -150,79 +164,104 @@ void Session::setAesCgmKeyProvider(KeyProviderOptions options,
 
 void Session::enableAesCgmForLocalMedia(bool enable)
 {
-    _engine->enableAesCgmForLocalMedia(enable);
+    _impl->_engine.enableAesCgmForLocalMedia(enable);
 }
 
 bool Session::aesCgmEnabledForLocalMedia() const
 {
-    return _engine->aesCgmEnabledForLocalMedia();
+    return _impl->_engine.aesCgmEnabledForLocalMedia();
 }
 
 bool Session::sendUserPacket(std::string payload, bool reliable,
                              const std::vector<std::string>& destinationIdentities,
                              const std::string& topic)
 {
-    return _engine->sendUserPacket(std::move(payload), reliable,
-                                   destinationIdentities, topic);
+    return _impl->_engine.sendUserPacket(std::move(payload), reliable,
+                                         destinationIdentities, topic);
 }
 
 bool Session::sendChatMessage(std::string message, bool deleted)
 {
-    return _engine->sendChatMessage(std::move(message), deleted);
+    return _impl->_engine.sendChatMessage(std::move(message), deleted);
 }
 
 SessionState Session::state() const
 {
-    return _engine->state();
+    return _impl->_engine.state();
 }
 
 bool Session::connect(std::string host, std::string authToken)
 {
-    return _engine->connect(std::move(host), std::move(authToken));
+    return _impl->_engine.connect(std::move(host), std::move(authToken));
 }
 
 void Session::disconnect()
 {
-    _engine->disconnect();
+    _impl->_engine.disconnect();
 }
 
 void Session::setListener(SessionListener* listener)
 {
-    _engine->setListener(listener);
+    _impl->_engine.setListener(listener);
 }
 
 std::string Session::sid() const
 {
-    return _engine->localParticipant().sid();
+    return _impl->_engine.localParticipant().sid();
 }
 
 std::string Session::identity() const
 {
-    return _engine->localParticipant().identity();
+    return _impl->_engine.localParticipant().identity();
 }
 
 std::string Session::name() const
 {
-    return _engine->localParticipant().name();
+    return _impl->_engine.localParticipant().name();
 }
 
 std::string Session::metadata() const
 {
-    return _engine->localParticipant().metadata();
+    return _impl->_engine.localParticipant().metadata();
 }
 
 ParticipantKind Session::kind() const
 {
-    return _engine->localParticipant().kind();
+    return _impl->_engine.localParticipant().kind();
+}
+
+void Session::addListener(StatsListener* listener)
+{
+    _impl->_statsCollector->addListener(listener);
+}
+
+void Session::removeListener(StatsListener* listener)
+{
+    _impl->_statsCollector->removeListener(listener);
+}
+
+void Session::queryStats() const
+{
+    _impl->queryStats();
 }
 
 std::unique_ptr<KeyProvider> Session::createProvider(KeyProviderOptions options) const
 {
-    return std::make_unique<DefaultKeyProvider>(std::move(options), _engine->logger());
+    return std::make_unique<DefaultKeyProvider>(std::move(options), _impl->_engine.logger());
+}
+
+Session::Impl::Impl(Options options,
+                    PeerConnectionFactory* pcf,
+                    const Participant* session,
+                    std::unique_ptr<Websocket::EndPoint> socket,
+                    const std::shared_ptr<Bricks::Logger>& logger)
+    : _statsCollector(webrtc::make_ref_counted<StatsSourceImpl>())
+    , _engine(std::move(options), pcf, session, std::move(socket), logger)
+{
 }
 
 #else
-class RTCEngine {}; // stub
+struct Session::Impl {}; // stub
 
 Session::Session(std::unique_ptr<Websocket::EndPoint>, PeerConnectionFactory*,
                  Options, const std::shared_ptr<Bricks::Logger>&) {}
@@ -302,6 +341,12 @@ std::string Session::name() const { return {}; }
 std::string Session::metadata() const { return {}; }
 
 ParticipantKind Session::kind() const { return ParticipantKind::Standard; }
+
+void Session::addListener(StatsListener*) {}
+
+void Session::removdListener(StatsListener*) {}
+
+void Session::queryStats() const {}
 
 std::unique_ptr<KeyProvider> Session::createProvider(KeyProviderOptions) const { return {}; }
 #endif

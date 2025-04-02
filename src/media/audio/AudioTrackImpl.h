@@ -34,8 +34,7 @@ public:
     void setVolume(double volume) final;
 protected:
     AudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
-                   TrackManager* manager,
-                   const std::shared_ptr<Bricks::Logger>& logger);
+                   TrackManager* manager);
     webrtc::AudioSourceInterface* audioSource() const;
 private:
     AudioSinks _sinks;
@@ -43,9 +42,8 @@ private:
 
 template<class TTrackApi>
 inline AudioTrackImpl<TTrackApi>::AudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
-                                                 TrackManager* manager,
-                                                 const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(std::move(audioTrack), manager, logger)
+                                                 TrackManager* manager)
+    : Base(std::move(audioTrack), manager)
 {
 }
 

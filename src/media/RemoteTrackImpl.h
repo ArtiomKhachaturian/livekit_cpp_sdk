@@ -16,6 +16,7 @@
 #include "TrackManager.h"
 #include "rtc/TrackInfo.h"
 #include <api/scoped_refptr.h>
+#include <api/rtp_receiver_interface.h>
 #include <type_traits>
 
 namespace LiveKitCpp
@@ -28,6 +29,8 @@ class RemoteTrackImpl : public TBaseImpl
 {
     static_assert(std::is_base_of_v<Track, TBaseImpl>);
 public:
+    // impl. of StatsSource
+    void queryStats() const final;
     // impl. of Track
     EncryptionType encryption() const final { return _info._encryption; }
     BackupCodecPolicy backupCodecPolicy() const final { return _info._backupCodecPolicy; }
@@ -38,24 +41,34 @@ public:
 protected:
     template<class TWebRtcTrack>
     RemoteTrackImpl(const TrackInfo& info,
+                    const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                     webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
-                    TrackManager* manager,
-                    const std::shared_ptr<Bricks::Logger>& logger);
+                    TrackManager* manager);
     const auto& info() const noexcept { return _info; }
     void notifyAboutMuted(bool mute) const override;
 private:
     const TrackInfo _info;
+    const rtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;
 };
 
 template<class TBaseImpl>
 template<class TWebRtcTrack>
 inline RemoteTrackImpl<TBaseImpl>::RemoteTrackImpl(const TrackInfo& info,
+                                                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                                    webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
-                                                   TrackManager* manager,
-                                                   const std::shared_ptr<Bricks::Logger>& logger)
-    : TBaseImpl(std::move(mediaTrack), manager, logger)
+                                                   TrackManager* manager)
+    : TBaseImpl(std::move(mediaTrack), manager)
     , _info(info)
+    , _receiver(receiver)
 {
+}
+
+template<class TBaseImpl>
+inline void RemoteTrackImpl<TBaseImpl>::queryStats() const
+{
+    if (const auto m = TBaseImpl::manager()) {
+        m->queryStats(_receiver, TBaseImpl::statsCollector());
+    }
 }
 
 template<class TBaseImpl>

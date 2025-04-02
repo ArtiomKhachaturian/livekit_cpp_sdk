@@ -126,6 +126,15 @@ bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
     return _localDcs.sendChatMessage(std::move(message), deleted);
 }
 
+void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+{
+    if (callback) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->queryStats(callback);
+        }
+    }
+}
+
 std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalMicrophoneTrack()
 {
     auto track = RTCMediaEngine::addLocalMicrophoneTrack();
@@ -170,6 +179,26 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
         }
     }
     return media;
+}
+
+void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                           const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+{
+    if (receiver && callback) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->queryStats(receiver, callback);
+        }
+    }
+}
+
+void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                           const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+{
+    if (sender && callback) {
+        if (const auto pcManager = std::atomic_load(&_pcManager)) {
+            pcManager->queryStats(sender, callback);
+        }
+    }
 }
 
 RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const

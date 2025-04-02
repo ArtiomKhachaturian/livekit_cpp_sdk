@@ -32,19 +32,15 @@ public:
     void addSink(VideoTrackSink* sink) final;
     void removeSink(VideoTrackSink* sink) final;
 protected:
-    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack,
-                   TrackManager* manager,
-                   const std::shared_ptr<Bricks::Logger>& logger);
+    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack, TrackManager* manager);
 private:
     VideoSinks _sinks;
 };
 
 template<class TTrackApi, class TWebRtcTrack>
 inline VideoTrackImpl<TTrackApi, TWebRtcTrack>::
-    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack,
-                   TrackManager* manager,
-                   const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(std::move(videoTrack), manager, logger)
+    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack, TrackManager* manager)
+    : Base(std::move(videoTrack), manager)
 {
 }
 

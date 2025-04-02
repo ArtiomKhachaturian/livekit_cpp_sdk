@@ -11,17 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "RemoteVideoTrackImpl.h"
+#include "StatsSourceImpl.h"
 
 namespace LiveKitCpp
 {
 
-RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
-                                           const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                                           webrtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack,
-                                           TrackManager* manager)
-    : Base(info, receiver, std::move(videoTrack), manager)
+void StatsSourceImpl::addListener(StatsListener* listener)
 {
+    _listeners.add(listener);
+}
+
+void StatsSourceImpl::removeListener(StatsListener* listener)
+{
+    _listeners.remove(listener);
+}
+
+void StatsSourceImpl::OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& report)
+{
+    
 }
 
 } // namespace LiveKitCpp

@@ -25,9 +25,8 @@ namespace LiveKitCpp
 {
 
 LocalAudioTrackImpl::LocalAudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
-                                         TrackManager* manager, bool microphone,
-                                         const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(audioLabel(microphone), std::move(audioTrack), manager, logger)
+                                         TrackManager* manager, bool microphone)
+    : Base(audioLabel(microphone), std::move(audioTrack), manager)
     , _microphone(microphone)
 {
 }

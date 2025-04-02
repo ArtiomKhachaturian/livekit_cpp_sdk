@@ -17,10 +17,10 @@ namespace LiveKitCpp
 {
 
 RemoteAudioTrackImpl::RemoteAudioTrackImpl(const TrackInfo& info,
+                                           const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                            webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
-                                           TrackManager* manager,
-                                           const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(info, std::move(audioTrack), manager, logger)
+                                           TrackManager* manager)
+    : Base(info, receiver, std::move(audioTrack), manager)
 {
 }
 

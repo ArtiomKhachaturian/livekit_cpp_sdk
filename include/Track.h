@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Track.h
+#include "StatsSource.h"
 #include "rtc/TrackType.h"
 #include "rtc/TrackSource.h"
 #include "rtc/EncryptionType.h"
@@ -21,10 +22,10 @@
 namespace LiveKitCpp
 {
 
-class Track
+class Track : public StatsSource
 {
 public:
-    virtual ~Track() = default;
+    ~Track() override = default;
     virtual EncryptionType encryption() const = 0;
     virtual BackupCodecPolicy backupCodecPolicy() const { return BackupCodecPolicy::Regression; }
     // server track ID if any

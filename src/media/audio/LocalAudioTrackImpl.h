@@ -22,8 +22,7 @@ class LocalAudioTrackImpl : public LocalTrackImpl<AudioTrackImpl<>>
     using Base = LocalTrackImpl<AudioTrackImpl<>>;
 public:
     LocalAudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
-                        TrackManager* manager, bool microphone = true,
-                        const std::shared_ptr<Bricks::Logger>& logger = {});
+                        TrackManager* manager, bool microphone = true);
     // impl. of AudioTrack
     std::vector<AudioTrackFeature> features() const final;
     // impl. of LocalTrack

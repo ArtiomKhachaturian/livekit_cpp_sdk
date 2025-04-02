@@ -61,6 +61,11 @@ public:
     void addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     bool addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
                         const webrtc::RtpTransceiverInit& init = {});
+    // stats
+    void queryReceiverStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                            const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver = {}) const;
+    void querySenderStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                          const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender = {}) const;
     // SDP manipulations
     void createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});

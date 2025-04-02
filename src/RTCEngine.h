@@ -66,6 +66,7 @@ public:
                         const std::vector<std::string>& destinationIdentities = {},
                         const std::string& topic = {}) const;
     bool sendChatMessage(std::string message, bool deleted) const;
+    void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     // override of RTCMediaEngine
     std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack() final;
     std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(const CameraOptions& options) final;
@@ -73,6 +74,11 @@ public:
         removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track) final;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track) final;
+    // impl. of TrackManager
+    void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                    const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
+    void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                    const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
 protected:
     // impl. or overrides of RTCMediaEngine
     SendResult sendAddTrack(const AddTrackRequest& request) const final;

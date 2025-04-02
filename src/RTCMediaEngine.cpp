@@ -255,10 +255,10 @@ void RTCMediaEngine::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInter
                                          sender->id())) {
             cryptor->setObserver(_localParticipant);
             sender->SetFrameTransformer(std::move(cryptor));
-            track->notifyThatMediaAddedToTransport(true);
+            track->notifyThatMediaAddedToTransport(std::move(sender), true);
         }
         else {
-            track->notifyThatMediaAddedToTransport(false);
+            track->notifyThatMediaAddedToTransport(std::move(sender), false);
         }
         sendAddTrack(track);
     }

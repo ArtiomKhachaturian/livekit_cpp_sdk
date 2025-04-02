@@ -18,6 +18,7 @@
 #include "LiveKitClientExport.h"
 #include "Options.h"
 #include "SessionState.h"
+#include "StatsSource.h"
 #include "RemoteParticipant.h"
 #include "e2e/KeyProvider.h"
 #include "e2e/KeyProviderOptions.h"
@@ -39,11 +40,11 @@ namespace LiveKitCpp
 class RemoteParticipant;
 class SessionListener;
 class PeerConnectionFactory;
-class RTCEngine;
 
-class LIVEKIT_CLIENT_API Session : public Participant
+class LIVEKIT_CLIENT_API Session : public Participant, public StatsSource
 {
     friend class Service;
+    struct Impl;
 public:
     ~Session();
     // local media
@@ -119,13 +120,17 @@ public:
     std::string name() const final;
     std::string metadata() const final;
     ParticipantKind kind() const final;
+    // impl. of StatsSource
+    void addListener(StatsListener* listener) final;
+    void removeListener(StatsListener* listener) final;
+    void queryStats() const final;
 private:
     Session(std::unique_ptr<Websocket::EndPoint> socket,
             PeerConnectionFactory* pcf, Options options,
             const std::shared_ptr<Bricks::Logger>& logger = {});
     std::unique_ptr<KeyProvider> createProvider(KeyProviderOptions options) const;
 private:
-    const std::unique_ptr<RTCEngine> _engine;
+    const std::unique_ptr<Impl> _impl;
 };
 
 } // namespace LiveKitCpp

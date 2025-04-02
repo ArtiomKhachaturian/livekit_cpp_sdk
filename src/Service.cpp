@@ -104,8 +104,8 @@ private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     std::atomic<double> _recordingVolume = 0.2;
     std::atomic<double> _playoutVolume = 0.2;
-    std::atomic_bool _recordingMuted = false;
-    std::atomic_bool _playoutMuted = false;
+    std::atomic_bool _recordingMuted;
+    std::atomic_bool _playoutMuted;
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -199,24 +199,24 @@ void Service::setPlayoutVolume(double volume)
     _impl->setPlayoutVolume(volume);
 }
 
-void Service::setRecordingMute(bool mute)
+void Service::setAudioRecording(bool recording)
 {
-    _impl->setRecordingMute(mute);
+    _impl->setRecordingMute(!recording);
 }
 
-bool Service::recordingMuted() const
+bool Service::audioRecordingEnabled() const
 {
-    return _impl->recordingMuted();
+    return !_impl->recordingMuted();
 }
 
-void Service::setPlayoutMute(bool mute)
+void Service::setAudioPlayout(bool playout)
 {
-    _impl->setPlayoutMute(mute);
+    _impl->setPlayoutMute(!playout);
 }
 
-bool Service::playoutMuted() const
+bool Service::audioPlayoutEnabled() const
 {
-    return _impl->playoutMuted();
+    return !_impl->playoutMuted();
 }
 
 std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const
@@ -258,6 +258,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::create(true, microphoneOptions, logWebrtcEvents ? logger : nullptr))
 {
+    _recordingMuted = _playoutMuted = nullptr == _pcf;
     if (!_pcf) {
         logError("failed to create of peer connection factory");
     }
@@ -576,13 +577,13 @@ double Service::playoutVolume() const { return 0.; }
 
 void Service::setPlayoutVolume(double) {}
 
-void Service::setRecordingMute(bool) {}
+void Service::setAudioRecording(bool) {}
 
-bool Service::recordingMuted() const { return false; }
+bool Service::audioRecordingEnabled() const { return false; }
 
-void Service::setPlayoutMute(bool) {}
+void Service::setAudioPlayout(bool) {}
 
-bool Service::playoutMuted() const { return false; }
+bool Service::audioPlayoutEnabled() const { return false; }
 
 std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const { return {}; }
 

@@ -13,8 +13,15 @@
 // limitations under the License.
 #pragma once // TrackManager.h
 #include "rtc/EncryptionType.h"
+#include <api/scoped_refptr.h>
 #include <optional>
 #include <string>
+
+namespace webrtc {
+class RtpReceiverInterface;
+class RtpSenderInterface;
+class RTCStatsCollectorCallback;
+}
 
 namespace LiveKitCpp
 {
@@ -25,6 +32,10 @@ public:
     virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
     virtual std::optional<bool> stereoRecording() const = 0;
     virtual EncryptionType localEncryptionType() const = 0;
+    virtual void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                            const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;
+    virtual void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                            const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;
 protected:
     virtual ~TrackManager() = default;
 };

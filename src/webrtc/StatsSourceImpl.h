@@ -11,17 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "RemoteVideoTrackImpl.h"
+#pragma once // StatsSourceImpl.h
+#include "Listeners.h"
+#include "StatsListener.h"
+#include <api/stats/rtc_stats_collector_callback.h>
 
 namespace LiveKitCpp
 {
 
-RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
-                                           const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                                           webrtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack,
-                                           TrackManager* manager)
-    : Base(info, receiver, std::move(videoTrack), manager)
+class StatsSourceImpl : public webrtc::RTCStatsCollectorCallback
 {
-}
+public:
+    StatsSourceImpl() = default;
+    // impl. of StatsSource
+    void addListener(StatsListener* listener);
+    void removeListener(StatsListener* listener);
+    void clearListeners() { _listeners.clear(); }
+    // impl. of webrtc::RTCStatsCollectorCallback
+    void OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& report) final;
+private:
+    Bricks::Listeners<StatsListener*> _listeners;
+};
 
 } // namespace LiveKitCpp

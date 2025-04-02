@@ -16,6 +16,10 @@
 #include <api/media_types.h>
 #include <string>
 
+namespace webrtc {
+class RtpSenderInterface;
+}
+
 namespace LiveKitCpp
 {
 
@@ -34,7 +38,8 @@ public:
     virtual bool fillRequest(AddTrackRequest* request) const = 0;
     // transport layer
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const = 0;
-    virtual void notifyThatMediaAddedToTransport(bool encryption) = 0;
+    virtual void notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender,
+                                                 bool encryption) = 0;
     virtual void notifyThatMediaRemovedFromTransport() = 0;
     // state
     virtual bool muted() const = 0;
