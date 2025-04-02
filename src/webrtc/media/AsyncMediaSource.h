@@ -90,7 +90,7 @@ template <class Method, typename... Args>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::
     postToImpl(Method method, Args&&... args) const
 {
-    postOrInvoke(signalingQueue(), _impl, false, method, std::forward<Args>(args)...);
+    postOrInvokeW(signalingQueue(), _impl, false, method, std::forward<Args>(args)...);
 }
 
 } // namespace LiveKitCpp

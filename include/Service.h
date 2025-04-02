@@ -69,6 +69,11 @@ public:
     // normalized volume in range [0...1]
     double playoutVolume() const;
     void setPlayoutVolume(double volume);
+    // mute/unmute for speakers & microphone
+    void setRecordingMute(bool mute);
+    bool recordingMuted() const;
+    void setPlayoutMute(bool mute);
+    bool playoutMuted() const;
     // enumeration
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;

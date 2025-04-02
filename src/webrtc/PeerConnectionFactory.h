@@ -72,6 +72,8 @@ public:
     // volume in range [0...1]
     void setMicrophoneVolume(double volume);
     void setSpeakerVolume(double volume);
+    void setRecordingMute(bool mute);
+    void setPlayoutMute(bool mute);
     void registerAdmRecordingListener(AdmProxyListener* l, bool reg);
     void registerAdmPlayoutListener(AdmProxyListener* l, bool reg);
     // impl. of webrtc::PeerConnectionFactoryInterface
@@ -99,6 +101,9 @@ protected:
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
                           webrtc::scoped_refptr<AdmProxy> admProxy,
                           const MicrophoneOptions& microphoneOptions);
+private:
+    template <class Method, typename... Args>
+    void postAdmTask(Method method, Args&&... args) const;
 private:
     const std::shared_ptr<webrtc::TaskQueueBase> _eventsQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;

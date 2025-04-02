@@ -84,20 +84,20 @@ inline void postOrInvoke(webrtc::TaskQueueBase* queue,
 }
 
 template<class TListener, class Method, typename... Args>
-inline void postOrInvoke(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
-                         const std::shared_ptr<TListener>& listener,
-                         bool forcePost, Method method, Args&&... args)
+inline void postOrInvokeS(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
+                          const std::shared_ptr<TListener>& listener,
+                          bool forcePost, Method method, Args&&... args)
 {
     postOrInvoke(queue.get(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
 }
 
 template <class TListener, class Method, typename... Args>
-inline void postOrInvoke(const std::weak_ptr<webrtc::TaskQueueBase>& queue,
-                         const std::shared_ptr<TListener>& listener,
-                         bool forcePost, Method method, Args&&... args)
+inline void postOrInvokeW(const std::weak_ptr<webrtc::TaskQueueBase>& queue,
+                          const std::shared_ptr<TListener>& listener,
+                          bool forcePost, Method method, Args&&... args)
 {
     if (listener) {
-        postOrInvoke(queue.lock(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
+        postOrInvokeS(queue.lock(), listener, forcePost, std::move(method), std::forward<Args>(args)...);
     }
 }
 

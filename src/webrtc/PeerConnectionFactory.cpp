@@ -106,6 +106,8 @@ public:
     bool setPlayoutDevice(const MediaDeviceInfo& info);
     bool setMicrophoneVolume(double volume);
     bool setSpeakerVolume(double volume);
+    bool setRecordingMute(bool mute);
+    bool setPlayoutMute(bool mute);
     // impl. of AdmProxyFacade
     void registerRecordingSink(webrtc::AudioTrackSinkInterface* sink, bool reg) final;
     void registerRecordingListener(AdmProxyListener* l, bool reg) final;
@@ -271,24 +273,22 @@ std::vector<MediaDeviceInfo> PeerConnectionFactory::playoutAudioDevices() const
 
 void PeerConnectionFactory::setMicrophoneVolume(double volume)
 {
-    if (_admProxy) {
-        postTask(_workingThread, [volume, admRef = AdmFW(_admProxy)]() {
-            if (const auto adm = admRef.lock()) {
-                adm->setMicrophoneVolume(volume);
-            }
-        });
-    }
+    postAdmTask(&AdmFacade::setMicrophoneVolume, volume);
 }
 
 void PeerConnectionFactory::setSpeakerVolume(double volume)
 {
-    if (_admProxy) {
-        postTask(_workingThread, [volume, admRef = AdmFW(_admProxy)]() {
-            if (const auto adm = admRef.lock()) {
-                adm->setSpeakerVolume(volume);
-            }
-        });
-    }
+    postAdmTask(&AdmFacade::setSpeakerVolume, volume);
+}
+
+void PeerConnectionFactory::setRecordingMute(bool mute)
+{
+    postAdmTask(&AdmFacade::setRecordingMute, mute);
+}
+
+void PeerConnectionFactory::setPlayoutMute(bool mute)
+{
+    postAdmTask(&AdmFacade::setPlayoutMute, mute);
 }
 
 void PeerConnectionFactory::registerAdmRecordingListener(AdmProxyListener* l, bool reg)
@@ -368,6 +368,16 @@ void PeerConnectionFactory::StopAecDump()
     _innerImpl->StopAecDump();
 }
 
+template <class Method, typename... Args>
+void PeerConnectionFactory::postAdmTask(Method method, Args&&... args) const
+{
+    if (_admProxy) {
+        postOrInvokeS(_workingThread, _admProxy, true,
+                      std::move(method),
+                      std::forward<Args>(args)...);
+    }
+}
+
 PeerConnectionFactory::AdmFacade::AdmFacade(webrtc::scoped_refptr<AdmProxy> admProxy,
                                             cricket::AudioOptions options)
     : _admProxy(std::move(admProxy))
@@ -393,6 +403,16 @@ bool PeerConnectionFactory::AdmFacade::setMicrophoneVolume(double volume)
 bool PeerConnectionFactory::AdmFacade::setSpeakerVolume(double volume)
 {
     return _admProxy->setSpeakerVolume(volume);
+}
+
+bool PeerConnectionFactory::AdmFacade::setRecordingMute(bool mute)
+{
+    return 0 == _admProxy->SetMicrophoneMute(mute);
+}
+
+bool PeerConnectionFactory::AdmFacade::setPlayoutMute(bool mute)
+{
+    return 0 == _admProxy->SetSpeakerMute(mute);
 }
 
 void PeerConnectionFactory::AdmFacade::registerRecordingSink(webrtc::AudioTrackSinkInterface* sink,

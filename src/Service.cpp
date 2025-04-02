@@ -65,10 +65,14 @@ public:
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
-    double microphoneVolume() const noexcept { return _microphoneVolume; }
-    double speakerVolume() const noexcept { return _speakerVolume; }
-    void setMicrophoneVolume(double volume);
-    void setSpeakerVolume(double volume);
+    double recordingVolume() const noexcept { return _recordingVolume; }
+    double playoutVolume() const noexcept { return _playoutVolume; }
+    void setRecordingVolumeVolume(double volume);
+    void setPlayoutVolume(double volume);
+    void setRecordingMute(bool mute);
+    bool recordingMuted() const { return _recordingMuted; }
+    void setPlayoutMute(bool mute);
+    bool playoutMuted() const { return _playoutMuted; }
     std::unique_ptr<Session> createSession(Options options) const;
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -77,15 +81,20 @@ public:
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
     // overrides of AdmProxyListener
-    void onStarted(bool recording) final { updateAdmVolume(recording); }
+    void onStarted(bool recording) final;
     void onMinMaxVolumeChanged(bool recording, uint32_t, uint32_t) final;
     void onDeviceChanged(bool recording, const MediaDeviceInfo& info);
 protected:
-    void updateMicrophoneVolume(double volume);
-    void updateMicrophoneVolume() { updateMicrophoneVolume(_microphoneVolume); }
-    void updateSpeakerVolume(double volume);
-    void updateSpeakerVolume() { updateSpeakerVolume(_speakerVolume); }
-    void updateAdmVolume(bool recording);
+    void updateAdmVolume(bool recording, double volume) const;
+    void updateAdmMute(bool recording, bool mute) const;
+    void updateRecordingVolume(double volume) const { updateAdmVolume(true, volume); }
+    void updateRecordingMute(bool mute) const { updateAdmMute(true, mute); }
+    void updateRecordingVolume() const { updateRecordingVolume(recordingVolume()); }
+    void updateRecordingMute() const { updateRecordingMute(recordingMuted()); }
+    void updatePlayoutVolume(double volume) const { updateAdmVolume(false, volume); }
+    void updatePlayoutMute(bool mute) const { updateAdmMute(false, mute); }
+    void updatePlayoutVolume() const { updatePlayoutVolume(playoutVolume()); }
+    void updatePlayoutMute() const { updatePlayoutMute(playoutMuted()); }
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final { return g_logCategory; }
 private:
@@ -93,8 +102,10 @@ private:
 private:
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    std::atomic<double> _microphoneVolume = 0.2;
-    std::atomic<double> _speakerVolume = 0.2;
+    std::atomic<double> _recordingVolume = 0.2;
+    std::atomic<double> _playoutVolume = 0.2;
+    std::atomic_bool _recordingMuted = false;
+    std::atomic_bool _playoutMuted = false;
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -160,12 +171,12 @@ MediaDeviceInfo Service::recordingAudioDevice() const
 
 double Service::recordingVolume() const
 {
-    return _impl->microphoneVolume();
+    return _impl->recordingVolume();
 }
 
 void Service::setRecordingVolume(double volume)
 {
-    _impl->setMicrophoneVolume(volume);
+    _impl->setRecordingVolumeVolume(volume);
 }
 
 bool Service::setPlayoutAudioDevice(const MediaDeviceInfo& info)
@@ -180,12 +191,32 @@ MediaDeviceInfo Service::playoutAudioDevice() const
 
 double Service::playoutVolume() const
 {
-    return _impl->speakerVolume();
+    return _impl->playoutVolume();
 }
 
 void Service::setPlayoutVolume(double volume)
 {
-    _impl->setSpeakerVolume(volume);
+    _impl->setPlayoutVolume(volume);
+}
+
+void Service::setRecordingMute(bool mute)
+{
+    _impl->setRecordingMute(mute);
+}
+
+bool Service::recordingMuted() const
+{
+    return _impl->recordingMuted();
+}
+
+void Service::setPlayoutMute(bool mute)
+{
+    _impl->setPlayoutMute(mute);
+}
+
+bool Service::playoutMuted() const
+{
+    return _impl->playoutMuted();
 }
 
 std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const
@@ -313,17 +344,31 @@ std::vector<MediaDeviceInfo> Service::Impl::playoutAudioDevices() const
     return {};
 }
 
-void Service::Impl::setMicrophoneVolume(double volume)
+void Service::Impl::setRecordingVolumeVolume(double volume)
 {
-    if (_pcf && exchangeVal(volume, _microphoneVolume)) {
-        updateMicrophoneVolume(volume);
+    if (_pcf && exchangeVal(volume, _recordingVolume)) {
+        updateRecordingVolume(volume);
     }
 }
 
-void Service::Impl::setSpeakerVolume(double volume)
+void Service::Impl::setPlayoutVolume(double volume)
 {
-    if (_pcf && exchangeVal(volume, _speakerVolume)) {
-        updateSpeakerVolume(volume);
+    if (_pcf && exchangeVal(volume, _playoutVolume)) {
+        updatePlayoutVolume(volume);
+    }
+}
+
+void Service::Impl::setRecordingMute(bool mute)
+{
+    if (_pcf && exchangeVal(mute, _recordingMuted)) {
+        updateRecordingMute(mute);
+    }
+}
+
+void Service::Impl::setPlayoutMute(bool mute)
+{
+    if (_pcf && exchangeVal(mute, _playoutMuted)) {
+        updatePlayoutMute(mute);
     }
 }
 
@@ -383,9 +428,26 @@ std::unique_ptr<Service::Impl> Service::Impl::
     return {};
 }
 
+void Service::Impl::onStarted(bool recording)
+{
+    if (recording) {
+        updateRecordingVolume();
+        updateRecordingMute();
+    }
+    else {
+        updatePlayoutVolume();
+        updatePlayoutMute();
+    }
+}
+
 void Service::Impl::onMinMaxVolumeChanged(bool recording, uint32_t, uint32_t)
 {
-    updateAdmVolume(recording);
+    if (recording) {
+        updateRecordingVolume();
+    }
+    else {
+        updatePlayoutVolume();
+    }
 }
 
 void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
@@ -400,27 +462,27 @@ void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
     }
 }
 
-void Service::Impl::updateMicrophoneVolume(double volume)
+void Service::Impl::updateAdmVolume(bool recording, double volume) const
 {
     if (_pcf) {
-        _pcf->setMicrophoneVolume(volume);
+        if (recording) {
+            _pcf->setMicrophoneVolume(volume);
+        }
+        else {
+            _pcf->setSpeakerVolume(volume);
+        }
     }
 }
 
-void Service::Impl::updateSpeakerVolume(double volume)
+void Service::Impl::updateAdmMute(bool recording, bool mute) const
 {
     if (_pcf) {
-        _pcf->setSpeakerVolume(volume);
-    }
-}
-
-void Service::Impl::updateAdmVolume(bool recording)
-{
-    if (recording) {
-        updateMicrophoneVolume();
-    }
-    else {
-        updateSpeakerVolume();
+        if (recording) {
+            _pcf->setRecordingMute(mute);
+        }
+        else {
+            _pcf->setPlayoutMute(mute);
+        }
     }
 }
 
@@ -513,6 +575,14 @@ MediaDeviceInfo Service::playoutAudioDevice() const { return {}; }
 double Service::playoutVolume() const { return 0.; }
 
 void Service::setPlayoutVolume(double) {}
+
+void Service::setRecordingMute(bool) {}
+
+bool Service::recordingMuted() const { return false; }
+
+void Service::setPlayoutMute(bool) {}
+
+bool Service::playoutMuted() const { return false; }
 
 std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const { return {}; }
 
