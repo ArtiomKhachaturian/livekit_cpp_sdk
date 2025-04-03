@@ -23,7 +23,7 @@
 namespace LiveKitCpp
 {
 
-struct StatsReportData;
+class StatsData;
 
 class LIVEKIT_CLIENT_API Stats
 {
@@ -40,7 +40,8 @@ public:
     const std::string& id() const;
     // Unix time in milliseconds
     std::chrono::time_point<std::chrono::system_clock> timestamp() const;
-    std::string_view type() const;
+    StatsType type() const;
+    std::string_view name() const;
     // Creates a JSON readable string representation of the stats
     // object, listing all of its attributes (names and values).
     std::string json() const;
@@ -48,10 +49,9 @@ public:
     // metrics as viewed via the Attribute wrapper.
     std::vector<StatsAttribute> attributes() const;
 private:
-    Stats(const void* stats, const std::shared_ptr<StatsReportData>& data);
+    Stats(const StatsData* stats);
 private:
-    const void* _stats = nullptr;
-    std::shared_ptr<StatsReportData> _data;
+    std::shared_ptr<const StatsData> _stats;
 };
 
 } // namespace LiveKitCpp

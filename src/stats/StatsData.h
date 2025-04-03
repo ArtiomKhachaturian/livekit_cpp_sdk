@@ -11,34 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // StatsType.h
-#include "LiveKitClientExport.h"
-#include <string>
+#pragma once // StatsData.h
+#include "stats/StatsType.h"
+
+namespace webrtc {
+class RTCStats;
+}
 
 namespace LiveKitCpp
 {
 
-// https://www.w3.org/TR/webrtc-stats/#rtcstatstype-str*
-enum class StatsType
+class StatsData
 {
-    Uknown,
-    Codec,
-    InboundRtp,
-    OutboundRtp,
-    RemoteInboundRtp,
-    RemoteOutboundRtp,
-    MediaSource,
-    MediaPlayout,
-    PeerConnection,
-    DataChannel,
-    Transport,
-    CandidatePair,
-    LocalCandidate,
-    RemoteCandidate,
-    Certificate
+public:
+    virtual ~StatsData() = default;
+    virtual const webrtc::RTCStats* rtcStats() const = 0;
+    virtual StatsType type() const;
 };
-
-LIVEKIT_CLIENT_API std::string toString(StatsType type);
-LIVEKIT_CLIENT_API StatsType toStatsType(std::string_view type);
 
 } // namespace LiveKitCpp

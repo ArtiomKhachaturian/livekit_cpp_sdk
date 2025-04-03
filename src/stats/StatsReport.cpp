@@ -13,18 +13,19 @@
 // limitations under the License.
 #include "stats/StatsReport.h"
 #include "StatsReportData.h"
+#include "StatsDataImpl.h"
 #include "Utils.h"
 #include <cassert>
 
 namespace
 {
 
+using namespace LiveKitCpp;
+
 #ifdef WEBRTC_AVAILABLE
-inline std::chrono::time_point<std::chrono::system_clock> map(const webrtc::Timestamp& t) {
-    using namespace std::chrono;
-    const auto us = duration_cast<system_clock::duration>(nanoseconds(t.us()));
-    return time_point<system_clock>(us);
-}
+std::chrono::time_point<std::chrono::system_clock> map(const webrtc::Timestamp& t);
+const webrtc::RTCStats* getRtcStats(const std::shared_ptr<const StatsData>& stats);
+StatsData* make(const webrtc::RTCStats* stats, const std::shared_ptr<const StatsReportData>& data);
 #endif
 
 struct VisitIsSequence
@@ -133,7 +134,7 @@ Stats StatsReport::get(const std::string& id) const
 #ifdef WEBRTC_AVAILABLE
     if (_data && _data->_data) {
         if (const auto stats = _data->_data->Get(id)) {
-            return Stats(stats, _data);
+            return Stats(make(stats, _data));
         }
     }
 #endif
@@ -147,7 +148,7 @@ Stats StatsReport::get(size_t index) const
         size_t i = 0U;
         for (auto it = _data->_data->begin(); it != _data->_data->end(); ++it, ++i) {
             if (i == index) {
-                return Stats(it.operator->(), _data);
+                return Stats(make(it.operator->(), _data));
             }
         }
     }
@@ -165,23 +166,20 @@ std::string StatsReport::json() const
     return {};
 }
 
-Stats::Stats(const void* stats, const std::shared_ptr<StatsReportData>& data)
+Stats::Stats(const StatsData* stats)
     : _stats(stats)
-    , _data(data)
 {
 }
 
 Stats::Stats(const Stats& src) noexcept
     : _stats(src._stats)
-    , _data(src._data)
 {
 }
 
 Stats::Stats(Stats&& tmp) noexcept
-    : _stats(tmp._stats)
-    , _data(std::move(tmp._data))
+    : _stats(std::move(tmp._stats))
 {
-    tmp._stats = nullptr;
+    tmp._stats.reset();
 }
 
 Stats::~Stats()
@@ -192,7 +190,6 @@ Stats& Stats::operator = (const Stats& src) noexcept
 {
     if (&src != this) {
         _stats = src._stats;
-        _data = src._data;
     }
     return *this;
 }
@@ -200,22 +197,21 @@ Stats& Stats::operator = (const Stats& src) noexcept
 Stats& Stats::operator = (Stats&& tmp) noexcept
 {
     if (&tmp != this) {
-        _stats = tmp._stats;
-        _data = std::move(tmp._data);
-        tmp._stats = nullptr;
+        _stats = std::move(tmp._stats);
+        tmp._stats.reset();
     }
     return *this;
 }
 
 bool Stats::valid() const noexcept
 {
-    return nullptr != _stats;
+    return nullptr != getRtcStats(_stats);
 }
 
 const std::string& Stats::id() const
 {
 #ifdef WEBRTC_AVAILABLE
-    if (const auto stats = reinterpret_cast<const webrtc::RTCStats*>(_stats)) {
+    if (const auto stats = getRtcStats(_stats)) {
         return stats->id();
     }
 #endif
@@ -225,17 +221,27 @@ const std::string& Stats::id() const
 std::chrono::time_point<std::chrono::system_clock> Stats::timestamp() const
 {
 #ifdef WEBRTC_AVAILABLE
-    if (const auto stats = reinterpret_cast<const webrtc::RTCStats*>(_stats)) {
+    if (const auto stats = getRtcStats(_stats)) {
         return map(stats->timestamp());
     }
 #endif
     return {};
 }
 
-std::string_view Stats::type() const
+StatsType Stats::type() const
 {
 #ifdef WEBRTC_AVAILABLE
-    if (const auto stats = reinterpret_cast<const webrtc::RTCStats*>(_stats)) {
+    if (_stats) {
+        return _stats->type();
+    }
+#endif
+    return StatsType::Uknown;
+}
+
+std::string_view Stats::name() const
+{
+#ifdef WEBRTC_AVAILABLE
+    if (const auto stats = getRtcStats(_stats)) {
         return stats->type();
     }
 #endif
@@ -245,7 +251,7 @@ std::string_view Stats::type() const
 std::string Stats::json() const
 {
 #ifdef WEBRTC_AVAILABLE
-    if (const auto stats = reinterpret_cast<const webrtc::RTCStats*>(_stats)) {
+    if (const auto stats = getRtcStats(_stats)) {
         return stats->ToJson();
     }
 #endif
@@ -255,7 +261,7 @@ std::string Stats::json() const
 std::vector<StatsAttribute> Stats::attributes() const
 {
 #ifdef WEBRTC_AVAILABLE
-    if (const auto stats = reinterpret_cast<const webrtc::RTCStats*>(_stats)) {
+    if (const auto stats = getRtcStats(_stats)) {
         auto rtcAttributes = stats->Attributes();
         if (const auto s = rtcAttributes.size()) {
             std::vector<StatsAttribute> attributes;
@@ -315,7 +321,7 @@ bool StatsAttribute::operator == (const StatsAttribute& other) const
 
 bool StatsAttribute::operator != (const StatsAttribute& other) const
 {
-    return _value != other._value;
+    return &other != this || _value != other._value;
 }
 
 std::string toString(StatsType type)
@@ -358,7 +364,15 @@ std::string toString(StatsType type)
     return {};
 }
 
-StatsType fromString(std::string_view type)
+StatsType StatsData::type() const
+{
+    if (const auto stats = rtcStats()) {
+        return toStatsType(stats->id());
+    }
+    return StatsType::Uknown;
+}
+
+StatsType toStatsType(std::string_view type)
 {
     if (!type.empty()) {
         static const StatsType statTypes [] = {
@@ -432,5 +446,31 @@ std::string VisitToString::join(const std::vector<std::string>& strings)
 {
     return LiveKitCpp::join(strings, ",", false);
 }
+
+#ifdef WEBRTC_AVAILABLE
+std::chrono::time_point<std::chrono::system_clock> map(const webrtc::Timestamp& t)
+{
+    using namespace std::chrono;
+    const auto us = duration_cast<system_clock::duration>(nanoseconds(t.us()));
+    return time_point<system_clock>(us);
+}
+
+const webrtc::RTCStats* getRtcStats(const std::shared_ptr<const StatsData>& stats)
+{
+    if (stats) {
+        return stats->rtcStats();
+    }
+    return nullptr;
+}
+
+StatsData* make(const webrtc::RTCStats* stats,
+                const std::shared_ptr<const StatsReportData>& data)
+{
+    if (stats) {
+        return new StatsDataImpl<webrtc::RTCStats>(stats, data);
+    }
+    return nullptr;
+}
+#endif
 
 }
