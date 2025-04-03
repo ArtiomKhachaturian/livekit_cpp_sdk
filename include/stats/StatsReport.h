@@ -27,6 +27,7 @@ class LIVEKIT_CLIENT_API StatsReport
 {
     friend class StatsSourceImpl;
 public:
+    StatsReport() = default;
     StatsReport(const StatsReport& src) noexcept;
     StatsReport(StatsReport&& tmp) noexcept;
     ~StatsReport();
@@ -41,6 +42,7 @@ public:
     // Creates a JSON readable string representation of the report,
     // listing all of its stats objects.
     std::string json() const;
+    explicit operator bool() const { return size() > 0U; }
 private:
     StatsReport(StatsReportData* data) noexcept;
 private:

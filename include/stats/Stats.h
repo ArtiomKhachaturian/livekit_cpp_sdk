@@ -13,7 +13,8 @@
 // limitations under the License.
 #pragma once // Stats.h
 #include "LiveKitClientExport.h"
-#include "StatsAttribute.h"
+#include "stats/StatsAttribute.h"
+#include "stats/StatsType.h"
 #include <chrono>
 #include <memory>
 #include <string>

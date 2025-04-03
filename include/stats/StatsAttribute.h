@@ -45,7 +45,7 @@ public:
     StatsAttribute() = default;
     std::string_view name() const;
     bool valid() const;
-    explicit operator bool() const noexcept { return valid(); }
+    explicit operator bool() const { return valid(); }
     template<typename T>
     bool isType() const { return std::holds_alternative<const std::optional<T>*>(_value); }
     template<typename T>

@@ -14,6 +14,7 @@
 #include "stats/StatsReport.h"
 #include "StatsReportData.h"
 #include "Utils.h"
+#include <cassert>
 
 namespace
 {
@@ -315,6 +316,74 @@ bool StatsAttribute::operator == (const StatsAttribute& other) const
 bool StatsAttribute::operator != (const StatsAttribute& other) const
 {
     return _value != other._value;
+}
+
+std::string toString(StatsType type)
+{
+    switch (type) {
+        case StatsType::Uknown:
+            break;
+        case StatsType::Codec:
+            return "codec";
+        case StatsType::InboundRtp:
+            return "inbound-rtp";
+        case StatsType::OutboundRtp:
+            return "outbound-rtp";
+        case StatsType::RemoteInboundRtp:
+            return "remote-inbound-rtp";
+        case StatsType::RemoteOutboundRtp:
+            return "remote-outbound-rtp";
+        case StatsType::MediaSource:
+            return "media-source";
+        case StatsType::MediaPlayout:
+            return "media-playout";
+        case StatsType::PeerConnection:
+            return "peer-connection";
+        case StatsType::DataChannel:
+            return "data-channel";
+        case StatsType::Transport:
+            return "transport";
+        case StatsType::CandidatePair:
+            return "candidate-pair";
+        case StatsType::LocalCandidate:
+            return "local-candidate";
+        case StatsType::RemoteCandidate:
+            return "remote-candidate";
+        case StatsType::Certificate:
+            return "certificate";
+        default:
+            assert(false);
+            break;
+    }
+    return {};
+}
+
+StatsType fromString(std::string_view type)
+{
+    if (!type.empty()) {
+        static const StatsType statTypes [] = {
+            StatsType::Codec,
+            StatsType::InboundRtp,
+            StatsType::OutboundRtp,
+            StatsType::RemoteInboundRtp,
+            StatsType::RemoteOutboundRtp,
+            StatsType::MediaSource,
+            StatsType::MediaPlayout,
+            StatsType::PeerConnection,
+            StatsType::DataChannel,
+            StatsType::Transport,
+            StatsType::CandidatePair,
+            StatsType::LocalCandidate,
+            StatsType::RemoteCandidate,
+            StatsType::Certificate
+        };
+        for (auto statType : statTypes) {
+            if (compareCaseSensitive(type, toString(statType))) {
+                return statType;
+            }
+        }
+    }
+    return StatsType::Uknown;
 }
 
 } // namespace LiveKitCpp
