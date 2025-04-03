@@ -11,29 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // StatsSourceImpl.h
+#pragma once // StatsReportData.h
 #ifdef WEBRTC_AVAILABLE
-#include "Listeners.h"
-#include <api/stats/rtc_stats_collector_callback.h>
+#include <api/stats/rtc_stats_report.h>
+#include <api/scoped_refptr.h>
+#endif
 
 namespace LiveKitCpp
 {
 
-class StatsListener;
-
-class StatsSourceImpl : public webrtc::RTCStatsCollectorCallback
+struct StatsReportData
 {
-public:
-    StatsSourceImpl() = default;
-    // impl. of StatsSource
-    void addListener(StatsListener* listener);
-    void removeListener(StatsListener* listener);
-    void clearListeners() { _listeners.clear(); }
-    // impl. of webrtc::RTCStatsCollectorCallback
-    void OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& rtcReport) final;
-private:
-    Bricks::Listeners<StatsListener*> _listeners;
+#ifdef WEBRTC_AVAILABLE
+    webrtc::scoped_refptr<const webrtc::RTCStatsReport> _data;
+#endif
 };
 
 } // namespace LiveKitCpp
-#endif

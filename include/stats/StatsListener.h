@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsListener.h
+#include "stats/StatsReport.h"
 
 namespace LiveKitCpp
 {
@@ -19,7 +20,7 @@ namespace LiveKitCpp
 class StatsListener
 {
 public:
-    
+    virtual void onStats(const StatsReport& report) = 0;
 protected:
     virtual ~StatsListener() = default;
 };

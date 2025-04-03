@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "StatsSourceImpl.h"
+#ifdef WEBRTC_AVAILABLE
+#include "stats/StatsListener.h"
+#include "StatsReportData.h"
 
 namespace LiveKitCpp
 {
@@ -26,9 +29,13 @@ void StatsSourceImpl::removeListener(StatsListener* listener)
     _listeners.remove(listener);
 }
 
-void StatsSourceImpl::OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& report)
+void StatsSourceImpl::OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& rtcReport)
 {
-    
+    if (rtcReport && _listeners && rtcReport->size()) {
+        const StatsReport report(new StatsReportData{rtcReport});
+        _listeners.invoke(&StatsListener::onStats, report);
+    }
 }
 
 } // namespace LiveKitCpp
+#endif
