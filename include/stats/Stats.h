@@ -14,6 +14,12 @@
 #pragma once // Stats.h
 #include "LiveKitClientExport.h"
 #include "stats/StatsAttribute.h"
+#include "stats/StatsCertificateExt.h"
+#include "stats/StatsCodecExt.h"
+#include "stats/StatsDataChannelExt.h"
+#include "stats/StatsIceCandidateExt.h"
+#include "stats/StatsIceCandidatePairExt.h"
+#include "stats/StatsPeerConnectionExt.h"
 #include "stats/StatsType.h"
 #include <chrono>
 #include <memory>
@@ -48,6 +54,19 @@ public:
     // Returns all attributes of this stats object, i.e. a list of its individual
     // metrics as viewed via the Attribute wrapper.
     std::vector<StatsAttribute> attributes() const;
+    // specific data, see also StatsType description
+    // StatsType::Codec
+    std::shared_ptr<const StatsCodecExt> codec() const;
+    // StatsType::Certificate
+    std::shared_ptr<const StatsCertificateExt> certificate() const;
+    // StatsType::DataChannel
+    std::shared_ptr<const StatsDataChannelExt> dataChannel() const;
+    // StatsType::LocalCandidate & StatsType::RemoteCandidate
+    std::shared_ptr<const StatsIceCandidateExt> iceCandidate() const;
+    // StatsType::CandidatePair
+    std::shared_ptr<const StatsIceCandidatePairExt> iceCandidatePair() const;
+    // StatsType::PeerConnection
+    std::shared_ptr<const StatsPeerConnectionExt> peerConnection() const;
 private:
     Stats(const StatsData* stats);
 private:

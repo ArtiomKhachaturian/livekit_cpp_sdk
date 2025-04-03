@@ -12,20 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsDataImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "StatsData.h"
 #include "StatsReportData.h"
+#include <api/stats/rtcstats_objects.h>
 #include <type_traits>
 
 namespace LiveKitCpp
 {
 
-template<class TRtcStats>
-class StatsDataImpl : public StatsData
+template<class TRtcStats, class... BaseInterface>
+class StatsDataImpl : public StatsData, public BaseInterface...
 {
     static_assert(std::is_base_of_v<webrtc::RTCStats, TRtcStats>);
 public:
     StatsDataImpl(const TRtcStats* stats,
                   const std::shared_ptr<const StatsReportData>& data);
+    ~StatsDataImpl() override = default;
     // final
     const webrtc::RTCStats* rtcStats() const final { return _stats; }
 protected:
@@ -34,12 +37,14 @@ private:
     const std::shared_ptr<const StatsReportData> _data;
 };
 
-template<class TRtcStats>
-inline StatsDataImpl<TRtcStats>::StatsDataImpl(const TRtcStats* stats,
-                                               const std::shared_ptr<const StatsReportData>& data)
+template<class TRtcStats, class... BaseInterface>
+inline StatsDataImpl<TRtcStats, BaseInterface...>::
+    StatsDataImpl(const TRtcStats* stats,
+                  const std::shared_ptr<const StatsReportData>& data)
     : _stats(stats)
     , _data(data)
 {
 }
 
 } // namespace LiveKitCpp
+#endif

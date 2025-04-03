@@ -13,7 +13,14 @@
 // limitations under the License.
 #include "stats/StatsReport.h"
 #include "StatsReportData.h"
-#include "StatsDataImpl.h"
+#ifdef WEBRTC_AVAILABLE
+#include "StatsCertificateImpl.h"
+#include "StatsCodecImpl.h"
+#include "StatsDataChannelImpl.h"
+#include "StatsIceCandidatePairImpl.h"
+#include "StatsIceCandidateImpl.h"
+#include "StatsPeerConnectionImpl.h"
+#endif
 #include "Utils.h"
 #include <cassert>
 
@@ -277,6 +284,54 @@ std::vector<StatsAttribute> Stats::attributes() const
     return {};
 }
 
+std::shared_ptr<const StatsCodecExt> Stats::codec() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsCodecExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsCertificateExt> Stats::certificate() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsCertificateExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsDataChannelExt> Stats::dataChannel() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsDataChannelExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsIceCandidateExt> Stats::iceCandidate() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsIceCandidateExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsIceCandidatePairExt> Stats::iceCandidatePair() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsIceCandidatePairExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsPeerConnectionExt> Stats::peerConnection() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsPeerConnectionExt>(_stats);
+#endif
+    return {};
+}
+
 StatsAttribute::StatsAttribute(std::string_view name, Value value)
     : _name(std::move(name))
     , _value(std::move(value))
@@ -467,6 +522,62 @@ StatsData* make(const webrtc::RTCStats* stats,
                 const std::shared_ptr<const StatsReportData>& data)
 {
     if (stats) {
+        switch (toStatsType(stats->type())) {
+            case LiveKitCpp::StatsType::Codec:
+                if (const auto cs = dynamic_cast<const webrtc::RTCCodecStats*>(stats)) {
+                    return new StatsCodecImpl(cs, data);
+                }
+                break;
+            case LiveKitCpp::StatsType::InboundRtp:
+                
+                break;
+            case LiveKitCpp::StatsType::OutboundRtp:
+                
+                break;
+            case LiveKitCpp::StatsType::RemoteInboundRtp:
+                
+                break;
+            case LiveKitCpp::StatsType::RemoteOutboundRtp:
+                
+                break;
+            case LiveKitCpp::StatsType::MediaSource:
+                
+                break;
+            case LiveKitCpp::StatsType::MediaPlayout:
+                
+                break;
+            case LiveKitCpp::StatsType::PeerConnection:
+                if (const auto pcs = dynamic_cast<const webrtc::RTCPeerConnectionStats*>(stats)) {
+                    return new StatsPeerConnectionImpl(pcs, data);
+                }
+                break;
+            case LiveKitCpp::StatsType::DataChannel:
+                if (const auto ds = dynamic_cast<const webrtc::RTCDataChannelStats*>(stats)) {
+                    return new StatsDataChannelImpl(ds, data);
+                }
+                break;
+            case LiveKitCpp::StatsType::Transport:
+                
+                break;
+            case LiveKitCpp::StatsType::CandidatePair:
+                if (const auto icps = dynamic_cast<const webrtc::RTCIceCandidatePairStats*>(stats)) {
+                    return new StatsIceCandidatePairImpl(icps, data);
+                }
+                break;
+            case LiveKitCpp::StatsType::LocalCandidate:
+            case LiveKitCpp::StatsType::RemoteCandidate:
+                if (const auto ics = dynamic_cast<const webrtc::RTCIceCandidateStats*>(stats)) {
+                    return new StatsIceCandidateImpl(ics, data);
+                }
+                break;
+            case LiveKitCpp::StatsType::Certificate:
+                if (const auto cs = dynamic_cast<const webrtc::RTCCertificateStats*>(stats)) {
+                    return new StatsCertificateImpl(cs, data);
+                }
+                break;
+            default:
+                break;
+        }
         return new StatsDataImpl<webrtc::RTCStats>(stats, data);
     }
     return nullptr;
