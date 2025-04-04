@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraManager.h
-#include "CameraOptions.h"
+#include "media/CameraOptions.h"
 #include <api/scoped_refptr.h>
 #include <api/video/video_rotation.h>
 #include <modules/video_capture/video_capture_factory.h> // VideoCaptureFactory & VideoCaptureCapability
-#include <optional>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace Bricks {

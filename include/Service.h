@@ -13,13 +13,13 @@
 // limitations under the License.
 #pragma once // Service.h
 #include "LiveKitClientExport.h"
-#include "CameraOptions.h"
-#include "MicrophoneOptions.h"
 #include "Session.h"
 #include "ServiceState.h"
-#include "MediaDeviceInfo.h"
-#include "MediaAuthorizationLevel.h"
 #include "Options.h"
+#include "media/CameraOptions.h"
+#include "media/MicrophoneOptions.h"
+#include "media/MediaAuthorizationLevel.h"
+#include "media/MediaDeviceInfo.h"
 #include <memory>
 #include <vector>
 

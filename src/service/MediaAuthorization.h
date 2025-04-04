@@ -14,7 +14,7 @@
 #pragma once // MediaAuthorization.h
 #include "MediaAuthorizationKind.h"
 #include "MediaAuthorizationStatus.h"
-#include "MediaAuthorizationLevel.h"
+#include "media/MediaAuthorizationLevel.h"
 #include <memory>
 
 namespace Bricks {

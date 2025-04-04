@@ -15,8 +15,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include "RemoteTrackImpl.h"
 #include "VideoTrackImpl.h"
-#include "RemoteVideoTrack.h"
-
+#include "media/RemoteVideoTrack.h"
 
 namespace LiveKitCpp
 {

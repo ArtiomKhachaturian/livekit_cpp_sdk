@@ -17,11 +17,11 @@
 #include "WebsocketEndPoint.h"
 #include "WebsocketFactory.h"
 #include "NetworkType.h"
-#include "VideoOptions.h"
 #include "Utils.h"
 #include "rtc/ClientInfo.h"
 #include "e2e/KeyProviderOptions.h"
 #include "e2e/KeyProvider.h"
+#include "media/VideoOptions.h"
 #ifdef WEBRTC_AVAILABLE
 #include "AdmProxyListener.h"
 #include "CameraManager.h"

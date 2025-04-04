@@ -17,8 +17,8 @@
 #include "LocalTrack.h"
 #include "SafeScopedRefPtr.h"
 #include "rtc/AddTrackRequest.h"
-#include "Track.h"
 #include "TrackManager.h"
+#include "media/Track.h"
 #include <api/media_stream_interface.h>
 #include <api/rtp_sender_interface.h>
 #include <atomic>

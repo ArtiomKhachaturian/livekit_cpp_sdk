@@ -13,8 +13,8 @@
 // limitations under the License.
 #pragma once // CameraOptions.h
 #include "LiveKitClientExport.h"
-#include "VideoOptions.h"
-#include "VideoType.h"
+#include "media/VideoOptions.h"
+#include "media/VideoType.h"
 
 namespace LiveKitCpp
 {

@@ -13,8 +13,8 @@
 // limitations under the License.
 #include "CameraManager.h"
 #include "CameraCapturer.h"
-#include "MediaDeviceInfo.h"
 #include "Utils.h"
+#include "media/MediaDeviceInfo.h"
 #include <modules/video_capture/video_capture_config.h>
 #include <cassert>
 

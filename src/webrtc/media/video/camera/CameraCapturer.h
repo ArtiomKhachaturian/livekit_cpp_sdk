@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once
 #include "SafeObj.h"
-#include "MediaDeviceInfo.h"
+#include "media/MediaDeviceInfo.h"
 #include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture.h>
 #include <modules/video_capture/video_capture_config.h>

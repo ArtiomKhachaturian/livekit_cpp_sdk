@@ -11,23 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraTrack.h
-#include "VideoTrack.h"
-#include "CameraOptions.h"
-#include "MediaDeviceInfo.h"
+#pragma once // VideoTrack.h
+#include "media/Track.h"
 
 namespace LiveKitCpp
 {
 
-class CameraTrack : public VideoTrack
+class VideoTrackSink;
+
+class VideoTrack : public Track
 {
 public:
-    virtual void setDeviceInfo(const MediaDeviceInfo& info = {}) = 0;
-    virtual MediaDeviceInfo deviceInfo() const = 0;
-    virtual void setOptions(const CameraOptions& options) = 0;
-    virtual CameraOptions options() const = 0;
     // impl. of Track
-    TrackSource source() const final { return TrackSource::Camera; }
+    TrackType type() const final { return TrackType::Video; }
+    virtual void addSink(VideoTrackSink* sink) = 0;
+    virtual void removeSink(VideoTrackSink* sink) = 0;
 };
 
 } // namespace LiveKitCpp

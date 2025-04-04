@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "MediaDeviceInfo.h"
+#include "media/MediaDeviceInfo.h"
 #include <api/peer_connection_interface.h>
 #include <rtc_base/thread.h>
 #include <memory>

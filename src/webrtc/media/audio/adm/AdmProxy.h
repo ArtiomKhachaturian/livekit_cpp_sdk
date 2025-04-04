@@ -15,9 +15,9 @@
 #include "AdmProxyTypedefs.h"
 #include "AdmProxyState.h"
 #include "AsyncListeners.h"
-#include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
 #include "SafeObjAliases.h"
+#include "media/MediaDeviceInfo.h"
 #include <api/function_view.h>
 #include <modules/audio_device/include/audio_device.h> //AudioDeviceModule
 #include <type_traits>

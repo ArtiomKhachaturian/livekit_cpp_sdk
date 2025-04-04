@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Session.h
-#include "AudioTrack.h"
-#include "CameraTrack.h"
-#include "CameraOptions.h"
 #include "LiveKitClientExport.h"
 #include "Options.h"
 #include "SessionState.h"
-#include "StatsSource.h"
 #include "RemoteParticipant.h"
 #include "e2e/KeyProvider.h"
 #include "e2e/KeyProviderOptions.h"
+#include "media/AudioTrack.h"
+#include "media/CameraTrack.h"
+#include "media/CameraOptions.h"
+#include "stats/StatsSource.h"
 #include <memory>
 #include <string>
 #include <vector>

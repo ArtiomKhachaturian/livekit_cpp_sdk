@@ -15,7 +15,7 @@
 #include "AsyncListeners.h"
 #include "CameraSource.h"
 #include "Loggable.h"
-#include "MediaDeviceInfo.h"
+#include "media/MediaDeviceInfo.h"
 #include <api/media_stream_interface.h>
 #include <memory>
 

@@ -14,9 +14,9 @@
 #pragma once // AdmProxyState.h
 #include "AdmProxyTypedefs.h"
 #include "AsyncListeners.h"
-#include "MediaDeviceInfo.h"
 #include "SafeObjAliases.h"
 #include "VolumeControl.h"
+#include "media/MediaDeviceInfo.h"
 #include <atomic>
 #include <optional>
 

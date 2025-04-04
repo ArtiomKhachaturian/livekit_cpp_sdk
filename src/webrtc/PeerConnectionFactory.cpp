@@ -18,9 +18,9 @@
 #include "ThreadUtils.h"
 #include "AdmProxy.h"
 #include "AdmProxyFacade.h"
-#include "MicrophoneOptions.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
+#include "media/MicrophoneOptions.h"
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
 #include <api/audio_codecs/builtin_audio_encoder_factory.h>

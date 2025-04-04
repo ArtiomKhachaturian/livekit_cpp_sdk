@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // AudioSinks.h
-#include "AudioTrackSink.h"
 #include "Sinks.h"
+#include "media/AudioTrackSink.h"
 #include <api/media_stream_interface.h>
 
 namespace LiveKitCpp

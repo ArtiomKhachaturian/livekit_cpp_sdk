@@ -14,9 +14,9 @@
 #pragma once // CameraTrack.h
 #ifdef WEBRTC_AVAILABLE
 #include "CameraDevice.h"
-#include "CameraTrack.h"
 #include "LocalTrackImpl.h"
 #include "VideoTrackImpl.h"
+#include "media/CameraTrack.h"
 
 namespace LiveKitCpp
 {

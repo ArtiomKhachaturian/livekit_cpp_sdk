@@ -14,9 +14,9 @@
 #pragma once // CameraVideoSourceImpl.h
 #include "CameraCapturerProxySink.h"
 #include "CameraCapturer.h"
-#include "MediaDeviceInfo.h"
 #include "SafeScopedRefPtr.h"
 #include "AsyncVideoSourceImpl.h"
+#include "media/MediaDeviceInfo.h"
 
 namespace LiveKitCpp
 {

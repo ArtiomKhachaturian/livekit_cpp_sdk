@@ -13,9 +13,9 @@
 // limitations under the License.
 #pragma once // AudioTrackImpl.h
 #ifdef WEBRTC_AVAILABLE
-#include "AudioTrack.h"
 #include "AudioSinks.h"
 #include "TrackImpl.h"
+#include "media/AudioTrack.h"
 #include <type_traits>
 
 namespace LiveKitCpp

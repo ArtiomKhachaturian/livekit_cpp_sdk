@@ -14,8 +14,8 @@
 #pragma once // VideoTrackImpl.h
 #ifdef WEBRTC_AVAILABLE
 #include "TrackImpl.h"
-#include "VideoTrack.h"
 #include "VideoSinks.h"
+#include "media/VideoTrack.h"
 #include <type_traits>
 
 namespace LiveKitCpp

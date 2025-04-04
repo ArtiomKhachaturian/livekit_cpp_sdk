@@ -11,25 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // RemoteVideoTrack.h
-#include "VideoTrack.h"
-#include "rtc/VideoLayer.h"
-#include "rtc/SimulcastCodecInfo.h"
-#include <vector>
+#pragma once // RemoteAudioTrack.h
+#include "media/AudioTrack.h"
 
 namespace LiveKitCpp
 {
 
-class RemoteVideoTrack : public VideoTrack
+class RemoteAudioTrack : public AudioTrack
 {
 public:
     // server track ID
     virtual std::string sid() const = 0;
-    // clients may receive a lower resolution version with simulcast
-    virtual uint32_t originalWidth() const = 0;
-    virtual uint32_t originalHeight() const = 0;
-    virtual std::vector<VideoLayer> layers() const = 0;
-    virtual std::vector<SimulcastCodecInfo> codecs() const = 0;
+    virtual bool dtx() const = 0;
+    virtual bool stereo() const = 0;
+    virtual bool red() const = 0;
     virtual std::string mime() const = 0;
     virtual std::string stream() const = 0;
 };

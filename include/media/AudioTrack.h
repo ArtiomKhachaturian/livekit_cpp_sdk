@@ -11,21 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // VideoTrack.h
-#include "Track.h"
+#pragma once // AudioTrack.h
+#include "media/Track.h"
+#include "rtc/AudioTrackFeature.h"
+#include <optional>
+#include <vector>
 
 namespace LiveKitCpp
 {
 
-class VideoTrackSink;
+class AudioTrackSink;
 
-class VideoTrack : public Track
+class AudioTrack : public Track
 {
 public:
     // impl. of Track
-    TrackType type() const final { return TrackType::Video; }
-    virtual void addSink(VideoTrackSink* sink) = 0;
-    virtual void removeSink(VideoTrackSink* sink) = 0;
+    TrackType type() const final { return TrackType::Audio; }
+    virtual void addSink(AudioTrackSink* sink) = 0;
+    virtual void removeSink(AudioTrackSink* sink) = 0;
+    // Sets the volume of the track. `volume` is in  the range of [0, 10].
+    virtual void setVolume(double volume) = 0;
+    // Get the signal level from the audio track.
+    virtual std::optional<int> signalLevel() const = 0;
+    virtual std::vector<AudioTrackFeature> features() const { return {}; }
 };
 
 } // namespace LiveKitCpp

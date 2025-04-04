@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoSinks.h
-#include "VideoTrackSink.h"
 #include "Sinks.h"
+#include "media/VideoTrackSink.h"
 #include <api/video/video_frame.h>
 #include <api/video/video_sink_interface.h>
 
