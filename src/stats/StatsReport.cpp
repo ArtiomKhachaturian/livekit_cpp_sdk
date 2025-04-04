@@ -16,6 +16,7 @@
 #include "StatsData.h"
 #ifdef WEBRTC_AVAILABLE
 #include "StatsAudioPlayoutImpl.h"
+#include "StatsAudioSourceImpl.h"
 #include "StatsCertificateImpl.h"
 #include "StatsCodecImpl.h"
 #include "StatsDataChannelImpl.h"
@@ -27,6 +28,7 @@
 #include "StatsRemoteInboundRtpStreamImpl.h"
 #include "StatsRemoteOutboundRtpStreamImpl.h"
 #include "StatsTransportImpl.h"
+#include "StatsVideoSourceImpl.h"
 #endif
 #include "Utils.h"
 #include <cassert>
@@ -262,7 +264,15 @@ StatsData* make(const webrtc::RTCStats* stats,
                 }
                 break;
             case LiveKitCpp::StatsType::MediaSource:
-                
+                if (const auto as = dynamic_cast<const webrtc::RTCAudioSourceStats*>(stats)) {
+                    return new StatsAudioSourceImpl(as, data);
+                }
+                if (const auto vs = dynamic_cast<const webrtc::RTCVideoSourceStats*>(stats)) {
+                    return new StatsVideoSourceImpl(vs, data);
+                }
+                if (const auto ms = dynamic_cast<const webrtc::RTCMediaSourceStats*>(stats)) {
+                    return new StatsMediaSourceImpl(ms, data);
+                }
                 break;
             case LiveKitCpp::StatsType::MediaPlayout:
                 if (const auto aps = dynamic_cast<const webrtc::RTCAudioPlayoutStats*>(stats)) {

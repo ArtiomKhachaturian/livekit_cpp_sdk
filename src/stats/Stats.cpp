@@ -208,6 +208,21 @@ std::shared_ptr<const StatsAudioPlayoutExt> Stats::extAudioPlayout() const
     return std::dynamic_pointer_cast<const StatsAudioPlayoutExt>(_stats);
 }
 
+std::shared_ptr<const StatsMediaSourceExt> Stats::extMediaSource() const
+{
+    return std::dynamic_pointer_cast<const StatsMediaSourceExt>(_stats);
+}
+
+std::shared_ptr<const StatsAudioSourceExt> Stats::extAudioSource() const
+{
+    return std::dynamic_pointer_cast<const StatsAudioSourceExt>(_stats);
+}
+
+std::shared_ptr<const StatsVideoSourceExt> Stats::extVideoSource() const
+{
+    return std::dynamic_pointer_cast<const StatsVideoSourceExt>(_stats);
+}
+
 } // namespace LiveKitCpp
 
 #ifdef WEBRTC_AVAILABLE

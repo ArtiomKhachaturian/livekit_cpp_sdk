@@ -15,6 +15,7 @@
 #include "LiveKitClientExport.h"
 #include "stats/StatsAttribute.h"
 #include "stats/StatsAudioPlayoutExt.h"
+#include "stats/StatsAudioSourceExt.h"
 #include "stats/StatsCertificateExt.h"
 #include "stats/StatsCodecExt.h"
 #include "stats/StatsDataChannelExt.h"
@@ -26,6 +27,7 @@
 #include "stats/StatsRemoteInboundRtpStreamExt.h"
 #include "stats/StatsRemoteOutboundRtpStreamExt.h"
 #include "stats/StatsTransportExt.h"
+#include "stats/StatsVideoSourceExt.h"
 #include "stats/StatsType.h"
 #include <chrono>
 #include <memory>
@@ -85,6 +87,10 @@ public:
     std::shared_ptr<const StatsTransportExt> extTransport() const;
     // StatsType::MediaPlayout
     std::shared_ptr<const StatsAudioPlayoutExt> extAudioPlayout() const;
+    // StatsType::MediaSource
+    std::shared_ptr<const StatsMediaSourceExt> extMediaSource() const;
+    std::shared_ptr<const StatsAudioSourceExt> extAudioSource() const;
+    std::shared_ptr<const StatsVideoSourceExt> extVideoSource() const;
 private:
     Stats(const StatsData* stats);
 private:
