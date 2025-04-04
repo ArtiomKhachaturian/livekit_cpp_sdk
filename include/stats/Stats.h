@@ -24,6 +24,7 @@
 #include "stats/StatsPeerConnectionExt.h"
 #include "stats/StatsRemoteInboundRtpStreamExt.h"
 #include "stats/StatsRemoteOutboundRtpStreamExt.h"
+#include "stats/StatsTransportExt.h"
 #include "stats/StatsType.h"
 #include <chrono>
 #include <memory>
@@ -79,6 +80,8 @@ public:
     std::shared_ptr<const StatsRemoteInboundRtpStreamExt> extRemoteInboundRtpStream() const;
     // StatsType::RemoteOutboundRtp
     std::shared_ptr<const StatsRemoteOutboundRtpStreamExt> extRemoteOutboundRtpStream() const;
+    // StatsType::Transport
+    std::shared_ptr<const StatsTransportExt> extTransport() const;
 private:
     Stats(const StatsData* stats);
 private:

@@ -25,6 +25,7 @@
 #include "StatsPeerConnectionImpl.h"
 #include "StatsRemoteInboundRtpStreamImpl.h"
 #include "StatsRemoteOutboundRtpStreamImpl.h"
+#include "StatsTransportImpl.h"
 #endif
 #include "Utils.h"
 #include <cassert>
@@ -276,7 +277,9 @@ StatsData* make(const webrtc::RTCStats* stats,
                 }
                 break;
             case LiveKitCpp::StatsType::Transport:
-                
+                if (const auto ts = dynamic_cast<const webrtc::RTCTransportStats*>(stats)) {
+                    return new StatsTransportImpl(ts, data);
+                }
                 break;
             case LiveKitCpp::StatsType::CandidatePair:
                 if (const auto icps = dynamic_cast<const webrtc::RTCIceCandidatePairStats*>(stats)) {

@@ -228,6 +228,14 @@ std::shared_ptr<const StatsRemoteOutboundRtpStreamExt> Stats::extRemoteOutboundR
     return {};
 }
 
+std::shared_ptr<const StatsTransportExt> Stats::extTransport() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsTransportExt>(_stats);
+#endif
+    return {};
+}
+
 } // namespace LiveKitCpp
 
 #ifdef WEBRTC_AVAILABLE
