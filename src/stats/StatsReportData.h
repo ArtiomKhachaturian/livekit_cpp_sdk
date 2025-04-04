@@ -15,6 +15,7 @@
 #ifdef WEBRTC_AVAILABLE
 #include <api/stats/rtc_stats_report.h>
 #include <api/scoped_refptr.h>
+#include <chrono>
 #endif
 
 namespace LiveKitCpp
@@ -24,6 +25,7 @@ struct StatsReportData
 {
 #ifdef WEBRTC_AVAILABLE
     webrtc::scoped_refptr<const webrtc::RTCStatsReport> _data;
+    static std::chrono::time_point<std::chrono::system_clock> map(const webrtc::Timestamp& t);
 #endif
 };
 

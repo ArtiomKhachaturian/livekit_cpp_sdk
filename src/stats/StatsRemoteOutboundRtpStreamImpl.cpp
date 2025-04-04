@@ -33,7 +33,7 @@ std::optional<std::string> StatsRemoteOutboundRtpStreamImpl::localId() const
 std::optional<double> StatsRemoteOutboundRtpStreamImpl::remoteTimestamp() const
 {
     if (_stats) {
-        return _stats->local_id;
+        return _stats->remote_timestamp;
     }
     return {};
 }
@@ -41,7 +41,7 @@ std::optional<double> StatsRemoteOutboundRtpStreamImpl::remoteTimestamp() const
 std::optional<uint64_t> StatsRemoteOutboundRtpStreamImpl::reportsSent() const
 {
     if (_stats) {
-        return _stats->local_id;
+        return _stats->reports_sent;
     }
     return {};
 }
