@@ -15,6 +15,7 @@
 #include "StatsReportData.h"
 #include "StatsData.h"
 #ifdef WEBRTC_AVAILABLE
+#include "StatsAudioPlayoutImpl.h"
 #include "StatsCertificateImpl.h"
 #include "StatsCodecImpl.h"
 #include "StatsDataChannelImpl.h"
@@ -264,7 +265,9 @@ StatsData* make(const webrtc::RTCStats* stats,
                 
                 break;
             case LiveKitCpp::StatsType::MediaPlayout:
-                
+                if (const auto aps = dynamic_cast<const webrtc::RTCAudioPlayoutStats*>(stats)) {
+                    return new StatsAudioPlayoutImpl(aps, data);
+                }
                 break;
             case LiveKitCpp::StatsType::PeerConnection:
                 if (const auto pcs = dynamic_cast<const webrtc::RTCPeerConnectionStats*>(stats)) {

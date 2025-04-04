@@ -14,6 +14,7 @@
 #pragma once // Stats.h
 #include "LiveKitClientExport.h"
 #include "stats/StatsAttribute.h"
+#include "stats/StatsAudioPlayoutExt.h"
 #include "stats/StatsCertificateExt.h"
 #include "stats/StatsCodecExt.h"
 #include "stats/StatsDataChannelExt.h"
@@ -82,6 +83,8 @@ public:
     std::shared_ptr<const StatsRemoteOutboundRtpStreamExt> extRemoteOutboundRtpStream() const;
     // StatsType::Transport
     std::shared_ptr<const StatsTransportExt> extTransport() const;
+    // StatsType::MediaPlayout
+    std::shared_ptr<const StatsAudioPlayoutExt> extAudioPlayout() const;
 private:
     Stats(const StatsData* stats);
 private:

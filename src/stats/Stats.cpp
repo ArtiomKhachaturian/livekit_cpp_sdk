@@ -150,90 +150,62 @@ std::vector<StatsAttribute> Stats::attributes() const
 
 std::shared_ptr<const StatsCodecExt> Stats::extCodec() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsCodecExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsCertificateExt> Stats::extCertificate() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsCertificateExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsDataChannelExt> Stats::extDataChannel() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsDataChannelExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsIceCandidateExt> Stats::extIceCandidate() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsIceCandidateExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsIceCandidatePairExt> Stats::extIceCandidatePair() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsIceCandidatePairExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsPeerConnectionExt> Stats::extPeerConnection() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsPeerConnectionExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsInboundRtpStreamExt> Stats::extInboundRtpStream() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsInboundRtpStreamExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsOutboundRtpStreamExt> Stats::extOutboundRtpStream() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsOutboundRtpStreamExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsRemoteInboundRtpStreamExt> Stats::extRemoteInboundRtpStream() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsRemoteInboundRtpStreamExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsRemoteOutboundRtpStreamExt> Stats::extRemoteOutboundRtpStream() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsRemoteOutboundRtpStreamExt>(_stats);
-#endif
-    return {};
 }
 
 std::shared_ptr<const StatsTransportExt> Stats::extTransport() const
 {
-#ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsTransportExt>(_stats);
-#endif
-    return {};
+}
+
+std::shared_ptr<const StatsAudioPlayoutExt> Stats::extAudioPlayout() const
+{
+    return std::dynamic_pointer_cast<const StatsAudioPlayoutExt>(_stats);
 }
 
 } // namespace LiveKitCpp
