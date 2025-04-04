@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteVideoTrackImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "RemoteTrackImpl.h"
 #include "VideoTrackImpl.h"
 #include "RemoteVideoTrack.h"
@@ -39,3 +40,4 @@ public:
 };
 
 } // namespace LiveKitCpp
+#endif

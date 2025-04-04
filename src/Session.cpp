@@ -280,7 +280,7 @@ size_t Session::localAudioTracksCount() const { return 0U; }
 
 size_t Session::localVideoTracksCount() const { return 0U; }
 
-std::shared_ptr<AudioTrack> Session::addMicrophoneTrack(const MicrophoneOptions&) { return {}; }
+std::shared_ptr<AudioTrack> Session::addMicrophoneTrack() { return {}; }
 
 std::shared_ptr<CameraTrack> Session::addCameraTrack(const CameraOptions&) { return {}; }
 
@@ -344,7 +344,7 @@ ParticipantKind Session::kind() const { return ParticipantKind::Standard; }
 
 void Session::addListener(StatsListener*) {}
 
-void Session::removdListener(StatsListener*) {}
+void Session::removeListener(StatsListener*) {}
 
 void Session::queryStats() const {}
 

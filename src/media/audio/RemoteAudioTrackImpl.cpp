@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "RemoteAudioTrackImpl.h"
+#ifdef WEBRTC_AVAILABLE
 
 namespace LiveKitCpp
 {
@@ -25,3 +26,4 @@ RemoteAudioTrackImpl::RemoteAudioTrackImpl(const TrackInfo& info,
 }
 
 } // namespace LiveKitCpp
+#endif

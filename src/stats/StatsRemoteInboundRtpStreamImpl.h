@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsRemoteInboundRtpStreamImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "stats/StatsRemoteInboundRtpStreamExt.h"
 #include "StatsReceivedRtpStreamImpl.h"
 
@@ -36,3 +37,4 @@ public:
 };
 
 } // namespace LiveKitCpp
+#endif

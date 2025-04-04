@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalTrack.h
+#ifdef WEBRTC_AVAILABLE
 #include <api/media_stream_interface.h>
 #include <api/media_types.h>
 #include <string>
@@ -48,3 +49,4 @@ protected:
 };
 
 } // namespace LiveKitCpp
+#endif

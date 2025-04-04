@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsRtpStreamImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "stats/StatsRtpStreamExt.h"
 #include "StatsDataImpl.h"
 
@@ -78,3 +79,4 @@ inline std::optional<std::string> StatsRtpStreamImpl<TRtcStats, TBaseInterface>:
 }
 
 } // namespace LiveKitCpp
+#endif

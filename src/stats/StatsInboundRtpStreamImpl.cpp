@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "StatsInboundRtpStreamImpl.h"
+#ifdef WEBRTC_AVAILABLE
 
 namespace LiveKitCpp
 {
@@ -535,3 +536,4 @@ std::optional<double> StatsInboundRtpStreamImpl::minPlayoutDelay() const
 }
 
 } // namespace LiveKitCpp
+#endif

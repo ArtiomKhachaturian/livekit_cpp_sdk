@@ -541,12 +541,11 @@ CameraOptions CameraOptions::defaultOptions()
 class Service::Impl {};
 
 Service::Service(const std::shared_ptr<Websocket::Factory>&,
-                 const MicrophoneOptions&
+                 const MicrophoneOptions&,
                  const std::shared_ptr<Bricks::Logger>&, bool) {}
 
 Service::Service(const std::shared_ptr<Websocket::Factory>&,
-                 const std::shared_ptr<Bricks::Logger>&,
-                 bool) {}
+                 const std::shared_ptr<Bricks::Logger>&, bool) {}
 
 Service::~Service() {}
 

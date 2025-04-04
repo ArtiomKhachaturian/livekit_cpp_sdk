@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoTrackImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "TrackImpl.h"
 #include "VideoTrack.h"
 #include "VideoSinks.h"
@@ -75,3 +76,4 @@ inline void VideoTrackImpl<TTrackApi, TWebRtcTrack>::removeSink(VideoTrackSink* 
 }
 
 } // namespace LiveKitCpp
+#endif

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteTrackImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "Logger.h"
 #include "TrackManager.h"
 #include "rtc/TrackInfo.h"
@@ -81,3 +82,4 @@ inline void RemoteTrackImpl<TBaseImpl>::notifyAboutMuted(bool mute) const
 }
 
 } // namespace LiveKitCpp
+#endif

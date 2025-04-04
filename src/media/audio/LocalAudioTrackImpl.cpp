@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "LocalAudioTrackImpl.h"
+#ifdef WEBRTC_AVAILABLE
 
 namespace {
 
@@ -82,3 +83,4 @@ std::optional<bool> LocalAudioTrackImpl::stereoRecording() const
 }
 
 } // namespace LiveKitCpp
+#endif

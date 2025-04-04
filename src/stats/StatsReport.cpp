@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "stats/StatsReport.h"
 #include "StatsReportData.h"
+#include "StatsData.h"
 #ifdef WEBRTC_AVAILABLE
 #include "StatsCertificateImpl.h"
 #include "StatsCodecImpl.h"
@@ -186,9 +187,11 @@ std::string toString(StatsType type)
 
 StatsType StatsData::type() const
 {
+#ifdef WEBRTC_AVAILABLE
     if (const auto stats = rtcStats()) {
         return toStatsType(stats->id());
     }
+#endif
     return StatsType::Uknown;
 }
 

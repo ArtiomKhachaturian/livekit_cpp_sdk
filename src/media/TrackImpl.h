@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TrackImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "StatsSourceImpl.h"
 #include "TrackManager.h"
 #include <api/media_stream_interface.h>
@@ -95,3 +96,4 @@ inline webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>
 }
 
 } // namespace LiveKitCpp
+#endif

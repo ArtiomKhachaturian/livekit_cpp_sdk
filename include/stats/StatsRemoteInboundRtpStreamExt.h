@@ -17,6 +17,7 @@
 namespace LiveKitCpp
 {
 
+// https://w3c.github.io/webrtc-stats/#remoteinboundrtpstats-dict*
 class StatsRemoteInboundRtpStreamExt : public StatsReceivedRtpStreamExt
 {
 public:

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "StatsRemoteInboundRtpStreamImpl.h"
+#ifdef WEBRTC_AVAILABLE
 
 namespace LiveKitCpp
 {
@@ -63,3 +64,4 @@ std::optional<int32_t> StatsRemoteInboundRtpStreamImpl::roundTripTimeMeasurement
 }
 
 } // namespace LiveKitCpp
+#endif

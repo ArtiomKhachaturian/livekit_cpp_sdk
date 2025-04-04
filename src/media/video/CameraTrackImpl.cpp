@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CameraTrackImpl.h"
+#ifdef WEBRTC_AVAILABLE
 #include "CameraManager.h"
 
 namespace LiveKitCpp
@@ -77,3 +78,4 @@ bool CameraTrackImpl::fillRequest(AddTrackRequest* request) const
 }
 
 } // namespace LiveKitCpp
+#endif

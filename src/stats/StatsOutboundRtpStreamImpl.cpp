@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "StatsOutboundRtpStreamImpl.h"
+#ifdef WEBRTC_AVAILABLE
 
 namespace LiveKitCpp
 {
@@ -272,3 +273,4 @@ std::optional<uint32_t> StatsOutboundRtpStreamImpl::rtxSsrc() const
 }
 
 } // namespace LiveKitCpp
+#endif

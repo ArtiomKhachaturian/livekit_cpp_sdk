@@ -14,7 +14,9 @@
 #include "stats/Stats.h"
 #include "StatsData.h"
 #include "StatsReportData.h"
+#ifdef WEBRTC_AVAILABLE
 #include <api/stats/rtc_stats.h>
+#endif
 
 namespace
 {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // AudioTrackImpl.h
+#ifdef WEBRTC_AVAILABLE
 #include "AudioTrack.h"
 #include "AudioSinks.h"
 #include "TrackImpl.h"
@@ -107,3 +108,4 @@ webrtc::AudioSourceInterface* AudioTrackImpl<TTrackApi>::audioSource() const
 }
 
 } // namespace LiveKitCpp
+#endif

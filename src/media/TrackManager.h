@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TrackManager.h
+#ifdef WEBRTC_AVAILABLE
 #include "rtc/EncryptionType.h"
 #include <api/scoped_refptr.h>
 #include <optional>
@@ -41,3 +42,4 @@ protected:
 };
 
 } // namespace LiveKitCpp
+#endif
