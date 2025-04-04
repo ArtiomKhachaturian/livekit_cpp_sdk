@@ -21,8 +21,8 @@
 namespace LiveKitCpp
 {
 
-template<class TRtcStats, class... BaseInterface>
-class StatsDataImpl : public StatsData, public BaseInterface...
+template<class TRtcStats, class... TBaseInterface>
+class StatsDataImpl : public StatsData, public TBaseInterface...
 {
     static_assert(std::is_base_of_v<webrtc::RTCStats, TRtcStats>);
 public:
@@ -37,8 +37,8 @@ private:
     const std::shared_ptr<const StatsReportData> _data;
 };
 
-template<class TRtcStats, class... BaseInterface>
-inline StatsDataImpl<TRtcStats, BaseInterface...>::
+template<class TRtcStats, class... TBaseInterface>
+inline StatsDataImpl<TRtcStats, TBaseInterface...>::
     StatsDataImpl(const TRtcStats* stats,
                   const std::shared_ptr<const StatsReportData>& data)
     : _stats(stats)

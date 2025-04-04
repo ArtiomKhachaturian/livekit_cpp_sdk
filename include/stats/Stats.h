@@ -19,7 +19,11 @@
 #include "stats/StatsDataChannelExt.h"
 #include "stats/StatsIceCandidateExt.h"
 #include "stats/StatsIceCandidatePairExt.h"
+#include "stats/StatsInboundRtpStreamExt.h"
+#include "stats/StatsOutboundRtpStreamExt.h"
 #include "stats/StatsPeerConnectionExt.h"
+#include "stats/StatsRemoteInboundRtpStreamExt.h"
+#include "stats/StatsRemoteOutboundRtpStreamExt.h"
 #include "stats/StatsType.h"
 #include <chrono>
 #include <memory>
@@ -56,17 +60,25 @@ public:
     std::vector<StatsAttribute> attributes() const;
     // specific data, see also StatsType description
     // StatsType::Codec
-    std::shared_ptr<const StatsCodecExt> codec() const;
+    std::shared_ptr<const StatsCodecExt> extCodec() const;
     // StatsType::Certificate
-    std::shared_ptr<const StatsCertificateExt> certificate() const;
+    std::shared_ptr<const StatsCertificateExt> extCertificate() const;
     // StatsType::DataChannel
-    std::shared_ptr<const StatsDataChannelExt> dataChannel() const;
+    std::shared_ptr<const StatsDataChannelExt> extDataChannel() const;
     // StatsType::LocalCandidate & StatsType::RemoteCandidate
-    std::shared_ptr<const StatsIceCandidateExt> iceCandidate() const;
+    std::shared_ptr<const StatsIceCandidateExt> extIceCandidate() const;
     // StatsType::CandidatePair
-    std::shared_ptr<const StatsIceCandidatePairExt> iceCandidatePair() const;
+    std::shared_ptr<const StatsIceCandidatePairExt> extIceCandidatePair() const;
     // StatsType::PeerConnection
-    std::shared_ptr<const StatsPeerConnectionExt> peerConnection() const;
+    std::shared_ptr<const StatsPeerConnectionExt> extPeerConnection() const;
+    // StatsType::InboundRtp
+    std::shared_ptr<const StatsInboundRtpStreamExt> extInboundRtpStream() const;
+    // StatsType::OtboundRtp
+    std::shared_ptr<const StatsOutboundRtpStreamExt> extOutboundRtpStream() const;
+    // StatsType::RemoteInboundRtp
+    std::shared_ptr<const StatsRemoteInboundRtpStreamExt> extRemoteInboundRtpStream() const;
+    // StatsType::RemoteOutboundRtp
+    std::shared_ptr<const StatsRemoteOutboundRtpStreamExt> extRemoteOutboundRtpStream() const;
 private:
     Stats(const StatsData* stats);
 private:

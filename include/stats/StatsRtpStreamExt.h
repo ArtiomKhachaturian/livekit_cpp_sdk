@@ -11,20 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // StatsPeerConnectionExt.h
-#include <cstdint>
+#pragma once // StatsRtpStreamExt.h
 #include <optional>
+#include <string>
 
 namespace LiveKitCpp
 {
 
-// https://w3c.github.io/webrtc-stats/#pcstats-dict*
-class StatsPeerConnectionExt
+// https://w3c.github.io/webrtc-stats/#streamstats-dict*
+class StatsRtpStreamExt
 {
 public:
-    virtual ~StatsPeerConnectionExt() = default;
-    virtual std::optional<uint32_t> dataChannelsOpened() const = 0;
-    virtual std::optional<uint32_t> dataChannelsClosed() const = 0;
+    virtual ~StatsRtpStreamExt() = default;
+    virtual std::optional<uint32_t> ssrc() const = 0;
+    virtual std::optional<std::string> kind() const = 0;
+    virtual std::optional<std::string> transportId() const = 0;
+    virtual std::optional<std::string> codecId() const = 0;
 };
 
 } // namespace LiveKitCpp

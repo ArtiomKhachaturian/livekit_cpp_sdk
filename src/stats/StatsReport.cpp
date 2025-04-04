@@ -19,7 +19,11 @@
 #include "StatsDataChannelImpl.h"
 #include "StatsIceCandidatePairImpl.h"
 #include "StatsIceCandidateImpl.h"
+#include "StatsInboundRtpStreamImpl.h"
+#include "StatsOutboundRtpStreamImpl.h"
 #include "StatsPeerConnectionImpl.h"
+#include "StatsRemoteInboundRtpStreamImpl.h"
+#include "StatsRemoteOutboundRtpStreamImpl.h"
 #endif
 #include "Utils.h"
 #include <cassert>
@@ -284,7 +288,7 @@ std::vector<StatsAttribute> Stats::attributes() const
     return {};
 }
 
-std::shared_ptr<const StatsCodecExt> Stats::codec() const
+std::shared_ptr<const StatsCodecExt> Stats::extCodec() const
 {
 #ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsCodecExt>(_stats);
@@ -292,7 +296,7 @@ std::shared_ptr<const StatsCodecExt> Stats::codec() const
     return {};
 }
 
-std::shared_ptr<const StatsCertificateExt> Stats::certificate() const
+std::shared_ptr<const StatsCertificateExt> Stats::extCertificate() const
 {
 #ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsCertificateExt>(_stats);
@@ -300,7 +304,7 @@ std::shared_ptr<const StatsCertificateExt> Stats::certificate() const
     return {};
 }
 
-std::shared_ptr<const StatsDataChannelExt> Stats::dataChannel() const
+std::shared_ptr<const StatsDataChannelExt> Stats::extDataChannel() const
 {
 #ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsDataChannelExt>(_stats);
@@ -308,7 +312,7 @@ std::shared_ptr<const StatsDataChannelExt> Stats::dataChannel() const
     return {};
 }
 
-std::shared_ptr<const StatsIceCandidateExt> Stats::iceCandidate() const
+std::shared_ptr<const StatsIceCandidateExt> Stats::extIceCandidate() const
 {
 #ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsIceCandidateExt>(_stats);
@@ -316,7 +320,7 @@ std::shared_ptr<const StatsIceCandidateExt> Stats::iceCandidate() const
     return {};
 }
 
-std::shared_ptr<const StatsIceCandidatePairExt> Stats::iceCandidatePair() const
+std::shared_ptr<const StatsIceCandidatePairExt> Stats::extIceCandidatePair() const
 {
 #ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsIceCandidatePairExt>(_stats);
@@ -324,10 +328,42 @@ std::shared_ptr<const StatsIceCandidatePairExt> Stats::iceCandidatePair() const
     return {};
 }
 
-std::shared_ptr<const StatsPeerConnectionExt> Stats::peerConnection() const
+std::shared_ptr<const StatsPeerConnectionExt> Stats::extPeerConnection() const
 {
 #ifdef WEBRTC_AVAILABLE
     return std::dynamic_pointer_cast<const StatsPeerConnectionExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsInboundRtpStreamExt> Stats::extInboundRtpStream() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsInboundRtpStreamExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsOutboundRtpStreamExt> Stats::extOutboundRtpStream() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsOutboundRtpStreamExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsRemoteInboundRtpStreamExt> Stats::extRemoteInboundRtpStream() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsRemoteInboundRtpStreamExt>(_stats);
+#endif
+    return {};
+}
+
+std::shared_ptr<const StatsRemoteOutboundRtpStreamExt> Stats::extRemoteOutboundRtpStream() const
+{
+#ifdef WEBRTC_AVAILABLE
+    return std::dynamic_pointer_cast<const StatsRemoteOutboundRtpStreamExt>(_stats);
 #endif
     return {};
 }
@@ -529,16 +565,24 @@ StatsData* make(const webrtc::RTCStats* stats,
                 }
                 break;
             case LiveKitCpp::StatsType::InboundRtp:
-                
+                if (const auto is = dynamic_cast<const webrtc::RTCInboundRtpStreamStats*>(stats)) {
+                    return new StatsInboundRtpStreamImpl(is, data);
+                }
                 break;
             case LiveKitCpp::StatsType::OutboundRtp:
-                
+                if (const auto os = dynamic_cast<const webrtc::RTCOutboundRtpStreamStats*>(stats)) {
+                    return new StatsOutboundRtpStreamImpl(os, data);
+                }
                 break;
             case LiveKitCpp::StatsType::RemoteInboundRtp:
-                
+                if (const auto ris = dynamic_cast<const webrtc::RTCRemoteInboundRtpStreamStats*>(stats)) {
+                    return new StatsRemoteInboundRtpStreamImpl(ris, data);
+                }
                 break;
             case LiveKitCpp::StatsType::RemoteOutboundRtp:
-                
+                if (const auto ros = dynamic_cast<const webrtc::RTCRemoteOutboundRtpStreamStats*>(stats)) {
+                    return new StatsRemoteOutboundRtpStreamImpl(ros, data);
+                }
                 break;
             case LiveKitCpp::StatsType::MediaSource:
                 
