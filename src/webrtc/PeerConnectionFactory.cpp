@@ -102,7 +102,7 @@ public:
     auto recordingDevices() const { return _admProxy->recordingDevices(); }
     auto defaultRecordingDevice() const { return _admProxy->defaultRecordingDevice(); }
     auto defaultPlayoutDevice() const { return _admProxy->defaultPlayoutDevice(); }
-    bool setRecordingAudioDevice(const MediaDeviceInfo& info);
+    bool setRecordingDevice(const MediaDeviceInfo& info);
     bool setPlayoutDevice(const MediaDeviceInfo& info);
     bool setMicrophoneVolume(double volume);
     bool setSpeakerVolume(double volume);
@@ -213,7 +213,7 @@ std::weak_ptr<AdmProxyFacade> PeerConnectionFactory::admProxy() const
     return _admProxy;
 }
 
-MediaDeviceInfo PeerConnectionFactory::defaultRecordingAudioDevice() const
+MediaDeviceInfo PeerConnectionFactory::defaultAudioRecordingDevice() const
 {
     if (_admProxy) {
         return _admProxy->defaultRecordingDevice();
@@ -221,7 +221,7 @@ MediaDeviceInfo PeerConnectionFactory::defaultRecordingAudioDevice() const
     return {};
 }
 
-MediaDeviceInfo PeerConnectionFactory::defaultPlayoutAudioDevice() const
+MediaDeviceInfo PeerConnectionFactory::defaultAudioPlayoutDevice() const
 {
     if (_admProxy) {
         return _admProxy->defaultPlayoutDevice();
@@ -229,9 +229,9 @@ MediaDeviceInfo PeerConnectionFactory::defaultPlayoutAudioDevice() const
     return {};
 }
 
-bool PeerConnectionFactory::setRecordingAudioDevice(const MediaDeviceInfo& info)
+bool PeerConnectionFactory::setAudioRecordingDevice(const MediaDeviceInfo& info)
 {
-    return _admProxy && _admProxy->setRecordingAudioDevice(info);
+    return _admProxy && _admProxy->setRecordingDevice(info);
 }
 
 MediaDeviceInfo PeerConnectionFactory::recordingAudioDevice() const
@@ -242,7 +242,7 @@ MediaDeviceInfo PeerConnectionFactory::recordingAudioDevice() const
     return {};
 }
 
-bool PeerConnectionFactory::setPlayoutAudioDevice(const MediaDeviceInfo& info)
+bool PeerConnectionFactory::setAudioPlayoutDevice(const MediaDeviceInfo& info)
 {
     return _admProxy && _admProxy->setPlayoutDevice(info);
 }
@@ -385,7 +385,7 @@ PeerConnectionFactory::AdmFacade::AdmFacade(webrtc::scoped_refptr<AdmProxy> admP
 {
 }
 
-bool PeerConnectionFactory::AdmFacade::setRecordingAudioDevice(const MediaDeviceInfo& info)
+bool PeerConnectionFactory::AdmFacade::setRecordingDevice(const MediaDeviceInfo& info)
 {
     return _admProxy->setRecordingDevice(info);
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "StatsAudioPlayoutImpl.h"
+#ifdef WEBRTC_AVAILABLE
 
 namespace LiveKitCpp
 {
@@ -71,3 +72,4 @@ std::optional<uint64_t> StatsAudioPlayoutImpl::totalSamplesCount() const
 }
 
 } // namespace LiveKitCpp
+#endif

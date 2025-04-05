@@ -61,11 +61,11 @@ public:
     const auto& eventsQueue() const noexcept { return _eventsQueue; }
     std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
     std::weak_ptr<AdmProxyFacade> admProxy() const;
-    MediaDeviceInfo defaultRecordingAudioDevice() const;
-    MediaDeviceInfo defaultPlayoutAudioDevice() const;
-    bool setRecordingAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo defaultAudioRecordingDevice() const;
+    MediaDeviceInfo defaultAudioPlayoutDevice() const;
+    bool setAudioRecordingDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo recordingAudioDevice() const;
-    bool setPlayoutAudioDevice(const MediaDeviceInfo& info);
+    bool setAudioPlayoutDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;

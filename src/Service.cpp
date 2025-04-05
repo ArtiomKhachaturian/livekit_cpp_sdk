@@ -24,11 +24,14 @@
 #include "media/VideoOptions.h"
 #ifdef WEBRTC_AVAILABLE
 #include "AdmProxyListener.h"
+#include "AdmProxyFacade.h"
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
 #include "Loggable.h"
+#include "Listeners.h"
 #include "PeerConnectionFactory.h"
 #include "RtcInitializer.h"
+#include "ServiceListener.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
 #elif defined(_WIN32)
@@ -57,23 +60,25 @@ public:
     ~Impl();
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
-    MediaDeviceInfo defaultRecordingAudioDevice() const;
-    MediaDeviceInfo defaultPlayoutAudioDevice() const;
-    bool setRecordingAudioDevice(const MediaDeviceInfo& info);
+    MediaDeviceInfo defaultAudioRecordingDevice() const;
+    MediaDeviceInfo defaultAudioPlayoutDevice() const;
+    bool setAudioRecordingDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo recordingAudioDevice() const;
-    bool setPlayoutAudioDevice(const MediaDeviceInfo& info);
+    bool setAudioPlayoutDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
-    double recordingVolume() const noexcept { return _recordingVolume; }
-    double playoutVolume() const noexcept { return _playoutVolume; }
-    void setRecordingVolumeVolume(double volume);
-    void setPlayoutVolume(double volume);
+    double recordingAudioVolume() const noexcept { return _recordingVolume; }
+    double playoutAudioVolume() const noexcept { return _playoutVolume; }
+    void setRecordingAudioVolume(double volume);
+    void setPlayoutAudioVolume(double volume);
     void setRecordingMute(bool mute);
     bool recordingMuted() const { return _recordingMuted; }
     void setPlayoutMute(bool mute);
     bool playoutMuted() const { return _playoutMuted; }
     std::unique_ptr<Session> createSession(Options options) const;
+    void addListener(ServiceListener* listener);
+    void removeListener(ServiceListener* listener);
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -82,6 +87,9 @@ public:
                                         bool logWebrtcEvents);
     // overrides of AdmProxyListener
     void onStarted(bool recording) final;
+    void onStopped(bool recording) final;
+    void onMuteChanged(bool recording, bool mute) final;
+    void onVolumeChanged(bool recording, uint32_t) final;
     void onMinMaxVolumeChanged(bool recording, uint32_t, uint32_t) final;
     void onDeviceChanged(bool recording, const MediaDeviceInfo& info);
 protected:
@@ -89,11 +97,11 @@ protected:
     void updateAdmMute(bool recording, bool mute) const;
     void updateRecordingVolume(double volume) const { updateAdmVolume(true, volume); }
     void updateRecordingMute(bool mute) const { updateAdmMute(true, mute); }
-    void updateRecordingVolume() const { updateRecordingVolume(recordingVolume()); }
+    void updateRecordingVolume() const { updateRecordingVolume(recordingAudioVolume()); }
     void updateRecordingMute() const { updateRecordingMute(recordingMuted()); }
     void updatePlayoutVolume(double volume) const { updateAdmVolume(false, volume); }
     void updatePlayoutMute(bool mute) const { updateAdmMute(false, mute); }
-    void updatePlayoutVolume() const { updatePlayoutVolume(playoutVolume()); }
+    void updatePlayoutVolume() const { updatePlayoutVolume(playoutAudioVolume()); }
     void updatePlayoutMute() const { updatePlayoutMute(playoutMuted()); }
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final { return g_logCategory; }
@@ -106,6 +114,7 @@ private:
     std::atomic<double> _playoutVolume = 0.2;
     std::atomic_bool _recordingMuted;
     std::atomic_bool _playoutMuted;
+    Bricks::Listeners<ServiceListener*> _listeners;
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -146,108 +155,160 @@ ServiceState Service::state() const
 
 std::unique_ptr<Session> Service::createSession(Options options) const
 {
-    return _impl->createSession(std::move(options));
+    if (_impl) {
+        return _impl->createSession(std::move(options));
+    }
+    return {};
 }
 
-MediaDeviceInfo Service::defaultRecordingAudioDevice() const
+MediaDeviceInfo Service::defaultAudioRecordingDevice() const
 {
-    return _impl->defaultRecordingAudioDevice();
+    if (_impl) {
+        return _impl->defaultAudioRecordingDevice();
+    }
+    return {};
 }
 
-MediaDeviceInfo Service::defaultPlayoutAudioDevice() const
+MediaDeviceInfo Service::defaultAudioPlayoutDevice() const
 {
-    return _impl->defaultPlayoutAudioDevice();
+    if (_impl) {
+        return _impl->defaultAudioPlayoutDevice();
+    }
+    return {};
 }
 
-bool Service::setRecordingAudioDevice(const MediaDeviceInfo& info)
+bool Service::setAudioRecordingDevice(const MediaDeviceInfo& info)
 {
-    return _impl->setRecordingAudioDevice(info);
+    return _impl && _impl->setAudioRecordingDevice(info);
 }
 
 MediaDeviceInfo Service::recordingAudioDevice() const
 {
-    return _impl->recordingAudioDevice();
+    if (_impl) {
+        return _impl->recordingAudioDevice();
+    }
+    return {};
 }
 
-double Service::recordingVolume() const
+double Service::recordingAudioVolume() const
 {
-    return _impl->recordingVolume();
+    if (_impl) {
+        return _impl->recordingAudioVolume();
+    }
+    return 0.;
 }
 
-void Service::setRecordingVolume(double volume)
+void Service::setRecordingAudioVolume(double volume)
 {
-    _impl->setRecordingVolumeVolume(volume);
+    if (_impl) {
+        _impl->setRecordingAudioVolume(volume);
+    }
 }
 
-bool Service::setPlayoutAudioDevice(const MediaDeviceInfo& info)
+bool Service::setAudioPlayoutDevice(const MediaDeviceInfo& info)
 {
-    return _impl->setPlayoutAudioDevice(info);
+    return _impl && _impl->setAudioPlayoutDevice(info);
 }
 
 MediaDeviceInfo Service::playoutAudioDevice() const
 {
-    return _impl->playoutAudioDevice();
+    if (_impl) {
+        return _impl->playoutAudioDevice();
+    }
+    return {};
 }
 
-double Service::playoutVolume() const
+double Service::playoutAudioVolume() const
 {
-    return _impl->playoutVolume();
+    if (_impl) {
+        return _impl->playoutAudioVolume();
+    }
+    return 0.;
 }
 
-void Service::setPlayoutVolume(double volume)
+void Service::setPlayoutAudioVolume(double volume)
 {
-    _impl->setPlayoutVolume(volume);
+    _impl->setPlayoutAudioVolume(volume);
 }
 
-void Service::setAudioRecording(bool recording)
+void Service::setAudioRecordingEnabled(bool enabled)
 {
-    _impl->setRecordingMute(!recording);
+    if (_impl) {
+        _impl->setRecordingMute(!enabled);
+    }
 }
 
 bool Service::audioRecordingEnabled() const
 {
-    return !_impl->recordingMuted();
+    return _impl && !_impl->recordingMuted();
 }
 
-void Service::setAudioPlayout(bool playout)
+void Service::setAudioPlayoutEnabled(bool enabled)
 {
-    _impl->setPlayoutMute(!playout);
+    if (_impl) {
+        _impl->setPlayoutMute(!enabled);
+    }
 }
 
 bool Service::audioPlayoutEnabled() const
 {
-    return !_impl->playoutMuted();
+    return _impl && !_impl->playoutMuted();
 }
 
 std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const
 {
-    return _impl->recordingAudioDevices();
+    if (_impl) {
+        return _impl->recordingAudioDevices();
+    }
+    return {};
 }
 
 std::vector<MediaDeviceInfo> Service::playoutAudioDevices() const
 {
-    return _impl->playoutAudioDevices();
+    if (_impl) {
+        return _impl->playoutAudioDevices();
+    }
+    return {};
 }
 
 std::vector<MediaDeviceInfo> Service::cameraDevices() const
 {
-    return CameraManager::devices();
+    if (_impl) {
+        return CameraManager::devices();
+    }
+    return {};
 }
 
 std::vector<CameraOptions> Service::cameraOptions(const MediaDeviceInfo& info) const
 {
-    if (const uint32_t number = CameraManager::capabilitiesNumber(info)) {
-        std::vector<CameraOptions> options;
-        options.reserve(number);
-        for (uint32_t i = 0U; i < number; ++i) {
-            webrtc::VideoCaptureCapability capability;
-            if (CameraManager::capability(info, i, capability)) {
-                options.push_back(map(capability));
+    if (_impl) {
+        if (const uint32_t number = CameraManager::capabilitiesNumber(info)) {
+            std::vector<CameraOptions> options;
+            options.reserve(number);
+            for (uint32_t i = 0U; i < number; ++i) {
+                webrtc::VideoCaptureCapability capability;
+                if (CameraManager::capability(info, i, capability)) {
+                    options.push_back(map(capability));
+                }
             }
+            return options;
         }
-        return options;
     }
     return {};
+}
+
+void Service::addListener(ServiceListener* listener)
+{
+    if (_impl) {
+        _impl->addListener(listener);
+    }
+}
+
+void Service::removeListener(ServiceListener* listener)
+{
+    if (_impl) {
+        _impl->removeListener(listener);
+    }
 }
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -287,25 +348,25 @@ Service::Impl::~Impl()
     }
 }
 
-MediaDeviceInfo Service::Impl::defaultRecordingAudioDevice() const
+MediaDeviceInfo Service::Impl::defaultAudioRecordingDevice() const
 {
     if (_pcf) {
-        return _pcf->defaultRecordingAudioDevice();
+        return _pcf->defaultAudioRecordingDevice();
     }
     return {};
 }
 
-MediaDeviceInfo Service::Impl::defaultPlayoutAudioDevice() const
+MediaDeviceInfo Service::Impl::defaultAudioPlayoutDevice() const
 {
     if (_pcf) {
-        return _pcf->defaultPlayoutAudioDevice();
+        return _pcf->defaultAudioPlayoutDevice();
     }
     return {};
 }
 
-bool Service::Impl::setRecordingAudioDevice(const MediaDeviceInfo& info)
+bool Service::Impl::setAudioRecordingDevice(const MediaDeviceInfo& info)
 {
-    return _pcf && _pcf->setRecordingAudioDevice(info);
+    return _pcf && _pcf->setAudioRecordingDevice(info);
 }
 
 MediaDeviceInfo Service::Impl::recordingAudioDevice() const
@@ -316,9 +377,9 @@ MediaDeviceInfo Service::Impl::recordingAudioDevice() const
     return {};
 }
 
-bool Service::Impl::setPlayoutAudioDevice(const MediaDeviceInfo& info)
+bool Service::Impl::setAudioPlayoutDevice(const MediaDeviceInfo& info)
 {
-    return _pcf && _pcf->setPlayoutAudioDevice(info);
+    return _pcf && _pcf->setAudioPlayoutDevice(info);
 }
 
 MediaDeviceInfo Service::Impl::playoutAudioDevice() const
@@ -345,17 +406,19 @@ std::vector<MediaDeviceInfo> Service::Impl::playoutAudioDevices() const
     return {};
 }
 
-void Service::Impl::setRecordingVolumeVolume(double volume)
+void Service::Impl::setRecordingAudioVolume(double volume)
 {
     if (_pcf && exchangeVal(volume, _recordingVolume)) {
         updateRecordingVolume(volume);
+        _listeners.invoke(&ServiceListener::onAudioRecordingVolumeChanged, volume);
     }
 }
 
-void Service::Impl::setPlayoutVolume(double volume)
+void Service::Impl::setPlayoutAudioVolume(double volume)
 {
     if (_pcf && exchangeVal(volume, _playoutVolume)) {
         updatePlayoutVolume(volume);
+        _listeners.invoke(&ServiceListener::onAudioPlayoutVolumeChanged, volume);
     }
 }
 
@@ -383,6 +446,16 @@ std::unique_ptr<Session> Service::Impl::createSession(Options options) const
         }
     }
     return session;
+}
+
+void Service::Impl::addListener(ServiceListener* listener)
+{
+    _listeners.add(listener);
+}
+
+void Service::Impl::removeListener(ServiceListener* listener)
+{
+    _listeners.remove(listener);
 }
 
 bool Service::Impl::sslInitialized(const std::shared_ptr<Bricks::Logger>& logger)
@@ -434,10 +507,48 @@ void Service::Impl::onStarted(bool recording)
     if (recording) {
         updateRecordingVolume();
         updateRecordingMute();
+        _listeners.invoke(&ServiceListener::onAudioRecordingStarted);
     }
     else {
         updatePlayoutVolume();
         updatePlayoutMute();
+        _listeners.invoke(&ServiceListener::onAudioPlayoutStarted);
+    }
+}
+
+void Service::Impl::onStopped(bool recording)
+{
+    if (recording) {
+        _listeners.invoke(&ServiceListener::onAudioRecordingStopped);
+    }
+    else {
+        _listeners.invoke(&ServiceListener::onAudioPlayoutStopped);
+    }
+}
+
+void Service::Impl::onMuteChanged(bool recording, bool mute)
+{
+    if (recording) {
+        _listeners.invoke(&ServiceListener::onAudioRecordingEnabled, !mute);
+    }
+    else {
+        _listeners.invoke(&ServiceListener::onAudioPlayoutEnabled, !mute);
+    }
+}
+
+void Service::Impl::onVolumeChanged(bool recording, uint32_t)
+{
+    if (const auto adm = _pcf->admProxy().lock()) {
+        if (recording) {
+            if (const auto volume = adm->recordingState().normalizedVolume()) {
+                setRecordingAudioVolume(volume.value());
+            }
+        }
+        else {
+            if (const auto volume = adm->playoutState().normalizedVolume()) {
+                setPlayoutAudioVolume(volume.value());
+            }
+        }
     }
 }
 
@@ -456,9 +567,11 @@ void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
     if (!info.empty()) {
         if (recording) {
             logInfo("recording audio device has been changed to '" + info._name + "'");
+            _listeners.invoke(&ServiceListener::onAudioRecordingDeviceChanged, info);
         }
         else {
             logInfo("playoud audio device has been changed to '" + info._name + "'");
+            _listeners.invoke(&ServiceListener::onAudioPlayoutDeviceChanged, info);
         }
     }
 }
@@ -556,31 +669,31 @@ ServiceState Service::state() const
 
 std::unique_ptr<Session> Service::createSession(Options options) const { return {}; }
 
-MediaDeviceInfo Service::defaultRecordingAudioDevice() const { return {}; }
+MediaDeviceInfo Service::defaultAudioRecordingDevice() const { return {}; }
 
-MediaDeviceInfo Service::defaultPlayoutAudioDevice() const { return {}; }
+MediaDeviceInfo Service::defaultAudioPlayoutDevice() const { return {}; }
 
-bool Service::setRecordingAudioDevice(const MediaDeviceInfo&) { return false; }
+bool Service::setAudioRecordingDevice(const MediaDeviceInfo&) { return false; }
 
 MediaDeviceInfo Service::recordingAudioDevice() const { return {}; }
 
-double Service::recordingVolume() const { return 0.; }
+double Service::recordingAudioVolume() const { return 0.; }
 
-void Service::setRecordingVolume(double) {}
+void Service::setRecordingAudioVolume(double) {}
 
-bool Service::setPlayoutAudioDevice(const MediaDeviceInfo&) { return false; }
+bool Service::setAudioPlayoutDevice(const MediaDeviceInfo&) { return false; }
 
 MediaDeviceInfo Service::playoutAudioDevice() const { return {}; }
 
-double Service::playoutVolume() const { return 0.; }
+double Service::playoutAudioVolume() const { return 0.; }
 
-void Service::setPlayoutVolume(double) {}
+void Service::setPlayoutAudioVolume(double) {}
 
-void Service::setAudioRecording(bool) {}
+void Service::setAudioRecordingEnabled(bool) {}
 
 bool Service::audioRecordingEnabled() const { return false; }
 
-void Service::setAudioPlayout(bool) {}
+void Service::setAudioPlayoutEnabled(bool) {}
 
 bool Service::audioPlayoutEnabled() const { return false; }
 
@@ -589,6 +702,10 @@ std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const { return {};
 std::vector<MediaDeviceInfo> Service::playoutAudioDevices() const { return {}; }
 
 std::vector<MediaDeviceInfo> Service::cameraDevices() const { return {}; }
+
+void Service::addListener(ServiceListener*) {}
+
+void Service::removeListener(ServiceListener*) {}
 
 CameraOptions CameraOptions::defaultOptions() { return {}; }
 #endif
