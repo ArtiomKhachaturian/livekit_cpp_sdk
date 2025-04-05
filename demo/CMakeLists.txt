@@ -27,6 +27,7 @@ qt_add_qml_module(appLiveKitClient
         QML_FILES SessionForm.qml
         QML_FILES
         SOURCES demoapp.h demoapp.cpp
+        SOURCES logger.h logger.cpp
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -40,8 +41,10 @@ set_target_properties(appLiveKitClient PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+target_include_directories(appLiveKitClient PRIVATE LiveKitCppClient ZaphoydTppWebsockets)
+
 target_link_libraries(appLiveKitClient
-    PRIVATE Qt6::Quick Qt6::QuickControls2
+    PRIVATE Qt6::Quick Qt6::QuickControls2 LiveKitCppClient ZaphoydTppWebsockets
 )
 
 include(GNUInstallDirs)

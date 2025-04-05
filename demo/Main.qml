@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 
 ApplicationWindow {
@@ -19,6 +20,7 @@ ApplicationWindow {
                 id: tabBar
                 currentIndex: clients.count - 1
                 Layout.fillWidth: true
+                enabled: app.valid
                 Repeater {
                     model: clients
                     TabButton {
@@ -31,6 +33,7 @@ ApplicationWindow {
             ToolButton {
                 Layout.alignment: Qt.AlignRight
                 text: qsTr("New client")
+                enabled: app.valid
                 onClicked: {
                     addNewClient()
                 }
@@ -44,9 +47,11 @@ ApplicationWindow {
 
             Repeater {
                 model: clients
+                enabled: app.valid
                 Client {
                     objectName: modelData
                     urlText: lastUrl
+                    enabled: app.valid
 
                     Component.onCompleted: {
                         app.registerClient(objectName, true)
@@ -66,6 +71,19 @@ ApplicationWindow {
     ListModel {
         id: clients
         property int usersCount: 0
+    }
+
+    MessageDialog {
+        id: errorMessageBox
+        buttons: MessageDialog.Ok
+    }
+
+    Connections {
+        target: app
+        function onShowErrorMessage(message){
+            errorMessageBox.text = message
+            errorMessageBox.open()
+        }
     }
 
     Component.onCompleted: {
