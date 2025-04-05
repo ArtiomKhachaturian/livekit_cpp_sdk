@@ -32,6 +32,7 @@ qt_add_qml_module(appLiveKitClient
         SOURCES mediadeviceinfo.h mediadeviceinfo.cpp
         SOURCES mediadevicesmodel.h mediadevicesmodel.cpp
         SOURCES sessionwrapper.h sessionwrapper.cpp
+        QML_FILES ChatView.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

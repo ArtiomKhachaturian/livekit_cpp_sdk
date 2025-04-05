@@ -22,13 +22,6 @@ bool SessionWrapper::connectToSfu(const QString& url, const QString& token)
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
-void SessionWrapper::disconnectFromSfu()
-{
-    if (_impl) {
-        _impl->disconnect();
-    }
-}
-
 bool SessionWrapper::connecting() const
 {
     switch (state()) {
@@ -93,6 +86,56 @@ QString SessionWrapper::name() const
     return {};
 }
 
+void SessionWrapper::disconnectFromSfu()
+{
+    if (_impl) {
+        _impl->disconnect();
+    }
+}
+
+bool SessionWrapper::sendChatMessage(const QString& message)
+{
+    return _impl && _impl->sendChatMessage(message.toStdString());
+}
+
+bool SessionWrapper::addMicrophoneTrack()
+{
+    if (_impl) {
+        if (!_micTrack) {
+            _micTrack = _impl->addMicrophoneTrack();
+        }
+        return nullptr != _micTrack;
+    }
+    return false;
+}
+
+bool SessionWrapper::addCameraTrack()
+{
+    if (_impl) {
+        if (!_cameraTrack) {
+            _cameraTrack = _impl->addCameraTrack();
+        }
+        return nullptr != _cameraTrack;
+    }
+    return false;
+}
+
+void SessionWrapper::removeMicrophoneTrack()
+{
+    if (_impl && _micTrack) {
+        _impl->removeAudioTrack(_micTrack);
+        _micTrack = {};
+    }
+}
+
+void SessionWrapper::removeCameraTrack()
+{
+    if (_impl && _cameraTrack) {
+        _impl->removeVideoTrack(_cameraTrack);
+        _cameraTrack = {};
+    }
+}
+
 void SessionWrapper::onError(LiveKitCpp::LiveKitError error, const std::string& what)
 {
     emit this->error(QString::fromStdString(LiveKitCpp::toString(error)),
@@ -107,4 +150,11 @@ void SessionWrapper::onChanged(const LiveKitCpp::Participant*)
 void SessionWrapper::onStateChanged(LiveKitCpp::SessionState)
 {
     emit stateChanged();
+}
+
+void SessionWrapper::onChatMessageReceived(const std::string& identity,
+                                           const std::string& message, const std::string&,
+                                           int64_t, bool deleted, bool)
+{
+    emit chatMessageReceived(QString::fromStdString(identity), QString::fromStdString(message), deleted);
 }

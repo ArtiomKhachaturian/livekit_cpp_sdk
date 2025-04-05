@@ -18,27 +18,45 @@ Pane {
         anchors.right: parent.right
         anchors.top: parent.top
         icon.name: "window-close"
+        z: 1
         onClicked: {
             sessionForm.disconnect()
             wantsToBeClosed(root.objectName)
         }
     }
 
-    StackView {
+    StackLayout {
+        id: stackView
         anchors.fill: parent
-        ConnectForm {
-            id: connection
-            width: parent.width - 200
-            anchors.centerIn: parent
-            onConnectClicked: {
-                wantsToBeConnected(root.objectName)
-                sessionForm.connect(urlText, tokenText)
+        Item {
+            ConnectForm {
+                id: connection
+                width: parent.width - 200
+                anchors.centerIn: parent
+                onConnectClicked: {
+                    wantsToBeConnected(root.objectName)
+                    sessionForm.connect(urlText, tokenText)
+                }
             }
         }
         SessionForm {
             id: sessionForm
+            Layout.fillHeight: true
+            Layout.fillWidth: true
             onError: (desc, details) => {
                 root.error(desc, details)
+            }
+            onStateChanged: {
+                switch (state) {
+                    case SessionWrapper.RtcConnecting:
+                    case SessionWrapper.RtcConnected:
+                    case SessionWrapper.RtcDisconnected:
+                        stackView.currentIndex = 1
+                        break
+                    default:
+                        stackView.currentIndex = 0
+                        break
+                }
             }
         }
     }
