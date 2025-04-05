@@ -81,6 +81,14 @@ ApplicationWindow {
                     }
                     ComboBox {
                         Layout.fillWidth: true
+                        model: app.recordingAudioDevicesModel
+                        textRole: "display"
+                        onActivated: index => {
+                            app.recordingAudioDevice = model.infoAt(index)
+                        }
+                        Component.onCompleted: {
+                            currentIndex = model.indexOf(app.recordingAudioDevice)
+                        }
                     }
                     Label {
                         text: qsTr("Volume:")
@@ -112,6 +120,14 @@ ApplicationWindow {
                     }
                     ComboBox {
                         Layout.fillWidth: true
+                        model: app.playoutAudioDevicesModel
+                        textRole: "display"
+                        onActivated: index => {
+                            app.playoutAudioDevice = model.infoAt(index)
+                        }
+                        Component.onCompleted: {
+                            currentIndex = model.indexOf(app.playoutAudioDevice)
+                        }
                     }
                     Label {
                         text: qsTr("Volume:")

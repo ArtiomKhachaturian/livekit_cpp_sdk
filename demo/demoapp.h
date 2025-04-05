@@ -1,5 +1,9 @@
 #ifndef DEMOAPP_H
 #define DEMOAPP_H
+#include "safeobj.h"
+#include "mediadeviceinfo.h"
+#include "mediadevicesmodel.h"
+#include <ServiceListener.h>
 #include <QGuiApplication>
 #include <QScopedPointer>
 #include <QPointer>
@@ -14,14 +18,18 @@ class Service;
 enum class ServiceState;
 }
 
-class DemoApp : public QGuiApplication
+class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
 {
     Q_OBJECT
     Q_PROPERTY(bool valid READ isValid CONSTANT)
-    Q_PROPERTY(bool audioRecordingEnabled READ audioRecordingEnabled WRITE setAudioRecordingEnabled NOTIFY audioRecordingChanged)
-    Q_PROPERTY(bool audioPlayoutEnabled READ audioPlayoutEnabled WRITE setAudioPlayoutEnabled NOTIFY audioPlayoutChanged)
+    Q_PROPERTY(bool audioRecordingEnabled READ audioRecordingEnabled WRITE setAudioRecordingEnabled NOTIFY audioRecordingEnabledChanged)
+    Q_PROPERTY(bool audioPlayoutEnabled READ audioPlayoutEnabled WRITE setAudioPlayoutEnabled NOTIFY audioPlayoutEnabledChanged)
     Q_PROPERTY(int audioRecordingVolume READ audioRecordingVolume WRITE setAudioRecordingVolume NOTIFY audioRecordingVolumeChanged)
     Q_PROPERTY(int audioPlayoutVolume READ audioPlayoutVolume WRITE setAudioPlayoutVolume NOTIFY audioPlayoutVolumeChanged)
+    Q_PROPERTY(MediaDevicesModel* recordingAudioDevicesModel MEMBER _recordingAudioDevicesModel CONSTANT)
+    Q_PROPERTY(MediaDevicesModel* playoutAudioDevicesModel MEMBER _playoutAudioDevicesModel CONSTANT)
+    Q_PROPERTY(MediaDeviceInfo recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
+    Q_PROPERTY(MediaDeviceInfo playoutAudioDevice READ playoutAudioDevice WRITE setPlayoutAudioDevice NOTIFY playoutAudioDeviceChanged)
 public:
     DemoApp(int &argc, char **argv);
     ~DemoApp() override;
@@ -31,6 +39,8 @@ public slots:
     Q_INVOKABLE void setAudioPlayoutEnabled(bool enabled);
     Q_INVOKABLE void setAudioRecordingVolume(int volume);
     Q_INVOKABLE void setAudioPlayoutVolume(int volume);
+    Q_INVOKABLE void setRecordingAudioDevice(const MediaDeviceInfo& device);
+    Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE bool registerClient(const QString& id);
     Q_INVOKABLE void unregisterClient(const QString& id);
 public:
@@ -39,16 +49,35 @@ public:
     Q_INVOKABLE bool audioPlayoutEnabled() const;
     Q_INVOKABLE int audioRecordingVolume() const;
     Q_INVOKABLE int audioPlayoutVolume() const;
+    Q_INVOKABLE MediaDeviceInfo recordingAudioDevice() const { return _recordingAudioDevice; }
+    Q_INVOKABLE MediaDeviceInfo playoutAudioDevice() const { return _playoutAudioDevice; }
 signals:
     void showErrorMessage(const QString& message);
-    void audioRecordingChanged();
-    void audioPlayoutChanged();
+    void audioRecordingEnabledChanged();
+    void audioPlayoutEnabledChanged();
     void audioRecordingVolumeChanged();
     void audioPlayoutVolumeChanged();
+    void recordingAudioDeviceChanged();
+    void playoutAudioDeviceChanged();
 private:
+    void onAudioRecordingStarted() final;
+    void onAudioRecordingStopped() final;
+    void onAudioPlayoutStarted() final;
+    void onAudioPlayoutStopped() final;
+    void onAudioRecordingEnabled(bool) final;
+    void onAudioPlayoutEnabled(bool) final;
+    void onAudioRecordingVolumeChanged(double) final;
+    void onAudioPlayoutVolumeChanged(double) final;
+    void onAudioRecordingDeviceChanged(const LiveKitCpp::MediaDeviceInfo& info) final;
+    void onAudioPlayoutDeviceChanged(const LiveKitCpp::MediaDeviceInfo& info) final;
+private:
+    MediaDevicesModel* const _recordingAudioDevicesModel;
+    MediaDevicesModel* const _playoutAudioDevicesModel;
     QScopedPointer<LiveKitCpp::Service> _service;
     std::optional<LiveKitCpp::ServiceState> _serviceInitFailure;
     QPointer<QObject> _appWindow;
+    SafeObj<MediaDeviceInfo> _recordingAudioDevice;
+    SafeObj<MediaDeviceInfo> _playoutAudioDevice;
 };
 
 #endif // DEMOAPP_H

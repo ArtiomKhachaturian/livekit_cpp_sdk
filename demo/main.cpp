@@ -5,6 +5,9 @@
 
 int main(int argc, char *argv[])
 {
+    qRegisterMetaType<MediaDeviceInfo>();
+    qRegisterMetaType<MediaDevicesModel*>();
+
     DemoApp app(argc, argv);
     QQmlApplicationEngine engine;
 

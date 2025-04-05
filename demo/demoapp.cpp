@@ -22,6 +22,8 @@ inline double normalizedVolume(double volume) {
 
 DemoApp::DemoApp(int &argc, char **argv)
     : QGuiApplication(argc, argv)
+    , _recordingAudioDevicesModel(new MediaDevicesModel(this))
+    , _playoutAudioDevicesModel(new MediaDevicesModel(this))
 {
     const auto logger = std::make_shared<Logger>();
     const auto wsf = std::make_shared<ZaphoydTppFactory>(logger);
@@ -29,6 +31,11 @@ DemoApp::DemoApp(int &argc, char **argv)
     const auto state = service->state();
     if (LiveKitCpp::ServiceState::OK == state) {
          _service.reset(service.release());
+        _recordingAudioDevice = _service->defaultAudioRecordingDevice();
+         _playoutAudioDevice = _service->defaultAudioPlayoutDevice();
+        _recordingAudioDevicesModel->setInfo(_service->recordingAudioDevices());
+         _playoutAudioDevicesModel->setInfo(_service->playoutAudioDevices());
+        _service->addListener(this);
     }
     else {
         _serviceInitFailure = state;
@@ -37,6 +44,9 @@ DemoApp::DemoApp(int &argc, char **argv)
 
 DemoApp::~DemoApp()
 {
+    if (_service) {
+        _service->removeListener(this);
+    }
 }
 
 void DemoApp::setAppWindow(QObject* appWindow, const QUrl&)
@@ -70,28 +80,42 @@ void DemoApp::setAppWindow(QObject* appWindow, const QUrl&)
 void DemoApp::setAudioRecordingEnabled(bool enabled)
 {
     if (_service) {
-        _service->setAudioRecording(enabled);
+        _service->setAudioRecordingEnabled(enabled);
     }
 }
 
 void DemoApp::setAudioPlayoutEnabled(bool enabled)
 {
     if (_service) {
-        _service->setAudioPlayout(enabled);
+        _service->setAudioPlayoutEnabled(enabled);
     }
 }
 
 void DemoApp::setAudioRecordingVolume(int volume)
 {
     if (_service) {
-        _service->setRecordingVolume(normalizeVolume(volume));
+        _service->setRecordingAudioVolume(normalizeVolume(volume));
     }
 }
 
 void DemoApp::setAudioPlayoutVolume(int volume)
 {
     if (_service) {
-        _service->setPlayoutVolume(normalizeVolume(volume));
+        _service->setPlayoutAudioVolume(normalizeVolume(volume));
+    }
+}
+
+void DemoApp::setRecordingAudioDevice(const MediaDeviceInfo& device)
+{
+    if (_service) {
+        _service->setAudioRecordingDevice(device);
+    }
+}
+
+void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
+{
+    if (_service) {
+        _service->setAudioPlayoutDevice(device);
     }
 }
 
@@ -130,7 +154,7 @@ bool DemoApp::audioPlayoutEnabled() const
 int DemoApp::audioRecordingVolume() const
 {
     if (_service) {
-        return normalizedVolume(_service->recordingVolume());
+        return normalizedVolume(_service->recordingAudioVolume());
     }
     return 0;
 }
@@ -138,7 +162,60 @@ int DemoApp::audioRecordingVolume() const
 int DemoApp::audioPlayoutVolume() const
 {
     if (_service) {
-        return normalizedVolume(_service->playoutVolume());
+        return normalizedVolume(_service->playoutAudioVolume());
     }
     return 0;
+}
+
+void DemoApp::onAudioRecordingStarted()
+{
+
+}
+
+void DemoApp::onAudioRecordingStopped()
+{
+
+}
+void DemoApp::onAudioPlayoutStarted()
+{
+
+}
+
+void DemoApp::onAudioPlayoutStopped()
+{
+
+}
+
+void DemoApp::onAudioRecordingEnabled(bool)
+{
+    emit audioRecordingEnabledChanged();
+}
+
+void DemoApp::onAudioPlayoutEnabled(bool)
+{
+    emit audioPlayoutEnabledChanged();
+}
+
+void DemoApp::onAudioRecordingVolumeChanged(double)
+{
+    emit audioRecordingVolumeChanged();
+}
+
+void DemoApp::onAudioPlayoutVolumeChanged(double)
+{
+    emit audioRecordingVolumeChanged();
+}
+
+void DemoApp::onAudioRecordingDeviceChanged(const LiveKitCpp::MediaDeviceInfo& info)
+{
+    if (_recordingAudioDevice.exchange(info)) {
+        emit recordingAudioDeviceChanged();
+    }
+}
+
+void DemoApp::onAudioPlayoutDeviceChanged(const LiveKitCpp::MediaDeviceInfo& info)
+{
+    if (_playoutAudioDevice.exchange(info)) {
+        emit playoutAudioDeviceChanged();
+    }
 }
