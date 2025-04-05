@@ -120,35 +120,15 @@ void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
     }
 }
 
-void DemoApp::unregisterClient(const QString& clientId)
+SessionWrapper* DemoApp::createSession(QObject* parent) const
 {
-    if (!clientId.isEmpty()) {
-        if (const auto wrapper = _clients.take(clientId)) {
-            wrapper->disconnectFromSfu();
-            wrapper->disconnect(this);
-            wrapper->deleteLater();
+    SessionWrapper* wrapper = nullptr;
+    if (_service) {
+        if (auto sessionImpl = _service->createSession()) {
+            wrapper = new SessionWrapper(std::move(sessionImpl), parent);
         }
     }
-}
-
-void DemoApp::connect(const QString& clientId, const QString& url, const QString& token)
-{
-    if (_service && !clientId.isEmpty() && !url.isEmpty() && !token.isEmpty()) {
-        SessionWrapper* wrapper = _clients.value(clientId, nullptr);
-        if (!wrapper) {
-            if (auto sessionImpl = _service->createSession()) {
-                wrapper = new SessionWrapper(std::move(sessionImpl), clientId, this);
-                _clients[clientId] = wrapper;
-                QObject::connect(wrapper, &SessionWrapper::error, this, &DemoApp::onSessionError);
-            }
-            else {
-                // TODO: log error
-            }
-        }
-        if (wrapper && !wrapper->connectToSfu(url, token)) {
-            emit showErrorMessage(tr("Unable connect to %1").arg(url), {}, clientId);
-        }
-    }
+    return wrapper;
 }
 
 bool DemoApp::isValid() const
@@ -180,13 +160,6 @@ int DemoApp::audioPlayoutVolume() const
         return normalizedVolume(_service->playoutAudioVolume());
     }
     return 0;
-}
-
-void DemoApp::onSessionError(const QString& clientId, const QString& desc, const QString& details)
-{
-    if (_clients.contains(clientId)) {
-        emit showErrorMessage(desc, details, clientId);
-    }
 }
 
 void DemoApp::onAudioRecordingStarted()

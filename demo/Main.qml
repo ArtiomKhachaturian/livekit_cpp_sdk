@@ -47,19 +47,16 @@ ApplicationWindow {
             Client {
                 objectName: modelData
                 urlText: lastUrl
+                tokenText: "1"
                 enabled: app.valid
-
                 Component.onCompleted: {
                     closable = clients.usersCount > 1
-                }
-                Component.onDestruction: {
-                    app.unregisterClient(objectName)
                 }
                 onWantsToBeClosed: name => {
                     removeClient(name)
                 }
-                onWantsToBeConnected: (url, token) => {
-                    app.connect(objectName, url, token)
+                onError: (desc, details) => {
+                    showErrorMessage(desc, details, objectName)
                 }
             }
         }
@@ -159,16 +156,6 @@ ApplicationWindow {
         title: qsTr("Fatal error")
     }
 
-    Connections {
-        target: app
-        function onShowErrorMessage(message, details, clientId){
-            errorMessageBox.text = message
-            errorMessageBox.informativeText = details
-            errorMessageBox.title = clientId
-            errorMessageBox.open()
-        }
-    }
-
     Component.onCompleted: {
         addNewClient()
     }
@@ -185,5 +172,12 @@ ApplicationWindow {
                 break
             }
         }
+    }
+
+    function showErrorMessage(message, details, clientId){
+        errorMessageBox.text = message
+        errorMessageBox.informativeText = details
+        errorMessageBox.title = clientId
+        errorMessageBox.open()
     }
 }

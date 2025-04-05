@@ -1,3 +1,4 @@
+#include "sessionwrapper.h"
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQmlContext>
@@ -7,6 +8,7 @@ int main(int argc, char *argv[])
 {
     qRegisterMetaType<MediaDeviceInfo>();
     qRegisterMetaType<MediaDevicesModel*>();
+    qRegisterMetaType<SessionWrapper*>();
 
     DemoApp app(argc, argv);
     QQmlApplicationEngine engine;

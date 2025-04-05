@@ -4,11 +4,14 @@ import QtQuick.Layouts
 
 Pane {
     id: root
+
     property bool closable: true
     property alias urlText: connection.urlText
     property alias tokenText: connection.tokenText
+
     signal wantsToBeClosed(string name)
-    signal wantsToBeConnected(string url, string token)
+    signal wantsToBeConnected(string name)
+    signal error(string desc, string details)
 
     ToolButton {
         visible: closable
@@ -16,6 +19,7 @@ Pane {
         anchors.top: parent.top
         icon.name: "window-close"
         onClicked: {
+            sessionForm.disconnect()
             wantsToBeClosed(root.objectName)
         }
     }
@@ -27,11 +31,21 @@ Pane {
             width: parent.width - 200
             anchors.centerIn: parent
             onConnectClicked: {
-                wantsToBeConnected(connection.urlText, connection.tokenText)
+                wantsToBeConnected(root.objectName)
+                sessionForm.connect(urlText, tokenText)
             }
         }
         SessionForm {
-
+            id: sessionForm
+            onError: (desc, details) => {
+                root.error(desc, details)
+            }
         }
     }
+
+    BusyIndicator {
+        anchors.fill: parent
+        running: sessionForm.connecting
+    }
+
 }
