@@ -12,56 +12,117 @@ ApplicationWindow {
 
     property string lastUrl: "ws://localhost:7880"
 
-    ColumnLayout {
-        anchors.fill: parent
-
-        RowLayout {
-            TabBar {
-                id: tabBar
-                currentIndex: clients.count - 1
-                Layout.fillWidth: true
-                enabled: app.valid
-                Repeater {
-                    model: clients
-                    TabButton {
-                        text: modelData
-                        width: 100
-                    }
-                }
-            }
-
-            ToolButton {
-                Layout.alignment: Qt.AlignRight
-                text: qsTr("New client")
-                enabled: app.valid
-                onClicked: {
-                    addNewClient()
+    header: RowLayout {
+        TabBar {
+            id: tabBar
+            currentIndex: clients.count - 1
+            enabled: app.valid
+            visible: count > 0
+            Repeater {
+                model: clients
+                TabButton {
+                    text: modelData
+                    width: 100
                 }
             }
         }
 
-        StackLayout {
-            id: clientsView
-            currentIndex: tabBar.currentIndex
-            Layout.fillHeight: true
+        ToolButton {
+            Layout.alignment: Qt.AlignRight
+            text: qsTr("New client")
+            enabled: app.valid
+            onClicked: {
+                addNewClient()
+            }
+        }
+    }
 
-            Repeater {
-                model: clients
+    StackLayout {
+        id: clientsView
+        currentIndex: tabBar.currentIndex
+        anchors.fill: parent
+        Repeater {
+            model: clients
+            enabled: app.valid
+            Client {
+                objectName: modelData
+                urlText: lastUrl
                 enabled: app.valid
-                Client {
-                    objectName: modelData
-                    urlText: lastUrl
-                    enabled: app.valid
 
-                    Component.onCompleted: {
-                        app.registerClient(objectName, true)
-                        closable = clients.usersCount > 1
+                Component.onCompleted: {
+                    closable = clients.usersCount > 1
+                }
+                Component.onDestruction: {
+                    app.unregisterClient(objectName)
+                }
+                onWantsToBeClosed: name => {
+                    removeClient(name)
+                }
+            }
+        }
+    }
+
+    footer: Frame {
+        RowLayout {
+            anchors.fill: parent
+            GroupBox {
+                title: qsTr("Microphone")
+                Layout.fillWidth: true
+                RowLayout {
+                    anchors.fill: parent
+                    ToolButton {
+                        icon.name: "audio-input-microphone"
+                        checkable: true
+                        checked: app.audioRecordingEnabled
+                        display: ToolButton.IconOnly
+                        onCheckedChanged: {
+                            app.audioRecordingEnabled = checked
+                        }
                     }
-                    Component.onDestruction: {
-                        app.registerClient(objectName, false)
+                    ComboBox {
+                        Layout.fillWidth: true
                     }
-                    onWantsToBeClosed: name => {
-                        removeClient(name)
+                    Label {
+                        text: qsTr("Volume:")
+                    }
+                    Slider {
+                        from: 0
+                        to: 100
+                        value: app.audioRecordingVolume
+                        onValueChanged: {
+                            app.audioRecordingVolume = value
+                        }
+                    }
+                }
+            }
+
+            GroupBox {
+                title: qsTr("Speakers")
+                Layout.fillWidth: true
+                RowLayout {
+                    anchors.fill: parent
+                    ToolButton {
+                        icon.name: "audio-card"
+                        checkable: true
+                        checked: app.audioPlayoutEnabled
+                        display: ToolButton.IconOnly
+                        onCheckedChanged: {
+                            app.audioPlayoutEnabled = checked
+                        }
+                    }
+                    ComboBox {
+                        Layout.fillWidth: true
+                    }
+                    Label {
+                        text: qsTr("Volume:")
+                    }
+                    Slider {
+                        from: 0
+                        to: 100
+                        value: app.audioPlayoutVolume
+                        onValueChanged: {
+                            app.audioPlayoutVolume = value
+                        }
                     }
                 }
             }
@@ -75,14 +136,14 @@ ApplicationWindow {
 
     MessageDialog {
         id: errorMessageBox
-        buttons: MessageDialog.Ok
+        buttons: MessageDialog.Close
+        title: qsTr("Fatal error")
     }
 
     Connections {
         target: app
         function onShowErrorMessage(message){
-            errorMessageBox.text = message
-            errorMessageBox.open()
+            showError(message)
         }
     }
 
@@ -91,8 +152,14 @@ ApplicationWindow {
     }
 
     function addNewClient() {
-        ++clients.usersCount
-        clients.append({text:"client #" + clients.usersCount})
+        var clientId = "client #" + clients.usersCount + 1
+        if (app.registerClient(clientId)) {
+            ++clients.usersCount
+            clients.append({text:clientId})
+        }
+        else {
+            showError(qsTr("Unable to add new client"), qsTr("see logs for details"))
+        }
     }
 
     function removeClient(name) {
@@ -102,5 +169,11 @@ ApplicationWindow {
                 break
             }
         }
+    }
+
+    function showError(message, details = "") {
+        errorMessageBox.text = message
+        errorMessageBox.detailedText = details
+        errorMessageBox.open()
     }
 }

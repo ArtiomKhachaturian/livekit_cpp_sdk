@@ -5,6 +5,21 @@
 #include <QDebug>
 #include <memory>
 
+namespace
+{
+
+inline double normalizeVolume(int volume) {
+    volume = qBound(0, volume, 100);
+    return volume / 100.;
+}
+
+inline double normalizedVolume(double volume) {
+    volume = qBound<double>(0., volume, 1.);
+    return qRound(volume * 100);
+}
+
+}
+
 DemoApp::DemoApp(int &argc, char **argv)
     : QGuiApplication(argc, argv)
 {
@@ -52,14 +67,78 @@ void DemoApp::setAppWindow(QObject* appWindow, const QUrl&)
     }
 }
 
-void DemoApp::registerClient(const QString& id, bool reg)
+void DemoApp::setAudioRecordingEnabled(bool enabled)
+{
+    if (_service) {
+        _service->setAudioRecording(enabled);
+    }
+}
+
+void DemoApp::setAudioPlayoutEnabled(bool enabled)
+{
+    if (_service) {
+        _service->setAudioPlayout(enabled);
+    }
+}
+
+void DemoApp::setAudioRecordingVolume(int volume)
+{
+    if (_service) {
+        _service->setRecordingVolume(normalizeVolume(volume));
+    }
+}
+
+void DemoApp::setAudioPlayoutVolume(int volume)
+{
+    if (_service) {
+        _service->setPlayoutVolume(normalizeVolume(volume));
+    }
+}
+
+bool DemoApp::registerClient(const QString& id)
 {
     if (_service && !id.isEmpty()) {
-        qDebug() << id << (reg ? "is registered" : "is unregistered");
+        //qDebug() << id << (reg ? "is registered" : "is unregistered");
+
+        return true;
+    }
+    return false;
+}
+
+void DemoApp::unregisterClient(const QString& id)
+{
+    if (!id.isEmpty()) {
+
     }
 }
 
 bool DemoApp::isValid() const
 {
     return nullptr != _service;
+}
+
+bool DemoApp::audioRecordingEnabled() const
+{
+    return _service && _service->audioRecordingEnabled();
+}
+
+bool DemoApp::audioPlayoutEnabled() const
+{
+    return _service && _service->audioPlayoutEnabled();
+}
+
+int DemoApp::audioRecordingVolume() const
+{
+    if (_service) {
+        return normalizedVolume(_service->recordingVolume());
+    }
+    return 0;
+}
+
+int DemoApp::audioPlayoutVolume() const
+{
+    if (_service) {
+        return normalizedVolume(_service->playoutVolume());
+    }
+    return 0;
 }
