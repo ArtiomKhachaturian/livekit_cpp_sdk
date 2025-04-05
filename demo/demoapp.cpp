@@ -1,5 +1,6 @@
 #include "demoapp.h"
 #include "logger.h"
+#include "sessionwrapper.h"
 #include <Service.h>
 #include <ZaphoydTppFactory.h>
 #include <QDebug>
@@ -119,20 +120,34 @@ void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
     }
 }
 
-bool DemoApp::registerClient(const QString& id)
+void DemoApp::unregisterClient(const QString& clientId)
 {
-    if (_service && !id.isEmpty()) {
-        //qDebug() << id << (reg ? "is registered" : "is unregistered");
-
-        return true;
+    if (!clientId.isEmpty()) {
+        if (const auto wrapper = _clients.take(clientId)) {
+            wrapper->disconnectFromSfu();
+            wrapper->disconnect(this);
+            wrapper->deleteLater();
+        }
     }
-    return false;
 }
 
-void DemoApp::unregisterClient(const QString& id)
+void DemoApp::connect(const QString& clientId, const QString& url, const QString& token)
 {
-    if (!id.isEmpty()) {
-
+    if (_service && !clientId.isEmpty() && !url.isEmpty() && !token.isEmpty()) {
+        SessionWrapper* wrapper = _clients.value(clientId, nullptr);
+        if (!wrapper) {
+            if (auto sessionImpl = _service->createSession()) {
+                wrapper = new SessionWrapper(std::move(sessionImpl), clientId, this);
+                _clients[clientId] = wrapper;
+                QObject::connect(wrapper, &SessionWrapper::error, this, &DemoApp::onSessionError);
+            }
+            else {
+                // TODO: log error
+            }
+        }
+        if (wrapper && !wrapper->connectToSfu(url, token)) {
+            emit showErrorMessage(tr("Unable connect to %1").arg(url), {}, clientId);
+        }
     }
 }
 
@@ -165,6 +180,13 @@ int DemoApp::audioPlayoutVolume() const
         return normalizedVolume(_service->playoutAudioVolume());
     }
     return 0;
+}
+
+void DemoApp::onSessionError(const QString& clientId, const QString& desc, const QString& details)
+{
+    if (_clients.contains(clientId)) {
+        emit showErrorMessage(desc, details, clientId);
+    }
 }
 
 void DemoApp::onAudioRecordingStarted()

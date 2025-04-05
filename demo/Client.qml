@@ -8,6 +8,7 @@ Pane {
     property alias urlText: connection.urlText
     property alias tokenText: connection.tokenText
     signal wantsToBeClosed(string name)
+    signal wantsToBeConnected(string url, string token)
 
     ToolButton {
         visible: closable
@@ -25,6 +26,9 @@ Pane {
             id: connection
             width: parent.width - 200
             anchors.centerIn: parent
+            onConnectClicked: {
+                wantsToBeConnected(connection.urlText, connection.tokenText)
+            }
         }
         SessionForm {
 

@@ -27,7 +27,7 @@ ApplicationWindow {
             }
         }
 
-        ToolButton {
+        Button {
             Layout.alignment: Qt.AlignRight
             text: qsTr("New client")
             enabled: app.valid
@@ -57,6 +57,9 @@ ApplicationWindow {
                 }
                 onWantsToBeClosed: name => {
                     removeClient(name)
+                }
+                onWantsToBeConnected: (url, token) => {
+                    app.connect(objectName, url, token)
                 }
             }
         }
@@ -158,8 +161,11 @@ ApplicationWindow {
 
     Connections {
         target: app
-        function onShowErrorMessage(message){
-            showError(message)
+        function onShowErrorMessage(message, details, clientId){
+            errorMessageBox.text = message
+            errorMessageBox.informativeText = details
+            errorMessageBox.title = clientId
+            errorMessageBox.open()
         }
     }
 
@@ -168,14 +174,8 @@ ApplicationWindow {
     }
 
     function addNewClient() {
-        var clientId = "client #" + clients.usersCount + 1
-        if (app.registerClient(clientId)) {
-            ++clients.usersCount
-            clients.append({text:clientId})
-        }
-        else {
-            showError(qsTr("Unable to add new client"), qsTr("see logs for details"))
-        }
+        var clientId = "client #" + (++clients.usersCount)
+        clients.append({text:clientId})
     }
 
     function removeClient(name) {
@@ -185,11 +185,5 @@ ApplicationWindow {
                 break
             }
         }
-    }
-
-    function showError(message, details = "") {
-        errorMessageBox.text = message
-        errorMessageBox.detailedText = details
-        errorMessageBox.open()
     }
 }

@@ -43,6 +43,7 @@ Frame {
             id: connect
             Layout.fillWidth: true
             text: qsTr("Connect")
+            enabled: url.text !== "" && token.text !== ""
             onClicked: {
                 connectClicked()
             }

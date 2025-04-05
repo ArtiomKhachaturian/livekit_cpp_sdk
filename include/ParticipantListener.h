@@ -14,6 +14,7 @@
 #pragma once // ParticipantListener.h
 #include "rtc/TrackType.h"
 #include "rtc/EncryptionType.h"
+#include <string>
 
 namespace LiveKitCpp
 {

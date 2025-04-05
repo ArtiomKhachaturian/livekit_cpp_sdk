@@ -6,6 +6,7 @@
 #include <ServiceListener.h>
 #include <QGuiApplication>
 #include <QScopedPointer>
+#include <QHash>
 #include <QPointer>
 #include <optional>
 
@@ -17,6 +18,8 @@ namespace LiveKitCpp {
 class Service;
 enum class ServiceState;
 }
+
+class SessionWrapper;
 
 class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
 {
@@ -41,8 +44,8 @@ public slots:
     Q_INVOKABLE void setAudioPlayoutVolume(int volume);
     Q_INVOKABLE void setRecordingAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
-    Q_INVOKABLE bool registerClient(const QString& id);
-    Q_INVOKABLE void unregisterClient(const QString& id);
+    Q_INVOKABLE void unregisterClient(const QString& clientId);
+    Q_INVOKABLE void connect(const QString& clientId, const QString& url, const QString& token);
 public:
     Q_INVOKABLE bool isValid() const;
     Q_INVOKABLE bool audioRecordingEnabled() const;
@@ -52,14 +55,19 @@ public:
     Q_INVOKABLE MediaDeviceInfo recordingAudioDevice() const { return _recordingAudioDevice; }
     Q_INVOKABLE MediaDeviceInfo playoutAudioDevice() const { return _playoutAudioDevice; }
 signals:
-    void showErrorMessage(const QString& message);
+    void showErrorMessage(const QString& message,
+                          const QString& details = {},
+                          const QString& clientId = {});
     void audioRecordingEnabledChanged();
     void audioPlayoutEnabledChanged();
     void audioRecordingVolumeChanged();
     void audioPlayoutVolumeChanged();
     void recordingAudioDeviceChanged();
     void playoutAudioDeviceChanged();
+private slots:
+    void onSessionError(const QString& clientId, const QString& desc, const QString& details);
 private:
+    // impl. of LiveKitCpp::ServiceListener
     void onAudioRecordingStarted() final;
     void onAudioRecordingStopped() final;
     void onAudioPlayoutStarted() final;
@@ -78,6 +86,7 @@ private:
     QPointer<QObject> _appWindow;
     SafeObj<MediaDeviceInfo> _recordingAudioDevice;
     SafeObj<MediaDeviceInfo> _playoutAudioDevice;
+    QHash<QString, SessionWrapper*> _clients;
 };
 
 #endif // DEMOAPP_H

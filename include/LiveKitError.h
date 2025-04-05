@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // LiveKitError.h
 #include "LiveKitClientExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
