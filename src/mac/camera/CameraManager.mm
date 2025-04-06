@@ -13,10 +13,10 @@
 // limitations under the License.
 #ifdef WEBRTC_MAC
 #include "CameraManager.h"
-#include "AVCameraCapturer.h"
 #include "MacOSCameraCapturer.h"
 #include "Utils.h"
 #include <modules/video_capture/device_info_impl.h>
+#import <components/capturer/RTCCameraVideoCapturer.h>
 
 namespace
 {
@@ -25,7 +25,6 @@ class MacOSDeviceInfoImpl : public webrtc::videocapturemodule::DeviceInfoImpl
 {
 public:
     MacOSDeviceInfoImpl() = default;
-    static AVCaptureDevice* findDevice(const char* deviceUniqueIdUTF8);
     // impl. of webrtc::VideoCaptureModule
     uint32_t NumberOfDevices() final;
     int32_t GetDeviceName(uint32_t deviceNumber,
@@ -67,15 +66,10 @@ namespace
 
 using namespace LiveKitCpp;
 
-AVCaptureDevice* MacOSDeviceInfoImpl::findDevice(const char* deviceUniqueIdUTF8)
-{
-    return [AVCameraCapturer deviceWithUniqueIDUTF8:deviceUniqueIdUTF8];
-}
-
 uint32_t MacOSDeviceInfoImpl::NumberOfDevices()
 {
     @autoreleasepool {
-        auto devs = [AVCameraCapturer availableDevices];
+        auto devs = [RTCCameraVideoCapturer captureDevices];
         if (devs) {
             return static_cast<uint32_t>([devs count]);
         }
@@ -93,7 +87,7 @@ int32_t MacOSDeviceInfoImpl::GetDeviceName(uint32_t deviceNumber,
 {
     if (deviceNameUTF8 && deviceNameLength > 0U) {
         @autoreleasepool {
-            if (auto devs = [AVCameraCapturer availableDevices]) {
+            if (auto devs = [RTCCameraVideoCapturer captureDevices]) {
                 if (deviceNumber < [devs count]) {
                     auto dev = [devs objectAtIndex:deviceNumber];
                     if (dev) {

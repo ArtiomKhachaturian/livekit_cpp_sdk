@@ -23,13 +23,9 @@
 #ifdef __OBJC__
 @class AVCaptureDevice;
 @class AVCaptureDeviceFormat;
-@class AVCameraCapturer;
-@class MacOSCameraCapturerDelegate;
 #else
 typedef struct objc_object AVCaptureDevice;
 typedef struct objc_object AVCaptureDeviceFormat;
-typedef struct objc_object AVCameraCapturer;
-typedef struct objc_object MacOSCameraCapturerDelegate;
 #endif
 
 namespace Bricks {
@@ -39,14 +35,16 @@ class Logger;
 namespace LiveKitCpp
 {
 
-class MacOSCameraCapturer : public CameraCapturer
+class MacOSCameraCapturer : public CameraCapturer,
+                            private rtc::VideoSinkInterface<webrtc::VideoFrame>
 {
+    class Impl;
 public:
     ~MacOSCameraCapturer() override;
     static rtc::scoped_refptr<MacOSCameraCapturer>
         create(const MediaDeviceInfo& deviceInfo,
                const std::shared_ptr<Bricks::Logger>& logger = {});
-    void deliverFrame(int64_t timestampMicro, CMSampleBufferRef sampleBuffer);
+    static AVCaptureDevice* deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(const char* deviceUniqueIdUTF8);
     static std::string localizedDeviceName(AVCaptureDevice* device);
@@ -59,23 +57,20 @@ public:
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
     bool CaptureStarted() final;
 protected:
-    MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo,
-                        AVCaptureDevice* device,
-                        const std::shared_ptr<Bricks::Logger>& logger = {});
+    MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl);
 private:
-    rtc::scoped_refptr<webrtc::VideoFrameBuffer> createBuffer(CMSampleBufferRef sampleBuffer) const;
-    AVCaptureDeviceFormat* findClosestFormat(const webrtc::VideoCaptureCapability& capability) const;
-    std::optional<webrtc::ColorSpace> activeColorSpace() const;
     static webrtc::VideoType fromMediaSubType(OSType type);
     static webrtc::VideoType fromMediaSubType(CMFormatDescriptionRef format);
     static bool interlaced(CMFormatDescriptionRef format);
     template <typename Callback>
     static void enumerateFramerates(AVCaptureDeviceFormat* format, Callback callback);
+    AVCaptureDeviceFormat* findClosestFormat(const webrtc::VideoCaptureCapability& capability) const;
+    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
+    void OnFrame(const webrtc::VideoFrame& frame) final { sendFrame(frame); }
+    void OnDiscardedFrame() final { discardFrame(); }
 private:
-    static inline int32_t _frameRateStep = 10;
-    AVCaptureDevice* const _device;
-    MacOSCameraCapturerDelegate* const _delegate;
-    AVCameraCapturer* const _impl;
+    static constexpr int32_t _frameRateStep = 10;
+    const std::unique_ptr<Impl> _impl;
 };
 
 } // namespace LiveKitCpp

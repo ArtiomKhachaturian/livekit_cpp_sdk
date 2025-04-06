@@ -233,6 +233,10 @@ if (WEBRTC_AVAILABLE)
         ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_AVAILABLE -DJSON_HAS_CPP_17)
     if (APPLE)
+        target_include_directories(${PROJECT_NAME} PRIVATE 
+            ${WEBRTC_INCLUDE_DIR}/sdk/objc
+            ${WEBRTC_INCLUDE_DIR}/sdk/objc/base
+        )
         target_compile_definitions(${PROJECT_NAME} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
         target_link_libraries(${PROJECT_NAME} PRIVATE "-framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
     elseif(WIN32)

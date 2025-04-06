@@ -90,9 +90,9 @@ std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webr
                                                    int64_t timeStampMicro = 0LL, uint16_t id = 0U,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace = {});
 std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
-                                                   int64_t timeStampMicro = 0LL,
-                                                   uint16_t id = 0U,
-                                                   const std::optional<webrtc::ColorSpace>& colorSpace = {});
+                                                        int64_t timeStampMicro = 0LL,
+                                                        uint16_t id = 0U,
+                                                        const std::optional<webrtc::ColorSpace>& colorSpace = {});
 
 
 } // namespace LiveKitCpp

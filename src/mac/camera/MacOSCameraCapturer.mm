@@ -13,14 +13,17 @@
 // limitations under the License.
 #ifdef WEBRTC_MAC
 #include "MacOSCameraCapturer.h"
-#include "MacOSCameraCapturerDelegate.h"
-#include "AVCameraCapturer.h"
-#include "CoreVideoPixelBuffer.h"
-#include "VTSupportedPixelFormats.h"
+#include "CameraObserver.h"
+#include "CameraManager.h"
+#include "Listener.h"
+#include "Logger.h"
 #include "VideoFrameBuffer.h"
+#include "VTSupportedPixelFormats.h"
 #include "Utils.h"
 #include <modules/video_capture/video_capture_config.h>
 #include <rtc_base/ref_counted_object.h>
+#include <components/capturer/RTCCameraVideoCapturer.h>
+#include <native/api/video_frame_buffer.h>
 #include <set>
 #include <unordered_set>
 
@@ -40,23 +43,53 @@ inline size_t hashCode(const webrtc::VideoCaptureCapability& cap) {
 
 }
 
+@interface CapturerDelegate : NSObject<RTC_OBJC_TYPE(RTCVideoCapturerDelegate)>
+
+- (instancetype) init:(const std::shared_ptr<Bricks::Logger>&) logger;
+- (void) reportAboutError:(NSError* _Nullable) error;
+@property (nullable, nonatomic) rtc::VideoSinkInterface<webrtc::VideoFrame>* sink;
+@property (nullable, nonatomic) LiveKitCpp::CameraObserver* observer;
+@property (nonatomic) LiveKitCpp::CameraState state;
+
+@end
+
 namespace LiveKitCpp
 {
 
-MacOSCameraCapturer::MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo,
-                                         AVCaptureDevice* device,
-                                         const std::shared_ptr<Bricks::Logger>& logger)
-    : CameraCapturer(deviceInfo)
-    , _device(device)
-    , _delegate([[MacOSCameraCapturerDelegate alloc] initWithCapturer:this andLogger:logger])
-    , _impl([[AVCameraCapturer alloc] initWithDelegate:_delegate])
+class MacOSCameraCapturer::Impl
 {
+public:
+    Impl(AVCaptureDevice* device, const std::shared_ptr<Bricks::Logger>& logger);
+    ~Impl();
+    AVCaptureDevice* device() const noexcept { return _device; }
+    bool startCapture(AVCaptureDeviceFormat* format, NSInteger fps);
+    bool stopCapture();
+    void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) { _delegate.sink = sink; }
+    void setObserver(CameraObserver* observer) { _delegate.observer = observer; }
+    CameraState state() const { return _delegate.state; }
+    void setState(CameraState state) { _delegate.state = state; }
+private:
+    AVCaptureDevice* const _device;
+    CapturerDelegate* const _delegate;
+    RTC_OBJC_TYPE(RTCCameraVideoCapturer)* const _capturer;
+};
+
+MacOSCameraCapturer::MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo,
+                                         std::unique_ptr<Impl> impl)
+    : CameraCapturer(deviceInfo)
+    , _impl(std::move(impl))
+{
+    _impl->setSink(this);
 }
 
 MacOSCameraCapturer::~MacOSCameraCapturer()
 {
-    MacOSCameraCapturer::StopCapture();
-    [_delegate reset];
+    const auto ok = 0 == MacOSCameraCapturer::StopCapture();
+    _impl->setSink(nullptr);
+    if (ok) {
+        _impl->setState(CameraState::Stopped);
+    }
+    _impl->setObserver(nullptr);
 }
 
 rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
@@ -66,36 +99,26 @@ rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
     if (!deviceInfo._guid.empty()) {
         @autoreleasepool {
             const auto guid = deviceInfo._guid.c_str();
-            if (AVCaptureDevice* device = [AVCameraCapturer deviceWithUniqueIDUTF8:guid]) {
-                auto capturer = rtc::make_ref_counted<MacOSCameraCapturer>(deviceInfo,
-                                                                           device,
-                                                                           logger);
-                if (capturer->_impl) {
-                    return capturer;
-                }
+            AVCaptureDevice* device = deviceWithUniqueIDUTF8(guid);
+            if (device) {
+                auto impl = std::make_unique<Impl>(device, logger);
+                return rtc::make_ref_counted<MacOSCameraCapturer>(deviceInfo, std::move(impl));
             }
         }
     }
     return {};
 }
 
-void MacOSCameraCapturer::deliverFrame(int64_t timestampMicro, CMSampleBufferRef sampleBuffer)
+AVCaptureDevice* MacOSCameraCapturer::deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8)
 {
-    if (sampleBuffer && hasSink()) {
-        if (const auto nativeFrame = createVideoFrame(createBuffer(sampleBuffer), timestampMicro)) {
-            sendFrame(nativeFrame.value());
-        }
-        else {
-            discardFrame();
-        }
-    }
+    return [AVCaptureDevice deviceWithUniqueID:toNSString(deviceUniqueIdUTF8)];
 }
 
 std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(AVCaptureDevice* device)
 {
     if (device) {
         @autoreleasepool {
-            if (auto formats = [AVCameraCapturer formatsForDevice:device]) {
+            if (auto formats = [RTCCameraVideoCapturer supportedFormatsForDevice:device]) {
                 // fill
                 std::list<webrtc::VideoCaptureCapability> caps;
                 std::unordered_set<size_t> enumerated;
@@ -144,7 +167,8 @@ std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(AV
 std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(const char* deviceUniqueIdUTF8)
 {
     @autoreleasepool {
-        return capabilities([AVCameraCapturer deviceWithUniqueIDUTF8:deviceUniqueIdUTF8]);
+        const auto device = deviceWithUniqueIDUTF8(deviceUniqueIdUTF8);
+        return capabilities(device);
     }
 }
 
@@ -166,46 +190,58 @@ std::string MacOSCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
 
 void MacOSCameraCapturer::setObserver(CameraObserver* observer)
 {
-    [_delegate setObserver:observer];
+    _impl->setObserver(observer);
 }
 
 int32_t MacOSCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& capability)
 {
-    if (_impl) {
-        switch (_delegate.state) {
-            case CameraState::Stopped:
-            case CameraState::Stopping:
-                @autoreleasepool {
-                    auto format = findClosestFormat(capability);
-                    if (format) {
-                        if ([_impl startCaptureWithDevice:_device format:format fps:capability.maxFPS]) {
-                            return 0;
-                        }
-                    }
+    switch (_impl->state()) {
+        case CameraState::Stopped:
+        case CameraState::Stopping:
+            @autoreleasepool {
+                auto format = findClosestFormat(capability);
+                if (format && _impl->startCapture(format, capability.maxFPS)) {
+                    return 0;
                 }
-                break;
-            default:
-                break;
-        }
+            }
+            break;
+        default:
+            break;
     }
     return -1;
 }
 
 int32_t MacOSCameraCapturer::StopCapture()
 {
-    if (_impl) {
-        switch (_delegate.state) {
-            case CameraState::Starting:
-            case CameraState::Started:
-                if ([_impl stopCapture]) {
-                    return 0;
-                }
-                break;
-            case CameraState::Stopping:
-            case CameraState::Stopped:
+    switch (_impl->state()) {
+        case CameraState::Starting:
+        case CameraState::Started:
+            if (_impl->stopCapture()) {
                 return 0;
-            default:
-                break;
+            }
+            break;
+        case CameraState::Stopping:
+        case CameraState::Stopped:
+            return 0;
+        default:
+            break;
+    }
+    return -1;
+}
+
+int32_t MacOSCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& settings)
+{
+    @autoreleasepool {
+        if (_impl->device().activeFormat) {
+            const auto desc = _impl->device().activeFormat.formatDescription;
+            const auto dimensions = CMVideoFormatDescriptionGetDimensions(desc);
+            settings.videoType = fromMediaSubType(desc);
+            settings.interlaced = interlaced(desc);
+            settings.width = dimensions.width;
+            settings.height = dimensions.height;
+            const auto fps = 1. / CMTimeGetSeconds(_impl->device().activeVideoMinFrameDuration);
+            settings.maxFPS = static_cast<int32_t>(std::round(fps));
+            return 0;
         }
     }
     return -1;
@@ -213,56 +249,7 @@ int32_t MacOSCameraCapturer::StopCapture()
 
 bool MacOSCameraCapturer::CaptureStarted()
 {
-    return CameraState::Started == _delegate.state;
-}
-
-int32_t MacOSCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& settings)
-{
-    @autoreleasepool {
-        if (_device.activeFormat) {
-            const auto dimensions = CMVideoFormatDescriptionGetDimensions(_device.activeFormat.formatDescription);
-            settings.videoType = fromMediaSubType(_device.activeFormat.formatDescription);
-            settings.interlaced = interlaced(_device.activeFormat.formatDescription);
-            settings.width = dimensions.width;
-            settings.height = dimensions.height;
-            settings.maxFPS = static_cast<int32_t>([_impl fps]);
-            return 0;
-        }
-    }
-    return -1;
-}
-
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> MacOSCameraCapturer::createBuffer(CMSampleBufferRef sampleBuffer) const
-{
-    return CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer);
-}
-
-AVCaptureDeviceFormat* MacOSCameraCapturer::findClosestFormat(const webrtc::VideoCaptureCapability& capability) const
-{
-    @autoreleasepool {
-        auto eligibleFormats = eligibleDeviceFormats(_device, capability.maxFPS);
-        if (eligibleFormats) {
-            AVCaptureDeviceFormat* desiredDeviceFormat = nil;
-            for (AVCaptureDeviceFormat* deviceFormat in eligibleFormats) {
-                CMVideoDimensions dimension = CMVideoFormatDescriptionGetDimensions(deviceFormat.formatDescription);
-                if (dimension.width == capability.width && dimension.height == capability.height) {
-                    // this is the preferred format so no need to wait for better option.
-                    return deviceFormat; // exact the same as required
-                }
-                if (dimension.width < capability.width && dimension.height < capability.height) {
-                    // this is good candidate, but let's wait for something better.
-                    desiredDeviceFormat = deviceFormat;
-                }
-            }
-            return desiredDeviceFormat;
-        }
-    }
-    return nil;
-}
-
-std::optional<webrtc::ColorSpace> MacOSCameraCapturer::activeColorSpace() const
-{
-    return std::nullopt; // not yet supported now
+    return CameraState::Started == _impl->state();
 }
 
 webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(OSType type)
@@ -319,8 +306,164 @@ void MacOSCameraCapturer::enumerateFramerates(AVCaptureDeviceFormat* format, Cal
     }
 }
 
+AVCaptureDeviceFormat* MacOSCameraCapturer::findClosestFormat(const webrtc::VideoCaptureCapability& capability) const
+{
+    @autoreleasepool {
+        auto eligibleFormats = eligibleDeviceFormats(_impl->device(), capability.maxFPS);
+        if (eligibleFormats) {
+            AVCaptureDeviceFormat* desiredDeviceFormat = nil;
+            for (AVCaptureDeviceFormat* deviceFormat in eligibleFormats) {
+                CMVideoDimensions dimension = CMVideoFormatDescriptionGetDimensions(deviceFormat.formatDescription);
+                if (dimension.width == capability.width && dimension.height == capability.height) {
+                    // this is the preferred format so no need to wait for better option.
+                    return deviceFormat; // exact the same as required
+                }
+                if (dimension.width < capability.width && dimension.height < capability.height) {
+                    // this is good candidate, but let's wait for something better.
+                    desiredDeviceFormat = deviceFormat;
+                }
+            }
+            return desiredDeviceFormat;
+        }
+    }
+    return nil;
+}
+
+MacOSCameraCapturer::Impl::Impl(AVCaptureDevice* device,
+                                const std::shared_ptr<Bricks::Logger>& logger)
+    : _device(device)
+    , _delegate([[CapturerDelegate alloc] init:logger])
+    , _capturer([[RTCCameraVideoCapturer alloc] initWithDelegate:_delegate])
+{
+}
+
+MacOSCameraCapturer::Impl::~Impl()
+{
+    stopCapture();
+}
+
+bool MacOSCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format,
+                                             NSInteger fps)
+{
+    if (format && _capturer && _device && _delegate) {
+        @autoreleasepool {
+            _delegate.state = CameraState::Starting;
+            CapturerDelegate* __weak weakDelegate = _delegate;
+            [_capturer startCaptureWithDevice:_device
+                                       format:format
+                                          fps:fps
+                            completionHandler:^(NSError* _Nullable error) {
+                CapturerDelegate* __strong delegate = weakDelegate;
+                if (delegate) {
+                    if (error) {
+                        delegate.state = CameraState::Stopped;
+                        [delegate reportAboutError:error];
+                    }
+                    else {
+                        delegate.state = CameraState::Started;
+                    }
+                }
+            }];
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MacOSCameraCapturer::Impl::stopCapture()
+{
+    if (_capturer) {
+        @autoreleasepool {
+            _delegate.state = CameraState::Stopping;
+            CapturerDelegate* __weak weakDelegate = _delegate;
+            [_capturer stopCaptureWithCompletionHandler:^{
+                CapturerDelegate* __strong delegate = weakDelegate;
+                if (delegate) {
+                    delegate.state = CameraState::Stopped;
+                }
+            }];
+        }
+        return true;
+    }
+    return false;
+}
 
 } // namespace LiveKitCpp
+
+@implementation CapturerDelegate {
+    std::shared_ptr<Bricks::Logger> _logger;
+    Bricks::Listener<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink;
+    Bricks::Listener<LiveKitCpp::CameraObserver*> _observer;
+    std::atomic<LiveKitCpp::CameraState> _state;
+}
+
+- (instancetype) init:(const std::shared_ptr<Bricks::Logger>&) logger
+{
+    if (self = [super init]) {
+        _logger = logger;
+        _state = LiveKitCpp::CameraState::Stopped;
+    }
+    return self;
+}
+
+- (void) reportAboutError:(NSError* _Nullable) error
+{
+    if (error && _logger && _logger->canLogError()) {
+        _logger->logError(LiveKitCpp::toString(error), LiveKitCpp::CameraManager::logCategory());
+    }
+}
+
+- (rtc::VideoSinkInterface<webrtc::VideoFrame>*) sink
+{
+    return _sink.listener();
+}
+
+- (void) setSink:(rtc::VideoSinkInterface<webrtc::VideoFrame>*) sink
+{
+    _sink = sink;
+}
+
+- (LiveKitCpp::CameraObserver*) observer
+{
+    return _observer.listener();
+}
+
+- (void) setObserver:(LiveKitCpp::CameraObserver*) observer
+{
+    _observer = observer;
+}
+
+- (LiveKitCpp::CameraState) state
+{
+    return _state;
+}
+
+- (void)setState:(LiveKitCpp::CameraState) state
+{
+    if (LiveKitCpp::exchangeVal(state, _state)) {
+        _observer.invoke(&LiveKitCpp::CameraObserver::onStateChanged, state);
+    }
+}
+
+- (void) capturer:(RTCVideoCapturer*) capturer didCaptureVideoFrame:(RTCVideoFrame*) frame
+{
+    if (_sink) {
+        if (frame) {
+            if (const auto buffer = webrtc::ObjCToNativeVideoFrameBuffer(frame.buffer)) {
+                if (auto rtcFrame = LiveKitCpp::createVideoFrame(buffer)) {
+                    rtcFrame->set_rotation(webrtc::VideoRotation(frame.rotation));
+                    rtcFrame->set_rtp_timestamp(frame.timeStamp);
+                    rtcFrame->set_timestamp_us(frame.timeStampNs / rtc::kNumNanosecsPerMicrosec);
+                    _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnFrame, rtcFrame.value());
+                    return;
+                }
+            }
+        }
+        _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnDiscardedFrame);
+    }
+}
+
+@end
 
 namespace {
 

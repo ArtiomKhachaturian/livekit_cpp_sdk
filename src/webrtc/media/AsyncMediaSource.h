@@ -14,6 +14,7 @@
 #pragma once // AsyncMediaSource.h
 #include "AsyncMediaSourceImpl.h"
 #include "ThreadUtils.h"
+#include "Invoke.h"
 #include <api/media_stream_interface.h>
 #include <memory>
 #include <type_traits>
@@ -27,11 +28,11 @@ class AsyncMediaSource : public TMediaSource
     static_assert(std::is_base_of_v<AsyncMediaSourceImpl, TAsyncImpl>);
     static_assert(std::is_base_of_v<webrtc::MediaSourceInterface, TMediaSource>);
 public:
-    ~AsyncMediaSource() override { postToImpl(&TAsyncImpl::close); }
+    ~AsyncMediaSource() override { close(); }
     const auto& signalingQueue() const noexcept { return _impl->signalingQueue(); }
     bool enabled() const noexcept { return _enabled; }
     bool setEnabled(bool enabled);
-    void close() { _impl->close(); }
+    void close();
     // impl. of MediaSourceInterface
     webrtc::MediaSourceInterface::SourceState state() const final { return _impl->state(); }
     bool remote() const final { return false; }
@@ -71,6 +72,14 @@ inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
         return true;
     }
     return false;
+}
+
+template<class TMediaSource, class TAsyncImpl>
+inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::close()
+{
+    if (_impl->deactivate()) {
+        postToImpl(&TAsyncImpl::close);
+    }
 }
 
 template<class TMediaSource, class TAsyncImpl>

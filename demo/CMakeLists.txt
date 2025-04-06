@@ -57,7 +57,18 @@ target_link_libraries(${PROJECT_NAME}
     PUBLIC Qt6::Quick Qt6::QuickControls2 LiveKitCppClient ZaphoydTppWebsockets
 )
 
+get_target_property(ZP_LOCATION ZaphoydTppWebsockets LOCATION)
+get_target_property(LC_LOCATION LiveKitCppClient LOCATION)
+
+if (APPLE)
+    file(COPY ${ZP_LOCATION} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Frameworks)
+    file(COPY ${LC_LOCATION} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Frameworks)
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
+endif()
+
+include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+
 install(TARGETS ${PROJECT_NAME}
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

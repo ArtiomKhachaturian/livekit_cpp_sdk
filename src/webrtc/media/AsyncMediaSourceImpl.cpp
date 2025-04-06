@@ -38,11 +38,19 @@ void AsyncMediaSourceImpl::setEnabled(bool enabled)
     }
 }
 
-void AsyncMediaSourceImpl::close()
+bool AsyncMediaSourceImpl::deactivate()
 {
     if (_active.exchange(false)) {
-        onClosed();
         changeState(webrtc::MediaSourceInterface::kEnded);
+        return true;
+    }
+    return false;
+}
+
+void AsyncMediaSourceImpl::close()
+{
+    if (!active()) {
+        onClosed();
     }
 }
 
