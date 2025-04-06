@@ -33,7 +33,7 @@ void AsyncMediaSourceImpl::notifyAboutChanges()
 
 void AsyncMediaSourceImpl::setEnabled(bool enabled)
 {
-    if (active() && enabled != _enabled.exchange(enabled)) {
+    if (active() && exchangeVal(enabled, _enabled)) {
         onEnabled(enabled);
     }
 }

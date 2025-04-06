@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // AsyncMediaSource.h
 #include "AsyncMediaSourceImpl.h"
+#include "Utils.h"
 #include "ThreadUtils.h"
 #include <api/media_stream_interface.h>
 #include <memory>
@@ -65,7 +66,7 @@ inline AsyncMediaSource<TMediaSource, TAsyncImpl>::
 template<class TMediaSource, class TAsyncImpl>
 inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
 {
-    if (_impl->active() && enabled != _enabled.exchange(enabled)) {
+    if (_impl->active() && exchangeVal(enabled, _enabled)) {
         postToImpl(&TAsyncImpl::setEnabled, enabled);
         _impl->notifyAboutChanges();
         return true;

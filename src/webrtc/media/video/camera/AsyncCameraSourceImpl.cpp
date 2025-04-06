@@ -145,14 +145,11 @@ void AsyncCameraSourceImpl::onClosed()
 void AsyncCameraSourceImpl::onEnabled(bool enabled)
 {
     AsyncVideoSourceImpl::onEnabled(enabled);
-    LOCK_READ_SAFE_OBJ(_capturer);
-    if (_capturer.constRef()) {
-        if (enabled) {
-            startCapturer(_capability());
-        }
-        else {
-            stopCapturer(true);
-        }
+    if (enabled) {
+        requestCapturer();
+    }
+    else {
+        resetCapturer();
     }
 }
 
