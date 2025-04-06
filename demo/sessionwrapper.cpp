@@ -136,6 +136,20 @@ void SessionWrapper::removeCameraTrack()
     }
 }
 
+void SessionWrapper::muteMicrophoneTrack(bool mute)
+{
+    if (_micTrack) {
+        _micTrack->mute(mute);
+    }
+}
+
+void SessionWrapper::muteCameraTrack(bool mute)
+{
+    if (_cameraTrack) {
+        _cameraTrack->mute(mute);
+    }
+}
+
 void SessionWrapper::onError(LiveKitCpp::LiveKitError error, const std::string& what)
 {
     emit this->error(QString::fromStdString(LiveKitCpp::toString(error)),

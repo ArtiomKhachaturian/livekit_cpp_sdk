@@ -29,20 +29,19 @@ Frame {
                     checked: false
                     enabled: session != null
                     onCheckedChanged: {
-                        if (session != null) {
-                            if (checked) {
-                                session.addMicrophoneTrack()
-                            }
-                            else {
-                                session.removeMicrophoneTrack()
-                            }
-                        }
+                        addMicrophoneTrack(checked)
                     }
                 }
                 CheckBox {
+                    id: micMuted
                     text: qsTr("Muted")
                     enabled: micAdded.enabled && micAdded.checked
                     checked: false
+                    onCheckedChanged: {
+                        if (session != null) {
+                            session.muteMicrophoneTrack(checked)
+                        }
+                    }
                 }
                 Label {
                     text: "|"
@@ -56,20 +55,19 @@ Frame {
                     enabled: session != null
                     checked: false
                     onCheckedChanged: {
-                        if (session != null) {
-                            if (checked) {
-                                session.addCameraTrack()
-                            }
-                            else {
-                                session.removeCameraTrack()
-                            }
-                        }
+                        addCameraTrack(checked)
                     }
                 }
                 CheckBox {
+                    id: cameraMuted
                     text: qsTr("Muted")
                     enabled: cameraAdded.enabled && cameraAdded.checked
                     checked: false
+                    onCheckedChanged: {
+                        if (session != null) {
+                            session.muteCameraTrack(checked)
+                        }
+                    }
                 }
 
                 Item { // spacer
@@ -116,7 +114,14 @@ Frame {
     function connect(url, token) {
         session = app.createSession(this)
         if (session != null) {
-            session.connectToSfu(url, token)
+            if (session.connectToSfu(url, token)) {
+                if (micAdded.checked) {
+                    addMicrophoneTrack()
+                }
+                if (cameraAdded.checked) {
+                    addCameraTrack()
+                }
+            }
         }
         else {
             error(qsTr("Failed to create session"), "")
@@ -127,6 +132,30 @@ Frame {
         if (session != null) {
             session.disconnectFromSfu()
             session = null
+        }
+    }
+
+    function addMicrophoneTrack(add = true) {
+        if (session != null) {
+            if (add) {
+                session.addMicrophoneTrack()
+                session.muteMicrophoneTrack(micMuted.checked)
+            }
+            else {
+                session.removeMicrophoneTrack()
+            }
+        }
+    }
+
+    function addCameraTrack(add = true) {
+        if (session != null) {
+            if (add) {
+                session.addCameraTrack()
+                session.muteCameraTrack(cameraMuted.checked)
+            }
+            else {
+                session.removeCameraTrack()
+            }
         }
     }
 

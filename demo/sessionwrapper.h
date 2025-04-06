@@ -46,6 +46,8 @@ public slots:
     Q_INVOKABLE bool addCameraTrack();
     Q_INVOKABLE void removeMicrophoneTrack();
     Q_INVOKABLE void removeCameraTrack();
+    Q_INVOKABLE void muteMicrophoneTrack(bool mute);
+    Q_INVOKABLE void muteCameraTrack(bool mute);
 signals:
     void chatMessageReceived(const QString& participantIdentity,
                              const QString& message, bool deleted);
