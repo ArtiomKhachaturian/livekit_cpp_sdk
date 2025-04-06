@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoSinks.h"
+#include "VideoFrameImpl.h"
 
 namespace LiveKitCpp
 {
 
-void VideoSinks::OnFrame(const webrtc::VideoFrame& /*frame*/)
+void VideoSinks::OnFrame(const webrtc::VideoFrame& rtcFrame)
 {
+    if (!empty()) {
+        if (const auto frame = VideoFrameImpl::create(rtcFrame)) {
+            invoke(&VideoTrackSink::onFrame, frame);
+        }
+    }
 }
 
 } // namespace LiveKitCpp

@@ -8,7 +8,7 @@
 
 class MediaDeviceInfo
 {
-    QML_VALUE_TYPE(MediaDeviceInfo)
+    QML_VALUE_TYPE(mediaDeviceInfo)
 public:
     MediaDeviceInfo() = default;
     MediaDeviceInfo(const MediaDeviceInfo&) = default;

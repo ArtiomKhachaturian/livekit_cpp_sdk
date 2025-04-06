@@ -1,11 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 Frame {
     id: root
 
     property SessionWrapper session: null
+    property AudioTrackWrapper micTrack: null
+    property CameraTrackWrapper cameraTrack: null
     readonly property bool connecting: session != null && session.connecting
     readonly property int state: {
         if (session == null) {
@@ -13,6 +16,7 @@ Frame {
         }
         return session.state
     }
+    readonly property string identity : session == null ? "" : session.identity
 
     signal error(string desc, string details)
 
@@ -35,20 +39,17 @@ Frame {
                 CheckBox {
                     id: micMuted
                     text: qsTr("Muted")
-                    enabled: micAdded.enabled && micAdded.checked
+                    enabled: micTrack != null
                     checked: false
                     onCheckedChanged: {
-                        if (session != null) {
-                            session.muteMicrophoneTrack(checked)
+                        if (micTrack != null) {
+                            micTrack.muted = checked
                         }
                     }
                 }
-                Label {
-                    text: "|"
-                    Layout.alignment: Qt.AlignHCenter
-                    horizontalAlignment: Qt.AlignHCenter
-                    verticalAlignment: Qt.AlignVCenter
-                }
+
+                ToolSeparator {}
+
                 Switch {
                     id: cameraAdded
                     text: qsTr("Camera")
@@ -61,14 +62,22 @@ Frame {
                 CheckBox {
                     id: cameraMuted
                     text: qsTr("Muted")
-                    enabled: cameraAdded.enabled && cameraAdded.checked
+                    enabled: cameraTrack != null
                     checked: false
                     onCheckedChanged: {
-                        if (session != null) {
-                            session.muteCameraTrack(checked)
+                        if (cameraTrack != null) {
+                            cameraTrack.muted = checked
                         }
                     }
                 }
+                ComboBox {
+                    model: app.camerasModel
+                    textRole: "display"
+                    Layout.fillWidth: true
+                    enabled: cameraTrack != null
+                    visible: model.rowCount > 0
+                }
+
 
                 Item { // spacer
                     Layout.fillWidth: true
@@ -95,6 +104,10 @@ Frame {
             Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                VideoOutput {
+                    id: localCameraView
+                    anchors.fill: parent
+                }
             }
             ChatView {
                 id: chatView
@@ -138,11 +151,13 @@ Frame {
     function addMicrophoneTrack(add = true) {
         if (session != null) {
             if (add) {
-                session.addMicrophoneTrack()
-                session.muteMicrophoneTrack(micMuted.checked)
+                micTrack = session.addMicrophoneTrack()
+                if (micTrack != null) {
+                    micTrack.muted = micMuted.checked;
+                }
             }
             else {
-                session.removeMicrophoneTrack()
+                session.removeMicrophoneTrack(micTrack)
             }
         }
     }
@@ -150,11 +165,14 @@ Frame {
     function addCameraTrack(add = true) {
         if (session != null) {
             if (add) {
-                session.addCameraTrack()
-                session.muteCameraTrack(cameraMuted.checked)
+                cameraTrack = session.addCameraTrack()
+                if (cameraTrack != null) {
+                    cameraTrack.muted = cameraMuted.checked
+                    cameraTrack.setVideoOutput(localCameraView.videoSink)
+                }
             }
             else {
-                session.removeCameraTrack()
+                session.removeCameraTrack(cameraTrack)
             }
         }
     }

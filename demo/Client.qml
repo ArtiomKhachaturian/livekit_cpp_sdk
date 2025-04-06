@@ -8,6 +8,7 @@ Pane {
     property bool closable: true
     property alias urlText: connection.urlText
     property alias tokenText: connection.tokenText
+    property alias identity: sessionForm.identity
 
     signal wantsToBeClosed(string name)
     signal wantsToBeConnected(string name)

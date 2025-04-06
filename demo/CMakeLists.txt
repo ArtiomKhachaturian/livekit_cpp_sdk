@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FindPackageHandleStandardArgs)
 find_package(LiveKitCppClient REQUIRED)
 find_package(ZaphoydTppWebsockets REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -24,6 +24,10 @@ target_sources(${PROJECT_NAME} PRIVATE
         mediadeviceinfo.cpp
         mediadevicesmodel.cpp
         sessionwrapper.cpp
+        trackwrapper.cpp
+        videotrackwrapper.cpp
+        audiotrackwrapper.cpp
+        cameratrackwrapper.cpp
 )
 
 qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
@@ -33,11 +37,16 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             ConnectForm.qml
             SessionForm.qml
             ChatView.qml
+            AudioServiceControl.qml
     SOURCES
             demoapp.h
             mediadeviceinfo.h
             mediadevicesmodel.h
             sessionwrapper.h
+            trackwrapper.h
+            videotrackwrapper.h
+            cameratrackwrapper.h
+            audiotrackwrapper.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -60,7 +69,7 @@ endif()
 target_include_directories(${PROJECT_NAME} PRIVATE LiveKitCppClient ZaphoydTppWebsockets)
 
 target_link_libraries(${PROJECT_NAME}
-    PUBLIC Qt6::Quick Qt6::QuickControls2 LiveKitCppClient ZaphoydTppWebsockets
+    PUBLIC Qt6::Quick Qt6::QuickControls2 Qt6::Multimedia LiveKitCppClient ZaphoydTppWebsockets
 )
 
 get_target_property(ZP_LOCATION ZaphoydTppWebsockets LOCATION)

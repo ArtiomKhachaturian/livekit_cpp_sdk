@@ -30,6 +30,7 @@ class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
     Q_PROPERTY(int audioPlayoutVolume READ audioPlayoutVolume WRITE setAudioPlayoutVolume NOTIFY audioPlayoutVolumeChanged)
     Q_PROPERTY(MediaDevicesModel* recordingAudioDevicesModel MEMBER _recordingAudioDevicesModel CONSTANT)
     Q_PROPERTY(MediaDevicesModel* playoutAudioDevicesModel MEMBER _playoutAudioDevicesModel CONSTANT)
+    Q_PROPERTY(MediaDevicesModel* camerasModel MEMBER _camerasModel CONSTANT)
     Q_PROPERTY(MediaDeviceInfo recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
     Q_PROPERTY(MediaDeviceInfo playoutAudioDevice READ playoutAudioDevice WRITE setPlayoutAudioDevice NOTIFY playoutAudioDeviceChanged)
 public:
@@ -75,6 +76,7 @@ private:
 private:
     MediaDevicesModel* const _recordingAudioDevicesModel;
     MediaDevicesModel* const _playoutAudioDevicesModel;
+    MediaDevicesModel* const _camerasModel;
     QScopedPointer<LiveKitCpp::Service> _service;
     std::optional<LiveKitCpp::ServiceState> _serviceInitFailure;
     QPointer<QObject> _appWindow;

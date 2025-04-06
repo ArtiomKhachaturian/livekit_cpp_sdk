@@ -22,6 +22,42 @@ bool SessionWrapper::connectToSfu(const QString& url, const QString& token)
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
+AudioTrackWrapper* SessionWrapper::addMicrophoneTrack()
+{
+    if (_impl) {
+        if (const auto track = _impl->addMicrophoneTrack()) {
+            return new AudioTrackWrapper(track, this);
+        }
+    }
+    return nullptr;
+}
+
+CameraTrackWrapper* SessionWrapper::addCameraTrack()
+{
+    if (_impl) {
+        if (const auto track = _impl->addCameraTrack()) {
+            return new CameraTrackWrapper(track, this);
+        }
+    }
+    return nullptr;
+}
+
+void SessionWrapper::removeMicrophoneTrack(AudioTrackWrapper* track)
+{
+    if (_impl && track && track->parent() == this) {
+        _impl->removeAudioTrack(track->track());
+        delete track;
+    }
+}
+
+void SessionWrapper::removeCameraTrack(CameraTrackWrapper* track)
+{
+    if (_impl && track && track->parent() == this) {
+        _impl->removeVideoTrack(track->track());
+        delete track;
+    }
+}
+
 bool SessionWrapper::connecting() const
 {
     switch (state()) {
@@ -96,58 +132,6 @@ void SessionWrapper::disconnectFromSfu()
 bool SessionWrapper::sendChatMessage(const QString& message)
 {
     return _impl && _impl->sendChatMessage(message.toStdString());
-}
-
-bool SessionWrapper::addMicrophoneTrack()
-{
-    if (_impl) {
-        if (!_micTrack) {
-            _micTrack = _impl->addMicrophoneTrack();
-        }
-        return nullptr != _micTrack;
-    }
-    return false;
-}
-
-bool SessionWrapper::addCameraTrack()
-{
-    if (_impl) {
-        if (!_cameraTrack) {
-            _cameraTrack = _impl->addCameraTrack();
-        }
-        return nullptr != _cameraTrack;
-    }
-    return false;
-}
-
-void SessionWrapper::removeMicrophoneTrack()
-{
-    if (_impl && _micTrack) {
-        _impl->removeAudioTrack(_micTrack);
-        _micTrack = {};
-    }
-}
-
-void SessionWrapper::removeCameraTrack()
-{
-    if (_impl && _cameraTrack) {
-        _impl->removeVideoTrack(_cameraTrack);
-        _cameraTrack = {};
-    }
-}
-
-void SessionWrapper::muteMicrophoneTrack(bool mute)
-{
-    if (_micTrack) {
-        _micTrack->mute(mute);
-    }
-}
-
-void SessionWrapper::muteCameraTrack(bool mute)
-{
-    if (_cameraTrack) {
-        _cameraTrack->mute(mute);
-    }
 }
 
 void SessionWrapper::onError(LiveKitCpp::LiveKitError error, const std::string& what)

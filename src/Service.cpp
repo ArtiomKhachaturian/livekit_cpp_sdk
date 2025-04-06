@@ -22,6 +22,7 @@
 #include "e2e/KeyProviderOptions.h"
 #include "e2e/KeyProvider.h"
 #include "media/VideoOptions.h"
+#include "media/VideoFrame.h"
 #ifdef WEBRTC_AVAILABLE
 #include "AdmProxyListener.h"
 #include "AdmProxyFacade.h"
@@ -807,6 +808,31 @@ ClientInfo ClientInfo::defaultClientInfo()
     ci._deviceModel = modelIdentifier();
     ci._network = toString(activeNetworkType());
     return ci;
+}
+
+VideoFrame::VideoFrame(VideoFrameType type, int rotation)
+    : _type(type)
+    , _rotation(rotation)
+{
+}
+
+size_t VideoFrame::planesCount() const
+{
+    switch (type()) {
+        case VideoFrameType::I420:
+        case VideoFrameType::I422:
+        case VideoFrameType::I444:
+        case VideoFrameType::I010:
+        case VideoFrameType::I210:
+        case VideoFrameType::I410:
+            return 3U;
+        case VideoFrameType::NV12:
+            return 2U;
+        default:
+            assert(false);
+            break;
+    }
+    return 0U;
 }
 
 } // namespace LiveKitCpp

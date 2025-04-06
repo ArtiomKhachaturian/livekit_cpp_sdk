@@ -47,7 +47,7 @@ ApplicationWindow {
             Client {
                 objectName: modelData
                 urlText: lastUrl
-                tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDM5NjIxOTEsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0Mzg3NTc5MSwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.8qeGpt5ybPVKkd8Kf-eyhX5LaWUZMGP4NgOdLDWg4vw"
+                tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDQwNDkzNzgsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0Mzk2Mjk3OCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.kc8Ob_d8V8NMNkWZNYGEoITeT11t9vEvag5bPhUxzJE"
                 enabled: app.valid
                 Component.onCompleted: {
                     closable = clients.usersCount > 1
@@ -65,82 +65,13 @@ ApplicationWindow {
     footer: Frame {
         RowLayout {
             anchors.fill: parent
-            GroupBox {
-                title: qsTr("Microphone")
+            AudioServiceControl {
+                recording: true
                 Layout.fillWidth: true
-                RowLayout {
-                    anchors.fill: parent
-                    ToolButton {
-                        icon.name: "audio-input-microphone"
-                        checkable: true
-                        checked: app.audioRecordingEnabled
-                        display: ToolButton.IconOnly
-                        onCheckedChanged: {
-                            app.audioRecordingEnabled = checked
-                        }
-                    }
-                    ComboBox {
-                        Layout.fillWidth: true
-                        model: app.recordingAudioDevicesModel
-                        textRole: "display"
-                        onActivated: index => {
-                            app.recordingAudioDevice = model.infoAt(index)
-                        }
-                        Component.onCompleted: {
-                            currentIndex = model.indexOf(app.recordingAudioDevice)
-                        }
-                    }
-                    Label {
-                        text: qsTr("Volume:")
-                    }
-                    Slider {
-                        from: 0
-                        to: 100
-                        value: app.audioRecordingVolume
-                        onMoved: {
-                            app.audioRecordingVolume = value
-                        }
-                    }
-                }
             }
-
-            GroupBox {
-                title: qsTr("Speakers")
+            AudioServiceControl {
+                recording: false
                 Layout.fillWidth: true
-                RowLayout {
-                    anchors.fill: parent
-                    ToolButton {
-                        icon.name: "audio-card"
-                        checkable: true
-                        checked: app.audioPlayoutEnabled
-                        display: ToolButton.IconOnly
-                        onCheckedChanged: {
-                            app.audioPlayoutEnabled = checked
-                        }
-                    }
-                    ComboBox {
-                        Layout.fillWidth: true
-                        model: app.playoutAudioDevicesModel
-                        textRole: "display"
-                        onActivated: index => {
-                            app.playoutAudioDevice = model.infoAt(index)
-                        }
-                        Component.onCompleted: {
-                            currentIndex = model.indexOf(app.playoutAudioDevice)
-                        }
-                    }
-                    Label {
-                        text: qsTr("Volume:")
-                    }
-                    Slider {
-                        from: 0
-                        to: 100
-                        value: app.audioPlayoutVolume
-                        onMoved: {
-                            app.audioPlayoutVolume = value
-                        }
-                    }
-                }
             }
         }
     }

@@ -11,20 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // VideoTrackSink.h
-#include <memory>
+#pragma once // VideoFrameType.h
 
 namespace LiveKitCpp
 {
 
-class VideoFrame;
-
-class VideoTrackSink
+enum class VideoFrameType
 {
-public:
-    virtual void onFrame(const std::shared_ptr<VideoFrame>& frame) = 0;
-protected:
-    virtual ~VideoTrackSink() = default;
+    Native,
+    I420,
+    I422,
+    I444,
+    I010,
+    I210,
+    I410,
+    NV12,
 };
 
 } // namespace LiveKitCpp

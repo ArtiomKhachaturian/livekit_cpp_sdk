@@ -9,6 +9,9 @@ int main(int argc, char *argv[])
     qRegisterMetaType<MediaDeviceInfo>();
     qRegisterMetaType<MediaDevicesModel*>();
     qRegisterMetaType<SessionWrapper*>();
+    qRegisterMetaType<AudioTrackWrapper*>();
+    qRegisterMetaType<VideoTrackWrapper*>();
+    qRegisterMetaType<CameraTrackWrapper*>();
 
     DemoApp app(argc, argv);
     QQmlApplicationEngine engine;

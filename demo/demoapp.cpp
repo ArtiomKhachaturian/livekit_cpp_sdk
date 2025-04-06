@@ -25,6 +25,7 @@ DemoApp::DemoApp(int &argc, char **argv)
     : QGuiApplication(argc, argv)
     , _recordingAudioDevicesModel(new MediaDevicesModel(this))
     , _playoutAudioDevicesModel(new MediaDevicesModel(this))
+    , _camerasModel(new MediaDevicesModel(this))
 {
     const auto logger = std::make_shared<Logger>();
     const auto wsf = std::make_shared<ZaphoydTppFactory>();
@@ -35,7 +36,8 @@ DemoApp::DemoApp(int &argc, char **argv)
         _recordingAudioDevice = _service->defaultAudioRecordingDevice();
          _playoutAudioDevice = _service->defaultAudioPlayoutDevice();
         _recordingAudioDevicesModel->setInfo(_service->recordingAudioDevices());
-         _playoutAudioDevicesModel->setInfo(_service->playoutAudioDevices());
+        _playoutAudioDevicesModel->setInfo(_service->playoutAudioDevices());
+        _camerasModel->setInfo(_service->cameraDevices());
         _service->addListener(this);
     }
     else {

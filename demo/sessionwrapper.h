@@ -1,5 +1,7 @@
 #ifndef SESSIONWRAPPER_H
 #define SESSIONWRAPPER_H
+#include "audiotrackwrapper.h"
+#include "cameratrackwrapper.h"
 #include <SessionListener.h>
 #include <Session.h>
 #include <QObject>
@@ -34,6 +36,10 @@ public:
                             QObject *parent = nullptr);
     ~SessionWrapper() override;
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
+    Q_INVOKABLE AudioTrackWrapper* addMicrophoneTrack();
+    Q_INVOKABLE CameraTrackWrapper* addCameraTrack();
+    Q_INVOKABLE void removeMicrophoneTrack(AudioTrackWrapper* track);
+    Q_INVOKABLE void removeCameraTrack(CameraTrackWrapper* track);
     bool connecting() const;
     State state() const;
     QString sid() const;
@@ -42,12 +48,6 @@ public:
 public slots:
     Q_INVOKABLE void disconnectFromSfu();
     Q_INVOKABLE bool sendChatMessage(const QString& message);
-    Q_INVOKABLE bool addMicrophoneTrack();
-    Q_INVOKABLE bool addCameraTrack();
-    Q_INVOKABLE void removeMicrophoneTrack();
-    Q_INVOKABLE void removeCameraTrack();
-    Q_INVOKABLE void muteMicrophoneTrack(bool mute);
-    Q_INVOKABLE void muteCameraTrack(bool mute);
 signals:
     void chatMessageReceived(const QString& participantIdentity,
                              const QString& message, bool deleted);
@@ -64,8 +64,6 @@ private:
                                int64_t, bool deleted, bool) final;
 private:
     const std::unique_ptr<LiveKitCpp::Session> _impl;
-    std::shared_ptr<LiveKitCpp::AudioTrack> _micTrack;
-    std::shared_ptr<LiveKitCpp::CameraTrack> _cameraTrack;
 };
 
 Q_DECLARE_METATYPE(SessionWrapper*)
