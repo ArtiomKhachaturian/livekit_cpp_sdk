@@ -14,6 +14,7 @@
 #pragma once // VideoFrameImpl.h
 #include "media/VideoFrame.h"
 #include <api/video/video_frame.h>
+#include <optional>
 
 namespace LiveKitCpp
 {
@@ -29,8 +30,9 @@ public:
     int stride(size_t planeIndex) const final;
     const void* data(size_t planeIndex) const final;
 private:
-    VideoFrameImpl(int rotation, rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
-    static VideoFrameType detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
+    VideoFrameImpl(VideoFrameType type, int rotation,
+                   rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
+    static std::optional<VideoFrameType> detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
     static int detectRotation(const webrtc::VideoFrame& frame);
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> map(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
     static int stride(size_t planeIndex, const webrtc::PlanarYuvBuffer* buffer);

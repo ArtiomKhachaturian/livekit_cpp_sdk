@@ -819,6 +819,15 @@ VideoFrame::VideoFrame(VideoFrameType type, int rotation)
 size_t VideoFrame::planesCount() const
 {
     switch (type()) {
+        case VideoFrameType::RGB24:
+        case VideoFrameType::BGR24:
+        case VideoFrameType::BGRA32:
+        case VideoFrameType::ARGB32:
+        case VideoFrameType::RGBA32:
+        case VideoFrameType::ABGR32:
+            return 1U;
+        case VideoFrameType::NV12:
+            return 2U;
         case VideoFrameType::I420:
         case VideoFrameType::I422:
         case VideoFrameType::I444:
@@ -826,8 +835,6 @@ size_t VideoFrame::planesCount() const
         case VideoFrameType::I210:
         case VideoFrameType::I410:
             return 3U;
-        case VideoFrameType::NV12:
-            return 2U;
         default:
             assert(false);
             break;

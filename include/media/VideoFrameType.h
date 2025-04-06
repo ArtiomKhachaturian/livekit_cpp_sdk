@@ -18,7 +18,14 @@ namespace LiveKitCpp
 
 enum class VideoFrameType
 {
-    Native,
+    // non-planar (single plane) types (RGBX)
+    RGB24, // RGB big endian (rgb in memory)
+    BGR24, // RGB little endian (bgr in memory)
+    BGRA32, // ARGB little endian (bgra in memory)
+    ARGB32, // BGRA little endian (argb in memory)
+    RGBA32, // ABGR little endian (rgba in memory)
+    ABGR32, // RGBA little endian (abgr in memory)
+    // planar types
     I420,
     I422,
     I444,

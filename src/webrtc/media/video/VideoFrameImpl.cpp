@@ -17,8 +17,9 @@
 namespace LiveKitCpp
 {
 
-VideoFrameImpl::VideoFrameImpl(int rotation, rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer)
-    : VideoFrame(detectType(buffer), rotation)
+VideoFrameImpl::VideoFrameImpl(VideoFrameType type, int rotation,
+                               rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer)
+    : VideoFrame(type, rotation)
     , _buffer(std::move(buffer))
 {
 }
@@ -27,7 +28,10 @@ std::shared_ptr<VideoFrame> VideoFrameImpl::create(const webrtc::VideoFrame& fra
 {
     std::shared_ptr<VideoFrame> impl;
     if (auto buffer = map(frame.video_frame_buffer())) {
-        impl.reset(new VideoFrameImpl(detectRotation(frame), std::move(buffer)));
+        if (const auto type = detectType(buffer)) {
+            const auto rotation = detectRotation(frame);
+            impl.reset(new VideoFrameImpl(type.value(), rotation, std::move(buffer)));
+        }
     }
     return impl;
 }
@@ -37,7 +41,10 @@ std::shared_ptr<VideoFrame> VideoFrameImpl::convertToI420() const
     std::shared_ptr<VideoFrame> converted;
     if (_buffer) {
         if (auto i420 = _buffer->ToI420()) {
-            converted.reset(new VideoFrameImpl(rotation(), std::move(i420)));
+            assert(webrtc::VideoFrameBuffer::Type::kI420 == i420->type());
+            converted.reset(new VideoFrameImpl(VideoFrameType::I420,
+                                               rotation(),
+                                               std::move(i420)));
         }
     }
     return converted;
@@ -105,7 +112,7 @@ const void* VideoFrameImpl::data(size_t planeIndex) const
     return nullptr;
 }
 
-VideoFrameType VideoFrameImpl::detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer)
+std::optional<VideoFrameType> VideoFrameImpl::detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer)
 {
     if (buffer) {
         switch (buffer->type()) {
@@ -132,7 +139,7 @@ VideoFrameType VideoFrameImpl::detectType(const rtc::scoped_refptr<webrtc::Video
                 break;
         }
     }
-    return VideoFrameType::Native;
+    return std::nullopt;
 }
 
 int VideoFrameImpl::detectRotation(const webrtc::VideoFrame& frame)
