@@ -43,13 +43,19 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    #MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
+set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE TRUE WIN32_EXECUTABLE TRUE)
+
+if (APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.LiveKit.${PROJECT_NAME}"
+        MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
+        MACOSX_BUNDLE_DISPLAY_NAME "${PROJECT_NAME}"
+        MACOSX_BUNDLE_INFO_STRING "${PROJECT_NAME} - LiveKit client desktop demo app"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in XCODE_ATTRIBUTE_INFOPLIST_PREPROCESS YES
+    )
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE LiveKitCppClient ZaphoydTppWebsockets)
 
@@ -57,16 +63,15 @@ target_link_libraries(${PROJECT_NAME}
     PUBLIC Qt6::Quick Qt6::QuickControls2 LiveKitCppClient ZaphoydTppWebsockets
 )
 
-get_target_property(ZP_LOCATION ZaphoydTppWebsockets LOCATION)
-get_target_property(LC_LOCATION LiveKitCppClient LOCATION)
+#get_target_property(ZP_LOCATION ZaphoydTppWebsockets LOCATION)
+#get_target_property(LC_LOCATION LiveKitCppClient LOCATION)
 
-if (APPLE)
-    file(COPY ${ZP_LOCATION} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Frameworks)
-    file(COPY ${LC_LOCATION} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Frameworks)
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
-endif()
+#if (APPLE)
+#    file(COPY ${ZP_LOCATION} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Frameworks)
+#    file(COPY ${LC_LOCATION} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Frameworks)
+#    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
+#endif()
 
-include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
 install(TARGETS ${PROJECT_NAME}
