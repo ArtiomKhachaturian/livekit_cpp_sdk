@@ -142,8 +142,6 @@ public:
     int32_t GetPlayoutUnderrunCount() const final;
     std::optional<Stats> GetStats() const final;
     
-    bool setMicrophoneVolume(double normalizedVolume);
-    bool setSpeakerVolume(double normalizedVolume);
     const AdmProxyState& recordingState() const noexcept { return _recState; }
     const AdmProxyState& playoutState() const noexcept { return _playState; }
     void close();

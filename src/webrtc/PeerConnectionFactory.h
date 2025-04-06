@@ -69,9 +69,8 @@ public:
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
-    // volume in range [0...1]
-    void setMicrophoneVolume(double volume);
-    void setSpeakerVolume(double volume);
+    void setMicrophoneVolume(uint32_t volume);
+    void setSpeakerVolume(uint32_t volume);
     void setRecordingMute(bool mute);
     void setPlayoutMute(bool mute);
     void registerAdmRecordingListener(AdmProxyListener* l, bool reg);

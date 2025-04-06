@@ -104,8 +104,8 @@ public:
     auto defaultPlayoutDevice() const { return _admProxy->defaultPlayoutDevice(); }
     bool setRecordingDevice(const MediaDeviceInfo& info);
     bool setPlayoutDevice(const MediaDeviceInfo& info);
-    bool setMicrophoneVolume(double volume);
-    bool setSpeakerVolume(double volume);
+    bool setMicrophoneVolume(uint32_t volume);
+    bool setSpeakerVolume(uint32_t volume);
     bool setRecordingMute(bool mute);
     bool setPlayoutMute(bool mute);
     // impl. of AdmProxyFacade
@@ -271,12 +271,12 @@ std::vector<MediaDeviceInfo> PeerConnectionFactory::playoutAudioDevices() const
     return {};
 }
 
-void PeerConnectionFactory::setMicrophoneVolume(double volume)
+void PeerConnectionFactory::setMicrophoneVolume(uint32_t volume)
 {
     postAdmTask(&AdmFacade::setMicrophoneVolume, volume);
 }
 
-void PeerConnectionFactory::setSpeakerVolume(double volume)
+void PeerConnectionFactory::setSpeakerVolume(uint32_t volume)
 {
     postAdmTask(&AdmFacade::setSpeakerVolume, volume);
 }
@@ -395,14 +395,14 @@ bool PeerConnectionFactory::AdmFacade::setPlayoutDevice(const MediaDeviceInfo& i
     return _admProxy->setPlayoutDevice(info);
 }
 
-bool PeerConnectionFactory::AdmFacade::setMicrophoneVolume(double volume)
+bool PeerConnectionFactory::AdmFacade::setMicrophoneVolume(uint32_t volume)
 {
-    return _admProxy->setMicrophoneVolume(volume);
+    return 0 == _admProxy->SetMicrophoneVolume(volume);
 }
 
-bool PeerConnectionFactory::AdmFacade::setSpeakerVolume(double volume)
+bool PeerConnectionFactory::AdmFacade::setSpeakerVolume(uint32_t volume)
 {
-    return _admProxy->setSpeakerVolume(volume);
+    return 0 == _admProxy->SetSpeakerVolume(volume);
 }
 
 bool PeerConnectionFactory::AdmFacade::setRecordingMute(bool mute)

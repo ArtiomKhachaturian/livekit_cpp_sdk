@@ -15,7 +15,6 @@
 #include "AdmProxyTypedefs.h"
 #include "AsyncListeners.h"
 #include "SafeObjAliases.h"
-#include "VolumeControl.h"
 #include "media/MediaDeviceInfo.h"
 #include <atomic>
 #include <optional>
@@ -45,7 +44,6 @@ public:
     bool setMinMaxVolumeFrom(const AdmPtr& adm);
     bool setVolume(uint32_t volume);
     bool setVolumeFrom(const AdmPtr& adm);
-    bool setNormalizedVolume(double normalizedVolume);
     MediaDeviceInfo currentDevice() const { return _dev(); }
     bool started() const noexcept { return _started; }
     bool mute() const noexcept { return _mute; }
@@ -53,11 +51,8 @@ public:
     void minMaxVolume(uint32_t* minVolume = nullptr, uint32_t* maxVolume = nullptr) const;
     uint32_t minVolume() const;
     uint32_t maxVolume() const;
-    std::optional<uint32_t> volume(double normalizedVolume) const;
     uint32_t volume() const noexcept { return _volume; }
-    std::optional<double> normalizedVolume() const;
 private:
-    VolumeControl makeVolumeControl() const;
     template<class Method, typename... Args>
     void invoke(Method method, Args&&... args) const;
     template<typename T, class Getter>

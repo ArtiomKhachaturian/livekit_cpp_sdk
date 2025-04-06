@@ -32,6 +32,7 @@
 #include "PeerConnectionFactory.h"
 #include "RtcInitializer.h"
 #include "ServiceListener.h"
+#include "VolumeControl.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
 #elif defined(_WIN32)
@@ -68,8 +69,8 @@ public:
     MediaDeviceInfo playoutAudioDevice() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
-    double recordingAudioVolume() const noexcept { return _recordingVolume; }
-    double playoutAudioVolume() const noexcept { return _playoutVolume; }
+    double recordingAudioVolume() const noexcept;
+    double playoutAudioVolume() const noexcept;
     void setRecordingAudioVolume(double volume);
     void setPlayoutAudioVolume(double volume);
     void setRecordingMute(bool mute);
@@ -89,29 +90,31 @@ public:
     void onStarted(bool recording) final;
     void onStopped(bool recording) final;
     void onMuteChanged(bool recording, bool mute) final;
-    void onVolumeChanged(bool recording, uint32_t) final;
-    void onMinMaxVolumeChanged(bool recording, uint32_t, uint32_t) final;
+    void onVolumeChanged(bool recording, uint32_t volume) final;
+    void onMinMaxVolumeChanged(bool recording, uint32_t minV, uint32_t maxV) final;
     void onDeviceChanged(bool recording, const MediaDeviceInfo& info);
 protected:
-    void updateAdmVolume(bool recording, double volume) const;
-    void updateAdmMute(bool recording, bool mute) const;
-    void updateRecordingVolume(double volume) const { updateAdmVolume(true, volume); }
-    void updateRecordingMute(bool mute) const { updateAdmMute(true, mute); }
-    void updateRecordingVolume() const { updateRecordingVolume(recordingAudioVolume()); }
-    void updateRecordingMute() const { updateRecordingMute(recordingMuted()); }
-    void updatePlayoutVolume(double volume) const { updateAdmVolume(false, volume); }
-    void updatePlayoutMute(bool mute) const { updateAdmMute(false, mute); }
-    void updatePlayoutVolume() const { updatePlayoutVolume(playoutAudioVolume()); }
-    void updatePlayoutMute() const { updatePlayoutMute(playoutMuted()); }
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final { return g_logCategory; }
 private:
+    uint32_t recordingDevAudioVolume() const;
+    uint32_t playoutDevAudioVolume() const noexcept;
+    void updateAdmVolume(bool recording, uint32_t volume) const;
+    void updateAdmMute(bool recording, bool mute) const;
+    void updateRecordingVolume(uint32_t volume) const { updateAdmVolume(true, volume); }
+    void updateRecordingMute(bool mute) const { updateAdmMute(true, mute); }
+    void updateRecordingMute() const { updateRecordingMute(recordingMuted()); }
+    void updatePlayoutVolume(uint32_t volume) const { updateAdmVolume(false, volume); }
+    void updatePlayoutMute(bool mute) const { updateAdmMute(false, mute); }
+    void updatePlayoutMute() const { updatePlayoutMute(playoutMuted()); }
     static void logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
+    static inline const VolumeControl _defaultRecording = {70U, 0U, 255U};
+    static inline const VolumeControl _defaultPlayout = {51U, 0U, 255U};
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    std::atomic<double> _recordingVolume = 0.2;
-    std::atomic<double> _playoutVolume = 0.2;
+    Bricks::SafeObj<VolumeControl> _recordingVolume;
+    Bricks::SafeObj<VolumeControl> _playoutVolume;
     std::atomic_bool _recordingMuted;
     std::atomic_bool _playoutMuted;
     Bricks::Listeners<ServiceListener*> _listeners;
@@ -318,6 +321,8 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::create(true, microphoneOptions, logWebrtcEvents ? logger : nullptr))
+    , _recordingVolume(_defaultRecording)
+    , _playoutVolume(_defaultPlayout)
 {
     _recordingMuted = _playoutMuted = nullptr == _pcf;
     if (!_pcf) {
@@ -406,19 +411,47 @@ std::vector<MediaDeviceInfo> Service::Impl::playoutAudioDevices() const
     return {};
 }
 
-void Service::Impl::setRecordingAudioVolume(double volume)
+double Service::Impl::recordingAudioVolume() const noexcept
 {
-    if (_pcf && exchangeVal(volume, _recordingVolume)) {
-        updateRecordingVolume(volume);
-        _listeners.invoke(&ServiceListener::onAudioRecordingVolumeChanged, volume);
+    LOCK_READ_SAFE_OBJ(_recordingVolume);
+    return _recordingVolume->normalizedVolume();
+}
+
+double Service::Impl::playoutAudioVolume() const noexcept
+{
+    LOCK_READ_SAFE_OBJ(_playoutVolume);
+    return _playoutVolume->normalizedVolume();
+}
+
+void Service::Impl::setRecordingAudioVolume(double normalizedVolume)
+{
+    if (_pcf) {
+        std::optional<uint32_t> volume;
+        {
+            LOCK_WRITE_SAFE_OBJ(_recordingVolume);
+            if (_recordingVolume->setNormalizedVolume(normalizedVolume)) {
+                volume = _recordingVolume->volume();
+            }
+        }
+        if (volume.has_value()) {
+            updateRecordingVolume(volume.value());
+        }
     }
 }
 
-void Service::Impl::setPlayoutAudioVolume(double volume)
+void Service::Impl::setPlayoutAudioVolume(double normalizedVolume)
 {
-    if (_pcf && exchangeVal(volume, _playoutVolume)) {
-        updatePlayoutVolume(volume);
-        _listeners.invoke(&ServiceListener::onAudioPlayoutVolumeChanged, volume);
+    if (_pcf) {
+        std::optional<uint32_t> volume;
+        {
+            LOCK_WRITE_SAFE_OBJ(_playoutVolume);
+            if (_playoutVolume->setNormalizedVolume(normalizedVolume)) {
+                volume = _playoutVolume->volume();
+            }
+        }
+        if (volume.has_value()) {
+            updatePlayoutVolume(volume.value());
+        }
     }
 }
 
@@ -505,12 +538,12 @@ std::unique_ptr<Service::Impl> Service::Impl::
 void Service::Impl::onStarted(bool recording)
 {
     if (recording) {
-        updateRecordingVolume();
+        updateRecordingVolume(recordingDevAudioVolume());
         updateRecordingMute();
         _listeners.invoke(&ServiceListener::onAudioRecordingStarted);
     }
     else {
-        updatePlayoutVolume();
+        updatePlayoutVolume(playoutDevAudioVolume());
         updatePlayoutMute();
         _listeners.invoke(&ServiceListener::onAudioPlayoutStarted);
     }
@@ -536,29 +569,55 @@ void Service::Impl::onMuteChanged(bool recording, bool mute)
     }
 }
 
-void Service::Impl::onVolumeChanged(bool recording, uint32_t)
+void Service::Impl::onVolumeChanged(bool recording, uint32_t volume)
 {
-    if (const auto adm = _pcf->admProxy().lock()) {
+    std::optional<double> normalized;
+    if (recording) {
+        LOCK_WRITE_SAFE_OBJ(_recordingVolume);
+        if (_recordingVolume->setVolume(volume)) {
+            normalized = _recordingVolume->normalizedVolume();
+        }
+    }
+    else {
+        LOCK_WRITE_SAFE_OBJ(_playoutVolume);
+        if (_playoutVolume->setVolume(volume)) {
+            normalized = _playoutVolume->normalizedVolume();
+        }
+    }
+    if (normalized.has_value()) {
         if (recording) {
-            if (const auto volume = adm->recordingState().normalizedVolume()) {
-                setRecordingAudioVolume(volume.value());
-            }
+            _listeners.invoke(&ServiceListener::onAudioRecordingVolumeChanged, normalized.value());
         }
         else {
-            if (const auto volume = adm->playoutState().normalizedVolume()) {
-                setPlayoutAudioVolume(volume.value());
-            }
+            _listeners.invoke(&ServiceListener::onAudioPlayoutVolumeChanged, normalized.value());
         }
     }
 }
 
-void Service::Impl::onMinMaxVolumeChanged(bool recording, uint32_t, uint32_t)
+void Service::Impl::onMinMaxVolumeChanged(bool recording,
+                                          uint32_t minVolume,
+                                          uint32_t maxVolume)
 {
+    std::optional<double> normalized;
     if (recording) {
-        updateRecordingVolume();
+        LOCK_WRITE_SAFE_OBJ(_recordingVolume);
+        if (_recordingVolume->setRange(minVolume, maxVolume)) {
+            normalized = _recordingVolume->normalizedVolume();
+        }
     }
     else {
-        updatePlayoutVolume();
+        LOCK_WRITE_SAFE_OBJ(_playoutVolume);
+        if (_playoutVolume->setRange(minVolume, maxVolume)) {
+            normalized = _playoutVolume->normalizedVolume();
+        }
+    }
+    if (normalized.has_value()) {
+        if (recording) {
+            _listeners.invoke(&ServiceListener::onAudioRecordingVolumeChanged, normalized.value());
+        }
+        else {
+            _listeners.invoke(&ServiceListener::onAudioPlayoutVolumeChanged, normalized.value());
+        }
     }
 }
 
@@ -576,7 +635,19 @@ void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
     }
 }
 
-void Service::Impl::updateAdmVolume(bool recording, double volume) const
+uint32_t Service::Impl::recordingDevAudioVolume() const
+{
+    LOCK_READ_SAFE_OBJ(_recordingVolume);
+    return _recordingVolume->volume();
+}
+
+uint32_t Service::Impl::playoutDevAudioVolume() const noexcept
+{
+    LOCK_READ_SAFE_OBJ(_playoutVolume);
+    return _playoutVolume->volume();
+}
+
+void Service::Impl::updateAdmVolume(bool recording, uint32_t volume) const
 {
     if (_pcf) {
         if (recording) {

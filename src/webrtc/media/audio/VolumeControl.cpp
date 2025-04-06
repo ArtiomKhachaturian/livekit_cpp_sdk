@@ -35,6 +35,18 @@ VolumeControl::VolumeControl(uint32_t minVolume, uint32_t maxVolume)
     setRange(minVolume, maxVolume);
 }
 
+VolumeControl::VolumeControl(uint32_t volume, uint32_t minVolume, uint32_t maxVolume)
+    : VolumeControl(minVolume, maxVolume)
+{
+    setVolume(volume);
+}
+
+VolumeControl::VolumeControl(double volume, uint32_t minVolume, uint32_t maxVolume)
+    : VolumeControl(minVolume, maxVolume)
+{
+    setNormalizedVolume(volume);
+}
+
 bool VolumeControl::setRange(uint32_t minVolume, uint32_t maxVolume)
 {
     const auto minv = std::min(minVolume, maxVolume);

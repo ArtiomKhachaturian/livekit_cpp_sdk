@@ -21,7 +21,11 @@ class VolumeControl
 {
 public:
     VolumeControl() = default;
+    VolumeControl(const VolumeControl&) = default;
+    VolumeControl(VolumeControl&&) = default;
     VolumeControl(uint32_t minVolume, uint32_t maxVolume);
+    VolumeControl(uint32_t volume, uint32_t minVolume, uint32_t maxVolume);
+    explicit VolumeControl(double volume, uint32_t minVolume, uint32_t maxVolume);
     void reset() { _minVolume = _maxVolume = 0U; }
     bool setRange(uint32_t minVolume, uint32_t maxVolume);
     bool valid() const;
@@ -30,6 +34,8 @@ public:
     uint32_t volume() const;
     double normalizedVolume() const noexcept { return _normalizedVolume; }
     explicit operator bool() const noexcept { return valid(); }
+    VolumeControl& operator = (const VolumeControl&) = default;
+    VolumeControl& operator = (VolumeControl&&) = default;
 private:
     uint32_t _minVolume = 0U;
     uint32_t _maxVolume = 0U;

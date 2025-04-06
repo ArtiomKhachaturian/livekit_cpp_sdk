@@ -154,12 +154,6 @@ bool AdmProxyState::setVolumeFrom(const AdmPtr& adm)
     return false;
 }
 
-bool AdmProxyState::setNormalizedVolume(double normalizedVolume)
-{
-    const auto volume = this->volume(normalizedVolume);
-    return volume && setVolume(volume.value());
-}
-
 void AdmProxyState::minMaxVolume(uint32_t* minVolume, uint32_t* maxVolume) const
 {
     if (minVolume || maxVolume) {
@@ -185,33 +179,6 @@ uint32_t AdmProxyState::maxVolume() const
     uint32_t maxv = 0U;
     minMaxVolume(nullptr, &maxv);
     return maxv;
-}
-
-std::optional<uint32_t> AdmProxyState::volume(double normalizedVolume) const
-{
-    auto control = makeVolumeControl();
-    if (control) {
-        control.setNormalizedVolume(normalizedVolume);
-        return control.volume();
-    }
-    return std::nullopt;
-}
-
-std::optional<double> AdmProxyState::normalizedVolume() const
-{
-    auto control = makeVolumeControl();
-    if (control) {
-        control.setVolume(volume());
-        return control.normalizedVolume();
-    }
-    return std::nullopt;
-}
-
-VolumeControl AdmProxyState::makeVolumeControl() const
-{
-    uint32_t minv, maxv;
-    minMaxVolume(&minv, &maxv);
-    return VolumeControl{minv, maxv};
 }
 
 template<class Method, typename... Args>
