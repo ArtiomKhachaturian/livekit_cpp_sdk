@@ -10,17 +10,19 @@ Frame {
         ScrollView {
             Layout.fillHeight: true
             Layout.fillWidth: true
-            TextArea {
-                id: chatMessages
-                anchors.fill: parent
-                clip: true
-                readOnly: true
-                wrapMode: TextEdit.WordWrap
-                textFormat: TextEdit.RichText
-                background: Rectangle {
-                    border.width: chatMessages.activeFocus ? 2 : 1
-                    color: chatMessages.palette.base
-                    border.color: chatMessages.activeFocus ? chatMessages.palette.highlight : chatMessages.palette.mid
+            Item {
+                TextArea {
+                    id: chatMessages
+                    anchors.fill: parent
+                    clip: true
+                    readOnly: true
+                    wrapMode: TextEdit.WordWrap
+                    textFormat: TextEdit.RichText
+                    background: Rectangle {
+                        border.width: chatMessages.activeFocus ? 2 : 1
+                        color: chatMessages.palette.base
+                        border.color: chatMessages.activeFocus ? chatMessages.palette.highlight : chatMessages.palette.mid
+                    }
                 }
             }
         }

@@ -33,6 +33,7 @@ Pane {
                 id: connection
                 width: parent.width - 200
                 anchors.centerIn: parent
+                enabled: !sessionForm.connecting
                 onConnectClicked: {
                     wantsToBeConnected(root.objectName)
                     sessionForm.connect(urlText, tokenText)
@@ -62,7 +63,7 @@ Pane {
     }
 
     BusyIndicator {
-        anchors.fill: parent
+        anchors.centerIn: parent
         running: sessionForm.connecting
     }
 

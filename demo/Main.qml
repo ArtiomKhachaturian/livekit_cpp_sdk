@@ -97,7 +97,7 @@ ApplicationWindow {
                         from: 0
                         to: 100
                         value: app.audioRecordingVolume
-                        onValueChanged: {
+                        onMoved: {
                             app.audioRecordingVolume = value
                         }
                     }
@@ -136,7 +136,7 @@ ApplicationWindow {
                         from: 0
                         to: 100
                         value: app.audioPlayoutVolume
-                        onValueChanged: {
+                        onMoved: {
                             app.audioPlayoutVolume = value
                         }
                     }
