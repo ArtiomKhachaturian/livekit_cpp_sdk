@@ -103,10 +103,8 @@ private:
     void updateAdmMute(bool recording, bool mute) const;
     void updateRecordingVolume(uint32_t volume) const { updateAdmVolume(true, volume); }
     void updateRecordingMute(bool mute) const { updateAdmMute(true, mute); }
-    void updateRecordingMute() const { updateRecordingMute(recordingMuted()); }
     void updatePlayoutVolume(uint32_t volume) const { updateAdmVolume(false, volume); }
     void updatePlayoutMute(bool mute) const { updateAdmMute(false, mute); }
-    void updatePlayoutMute() const { updatePlayoutMute(playoutMuted()); }
     static void logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     static inline const VolumeControl _defaultRecording = {70U, 0U, 255U};
@@ -539,12 +537,12 @@ void Service::Impl::onStarted(bool recording)
 {
     if (recording) {
         updateRecordingVolume(recordingDevAudioVolume());
-        updateRecordingMute();
+        updateRecordingMute(recordingMuted());
         _listeners.invoke(&ServiceListener::onAudioRecordingStarted);
     }
     else {
         updatePlayoutVolume(playoutDevAudioVolume());
-        updatePlayoutMute();
+        updatePlayoutMute(playoutMuted());
         _listeners.invoke(&ServiceListener::onAudioPlayoutStarted);
     }
 }
