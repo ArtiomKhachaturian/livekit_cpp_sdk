@@ -27,7 +27,7 @@ DemoApp::DemoApp(int &argc, char **argv)
     , _playoutAudioDevicesModel(new MediaDevicesModel(this))
 {
     const auto logger = std::make_shared<Logger>();
-    const auto wsf = std::make_shared<ZaphoydTppFactory>(logger);
+    const auto wsf = std::make_shared<ZaphoydTppFactory>();
     auto service = std::make_unique<LiveKitCpp::Service>(wsf, logger);
     const auto state = service->state();
     if (LiveKitCpp::ServiceState::OK == state) {
