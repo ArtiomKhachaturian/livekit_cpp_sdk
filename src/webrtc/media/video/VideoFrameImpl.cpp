@@ -86,7 +86,7 @@ int VideoFrameImpl::stride(size_t planeIndex) const
     return 0;
 }
 
-const void* VideoFrameImpl::data(size_t planeIndex) const
+const std::byte* VideoFrameImpl::data(size_t planeIndex) const
 {
     if (_buffer) {
         switch (_buffer->type()) {
@@ -110,6 +110,33 @@ const void* VideoFrameImpl::data(size_t planeIndex) const
         }
     }
     return nullptr;
+}
+
+
+int VideoFrameImpl::dataSize(size_t planeIndex) const
+{
+    if (_buffer) {
+        switch (_buffer->type()) {
+            case webrtc::VideoFrameBuffer::Type::kI420:
+                return dataSizeI420(planeIndex, _buffer->width(), _buffer->height());
+            case webrtc::VideoFrameBuffer::Type::kI422:
+                return dataSizeI422(planeIndex, _buffer->width(), _buffer->height());
+            case webrtc::VideoFrameBuffer::Type::kI444:
+                return dataSizeI444(planeIndex, _buffer->width(), _buffer->height());
+            case webrtc::VideoFrameBuffer::Type::kI010:
+                return dataSizeI010(planeIndex, _buffer->width(), _buffer->height());
+            case webrtc::VideoFrameBuffer::Type::kI210:
+                return dataSizeI210(planeIndex, _buffer->width(), _buffer->height());
+            case webrtc::VideoFrameBuffer::Type::kI410:
+                return dataSizeI410(planeIndex, _buffer->width(), _buffer->height());
+            case webrtc::VideoFrameBuffer::Type::kNV12:
+                return dataSizeNV12(planeIndex, _buffer->width(), _buffer->height());
+            default:
+                assert(false);
+                break;
+        }
+    }
+    return 0;
 }
 
 std::optional<VideoFrameType> VideoFrameImpl::detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer)
@@ -208,16 +235,16 @@ int VideoFrameImpl::stride(size_t planeIndex, const webrtc::BiplanarYuvBuffer* b
     return 0;
 }
 
-const void* VideoFrameImpl::data(size_t planeIndex, const webrtc::PlanarYuv8Buffer* buffer)
+const std::byte* VideoFrameImpl::data(size_t planeIndex, const webrtc::PlanarYuv8Buffer* buffer)
 {
     if (buffer) {
         switch (planeIndex) {
             case 0U:
-                return buffer->DataY();
+                return reinterpret_cast<const std::byte*>(buffer->DataY());
             case 1U:
-                return buffer->DataU();
+                return reinterpret_cast<const std::byte*>(buffer->DataU());
             case 2U:
-                return buffer->DataV();
+                return reinterpret_cast<const std::byte*>(buffer->DataV());
             default:
                 break;
         }
@@ -225,16 +252,16 @@ const void* VideoFrameImpl::data(size_t planeIndex, const webrtc::PlanarYuv8Buff
     return nullptr;
 }
 
-const void* VideoFrameImpl::data(size_t planeIndex, const webrtc::PlanarYuv16BBuffer* buffer)
+const std::byte* VideoFrameImpl::data(size_t planeIndex, const webrtc::PlanarYuv16BBuffer* buffer)
 {
     if (buffer) {
         switch (planeIndex) {
             case 0U:
-                return buffer->DataY();
+                return reinterpret_cast<const std::byte*>(buffer->DataY());
             case 1U:
-                return buffer->DataU();
+                return reinterpret_cast<const std::byte*>(buffer->DataU());
             case 2U:
-                return buffer->DataV();
+                return reinterpret_cast<const std::byte*>(buffer->DataV());
             default:
                 break;
         }
@@ -242,19 +269,112 @@ const void* VideoFrameImpl::data(size_t planeIndex, const webrtc::PlanarYuv16BBu
     return nullptr;
 }
 
-const void* VideoFrameImpl::data(size_t planeIndex, const webrtc::BiplanarYuv8Buffer* buffer)
+const std::byte* VideoFrameImpl::data(size_t planeIndex, const webrtc::BiplanarYuv8Buffer* buffer)
 {
     if (buffer) {
         switch (planeIndex) {
             case 0U:
-                return buffer->DataY();
+                return reinterpret_cast<const std::byte*>(buffer->DataY());
             case 1U:
-                return buffer->DataUV();
+                return reinterpret_cast<const std::byte*>(buffer->DataUV());
             default:
                 break;
         }
     }
     return nullptr;
+}
+
+int VideoFrameImpl::dataSizeI420(size_t planeIndex, int width, int height)
+{
+    switch (planeIndex) {
+        case 0U: // Y
+            return width * height;
+        case 1U: // U
+        case 2U: // V
+            return (width / 2) * (height / 2);
+        default:
+            break;
+    }
+    return 0;
+}
+
+int VideoFrameImpl::dataSizeI422(size_t planeIndex, int width, int height)
+{
+    switch (planeIndex) {
+        case 0U: // Y
+            return width * height;
+        case 1U: // U
+        case 2U: // V
+            return (width / 2) * height;
+        default:
+            break;
+    }
+    return 0;
+}
+
+int VideoFrameImpl::dataSizeI444(size_t planeIndex, int width, int height)
+{
+    switch (planeIndex) {
+        case 0U: // Y
+        case 1U: // U
+        case 2U: // V
+            return width * height;
+        default:
+            break;
+    }
+    return 0;
+}
+
+int VideoFrameImpl::dataSizeI010(size_t planeIndex, int width, int height)
+{
+    switch (planeIndex) {
+        case 0U: // Y
+            return width * height * 2;
+        case 1U: // U
+        case 2U: // V
+            return (width / 2) * (height / 2) * 2;
+        default:
+            break;
+    }
+    return 0;
+}
+
+int VideoFrameImpl::dataSizeI210(size_t planeIndex, int width, int height)
+{
+    switch (planeIndex) {
+        case 0U: // Y
+            return width * height * 2;
+        case 1U: // U
+        case 2U: // V
+            return (width / 2) * height * 2;
+        default:
+            break;
+    }
+    return 0;
+}
+
+int VideoFrameImpl::dataSizeI410(size_t planeIndex, int width, int height)
+{
+    switch (planeIndex) {
+        case 0U: // Y
+        case 1U: // U
+        case 2U: // V
+            return width * height * 2;
+        default:
+            break;
+    }
+    return 0;
+}
+
+int VideoFrameImpl::dataSizeNV12(size_t planeIndex, int width, int height)
+{
+    switch (planeIndex) {
+        case 0U: // Y
+            return width * height;
+        case 1U: // UV
+            return width * height / 2;
+    }
+    return 0;
 }
 
 } // namespace LiveKitCpp

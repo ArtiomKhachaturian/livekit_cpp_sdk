@@ -28,7 +28,8 @@ public:
     int width() const final;
     int height() const final;
     int stride(size_t planeIndex) const final;
-    const void* data(size_t planeIndex) const final;
+    const std::byte* data(size_t planeIndex) const final;
+    int dataSize(size_t planeIndex) const final;
 private:
     VideoFrameImpl(VideoFrameType type, int rotation,
                    rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
@@ -37,9 +38,16 @@ private:
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> map(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
     static int stride(size_t planeIndex, const webrtc::PlanarYuvBuffer* buffer);
     static int stride(size_t planeIndex, const webrtc::BiplanarYuvBuffer* buffer);
-    static const void* data(size_t planeIndex, const webrtc::PlanarYuv8Buffer* buffer);
-    static const void* data(size_t planeIndex, const webrtc::PlanarYuv16BBuffer* buffer);
-    static const void* data(size_t planeIndex, const webrtc::BiplanarYuv8Buffer* buffer);
+    static const std::byte* data(size_t planeIndex, const webrtc::PlanarYuv8Buffer* buffer);
+    static const std::byte* data(size_t planeIndex, const webrtc::PlanarYuv16BBuffer* buffer);
+    static const std::byte* data(size_t planeIndex, const webrtc::BiplanarYuv8Buffer* buffer);
+    static int dataSizeI420(size_t planeIndex, int width, int height);
+    static int dataSizeI422(size_t planeIndex, int width, int height);
+    static int dataSizeI444(size_t planeIndex, int width, int height);
+    static int dataSizeI010(size_t planeIndex, int width, int height);
+    static int dataSizeI210(size_t planeIndex, int width, int height);
+    static int dataSizeI410(size_t planeIndex, int width, int height);
+    static int dataSizeNV12(size_t planeIndex, int width, int height);
 private:
     const rtc::scoped_refptr<webrtc::VideoFrameBuffer> _buffer;
 };

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoFrame.h
+#include "LiveKitClientExport.h"
 #include "media/VideoFrameType.h"
 #include "LiveKitClientExport.h"
 #include <memory>
@@ -19,7 +20,7 @@
 namespace LiveKitCpp
 {
 
-class VideoFrame
+class LIVEKIT_CLIENT_API VideoFrame
 {
 public:
     virtual ~VideoFrame() = default;
@@ -28,11 +29,14 @@ public:
     int rotation() const { return _rotation; }
     virtual size_t planesCount() const;
     virtual int stride() const { return stride(0U); }
+    virtual const std::byte* data() const { return data(0U); }
+    virtual int dataSize() const { return dataSize(0U); }
     virtual std::shared_ptr<VideoFrame> convertToI420() const = 0;
     virtual int width() const = 0;
     virtual int height() const = 0;
     virtual int stride(size_t planeIndex) const = 0;
-    virtual const void* data(size_t planeIndex) const = 0;
+    virtual const std::byte* data(size_t planeIndex) const = 0;
+    virtual int dataSize(size_t planeIndex) const = 0;
 protected:
     VideoFrame(VideoFrameType type, int rotation);
 private:

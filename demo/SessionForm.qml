@@ -168,7 +168,7 @@ Frame {
                 cameraTrack = session.addCameraTrack()
                 if (cameraTrack != null) {
                     cameraTrack.muted = cameraMuted.checked
-                    cameraTrack.setVideoOutput(localCameraView.videoSink)
+                    cameraTrack.videoOutput = localCameraView.videoSink
                 }
             }
             else {
