@@ -1,12 +1,13 @@
 #ifndef DEMOAPP_H
 #define DEMOAPP_H
 #include "safeobj.h"
-#include "mediadeviceinfo.h"
 #include "mediadevicesmodel.h"
+#include "cameraoptionsmodel.h"
 #include <ServiceListener.h>
 #include <QGuiApplication>
 #include <QScopedPointer>
 #include <QPointer>
+#include <memory>
 #include <optional>
 
 QT_BEGIN_NAMESPACE
@@ -33,6 +34,7 @@ class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
     Q_PROPERTY(MediaDevicesModel* camerasModel MEMBER _camerasModel CONSTANT)
     Q_PROPERTY(MediaDeviceInfo recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
     Q_PROPERTY(MediaDeviceInfo playoutAudioDevice READ playoutAudioDevice WRITE setPlayoutAudioDevice NOTIFY playoutAudioDeviceChanged)
+    Q_PROPERTY(CameraOptions defaultCameraOptions READ defaultCameraOptions CONSTANT)
 public:
     DemoApp(int &argc, char **argv);
     ~DemoApp() override;
@@ -45,6 +47,8 @@ public slots:
     Q_INVOKABLE void setRecordingAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE SessionWrapper* createSession(QObject* parent) const;
+    Q_INVOKABLE CameraOptionsModel* createCameraOptionsModel(QObject* parent) const;
+    Q_INVOKABLE CameraOptions defaultCameraOptions() const;
 public:
     Q_INVOKABLE bool isValid() const;
     Q_INVOKABLE bool audioRecordingEnabled() const;
@@ -77,7 +81,7 @@ private:
     MediaDevicesModel* const _recordingAudioDevicesModel;
     MediaDevicesModel* const _playoutAudioDevicesModel;
     MediaDevicesModel* const _camerasModel;
-    QScopedPointer<LiveKitCpp::Service> _service;
+    std::shared_ptr<LiveKitCpp::Service> _service;
     std::optional<LiveKitCpp::ServiceState> _serviceInitFailure;
     QPointer<QObject> _appWindow;
     SafeObj<MediaDeviceInfo> _recordingAudioDevice;

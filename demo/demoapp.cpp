@@ -29,15 +29,15 @@ DemoApp::DemoApp(int &argc, char **argv)
 {
     const auto logger = std::make_shared<Logger>();
     const auto wsf = std::make_shared<ZaphoydTppFactory>();
-    auto service = std::make_unique<LiveKitCpp::Service>(wsf, logger);
+    auto service = std::make_shared<LiveKitCpp::Service>(wsf/*, logger*/);
     const auto state = service->state();
     if (LiveKitCpp::ServiceState::OK == state) {
-         _service.reset(service.release());
+        _service = std::move(service);
         _recordingAudioDevice = _service->defaultAudioRecordingDevice();
-         _playoutAudioDevice = _service->defaultAudioPlayoutDevice();
-        _recordingAudioDevicesModel->setInfo(_service->recordingAudioDevices());
-        _playoutAudioDevicesModel->setInfo(_service->playoutAudioDevices());
-        _camerasModel->setInfo(_service->cameraDevices());
+        _playoutAudioDevice = _service->defaultAudioPlayoutDevice();
+        _recordingAudioDevicesModel->setItems(_service->recordingAudioDevices());
+        _playoutAudioDevicesModel->setItems(_service->playoutAudioDevices());
+        _camerasModel->setItems(_service->cameraDevices());
         _service->addListener(this);
     }
     else {
@@ -131,6 +131,19 @@ SessionWrapper* DemoApp::createSession(QObject* parent) const
         }
     }
     return wrapper;
+}
+
+CameraOptionsModel* DemoApp::createCameraOptionsModel(QObject* parent) const
+{
+    if (_service) {
+        return new CameraOptionsModel(_service, parent);
+    }
+    return nullptr;
+}
+
+CameraOptions DemoApp::defaultCameraOptions() const
+{
+    return CameraOptions::defaultOptions();
 }
 
 bool DemoApp::isValid() const

@@ -1,68 +1,16 @@
 #include "mediadevicesmodel.h"
 
 MediaDevicesModel::MediaDevicesModel(QObject* parent)
-    : QAbstractListModel(parent)
+    : Base(parent)
 {
 }
 
-MediaDevicesModel::MediaDevicesModel(const std::vector<LiveKitCpp::MediaDeviceInfo>& infos,
-                                     QObject* parent)
-    : MediaDevicesModel(parent)
+MediaDeviceInfo MediaDevicesModel::itemAt(qsizetype index) const
 {
-    setInfo(infos);
+    return Base::itemAt(index);
 }
 
-void MediaDevicesModel::setInfo(const std::vector<LiveKitCpp::MediaDeviceInfo>& infos)
+qsizetype MediaDevicesModel::indexOf(const MediaDeviceInfo& item) const
 {
-    if (_infos.empty() && infos.empty()) {
-        return;
-    }
-    if (_infos.empty()) {
-        beginResetModel();
-        _infos.assign(infos.begin(), infos.end());
-        endResetModel();
-    }
-    else {
-        beginResetModel();
-        _infos.assign(infos.begin(), infos.end());
-        endResetModel();
-    }
-}
-
-MediaDeviceInfo MediaDevicesModel::infoAt(qsizetype index) const
-{
-    if (index >= 0 && index < _infos.size()) {
-        return _infos.at(index);
-    }
-    return {};
-}
-
-qsizetype MediaDevicesModel::indexOf(const MediaDeviceInfo& info) const
-{
-    if (!info.isEmpty()) {
-        return _infos.indexOf(info);
-    }
-    return -1;
-}
-
-QVariant MediaDevicesModel::data(const QModelIndex& index, int role) const
-{
-    if (index.isValid() && index.row() < _infos.size()) {
-        switch (role) {
-            case Qt::DisplayRole:
-                return _infos.at(index.row()).name();
-            case MediaDeviceInfoRole:
-                return QVariant::fromValue(_infos.at(index.row()));
-            default:
-                break;
-        }
-    }
-    return {};
-}
-
-QHash<int, QByteArray> MediaDevicesModel::roleNames() const
-{
-    auto names = QAbstractListModel::roleNames();
-    names.insert(MediaDeviceInfoRole, QByteArrayLiteral("mediaDeviceInfo"));
-    return names;
+    return Base::indexOf(item);
 }

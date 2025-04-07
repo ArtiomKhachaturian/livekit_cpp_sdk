@@ -71,11 +71,40 @@ Frame {
                     }
                 }
                 ComboBox {
+                    id: cameraModelComboBox
                     model: app.camerasModel
+                    readonly property var deviceInfo: {
+                        return model.itemAt(currentIndex)
+                    }
                     textRole: "display"
                     Layout.fillWidth: true
                     enabled: cameraTrack != null
-                    visible: model.rowCount > 0
+                    //visible: model.rowCount > 0
+                }
+
+                ComboBox {
+                    id: cameraOptionsComboBox
+                    textRole: "display"
+                    Layout.fillWidth: true
+                    enabled: cameraModelComboBox.enabled && null != model
+                    readonly property var cameraOptions: {
+                        if (null != model) {
+                            return model.itemAt(currentIndex)
+                        }
+                        return app.defaultCameraOptions
+                    }
+                    Component.onCompleted: {
+                        model = app.createCameraOptionsModel(this)
+                        if (null != model) {
+                            model.deviceInfo = cameraModelComboBox.deviceInfo
+                            currentIndex = Math.max(0, model.indexOf(app.defaultCameraOptions))
+                        }
+                    }
+                    onCurrentIndexChanged: {
+                        if (cameraTrack != null) {
+                            cameraTrack.options = cameraOptions
+                        }
+                    }
                 }
 
 
@@ -175,8 +204,9 @@ Frame {
     function addCameraTrack(add = true) {
         if (session != null) {
             if (add) {
-                cameraTrack = session.addCameraTrack()
+                cameraTrack = session.addCameraTrack(cameraOptionsComboBox.cameraOptions)
                 if (cameraTrack != null) {
+                    cameraTrack.deviceInfo = cameraModelComboBox.deviceInfo
                     cameraTrack.muted = cameraMuted.checked
                     cameraTrack.videoOutput = localCameraView.videoSink
                 }

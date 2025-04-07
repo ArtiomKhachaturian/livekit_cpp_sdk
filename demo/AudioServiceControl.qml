@@ -26,7 +26,7 @@ GroupBox {
             model: recording ? app.recordingAudioDevicesModel : app.playoutAudioDevicesModel
             textRole: "display"
             onActivated: index => {
-                var device = model.infoAt(index)
+                var device = model.itemAt(index)
                 if (recording) {
                     app.recordingAudioDevice = device
                 }

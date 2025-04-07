@@ -2,6 +2,7 @@
 #define SESSIONWRAPPER_H
 #include "audiotrackwrapper.h"
 #include "cameratrackwrapper.h"
+#include "cameraoptions.h"
 #include <SessionListener.h>
 #include <Session.h>
 #include <QObject>
@@ -37,7 +38,7 @@ public:
     ~SessionWrapper() override;
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
     Q_INVOKABLE AudioTrackWrapper* addMicrophoneTrack();
-    Q_INVOKABLE CameraTrackWrapper* addCameraTrack();
+    Q_INVOKABLE CameraTrackWrapper* addCameraTrack(const CameraOptions& options = {});
     Q_INVOKABLE void removeMicrophoneTrack(AudioTrackWrapper* track);
     Q_INVOKABLE void removeCameraTrack(CameraTrackWrapper* track);
     bool connecting() const;

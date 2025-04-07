@@ -30,6 +30,7 @@ public:
     // overrides of VideoOptions
     bool isValid() const noexcept final;
     QString toString() const final;
+    static CameraOptions defaultOptions();
 private:
     static QString toString(const std::optional<LiveKitCpp::VideoFrameType>& type);
 private:

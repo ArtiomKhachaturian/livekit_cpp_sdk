@@ -32,10 +32,10 @@ AudioTrackWrapper* SessionWrapper::addMicrophoneTrack()
     return nullptr;
 }
 
-CameraTrackWrapper* SessionWrapper::addCameraTrack()
+CameraTrackWrapper* SessionWrapper::addCameraTrack(const CameraOptions& options)
 {
     if (_impl) {
-        if (const auto track = _impl->addCameraTrack()) {
+        if (const auto track = _impl->addCameraTrack(options)) {
             return new CameraTrackWrapper(track, this);
         }
     }

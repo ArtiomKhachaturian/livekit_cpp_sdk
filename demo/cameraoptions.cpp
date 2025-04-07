@@ -115,6 +115,11 @@ QString CameraOptions::toString() const
     return VideoOptions::toString() + QStringLiteral(", ") + toString(type());
 }
 
+CameraOptions CameraOptions::defaultOptions()
+{
+    return LiveKitCpp::CameraOptions::defaultOptions();
+}
+
 QString CameraOptions::toString(const std::optional<LiveKitCpp::VideoFrameType>& type)
 {
     if (type.has_value()) {
