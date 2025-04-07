@@ -68,8 +68,11 @@ Frame {
                     id: cameraModelComboBox
                     model: app.camerasModel
                     textRole: "display"
+                    Layout.horizontalStretchFactor: 2
                     Layout.fillWidth: true
-                    visible: count > 1
+                    indicator.visible: count > 1
+                    flat: count <= 1
+                    enabled: indicator.visible
                     readonly property var deviceInfo: {
                         return model.itemAt(currentIndex)
                     }
@@ -78,6 +81,7 @@ Frame {
                 ComboBox {
                     id: cameraOptionsComboBox
                     textRole: "display"
+                    Layout.horizontalStretchFactor: 1
                     Layout.fillWidth: true
                     model: cameraOptionsModel
                     readonly property var cameraOptions: {
@@ -95,10 +99,6 @@ Frame {
                             cameraOptionsComboBox.currentIndex = defaultOptionsIndex()
                         }
                     }
-                }
-
-                Item { // spacer
-                    Layout.fillWidth: true
                 }
 
                 ToolButton {
