@@ -7,16 +7,14 @@ Frame {
     id: root
 
     property SessionWrapper session: null
-    property AudioTrackWrapper micTrack: null
-    property CameraTrackWrapper cameraTrack: null
-    readonly property bool connecting: session != null && session.connecting
+    readonly property bool connecting: session !== null && session.connecting
     readonly property int state: {
-        if (session == null) {
+        if (session === null) {
             return SessionWrapper.TransportDisconnected
         }
         return session.state
     }
-    readonly property string identity : session == null ? "" : session.identity
+    readonly property string identity : session === null ? "" : session.identity
 
     signal error(string desc, string details)
 
@@ -32,20 +30,14 @@ Frame {
                     text: qsTr("Microphone")
                     checked: false
                     enabled: session != null
-                    onCheckedChanged: {
-                        addMicrophoneTrack(checked)
-                    }
+                    onCheckedChanged: localMediaView.microphoneAdded = checked
                 }
                 CheckBox {
                     id: micMuted
                     text: qsTr("Muted")
-                    enabled: micTrack != null
+                    enabled: localMediaView.microphoneAdded
                     checked: false
-                    onCheckedChanged: {
-                        if (micTrack != null) {
-                            micTrack.muted = checked
-                        }
-                    }
+                    onCheckedChanged: localMediaView.microphoneMuted = checked
                 }
 
                 ToolSeparator {}
@@ -55,20 +47,14 @@ Frame {
                     text: qsTr("Camera")
                     enabled: session != null
                     checked: false
-                    onCheckedChanged: {
-                        addCameraTrack(checked)
-                    }
+                    onCheckedChanged: localMediaView.cameraAdded = checked
                 }
                 CheckBox {
                     id: cameraMuted
                     text: qsTr("Muted")
-                    enabled: cameraTrack != null
+                    enabled: localMediaView.cameraAdded
                     checked: false
-                    onCheckedChanged: {
-                        if (cameraTrack != null) {
-                            cameraTrack.muted = checked
-                        }
-                    }
+                    onCheckedChanged: localMediaView.cameraMuted = checked
                 }
                 ComboBox {
                     id: cameraModelComboBox
@@ -78,7 +64,7 @@ Frame {
                     }
                     textRole: "display"
                     Layout.fillWidth: true
-                    enabled: cameraTrack != null
+                    onCurrentIndexChanged: localMediaView.cameraDeviceInfo = deviceInfo
                     //visible: model.rowCount > 0
                 }
 
@@ -86,7 +72,7 @@ Frame {
                     id: cameraOptionsComboBox
                     textRole: "display"
                     Layout.fillWidth: true
-                    enabled: cameraModelComboBox.enabled && null != model
+                    enabled: localMediaView.cameraAdded && null != model
                     readonly property var cameraOptions: {
                         if (null != model) {
                             return model.itemAt(currentIndex)
@@ -100,11 +86,7 @@ Frame {
                             currentIndex = Math.max(0, model.indexOf(app.defaultCameraOptions))
                         }
                     }
-                    onCurrentIndexChanged: {
-                        if (cameraTrack != null) {
-                            cameraTrack.options = cameraOptions
-                        }
-                    }
+                    onCurrentIndexChanged: localMediaView.cameraOptions = cameraOptions
                 }
 
 
@@ -121,9 +103,7 @@ Frame {
                 ToolButton {
                     Layout.alignment: Qt.AlignRight
                     icon.name: "network-offline"
-                    onClicked: {
-                        disconnect()
-                    }
+                    onClicked: disconnect()
                 }
             }
         }
@@ -133,8 +113,8 @@ Frame {
             Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                VideoOutput {
-                    id: localCameraView
+                LocalMediaView {
+                    id: localMediaView
                     anchors.fill: parent
                 }
             }
@@ -156,13 +136,8 @@ Frame {
     function connect(url, token) {
         session = app.createSession(this)
         if (session != null) {
-            if (session.connectToSfu(url, token)) {
-                if (micAdded.checked) {
-                    addMicrophoneTrack()
-                }
-                if (cameraAdded.checked) {
-                    addCameraTrack()
-                }
+            if (!session.connectToSfu(url, token)) {
+                // TODO: log error
             }
         }
         else {
@@ -173,56 +148,19 @@ Frame {
     function disconnect() {
         if (session != null) {
             session.disconnectFromSfu()
-            destroySession()
+            session = null
         }
     }
 
-    function destroySession() {
-        if (session != null) {
-            session.removeMicrophoneTrack(micTrack)
-            session.removeCameraTrack(cameraTrack)
-            micTrack = null
-            cameraTrack = null
-        }
-    }
-
-    function addMicrophoneTrack(add = true) {
-        if (session != null) {
-            if (add) {
-                micTrack = session.addMicrophoneTrack()
-                if (micTrack != null) {
-                    micTrack.muted = micMuted.checked;
-                }
-            }
-            else {
-                session.removeMicrophoneTrack(micTrack)
-                micTrack = null
-            }
-        }
-    }
-
-    function addCameraTrack(add = true) {
-        if (session != null) {
-            if (add) {
-                cameraTrack = session.addCameraTrack(cameraOptionsComboBox.cameraOptions)
-                if (cameraTrack != null) {
-                    cameraTrack.deviceInfo = cameraModelComboBox.deviceInfo
-                    cameraTrack.muted = cameraMuted.checked
-                    cameraTrack.videoOutput = localCameraView.videoSink
-                }
-            }
-            else {
-                session.removeCameraTrack(cameraTrack)
-                cameraTrack = null
-            }
-        }
+    onSessionChanged: {
+        localMediaView.session = session
     }
 
     onStateChanged: {
         switch (state) {
             case SessionWrapper.TransportDisconnected:
             case SessionWrapper.RtcClosed:
-                destroySession()
+                localMediaView.session = null
                 break
             default:
                 break
@@ -232,7 +170,7 @@ Frame {
     Connections {
         target: session
         function onError(desc, details) {
-            destroySession()
+            session = null
             root.error(desc, details)
         }
         function onChatMessageReceived(participantIdentity, message, deleted) {

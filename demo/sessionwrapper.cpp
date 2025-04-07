@@ -50,7 +50,7 @@ void SessionWrapper::removeMicrophoneTrack(AudioTrackWrapper* track)
     }
 }
 
-void SessionWrapper::removeCameraTrack(CameraTrackWrapper* track)
+void SessionWrapper::removeVideoTrack(VideoTrackWrapper* track)
 {
     if (_impl && track && track->parent() == this) {
         _impl->removeVideoTrack(track->track());

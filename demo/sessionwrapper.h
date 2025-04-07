@@ -40,7 +40,7 @@ public:
     Q_INVOKABLE AudioTrackWrapper* addMicrophoneTrack();
     Q_INVOKABLE CameraTrackWrapper* addCameraTrack(const CameraOptions& options = {});
     Q_INVOKABLE void removeMicrophoneTrack(AudioTrackWrapper* track);
-    Q_INVOKABLE void removeCameraTrack(CameraTrackWrapper* track);
+    Q_INVOKABLE void removeVideoTrack(VideoTrackWrapper* track);
     bool connecting() const;
     State state() const;
     QString sid() const;

@@ -3,11 +3,16 @@
 #include <media/VideoFrame.h>
 #include <media/VideoFrameQtHelper.h>
 
+#include <QDebug>
+
 VideoTrackWrapper::VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrack>& impl,
                                      QObject *parent)
     : TrackWrapper(impl, parent)
     , _impl(impl)
 {
+    _fpsTimer.setInterval(1000);
+    _fpsTimer.setTimerType(Qt::PreciseTimer);
+    QObject::connect(&_fpsTimer, &QTimer::timeout, this, &VideoTrackWrapper::onMeasureFramerate);
 }
 
 VideoTrackWrapper::~VideoTrackWrapper()
@@ -18,6 +23,7 @@ VideoTrackWrapper::~VideoTrackWrapper()
             impl->removeSink(this);
         }
     }
+    _fpsTimer.disconnect(this);
 }
 
 void VideoTrackWrapper::setVideoOutput(QVideoSink* output)
@@ -34,9 +40,16 @@ void VideoTrackWrapper::setVideoOutput(QVideoSink* output)
             }
             _output = output;
             changed = true;
+            _framesCounter = 0U;
         }
     }
     if (changed) {
+        if (output) {
+            _fpsTimer.start();
+        }
+        else {
+            _fpsTimer.stop();
+        }
         emit videoOutputChanged();
     }
 }
@@ -47,6 +60,15 @@ QVideoSink* VideoTrackWrapper::videoOutput() const
     return _output;
 }
 
+void VideoTrackWrapper::onMeasureFramerate()
+{
+    const auto fps = _framesCounter.exchange(0U);
+    if (fps != _fps) {
+        _fps = fps;
+        emit fpsChanged();
+    }
+}
+
 void VideoTrackWrapper::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
 {
     if (frame && frame->planesCount()) {
@@ -55,6 +77,7 @@ void VideoTrackWrapper::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& f
             const auto qtFrame = LiveKitCpp::convert(frame);
             if (qtFrame.isValid()) {
                 _output->setVideoFrame(qtFrame);
+                _framesCounter.fetch_add(1U);
             }
         }
     }

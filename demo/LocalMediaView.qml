@@ -1,0 +1,95 @@
+import QtQuick
+
+Item {
+    id: root
+
+    property SessionWrapper session: null
+    property bool cameraAdded: false
+    property bool microphoneAdded: false
+    property bool microphoneMuted: false
+    property alias cameraDeviceInfo: localCameraView.deviceInfo
+    property alias cameraOptions: localCameraView.options
+    property alias cameraMuted: localCameraView.muted
+
+    CameraRenderer {
+        id: localCameraView
+        anchors.fill: parent
+    }
+
+    QtObject {
+        id: cachedObjects
+        property AudioTrackWrapper micTrack: null
+        property SessionWrapper cachedSession: null
+        onMicTrackChanged: {
+            if (micTrack !== null) {
+                micTrack.muted = root.microphoneMuted
+            }
+        }
+    }
+
+    onSessionChanged: {
+        if (cachedObjects.cachedSession !== null) {
+            cachedObjects.cachedSession.removeMicrophoneTrack(cachedObjects.micTrack)
+            cachedObjects.cachedSession.removeVideoTrack(localCameraView.takeTrack())
+            cachedObjects.micTrack = null
+            cachedObjects.cachedSession = null
+        }
+        if (session !== null) {
+            if (microphoneAdded) {
+                cachedObjects.micTrack = session.addMicrophoneTrack()
+                if (cachedObjects.micTrack === null) {
+                    microphoneAdded = false
+                }
+            }
+            if (cameraAdded) {
+                localCameraView.track = session.addCameraTrack(localCameraView.options)
+                if (localCameraView.track === null) {
+                    cameraAdded = false
+                }
+            }
+            cachedObjects.cachedSession = session
+        }
+        else {
+            microphoneAdded = cameraAdded = false
+        }
+    }
+
+    onCameraAddedChanged: {
+        if (session !== null) {
+            if (cameraAdded) {
+                localCameraView.track = session.addCameraTrack(localCameraView.options)
+                if (localCameraView.track === null) {
+                    cameraAdded = false
+                }
+            }
+            else {
+                if (localCameraView.track !== null) {
+                    session.removeVideoTrack(localCameraView.takeTrack())
+                }
+            }
+        }
+    }
+
+    onMicrophoneAddedChanged: {
+        if (session !== null) {
+            if (microphoneAdded) {
+                cachedObjects.micTrack = session.addMicrophoneTrack()
+                if (cachedObjects.micTrack === null) {
+                    microphoneAdded = false
+                }
+            }
+            else {
+                if (cachedObjects.micTrack !== null) {
+                    session.removeMicrophoneTrack(cachedObjects.micTrack)
+                    cachedObjects.micTrack = null
+                }
+            }
+        }
+    }
+
+    onMicrophoneMutedChanged: {
+        if (cachedObjects.micTrack !== null) {
+            cachedObjects.micTrack.muted = microphoneMuted
+        }
+    }
+}
