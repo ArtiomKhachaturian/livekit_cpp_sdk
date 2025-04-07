@@ -12,6 +12,7 @@ VideoTrackWrapper::VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrac
     , _impl(impl)
     , _frameSize(_nullSize)
 {
+    QObject::connect(this, &TrackWrapper::muteChanged, this, &VideoTrackWrapper::onMuteChanged);
 }
 
 VideoTrackWrapper::~VideoTrackWrapper()
@@ -22,7 +23,7 @@ VideoTrackWrapper::~VideoTrackWrapper()
             impl->removeSink(this);
         }
     }
-    _fpsTimer.stop();
+    stopMetricsCollection();
 }
 
 void VideoTrackWrapper::setVideoOutput(QVideoSink* output)
@@ -44,12 +45,10 @@ void VideoTrackWrapper::setVideoOutput(QVideoSink* output)
     }
     if (changed) {
         if (output) {
-            _fpsTimer.start(1000ms, this);
+            startMetricsCollection();
         }
         else {
-            _fpsTimer.stop();
-            setFps(0U);
-            setFrameSize(_nullSize);
+            stopMetricsCollection();
         }
         emit videoOutputChanged();
     }
@@ -69,6 +68,29 @@ void VideoTrackWrapper::timerEvent(QTimerEvent* e)
     TrackWrapper::timerEvent(e);
 }
 
+void VideoTrackWrapper::onMuteChanged()
+{
+    if (muted()) {
+        stopMetricsCollection();
+    }
+    else if (hasOutput()) {
+        startMetricsCollection();
+    }
+}
+
+void VideoTrackWrapper::startMetricsCollection()
+{
+    _fpsTimer.start(1000ms, this);
+}
+
+void VideoTrackWrapper::stopMetricsCollection()
+{
+    _fpsTimer.stop();
+    _framesCounter = 0U;
+    setFps(0U);
+    setFrameSize(_nullSize, false);
+}
+
 void VideoTrackWrapper::setFps(quint16 fps)
 {
     if (fps != _fps) {
@@ -77,17 +99,25 @@ void VideoTrackWrapper::setFps(quint16 fps)
     }
 }
 
-void VideoTrackWrapper::setFrameSize(QSize frameSize)
+void VideoTrackWrapper::setFrameSize(QSize frameSize, bool updateFps)
 {
-    _framesCounter.fetch_add(1U);
+    if (updateFps) {
+        _framesCounter.fetch_add(1U);
+    }
     if (_frameSize.exchange(std::move(frameSize))) {
         emit frameSizeChanged();
     }
 }
 
-void VideoTrackWrapper::setFrameSize(int width, int height)
+void VideoTrackWrapper::setFrameSize(int width, int height, bool updateFps)
 {
-    setFrameSize(QSize(width, height));
+    setFrameSize(QSize(width, height), updateFps);
+}
+
+bool VideoTrackWrapper::hasOutput() const
+{
+    const QReadLocker locker(&_outputLock);
+    return nullptr != _output;
 }
 
 void VideoTrackWrapper::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
@@ -98,7 +128,12 @@ void VideoTrackWrapper::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& f
             const auto qtFrame = LiveKitCpp::convert(frame);
             if (qtFrame.isValid()) {
                 _output->setVideoFrame(qtFrame);
-                setFrameSize(qtFrame.width(), qtFrame.height());
+                if (!muted()) {
+                    setFrameSize(qtFrame.width(), qtFrame.height());
+                }
+                else {
+                    setFrameSize(_nullSize, false);
+                }
             }
         }
     }

@@ -37,10 +37,15 @@ signals:
     void frameSizeChanged();
 protected:
     void timerEvent(QTimerEvent* e) override;
+private slots:
+    void onMuteChanged();
 private:
+    void startMetricsCollection();
+    void stopMetricsCollection();
     void setFps(quint16 fps);
-    void setFrameSize(QSize frameSize);
-    void setFrameSize(int width, int height);
+    void setFrameSize(QSize frameSize, bool updateFps = true);
+    void setFrameSize(int width, int height, bool updateFps = true);
+    bool hasOutput() const;
     // impl. of LiveKitCpp::VideoTrackSink
     void onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame) final;
 private:

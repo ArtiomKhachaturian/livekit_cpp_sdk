@@ -2,6 +2,7 @@ import QtQuick
 import QtMultimedia
 
 Item {
+    id: root
     property VideoTrackWrapper track: null
     property bool muted: false
 
@@ -18,23 +19,11 @@ Item {
         id: renderer
         anchors.fill: parent
         property VideoTrackWrapper cachedTrack: null
-        Rectangle {
+        VideoDiagnosticsView {
             id: fpsArea
-            x: renderer.contentRect.right - width
-            y: renderer.contentRect.top
-            width: 100
-            height: 20
-            visible: {
-                return fpsText.frameSize.width > 0 && fpsText.frameSize.height > 0
-            }
-            color: "yellow"
-            Text {
-                id: fpsText
-                property int fps: 0
-                property size frameSize: Qt.size(0, 0)
-                anchors.fill: parent
-                text: qsTr("%1x%2 %3 fps").arg(frameSize.width).arg(frameSize.height).arg(fps)
-            }
+            x: parent.contentRect.right - 4 - width
+            y: parent.contentRect.top + 4
+            visible: false
         }
     }
 
@@ -46,17 +35,27 @@ Item {
         if (track !== null) {
             track.muted = muted
             track.videoOutput = renderer.videoSink
-            fpsText.fps = Qt.binding(function() {
+            fpsArea.fps = Qt.binding(function() {
                 if (track !== null) {
                     return track.fps
                 }
                 return 0
             })
-            fpsText.frameSize = Qt.binding(function() {
+            fpsArea.frameSize = Qt.binding(function() {
                 if (track !== null) {
                     return track.frameSize
                 }
                 return Qt.size(0, 0)
+            })
+            fpsArea.visible = Qt.binding(function() {
+                if (track !== null) {
+                    if (!track.muted) {
+                        var size = track.frameSize
+                        var fps = track.fps
+                        return (size.width > 0 && size.height > 0) || fps > 0
+                    }
+                }
+                return false
             })
             renderer.cachedTrack = track
         }

@@ -42,6 +42,10 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             SessionForm.qml
             ChatView.qml
             AudioServiceControl.qml
+            VideoRenderer.qml
+            VideoDiagnosticsView.qml
+            CameraRenderer.qml
+            LocalMediaView.qml
     SOURCES
             demoapp.h
             mediadeviceinfo.h
@@ -54,9 +58,6 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             videooptions.h
             cameraoptions.h
             cameraoptionsmodel.h
-            QML_FILES VideoRenderer.qml
-            QML_FILES CameraRenderer.qml
-            QML_FILES LocalMediaView.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
