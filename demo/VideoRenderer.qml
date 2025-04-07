@@ -18,18 +18,22 @@ Item {
         id: renderer
         anchors.fill: parent
         property VideoTrackWrapper cachedTrack: null
-        property int fps: 0
         Rectangle {
             id: fpsArea
             x: renderer.contentRect.right - width
             y: renderer.contentRect.top
             width: 100
             height: 20
-            visible: renderer.contentRect.right - renderer.contentRect.left > 0
+            visible: {
+                return fpsText.frameSize.width > 0 && fpsText.frameSize.height > 0
+            }
             color: "yellow"
             Text {
+                id: fpsText
+                property int fps: 0
+                property size frameSize: Qt.size(0, 0)
                 anchors.fill: parent
-                text: renderer.fps
+                text: qsTr("%1x%2 %3 fps").arg(frameSize.width).arg(frameSize.height).arg(fps)
             }
         }
     }
@@ -42,11 +46,17 @@ Item {
         if (track !== null) {
             track.muted = muted
             track.videoOutput = renderer.videoSink
-            renderer.fps = Qt.binding(function() {
+            fpsText.fps = Qt.binding(function() {
                 if (track !== null) {
                     return track.fps
                 }
                 return 0
+            })
+            fpsText.frameSize = Qt.binding(function() {
+                if (track !== null) {
+                    return track.frameSize
+                }
+                return Qt.size(0, 0)
             })
             renderer.cachedTrack = track
         }

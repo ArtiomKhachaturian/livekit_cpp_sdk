@@ -49,9 +49,6 @@ Item {
             }
             cachedObjects.cachedSession = session
         }
-        else {
-            microphoneAdded = cameraAdded = false
-        }
     }
 
     onCameraAddedChanged: {

@@ -44,6 +44,7 @@ private:
     // impl. of LiveKitCpp::VideoTrackSink
     void onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame) final;
 private:
+    static constexpr QSize _nullSize = {0, 0};
     const std::weak_ptr<LiveKitCpp::VideoTrack> _impl;
     QBasicTimer _fpsTimer;
     mutable QReadWriteLock _outputLock;

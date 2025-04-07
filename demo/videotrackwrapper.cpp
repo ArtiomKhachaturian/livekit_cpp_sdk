@@ -10,6 +10,7 @@ VideoTrackWrapper::VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrac
                                      QObject *parent)
     : TrackWrapper(impl, parent)
     , _impl(impl)
+    , _frameSize(_nullSize)
 {
 }
 
@@ -47,6 +48,8 @@ void VideoTrackWrapper::setVideoOutput(QVideoSink* output)
         }
         else {
             _fpsTimer.stop();
+            setFps(0U);
+            setFrameSize(_nullSize);
         }
         emit videoOutputChanged();
     }
@@ -76,10 +79,10 @@ void VideoTrackWrapper::setFps(quint16 fps)
 
 void VideoTrackWrapper::setFrameSize(QSize frameSize)
 {
+    _framesCounter.fetch_add(1U);
     if (_frameSize.exchange(std::move(frameSize))) {
         emit frameSizeChanged();
     }
-    _framesCounter.fetch_add(1U);
 }
 
 void VideoTrackWrapper::setFrameSize(int width, int height)
