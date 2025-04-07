@@ -79,13 +79,23 @@ target_link_libraries(${PROJECT_NAME}
     PUBLIC Qt6::Quick Qt6::QuickControls2 Qt6::Multimedia LiveKitCppClient ZaphoydTppWebsockets
 )
 
-get_target_property(ZP_LOCATION ZaphoydTppWebsockets LOCATION)
-get_target_property(LC_LOCATION LiveKitCppClient LOCATION)
+function(copyFrameworksToBundle APP_BUNDLE_PATH)
+    if (EXISTS ${APP_BUNDLE_PATH})
+        set(APP_BUNDLE_PATH ${APP_BUNDLE_PATH}/Contents/Frameworks)
+        get_target_property(ZP_LOCATION ZaphoydTppWebsockets LOCATION)
+        message(STATUS "Copy ${ZP_LOCATION} to ${APP_BUNDLE_PATH}")
+        file(COPY ${ZP_LOCATION} DESTINATION ${APP_BUNDLE_PATH})
+        get_target_property(LC_LOCATION LiveKitCppClient LOCATION)
+        message(STATUS "Copy ${LC_LOCATION} to ${APP_BUNDLE_PATH}")
+        file(COPY ${LC_LOCATION} DESTINATION ${APP_BUNDLE_PATH})
+    endif()
+endfunction()
 
 if (APPLE)
-    set(FRAMEWORKS_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents/Frameworks)
-    file(COPY ${ZP_LOCATION} DESTINATION ${FRAMEWORKS_FOLDER})
-    file(COPY ${LC_LOCATION} DESTINATION ${FRAMEWORKS_FOLDER})
+    copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app)
+    foreach(CONFIGURATION ${CMAKE_CONFIGURATION_TYPES})
+        copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${CONFIGURATION}/${PROJECT_NAME}.app)
+    endforeach()
     set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
 endif()
 

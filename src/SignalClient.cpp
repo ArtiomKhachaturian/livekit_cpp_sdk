@@ -198,7 +198,8 @@ SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportStat
                     accepted = TransportState::Disconnecting == state || TransportState::Disconnected == state;
                     break;
                 case TransportState::Disconnecting:
-                    accepted = TransportState::Disconnected == state;
+                    // any state is good
+                    accepted = true;
                     break;
                 case TransportState::Disconnected:
                     accepted = TransportState::Connecting == state || TransportState::Connected == state;
