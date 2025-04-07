@@ -25,14 +25,20 @@ enum class VideoFrameType
     ARGB32, // BGRA little endian (argb in memory)
     RGBA32, // ABGR little endian (rgba in memory)
     ABGR32, // RGBA little endian (abgr in memory)
+    RGB565, // the image is stored using a premultiplied 24-bit ARGB format (8-5-6-5)
+    MJPEG,
+    UYVY,
+    YUY2,
     // planar types
+    NV12,
     I420,
     I422,
     I444,
     I010,
     I210,
     I410,
-    NV12,
+    YV12,
+    IYUV, // similar to I420
 };
 
 } // namespace LiveKitCpp

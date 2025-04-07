@@ -128,18 +128,24 @@ inline QVideoFrameFormat::PixelFormat qtVideoPixelFormat(VideoFrameType type)
             return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_RGBA8888);
         case VideoFrameType::ABGR32:
             return QVideoFrameFormat::Format_ABGR8888;
+        case VideoFrameType::RGB565:
+            return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_ARGB8565_Premultiplied);
+        case VideoFrameType::MJPEG:
+            return QVideoFrameFormat::Format_Jpeg;
+        case VideoFrameType::UYVY:
+            return QVideoFrameFormat::Format_UYVY;
+        case VideoFrameType::NV12:
+            return QVideoFrameFormat::Format_NV12;
         case VideoFrameType::I420:
             return QVideoFrameFormat::Format_YUV420P;
         case VideoFrameType::I422:
             return QVideoFrameFormat::Format_YUV422P;
-        case VideoFrameType::I444:
-            break;
         case VideoFrameType::I010:
         case VideoFrameType::I210:
         case VideoFrameType::I410:
-            return QVideoFrameFormat::Format_P010;
-        case VideoFrameType::NV12:
-            return QVideoFrameFormat::Format_NV12;
+            return QVideoFrameFormat::Format_P010; // ???
+        case VideoFrameType::YV12:
+            return QVideoFrameFormat::Format_YV12;
         default:
             break;
     }

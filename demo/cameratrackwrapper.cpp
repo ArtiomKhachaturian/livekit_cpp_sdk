@@ -8,6 +8,23 @@ CameraTrackWrapper::CameraTrackWrapper(const std::shared_ptr<LiveKitCpp::CameraT
 {
 }
 
+MediaDeviceInfo CameraTrackWrapper::deviceInfo() const
+{
+    if (const auto impl = _impl.lock()) {
+        return impl->deviceInfo();
+    }
+    return {};
+}
+
+
+CameraOptions CameraTrackWrapper::options() const
+{
+    if (const auto impl = _impl.lock()) {
+        return impl->options();
+    }
+    return {};
+}
+
 void CameraTrackWrapper::setDeviceInfo(const MediaDeviceInfo& info)
 {
     if (const auto impl = _impl.lock()) {
@@ -16,10 +33,10 @@ void CameraTrackWrapper::setDeviceInfo(const MediaDeviceInfo& info)
     }
 }
 
-MediaDeviceInfo CameraTrackWrapper::deviceInfo() const
+void CameraTrackWrapper::setOptions(const CameraOptions& options)
 {
     if (const auto impl = _impl.lock()) {
-        return impl->deviceInfo();
+        impl->setOptions(options);
+        emit optionsChanged();
     }
-    return {};
 }

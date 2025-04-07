@@ -249,84 +249,83 @@ webrtc::VideoCaptureCapability map(const CameraOptions& options)
     capability.height = options._height;
     capability.maxFPS = options._maxFPS;
     capability.interlaced = options._interlaced;
-    capability.videoType = map(options._type);
+    if (options._type.has_value()) {
+        capability.videoType = map(options._type.value());
+    }
     return capability;
 }
 
-webrtc::VideoType map(VideoType type)
+webrtc::VideoType map(VideoFrameType type)
 {
     switch (type) {
-        case VideoType::Unknown:
-            break;
-        case VideoType::I420:
+        case VideoFrameType::I420:
             return webrtc::VideoType::kI420;
-        case VideoType::IYUV:
+        case VideoFrameType::IYUV:
             return webrtc::VideoType::kIYUV;
-        case VideoType::RGB24:
+        case VideoFrameType::RGB24:
             return webrtc::VideoType::kRGB24;
-        case VideoType::BGR24:
+        case VideoFrameType::BGR24:
             return webrtc::VideoType::kBGR24;
-        case VideoType::ARGB:
+        case VideoFrameType::ARGB32:
             return webrtc::VideoType::kARGB;
-        case VideoType::ABGR:
+        case VideoFrameType::ABGR32:
             return webrtc::VideoType::kABGR;
-        case VideoType::RGB565:
+        case VideoFrameType::RGB565:
             return webrtc::VideoType::kRGB565;
-        case VideoType::YUY2:
+        case VideoFrameType::YUY2:
             return webrtc::VideoType::kYUY2;
-        case VideoType::YV12:
+        case VideoFrameType::YV12:
             return webrtc::VideoType::kYV12;
-        case VideoType::UYVY:
+        case VideoFrameType::UYVY:
             return webrtc::VideoType::kUYVY;
-        case VideoType::MJPEG:
+        case VideoFrameType::MJPEG:
             return webrtc::VideoType::kMJPEG;
-        case VideoType::BGRA:
+        case VideoFrameType::BGRA32:
             return webrtc::VideoType::kBGRA;
-        case VideoType::NV12:
+        case VideoFrameType::NV12:
             return webrtc::VideoType::kNV12;
         default:
-            assert(false);
             break;
     }
     return webrtc::VideoType::kUnknown;
 }
 
-VideoType map(webrtc::VideoType type)
+std::optional<VideoFrameType> map(webrtc::VideoType type)
 {
     switch (type) {
         case webrtc::VideoType::kUnknown:
             break;
         case webrtc::VideoType::kI420:
-            return VideoType::I420;
+            return VideoFrameType::I420;
         case webrtc::VideoType::kIYUV:
-            return VideoType::IYUV;
+            return VideoFrameType::IYUV;
         case webrtc::VideoType::kRGB24:
-            return VideoType::RGB24;
+            return VideoFrameType::RGB24;
         case webrtc::VideoType::kBGR24:
-            return VideoType::BGR24;
+            return VideoFrameType::BGR24;
         case webrtc::VideoType::kARGB:
-            return VideoType::ARGB;
+            return VideoFrameType::ARGB32;
         case webrtc::VideoType::kABGR:
-            return VideoType::ABGR;
+            return VideoFrameType::ABGR32;
         case webrtc::VideoType::kRGB565:
-            return VideoType::RGB565;
+            return VideoFrameType::RGB565;
         case webrtc::VideoType::kYUY2:
-            return VideoType::YUY2;
+            return VideoFrameType::YUY2;
         case webrtc::VideoType::kYV12:
-            return VideoType::YV12;
+            return VideoFrameType::YV12;
         case webrtc::VideoType::kUYVY:
-            return VideoType::UYVY;
+            return VideoFrameType::UYVY;
         case webrtc::VideoType::kMJPEG:
-            return VideoType::MJPEG;
+            return VideoFrameType::MJPEG;
         case webrtc::VideoType::kBGRA:
-            return VideoType::BGRA;
+            return VideoFrameType::BGRA32;
         case webrtc::VideoType::kNV12:
-            return VideoType::NV12;
+            return VideoFrameType::NV12;
         default:
             assert(false);
             break;
     }
-    return VideoType::Unknown;
+    return {};
 }
 
 } // namespace LiveKitCpp

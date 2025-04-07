@@ -14,14 +14,15 @@
 #pragma once // CameraOptions.h
 #include "LiveKitClientExport.h"
 #include "media/VideoOptions.h"
-#include "media/VideoType.h"
+#include "media/VideoFrameType.h"
+#include <optional>
 
 namespace LiveKitCpp
 {
 
 struct CameraOptions : public VideoOptions
 {
-    VideoType _type = VideoType::Unknown;
+    std::optional<VideoFrameType> _type;
     bool _interlaced = false;
     LIVEKIT_CLIENT_API static CameraOptions defaultOptions();
 };

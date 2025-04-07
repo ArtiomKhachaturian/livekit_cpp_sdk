@@ -22,6 +22,8 @@ public:
     bool operator == (const LiveKitCpp::MediaDeviceInfo& other) const;
     bool operator != (const MediaDeviceInfo& other) const;
     bool operator != (const LiveKitCpp::MediaDeviceInfo& other) const;
+    explicit operator bool () const noexcept { return !isEmpty(); }
+    operator const QString& () const noexcept { return name(); }
     operator LiveKitCpp::MediaDeviceInfo() const;
     const QString& name() const noexcept { return _name; }
     const QString& guid() const noexcept { return _guid; }

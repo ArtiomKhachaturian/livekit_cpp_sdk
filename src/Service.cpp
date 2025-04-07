@@ -825,6 +825,10 @@ size_t VideoFrame::planesCount() const
         case VideoFrameType::ARGB32:
         case VideoFrameType::RGBA32:
         case VideoFrameType::ABGR32:
+        case VideoFrameType::RGB565:
+        case VideoFrameType::MJPEG:
+        case VideoFrameType::UYVY:
+        case VideoFrameType::YUY2:
             return 1U;
         case VideoFrameType::NV12:
             return 2U;
@@ -834,6 +838,8 @@ size_t VideoFrame::planesCount() const
         case VideoFrameType::I010:
         case VideoFrameType::I210:
         case VideoFrameType::I410:
+        case VideoFrameType::YV12:
+        case VideoFrameType::IYUV:
             return 3U;
         default:
             assert(false);

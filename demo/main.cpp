@@ -7,6 +7,8 @@
 int main(int argc, char *argv[])
 {
     qRegisterMetaType<MediaDeviceInfo>();
+    qRegisterMetaType<VideoOptions>();
+    qRegisterMetaType<CameraOptions>();
     qRegisterMetaType<MediaDevicesModel*>();
     qRegisterMetaType<SessionWrapper*>();
     qRegisterMetaType<AudioTrackWrapper*>();
