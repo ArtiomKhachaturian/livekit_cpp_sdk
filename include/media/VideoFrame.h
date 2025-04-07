@@ -26,7 +26,7 @@ public:
     virtual ~VideoFrame() = default;
     VideoFrameType type() const noexcept { return _type; }
     // 0, 90, 180, 270 (clockwise rotation)
-    int rotation() const { return _rotation; }
+    int rotation() const noexcept { return _rotation; }
     virtual size_t planesCount() const;
     virtual int stride() const { return stride(0U); }
     virtual const std::byte* data() const { return data(0U); }

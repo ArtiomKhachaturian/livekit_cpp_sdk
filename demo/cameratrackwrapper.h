@@ -10,7 +10,7 @@ class CameraTrack;
 class CameraTrackWrapper : public VideoTrackWrapper
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_NAMED_ELEMENT(CameraTrackWrapper)
     Q_PROPERTY(MediaDeviceInfo deviceInfo READ deviceInfo WRITE setDeviceInfo NOTIFY deviceInfoChanged FINAL)
 public:
     CameraTrackWrapper(const std::shared_ptr<LiveKitCpp::CameraTrack>& impl = {},
@@ -21,7 +21,7 @@ public slots:
 signals:
     void deviceInfoChanged();
 private:
-    const std::shared_ptr<LiveKitCpp::CameraTrack> _impl;
+    const std::weak_ptr<LiveKitCpp::CameraTrack> _impl;
 };
 
 Q_DECLARE_METATYPE(CameraTrackWrapper*)

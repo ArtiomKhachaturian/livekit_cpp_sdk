@@ -11,7 +11,7 @@
 class SessionWrapper : public QObject, private LiveKitCpp::SessionListener
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_NAMED_ELEMENT(SessionWrapper)
 public:
     enum State
     {

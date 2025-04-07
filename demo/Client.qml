@@ -10,8 +10,7 @@ Pane {
     property alias tokenText: connection.tokenText
     property alias identity: sessionForm.identity
 
-    signal wantsToBeClosed(string name)
-    signal wantsToBeConnected(string name)
+    signal wantsToBeClosed()
     signal error(string desc, string details)
 
     ToolButton {
@@ -22,7 +21,7 @@ Pane {
         z: 1
         onClicked: {
             sessionForm.disconnect()
-            wantsToBeClosed(root.objectName)
+            wantsToBeClosed()
         }
     }
 
@@ -36,7 +35,6 @@ Pane {
                 anchors.centerIn: parent
                 enabled: !sessionForm.connecting
                 onConnectClicked: {
-                    wantsToBeConnected(root.objectName)
                     sessionForm.connect(urlText, tokenText)
                 }
             }

@@ -21,37 +21,7 @@
 namespace LiveKitCpp
 {
 
-inline QVideoFrameFormat::PixelFormat qtVideoPixelFormat(VideoFrameType type) {
-    switch (type) {
-        case VideoFrameType::RGB24:
-            return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_RGB888);
-        case VideoFrameType::BGR24:
-            return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_BGR888);
-        case VideoFrameType::BGRA32:
-            return QVideoFrameFormat::Format_BGRA8888;
-        case VideoFrameType::ARGB32:
-            return QVideoFrameFormat::Format_ARGB8888;
-        case VideoFrameType::RGBA32:
-            return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_RGBA8888);
-        case VideoFrameType::ABGR32:
-            return QVideoFrameFormat::Format_ABGR8888;
-        case VideoFrameType::I420:
-            return QVideoFrameFormat::Format_YUV420P;
-        case VideoFrameType::I422:
-            return QVideoFrameFormat::Format_YUV422P;
-        case VideoFrameType::I444:
-            break;
-        case VideoFrameType::I010:
-        case VideoFrameType::I210:
-        case VideoFrameType::I410:
-            return QVideoFrameFormat::Format_P010;
-        case VideoFrameType::NV12:
-            return QVideoFrameFormat::Format_NV12;
-        default:
-            break;
-    }
-    return QVideoFrameFormat::Format_Invalid;
-}
+// API
 
 class QtVideoBuffer : public QAbstractVideoBuffer
 {
@@ -67,15 +37,11 @@ private:
     QVideoFrameFormat::PixelFormat _format = QVideoFrameFormat::Format_Invalid;
 };
 
-inline QVideoFrame convert(const std::shared_ptr<VideoFrame>& frame) {
-    if (frame) {
-        auto buffer = std::make_unique<QtVideoBuffer>(frame);
-        if (buffer->valid()) {
-            return QVideoFrame(std::move(buffer));
-        }
-    }
-    return {};
-}
+QVideoFrameFormat::PixelFormat qtVideoPixelFormat(VideoFrameType type);
+
+QVideoFrame convert(const std::shared_ptr<VideoFrame>& frame);
+
+// implementation
 
 inline QtVideoBuffer::QtVideoBuffer(std::shared_ptr<VideoFrame> frame)
 {
@@ -88,7 +54,6 @@ inline QtVideoBuffer::QtVideoBuffer(std::shared_ptr<VideoFrame> frame)
         _frame = std::move(frame);
     }
 }
-
 
 inline bool QtVideoBuffer::valid() const
 {
@@ -121,6 +86,64 @@ inline QVideoFrameFormat QtVideoBuffer::format() const
         return QVideoFrameFormat(QSize(_frame->width(), _frame->height()), _format);
     }
     return {};
+}
+
+inline QVideoFrame convert(const std::shared_ptr<VideoFrame>& frame)
+{
+    if (frame) {
+        auto buffer = std::make_unique<QtVideoBuffer>(frame);
+        if (buffer->valid()) {
+            QVideoFrame rtcFrame(std::move(buffer));
+            switch (frame->rotation()) {
+                case 90:
+                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise90);
+                    break;
+                case 180:
+                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise180);
+                    break;
+                case 270:
+                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise270);
+                    break;
+                default:
+                    break;
+            }
+            return rtcFrame;
+        }
+    }
+    return {};
+}
+
+inline QVideoFrameFormat::PixelFormat qtVideoPixelFormat(VideoFrameType type)
+{
+    switch (type) {
+        case VideoFrameType::RGB24:
+            return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_RGB888);
+        case VideoFrameType::BGR24:
+            return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_BGR888);
+        case VideoFrameType::BGRA32:
+            return QVideoFrameFormat::Format_BGRA8888;
+        case VideoFrameType::ARGB32:
+            return QVideoFrameFormat::Format_ARGB8888;
+        case VideoFrameType::RGBA32:
+            return QVideoFrameFormat::pixelFormatFromImageFormat(QImage::Format_RGBA8888);
+        case VideoFrameType::ABGR32:
+            return QVideoFrameFormat::Format_ABGR8888;
+        case VideoFrameType::I420:
+            return QVideoFrameFormat::Format_YUV420P;
+        case VideoFrameType::I422:
+            return QVideoFrameFormat::Format_YUV422P;
+        case VideoFrameType::I444:
+            break;
+        case VideoFrameType::I010:
+        case VideoFrameType::I210:
+        case VideoFrameType::I410:
+            return QVideoFrameFormat::Format_P010;
+        case VideoFrameType::NV12:
+            return QVideoFrameFormat::Format_NV12;
+        default:
+            break;
+    }
+    return QVideoFrameFormat::Format_Invalid;
 }
 
 } // namespace LiveKitCpp

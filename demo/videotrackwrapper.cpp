@@ -12,10 +12,10 @@ VideoTrackWrapper::VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrac
 
 VideoTrackWrapper::~VideoTrackWrapper()
 {
-    if (_impl) {
+    if (const auto impl = _impl.lock()) {
         const QReadLocker locker(&_outputLock);
         if (_output) {
-            _impl->removeSink(this);
+            impl->removeSink(this);
         }
     }
 }
@@ -23,14 +23,14 @@ VideoTrackWrapper::~VideoTrackWrapper()
 void VideoTrackWrapper::setVideoOutput(QVideoSink* output)
 {
     bool changed = false;
-    if (_impl) {
+    if (const auto impl = _impl.lock()) {
         const QWriteLocker locker(&_outputLock);
         if (output != _output) {
             if (output && !_output) {
-                _impl->addSink(this);
+                impl->addSink(this);
             }
             else if (!output && _output) {
-                _impl->removeSink(this);
+                impl->removeSink(this);
             }
             _output = output;
             changed = true;

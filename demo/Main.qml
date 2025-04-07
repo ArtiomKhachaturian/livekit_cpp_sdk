@@ -21,7 +21,7 @@ ApplicationWindow {
             Repeater {
                 model: clients
                 TabButton {
-                    text: modelData
+                    text: model.text
                     width: 100
                 }
             }
@@ -45,18 +45,21 @@ ApplicationWindow {
             model: clients
             enabled: app.valid
             Client {
-                objectName: modelData
+                objectName: model.id
                 urlText: lastUrl
                 tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDQwNDkzNzgsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0Mzk2Mjk3OCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.kc8Ob_d8V8NMNkWZNYGEoITeT11t9vEvag5bPhUxzJE"
                 enabled: app.valid
                 Component.onCompleted: {
                     closable = clients.usersCount > 1
                 }
-                onWantsToBeClosed: name => {
-                    removeClient(name)
+                onWantsToBeClosed: {
+                    removeClient(objectName)
                 }
                 onError: (desc, details) => {
                     showErrorMessage(desc, details, objectName)
+                }
+                onIdentityChanged: {
+                    updateClientIdentity(objectName, identity)
                 }
             }
         }
@@ -92,14 +95,23 @@ ApplicationWindow {
     }
 
     function addNewClient() {
-        var clientId = "client #" + (++clients.usersCount)
-        clients.append({text:clientId})
+        var clientId = "User #" + (++clients.usersCount)
+        clients.append({id:clientId, text:clientId})
     }
 
-    function removeClient(name) {
+    function removeClient(id) {
         for (var i = 0; i < clients.count; i++) {
-            if (clients.get(i).text === name) {
+            if (clients.get(i).id === id) {
                 clients.remove(i)
+                break
+            }
+        }
+    }
+
+    function updateClientIdentity(id, identity) {
+        for (var i = 0; i < clients.count; i++) {
+            if (clients.get(i).id === id) {
+                clients.setProperty(i, "text", identity)
                 break
             }
         }

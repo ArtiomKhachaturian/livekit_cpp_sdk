@@ -10,7 +10,7 @@ AudioTrackWrapper::AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrac
 
 void AudioTrackWrapper::setVolume(qreal volume)
 {
-    if (_impl) {
-        _impl->setVolume(volume);
+    if (const auto impl = _impl.lock()) {
+        impl->setVolume(volume);
     }
 }

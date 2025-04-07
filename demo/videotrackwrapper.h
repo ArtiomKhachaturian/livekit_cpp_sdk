@@ -13,13 +13,13 @@ class VideoTrack;
 class VideoTrackWrapper : public TrackWrapper, private LiveKitCpp::VideoTrackSink
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_NAMED_ELEMENT(VideoTrackWrapper)
     Q_PROPERTY(QVideoSink* videoOutput READ videoOutput WRITE setVideoOutput NOTIFY videoOutputChanged)
 public:
     VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrack>& impl = {},
                       QObject *parent = nullptr);
     ~VideoTrackWrapper() override;
-    const auto& track() const noexcept { return _impl; }
+    std::shared_ptr<LiveKitCpp::VideoTrack> track() const noexcept { return _impl.lock(); }
     Q_INVOKABLE QVideoSink* videoOutput() const;
 public slots:
     void setVideoOutput(QVideoSink* output);
@@ -28,7 +28,7 @@ signals:
 private:
     void onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame) final;
 private:
-    const std::shared_ptr<LiveKitCpp::VideoTrack> _impl;
+    const std::weak_ptr<LiveKitCpp::VideoTrack> _impl;
     mutable QReadWriteLock _outputLock;
     QPointer<QVideoSink> _output;
 };

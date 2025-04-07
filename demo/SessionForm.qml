@@ -144,7 +144,16 @@ Frame {
     function disconnect() {
         if (session != null) {
             session.disconnectFromSfu()
-            session = null
+            destroySession()
+        }
+    }
+
+    function destroySession() {
+        if (session != null) {
+            session.removeMicrophoneTrack(micTrack)
+            session.removeCameraTrack(cameraTrack)
+            micTrack = null
+            cameraTrack = null
         }
     }
 
@@ -158,6 +167,7 @@ Frame {
             }
             else {
                 session.removeMicrophoneTrack(micTrack)
+                micTrack = null
             }
         }
     }
@@ -173,13 +183,26 @@ Frame {
             }
             else {
                 session.removeCameraTrack(cameraTrack)
+                cameraTrack = null
             }
+        }
+    }
+
+    onStateChanged: {
+        switch (state) {
+            case SessionWrapper.TransportDisconnected:
+            case SessionWrapper.RtcClosed:
+                destroySession()
+                break
+            default:
+                break
         }
     }
 
     Connections {
         target: session
         function onError(desc, details) {
+            destroySession()
             root.error(desc, details)
         }
         function onChatMessageReceived(participantIdentity, message, deleted) {

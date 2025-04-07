@@ -9,7 +9,7 @@
 class MediaDevicesModel : public QAbstractListModel
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_NAMED_ELEMENT(MediaDevicesModel)
 public:
     enum Roles { MediaDeviceInfoRole = Qt::UserRole + 1 };
 public:

@@ -9,15 +9,15 @@ class AudioTrack;
 class AudioTrackWrapper : public TrackWrapper
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_NAMED_ELEMENT(AudioTrackWrapper)
 public:
     AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl = {},
                       QObject *parent = nullptr);
-    const auto& track() const noexcept { return _impl; }
+    std::shared_ptr<LiveKitCpp::AudioTrack> track() const noexcept { return _impl.lock(); }
 public slots:
     void setVolume(qreal volume);
 private:
-    const std::shared_ptr<LiveKitCpp::AudioTrack> _impl;
+    const std::weak_ptr<LiveKitCpp::AudioTrack> _impl;
 };
 
 Q_DECLARE_METATYPE(AudioTrackWrapper*)
