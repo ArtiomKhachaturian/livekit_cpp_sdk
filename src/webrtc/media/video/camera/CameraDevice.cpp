@@ -18,11 +18,12 @@ namespace LiveKitCpp
 
 CameraDevice::CameraDevice(const std::string& id,
                            std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                           const MediaDeviceInfo& info,
                            const webrtc::VideoCaptureCapability& initialCapability,
                            const std::shared_ptr<Bricks::Logger>& logger)
     : _id(id)
     , _source(webrtc::make_ref_counted<CameraSource>(std::move(signalingQueue),
-                                                          initialCapability, logger))
+                                                     info, initialCapability, logger))
 {
 }
 

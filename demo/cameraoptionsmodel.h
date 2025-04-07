@@ -14,13 +14,16 @@ class CameraOptionsModel : public ItemModel<CameraOptions>
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(MediaDeviceInfo deviceInfo READ deviceInfo WRITE setDeviceInfo NOTIFY deviceInfoChanged FINAL)
-    using Base = ItemModel<CameraOptions>;
+    Q_PROPERTY(bool valid READ isValid CONSTANT)
+    Q_PROPERTY(CameraOptions defaultOptions READ defaultOptions CONSTANT)
 public:
-    CameraOptionsModel(const std::weak_ptr<LiveKitCpp::Service>& service = {},
-                       QObject* parent = nullptr);
+    explicit CameraOptionsModel(QObject* parent = nullptr);
     Q_INVOKABLE MediaDeviceInfo deviceInfo() const { return _deviceInfo; }
     Q_INVOKABLE CameraOptions itemAt(qsizetype index) const;
     Q_INVOKABLE qsizetype indexOf(const CameraOptions& item) const;
+    Q_INVOKABLE bool isValid() const { return !_service.expired(); }
+    Q_INVOKABLE CameraOptions defaultOptions() const { return LiveKitCpp::CameraOptions::defaultOptions(); }
+    Q_INVOKABLE qsizetype defaultOptionsIndex() const;
 public slots:
     void setDeviceInfo(const MediaDeviceInfo& info);
 signals:

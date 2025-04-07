@@ -21,6 +21,7 @@
 #include "media/AudioTrack.h"
 #include "media/CameraTrack.h"
 #include "media/CameraOptions.h"
+#include "media/MediaDeviceInfo.h"
 #include "stats/StatsSource.h"
 #include <memory>
 #include <string>
@@ -64,7 +65,8 @@ public:
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
     std::shared_ptr<AudioTrack> addMicrophoneTrack();
-    std::shared_ptr<CameraTrack> addCameraTrack(const CameraOptions& options = CameraOptions::defaultOptions());
+    std::shared_ptr<CameraTrack> addCameraTrack(const MediaDeviceInfo& info = {},
+                                                const CameraOptions& options = CameraOptions::defaultOptions());
     void removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
     void removeVideoTrack(const std::shared_ptr<VideoTrack>& track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;

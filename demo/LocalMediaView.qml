@@ -42,7 +42,7 @@ Item {
                 }
             }
             if (cameraAdded) {
-                localCameraView.track = session.addCameraTrack(localCameraView.options)
+                localCameraView.track = addCameraTrack()
                 if (localCameraView.track === null) {
                     cameraAdded = false
                 }
@@ -54,7 +54,7 @@ Item {
     onCameraAddedChanged: {
         if (session !== null) {
             if (cameraAdded) {
-                localCameraView.track = session.addCameraTrack(localCameraView.options)
+                localCameraView.track = addCameraTrack()
                 if (localCameraView.track === null) {
                     cameraAdded = false
                 }
@@ -88,5 +88,12 @@ Item {
         if (cachedObjects.micTrack !== null) {
             cachedObjects.micTrack.muted = microphoneMuted
         }
+    }
+
+    function addCameraTrack() {
+        if (session !== null) {
+            return session.addCameraTrack(localCameraView.deviceInfo, localCameraView.options)
+        }
+        return null
     }
 }

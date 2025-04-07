@@ -86,9 +86,10 @@ std::shared_ptr<AudioTrack> Session::addMicrophoneTrack()
     return _impl->_engine.addLocalMicrophoneTrack();
 }
 
-std::shared_ptr<CameraTrack> Session::addCameraTrack(const CameraOptions& options)
+std::shared_ptr<CameraTrack> Session::addCameraTrack(const MediaDeviceInfo& info,
+                                                     const CameraOptions& options)
 {
-    return _impl->_engine.addLocalCameraTrack(options);
+    return _impl->_engine.addLocalCameraTrack(info, options);
 }
 
 void Session::removeAudioTrack(const std::shared_ptr<AudioTrack>& track)
@@ -282,7 +283,8 @@ size_t Session::localVideoTracksCount() const { return 0U; }
 
 std::shared_ptr<AudioTrack> Session::addMicrophoneTrack() { return {}; }
 
-std::shared_ptr<CameraTrack> Session::addCameraTrack(const CameraOptions&) { return {}; }
+std::shared_ptr<CameraTrack> Session::addCameraTrack(const MediaDeviceInfo&,
+                                                     const CameraOptions&) { return {}; }
 
 void Session::removeAudioTrack(const std::shared_ptr<AudioTrack>&) {}
 

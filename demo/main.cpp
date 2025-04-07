@@ -1,4 +1,6 @@
 #include "sessionwrapper.h"
+#include "mediadeviceinfo.h"
+#include "cameraoptions.h"
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQmlContext>

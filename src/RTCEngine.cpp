@@ -146,9 +146,10 @@ std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalMicrophoneTrack()
     return track;
 }
 
-std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(const CameraOptions& options)
+std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(const MediaDeviceInfo& info,
+                                                                const CameraOptions& options)
 {
-    auto track = RTCMediaEngine::addLocalCameraTrack(options);
+    auto track = RTCMediaEngine::addLocalCameraTrack(info, options);
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());

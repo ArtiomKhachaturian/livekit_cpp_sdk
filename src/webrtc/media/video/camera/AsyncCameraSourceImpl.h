@@ -26,6 +26,7 @@ class AsyncCameraSourceImpl : public AsyncVideoSourceImpl, private CameraCapture
 public:
     AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                           const std::shared_ptr<Bricks::Logger>& logger,
+                          const MediaDeviceInfo& info,
                           const webrtc::VideoCaptureCapability& initialCapability);
     ~AsyncCameraSourceImpl() final { close(); }
     MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }

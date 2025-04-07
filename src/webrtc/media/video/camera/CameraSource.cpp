@@ -19,9 +19,10 @@ namespace LiveKitCpp
 {
 
 CameraSource::CameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                           const MediaDeviceInfo& info,
                            const webrtc::VideoCaptureCapability& initialCapability,
                            const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(std::move(signalingQueue), logger, initialCapability)
+    : Base(std::move(signalingQueue), logger, info, initialCapability)
 {
 }
 

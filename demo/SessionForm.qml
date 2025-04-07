@@ -67,14 +67,11 @@ Frame {
                 ComboBox {
                     id: cameraModelComboBox
                     model: app.camerasModel
-                    readonly property var deviceInfo: {
-                        return model.itemAt(currentIndex)
-                    }
                     textRole: "display"
                     Layout.fillWidth: true
                     visible: count > 1
-                    onCurrentIndexChanged: {
-                        localMediaView.cameraDeviceInfo = model.itemAt(currentIndex)
+                    readonly property var deviceInfo: {
+                        return model.itemAt(currentIndex)
                     }
                 }
 
@@ -82,18 +79,21 @@ Frame {
                     id: cameraOptionsComboBox
                     textRole: "display"
                     Layout.fillWidth: true
-                    enabled: localMediaView.cameraAdded && null !== model
-                    Component.onCompleted: {
-                        model = app.createCameraOptionsModel(this)
-                        if (null != model) {
-                            currentIndex = Math.max(0, model.indexOf(app.defaultCameraOptions))
-                            model.deviceInfo = Qt.binding(function() {
-                                return cameraModelComboBox.deviceInfo
-                            })
-                        }
+                    model: cameraOptionsModel
+                    readonly property var cameraOptions: {
+                        return model.itemAt(currentIndex)
                     }
-                    onCurrentIndexChanged: {
-                        localMediaView.cameraOptions = model.itemAt(currentIndex)
+
+                    Component.onCompleted: {
+                        currentIndex = model.defaultOptionsIndex()
+                    }
+
+                    CameraOptionsModel {
+                        id: cameraOptionsModel
+                        deviceInfo: cameraModelComboBox.deviceInfo
+                        onDeviceInfoChanged: {
+                            cameraOptionsComboBox.currentIndex = defaultOptionsIndex()
+                        }
                     }
                 }
 
@@ -123,6 +123,8 @@ Frame {
                 Layout.fillHeight: true
                 LocalMediaView {
                     id: localMediaView
+                    cameraDeviceInfo: cameraModelComboBox.deviceInfo
+                    cameraOptions: cameraOptionsComboBox.cameraOptions
                     anchors.fill: parent
                 }
             }

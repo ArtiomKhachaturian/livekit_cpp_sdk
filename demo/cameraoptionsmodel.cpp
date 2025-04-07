@@ -1,21 +1,33 @@
 #include "cameraoptionsmodel.h"
+#include "demoapp.h"
 #include <Service.h>
 
-CameraOptionsModel::CameraOptionsModel(const std::weak_ptr<LiveKitCpp::Service>& service,
-                                       QObject* parent)
-    : Base(parent)
-    , _service(service)
+namespace
+{
+
+inline std::weak_ptr<LiveKitCpp::Service> service() {
+    if (const auto app = qobject_cast<DemoApp*>(QCoreApplication::instance())) {
+        return app->service();
+    }
+    return {};
+}
+
+}
+
+CameraOptionsModel::CameraOptionsModel(QObject* parent)
+    : ItemModel<CameraOptions>(parent)
+    , _service(service())
 {
 }
 
 CameraOptions CameraOptionsModel::itemAt(qsizetype index) const
 {
-    return Base::itemAt(index);
+    return ItemModel<CameraOptions>::itemAt(index);
 }
 
 qsizetype CameraOptionsModel::indexOf(const CameraOptions& item) const
 {
-    return Base::indexOf(item);
+    return ItemModel<CameraOptions>::indexOf(item);
 }
 
 void CameraOptionsModel::setDeviceInfo(const MediaDeviceInfo& info)
@@ -27,4 +39,9 @@ void CameraOptionsModel::setDeviceInfo(const MediaDeviceInfo& info)
             emit deviceInfoChanged();
         }
     }
+}
+
+qsizetype CameraOptionsModel::defaultOptionsIndex() const
+{
+    return qMax<qsizetype>(0, indexOf(defaultOptions()));
 }

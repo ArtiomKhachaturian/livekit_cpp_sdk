@@ -78,9 +78,9 @@ std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addMicrophoneTrack()
 }
 
 std::shared_ptr<CameraTrackImpl> LocalParticipant::
-    addCameraTrack(const CameraOptions& options)
+    addCameraTrack(const MediaDeviceInfo& info, const CameraOptions& options)
 {
-    if (auto camera = createCamera(options)) {
+    if (auto camera = createCamera(info, options)) {
         auto track = std::make_shared<CameraTrackImpl>(std::move(camera), _manager);
         addTrack(track, _videoTracks);
         return track;
@@ -279,11 +279,12 @@ webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::createMic()
 }
 
 webrtc::scoped_refptr<CameraDevice> LocalParticipant::
-    createCamera(const CameraOptions& options) const
+    createCamera(const MediaDeviceInfo& info, const CameraOptions& options) const
 {
     if (_pcf && CameraManager::available()) {
         return webrtc::make_ref_counted<CameraDevice>(makeUuid(),
                                                       _pcf->signalingThread(),
+                                                      info,
                                                       map(options),
                                                       logger());
     }

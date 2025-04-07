@@ -27,6 +27,7 @@ class CameraDevice : public webrtc::VideoTrackInterface
 public:
     CameraDevice(const std::string& id,
                  std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                 const MediaDeviceInfo& info = {},
                  const webrtc::VideoCaptureCapability& initialCapability = {},
                  const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraDevice() override;

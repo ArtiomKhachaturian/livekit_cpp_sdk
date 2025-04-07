@@ -25,6 +25,7 @@ class CameraSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, 
     using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncCameraSourceImpl>;
 public:
     CameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                 const MediaDeviceInfo& info = {},
                  const webrtc::VideoCaptureCapability& initialCapability = {},
                  const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraSource() override;

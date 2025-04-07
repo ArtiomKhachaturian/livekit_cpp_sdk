@@ -36,8 +36,10 @@ namespace LiveKitCpp
 
 AsyncCameraSourceImpl::AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                              const std::shared_ptr<Bricks::Logger>& logger,
+                                             const MediaDeviceInfo& info,
                                              const webrtc::VideoCaptureCapability& initialCapability)
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger, false)
+    , _deviceInfo(info)
 {
     if (isNull(initialCapability)) {
         _capability = CameraManager::defaultCapability();
@@ -45,7 +47,9 @@ AsyncCameraSourceImpl::AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase
     else {
         _capability = initialCapability;
     }
-    CameraManager::defaultDevice(_deviceInfo.ref());
+    if (_deviceInfo->empty()) {
+        CameraManager::defaultDevice(_deviceInfo.ref());
+    }
 }
 
 void AsyncCameraSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)

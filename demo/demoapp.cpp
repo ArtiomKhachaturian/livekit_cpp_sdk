@@ -133,19 +133,6 @@ SessionWrapper* DemoApp::createSession(QObject* parent) const
     return wrapper;
 }
 
-CameraOptionsModel* DemoApp::createCameraOptionsModel(QObject* parent) const
-{
-    if (_service) {
-        return new CameraOptionsModel(_service, parent);
-    }
-    return nullptr;
-}
-
-CameraOptions DemoApp::defaultCameraOptions() const
-{
-    return CameraOptions::defaultOptions();
-}
-
 bool DemoApp::isValid() const
 {
     return nullptr != _service;
