@@ -254,17 +254,23 @@ webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(OSType type)
     switch (type) {
         case pixelFormatNV12Full():
         case pixelFormatNV12Video():
-            break;
-        case pixelFormatRGB24():
+            return webrtc::VideoType::kNV12;
+        case pixelFormatYUY2():
+            return webrtc::VideoType::kYUY2;
+        case pixelFormatI420():
+            return webrtc::VideoType::kI420;
+        case pixelFormatUYVY():
+            return webrtc::VideoType::kUYVY;
+        case pixelFormatRGB24(): // kCVPixelFormatType_24RGB
             return webrtc::VideoType::kRGB24;
-        case pixelFormatBGRA32():
+        case pixelFormatBGRA32(): // kCVPixelFormatType_32BGRA
             return webrtc::VideoType::kBGRA;
         case pixelFormatARGB32():
             return webrtc::VideoType::kARGB;
         default:
             break;
     }
-    return webrtc::VideoType::kYV12; // NV12 is always supported on MacOS
+    return webrtc::VideoType::kUnknown;
 }
 
 webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(CMFormatDescriptionRef format)

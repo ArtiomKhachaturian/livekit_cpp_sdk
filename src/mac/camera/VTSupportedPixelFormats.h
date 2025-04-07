@@ -24,6 +24,12 @@ namespace LiveKitCpp
 inline constexpr OSType pixelFormatNV12Full() { return kCVPixelFormatType_420YpCbCr8BiPlanarFullRange; }   // luma=[0,255] chroma=[1,255]
 inline constexpr OSType pixelFormatNV12Video() { return kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange; } // luma=[16,235] chroma=[16,240]
 bool isNV12Format(OSType format);
+// YUY2 packed Y'CbY'Cr
+inline constexpr OSType pixelFormatYUY2() { return kCVPixelFormatType_422YpCbCr8_yuvs; }
+// I420
+inline constexpr OSType pixelFormatI420() { return kCVPixelFormatType_420YpCbCr8Planar; }
+// UYVY
+inline constexpr OSType pixelFormatUYVY() { return kCVPixelFormatType_422YpCbCr8; }
 // RGB24
 inline constexpr OSType pixelFormatRGB24() { return kCVPixelFormatType_24RGB; }
 inline constexpr OSType pixelFormatBGR24() { return kCVPixelFormatType_24BGR; }
