@@ -66,6 +66,7 @@ void AsyncCameraSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)
                 }
             }
             if (changed) {
+                resetCapturer();
                 requestCapturer();
             }
         }

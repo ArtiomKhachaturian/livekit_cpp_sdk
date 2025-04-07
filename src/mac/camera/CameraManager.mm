@@ -42,6 +42,19 @@ protected:
     int32_t CreateCapabilityMap(const char* deviceUniqueIdUTF8) final;
 };
 
+inline NSArray<AVCaptureDevice*>* availableDevices()
+{
+    if (@available(macOS 10.15,*)) {
+        AVCaptureDeviceDiscoverySession* video = [AVCaptureDeviceDiscoverySession
+                                                  discoverySessionWithDeviceTypes:@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
+                                                                                    AVCaptureDeviceTypeExternalUnknown]
+                                                  mediaType:AVMediaTypeVideo
+                                                  position:AVCaptureDevicePositionUnspecified];
+        return [video devices];
+    }
+    return [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+}
+
 }
 
 namespace LiveKitCpp
@@ -69,7 +82,7 @@ using namespace LiveKitCpp;
 uint32_t MacOSDeviceInfoImpl::NumberOfDevices()
 {
     @autoreleasepool {
-        auto devs = [RTCCameraVideoCapturer captureDevices];
+        auto devs = availableDevices();
         if (devs) {
             return static_cast<uint32_t>([devs count]);
         }
@@ -87,7 +100,7 @@ int32_t MacOSDeviceInfoImpl::GetDeviceName(uint32_t deviceNumber,
 {
     if (deviceNameUTF8 && deviceNameLength > 0U) {
         @autoreleasepool {
-            if (auto devs = [RTCCameraVideoCapturer captureDevices]) {
+            if (auto devs = availableDevices()) {
                 if (deviceNumber < [devs count]) {
                     auto dev = [devs objectAtIndex:deviceNumber];
                     if (dev) {

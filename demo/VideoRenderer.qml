@@ -42,7 +42,12 @@ Item {
         if (track !== null) {
             track.muted = muted
             track.videoOutput = renderer.videoSink
-            renderer.fps = Qt.binding(function() { return track.fps })
+            renderer.fps = Qt.binding(function() {
+                if (track !== null) {
+                    return track.fps
+                }
+                return 0
+            })
             renderer.cachedTrack = track
         }
     }

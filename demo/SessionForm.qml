@@ -14,7 +14,7 @@ Frame {
         }
         return session.state
     }
-    readonly property string identity : session === null ? "" : session.identity
+    property string identity : session === null ? objectName : session.identity
 
     signal error(string desc, string details)
 
@@ -30,14 +30,18 @@ Frame {
                     text: qsTr("Microphone")
                     checked: false
                     enabled: session != null
-                    onCheckedChanged: localMediaView.microphoneAdded = checked
+                    onCheckedChanged: {
+                        localMediaView.microphoneAdded = checked
+                    }
                 }
                 CheckBox {
                     id: micMuted
                     text: qsTr("Muted")
                     enabled: localMediaView.microphoneAdded
                     checked: false
-                    onCheckedChanged: localMediaView.microphoneMuted = checked
+                    onCheckedChanged: {
+                        localMediaView.microphoneMuted = checked
+                    }
                 }
 
                 ToolSeparator {}
@@ -47,14 +51,18 @@ Frame {
                     text: qsTr("Camera")
                     enabled: session != null
                     checked: false
-                    onCheckedChanged: localMediaView.cameraAdded = checked
+                    onCheckedChanged: {
+                        localMediaView.cameraAdded = checked
+                    }
                 }
                 CheckBox {
                     id: cameraMuted
                     text: qsTr("Muted")
                     enabled: localMediaView.cameraAdded
                     checked: false
-                    onCheckedChanged: localMediaView.cameraMuted = checked
+                    onCheckedChanged: {
+                        localMediaView.cameraMuted = checked
+                    }
                 }
                 ComboBox {
                     id: cameraModelComboBox
@@ -64,35 +72,35 @@ Frame {
                     }
                     textRole: "display"
                     Layout.fillWidth: true
-                    onCurrentIndexChanged: localMediaView.cameraDeviceInfo = deviceInfo
-                    //visible: model.rowCount > 0
+                    visible: count > 1
+                    onCurrentIndexChanged: {
+                        localMediaView.cameraDeviceInfo = model.itemAt(currentIndex)
+                    }
                 }
 
                 ComboBox {
                     id: cameraOptionsComboBox
                     textRole: "display"
                     Layout.fillWidth: true
-                    enabled: localMediaView.cameraAdded && null != model
-                    readonly property var cameraOptions: {
-                        if (null != model) {
-                            return model.itemAt(currentIndex)
-                        }
-                        return app.defaultCameraOptions
-                    }
+                    enabled: localMediaView.cameraAdded && null !== model
                     Component.onCompleted: {
                         model = app.createCameraOptionsModel(this)
                         if (null != model) {
-                            model.deviceInfo = cameraModelComboBox.deviceInfo
                             currentIndex = Math.max(0, model.indexOf(app.defaultCameraOptions))
+                            model.deviceInfo = Qt.binding(function() {
+                                return cameraModelComboBox.deviceInfo
+                            })
                         }
                     }
-                    onCurrentIndexChanged: localMediaView.cameraOptions = cameraOptions
+                    onCurrentIndexChanged: {
+                        localMediaView.cameraOptions = model.itemAt(currentIndex)
+                    }
                 }
-
 
                 Item { // spacer
                     Layout.fillWidth: true
                 }
+
                 ToolButton {
                     Layout.alignment: Qt.AlignRight
                     id: chatButton

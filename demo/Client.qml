@@ -41,6 +41,7 @@ Pane {
         }
         SessionForm {
             id: sessionForm
+            objectName: root.objectName
             Layout.fillHeight: true
             Layout.fillWidth: true
             onError: (desc, details) => {
