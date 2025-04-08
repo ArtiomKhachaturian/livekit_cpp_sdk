@@ -50,6 +50,12 @@ void CameraTrackWrapper::setMuted(bool mute)
     const auto impl = _impl.lock();
     if (impl && impl->muted() != mute) {
         impl->mute(mute);
+        if (mute) {
+            stopMetricsCollection();
+        }
+        else if (hasOutput()) {
+            startMetricsCollection();
+        }
         emit muteChanged();
     }
 }

@@ -24,7 +24,6 @@ Item {
             renderer.source = null
         }
         if (source !== null) {
-            source.muted = muted
             source.videoOutput = renderer.videoSink
             fpsArea.fps = Qt.binding(function() {
                 if (source !== null) {
@@ -39,22 +38,24 @@ Item {
                 return Qt.size(0, 0)
             })
             fpsArea.visible = Qt.binding(function() {
-                if (source !== null) {
-                    if (!source.muted) {
-                        var size = source.frameSize
-                        var fps = source.fps
-                        return (size.width > 0 && size.height > 0) || fps > 0
-                    }
+                if (!muted && source !== null) {
+                    var size = source.frameSize
+                    var fps = source.fps
+                    return (size.width > 0 && size.height > 0) || fps > 0
                 }
                 return false
             })
             renderer.source = source
         }
+        actualizeRendererVisibility()
     }
 
     onMutedChanged: {
-        if (source !== null) {
-            source.muted = muted
-        }
+        actualizeRendererVisibility()
+    }
+
+    function actualizeRendererVisibility() {
+        // TODO: replace to https://doc.qt.io/qt-6/qml-qtmultimedia-videooutput.html#clearOutput-method in QT >= 6.9.x
+        renderer.visible = !muted && source !== null
     }
 }

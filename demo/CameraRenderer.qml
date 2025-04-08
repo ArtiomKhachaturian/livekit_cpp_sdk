@@ -1,9 +1,10 @@
 import QtQuick
 
 Item {
+    id: root
     property var options: app.defaultCameraOptions
     property var deviceInfo: undefined
-    property bool muted: false
+    property alias muted: renderer.muted
     property CameraTrackWrapper track: null
 
     function takeTrack() {
@@ -19,6 +20,11 @@ Item {
     VideoRenderer {
         id: renderer
         anchors.fill: parent
+        onMutedChanged: {
+            if (root.track !== null) {
+                root.track.muted = muted
+            }
+        }
     }
 
     onTrackChanged: {
@@ -39,12 +45,6 @@ Item {
     onDeviceInfoChanged: {
         if (track !== null) {
             track.deviceInfo = deviceInfo
-        }
-    }
-
-    onMutedChanged: {
-        if (track !== null) {
-            track.muted = muted
         }
     }
 }
