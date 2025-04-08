@@ -19,7 +19,7 @@
 namespace LiveKitCpp
 {
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 class StatsReceivedRtpStreamImpl : public StatsRtpStreamImpl<TRtcStats, TBaseInterface>
 {
     static_assert(std::is_base_of_v<webrtc::RTCReceivedRtpStreamStats, TRtcStats>);
@@ -33,7 +33,7 @@ public:
     std::optional<int32_t> packetsLost() const final;
 };
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline StatsReceivedRtpStreamImpl<TRtcStats, TBaseInterface>::
     StatsReceivedRtpStreamImpl(const TRtcStats* stats,
                                const std::shared_ptr<const StatsReportData>& data)
@@ -41,7 +41,7 @@ inline StatsReceivedRtpStreamImpl<TRtcStats, TBaseInterface>::
 {
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<double> StatsReceivedRtpStreamImpl<TRtcStats, TBaseInterface>::
     jitter() const
 {
@@ -51,7 +51,7 @@ inline std::optional<double> StatsReceivedRtpStreamImpl<TRtcStats, TBaseInterfac
     return {};
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<int32_t> StatsReceivedRtpStreamImpl<TRtcStats, TBaseInterface>::
     packetsLost() const
 {

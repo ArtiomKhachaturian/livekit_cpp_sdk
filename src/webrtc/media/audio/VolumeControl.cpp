@@ -16,7 +16,7 @@
 
 namespace {
 
-template<typename T>
+template <typename T>
 inline bool exchangeVolumeVal(const T& source, T& dst) {
     if (source != dst) {
         dst = source;

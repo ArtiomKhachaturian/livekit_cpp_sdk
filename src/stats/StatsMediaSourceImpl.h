@@ -19,7 +19,7 @@
 namespace LiveKitCpp
 {
 
-template<class TRtcStats = webrtc::RTCMediaSourceStats, class TBaseInterface = StatsMediaSourceExt>
+template <class TRtcStats = webrtc::RTCMediaSourceStats, class TBaseInterface = StatsMediaSourceExt>
 class StatsMediaSourceImpl : public StatsDataImpl<TRtcStats, TBaseInterface>
 {
     static_assert(std::is_base_of_v<webrtc::RTCMediaSourceStats, TRtcStats>);
@@ -35,14 +35,14 @@ public:
     std::optional<std::string> kind() const final;
 };
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline StatsMediaSourceImpl<TRtcStats, TBaseInterface>::
     StatsMediaSourceImpl(const TRtcStats* stats, const std::shared_ptr<const StatsReportData>& data)
         : Base(stats, data)
 {
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<std::string> StatsMediaSourceImpl<TRtcStats, TBaseInterface>::
     trackIdentifier() const
 {
@@ -52,7 +52,7 @@ inline std::optional<std::string> StatsMediaSourceImpl<TRtcStats, TBaseInterface
     return {};
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<std::string> StatsMediaSourceImpl<TRtcStats, TBaseInterface>::
     kind() const
 {

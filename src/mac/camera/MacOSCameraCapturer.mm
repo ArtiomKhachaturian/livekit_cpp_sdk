@@ -293,7 +293,7 @@ bool MacOSCameraCapturer::interlaced(CMFormatDescriptionRef format)
     return false;
 }
 
-template<typename Callback>
+template <typename Callback>
 void MacOSCameraCapturer::enumerateFramerates(AVCaptureDeviceFormat* format, Callback callback)
 {
     if (format) {

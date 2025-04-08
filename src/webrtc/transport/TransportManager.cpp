@@ -20,7 +20,7 @@
 
 namespace {
 
-template<typename T>
+template <typename T>
 inline uint32_t positiveOrZero(T value) {
     return value > 0 ? static_cast<uint32_t>(value) : 0U;
 }

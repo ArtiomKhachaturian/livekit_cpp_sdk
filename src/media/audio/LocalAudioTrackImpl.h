@@ -18,11 +18,14 @@
 
 namespace LiveKitCpp
 {
+
+class AudioDeviceImpl;
+
 class LocalAudioTrackImpl : public LocalTrackImpl<AudioTrackImpl<>>
 {
     using Base = LocalTrackImpl<AudioTrackImpl<>>;
 public:
-    LocalAudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+    LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
                         TrackManager* manager, bool microphone = true);
     // impl. of AudioTrack
     std::vector<AudioTrackFeature> features() const final;

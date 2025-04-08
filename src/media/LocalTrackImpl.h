@@ -27,7 +27,7 @@
 namespace LiveKitCpp
 {
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 class LocalTrackImpl : public TBaseImpl, public LocalTrack
 {
     static_assert(std::is_base_of_v<Track, TBaseImpl>);
@@ -41,21 +41,21 @@ public:
                                          bool encryption) final;
     void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
-    bool muted() const final { return TBaseImpl::muted(); }
+    bool muted() const override { return TBaseImpl::muted(); }
     // impl. of StatsSource
     void queryStats() const final;
     // impl. of Track
     std::string sid() const final { return _sid(); }
     EncryptionType encryption() const final;
-    std::string id() const final { return cid(); }
     std::string name() const final { return _name; }
     bool remote() const noexcept final { return false; }
 protected:
-    template<class TWebRtcTrack>
+    template <class TMediaDevice>
     LocalTrackImpl(std::string name,
-                   webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
+                   std::shared_ptr<TMediaDevice> mediaDevice,
                    TrackManager* manager);
-    void notifyAboutMuted(bool mute) const override;
+    // overrides of TrackImpl<>
+    void notifyAboutMuted(bool mute) const final;
 private:
     bool added() const;
 private:
@@ -65,49 +65,52 @@ private:
     SafeScopedRefPtr<webrtc::RtpSenderInterface> _sender;
 };
 
-template<class TBaseImpl>
-template<class TWebRtcTrack>
+template <class TBaseImpl>
+template <class TMediaDevice>
 inline LocalTrackImpl<TBaseImpl>::LocalTrackImpl(std::string name,
-                                                 webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
+                                                 std::shared_ptr<TMediaDevice> mediaDevice,
                                                  TrackManager* manager)
-    : TBaseImpl(std::move(mediaTrack), manager)
+    : TBaseImpl(std::move(mediaDevice), manager)
     , _name(std::move(name))
 {
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 void LocalTrackImpl<TBaseImpl>::close()
 {
     LocalTrack::close();
     notifyThatMediaRemovedFromTransport();
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalTrackImpl<TBaseImpl>::media() const
 {
-    return TBaseImpl::mediaTrack();
+    if (const auto& md = TBaseImpl::mediaDevice()) {
+        return md->track();
+    }
+    return {};
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::
     notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender,
                                     bool encryption)
 {
-    if (sender && sender->track() == TBaseImpl::mediaTrack()) {
+    if (sender && sender->track() == media()) {
         _sender(std::move(sender));
         _encryption = encryption;
         notifyAboutMuted(muted());
     }
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::notifyThatMediaRemovedFromTransport()
 {
     _sender({});
     _encryption = false;
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline bool LocalTrackImpl<TBaseImpl>::fillRequest(AddTrackRequest* request) const
 {
     if (request && media() && added()) {
@@ -121,7 +124,7 @@ inline bool LocalTrackImpl<TBaseImpl>::fillRequest(AddTrackRequest* request) con
     return false;
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::queryStats() const
 {
     if (const auto m = TBaseImpl::manager()) {
@@ -129,7 +132,7 @@ inline void LocalTrackImpl<TBaseImpl>::queryStats() const
     }
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline EncryptionType LocalTrackImpl<TBaseImpl>::encryption() const
 {
     if (TBaseImpl::manager() && _encryption) {
@@ -138,7 +141,14 @@ inline EncryptionType LocalTrackImpl<TBaseImpl>::encryption() const
     return EncryptionType::None;
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
+inline bool LocalTrackImpl<TBaseImpl>::added() const
+{
+    LOCK_READ_SAFE_OBJ(_sender);
+    return nullptr != _sender->get();
+}
+
+template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::notifyAboutMuted(bool mute) const
 {
     TBaseImpl::notifyAboutMuted(mute);
@@ -148,13 +158,6 @@ inline void LocalTrackImpl<TBaseImpl>::notifyAboutMuted(bool mute) const
             TBaseImpl::manager()->notifyAboutMuteChanges(sid, mute);
         }
     }
-}
-
-template<class TBaseImpl>
-inline bool LocalTrackImpl<TBaseImpl>::added() const
-{
-    LOCK_READ_SAFE_OBJ(_sender);
-    return nullptr != _sender->get();
 }
 
 } // namespace LiveKitCpp

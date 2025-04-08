@@ -20,13 +20,13 @@
 namespace LiveKitCpp
 {
 
-class RemoteVideoTrackImpl : public RemoteTrackImpl<VideoTrackImpl<RemoteVideoTrack>>
+class RemoteVideoTrackImpl : public RemoteTrackImpl<VideoTrackImpl<VideoDeviceImpl, RemoteVideoTrack>>
 {
-    using Base = RemoteTrackImpl<VideoTrackImpl<RemoteVideoTrack>>;
+    using Base = RemoteTrackImpl<VideoTrackImpl<VideoDeviceImpl, RemoteVideoTrack>>;
 public:
     RemoteVideoTrackImpl(const TrackInfo& info,
                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                         webrtc::scoped_refptr<webrtc::VideoTrackInterface> videoTrack,
+                         std::shared_ptr<VideoDeviceImpl> videoDevice,
                          TrackManager* manager);
     // impl. of RemoteVideoTrack
     std::string sid() const final { return info()._sid; }

@@ -20,7 +20,7 @@
 namespace LiveKitCpp
 {
 
-template<class TListener, bool forcePost = false>
+template <class TListener, bool forcePost = false>
 class AsyncListener
 {
     using Listener = Bricks::Listener<TListener>;
@@ -47,7 +47,7 @@ private:
     const std::shared_ptr<Listener> _listener;
 };
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 inline AsyncListener<TListener, forcePost>::
     AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue)
     : _queue(std::move(queue))
@@ -55,7 +55,7 @@ inline AsyncListener<TListener, forcePost>::
 {
 }
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 template <class Method, typename... Args>
 inline void AsyncListener<TListener, forcePost>::
     invoke(Method method, Args&&... args) const
@@ -79,7 +79,7 @@ inline void AsyncListener<TListener, forcePost>::
     }
 }
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 template <typename U>
 inline AsyncListener<TListener, forcePost>& AsyncListener<TListener, forcePost>::
     operator=(U listener) noexcept

@@ -33,30 +33,55 @@ inline bool compareTrackInfo(const TrackInfo& l, const TrackInfo& r) {
     return l._sid == r._sid;
 }
 
-template<class TMediaInterace>
-inline webrtc::scoped_refptr<TMediaInterace> mediaTrack(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
+template <class TTrack>
+struct MediaInterfaceType {};
+
+template <>
+struct MediaInterfaceType<RemoteAudioTrackImpl>
+{
+    using MediaInterface = webrtc::AudioTrackInterface;
+};
+
+template <>
+struct MediaInterfaceType<RemoteVideoTrackImpl>
+{
+    using MediaInterface = webrtc::VideoTrackInterface;
+};
+
+template <class TMediaInterface>
+struct DeviceType {};
+
+template <>
+struct DeviceType<webrtc::AudioTrackInterface>
+{
+    using Device = AudioDeviceImpl;
+};
+
+template <>
+struct DeviceType<webrtc::VideoTrackInterface>
+{
+    using Device = VideoDeviceImpl;
+};
+
+template <class TMediaInterface>
+inline webrtc::scoped_refptr<TMediaInterface> mediaTrack(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
     if (receiver) {
-        if (const auto media = dynamic_cast<TMediaInterace*>(receiver->track().get())) {
-            return webrtc::scoped_refptr<TMediaInterace>(media);
+        if (const auto media = dynamic_cast<TMediaInterface*>(receiver->track().get())) {
+            return webrtc::scoped_refptr<TMediaInterface>(media);
         }
     }
     return {};
 }
 
 template <class TTrack>
-struct MediaInteraceType {};
-
-template <>
-struct MediaInteraceType<RemoteAudioTrackImpl>
-{
-    using MediaInterace = webrtc::AudioTrackInterface;
-};
-
-template <>
-struct MediaInteraceType<RemoteVideoTrackImpl>
-{
-    using MediaInterace = webrtc::VideoTrackInterface;
-};
+inline auto makeDevice(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
+    using Media = typename MediaInterfaceType<TTrack>::MediaInterface;
+    using Device = typename DeviceType<Media>::Device;
+    if (auto track = mediaTrack<Media>(receiver)) {
+        return std::make_shared<Device>(std::move(track));
+    }
+    return std::shared_ptr<Device>{};
+}
 
 }
 
@@ -259,19 +284,18 @@ const TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid) const
     return nullptr;
 }
 
-template<class TTrack>
+template <class TTrack>
 bool RemoteParticipantImpl::addTrack(const std::string& sid,
                                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                      Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
     bool added = false;
     if (!sid.empty()) {
-        using MediaInterace = typename MediaInteraceType<TTrack>::MediaInterace;
-        if (auto rtcTrack = mediaTrack<MediaInterace>(receiver)) {
+        if (auto device = makeDevice<TTrack>(receiver)) {
             LOCK_READ_SAFE_OBJ(_info);
             if (const auto trackInfo = findBySid(sid)) {
                 auto trackImpl = std::make_shared<TTrack>(*trackInfo, receiver,
-                                                          std::move(rtcTrack),
+                                                          std::move(device),
                                                           _securityFactory);
                 if (attachCryptor(trackInfo->_encryption, receiver)) {
                     {
@@ -293,7 +317,7 @@ bool RemoteParticipantImpl::addTrack(const std::string& sid,
     return added;
 }
 
-template<class TTrack>
+template <class TTrack>
 bool RemoteParticipantImpl::removeTrack(const std::string& sid,
                                         Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
@@ -315,7 +339,7 @@ bool RemoteParticipantImpl::removeTrack(const std::string& sid,
     return false;
 }
 
-template<class TTrack>
+template <class TTrack>
 void RemoteParticipantImpl::clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
     Tracks<TTrack> removed;
@@ -357,7 +381,7 @@ bool RemoteParticipantImpl::attachCryptor(EncryptionType encryption,
     return false;
 }
 
-template<class TTrack>
+template <class TTrack>
 std::optional<size_t> RemoteParticipantImpl::findBySid(const std::string& sid,
                                                        const Tracks<TTrack>& collection)
 {
@@ -405,4 +429,9 @@ void RemoteParticipantImpl::ListenerImpl::
 }
 
 } // namespace LiveKitCpp
+
+namespace
+{
+
+}
 #endif

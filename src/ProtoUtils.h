@@ -56,7 +56,7 @@ inline std::optional<TProto> protoFromBytes(const Bricks::Blob& blob,
 }
 
 
-template<typename KIn, typename VIn, typename KOut, typename VOut, class KConv, class VConv>
+template <typename KIn, typename VIn, typename KOut, typename VOut, class KConv, class VConv>
 inline void toProtoMap(const std::unordered_map<KIn, VIn>& from,
                        google::protobuf::Map<KOut, VOut>* to,
                        KConv kConv, VConv vConv)
@@ -68,7 +68,7 @@ inline void toProtoMap(const std::unordered_map<KIn, VIn>& from,
     }
 }
 
-template<typename K, typename V>
+template <typename K, typename V>
 inline void toProtoMap(const std::unordered_map<K, V>& from,
                        google::protobuf::Map<K, V>* to)
 {
@@ -79,7 +79,7 @@ inline void toProtoMap(const std::unordered_map<K, V>& from,
     }
 }
 
-template<typename KIn, typename VIn, typename KOut, typename VOut, class KConv, class VConv>
+template <typename KIn, typename VIn, typename KOut, typename VOut, class KConv, class VConv>
 inline std::unordered_map<KOut, VOut> fromProtoMap(const google::protobuf::Map<KIn, VIn>& in,
                                                    KConv kConv, VConv vConv)
 {
@@ -94,14 +94,14 @@ inline std::unordered_map<KOut, VOut> fromProtoMap(const google::protobuf::Map<K
     return {};
 }
 
-template<typename K, typename V>
+template <typename K, typename V>
 inline std::unordered_map<K, V> fromProtoMap(const google::protobuf::Map<K, V>& in) {
     return fromProtoMap<K, V, K, V>(in,
                                     [](const K& val) -> const K& { return val; },
                                     [](const V& val) -> const V& { return val; });
 }
 
-template<typename TIn, typename TProtoBufRepeated, class Conv>
+template <typename TIn, typename TProtoBufRepeated, class Conv>
 inline void toProtoRepeated(const std::vector<TIn>& in,
                             TProtoBufRepeated* out,
                             Conv conv) {
@@ -115,7 +115,7 @@ inline void toProtoRepeated(const std::vector<TIn>& in,
     }
 }
 
-template<typename TIn, typename TProtoBufRepeated>
+template <typename TIn, typename TProtoBufRepeated>
 inline void toProtoRepeated(const std::vector<TIn>& in,
                             TProtoBufRepeated* out) {
     if (out) {
@@ -124,7 +124,7 @@ inline void toProtoRepeated(const std::vector<TIn>& in,
     }
 }
 
-template<typename TOut, typename TProtoBufRepeated, class Conv>
+template <typename TOut, typename TProtoBufRepeated, class Conv>
 inline std::vector<TOut> fromProtoRepeated(const TProtoBufRepeated& in,
                                            Conv conv) {
     std::vector<TOut> out;
@@ -137,7 +137,7 @@ inline std::vector<TOut> fromProtoRepeated(const TProtoBufRepeated& in,
     return out;
 }
 
-template<typename TOut, typename TProtoBufRepeated>
+template <typename TOut, typename TProtoBufRepeated>
 inline std::vector<TOut> fromProtoRepeated(const TProtoBufRepeated& in) {
     return fromProtoRepeated<TOut, TProtoBufRepeated>(in, [](const auto& val) { return val; });
 }

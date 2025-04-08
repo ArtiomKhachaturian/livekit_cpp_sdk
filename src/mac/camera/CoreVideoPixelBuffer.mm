@@ -35,7 +35,7 @@ protected:
     virtual ~CoreVideoPixelBufferAccessor() = default;
 };
 
-template<class TBaseVideoBuffer>
+template <class TBaseVideoBuffer>
 class CoreVideoPixelBufferHolder : public VideoFrameBuffer<TBaseVideoBuffer>,
                                    public CoreVideoPixelBufferAccessor
 {
@@ -140,7 +140,7 @@ bool isRGB32Format(OSType format)
 namespace
 {
 
-template<class TBaseVideoBuffer> template <class... AdditionalArgs>
+template <class TBaseVideoBuffer> template <class... AdditionalArgs>
 CoreVideoPixelBufferHolder<TBaseVideoBuffer>::CoreVideoPixelBufferHolder(CVPixelBufferAutoRelease lockedBuffer,
                                                                          AdditionalArgs&&... additionalArgs)
     : VideoFrameBuffer<TBaseVideoBuffer>(std::forward<AdditionalArgs>(additionalArgs)...)
@@ -148,7 +148,7 @@ CoreVideoPixelBufferHolder<TBaseVideoBuffer>::CoreVideoPixelBufferHolder(CVPixel
 {
 }
 
-template<class TBaseVideoBuffer>
+template <class TBaseVideoBuffer>
 CoreVideoPixelBufferHolder<TBaseVideoBuffer>::~CoreVideoPixelBufferHolder()
 {
     _lockedBuffer.unlock();

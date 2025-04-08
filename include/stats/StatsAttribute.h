@@ -46,11 +46,11 @@ public:
     std::string_view name() const;
     bool valid() const;
     explicit operator bool() const { return valid(); }
-    template<typename T>
+    template <typename T>
     bool isType() const { return std::holds_alternative<const std::optional<T>*>(_value); }
-    template<typename T>
+    template <typename T>
     const std::optional<T>& optional() const { return *std::get<const std::optional<T>*>(_value); }
-    template<typename T>
+    template <typename T>
     const T& value() const { return optional<T>().value(); };
     // is vector or not
     bool isSequence() const;

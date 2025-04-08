@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // AudioTrackImpl.h
 #ifdef WEBRTC_AVAILABLE
-#include "AudioSinks.h"
+#include "AudioDeviceImpl.h"
 #include "TrackImpl.h"
 #include "media/AudioTrack.h"
 #include <type_traits>
@@ -21,88 +21,70 @@
 namespace LiveKitCpp
 {
 
-template<class TTrackApi = AudioTrack>
-class AudioTrackImpl : public TrackImpl<webrtc::AudioTrackInterface, TTrackApi>
+template <class TTrackApi = AudioTrack>
+class AudioTrackImpl : public TrackImpl<AudioDeviceImpl, TTrackApi>
 {
     static_assert(std::is_base_of_v<AudioTrack, TTrackApi>);
-    using Base = TrackImpl<webrtc::AudioTrackInterface, TTrackApi>;
+    using Base = TrackImpl<AudioDeviceImpl, TTrackApi>;
 public:
-    ~AudioTrackImpl() override;
+    ~AudioTrackImpl() override = default;
     // impl. of AudioTrack
-    void addSink(AudioTrackSink* sink) final;
-    void removeSink(AudioTrackSink* sink) final;
+    void addSink(AudioSink* sink) final;
+    void removeSink(AudioSink* sink) final;
     std::optional<int> signalLevel() const final;
     void setVolume(double volume) final;
 protected:
-    AudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
-                   TrackManager* manager);
+    AudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice, TrackManager* manager);
     webrtc::AudioSourceInterface* audioSource() const;
-private:
-    AudioSinks _sinks;
 };
 
-template<class TTrackApi>
-inline AudioTrackImpl<TTrackApi>::AudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+template <class TTrackApi>
+inline AudioTrackImpl<TTrackApi>::AudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
                                                  TrackManager* manager)
-    : Base(std::move(audioTrack), manager)
+    : Base(std::move(audioDevice), manager)
 {
 }
 
-template<class TTrackApi>
-inline AudioTrackImpl<TTrackApi>::~AudioTrackImpl()
+template <class TTrackApi>
+inline void AudioTrackImpl<TTrackApi>::addSink(AudioSink* sink)
 {
-    if (_sinks.clear()) {
-        if (const auto& t = Base::mediaTrack()) {
-            t->RemoveSink(&_sinks);
-        }
+    if (const auto& md = Base::mediaDevice()) {
+        md->addSink(sink);
     }
 }
 
-template<class TTrackApi>
-inline void AudioTrackImpl<TTrackApi>::addSink(AudioTrackSink* sink)
+template <class TTrackApi>
+inline void AudioTrackImpl<TTrackApi>::removeSink(AudioSink* sink)
 {
-    if (Bricks::AddResult::OkFirst == _sinks.add(sink)) {
-        if (const auto& t = Base::mediaTrack()) {
-            t->AddSink(&_sinks);
-        }
+    if (const auto& md = Base::mediaDevice()) {
+        md->removeSink(sink);
     }
 }
 
-template<class TTrackApi>
-inline void AudioTrackImpl<TTrackApi>::removeSink(AudioTrackSink* sink)
-{
-    if (Bricks::RemoveResult::OkLast == _sinks.remove(sink)) {
-        if (const auto& t = Base::mediaTrack()) {
-            t->RemoveSink(&_sinks);
-        }
-    }
-}
-
-template<class TTrackApi>
+template <class TTrackApi>
 inline std::optional<int> AudioTrackImpl<TTrackApi>::signalLevel() const
 {
-    if (const auto& t = Base::mediaTrack()) {
-        int level;
-        if (t->GetSignalLevel(&level)) {
-            return level;
-        }
+    if (const auto& md = Base::mediaDevice()) {
+        return md->signalLevel();
     }
     return std::nullopt;
 }
 
-template<class TTrackApi>
+template <class TTrackApi>
 inline void AudioTrackImpl<TTrackApi>::setVolume(double volume)
 {
-    if (const auto s = audioSource()) {
-        s->SetVolume(volume);
+    if (const auto& md = Base::mediaDevice()) {
+        md->setVolume(volume);
     }
 }
 
-template<class TTrackApi>
+template <class TTrackApi>
 webrtc::AudioSourceInterface* AudioTrackImpl<TTrackApi>::audioSource() const
 {
-    if (const auto& t = Base::mediaTrack()) {
-        return t->GetSource();
+    if (const auto& md = Base::mediaDevice()) {
+        if (const auto& track = md->track()) {
+            return track->GetSource();
+        }
     }
     return nullptr;
 }

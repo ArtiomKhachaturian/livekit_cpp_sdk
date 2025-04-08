@@ -26,7 +26,7 @@ namespace LiveKitCpp
  *
  * @tparam T The type of elements in the input ranges.
  */
-template<typename T>
+template <typename T>
 class Seq
 {
 public:
@@ -41,9 +41,9 @@ public:
      * @param compare The comparator to use for element comparison.
      * @return A range of elements that are in range1 but not in range2.
      */
-    template< template <typename, typename...> class TIn,
+    template <template <typename, typename...> class TIn,
               template <typename, typename...> class TOut = TIn,
-              class TCompare = std::equal_to<T> >
+              class TCompare = std::equal_to<T>>
     static TOut<T> difference(const TIn<T>& range1, const TIn<T>& range2,
                               TCompare compare = {}) {
         if (&range1 != &range2 && !range1.empty()) {
@@ -76,9 +76,9 @@ public:
      * @param compare The comparator to use for element comparison.
      * @return A range consisting of elements found in both range1 and range2.
      */
-    template< template <typename, typename...> class TIn,
+    template <template <typename, typename...> class TIn,
               template <typename, typename...> class TOut = TIn,
-              class TCompare = std::equal_to<T> >
+              class TCompare = std::equal_to<T>>
     static TOut<T> intersection(const TIn<T>& range1, const TIn<T>& range2,
                                 TCompare compare = {}) {
         if (!range1.empty() && !range2.empty()) {

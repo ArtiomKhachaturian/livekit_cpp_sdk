@@ -35,7 +35,9 @@ namespace LiveKitCpp
 {
 
 class AudioTrack;
+class AudioDevice;
 class AesCgmCryptor;
+class CameraDevice;
 class CameraTrackImpl;
 class KeyProvider;
 class LocalParticipant;
@@ -44,10 +46,9 @@ class LocalAudioTrackImpl;
 class Participant;
 class PeerConnectionFactory;
 class SessionListener;
+class VideoDevice;
 class VideoTrack;
 struct AddTrackRequest;
-struct CameraOptions;
-struct MediaDeviceInfo;
 struct MuteTrackRequest;
 struct UpdateLocalAudioTrack;
 enum class DisconnectReason;
@@ -63,9 +64,8 @@ public:
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    virtual std::shared_ptr<LocalAudioTrackImpl> addLocalMicrophoneTrack();
-    virtual std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(const MediaDeviceInfo& info,
-                                                                 const CameraOptions& options);
+    virtual std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device);
+    virtual std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device);
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track);
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>

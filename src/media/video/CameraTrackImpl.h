@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // CameraTrack.h
 #ifdef WEBRTC_AVAILABLE
-#include "CameraDevice.h"
+#include "CameraDeviceImpl.h"
 #include "LocalTrackImpl.h"
 #include "VideoTrackImpl.h"
 #include "media/CameraTrack.h"
@@ -21,11 +21,12 @@
 namespace LiveKitCpp
 {
 
-class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraDevice>>
+// CameraDeviceImpl
+class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraDeviceImpl, CameraTrack>>
 {
-    using Base = LocalTrackImpl<VideoTrackImpl<CameraTrack, CameraDevice>>;
+    using Base = LocalTrackImpl<VideoTrackImpl<CameraDeviceImpl, CameraTrack>>;
 public:
-    CameraTrackImpl(webrtc::scoped_refptr<CameraDevice> cameraTrack, TrackManager* manager);
+    CameraTrackImpl(std::shared_ptr<CameraDeviceImpl> cameraDevice, TrackManager* manager);
     ~CameraTrackImpl();
     // impl. of CameraTrack
     void setDeviceInfo(const MediaDeviceInfo& info) final;
@@ -35,6 +36,8 @@ public:
     // impl. of LocalTrack
     void close() final;
     bool fillRequest(AddTrackRequest* request) const final;
+private:
+    webrtc::scoped_refptr<LocalCamera> track() const;
 };
 
 } // namespace LiveKitCpp

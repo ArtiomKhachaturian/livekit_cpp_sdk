@@ -88,15 +88,14 @@ size_t RTCMediaEngine::localVideoTracksCount() const
     return _localParticipant->videoTracksCount();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::addLocalMicrophoneTrack()
+std::shared_ptr<LocalAudioTrackImpl> RTCMediaEngine::addLocalAudioTrack(std::shared_ptr<AudioDevice> device)
 {
-    return _localParticipant->addMicrophoneTrack();
+    return _localParticipant->addAudioTrack(std::move(device));
 }
 
-std::shared_ptr<CameraTrackImpl> RTCMediaEngine::
-    addLocalCameraTrack(const MediaDeviceInfo& info, const CameraOptions& options)
+std::shared_ptr<CameraTrackImpl> RTCMediaEngine::addLocalCameraTrack(std::shared_ptr<CameraDevice> device)
 {
-    return _localParticipant->addCameraTrack(info, options);
+    return _localParticipant->addCameraTrack(std::move(device));
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCMediaEngine::

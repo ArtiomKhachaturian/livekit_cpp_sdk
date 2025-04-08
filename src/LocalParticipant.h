@@ -39,18 +39,20 @@ class Logger;
 namespace LiveKitCpp
 {
 
+class AudioDevice;
 class CameraDevice;
+class LocalCamera;
 class TrackManager;
 class ParticipantListener;
 class PeerConnectionFactory;
-struct CameraOptions;
+class VideoDevice;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 
 class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver>
 {
     using Base = Bricks::LoggableS<Participant, AesCgmCryptorObserver>;
-    template<class T> using Tracks = Bricks::SafeObj<std::vector<std::shared_ptr<T>>>;
+    template <class T> using Tracks = Bricks::SafeObj<std::vector<std::shared_ptr<T>>>;
 public:
     LocalParticipant(TrackManager* manager, PeerConnectionFactory* pcf,
                      const Participant* session,
@@ -60,9 +62,8 @@ public:
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
     size_t videoTracksCount() const;
-    std::shared_ptr<LocalAudioTrackImpl> addMicrophoneTrack();
-    std::shared_ptr<CameraTrackImpl> addCameraTrack(const MediaDeviceInfo& info,
-                                                    const CameraOptions& options);
+    std::shared_ptr<LocalAudioTrackImpl> addAudioTrack(std::shared_ptr<AudioDevice> device);
+    std::shared_ptr<CameraTrackImpl> addCameraTrack(std::shared_ptr<CameraDevice> device);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
@@ -85,16 +86,13 @@ public:
     std::string metadata() const final { return _metadata(); }
     ParticipantKind kind() const final { return _kind; }
 private:
-    template<class TTracks>
+    template <class TTracks>
     static std::shared_ptr<LocalTrack> lookup(const std::string& id, bool cid,
                                               const TTracks& tracks);
-    template<class TTrack, class TTracks>
+    template <class TTrack, class TTracks>
     static void addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks);
-    template<class TTracks>
+    template <class TTracks>
     static void clear(TTracks& tracks);
-    webrtc::scoped_refptr<webrtc::AudioTrackInterface> createMic() const;
-    webrtc::scoped_refptr<CameraDevice> createCamera(const MediaDeviceInfo& info,
-                                                     const CameraOptions& options) const;
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;
     // impl. of AesCgmCryptorObserver

@@ -20,15 +20,15 @@
 namespace LiveKitCpp
 {
 
-class AudioTrackSink;
+class AudioSink;
 
 class AudioTrack : public Track
 {
 public:
     // impl. of Track
     TrackType type() const final { return TrackType::Audio; }
-    virtual void addSink(AudioTrackSink* sink) = 0;
-    virtual void removeSink(AudioTrackSink* sink) = 0;
+    virtual void addSink(AudioSink* sink) = 0;
+    virtual void removeSink(AudioSink* sink) = 0;
     // Sets the volume of the track. `volume` is in  the range of [0, 10].
     virtual void setVolume(double volume) = 0;
     // Get the signal level from the audio track.

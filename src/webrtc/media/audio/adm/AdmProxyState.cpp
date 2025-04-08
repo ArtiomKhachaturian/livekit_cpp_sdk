@@ -181,7 +181,7 @@ uint32_t AdmProxyState::maxVolume() const
     return maxv;
 }
 
-template<class Method, typename... Args>
+template <class Method, typename... Args>
 void AdmProxyState::invoke(Method method, Args&&... args) const
 {
     if (_listeners) {
@@ -189,7 +189,7 @@ void AdmProxyState::invoke(Method method, Args&&... args) const
     }
 }
 
-template<typename T, class Getter>
+template <typename T, class Getter>
 std::optional<T> AdmProxyState::admProperty(const AdmPtr& adm, const Getter& getter)
 {
     if (adm) {

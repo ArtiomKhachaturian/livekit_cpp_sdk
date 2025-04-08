@@ -15,85 +15,107 @@
 #ifdef WEBRTC_AVAILABLE
 #include "StatsSourceImpl.h"
 #include "TrackManager.h"
-#include <api/media_stream_interface.h>
+#include "media/MediaDevice.h"
+#include "media/MediaDeviceListener.h"
 #include <atomic>
 
 namespace LiveKitCpp
 {
 
-template<class TWebRtcTrack, class TTrackApi>
-class TrackImpl : public TTrackApi
+template <class TMediaDevice, class TTrackApi>
+class TrackImpl : public TTrackApi, private MediaDeviceListener
 {
+    static_assert(std::is_base_of_v<MediaDevice, TMediaDevice>);
     static_assert(std::is_base_of_v<Track, TTrackApi>);
-    static_assert(std::is_base_of_v<webrtc::MediaStreamTrackInterface, TWebRtcTrack>);
 public:
-    ~TrackImpl() override { _statsCollector->clearListeners(); }
+    ~TrackImpl() override;
     // impl. of StatsSource
     void addListener(StatsListener* listener) final;
     void removeListener(StatsListener* listener) final;
     // impl. of Track
-    bool live() const final;
-    void mute(bool mute) final; // request media track creation if needed
-    bool muted() const override { return _muted; }
+    // track ID
+    std::string id() const override;
+    bool live() const final { return _mediaDevice && _mediaDevice->live(); }
+    void mute(bool mute) final;
+    bool muted() const override { return _mediaDevice && _mediaDevice->muted(); }
 protected:
-    TrackImpl(webrtc::scoped_refptr<TWebRtcTrack> mediaTrack, TrackManager* manager);
-    const auto& mediaTrack() const noexcept { return _mediaTrack; }
+    TrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager);
+    const auto& mediaDevice() const noexcept { return _mediaDevice; }
     TrackManager* manager() const noexcept { return _manager; }
     webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback> statsCollector() const;
     virtual void notifyAboutMuted(bool /*mute*/) const {}
 private:
+    // impl. of MediaDeviceListener
+    void onMuteChanged(const std::string&, bool mute) final;
+private:
     const webrtc::scoped_refptr<StatsSourceImpl> _statsCollector;
-    const webrtc::scoped_refptr<TWebRtcTrack> _mediaTrack;
+    const std::shared_ptr<TMediaDevice> _mediaDevice;
     TrackManager* const _manager;
-    std::atomic_bool _muted = false;
 };
 
-template<class TWebRtcTrack, class TTrackApi>
-inline TrackImpl<TWebRtcTrack, TTrackApi>::TrackImpl(webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
+template <class TMediaDevice, class TTrackApi>
+inline TrackImpl<TMediaDevice, TTrackApi>::TrackImpl(std::shared_ptr<TMediaDevice> mediaDevice,
                                                      TrackManager* manager)
     : _statsCollector(webrtc::make_ref_counted<StatsSourceImpl>())
-    , _mediaTrack(std::move(mediaTrack))
+    , _mediaDevice(std::move(mediaDevice))
     , _manager(manager)
-    , _muted(!_mediaTrack || !_mediaTrack->enabled())
 {
+    if (_mediaDevice) {
+        _mediaDevice->addListener(this);
+    }
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline void TrackImpl<TRtcTrack, TTrackApi>::addListener(StatsListener* listener)
+template <class TMediaDevice, class TTrackApi>
+inline TrackImpl<TMediaDevice, TTrackApi>::~TrackImpl()
+{
+    if (_mediaDevice) {
+        _mediaDevice->removeListener(this);
+    }
+    _statsCollector->clearListeners();
+}
+
+template <class TMediaDevice, class TTrackApi>
+inline void TrackImpl<TMediaDevice, TTrackApi>::addListener(StatsListener* listener)
 {
     _statsCollector->addListener(listener);
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline void TrackImpl<TRtcTrack, TTrackApi>::removeListener(StatsListener* listener)
+template <class TMediaDevice, class TTrackApi>
+inline void TrackImpl<TMediaDevice, TTrackApi>::removeListener(StatsListener* listener)
 {
     _statsCollector->removeListener(listener);
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline bool TrackImpl<TRtcTrack, TTrackApi>::live() const
+template <class TMediaDevice, class TTrackApi>
+inline std::string TrackImpl<TMediaDevice, TTrackApi>::id() const
 {
-    return _mediaTrack && webrtc::MediaStreamTrackInterface::kLive == _mediaTrack->state();
+    if (_mediaDevice) {
+        return _mediaDevice->id();
+    }
+    return {};
 }
 
-template<class TRtcTrack, class TTrackApi>
-inline void TrackImpl<TRtcTrack, TTrackApi>::mute(bool mute)
+template <class TMediaDevice, class TTrackApi>
+inline void TrackImpl<TMediaDevice, TTrackApi>::mute(bool mute)
 {
-    if (_mediaTrack && mute != _muted.exchange(mute)) {
-        const auto wasEnabled = _mediaTrack->enabled();
-        if (wasEnabled == mute) {
-            _mediaTrack->set_enabled(!mute);
-            notifyAboutMuted(mute);
-        }
+    if (_mediaDevice) {
+        _mediaDevice->mute(mute);
     }
 }
 
-template<class TRtcTrack, class TTrackApi>
+template <class TMediaDevice, class TTrackApi>
 inline webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>
-    TrackImpl<TRtcTrack, TTrackApi>::statsCollector() const
+    TrackImpl<TMediaDevice, TTrackApi>::statsCollector() const
 {
     return _statsCollector;
 }
+
+template <class TMediaDevice, class TTrackApi>
+inline void TrackImpl<TMediaDevice, TTrackApi>::onMuteChanged(const std::string&, bool mute)
+{
+    notifyAboutMuted(mute);
+}
+
 
 } // namespace LiveKitCpp
 #endif

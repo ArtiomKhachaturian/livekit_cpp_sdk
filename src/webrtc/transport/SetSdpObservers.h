@@ -22,7 +22,7 @@ namespace LiveKitCpp
 
 class SetSdpListener;
 
-template<class TObserveInterface>
+template <class TObserveInterface>
 class SetSdpObserver : public TObserveInterface
 {
 public:

@@ -17,15 +17,15 @@
 namespace LiveKitCpp
 {
 
-class VideoTrackSink;
+class VideoSink;
 
 class VideoTrack : public Track
 {
 public:
     // impl. of Track
     TrackType type() const final { return TrackType::Video; }
-    virtual void addSink(VideoTrackSink* sink) = 0;
-    virtual void removeSink(VideoTrackSink* sink) = 0;
+    virtual void addSink(VideoSink* sink) = 0;
+    virtual void removeSink(VideoSink* sink) = 0;
 };
 
 } // namespace LiveKitCpp

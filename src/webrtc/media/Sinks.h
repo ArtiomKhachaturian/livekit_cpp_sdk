@@ -17,7 +17,7 @@
 namespace LiveKitCpp
 {
 
-template<class TSink, class TRtcSink>
+template <class TSink, class TRtcSink>
 class Sinks : public TRtcSink
 {
 public:
@@ -34,19 +34,19 @@ private:
     Bricks::Listeners<TSink*> _sinks;
 };
 
-template<class TSink, class TRtcSink>
+template <class TSink, class TRtcSink>
 inline Bricks::AddResult Sinks<TSink, TRtcSink>::add(TSink* sink)
 {
     return _sinks.add(sink);
 }
 
-template<class TSink, class TRtcSink>
+template <class TSink, class TRtcSink>
 inline Bricks::RemoveResult Sinks<TSink, TRtcSink>::remove(TSink* sink)
 {
     return _sinks.remove(sink);
 }
 
-template<class TSink, class TRtcSink>
+template <class TSink, class TRtcSink>
 template <class Method, typename... Args>
 inline void Sinks<TSink, TRtcSink>::invoke(const Method& method, Args&&... args) const
 {

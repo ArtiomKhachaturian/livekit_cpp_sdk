@@ -20,7 +20,7 @@
 namespace LiveKitCpp
 {
 
-template<class TListener, bool forcePost = false>
+template <class TListener, bool forcePost = false>
 class AsyncListeners
 {
     using Listeners = Bricks::Listeners<TListener, true>;
@@ -49,7 +49,7 @@ private:
     const std::shared_ptr<Listeners> _listeners;
 };
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 inline AsyncListeners<TListener, forcePost>::
     AsyncListeners(std::weak_ptr<webrtc::TaskQueueBase> queue)
     : _queue(std::move(queue))
@@ -57,27 +57,27 @@ inline AsyncListeners<TListener, forcePost>::
 {
 }
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 inline Bricks::AddResult AsyncListeners<TListener, forcePost>::
     add(const TListener& listener)
 {
     return _listeners->add(listener);
 }
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 inline Bricks::RemoveResult AsyncListeners<TListener, forcePost>::
     remove(const TListener& listener)
 {
     return _listeners->remove(listener);
 }
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 inline bool AsyncListeners<TListener, forcePost>::contains(const TListener& listener) const
 {
     return _listeners->contains(listener);
 }
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 template <class Method, typename... Args>
 inline void AsyncListeners<TListener, forcePost>::
     invoke(Method method, Args&&... args) const
@@ -101,7 +101,7 @@ inline void AsyncListeners<TListener, forcePost>::
     }
 }
 
-template<class TListener, bool forcePost>
+template <class TListener, bool forcePost>
 template <class Functor>
 inline void AsyncListeners<TListener, forcePost>::foreach(const Functor& functor) const
 {

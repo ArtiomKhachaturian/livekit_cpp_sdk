@@ -22,7 +22,7 @@
 namespace LiveKitCpp
 {
 
-template<class TMediaSource, class TAsyncImpl>
+template <class TMediaSource, class TAsyncImpl>
 class AsyncMediaSource : public TMediaSource
 {
     static_assert(std::is_base_of_v<AsyncMediaSourceImpl, TAsyncImpl>);
@@ -40,7 +40,7 @@ public:
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 protected:
-    template<typename... Args>
+    template <typename... Args>
     AsyncMediaSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                      const std::shared_ptr<Bricks::Logger>& logger,
                      Args&&... args);
@@ -52,8 +52,8 @@ private:
     std::atomic_bool _enabled = true;
 };
 
-template<class TMediaSource, class TAsyncImpl>
-template<typename... Args>
+template <class TMediaSource, class TAsyncImpl>
+template <typename... Args>
 inline AsyncMediaSource<TMediaSource, TAsyncImpl>::
     AsyncMediaSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                      const std::shared_ptr<Bricks::Logger>& logger,
@@ -63,7 +63,7 @@ inline AsyncMediaSource<TMediaSource, TAsyncImpl>::
 {
 }
 
-template<class TMediaSource, class TAsyncImpl>
+template <class TMediaSource, class TAsyncImpl>
 inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
 {
     if (_impl->active() && exchangeVal(enabled, _enabled)) {
@@ -74,7 +74,7 @@ inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
     return false;
 }
 
-template<class TMediaSource, class TAsyncImpl>
+template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::close()
 {
     if (_impl->deactivate()) {
@@ -82,19 +82,19 @@ inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::close()
     }
 }
 
-template<class TMediaSource, class TAsyncImpl>
+template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::RegisterObserver(webrtc::ObserverInterface* observer)
 {
     _impl->registerObserver(observer);
 }
 
-template<class TMediaSource, class TAsyncImpl>
+template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::UnregisterObserver(webrtc::ObserverInterface* observer)
 {
     _impl->unregisterObserver(observer);
 }
 
-template<class TMediaSource, class TAsyncImpl>
+template <class TMediaSource, class TAsyncImpl>
 template <class Method, typename... Args>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::
     postToImpl(Method method, Args&&... args) const

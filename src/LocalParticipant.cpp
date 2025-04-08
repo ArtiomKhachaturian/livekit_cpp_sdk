@@ -14,12 +14,10 @@
 #ifdef WEBRTC_AVAILABLE
 #include "LocalParticipant.h"
 #include "AdmProxyFacade.h"
+#include "AudioDeviceImpl.h"
 #include "Blob.h"
-#include "CameraDevice.h"
-#include "CameraManager.h"
+#include "CameraDeviceImpl.h"
 #include "DataChannel.h"
-#include "LocalAudioDevice.h"
-#include "AsyncMicSourceImpl.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
 #include "rtc/ParticipantInfo.h"
@@ -67,20 +65,19 @@ size_t LocalParticipant::videoTracksCount() const
     return _videoTracks->size();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addMicrophoneTrack()
+std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addAudioTrack(std::shared_ptr<AudioDevice> device)
 {
-    if (auto mic = createMic()) {
-        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(mic),  _manager, true);
+    if (auto audio = std::dynamic_pointer_cast<AudioDeviceImpl>(device)) {
+        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(audio), _manager, true);
         addTrack(track, _audioTracks);
         return track;
     }
     return {};
 }
 
-std::shared_ptr<CameraTrackImpl> LocalParticipant::
-    addCameraTrack(const MediaDeviceInfo& info, const CameraOptions& options)
+std::shared_ptr<CameraTrackImpl> LocalParticipant::addCameraTrack(std::shared_ptr<CameraDevice> device)
 {
-    if (auto camera = createCamera(info, options)) {
+    if (auto camera = std::dynamic_pointer_cast<CameraDeviceImpl>(device)) {
         auto track = std::make_shared<CameraTrackImpl>(std::move(camera), _manager);
         addTrack(track, _videoTracks);
         return track;
@@ -227,7 +224,7 @@ void LocalParticipant::setInfo(const ParticipantInfo& info)
     }
 }
 
-template<class TTracks>
+template <class TTracks>
 std::shared_ptr<LocalTrack> LocalParticipant::lookup(const std::string& id,
                                                      bool cid,
                                                      const TTracks& tracks)
@@ -244,7 +241,7 @@ std::shared_ptr<LocalTrack> LocalParticipant::lookup(const std::string& id,
     return {};
 }
 
-template<class TTrack, class TTracks>
+template <class TTrack, class TTracks>
 void LocalParticipant::addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks)
 {
     if (track) {
@@ -253,7 +250,7 @@ void LocalParticipant::addTrack(const std::shared_ptr<TTrack>& track, TTracks& t
     }
 }
 
-template<class TTracks>
+template <class TTracks>
 void LocalParticipant::clear(TTracks& tracks)
 {
     const std::lock_guard guard(tracks.mutex());
@@ -263,32 +260,6 @@ void LocalParticipant::clear(TTracks& tracks)
         }
     }
     tracks->clear();
-}
-
-webrtc::scoped_refptr<webrtc::AudioTrackInterface> LocalParticipant::createMic() const
-{
-    if (_pcf) {
-        auto admProxy = _pcf->admProxy();
-        if (!admProxy.expired()) {
-            return LocalAudioDevice<AsyncMicSourceImpl>::create(_pcf->signalingThread(),
-                                                                logger(),
-                                                                std::move(admProxy));
-        }
-    }
-    return {};
-}
-
-webrtc::scoped_refptr<CameraDevice> LocalParticipant::
-    createCamera(const MediaDeviceInfo& info, const CameraOptions& options) const
-{
-    if (_pcf && CameraManager::available()) {
-        return webrtc::make_ref_counted<CameraDevice>(makeUuid(),
-                                                      _pcf->signalingThread(),
-                                                      info,
-                                                      map(options),
-                                                      logger());
-    }
-    return {};
 }
 
 template <class Method, typename... Args>

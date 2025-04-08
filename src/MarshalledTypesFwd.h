@@ -15,12 +15,12 @@
 #include <string>
 
 #define MARSHALLED_TYPE_NAME_DECL(name) \
-    template<> std::string marshalledTypeName<name>() { return #name; }
+    template <> std::string marshalledTypeName<name>() { return #name; }
 
 namespace LiveKitCpp
 {
 
-template<typename T>
+template <typename T>
 inline std::string marshalledTypeName() {
     static_assert(false, "type name not evaluated, "
                          "use MARSHALLED_TYPE_NAME_DECL macro "

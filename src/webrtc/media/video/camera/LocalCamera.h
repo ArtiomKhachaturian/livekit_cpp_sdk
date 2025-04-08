@@ -22,15 +22,15 @@
 namespace LiveKitCpp
 {
 
-class CameraDevice : public webrtc::VideoTrackInterface
+class LocalCamera : public webrtc::VideoTrackInterface
 {
 public:
-    CameraDevice(const std::string& id,
-                 std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                 const MediaDeviceInfo& info = {},
-                 const webrtc::VideoCaptureCapability& initialCapability = {},
-                 const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~CameraDevice() override;
+    LocalCamera(const std::string& id,
+                std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                const MediaDeviceInfo& info = {},
+                const webrtc::VideoCaptureCapability& initialCapability = {},
+                const std::shared_ptr<Bricks::Logger>& logger = {});
+    ~LocalCamera() override;
     void close();
     void setDeviceInfo(const MediaDeviceInfo& info);
     MediaDeviceInfo deviceInfo() const;

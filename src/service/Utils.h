@@ -92,7 +92,7 @@ inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xff
 std::string makeStateChangesString(TransportState from, TransportState to);
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
 
-template<typename T>
+template <typename T>
 inline bool exchangeVal(T source, Bricks::SafeObj<T>& dst) {
     const std::lock_guard guard(dst.mutex());
     if (source != dst.constRef()) {
@@ -102,7 +102,7 @@ inline bool exchangeVal(T source, Bricks::SafeObj<T>& dst) {
     return false;
 }
 
-template<typename T>
+template <typename T>
 inline bool exchangeVal(const T& source, std::atomic<T>& dst) {
     return source != dst.exchange(source);
 }

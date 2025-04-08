@@ -19,7 +19,7 @@
 namespace LiveKitCpp
 {
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 class StatsRtpStreamImpl : public StatsDataImpl<TRtcStats, TBaseInterface>
 {
     static_assert(std::is_base_of_v<webrtc::RTCRtpStreamStats, TRtcStats>);
@@ -35,14 +35,14 @@ public:
     std::optional<std::string> codecId() const final;
 };
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline StatsRtpStreamImpl<TRtcStats, TBaseInterface>::
     StatsRtpStreamImpl(const TRtcStats* stats, const std::shared_ptr<const StatsReportData>& data)
         : Base(stats, data)
 {
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<uint32_t> StatsRtpStreamImpl<TRtcStats, TBaseInterface>::ssrc() const
 {
     if (Base::_stats) {
@@ -51,7 +51,7 @@ inline std::optional<uint32_t> StatsRtpStreamImpl<TRtcStats, TBaseInterface>::ss
     return {};
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<std::string> StatsRtpStreamImpl<TRtcStats, TBaseInterface>::kind() const
 {
     if (Base::_stats) {
@@ -60,7 +60,7 @@ inline std::optional<std::string> StatsRtpStreamImpl<TRtcStats, TBaseInterface>:
     return {};
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<std::string> StatsRtpStreamImpl<TRtcStats, TBaseInterface>::transportId() const
 {
     if (Base::_stats) {
@@ -69,7 +69,7 @@ inline std::optional<std::string> StatsRtpStreamImpl<TRtcStats, TBaseInterface>:
     return {};
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<std::string> StatsRtpStreamImpl<TRtcStats, TBaseInterface>::codecId() const
 {
     if (Base::_stats) {

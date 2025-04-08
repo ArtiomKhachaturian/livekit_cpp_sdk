@@ -25,9 +25,9 @@ inline std::string audioLabel(bool microphone) {
 namespace LiveKitCpp
 {
 
-LocalAudioTrackImpl::LocalAudioTrackImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+LocalAudioTrackImpl::LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
                                          TrackManager* manager, bool microphone)
-    : Base(audioLabel(microphone), std::move(audioTrack), manager)
+    : Base(audioLabel(microphone), std::move(audioDevice), manager)
     , _microphone(microphone)
 {
 }

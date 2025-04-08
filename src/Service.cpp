@@ -26,6 +26,8 @@
 #ifdef WEBRTC_AVAILABLE
 #include "AdmProxyListener.h"
 #include "AdmProxyFacade.h"
+#include "MicAudioDevice.h"
+#include "CameraDeviceImpl.h"
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
 #include "Loggable.h"
@@ -56,12 +58,15 @@ class Service::Impl : public Bricks::LoggableS<AdmProxyListener>
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-         const MicrophoneOptions& microphoneOptions,
+         const AudioRecordingOptions& microphoneOptions,
          const std::shared_ptr<Bricks::Logger>& logger,
          bool logWebrtcEvents);
     ~Impl();
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
+    std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options) const;
+    std::shared_ptr<CameraDevice> createCamera(const MediaDeviceInfo& info,
+                                               const CameraOptions& options) const;
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
     bool setAudioRecordingDevice(const MediaDeviceInfo& info);
@@ -84,7 +89,7 @@ public:
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                                        const MicrophoneOptions& microphoneOptions,
+                                        const AudioRecordingOptions& microphoneOptions,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
     // overrides of AdmProxyListener
@@ -120,7 +125,7 @@ private:
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                 const MicrophoneOptions& microphoneOptions,
+                 const AudioRecordingOptions& microphoneOptions,
                  const std::shared_ptr<Bricks::Logger>& logger,
                  bool logWebrtcEvents)
     : _impl(Impl::create(websocketsFactory, microphoneOptions, logger, logWebrtcEvents))
@@ -159,6 +164,23 @@ std::unique_ptr<Session> Service::createSession(Options options) const
 {
     if (_impl) {
         return _impl->createSession(std::move(options));
+    }
+    return {};
+}
+
+std::shared_ptr<AudioDevice> Service::createMicrophone(const AudioRecordingOptions& options) const
+{
+    if (_impl) {
+        return _impl->createMicrophone(options);
+    }
+    return {};
+}
+
+std::shared_ptr<CameraDevice> Service::createCamera(const MediaDeviceInfo& info,
+                                                    const CameraOptions& options) const
+{
+    if (_impl) {
+        return _impl->createCamera(info, options);
     }
     return {};
 }
@@ -314,7 +336,7 @@ void Service::removeListener(ServiceListener* listener)
 }
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                    const MicrophoneOptions& microphoneOptions,
+                    const AudioRecordingOptions& microphoneOptions,
                     const std::shared_ptr<Bricks::Logger>& logger,
                     bool logWebrtcEvents)
     : Bricks::LoggableS<AdmProxyListener>(logger)
@@ -350,6 +372,23 @@ Service::Impl::~Impl()
         _pcf->registerAdmRecordingListener(this, false);
         _pcf->registerAdmPlayoutListener(this, false);
     }
+}
+
+std::shared_ptr<AudioDevice> Service::Impl::createMicrophone(const AudioRecordingOptions& options) const
+{
+    if (_pcf) {
+        return MicAudioDevice::create(_pcf.get(), options, logger());
+    }
+    return {};
+}
+
+std::shared_ptr<CameraDevice> Service::Impl::createCamera(const MediaDeviceInfo& info,
+                                                          const CameraOptions& options) const
+{
+    if (_pcf) {
+        return CameraDeviceImpl::create(_pcf.get(), info, options, logger());
+    }
+    return {};
 }
 
 MediaDeviceInfo Service::Impl::defaultAudioRecordingDevice() const
@@ -522,7 +561,7 @@ bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger
 
 std::unique_ptr<Service::Impl> Service::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-           const MicrophoneOptions& microphoneOptions,
+           const AudioRecordingOptions& microphoneOptions,
            const std::shared_ptr<Bricks::Logger>& logger,
            bool logWebrtcEvents)
 {
@@ -738,6 +777,10 @@ ServiceState Service::state() const
 }
 
 std::unique_ptr<Session> Service::createSession(Options options) const { return {}; }
+
+std::shared_ptr<AudioDevice> Service::createMicrophone(const AudioRecordingOptions&) const {}
+
+std::shared_ptr<CameraDevice> Service::createCamera(const MediaDeviceInfo&, const CameraOptions&) const {}
 
 MediaDeviceInfo Service::defaultAudioRecordingDevice() const { return {}; }
 

@@ -58,7 +58,7 @@ inline void postTask(const std::weak_ptr<webrtc::TaskQueueBase>& queue,
     postTask(queue.lock().get(), std::move(task));
 }
 
-template<class TListener, class Method, typename... Args>
+template <class TListener, class Method, typename... Args>
 inline void postOrInvoke(webrtc::TaskQueueBase* queue,
                          const std::shared_ptr<TListener>& listener,
                          bool forcePost, Method method, Args&&... args)
@@ -83,7 +83,7 @@ inline void postOrInvoke(webrtc::TaskQueueBase* queue,
     }
 }
 
-template<class TListener, class Method, typename... Args>
+template <class TListener, class Method, typename... Args>
 inline void postOrInvokeS(const std::shared_ptr<webrtc::TaskQueueBase>& queue,
                           const std::shared_ptr<TListener>& listener,
                           bool forcePost, Method method, Args&&... args)

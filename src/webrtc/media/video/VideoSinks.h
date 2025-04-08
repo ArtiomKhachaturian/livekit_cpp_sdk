@@ -13,14 +13,14 @@
 // limitations under the License.
 #pragma once // VideoSinks.h
 #include "Sinks.h"
-#include "media/VideoTrackSink.h"
+#include "media/VideoSink.h"
 #include <api/video/video_frame.h>
 #include <api/video/video_sink_interface.h>
 
 namespace LiveKitCpp
 {
 
-class VideoSinks : public Sinks<VideoTrackSink, rtc::VideoSinkInterface<webrtc::VideoFrame>>
+class VideoSinks : public Sinks<VideoSink, rtc::VideoSinkInterface<webrtc::VideoFrame>>
 {
 public:
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>

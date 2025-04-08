@@ -20,8 +20,10 @@ namespace LiveKitCpp
 
 AsyncMicSourceImpl::AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                        const std::shared_ptr<Bricks::Logger>& logger,
+                                       cricket::AudioOptions options,
                                        std::weak_ptr<AdmProxyFacade> admProxy)
     : AsyncAudioSourceImpl(std::move(signalingQueue), logger, false)
+    , _options(std::move(options))
     , _admProxy(std::move(admProxy))
 {
     if (const auto admp = adm()) {
@@ -55,14 +57,6 @@ void AsyncMicSourceImpl::removeSink(webrtc::AudioTrackSinkInterface* sink)
             admp->registerRecordingSink(sink, false);
         }
     }
-}
-
-cricket::AudioOptions AsyncMicSourceImpl::options() const
-{
-    if (const auto admp = adm()) {
-        return admp->options();
-    }
-    return {};
 }
 
 void AsyncMicSourceImpl::onMinMaxVolumeChanged(bool, uint32_t minVolume, uint32_t maxVolume)

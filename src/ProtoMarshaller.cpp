@@ -1569,13 +1569,13 @@ void ProtoMarshaller::rconv(const TCppRepeated& from, TProtoBufRepeated* to) con
     }
 }
 
-template<typename K, typename V>
+template <typename K, typename V>
 std::unordered_map<K, V> ProtoMarshaller::mconv(const google::protobuf::Map<K, V>& in) const
 {
     return fromProtoMap(in);
 }
 
-template<typename K, typename V>
+template <typename K, typename V>
 void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
                             google::protobuf::Map<K, V>* to) const
 {

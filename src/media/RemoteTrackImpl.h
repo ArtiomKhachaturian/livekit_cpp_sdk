@@ -25,7 +25,7 @@ namespace LiveKitCpp
 
 class Track;
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 class RemoteTrackImpl : public TBaseImpl
 {
     static_assert(std::is_base_of_v<Track, TBaseImpl>);
@@ -40,10 +40,10 @@ public:
     bool remote() const noexcept final { return true; }
     TrackSource source() const final { return _info._source; }
 protected:
-    template<class TWebRtcTrack>
+    template <class TMediaDevice>
     RemoteTrackImpl(const TrackInfo& info,
                     const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                    webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
+                    std::shared_ptr<TMediaDevice> mediaDevice,
                     TrackManager* manager);
     const auto& info() const noexcept { return _info; }
     void notifyAboutMuted(bool mute) const override;
@@ -52,19 +52,19 @@ private:
     const rtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;
 };
 
-template<class TBaseImpl>
-template<class TWebRtcTrack>
+template <class TBaseImpl>
+template <class TMediaDevice>
 inline RemoteTrackImpl<TBaseImpl>::RemoteTrackImpl(const TrackInfo& info,
                                                    const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                                                   webrtc::scoped_refptr<TWebRtcTrack> mediaTrack,
+                                                   std::shared_ptr<TMediaDevice> mediaDevice,
                                                    TrackManager* manager)
-    : TBaseImpl(std::move(mediaTrack), manager)
+    : TBaseImpl(std::move(mediaDevice), manager)
     , _info(info)
     , _receiver(receiver)
 {
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline void RemoteTrackImpl<TBaseImpl>::queryStats() const
 {
     if (const auto m = TBaseImpl::manager()) {
@@ -72,7 +72,7 @@ inline void RemoteTrackImpl<TBaseImpl>::queryStats() const
     }
 }
 
-template<class TBaseImpl>
+template <class TBaseImpl>
 inline void RemoteTrackImpl<TBaseImpl>::notifyAboutMuted(bool mute) const
 {
     TBaseImpl::notifyAboutMuted(mute);

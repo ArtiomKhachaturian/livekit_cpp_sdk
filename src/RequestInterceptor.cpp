@@ -32,7 +32,7 @@ private:
     const std::vector<uint8_t>& _data;
 };
 
-template<typename T>
+template <typename T>
 inline std::string requestTypeName() { static_assert(false, "type name not evaluated"); }
 
 }

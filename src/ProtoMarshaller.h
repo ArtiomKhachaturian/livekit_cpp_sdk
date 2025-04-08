@@ -176,15 +176,15 @@ protected:
     std::string_view logCategory() const final;
 private:
     // helpers
-    template<typename T>
+    template <typename T>
     const T& map(const T& in) const { return in; }
     template <typename TOut, typename TIn = TOut, class TProtoBufRepeated>
     std::vector<TOut> rconv(const TProtoBufRepeated& in) const;
     template <typename TCppRepeated, class TProtoBufRepeated>
     void rconv(const TCppRepeated& from, TProtoBufRepeated* to) const;
-    template<typename K, typename V>
+    template <typename K, typename V>
     std::unordered_map<K, V> mconv(const google::protobuf::Map<K, V>& in) const;
-    template<typename K, typename V>
+    template <typename K, typename V>
     void mconv(const std::unordered_map<K, V>& from, google::protobuf::Map<K, V>* to) const;
 };
 

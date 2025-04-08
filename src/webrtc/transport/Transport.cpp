@@ -25,7 +25,7 @@
 
 namespace {
 
-template<typename T>
+template <typename T>
 inline auto weak(const std::shared_ptr<T>& strong) {
     return std::weak_ptr<T>(strong);
 }
@@ -104,7 +104,7 @@ private:
     createPeerConnection(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                          const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                          webrtc::PeerConnectionObserver* observer) const;
-    template<typename TState>
+    template <typename TState>
     bool changeAndLogState(TState newState, std::atomic<TState>& val) const;
 private:
     const SignalTarget _target;
@@ -834,7 +834,7 @@ webrtc::scoped_refptr<webrtc::PeerConnectionInterface> Transport::Impl::
     return {};
 }
 
-template<typename TState>
+template <typename TState>
 bool Transport::Impl::changeAndLogState(TState newState, std::atomic<TState>& val) const
 {
     const TState oldState = val.exchange(newState);

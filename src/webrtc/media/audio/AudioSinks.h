@@ -13,13 +13,13 @@
 // limitations under the License.
 #pragma once // AudioSinks.h
 #include "Sinks.h"
-#include "media/AudioTrackSink.h"
+#include "media/AudioSink.h"
 #include <api/media_stream_interface.h>
 
 namespace LiveKitCpp
 {
 
-class AudioSinks : public Sinks<AudioTrackSink, webrtc::AudioTrackSinkInterface>
+class AudioSinks : public Sinks<AudioSink, webrtc::AudioTrackSinkInterface>
 {
 public:
     // impl. of webrtc::AudioTrackSinkInterface

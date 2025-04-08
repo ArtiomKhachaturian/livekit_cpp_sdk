@@ -36,7 +36,7 @@ class E2ESecurityFactory;
 
 class RemoteParticipantImpl : public RemoteParticipant
 {
-    template<class T> using Tracks = std::vector<std::shared_ptr<T>>;
+    template <class T> using Tracks = std::vector<std::shared_ptr<T>>;
     using AudioTracks = Tracks<RemoteAudioTrackImpl>;
     using VideoTracks = Tracks<RemoteVideoTrackImpl>;
     class ListenerImpl;
@@ -70,17 +70,17 @@ public:
     std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const final;
 private:
     const TrackInfo* findBySid(const std::string& sid) const;
-    template<class TTrack>
+    template <class TTrack>
     bool addTrack(const std::string& sid,
                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                   Bricks::SafeObj<Tracks<TTrack>>& collection) const;
-    template<class TTrack>
+    template <class TTrack>
     bool removeTrack(const std::string& sid, Bricks::SafeObj<Tracks<TTrack>>& collection) const;
-    template<class TTrack>
+    template <class TTrack>
     void clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     bool attachCryptor(EncryptionType encryption,
                        const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const;
-    template<class TTrack>
+    template <class TTrack>
     static std::optional<size_t> findBySid(const std::string& sid,
                                            const Tracks<TTrack>& collection);
 private:

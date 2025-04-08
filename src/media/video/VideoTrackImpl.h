@@ -14,64 +14,48 @@
 #pragma once // VideoTrackImpl.h
 #ifdef WEBRTC_AVAILABLE
 #include "TrackImpl.h"
-#include "VideoSinks.h"
+#include "VideoDeviceImpl.h"
 #include "media/VideoTrack.h"
 #include <type_traits>
 
 namespace LiveKitCpp
 {
 
-template<class TTrackApi = VideoTrack, class TWebRtcTrack = webrtc::VideoTrackInterface>
-class VideoTrackImpl : public TrackImpl<TWebRtcTrack, TTrackApi>
+template <class TMediaDevice = VideoDeviceImpl, class TTrackApi = VideoTrack>
+class VideoTrackImpl : public TrackImpl<TMediaDevice, TTrackApi>
 {
     static_assert(std::is_base_of_v<VideoTrack, TTrackApi>);
-    static_assert(std::is_base_of_v<webrtc::VideoTrackInterface, TWebRtcTrack>);
-    using Base = TrackImpl<TWebRtcTrack, TTrackApi>;
+    static_assert(std::is_base_of_v<VideoDevice, TMediaDevice>);
+    using Base = TrackImpl<TMediaDevice, TTrackApi>;
 public:
-    ~VideoTrackImpl() override;
+    ~VideoTrackImpl() override = default;
     // impl. of VideoTrack
-    void addSink(VideoTrackSink* sink) final;
-    void removeSink(VideoTrackSink* sink) final;
+    void addSink(VideoSink* sink) final;
+    void removeSink(VideoSink* sink) final;
 protected:
-    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack, TrackManager* manager);
-private:
-    VideoSinks _sinks;
+    VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager);
 };
 
-template<class TTrackApi, class TWebRtcTrack>
-inline VideoTrackImpl<TTrackApi, TWebRtcTrack>::
-    VideoTrackImpl(webrtc::scoped_refptr<TWebRtcTrack> videoTrack, TrackManager* manager)
-    : Base(std::move(videoTrack), manager)
+template <class TMediaDevice, class TTrackApi>
+inline VideoTrackImpl<TMediaDevice, TTrackApi>::
+    VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager)
+        : Base(std::move(mediaDevice), manager)
 {
 }
 
-template<class TTrackApi, class TWebRtcTrack>
-inline VideoTrackImpl<TTrackApi, TWebRtcTrack>::~VideoTrackImpl()
+template <class TMediaDevice, class TTrackApi>
+inline void VideoTrackImpl<TMediaDevice, TTrackApi>::addSink(VideoSink* sink)
 {
-    if (_sinks.clear()) {
-        if (const auto& t = Base::mediaTrack()) {
-            t->RemoveSink(&_sinks);
-        }
+    if (const auto& md = Base::mediaDevice()) {
+        md->addSink(sink);
     }
 }
 
-template<class TTrackApi, class TWebRtcTrack>
-inline void VideoTrackImpl<TTrackApi, TWebRtcTrack>::addSink(VideoTrackSink* sink)
+template <class TMediaDevice, class TTrackApi>
+inline void VideoTrackImpl<TMediaDevice, TTrackApi>::removeSink(VideoSink* sink)
 {
-    if (Bricks::AddResult::OkFirst == _sinks.add(sink)) {
-        if (const auto& t = Base::mediaTrack()) {
-            t->AddOrUpdateSink(&_sinks, {});
-        }
-    }
-}
-
-template<class TTrackApi, class TWebRtcTrack>
-inline void VideoTrackImpl<TTrackApi, TWebRtcTrack>::removeSink(VideoTrackSink* sink)
-{
-    if (Bricks::RemoveResult::OkLast == _sinks.remove(sink)) {
-        if (const auto& t = Base::mediaTrack()) {
-            t->RemoveSink(&_sinks);
-        }
+    if (const auto& md = Base::mediaDevice()) {
+        md->removeSink(sink);
     }
 }
 

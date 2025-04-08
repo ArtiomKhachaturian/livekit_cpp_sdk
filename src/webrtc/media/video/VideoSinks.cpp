@@ -21,7 +21,7 @@ void VideoSinks::OnFrame(const webrtc::VideoFrame& rtcFrame)
 {
     if (!empty()) {
         if (const auto frame = VideoFrameImpl::create(rtcFrame)) {
-            invoke(&VideoTrackSink::onFrame, frame);
+            invoke(&VideoSink::onFrame, frame);
         }
     }
 }

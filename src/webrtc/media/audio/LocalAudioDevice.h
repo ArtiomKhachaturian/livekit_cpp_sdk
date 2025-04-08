@@ -22,17 +22,17 @@ namespace LiveKitCpp
 
 class LocalAudioSource;
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 class LocalAudioDevice : public webrtc::AudioTrackInterface
 {
     using Source = AsyncAudioSource<TAsyncImpl>;
 public:
-    template<typename... Args>
+    template <typename... Args>
     LocalAudioDevice(const std::string& id,
                      std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                      const std::shared_ptr<Bricks::Logger>& logger,
                      Args&&... args);
-    template<typename... Args>
+    template <typename... Args>
     static webrtc::scoped_refptr<webrtc::AudioTrackInterface>
         create(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                const std::shared_ptr<Bricks::Logger>& logger,
@@ -56,8 +56,8 @@ private:
     const webrtc::scoped_refptr<Source> _source;
 };
 
-template<class TAsyncImpl>
-template<typename... Args>
+template <class TAsyncImpl>
+template <typename... Args>
 inline LocalAudioDevice<TAsyncImpl>::LocalAudioDevice(const std::string& id,
                                                       std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                                       const std::shared_ptr<Bricks::Logger>& logger,
@@ -69,8 +69,8 @@ inline LocalAudioDevice<TAsyncImpl>::LocalAudioDevice(const std::string& id,
 {
 }
 
-template<class TAsyncImpl>
-template<typename... Args>
+template <class TAsyncImpl>
+template <typename... Args>
 inline webrtc::scoped_refptr<webrtc::AudioTrackInterface>
     LocalAudioDevice<TAsyncImpl>::create(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                          const std::shared_ptr<Bricks::Logger>& logger,
@@ -83,25 +83,25 @@ inline webrtc::scoped_refptr<webrtc::AudioTrackInterface>
                                           std::forward<Args>(args)...);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 void LocalAudioDevice<TAsyncImpl>::AddSink(webrtc::AudioTrackSinkInterface* sink)
 {
     _source->AddSink(sink);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 void LocalAudioDevice<TAsyncImpl>::RemoveSink(webrtc::AudioTrackSinkInterface* sink)
 {
     _source->RemoveSink(sink);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 bool LocalAudioDevice<TAsyncImpl>::GetSignalLevel(int* level)
 {
     return level && _source->signalLevel(*level);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 webrtc::MediaStreamTrackInterface::TrackState LocalAudioDevice<TAsyncImpl>::state() const
 {
     switch (_source->state()) {
@@ -113,13 +113,13 @@ webrtc::MediaStreamTrackInterface::TrackState LocalAudioDevice<TAsyncImpl>::stat
     return webrtc::MediaStreamTrackInterface::TrackState::kLive;
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 void LocalAudioDevice<TAsyncImpl>::RegisterObserver(webrtc::ObserverInterface* observer)
 {
     _source->RegisterObserver(observer);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 void LocalAudioDevice<TAsyncImpl>::UnregisterObserver(webrtc::ObserverInterface* observer)
 {
     _source->UnregisterObserver(observer);

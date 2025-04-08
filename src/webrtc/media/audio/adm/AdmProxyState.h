@@ -53,9 +53,9 @@ public:
     uint32_t maxVolume() const;
     uint32_t volume() const noexcept { return _volume; }
 private:
-    template<class Method, typename... Args>
+    template <class Method, typename... Args>
     void invoke(Method method, Args&&... args) const;
-    template<typename T, class Getter>
+    template <typename T, class Getter>
     static std::optional<T> admProperty(const AdmPtr& adm, const Getter& getter);
 private:
     const bool _recording;

@@ -19,7 +19,7 @@
 namespace LiveKitCpp
 {
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 class StatsSentRtpStreamImpl : public StatsRtpStreamImpl<TRtcStats, TBaseInterface>
 {
     static_assert(std::is_base_of_v<webrtc::RTCSentRtpStreamStats, TRtcStats>);
@@ -33,7 +33,7 @@ public:
     std::optional<uint64_t> bytesSent() const final;
 };
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline StatsSentRtpStreamImpl<TRtcStats, TBaseInterface>::
     StatsSentRtpStreamImpl(const TRtcStats* stats,
                            const std::shared_ptr<const StatsReportData>& data)
@@ -41,7 +41,7 @@ inline StatsSentRtpStreamImpl<TRtcStats, TBaseInterface>::
 {
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<uint64_t> StatsSentRtpStreamImpl<TRtcStats, TBaseInterface>::
     packetsSent() const
 {
@@ -51,7 +51,7 @@ inline std::optional<uint64_t> StatsSentRtpStreamImpl<TRtcStats, TBaseInterface>
     return {};
 }
 
-template<class TRtcStats, class TBaseInterface>
+template <class TRtcStats, class TBaseInterface>
 inline std::optional<uint64_t> StatsSentRtpStreamImpl<TRtcStats, TBaseInterface>::
     bytesSent() const
 {

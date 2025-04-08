@@ -20,7 +20,7 @@
 #include "AdmProxyFacade.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
-#include "media/MicrophoneOptions.h"
+#include "media/AudioRecordingOptions.h"
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
 #include <api/audio_codecs/builtin_audio_encoder_factory.h>
@@ -64,7 +64,7 @@ inline std::shared_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
     return nullptr;
 }
 
-inline cricket::AudioOptions toCricketOptions(const LiveKitCpp::MicrophoneOptions& options)
+inline cricket::AudioOptions toCricketOptions(const LiveKitCpp::AudioRecordingOptions& options)
 {
     cricket::AudioOptions audioOptions;
     audioOptions.echo_cancellation = options._echoCancellation;
@@ -126,7 +126,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              std::shared_ptr<rtc::Thread> signalingThread,
                                              webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
                                              webrtc::scoped_refptr<AdmProxy> admProxy,
-                                             const MicrophoneOptions& microphoneOptions)
+                                             const AudioRecordingOptions& microphoneOptions)
     : _eventsQueue(createTaskQueueS("events_queue"))
     , _webrtcLogSink(std::move(webrtcLogSink))
     , _networkThread(std::move(networkThread))
@@ -155,7 +155,7 @@ PeerConnectionFactory::~PeerConnectionFactory()
 }
 
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
-    create(bool audioProcessing, const MicrophoneOptions& microphoneOptions,
+    create(bool audioProcessing, const AudioRecordingOptions& microphoneOptions,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
     //create threads for peer connection factory

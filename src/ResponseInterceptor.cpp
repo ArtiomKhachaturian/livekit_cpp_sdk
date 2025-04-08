@@ -25,7 +25,7 @@ inline std::string formatVerboseMsg(const std::string& typeName) {
     return {};
 }
 
-template<typename T>
+template <typename T>
 inline std::string formatVerboseMsg() {
     return formatVerboseMsg(LiveKitCpp::marshalledTypeName<T>());
 }

@@ -16,8 +16,10 @@
 #include "Session.h"
 #include "ServiceState.h"
 #include "Options.h"
+#include "media/AudioDevice.h"
+#include "media/CameraDevice.h"
 #include "media/CameraOptions.h"
-#include "media/MicrophoneOptions.h"
+#include "media/AudioRecordingOptions.h"
 #include "media/MediaAuthorizationLevel.h"
 #include "media/MediaDeviceInfo.h"
 #include <memory>
@@ -42,7 +44,7 @@ class LIVEKIT_CLIENT_API Service
     class Impl;
 public:
     Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-            const MicrophoneOptions& microphoneOptions,
+            const AudioRecordingOptions& microphoneOptions,
             const std::shared_ptr<Bricks::Logger>& logger = {},
             bool logWebrtcEvents = false);
     Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -51,7 +53,11 @@ public:
     ~Service();
     ServiceState state() const;
     std::unique_ptr<Session> createSession(Options options = {}) const;
-    // media
+    // local media
+    std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options = {}) const;
+    std::shared_ptr<CameraDevice> createCamera(const MediaDeviceInfo& info = {},
+                                               const CameraOptions& options = {}) const;
+    // global media
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
     // device for input from micrpohone

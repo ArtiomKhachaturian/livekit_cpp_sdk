@@ -17,7 +17,7 @@
 namespace LiveKitCpp
 {
 
-template<class TObserveInterface>
+template <class TObserveInterface>
 void SetSdpObserver<TObserveInterface>::process(webrtc::RTCError error) const
 {
     if (error.ok()) {

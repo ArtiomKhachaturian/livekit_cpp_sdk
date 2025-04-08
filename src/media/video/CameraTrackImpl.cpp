@@ -18,9 +18,9 @@
 namespace LiveKitCpp
 {
 
-CameraTrackImpl::CameraTrackImpl(webrtc::scoped_refptr<CameraDevice> cameraTrack,
+CameraTrackImpl::CameraTrackImpl(std::shared_ptr<CameraDeviceImpl> cameraDevice,
                                  TrackManager* manager)
-    : Base("camera", std::move(cameraTrack), manager)
+    : Base("camera", std::move(cameraDevice), manager)
 {
 }
 
@@ -31,30 +31,30 @@ CameraTrackImpl::~CameraTrackImpl()
 
 void CameraTrackImpl::setDeviceInfo(const MediaDeviceInfo& info)
 {
-    if (const auto& track = mediaTrack()) {
-        track->setDeviceInfo(info);
+    if (const auto t = track()) {
+        t->setDeviceInfo(info);
     }
 }
 
 MediaDeviceInfo CameraTrackImpl::deviceInfo() const
 {
-    if (const auto& track = mediaTrack()) {
-        return track->deviceInfo();
+    if (const auto t = track()) {
+        return t->deviceInfo();
     }
     return {};
 }
 
 void CameraTrackImpl::setOptions(const CameraOptions& options)
 {
-    if (const auto& track = mediaTrack()) {
-        track->setCapability(map(options));
+    if (const auto t = track()) {
+        t->setCapability(map(options));
     }
 }
 
 CameraOptions CameraTrackImpl::options() const
 {
-    if (const auto& track = mediaTrack()) {
-        return map(track->capability());
+    if (const auto t = track()) {
+        return map(t->capability());
     }
     return {};
 }
@@ -62,8 +62,8 @@ CameraOptions CameraTrackImpl::options() const
 void CameraTrackImpl::close()
 {
     Base::close();
-    if (const auto& track = mediaTrack()) {
-        track->close();
+    if (const auto t = track()) {
+        t->close();
     }
 }
 
@@ -75,6 +75,14 @@ bool CameraTrackImpl::fillRequest(AddTrackRequest* request) const
         return true;
     }
     return false;
+}
+
+webrtc::scoped_refptr<LocalCamera> CameraTrackImpl::track() const
+{
+    if (const auto& md = mediaDevice()) {
+        return md->track();
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp

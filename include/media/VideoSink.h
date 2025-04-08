@@ -19,12 +19,12 @@ namespace LiveKitCpp
 
 class VideoFrame;
 
-class VideoTrackSink
+class VideoSink
 {
 public:
     virtual void onFrame(const std::shared_ptr<VideoFrame>& frame) = 0;
 protected:
-    virtual ~VideoTrackSink() = default;
+    virtual ~VideoSink() = default;
 };
 
 } // namespace LiveKitCpp

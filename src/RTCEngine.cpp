@@ -135,9 +135,9 @@ void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCal
     }
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalMicrophoneTrack()
+std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalAudioTrack(std::shared_ptr<AudioDevice> device)
 {
-    auto track = RTCMediaEngine::addLocalMicrophoneTrack();
+    auto track = RTCMediaEngine::addLocalAudioTrack(std::move(device));
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());
@@ -146,10 +146,9 @@ std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalMicrophoneTrack()
     return track;
 }
 
-std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(const MediaDeviceInfo& info,
-                                                                const CameraOptions& options)
+std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(std::shared_ptr<CameraDevice> device)
 {
-    auto track = RTCMediaEngine::addLocalCameraTrack(info, options);
+    auto track = RTCMediaEngine::addLocalCameraTrack(std::move(device));
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());

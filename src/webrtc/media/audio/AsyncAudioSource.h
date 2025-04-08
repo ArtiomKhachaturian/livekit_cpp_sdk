@@ -18,13 +18,13 @@
 namespace LiveKitCpp
 {
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 class AsyncAudioSource : public AsyncMediaSource<webrtc::AudioSourceInterface, TAsyncImpl>
 {
     static_assert(std::is_base_of_v<AsyncAudioSourceImpl, TAsyncImpl>);
     using Base = AsyncMediaSource<webrtc::AudioSourceInterface, TAsyncImpl>;
 public:
-    template<typename... Args>
+    template <typename... Args>
     AsyncAudioSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                      const std::shared_ptr<Bricks::Logger>& logger,
                      Args&&... args);
@@ -38,8 +38,8 @@ public:
     const cricket::AudioOptions options() const final;
 };
 
-template<class TAsyncImpl>
-template<typename... Args>
+template <class TAsyncImpl>
+template <typename... Args>
 inline AsyncAudioSource<TAsyncImpl>::AsyncAudioSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                                       const std::shared_ptr<Bricks::Logger>& logger,
                                                       Args&&... args)
@@ -47,45 +47,45 @@ inline AsyncAudioSource<TAsyncImpl>::AsyncAudioSource(std::weak_ptr<webrtc::Task
 {
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 bool AsyncAudioSource<TAsyncImpl>::signalLevel(int& level) const
 {
     return Base::_impl->signalLevel(level);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 void AsyncAudioSource<TAsyncImpl>::SetVolume(double volume)
 {
     Base::postToImpl(&AsyncAudioSourceImpl::setVolume, volume);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::
     RegisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer)
 {
     Base::_impl->addAudioObserver(observer);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::
     UnregisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer)
 {
     Base::_impl->removeAudioObserver(observer);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::AddSink(webrtc::AudioTrackSinkInterface*  sink)
 {
     Base::_impl->addSink(sink);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::RemoveSink(webrtc::AudioTrackSinkInterface* sink)
 {
     Base::_impl->removeSink(sink);
 }
 
-template<class TAsyncImpl>
+template <class TAsyncImpl>
 inline const cricket::AudioOptions AsyncAudioSource<TAsyncImpl>::options() const
 {
     return Base::_impl->options();

@@ -26,7 +26,7 @@ class RemoteAudioTrackImpl : public RemoteTrackImpl<AudioTrackImpl<RemoteAudioTr
 public:
     RemoteAudioTrackImpl(const TrackInfo& info,
                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                         webrtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack,
+                         std::shared_ptr<AudioDeviceImpl> audioDevice,
                          TrackManager* manager);
     // impl. of RemoteAudioTrack
     std::string sid() const final { return info()._sid; }

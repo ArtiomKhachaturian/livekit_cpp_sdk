@@ -32,13 +32,13 @@ struct VisitIsMap
     template <typename T>
     bool operator()(const std::optional<std::map<std::string, T>>*) const { return true; }
     // Any other type is not.
-    template<typename T>
+    template <typename T>
     bool operator()(const std::optional<T>*) const { return false; }
 };
 
 struct VisitToString
 {
-    template<typename T>
+    template <typename T>
     std::string operator()(const std::optional<T>* attr) const;
 private:
     static const std::string& toString(const std::string& s) { return s; }
@@ -48,9 +48,9 @@ private:
     static std::string toString(int64_t v) { return std::to_string(v); }
     static std::string toString(uint64_t v) { return std::to_string(v); }
     static std::string toString(double v) { return std::to_string(v); }
-    template<typename T>
+    template <typename T>
     static std::string toString(const std::vector<T>& v);
-    template<typename T>
+    template <typename T>
     static std::string toString(const std::map<std::string, T>& v);
     static std::string join(const std::vector<std::string>& strings);
 };
@@ -112,7 +112,7 @@ bool StatsAttribute::operator != (const StatsAttribute& other) const
 namespace
 {
 
-template<typename T>
+template <typename T>
 std::string VisitToString::operator()(const std::optional<T>* attr) const
 {
     if (attr && attr->has_value()) {
@@ -121,7 +121,7 @@ std::string VisitToString::operator()(const std::optional<T>* attr) const
     return {};
 }
 
-template<typename T>
+template <typename T>
 std::string VisitToString::toString(const std::vector<T>& v)
 {
     if (const auto s = v.size()) {
@@ -135,7 +135,7 @@ std::string VisitToString::toString(const std::vector<T>& v)
     return {};
 }
 
-template<typename T>
+template <typename T>
 std::string VisitToString::toString(const std::map<std::string, T>& v)
 {
     if (const auto s = v.size()) {

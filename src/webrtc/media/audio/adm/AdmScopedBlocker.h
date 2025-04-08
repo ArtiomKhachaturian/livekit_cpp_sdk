@@ -18,7 +18,7 @@
 namespace LiveKitCpp
 {
 
-template<bool recording>
+template <bool recording>
 class AdmScopedBlocker
 {
 public:
@@ -29,7 +29,7 @@ private:
     bool _needRestart = false;
 };
 
-template<bool recording>
+template <bool recording>
 inline AdmScopedBlocker<recording>::AdmScopedBlocker(const AdmPtr& adm)
     : _adm(adm)
 {
@@ -57,7 +57,7 @@ inline AdmScopedBlocker<recording>::AdmScopedBlocker(const AdmPtr& adm)
     }
 }
 
-template<bool recording>
+template <bool recording>
 inline AdmScopedBlocker<recording>::~AdmScopedBlocker()
 {
     if (_needRestart) {
