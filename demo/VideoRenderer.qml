@@ -3,22 +3,13 @@ import QtMultimedia
 
 Item {
     id: root
-    property VideoSinkWrapper track: null
+    property VideoSinkWrapper source: null
     property bool muted: false
-
-    function takeTrack() {
-        var oldTrack = track
-        if (oldTrack) {
-            oldTrack.videoOutput = null
-        }
-        renderer.cachedTrack = track = null
-        return oldTrack
-    }
 
     VideoOutput {
         id: renderer
         anchors.fill: parent
-        property VideoSinkWrapper cachedTrack: null
+        property VideoSinkWrapper source: null
         VideoDiagnosticsView {
             id: fpsArea
             x: parent.contentRect.right - 4 - width
@@ -27,43 +18,43 @@ Item {
         }
     }
 
-    onTrackChanged: {
-        if (renderer.cachedTrack !== null) {
-            renderer.cachedTrack.videoOutput = null
-            renderer.cachedTrack = null
+    onSourceChanged: {
+        if (renderer.source !== null) {
+            renderer.source.videoOutput = null
+            renderer.source = null
         }
-        if (track !== null) {
-            track.muted = muted
-            track.videoOutput = renderer.videoSink
+        if (source !== null) {
+            source.muted = muted
+            source.videoOutput = renderer.videoSink
             fpsArea.fps = Qt.binding(function() {
-                if (track !== null) {
-                    return track.fps
+                if (source !== null) {
+                    return source.fps
                 }
                 return 0
             })
             fpsArea.frameSize = Qt.binding(function() {
-                if (track !== null) {
-                    return track.frameSize
+                if (source !== null) {
+                    return source.frameSize
                 }
                 return Qt.size(0, 0)
             })
             fpsArea.visible = Qt.binding(function() {
-                if (track !== null) {
-                    if (!track.muted) {
-                        var size = track.frameSize
-                        var fps = track.fps
+                if (source !== null) {
+                    if (!source.muted) {
+                        var size = source.frameSize
+                        var fps = source.fps
                         return (size.width > 0 && size.height > 0) || fps > 0
                     }
                 }
                 return false
             })
-            renderer.cachedTrack = track
+            renderer.source = source
         }
     }
 
     onMutedChanged: {
-        if (track !== null) {
-            track.muted = muted
+        if (source !== null) {
+            source.muted = muted
         }
     }
 }

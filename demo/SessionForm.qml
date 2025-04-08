@@ -1,12 +1,19 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtMultimedia
 
 Frame {
     id: root
 
     property SessionWrapper session: null
+    property bool activeCamera: false
+    property bool activeMicrophone: false
+    property alias camerDeviceInfo: localMediaView.cameraDeviceInfo
+    property alias cameraOptions: localMediaView.cameraOptions
+    property alias cameraMuted: localMediaView.cameraMuted
+    property alias microphoneMuted: localMediaView.microphoneMuted
+    property alias hasMicrophoneTrack: localMediaView.hasMicrophoneTrack
+    property alias hasCameraTrack: localMediaView.hasCameraTrack
     readonly property bool connecting: session !== null && session.connecting
     readonly property int state: {
         if (session === null) {
@@ -21,100 +28,7 @@ Frame {
 
     ColumnLayout {
         anchors.fill: parent
-        ToolBar {
-            Layout.fillWidth: true
-            RowLayout {
-                anchors.fill: parent
-                Switch {
-                    id: micAdded
-                    text: qsTr("Microphone")
-                    checked: false
-                    enabled: session != null
-                    onCheckedChanged: {
-                        localMediaView.microphoneAdded = checked
-                    }
-                }
-                CheckBox {
-                    id: micMuted
-                    text: qsTr("Muted")
-                    enabled: localMediaView.microphoneAdded
-                    checked: false
-                    onCheckedChanged: {
-                        localMediaView.microphoneMuted = checked
-                    }
-                }
 
-                ToolSeparator {}
-
-                Switch {
-                    id: cameraAdded
-                    text: qsTr("Camera")
-                    enabled: session != null
-                    checked: false
-                    onCheckedChanged: {
-                        localMediaView.cameraAdded = checked
-                    }
-                }
-                CheckBox {
-                    id: cameraMuted
-                    text: qsTr("Muted")
-                    enabled: localMediaView.cameraAdded
-                    checked: false
-                    onCheckedChanged: {
-                        localMediaView.cameraMuted = checked
-                    }
-                }
-                ComboBox {
-                    id: cameraModelComboBox
-                    model: app.camerasModel
-                    textRole: "display"
-                    Layout.horizontalStretchFactor: 2
-                    Layout.fillWidth: true
-                    indicator.visible: count > 1
-                    flat: count <= 1
-                    enabled: indicator.visible
-                    readonly property var deviceInfo: {
-                        return model.itemAt(currentIndex)
-                    }
-                }
-
-                ComboBox {
-                    id: cameraOptionsComboBox
-                    textRole: "display"
-                    Layout.horizontalStretchFactor: 1
-                    Layout.fillWidth: true
-                    model: cameraOptionsModel
-                    readonly property var cameraOptions: {
-                        return model.itemAt(currentIndex)
-                    }
-
-                    Component.onCompleted: {
-                        currentIndex = model.defaultOptionsIndex()
-                    }
-
-                    CameraOptionsModel {
-                        id: cameraOptionsModel
-                        deviceInfo: cameraModelComboBox.deviceInfo
-                        onDeviceInfoChanged: {
-                            cameraOptionsComboBox.currentIndex = defaultOptionsIndex()
-                        }
-                    }
-                }
-
-                ToolButton {
-                    Layout.alignment: Qt.AlignRight
-                    id: chatButton
-                    text: qsTr("Chat")
-                    checkable: true
-                    checked: false
-                }
-                ToolButton {
-                    Layout.alignment: Qt.AlignRight
-                    icon.name: "network-offline"
-                    onClicked: disconnect()
-                }
-            }
-        }
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -123,8 +37,10 @@ Frame {
                 Layout.fillHeight: true
                 LocalMediaView {
                     id: localMediaView
-                    cameraDeviceInfo: cameraModelComboBox.deviceInfo
-                    cameraOptions: cameraOptionsComboBox.cameraOptions
+                    cameraAdded: activeCamera
+                    microphoneAdded: activeMicrophone
+                    //cameraDeviceInfo: cameraModelComboBox.deviceInfo
+                    //cameraOptions: cameraOptionsComboBox.cameraOptions
                     anchors.fill: parent
                 }
             }
@@ -152,13 +68,6 @@ Frame {
         }
         else {
             error(qsTr("Failed to create session"), "")
-        }
-    }
-
-    function disconnect() {
-        if (session != null) {
-            session.disconnectFromSfu()
-            session = null
         }
     }
 

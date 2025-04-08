@@ -10,6 +10,8 @@ Item {
     property alias cameraDeviceInfo: localCameraView.deviceInfo
     property alias cameraOptions: localCameraView.options
     property alias cameraMuted: localCameraView.muted
+    readonly property bool hasMicrophoneTrack: cachedObjects.micTrack !== null
+    readonly property bool hasCameraTrack: localCameraView.track !== null
 
     CameraRenderer {
         id: localCameraView
