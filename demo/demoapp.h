@@ -2,6 +2,11 @@
 #define DEMOAPP_H
 #include "safeobj.h"
 #include "mediadevicesmodel.h"
+#include "audiotrackwrapper.h"
+#include "cameratrackwrapper.h"
+#include "audiodevicewrapper.h"
+#include "cameradevicewrapper.h"
+#include "cameraoptions.h"
 #include <ServiceListener.h>
 #include <QGuiApplication>
 #include <QScopedPointer>
@@ -46,6 +51,9 @@ public slots:
     Q_INVOKABLE void setRecordingAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE SessionWrapper* createSession(QObject* parent) const;
+    Q_INVOKABLE AudioDeviceWrapper* createMicrophone();
+    Q_INVOKABLE CameraDeviceWrapper* createCamera(const MediaDeviceInfo& info = {},
+                                                  const CameraOptions& options = {});
 public:
     Q_INVOKABLE bool isValid() const;
     Q_INVOKABLE bool audioRecordingEnabled() const;

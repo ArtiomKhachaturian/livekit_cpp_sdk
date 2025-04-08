@@ -1,31 +1,26 @@
-#ifndef VIDEOTRACKWRAPPER_H
-#define VIDEOTRACKWRAPPER_H
-#include "trackwrapper.h"
+#ifndef VIDEOSINKWRAPPER_H
+#define VIDEOSINKWRAPPER_H
 #include "safeobj.h"
+#include <QObject>
+#include <QQmlEngine>
 #include <QBasicTimer>
-#include <media/VideoTrackSink.h>
+#include <media/VideoSink.h>
 #include <QPointer>
 #include <QReadWriteLock>
 #include <QSize>
 #include <QVideoSink>
 #include <atomic>
 
-namespace LiveKitCpp {
-class VideoTrack;
-}
-
-class VideoTrackWrapper : public TrackWrapper, private LiveKitCpp::VideoTrackSink
+class VideoSinkWrapper : public QObject, protected LiveKitCpp::VideoSink
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(VideoTrackWrapper)
+    QML_NAMED_ELEMENT(VideoSinkWrapper)
     Q_PROPERTY(QVideoSink* videoOutput READ videoOutput WRITE setVideoOutput NOTIFY videoOutputChanged FINAL)
     Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
     Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)
 public:
-    VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrack>& impl = {},
-                      QObject *parent = nullptr);
-    ~VideoTrackWrapper() override;
-    std::shared_ptr<LiveKitCpp::VideoTrack> track() const noexcept { return _impl.lock(); }
+    explicit VideoSinkWrapper(QObject *parent = nullptr);
+    ~VideoSinkWrapper() override;
     Q_INVOKABLE QVideoSink* videoOutput() const;
     Q_INVOKABLE quint16 fps() const noexcept { return _fps; }
     Q_INVOKABLE QSize frameSize() const { return _frameSize; }
@@ -36,21 +31,22 @@ signals:
     void fpsChanged();
     void frameSizeChanged();
 protected:
-    void timerEvent(QTimerEvent* e) override;
-private slots:
-    void onMuteChanged();
-private:
     void startMetricsCollection();
     void stopMetricsCollection();
+    bool isMetricsCollectionStarted() const { return _fpsTimer.isActive(); }
+    bool hasOutput() const;
+    virtual bool hasVideoInput() const { return true; }
+    virtual bool isMuted() const { return false; }
+    virtual void subsribe(bool /*subscribe*/) {}
+    void timerEvent(QTimerEvent* e) override;
+private:
     void setFps(quint16 fps);
     void setFrameSize(QSize frameSize, bool updateFps = true);
     void setFrameSize(int width, int height, bool updateFps = true);
-    bool hasOutput() const;
-    // impl. of LiveKitCpp::VideoTrackSink
+    // impl. of LiveKitCpp::VideoSink
     void onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame) final;
 private:
     static constexpr QSize _nullSize = {0, 0};
-    const std::weak_ptr<LiveKitCpp::VideoTrack> _impl;
     QBasicTimer _fpsTimer;
     mutable QReadWriteLock _outputLock;
     QPointer<QVideoSink> _output;
@@ -59,6 +55,6 @@ private:
     SafeObj<QSize> _frameSize;
 };
 
-Q_DECLARE_METATYPE(VideoTrackWrapper*)
+Q_DECLARE_METATYPE(VideoSinkWrapper*)
 
-#endif // VIDEOTRACKWRAPPER_H
+#endif // VIDEOSINKWRAPPER_H

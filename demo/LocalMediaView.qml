@@ -30,7 +30,7 @@ Item {
     onSessionChanged: {
         if (cachedObjects.cachedSession !== null) {
             cachedObjects.cachedSession.removeMicrophoneTrack(cachedObjects.micTrack)
-            cachedObjects.cachedSession.removeVideoTrack(localCameraView.takeTrack())
+            cachedObjects.cachedSession.removeCameraTrack(localCameraView.takeTrack())
             cachedObjects.micTrack = null
             cachedObjects.cachedSession = null
         }
@@ -61,7 +61,7 @@ Item {
             }
             else {
                 if (localCameraView.track !== null) {
-                    session.removeVideoTrack(localCameraView.takeTrack())
+                    session.removeCameraTrack(localCameraView.takeTrack())
                 }
             }
         }

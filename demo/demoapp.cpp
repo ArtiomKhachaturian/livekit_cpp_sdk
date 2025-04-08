@@ -133,6 +133,27 @@ SessionWrapper* DemoApp::createSession(QObject* parent) const
     return wrapper;
 }
 
+AudioDeviceWrapper* DemoApp::createMicrophone()
+{
+    if (_service) {
+        if (auto device = _service->createMicrophone()) {
+            return new AudioDeviceWrapper(std::move(device), this);
+        }
+    }
+    return nullptr;
+}
+
+CameraDeviceWrapper* DemoApp::createCamera(const MediaDeviceInfo& info,
+                                           const CameraOptions& options)
+{
+    if (_service) {
+        if (auto device = _service->createCamera(info, options)) {
+            return new CameraDeviceWrapper(std::move(device), this);
+        }
+    }
+    return nullptr;
+}
+
 bool DemoApp::isValid() const
 {
     return nullptr != _service;

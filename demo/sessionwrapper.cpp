@@ -1,6 +1,19 @@
 #include "sessionwrapper.h"
+#include "demoapp.h"
+#include <Service.h>
 
-SessionWrapper::SessionWrapper(std::unique_ptr<LiveKitCpp::Session> impl, QObject *parent)
+namespace
+{
+
+inline DemoApp* appInstance()
+{
+    return qobject_cast<DemoApp*>(QCoreApplication::instance());
+}
+
+}
+
+SessionWrapper::SessionWrapper(std::unique_ptr<LiveKitCpp::Session> impl,
+                               QObject *parent)
     : QObject{parent}
     , _impl(std::move(impl))
 {
@@ -22,25 +35,49 @@ bool SessionWrapper::connectToSfu(const QString& url, const QString& token)
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
-AudioTrackWrapper* SessionWrapper::addMicrophoneTrack()
+AudioTrackWrapper* SessionWrapper::addAudioTrack(AudioDeviceWrapper* device)
 {
-    if (_impl) {
-        if (const auto track = _impl->addMicrophoneTrack()) {
+    if (_impl && device) {
+        if (const auto track = _impl->addAudioTrack(device->device())) {
             return new AudioTrackWrapper(track, this);
         }
     }
     return nullptr;
 }
 
-CameraTrackWrapper* SessionWrapper::addCameraTrack(const MediaDeviceInfo& info,
-                                                   const CameraOptions& options)
+CameraTrackWrapper* SessionWrapper::addCameraTrack(CameraDeviceWrapper* device)
 {
-    if (_impl) {
-        if (const auto track = _impl->addCameraTrack(info, options)) {
+    if (_impl && device) {
+        if (const auto track = _impl->addCameraTrack(device->device())) {
             return new CameraTrackWrapper(track, this);
         }
     }
     return nullptr;
+}
+
+AudioTrackWrapper* SessionWrapper::addMicrophoneTrack()
+{
+    AudioTrackWrapper* track = nullptr;
+    if (const auto app = appInstance()) {
+        if (const auto device = app->createMicrophone()) {
+            track = addAudioTrack(device);
+            device->deleteLater();
+        }
+    }
+    return track;
+}
+
+CameraTrackWrapper* SessionWrapper::addCameraTrack(const MediaDeviceInfo& info,
+                                                   const CameraOptions& options)
+{
+    CameraTrackWrapper* track = nullptr;
+    if (const auto app = appInstance()) {
+        if (const auto device = app->createCamera(info, options)) {
+            track = addCameraTrack(device);
+            device->deleteLater();
+        }
+    }
+    return track;
 }
 
 void SessionWrapper::removeMicrophoneTrack(AudioTrackWrapper* track)
@@ -51,7 +88,7 @@ void SessionWrapper::removeMicrophoneTrack(AudioTrackWrapper* track)
     }
 }
 
-void SessionWrapper::removeVideoTrack(VideoTrackWrapper* track)
+void SessionWrapper::removeCameraTrack(CameraTrackWrapper* track)
 {
     if (_impl && track && track->parent() == this) {
         _impl->removeVideoTrack(track->track());

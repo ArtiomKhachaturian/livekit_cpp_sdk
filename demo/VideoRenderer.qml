@@ -3,7 +3,7 @@ import QtMultimedia
 
 Item {
     id: root
-    property VideoTrackWrapper track: null
+    property VideoSinkWrapper track: null
     property bool muted: false
 
     function takeTrack() {
@@ -18,7 +18,7 @@ Item {
     VideoOutput {
         id: renderer
         anchors.fill: parent
-        property VideoTrackWrapper cachedTrack: null
+        property VideoSinkWrapper cachedTrack: null
         VideoDiagnosticsView {
             id: fpsArea
             x: parent.contentRect.right - 4 - width

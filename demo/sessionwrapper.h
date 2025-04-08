@@ -2,12 +2,17 @@
 #define SESSIONWRAPPER_H
 #include "audiotrackwrapper.h"
 #include "cameratrackwrapper.h"
-#include "cameraoptions.h"
+#include "audiodevicewrapper.h"
+#include "cameradevicewrapper.h"
 #include <SessionListener.h>
 #include <Session.h>
 #include <QObject>
 #include <QQmlEngine>
 #include <memory>
+
+namespace LiveKitCpp {
+class Service;
+}
 
 class SessionWrapper : public QObject, private LiveKitCpp::SessionListener
 {
@@ -33,15 +38,17 @@ public:
     Q_PROPERTY(QString identity READ identity NOTIFY localDataChanged)
     Q_PROPERTY(QString name READ name NOTIFY localDataChanged)
 public:
-    explicit SessionWrapper(std::unique_ptr<LiveKitCpp::Session> impl = {},
-                            QObject *parent = nullptr);
+    SessionWrapper(std::unique_ptr<LiveKitCpp::Session> impl = {},
+                   QObject *parent = nullptr);
     ~SessionWrapper() override;
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
+    Q_INVOKABLE AudioTrackWrapper* addAudioTrack(AudioDeviceWrapper* device);
+    Q_INVOKABLE CameraTrackWrapper* addCameraTrack(CameraDeviceWrapper* device);
     Q_INVOKABLE AudioTrackWrapper* addMicrophoneTrack();
     Q_INVOKABLE CameraTrackWrapper* addCameraTrack(const MediaDeviceInfo& info = {},
                                                    const CameraOptions& options = {});
     Q_INVOKABLE void removeMicrophoneTrack(AudioTrackWrapper* track);
-    Q_INVOKABLE void removeVideoTrack(VideoTrackWrapper* track);
+    Q_INVOKABLE void removeCameraTrack(CameraTrackWrapper* track);
     bool connecting() const;
     State state() const;
     QString sid() const;

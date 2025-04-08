@@ -3,7 +3,7 @@
 
 AudioTrackWrapper::AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl,
                                      QObject *parent)
-    : TrackWrapper(impl, parent)
+    : QObject(parent)
     , _impl(impl)
 {
 }
@@ -12,5 +12,30 @@ void AudioTrackWrapper::setVolume(qreal volume)
 {
     if (const auto impl = _impl.lock()) {
         impl->setVolume(volume);
+    }
+}
+
+QString AudioTrackWrapper::id() const
+{
+    if (const auto impl = _impl.lock()) {
+        return QString::fromStdString(impl->id());
+    }
+    return {};
+}
+
+bool AudioTrackWrapper::muted() const
+{
+    if (const auto impl = _impl.lock()) {
+        return impl->muted();
+    }
+    return false;
+}
+
+void AudioTrackWrapper::setMuted(bool mute)
+{
+    const auto impl = _impl.lock();
+    if (impl && impl->muted() != mute) {
+        impl->mute(mute);
+        emit muteChanged();
     }
 }

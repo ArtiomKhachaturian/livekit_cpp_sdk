@@ -3,9 +3,14 @@
 
 CameraTrackWrapper::CameraTrackWrapper(const std::shared_ptr<LiveKitCpp::CameraTrack>& impl,
                                        QObject *parent)
-    : VideoTrackWrapper(impl, parent)
+    : VideoSinkWrapper(parent)
     , _impl(impl)
 {
+}
+
+CameraTrackWrapper::~CameraTrackWrapper()
+{
+    CameraTrackWrapper::subsribe(false);
 }
 
 MediaDeviceInfo CameraTrackWrapper::deviceInfo() const
@@ -16,13 +21,37 @@ MediaDeviceInfo CameraTrackWrapper::deviceInfo() const
     return {};
 }
 
-
 CameraOptions CameraTrackWrapper::options() const
 {
     if (const auto impl = _impl.lock()) {
         return impl->options();
     }
     return {};
+}
+
+QString CameraTrackWrapper::id() const
+{
+    if (const auto impl = _impl.lock()) {
+        return QString::fromStdString(impl->id());
+    }
+    return {};
+}
+
+bool CameraTrackWrapper::muted() const
+{
+    if (const auto impl = _impl.lock()) {
+        return impl->muted();
+    }
+    return false;
+}
+
+void CameraTrackWrapper::setMuted(bool mute)
+{
+    const auto impl = _impl.lock();
+    if (impl && impl->muted() != mute) {
+        impl->mute(mute);
+        emit muteChanged();
+    }
 }
 
 void CameraTrackWrapper::setDeviceInfo(const MediaDeviceInfo& info)
@@ -38,5 +67,17 @@ void CameraTrackWrapper::setOptions(const CameraOptions& options)
     if (const auto impl = _impl.lock()) {
         impl->setOptions(options);
         emit optionsChanged();
+    }
+}
+
+void CameraTrackWrapper::subsribe(bool subscribe)
+{
+    if (const auto impl = _impl.lock()) {
+        if (subscribe) {
+            impl->addSink(this);
+        }
+        else {
+            impl->removeSink(this);
+        }
     }
 }
