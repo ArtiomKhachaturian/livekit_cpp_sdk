@@ -21,6 +21,8 @@ public:
     Q_INVOKABLE bool isValid() const { return nullptr != _device; }
     const auto& device() const noexcept { return _device; }
 protected:
+    // impl. of LiveKitCpp::MediaEventsListener
+    void onMuteChanged(const std::string&, bool) final {}
     // overrides of VideoSinkWrapper
     bool hasVideoInput() const final { return isValid(); }
     bool isMuted() const final;

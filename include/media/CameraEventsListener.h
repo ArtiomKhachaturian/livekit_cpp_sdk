@@ -23,11 +23,14 @@ struct CameraOptions;
 class CameraEventsListener : public MediaEventsListener
 {
 public:
-    virtual void onDeviceInfoChanged(const std::string& /*id*/, const MediaDeviceInfo& /*info*/) {}
-    virtual void onDeviceCreationFailed(const std::string& /*id*/, const MediaDeviceInfo& /*info*/) {}
+    virtual void onCapturerChanged(const std::string& /*id*/, const MediaDeviceInfo& /*info*/) {}
+    virtual void onCapturerCreationFailed(const std::string& /*id*/, const MediaDeviceInfo& /*info*/) {}
     virtual void onOptionsChanged(const std::string& /*id*/, const CameraOptions& /*options*/) {}
-    virtual void onStartFailed(const std::string& /*id*/, const CameraOptions& /*options*/) {}
-    virtual void onStopFailed(const std::string& /*id*/) {}
+    virtual void onCapturingStarted(const std::string& /*id*/, const CameraOptions& /*options*/) {}
+    virtual void onCapturingStartFailed(const std::string& /*id*/, const CameraOptions& /*options*/) {}
+    virtual void onCapturingStopped(const std::string& /*id*/) {}
+    virtual void onCapturingStopFailed(const std::string& /*id*/) {}
+    virtual void onCapturingFatalError(const std::string& /*id*/) {} // during the streaming
 };
 
 } // namespace LiveKitCpp

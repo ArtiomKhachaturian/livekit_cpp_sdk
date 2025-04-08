@@ -62,6 +62,7 @@ private:
     void notify(const Method& method, Args&&... args) const;
     // impl. of CameraObserver
     void onStateChanged(CameraState state) final;
+    void onCapturingFatalError() final;
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final { broadcast(frame, true); }
     void OnDiscardedFrame() final { discard(); }

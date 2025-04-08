@@ -21,6 +21,7 @@ class CameraObserver
 {
 public:
     virtual void onStateChanged(CameraState state) = 0;
+    virtual void onCapturingFatalError() {} // during the streaming
 protected:
     ~CameraObserver() = default;
 };

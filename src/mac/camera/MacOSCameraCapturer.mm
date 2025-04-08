@@ -24,6 +24,7 @@
 #include <rtc_base/ref_counted_object.h>
 #include <components/capturer/RTCCameraVideoCapturer.h>
 #include <native/api/video_frame_buffer.h>
+#include <helpers/RTCDispatcher+Private.h>
 #include <set>
 #include <unordered_set>
 
@@ -52,6 +53,7 @@ inline size_t hashCode(const webrtc::VideoCaptureCapability& cap) {
 @property (nullable, nonatomic) rtc::VideoSinkInterface<webrtc::VideoFrame>* sink;
 @property (nullable, nonatomic) LiveKitCpp::CameraObserver* observer;
 @property (nonatomic) LiveKitCpp::CameraState state;
+@property (weak) RTCCameraVideoCapturer* capturerRef;
 
 @end
 
@@ -338,11 +340,22 @@ MacOSCameraCapturer::Impl::Impl(AVCaptureDevice* device,
     , _delegate([[CapturerDelegate alloc] init:logger])
     , _capturer([[RTCCameraVideoCapturer alloc] initWithDelegate:_delegate])
 {
+    @autoreleasepool {
+        NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+        [center addObserver:_delegate
+                   selector:@selector(handleCaptureSessionRuntimeError:)
+                       name:AVCaptureSessionRuntimeErrorNotification
+                     object:_capturer.captureSession];
+        _delegate.capturerRef = _capturer;
+    }
 }
 
 MacOSCameraCapturer::Impl::~Impl()
 {
     stopCapture();
+    @autoreleasepool {
+        [[NSNotificationCenter defaultCenter] removeObserver:_delegate];
+    }
 }
 
 bool MacOSCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format,
@@ -404,6 +417,8 @@ void MacOSCameraCapturer::Impl::logError(const std::string& error)
     Bricks::Listener<LiveKitCpp::CameraObserver*> _observer;
     Bricks::SafeObj<LiveKitCpp::CameraState> _state;
 }
+
+@synthesize capturerRef = _capturerRef;
 
 - (instancetype) init:(const std::shared_ptr<Bricks::Logger>&) logger
 {
@@ -508,6 +523,18 @@ void MacOSCameraCapturer::Impl::logError(const std::string& error)
         }
         _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnDiscardedFrame);
     }
+}
+
+- (void)handleCaptureSessionRuntimeError:(NSNotification *)notification {
+    NSError *error = [notification.userInfo objectForKey:AVCaptureSessionErrorKey];
+
+    [RTC_OBJC_TYPE(RTCDispatcher) dispatchAsyncOnType:RTCDispatcherTypeCaptureSession
+                                                block:^{
+        [self reportAboutError:error];
+        [_capturerRef stopCapture];
+        self.state = LiveKitCpp::CameraState::Stopped;
+        _observer.invoke(&LiveKitCpp::CameraObserver::onCapturingFatalError);
+    }];
 }
 
 @end

@@ -10,6 +10,8 @@ Item {
         id: renderer
         anchors.fill: parent
         property VideoSinkWrapper source: null
+        // TODO: replace to https://doc.qt.io/qt-6/qml-qtmultimedia-videooutput.html#clearOutput-method in QT >= 6.9.x
+        visible: !muted && source !== null && source.active
         VideoDiagnosticsView {
             id: fpsArea
             x: parent.contentRect.right - 4 - width
@@ -47,15 +49,5 @@ Item {
             })
             renderer.source = source
         }
-        actualizeRendererVisibility()
-    }
-
-    onMutedChanged: {
-        actualizeRendererVisibility()
-    }
-
-    function actualizeRendererVisibility() {
-        // TODO: replace to https://doc.qt.io/qt-6/qml-qtmultimedia-videooutput.html#clearOutput-method in QT >= 6.9.x
-        renderer.visible = !muted && source !== null
     }
 }

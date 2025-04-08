@@ -91,7 +91,7 @@ void CameraTrackWrapper::subsribe(bool subscribe)
     }
 }
 
-void CameraTrackWrapper::onDeviceInfoChanged(const std::string&, const LiveKitCpp::MediaDeviceInfo&)
+void CameraTrackWrapper::onCapturerChanged(const std::string&, const LiveKitCpp::MediaDeviceInfo&)
 {
     emit deviceInfoChanged();
 }

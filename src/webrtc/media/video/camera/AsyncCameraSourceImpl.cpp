@@ -73,7 +73,7 @@ void AsyncCameraSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)
                 }
             }
             if (changed) {
-                notify(&CameraEventsListener::onDeviceInfoChanged, deviceInfo);
+                notify(&CameraEventsListener::onCapturerChanged, deviceInfo);
                 resetCapturer();
                 requestCapturer();
             }
@@ -127,7 +127,7 @@ void AsyncCameraSourceImpl::requestCapturer()
                 }
             }
             else {
-                notify(&CameraEventsListener::onDeviceCreationFailed, di);
+                notify(&CameraEventsListener::onCapturerCreationFailed, di);
             }
         }
     }
@@ -206,10 +206,11 @@ bool AsyncCameraSourceImpl::startCapturer(const webrtc::VideoCaptureCapability& 
             code = capturer->StartCapture(capability);
             if (0 != code) {
                 logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
-                notify(&CameraEventsListener::onStartFailed, map(capability));
+                notify(&CameraEventsListener::onCapturingStartFailed, map(capability));
             }
             else {
                 logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
+                notify(&CameraEventsListener::onCapturingStarted, map(capability));
             }
         }
     }
@@ -230,18 +231,19 @@ bool AsyncCameraSourceImpl::stopCapturer(bool sendByeFrame)
             }
         }
         code = capturer->StopCapture();
-        if (0 != code) {
-            logError(capturer, "failed to stop capturer",  code);
-            notify(&CameraEventsListener::onStopFailed);
-        }
-        else {
-            logVerbose(capturer, "capturer has been stopped");
-        }
         if (sendByeFrame) {
             const auto frame = createBlackVideoFrame(w, h, 0, frameId + 1U);
             if (frame.has_value()) {
                 broadcast(frame.value(), false);
             }
+        }
+        if (0 != code) {
+            logError(capturer, "failed to stop capturer",  code);
+            notify(&CameraEventsListener::onCapturingStopFailed);
+        }
+        else {
+            logVerbose(capturer, "capturer has been stopped");
+            notify(&CameraEventsListener::onCapturingStopped);
         }
     }
     return 0 == code;
@@ -292,6 +294,12 @@ void AsyncCameraSourceImpl::onStateChanged(CameraState state)
         default:
             break;
     }
+}
+
+void AsyncCameraSourceImpl::onCapturingFatalError()
+{
+    changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
+    notify(&CameraEventsListener::onCapturingFatalError);
 }
 
 void AsyncCameraSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)

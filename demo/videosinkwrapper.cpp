@@ -51,7 +51,9 @@ void VideoSinkWrapper::setVideoOutput(QVideoSink* output)
 
 void VideoSinkWrapper::startMetricsCollection()
 {
-    _fpsTimer.start(1000ms, this);
+    if (isActive() && hasVideoInput()) {
+        _fpsTimer.start(1000ms, this);
+    }
 }
 
 void VideoSinkWrapper::stopMetricsCollection()
@@ -74,6 +76,20 @@ void VideoSinkWrapper::timerEvent(QTimerEvent* e)
         setFps(_framesCounter.exchange(0U));
     }
     QObject::timerEvent(e);
+}
+
+
+void VideoSinkWrapper::setActive(bool active)
+{
+    if (active != _active.exchange(active)) {
+        if (!active) {
+            startMetricsCollection();
+        }
+        else {
+            stopMetricsCollection();
+        }
+        emit activeChanged();
+    }
 }
 
 void VideoSinkWrapper::setFps(quint16 fps)
@@ -107,7 +123,7 @@ void VideoSinkWrapper::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& fr
             const auto qtFrame = LiveKitCpp::convert(frame);
             if (qtFrame.isValid()) {
                 _output->setVideoFrame(qtFrame);
-                if (!isMuted()) {
+                if (isActive() && !isMuted()) {
                     setFrameSize(qtFrame.width(), qtFrame.height());
                 }
                 else {
@@ -117,3 +133,15 @@ void VideoSinkWrapper::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& fr
         }
     }
 }
+
+
+void VideoSinkWrapper::onCapturingStarted(const std::string&, const LiveKitCpp::CameraOptions&)
+{
+    setActive(true);
+}
+
+void VideoSinkWrapper::onCapturingStartFailed(const std::string&, const LiveKitCpp::CameraOptions&)
+{
+    setActive(false);
+}
+
