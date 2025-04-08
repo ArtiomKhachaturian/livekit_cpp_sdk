@@ -8,6 +8,9 @@ ComboBox {
     flat: count <= 1
     enabled: indicator.visible
     readonly property var deviceInfo: {
-        return model.itemAt(currentIndex)
+        return deviceInfoAt(currentIndex)
+    }
+    function deviceInfoAt(index) {
+        return model.itemAt(index)
     }
 }

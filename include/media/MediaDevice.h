@@ -17,14 +17,14 @@
 namespace LiveKitCpp
 {
 
-class MediaDeviceListener;
+class MediaEventsListener;
 
 class MediaDevice
 {
 public:
     virtual ~MediaDevice() = default;
-    virtual bool addListener(MediaDeviceListener* listener) = 0;
-    virtual bool removeListener(MediaDeviceListener* listener) = 0;
+    virtual bool addListener(MediaEventsListener* listener) = 0;
+    virtual bool removeListener(MediaEventsListener* listener) = 0;
     // live or ended, a device will never be live again after becoming ended
     virtual bool live() const = 0;
     // source

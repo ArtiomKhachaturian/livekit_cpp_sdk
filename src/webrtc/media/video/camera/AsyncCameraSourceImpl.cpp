@@ -14,6 +14,7 @@
 #include "AsyncCameraSourceImpl.h"
 #include "CameraManager.h"
 #include "VideoFrameBuffer.h"
+#include "media/CameraEventsListener.h"
 
 namespace {
 
@@ -36,9 +37,11 @@ namespace LiveKitCpp
 
 AsyncCameraSourceImpl::AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                              const std::shared_ptr<Bricks::Logger>& logger,
+                                             const std::string& id,
                                              const MediaDeviceInfo& info,
                                              const webrtc::VideoCaptureCapability& initialCapability)
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger, false)
+    , _id(id)
     , _deviceInfo(info)
 {
     if (isNull(initialCapability)) {
@@ -70,6 +73,7 @@ void AsyncCameraSourceImpl::setDeviceInfo(const MediaDeviceInfo& info)
                 }
             }
             if (changed) {
+                notify(&CameraEventsListener::onDeviceInfoChanged, deviceInfo);
                 resetCapturer();
                 requestCapturer();
             }
@@ -96,9 +100,12 @@ void AsyncCameraSourceImpl::setCapability(webrtc::VideoCaptureCapability capabil
                 changed = true;
             }
         }
-        if (changed && capturer && capturer->CaptureStarted()) {
-            stopCapturer(false);
-            startCapturer(capability);
+        if (changed) {
+            if (capturer && capturer->CaptureStarted()) {
+                stopCapturer(false);
+                startCapturer(capability);
+            }
+            notify(&CameraEventsListener::onOptionsChanged, map(capability));
         }
     }
 }
@@ -108,7 +115,8 @@ void AsyncCameraSourceImpl::requestCapturer()
     if (frameWanted()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer.constRef()) {
-            if (auto capturer = CameraManager::createCapturer(deviceInfo())) {
+            const auto di = deviceInfo();
+            if (auto capturer = CameraManager::createCapturer(di)) {
                 capturer->RegisterCaptureDataCallback(this);
                 capturer->setObserver(this);
                 LOCK_WRITE_SAFE_OBJ(_capability);
@@ -119,7 +127,7 @@ void AsyncCameraSourceImpl::requestCapturer()
                 }
             }
             else {
-                // TODO: log error
+                notify(&CameraEventsListener::onDeviceCreationFailed, di);
             }
         }
     }
@@ -134,6 +142,16 @@ void AsyncCameraSourceImpl::resetCapturer()
         capturer->DeRegisterCaptureDataCallback();
         capturer->setObserver(nullptr);
     }
+}
+
+void AsyncCameraSourceImpl::addListener(CameraEventsListener* listener)
+{
+    _listeners.add(listener);
+}
+
+void AsyncCameraSourceImpl::removeListener(CameraEventsListener* listener)
+{
+    _listeners.remove(listener);
 }
 
 std::string_view AsyncCameraSourceImpl::logCategory() const
@@ -188,6 +206,7 @@ bool AsyncCameraSourceImpl::startCapturer(const webrtc::VideoCaptureCapability& 
             code = capturer->StartCapture(capability);
             if (0 != code) {
                 logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
+                notify(&CameraEventsListener::onStartFailed, map(capability));
             }
             else {
                 logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
@@ -213,6 +232,7 @@ bool AsyncCameraSourceImpl::stopCapturer(bool sendByeFrame)
         code = capturer->StopCapture();
         if (0 != code) {
             logError(capturer, "failed to stop capturer",  code);
+            notify(&CameraEventsListener::onStopFailed);
         }
         else {
             logVerbose(capturer, "capturer has been stopped");
@@ -249,6 +269,12 @@ void AsyncCameraSourceImpl::logVerbose(const rtc::scoped_refptr<CameraCapturer>&
         const auto error = CameraManager::formatLogMessage(capturer->CurrentDeviceName(), message);
         AsyncVideoSourceImpl::logVerbose(error);
     }
+}
+
+template <class Method, typename... Args>
+void AsyncCameraSourceImpl::notify(const Method& method, Args&&... args) const
+{
+    _listeners.invoke(method, _id, std::forward<Args>(args)...);
 }
 
 void AsyncCameraSourceImpl::onStateChanged(CameraState state)

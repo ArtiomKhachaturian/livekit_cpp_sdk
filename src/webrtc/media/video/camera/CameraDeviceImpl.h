@@ -47,8 +47,8 @@ public:
     // impl. of MediaDevice
     bool audio() const final { return false; }
     // overrides of MediaDeviceImpl<>
-    bool addListener(MediaDeviceListener* listener) final;
-    bool removeListener(MediaDeviceListener* listener) final;
+    bool addListener(MediaEventsListener* listener) final;
+    bool removeListener(MediaEventsListener* listener) final;
     // impl. of VideoDevice
     void addSink(VideoSink* sink) final;
     void removeSink(VideoSink* sink) final;

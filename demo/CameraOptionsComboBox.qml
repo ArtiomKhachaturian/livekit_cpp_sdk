@@ -7,7 +7,11 @@ ComboBox {
 
     property alias deviceInfo: cameraOptionsModel.deviceInfo
     readonly property var options: {
-        return model.itemAt(currentIndex)
+        return optionsAt(currentIndex)
+    }
+
+    function optionsAt(index) {
+        return model.itemAt(index)
     }
 
     Component.onCompleted: {

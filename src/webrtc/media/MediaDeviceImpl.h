@@ -15,7 +15,7 @@
 #include "Listeners.h"
 #include "Utils.h"
 #include "media/MediaDevice.h"
-#include "media/MediaDeviceListener.h"
+#include "media/MediaEventsListener.h"
 #include <api/media_stream_interface.h>
 #include <atomic>
 #include <type_traits>
@@ -32,8 +32,8 @@ public:
     // for manipulations with peer connection
     const auto& track() const noexcept { return _track; }
     // impl. of MediaDevice
-    bool addListener(MediaDeviceListener* listener) override;
-    bool removeListener(MediaDeviceListener* listener) override;
+    bool addListener(MediaEventsListener* listener) override;
+    bool removeListener(MediaEventsListener* listener) override;
     bool live() const final;
     std::string id() const override { return _id; }
     void mute(bool mute) final;
@@ -44,7 +44,7 @@ private:
     const webrtc::scoped_refptr<TTrack> _track;
     const std::string _id;
     std::atomic_bool _muted;
-    Bricks::Listeners<MediaDeviceListener*> _listeners;
+    Bricks::Listeners<MediaEventsListener*> _listeners;
 };
 
 template <class TTrack, class TBaseInterface>
@@ -56,13 +56,13 @@ inline MediaDeviceImpl<TTrack, TBaseInterface>::MediaDeviceImpl(webrtc::scoped_r
 }
 
 template <class TTrack, class TBaseInterface>
-inline bool MediaDeviceImpl<TTrack, TBaseInterface>::addListener(MediaDeviceListener* listener)
+inline bool MediaDeviceImpl<TTrack, TBaseInterface>::addListener(MediaEventsListener* listener)
 {
     return _track && Bricks::ok(_listeners.add(listener));
 }
 
 template <class TTrack, class TBaseInterface>
-inline bool MediaDeviceImpl<TTrack, TBaseInterface>::removeListener(MediaDeviceListener* listener)
+inline bool MediaDeviceImpl<TTrack, TBaseInterface>::removeListener(MediaEventsListener* listener)
 {
     return _track && Bricks::ok(_listeners.remove(listener));
 }
@@ -80,7 +80,7 @@ inline void MediaDeviceImpl<TTrack, TBaseInterface>::mute(bool mute)
         const auto wasEnabled = _track->enabled();
         if (wasEnabled == mute) {
             _track->set_enabled(!mute);
-            _listeners.invoke(&MediaDeviceListener::onMuteChanged, _track->id(), mute);
+            _listeners.invoke(&MediaEventsListener::onMuteChanged, _track->id(), mute);
         }
     }
 }

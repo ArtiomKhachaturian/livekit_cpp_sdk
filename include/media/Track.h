@@ -22,6 +22,8 @@
 namespace LiveKitCpp
 {
 
+class MediaEventsListener;
+
 class Track : public StatsSource
 {
 public:
@@ -46,6 +48,9 @@ public:
     virtual void mute(bool mute = true) = 0;
     virtual bool muted() const = 0;
     void unmute() { mute(false); }
+    // track events
+    virtual bool addListener(MediaEventsListener* listener) = 0;
+    virtual bool removeListener(MediaEventsListener* listener) = 0;
 };
 
 } // namespace LiveKitCpp

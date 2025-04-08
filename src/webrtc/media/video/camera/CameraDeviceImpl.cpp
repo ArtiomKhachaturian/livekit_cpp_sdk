@@ -15,7 +15,7 @@
 #include "CameraManager.h"
 #include "PeerConnectionFactory.h"
 #include "Utils.h"
-#include "media/CameraDeviceListener.h"
+#include "media/CameraEventsListener.h"
 
 namespace LiveKitCpp
 {
@@ -62,22 +62,26 @@ CameraDeviceImpl::~CameraDeviceImpl()
     }
 }
 
-bool CameraDeviceImpl::addListener(MediaDeviceListener* listener)
+bool CameraDeviceImpl::addListener(MediaEventsListener* listener)
 {
     if (Base::addListener(listener)) {
-        if (const auto cameraListener = dynamic_cast<CameraDeviceListener*>(listener)) {
-            // TODO: add to camera track
+        if (const auto& t = track()) {
+            if (const auto cameraListener = dynamic_cast<CameraEventsListener*>(listener)) {
+                t->addListener(cameraListener);
+            }
         }
         return true;
     }
     return false;
 }
 
-bool CameraDeviceImpl::removeListener(MediaDeviceListener* listener)
+bool CameraDeviceImpl::removeListener(MediaEventsListener* listener)
 {
     if (Base::removeListener(listener)) {
-        if (const auto cameraListener = dynamic_cast<CameraDeviceListener*>(listener)) {
-            // TODO: remove from camera track
+        if (const auto& t = track()) {
+            if (const auto cameraListener = dynamic_cast<CameraEventsListener*>(listener)) {
+                t->removeListener(cameraListener);
+            }
         }
         return true;
     }

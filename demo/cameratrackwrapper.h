@@ -3,12 +3,14 @@
 #include "mediadeviceinfo.h"
 #include "cameraoptions.h"
 #include "videosinkwrapper.h"
+#include <media/CameraEventsListener.h>
 
 namespace LiveKitCpp {
 class CameraTrack;
 }
 
-class CameraTrackWrapper : public VideoSinkWrapper
+class CameraTrackWrapper : public VideoSinkWrapper,
+                           private LiveKitCpp::CameraEventsListener
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(CameraTrackWrapper)
@@ -38,6 +40,11 @@ protected:
     bool hasVideoInput() const final { return !_impl.expired(); }
     bool isMuted() const final { return muted(); }
     void subsribe(bool subscribe) final;
+private:
+    // impl. of LiveKitCpp::MediaEventsListener
+    void onMuteChanged(const std::string&, bool) final { emit muteChanged(); }
+    void onDeviceInfoChanged(const std::string&, const LiveKitCpp::MediaDeviceInfo&) final;
+    void onOptionsChanged(const std::string&, const LiveKitCpp::CameraOptions&) final;
 private:
     const std::weak_ptr<LiveKitCpp::CameraTrack> _impl;
 };

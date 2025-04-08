@@ -21,8 +21,7 @@ LocalCamera::LocalCamera(const std::string& id,
                         const MediaDeviceInfo& info,
                         const webrtc::VideoCaptureCapability& initialCapability,
                         const std::shared_ptr<Bricks::Logger>& logger)
-    : _id(id)
-    , _source(webrtc::make_ref_counted<CameraSource>(std::move(signalingQueue),
+    : _source(webrtc::make_ref_counted<CameraSource>(id, std::move(signalingQueue),
                                                      info, initialCapability, logger))
 {
 }
@@ -57,6 +56,16 @@ webrtc::VideoCaptureCapability LocalCamera::capability() const
     return _source->capability();
 }
 
+void LocalCamera::addListener(CameraEventsListener* listener)
+{
+    _source->addListener(listener);
+}
+
+void LocalCamera::removeListener(CameraEventsListener* listener)
+{
+    _source->removeListener(listener);
+}
+
 void LocalCamera::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                                   const rtc::VideoSinkWants& wants)
 {
@@ -71,6 +80,11 @@ void LocalCamera::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 webrtc::VideoTrackSourceInterface* LocalCamera::GetSource() const
 {
     return _source.get();
+}
+
+std::string LocalCamera::id() const
+{
+    return _source->id();
 }
 
 bool LocalCamera::enabled() const

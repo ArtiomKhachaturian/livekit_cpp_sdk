@@ -6,11 +6,17 @@ CameraTrackWrapper::CameraTrackWrapper(const std::shared_ptr<LiveKitCpp::CameraT
     : VideoSinkWrapper(parent)
     , _impl(impl)
 {
+    if (impl) {
+        impl->addListener(this);
+    }
 }
 
 CameraTrackWrapper::~CameraTrackWrapper()
 {
     CameraTrackWrapper::subsribe(false);
+    if (const auto impl = _impl.lock()) {
+        impl->removeListener(this);
+    }
 }
 
 MediaDeviceInfo CameraTrackWrapper::deviceInfo() const
@@ -56,7 +62,6 @@ void CameraTrackWrapper::setMuted(bool mute)
         else if (hasOutput()) {
             startMetricsCollection();
         }
-        emit muteChanged();
     }
 }
 
@@ -64,7 +69,6 @@ void CameraTrackWrapper::setDeviceInfo(const MediaDeviceInfo& info)
 {
     if (const auto impl = _impl.lock()) {
         impl->setDeviceInfo(info);
-        emit deviceInfoChanged();
     }
 }
 
@@ -72,7 +76,6 @@ void CameraTrackWrapper::setOptions(const CameraOptions& options)
 {
     if (const auto impl = _impl.lock()) {
         impl->setOptions(options);
-        emit optionsChanged();
     }
 }
 
@@ -86,4 +89,14 @@ void CameraTrackWrapper::subsribe(bool subscribe)
             impl->removeSink(this);
         }
     }
+}
+
+void CameraTrackWrapper::onDeviceInfoChanged(const std::string&, const LiveKitCpp::MediaDeviceInfo&)
+{
+    emit deviceInfoChanged();
+}
+
+void CameraTrackWrapper::onOptionsChanged(const std::string&, const LiveKitCpp::CameraOptions&)
+{
+    emit optionsChanged();
 }

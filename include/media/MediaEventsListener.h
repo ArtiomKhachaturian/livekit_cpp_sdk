@@ -11,20 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraDeviceListener.h
-#include "MediaDeviceListener.h"
+#pragma once // MediaEventsListener.h
+#include <string>
 
 namespace LiveKitCpp
 {
 
-struct MediaDeviceInfo;
-struct CameraOptions;
-
-class CameraDeviceListener : public MediaDeviceListener
+class MediaEventsListener
 {
 public:
-    virtual void onDeviceInfoChanged(const std::string& /*id*/, const MediaDeviceInfo& /*info*/) {}
-    virtual void onOptionsChanged(const std::string& /*id*/, const CameraOptions& /*options*/) {}
+    virtual void onMuteChanged(const std::string& id, bool mute) = 0;
+protected:
+    virtual ~MediaEventsListener() = default;
 };
 
 } // namespace LiveKitCpp

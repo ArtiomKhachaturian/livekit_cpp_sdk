@@ -75,6 +75,11 @@ Pane {
                     id: cameraModelComboBox
                     Layout.horizontalStretchFactor: 2
                     Layout.fillWidth: true
+                    onCurrentIndexChanged: {
+                        if (cameraAddSwitch.checked) {
+                            connectionForm.cameraDeviceInfo = deviceInfoAt(currentIndex)
+                        }
+                    }
                 }
 
                 CameraOptionsComboBox {

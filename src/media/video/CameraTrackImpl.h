@@ -21,7 +21,6 @@
 namespace LiveKitCpp
 {
 
-// CameraDeviceImpl
 class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraDeviceImpl, CameraTrack>>
 {
     using Base = LocalTrackImpl<VideoTrackImpl<CameraDeviceImpl, CameraTrack>>;

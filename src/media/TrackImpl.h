@@ -16,14 +16,14 @@
 #include "StatsSourceImpl.h"
 #include "TrackManager.h"
 #include "media/MediaDevice.h"
-#include "media/MediaDeviceListener.h"
+#include "media/MediaEventsListener.h"
 #include <atomic>
 
 namespace LiveKitCpp
 {
 
 template <class TMediaDevice, class TTrackApi>
-class TrackImpl : public TTrackApi, private MediaDeviceListener
+class TrackImpl : public TTrackApi, private MediaEventsListener
 {
     static_assert(std::is_base_of_v<MediaDevice, TMediaDevice>);
     static_assert(std::is_base_of_v<Track, TTrackApi>);
@@ -33,11 +33,12 @@ public:
     void addListener(StatsListener* listener) final;
     void removeListener(StatsListener* listener) final;
     // impl. of Track
-    // track ID
     std::string id() const override;
     bool live() const final { return _mediaDevice && _mediaDevice->live(); }
     void mute(bool mute) final;
     bool muted() const override { return _mediaDevice && _mediaDevice->muted(); }
+    bool addListener(MediaEventsListener* listener) final;
+    bool removeListener(MediaEventsListener* listener) final;
 protected:
     TrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager);
     const auto& mediaDevice() const noexcept { return _mediaDevice; }
@@ -116,6 +117,17 @@ inline void TrackImpl<TMediaDevice, TTrackApi>::onMuteChanged(const std::string&
     notifyAboutMuted(mute);
 }
 
+template <class TMediaDevice, class TTrackApi>
+inline bool TrackImpl<TMediaDevice, TTrackApi>::addListener(MediaEventsListener* listener)
+{
+    return listener != this && _mediaDevice && _mediaDevice->addListener(listener);
+}
+
+template <class TMediaDevice, class TTrackApi>
+inline bool TrackImpl<TMediaDevice, TTrackApi>::removeListener(MediaEventsListener* listener)
+{
+    return listener != this && _mediaDevice && _mediaDevice->removeListener(listener);
+}
 
 } // namespace LiveKitCpp
 #endif
