@@ -25,6 +25,7 @@ public:
     Q_INVOKABLE CameraOptions options() const;
     Q_INVOKABLE QString id() const;
     Q_INVOKABLE bool muted() const;
+    Q_INVOKABLE void close();
 public slots:
     void setMuted(bool muted);
     void setDeviceInfo(const MediaDeviceInfo& info = {});

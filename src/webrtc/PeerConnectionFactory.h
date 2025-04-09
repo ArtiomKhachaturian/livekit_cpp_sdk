@@ -47,7 +47,6 @@ class AdmProxyFacade;
 class AdmProxyListener;
 class MicAudioSource;
 class WebRtcLogSink;
-struct AudioRecordingOptions;
 
 class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 {
@@ -56,7 +55,6 @@ class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
 public:
     ~PeerConnectionFactory() override;
     static webrtc::scoped_refptr<PeerConnectionFactory> create(bool audioProcessing,
-                                                               const AudioRecordingOptions& microphoneOptions,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& eventsQueue() const noexcept { return _eventsQueue; }
     std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
@@ -98,8 +96,7 @@ protected:
                           std::shared_ptr<rtc::Thread> workingThread,
                           std::shared_ptr<rtc::Thread> signalingThread,
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
-                          webrtc::scoped_refptr<AdmProxy> admProxy,
-                          const AudioRecordingOptions& microphoneOptions);
+                          webrtc::scoped_refptr<AdmProxy> admProxy);
 private:
     template <class Method, typename... Args>
     void postAdmTask(Method method, Args&&... args) const;

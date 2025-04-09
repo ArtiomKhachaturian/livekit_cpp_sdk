@@ -20,7 +20,6 @@
 #include "AdmProxyFacade.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
-#include "media/AudioRecordingOptions.h"
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
 #include <api/audio_codecs/builtin_audio_encoder_factory.h>
@@ -64,16 +63,6 @@ inline std::shared_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
     return nullptr;
 }
 
-inline cricket::AudioOptions toCricketOptions(const LiveKitCpp::AudioRecordingOptions& options)
-{
-    cricket::AudioOptions audioOptions;
-    audioOptions.echo_cancellation = options._echoCancellation;
-    audioOptions.auto_gain_control = options._autoGainControl;
-    audioOptions.noise_suppression = options._noiseSuppression;
-    audioOptions.highpass_filter = options._highpassFilter;
-    audioOptions.stereo_swapping = options._stereoSwapping;
-    return audioOptions;
-}
 
 }
 
@@ -95,7 +84,7 @@ namespace LiveKitCpp
 class PeerConnectionFactory::AdmFacade : public AdmProxyFacade
 {
 public:
-    AdmFacade(webrtc::scoped_refptr<AdmProxy> admProxy, cricket::AudioOptions options);
+    AdmFacade(webrtc::scoped_refptr<AdmProxy> admProxy);
     ~AdmFacade() final { close(); }
     void close() { _admProxy->close(); }
     auto playoutDevices() const { return _admProxy->playoutDevices(); }
@@ -112,12 +101,10 @@ public:
     void registerRecordingSink(webrtc::AudioTrackSinkInterface* sink, bool reg) final;
     void registerRecordingListener(AdmProxyListener* l, bool reg) final;
     void registerPlayoutListener(AdmProxyListener* l, bool reg) final;
-    cricket::AudioOptions options() const final { return _options; }
     const AdmProxyState& recordingState() const final { return _admProxy->recordingState(); }
     const AdmProxyState& playoutState() const final { return _admProxy->playoutState(); }
 private:
     const webrtc::scoped_refptr<AdmProxy> _admProxy;
-    const cricket::AudioOptions _options;
 };
 
 PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webrtcLogSink,
@@ -125,8 +112,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              std::shared_ptr<rtc::Thread> workingThread,
                                              std::shared_ptr<rtc::Thread> signalingThread,
                                              webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
-                                             webrtc::scoped_refptr<AdmProxy> admProxy,
-                                             const AudioRecordingOptions& microphoneOptions)
+                                             webrtc::scoped_refptr<AdmProxy> admProxy)
     : _eventsQueue(createTaskQueueS("events_queue"))
     , _webrtcLogSink(std::move(webrtcLogSink))
     , _networkThread(std::move(networkThread))
@@ -142,8 +128,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     _workingThread->AllowInvokesToThread(_workingThread.get());
     _signalingThread->AllowInvokesToThread(_signalingThread.get());
     if (admProxy) {
-        auto options = toCricketOptions(microphoneOptions);
-        _admProxy.reset(new AdmFacade(std::move(admProxy), std::move(options)));
+        _admProxy.reset(new AdmFacade(std::move(admProxy)));
     }
 }
 
@@ -155,8 +140,7 @@ PeerConnectionFactory::~PeerConnectionFactory()
 }
 
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
-    create(bool audioProcessing, const AudioRecordingOptions& microphoneOptions,
-           const std::shared_ptr<Bricks::Logger>& logger)
+    create(bool audioProcessing, const std::shared_ptr<Bricks::Logger>& logger)
 {
     //create threads for peer connection factory
     //See also https://webrtc.org/native-code/native-apis/#threading-model
@@ -202,8 +186,7 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
                                                                std::move(workingThread),
                                                                std::move(signalingThread),
                                                                std::move(pcf),
-                                                               std::move(admProxy),
-                                                               microphoneOptions);
+                                                               std::move(admProxy));
     }
     return {};
 }
@@ -378,10 +361,8 @@ void PeerConnectionFactory::postAdmTask(Method method, Args&&... args) const
     }
 }
 
-PeerConnectionFactory::AdmFacade::AdmFacade(webrtc::scoped_refptr<AdmProxy> admProxy,
-                                            cricket::AudioOptions options)
+PeerConnectionFactory::AdmFacade::AdmFacade(webrtc::scoped_refptr<AdmProxy> admProxy)
     : _admProxy(std::move(admProxy))
-    , _options(std::move(options))
 {
 }
 

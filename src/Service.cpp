@@ -58,7 +58,6 @@ class Service::Impl : public Bricks::LoggableS<AdmProxyListener>
 {
 public:
     Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-         const AudioRecordingOptions& microphoneOptions,
          const std::shared_ptr<Bricks::Logger>& logger,
          bool logWebrtcEvents);
     ~Impl();
@@ -89,7 +88,6 @@ public:
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                                        const AudioRecordingOptions& microphoneOptions,
                                         const std::shared_ptr<Bricks::Logger>& logger,
                                         bool logWebrtcEvents);
     // overrides of AdmProxyListener
@@ -125,17 +123,9 @@ private:
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                 const AudioRecordingOptions& microphoneOptions,
                  const std::shared_ptr<Bricks::Logger>& logger,
                  bool logWebrtcEvents)
-    : _impl(Impl::create(websocketsFactory, microphoneOptions, logger, logWebrtcEvents))
-{
-}
-
-Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                 const std::shared_ptr<Bricks::Logger>& logger,
-                 bool logWebrtcEvents)
-    : Service(websocketsFactory, {}, logger, logWebrtcEvents)
+    : _impl(Impl::create(websocketsFactory, logger, logWebrtcEvents))
 {
 }
 
@@ -336,12 +326,11 @@ void Service::removeListener(ServiceListener* listener)
 }
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                    const AudioRecordingOptions& microphoneOptions,
                     const std::shared_ptr<Bricks::Logger>& logger,
                     bool logWebrtcEvents)
     : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
-    , _pcf(PeerConnectionFactory::create(true, microphoneOptions, logWebrtcEvents ? logger : nullptr))
+    , _pcf(PeerConnectionFactory::create(true, logWebrtcEvents ? logger : nullptr))
     , _recordingVolume(_defaultRecording)
     , _playoutVolume(_defaultPlayout)
 {
@@ -561,14 +550,12 @@ bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger
 
 std::unique_ptr<Service::Impl> Service::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-           const AudioRecordingOptions& microphoneOptions,
            const std::shared_ptr<Bricks::Logger>& logger,
            bool logWebrtcEvents)
 {
     if (wsaInitialized(logger) && sslInitialized(logger) && websocketsFactory) {
         logPlatformDefects(logger);
-        return std::make_unique<Impl>(websocketsFactory, microphoneOptions,
-                                      logger, logWebrtcEvents);
+        return std::make_unique<Impl>(websocketsFactory, logger, logWebrtcEvents);
     }
     return {};
 }

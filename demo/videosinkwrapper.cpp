@@ -2,6 +2,7 @@
 #include <media/VideoFrame.h>
 #include <media/VideoFrameQtHelper.h>
 #include <QTimerEvent>
+#include <QThread>
 
 using namespace std::chrono_literals;
 
@@ -39,12 +40,7 @@ void VideoSinkWrapper::setVideoOutput(QVideoSink* output)
         }
     }
     if (changed) {
-        if (output) {
-            startMetricsCollection();
-        }
-        else {
-            stopMetricsCollection();
-        }
+        setActive(nullptr != output);
         emit videoOutputChanged();
     }
 }
@@ -52,16 +48,26 @@ void VideoSinkWrapper::setVideoOutput(QVideoSink* output)
 void VideoSinkWrapper::startMetricsCollection()
 {
     if (isActive() && hasVideoInput()) {
-        _fpsTimer.start(1000ms, this);
+        if (QThread::currentThread() == thread()) {
+            _fpsTimer.start(1000ms, this);
+        }
+        else {
+            QMetaObject::invokeMethod(this, &VideoSinkWrapper::startMetricsCollection);
+        }
     }
 }
 
 void VideoSinkWrapper::stopMetricsCollection()
 {
-    _fpsTimer.stop();
     _framesCounter = 0U;
     setFps(0U);
     setFrameSize(_nullSize, false);
+    if (QThread::currentThread() == thread()) {
+        _fpsTimer.stop();
+    }
+    else {
+        QMetaObject::invokeMethod(this, &VideoSinkWrapper::stopMetricsCollection);
+    }
 }
 
 bool VideoSinkWrapper::hasOutput() const
@@ -78,11 +84,10 @@ void VideoSinkWrapper::timerEvent(QTimerEvent* e)
     QObject::timerEvent(e);
 }
 
-
 void VideoSinkWrapper::setActive(bool active)
 {
     if (active != _active.exchange(active)) {
-        if (!active) {
+        if (active) {
             startMetricsCollection();
         }
         else {

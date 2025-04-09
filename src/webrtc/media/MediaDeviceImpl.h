@@ -29,6 +29,7 @@ class MediaDeviceImpl : public TBaseInterface
     static_assert(std::is_base_of_v<webrtc::MediaStreamTrackInterface, TTrack>);
     static_assert(std::is_base_of_v<MediaDevice, TBaseInterface>);
 public:
+    ~MediaDeviceImpl() override { _listeners.clear(); }
     // for manipulations with peer connection
     const auto& track() const noexcept { return _track; }
     // impl. of MediaDevice

@@ -44,10 +44,6 @@ class LIVEKIT_CLIENT_API Service
     class Impl;
 public:
     Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-            const AudioRecordingOptions& microphoneOptions,
-            const std::shared_ptr<Bricks::Logger>& logger = {},
-            bool logWebrtcEvents = false);
-    Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
             const std::shared_ptr<Bricks::Logger>& logger = {},
             bool logWebrtcEvents = false);
     ~Service();

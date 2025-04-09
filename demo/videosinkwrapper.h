@@ -18,6 +18,7 @@ class VideoSinkWrapper : public QObject,
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(VideoSinkWrapper)
+    QML_UNCREATABLE("Create CameraDeviceWrapper or CameraTrackWrapper instead of")
     Q_PROPERTY(QVideoSink* videoOutput READ videoOutput WRITE setVideoOutput NOTIFY videoOutputChanged FINAL)
     Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
     Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)

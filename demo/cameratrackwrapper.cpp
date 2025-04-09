@@ -13,10 +13,7 @@ CameraTrackWrapper::CameraTrackWrapper(const std::shared_ptr<LiveKitCpp::CameraT
 
 CameraTrackWrapper::~CameraTrackWrapper()
 {
-    CameraTrackWrapper::subsribe(false);
-    if (const auto impl = _impl.lock()) {
-        impl->removeListener(this);
-    }
+    close();
 }
 
 MediaDeviceInfo CameraTrackWrapper::deviceInfo() const
@@ -49,6 +46,14 @@ bool CameraTrackWrapper::muted() const
         return impl->muted();
     }
     return false;
+}
+
+void CameraTrackWrapper::close()
+{
+    if (const auto impl = _impl.lock()) {
+        impl->removeListener(this);
+        impl->removeSink(this);
+    }
 }
 
 void CameraTrackWrapper::setMuted(bool mute)

@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once // AdmProxyFacade.h
 #include "AdmProxyState.h"
-#include <api/audio_options.h>
 
 namespace webrtc {
 class AudioTrackSinkInterface;
@@ -30,7 +29,6 @@ public:
     virtual void registerRecordingSink(webrtc::AudioTrackSinkInterface* sink, bool reg) = 0;
     virtual void registerRecordingListener(AdmProxyListener* l, bool reg) = 0;
     virtual void registerPlayoutListener(AdmProxyListener* l, bool reg) = 0;
-    virtual cricket::AudioOptions options() const = 0;
     virtual const AdmProxyState& recordingState() const = 0;
     virtual const AdmProxyState& playoutState() const = 0;
 protected:
