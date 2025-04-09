@@ -1,5 +1,6 @@
 import QtQuick
 import QtMultimedia
+import LiveKitClient 1.0
 
 Item {
     id: root
@@ -38,6 +39,12 @@ Item {
                     return source.frameSize
                 }
                 return Qt.size(0, 0)
+            })
+            fpsArea.frameType = Qt.binding(function() {
+                if (source !== null) {
+                    return source.frameType
+                }
+                return ""
             })
             fpsArea.visible = Qt.binding(function() {
                 if (!muted && source !== null) {

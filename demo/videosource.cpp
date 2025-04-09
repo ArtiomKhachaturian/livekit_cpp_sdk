@@ -1,4 +1,5 @@
 #include "videosource.h"
+#include "cameraoptions.h"
 #include <livekit/media/VideoFrame.h>
 #include <livekit/media/VideoFrameQtHelper.h>
 #include <QTimerEvent>
@@ -8,6 +9,7 @@ using namespace std::chrono_literals;
 
 VideoSource::VideoSource(QObject *parent)
     : QObject{parent}
+    , _frameType(LiveKitCpp::VideoFrameType::I420)
 {
 }
 
@@ -20,6 +22,11 @@ QVideoSink* VideoSource::output() const
 {
     const QReadLocker locker(&_output._lock);
     return _output._val;
+}
+
+QString VideoSource::frameType() const
+{
+    return CameraOptions::toString(_frameType);
 }
 
 void VideoSource::setOutput(QVideoSink* output)
@@ -84,6 +91,13 @@ void VideoSource::timerEvent(QTimerEvent* e)
     QObject::timerEvent(e);
 }
 
+void VideoSource::setFrameType(LiveKitCpp::VideoFrameType type)
+{
+    if (type != _frameType.exchange(type)) {
+        emit frameTypeChanged();
+    }
+}
+
 void VideoSource::setActive(bool active)
 {
     if (active != _active.exchange(active)) {
@@ -129,6 +143,7 @@ void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
             if (qtFrame.isValid()) {
                 _output._val->setVideoFrame(qtFrame);
                 if (isActive() && !isMuted()) {
+                    setFrameType(frame->type());
                     setFrameSize(qtFrame.width(), qtFrame.height());
                 }
                 else {

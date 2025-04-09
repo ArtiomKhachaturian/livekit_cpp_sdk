@@ -11,6 +11,10 @@
 #include <QVideoSink>
 #include <atomic>
 
+namespace LiveKitCpp {
+enum class VideoFrameType;
+}
+
 class VideoSource : public QObject,
                     protected LiveKitCpp::VideoSink,
                     protected LiveKitCpp::CameraEventsListener
@@ -22,13 +26,15 @@ class VideoSource : public QObject,
     Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
     Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged FINAL)
+    Q_PROPERTY(QString frameType READ frameType NOTIFY frameTypeChanged FINAL)
 public:
     explicit VideoSource(QObject *parent = nullptr);
     ~VideoSource() override;
-    Q_INVOKABLE QVideoSink* output() const;
-    Q_INVOKABLE quint16 fps() const noexcept { return _fps; }
-    Q_INVOKABLE QSize frameSize() const { return _frameSize; }
-    Q_INVOKABLE bool isActive() const { return _active; }
+    QVideoSink* output() const;
+    quint16 fps() const noexcept { return _fps; }
+    QSize frameSize() const { return _frameSize; }
+    bool isActive() const { return _active; }
+    QString frameType() const;
 public slots:
     void setOutput(QVideoSink* output);
 signals:
@@ -36,6 +42,7 @@ signals:
     void fpsChanged();
     void frameSizeChanged();
     void activeChanged();
+    void frameTypeChanged();
 protected:
     void startMetricsCollection();
     void stopMetricsCollection();
@@ -46,6 +53,7 @@ protected:
     virtual void subsribe(bool /*subscribe*/) {}
     void timerEvent(QTimerEvent* e) override;
 private:
+    void setFrameType(LiveKitCpp::VideoFrameType type);
     void setActive(bool active);
     void setFps(quint16 fps);
     void setFrameSize(QSize frameSize, bool updateFps = true);
@@ -65,6 +73,7 @@ private:
     SafeObj<QSize> _frameSize;
     std::atomic<quint16> _framesCounter = 0U;
     std::atomic_bool _active = false;
+    std::atomic<LiveKitCpp::VideoFrameType> _frameType;
 };
 
 Q_DECLARE_METATYPE(VideoSource*)

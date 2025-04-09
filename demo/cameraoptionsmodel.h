@@ -18,11 +18,11 @@ class CameraOptionsModel : public ItemModel<CameraOptions>
     Q_PROPERTY(CameraOptions defaultOptions READ defaultOptions CONSTANT)
 public:
     explicit CameraOptionsModel(QObject* parent = nullptr);
-    Q_INVOKABLE MediaDeviceInfo deviceInfo() const { return _deviceInfo; }
+    const MediaDeviceInfo& deviceInfo() const noexcept { return _deviceInfo; }
     Q_INVOKABLE CameraOptions itemAt(qsizetype index) const;
     Q_INVOKABLE qsizetype indexOf(const CameraOptions& item) const;
-    Q_INVOKABLE bool isValid() const { return !_service.expired(); }
-    Q_INVOKABLE CameraOptions defaultOptions() const { return LiveKitCpp::CameraOptions::defaultOptions(); }
+    bool isValid() const { return !_service.expired(); }
+    CameraOptions defaultOptions() const { return LiveKitCpp::CameraOptions::defaultOptions(); }
     Q_INVOKABLE qsizetype defaultOptionsIndex() const;
 public slots:
     void setDeviceInfo(const MediaDeviceInfo& info);

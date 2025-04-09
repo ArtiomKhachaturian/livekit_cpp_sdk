@@ -22,8 +22,8 @@ public:
                QObject* parent = nullptr);
     ~VideoTrack() override;
     std::shared_ptr<LiveKitCpp::VideoTrack> takeSdkTrack();
-    Q_INVOKABLE QString id() const;
-    Q_INVOKABLE bool muted() const;
+    QString id() const;
+    bool muted() const;
 public slots:
     void setMuted(bool muted);
 signals:
