@@ -3,13 +3,13 @@ import QtMultimedia
 
 Item {
     id: root
-    property VideoSinkWrapper source: null
+    property VideoSink source: null
     property bool muted: false
 
     VideoOutput {
         id: renderer
         anchors.fill: parent
-        property VideoSinkWrapper source: null
+        property VideoSink source: null
         // TODO: replace to https://doc.qt.io/qt-6/qml-qtmultimedia-videooutput.html#clearOutput-method in QT >= 6.9.x
         visible: !muted && source !== null && source.active
         VideoDiagnosticsView {

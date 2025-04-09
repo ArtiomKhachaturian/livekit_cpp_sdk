@@ -1,14 +1,14 @@
-#include "videotrackwrapper.h"
-#include <media/VideoTrack.h>
+#include "videotrack.h"
+#include <livekit/media/VideoTrack.h>
 
-VideoTrackWrapper::VideoTrackWrapper(QObject* parent)
-    : VideoSinkWrapper{parent}
+VideoTrack::VideoTrack(QObject* parent)
+    : VideoSink{parent}
 {
 }
 
-VideoTrackWrapper::VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrack>& impl,
+VideoTrack::VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& impl,
                                      QObject* parent)
-    : VideoSinkWrapper(parent)
+    : VideoSink(parent)
     , _impl(impl)
 {
     if (_impl) {
@@ -16,7 +16,7 @@ VideoTrackWrapper::VideoTrackWrapper(const std::shared_ptr<LiveKitCpp::VideoTrac
     }
 }
 
-VideoTrackWrapper::~VideoTrackWrapper()
+VideoTrack::~VideoTrack()
 {
     if (_impl) {
         _impl->removeListener(this);
@@ -24,7 +24,7 @@ VideoTrackWrapper::~VideoTrackWrapper()
     }
 }
 
-QString VideoTrackWrapper::id() const
+QString VideoTrack::id() const
 {
     if (_impl) {
         return QString::fromStdString(_impl->id());
@@ -32,19 +32,19 @@ QString VideoTrackWrapper::id() const
     return {};
 }
 
-bool VideoTrackWrapper::muted() const
+bool VideoTrack::muted() const
 {
     return _impl && _impl->muted();
 }
 
-void VideoTrackWrapper::setMuted(bool mute)
+void VideoTrack::setMuted(bool mute)
 {
     if (_impl) {
         _impl->mute(mute);
     }
 }
 
-void VideoTrackWrapper::subsribe(bool subscribe)
+void VideoTrack::subsribe(bool subscribe)
 {
     if (_impl) {
         if (subscribe) {
@@ -56,7 +56,7 @@ void VideoTrackWrapper::subsribe(bool subscribe)
     }
 }
 
-void VideoTrackWrapper::onMuteChanged(const std::string&, bool muted)
+void VideoTrack::onMuteChanged(const std::string&, bool muted)
 {
     if (muted) {
         stopMetricsCollection();

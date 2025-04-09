@@ -20,7 +20,7 @@ Item {
 
     QtObject {
         id: cachedObjects
-        property AudioTrackWrapper micTrack: null
+        property AudioTrack micTrack: null
         property Session cachedSession: null
         onMicTrackChanged: {
             if (micTrack !== null) {

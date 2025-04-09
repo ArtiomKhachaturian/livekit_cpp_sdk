@@ -1,6 +1,6 @@
-#ifndef CAMERADEVICEWRAPPER_H
-#define CAMERADEVICEWRAPPER_H
-#include "videosinkwrapper.h"
+#ifndef CAMERADEVICE_H
+#define CAMERADEVICE_H
+#include "videosink.h"
 #include <QObject>
 #include <QQmlEngine>
 #include <memory>
@@ -9,21 +9,21 @@ namespace LiveKitCpp {
 class CameraDevice;
 }
 
-class CameraDeviceWrapper : public VideoSinkWrapper
+class CameraDevice : public VideoSink
 {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(bool valid READ isValid CONSTANT)
 public:
-    CameraDeviceWrapper(std::shared_ptr<LiveKitCpp::CameraDevice> device = {},
-                        QObject *parent = nullptr);
-    ~CameraDeviceWrapper() override;
+    CameraDevice(std::shared_ptr<LiveKitCpp::CameraDevice> device = {},
+                 QObject *parent = nullptr);
+    ~CameraDevice() override;
     Q_INVOKABLE bool isValid() const { return nullptr != _device; }
     const auto& device() const noexcept { return _device; }
 protected:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final {}
-    // overrides of VideoSinkWrapper
+    // overrides of VideoSink
     bool hasVideoInput() const final { return isValid(); }
     bool isMuted() const final;
     void subsribe(bool subscribe) final;
@@ -31,4 +31,4 @@ private:
     const std::shared_ptr<LiveKitCpp::CameraDevice> _device;
 };
 
-#endif // CAMERADEVICEWRAPPER_H
+#endif // CAMERADEVICE_H

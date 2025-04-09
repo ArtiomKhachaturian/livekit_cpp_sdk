@@ -1,23 +1,22 @@
-#ifndef CAMERATRACKWRAPPER_H
-#define CAMERATRACKWRAPPER_H
+#ifndef CAMERATRACK_H
+#define CAMERATRACK_H
 #include "mediadeviceinfo.h"
 #include "cameraoptions.h"
-#include "videotrackwrapper.h"
+#include "videotrack.h"
 
 namespace LiveKitCpp {
 class CameraTrack;
 }
 
-class CameraTrackWrapper : public VideoTrackWrapper
+class CameraTrack : public VideoTrack
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(CameraTrackWrapper)
+    QML_NAMED_ELEMENT(CameraTrack)
     Q_PROPERTY(MediaDeviceInfo deviceInfo READ deviceInfo WRITE setDeviceInfo NOTIFY deviceInfoChanged FINAL)
     Q_PROPERTY(CameraOptions options READ options WRITE setOptions NOTIFY optionsChanged FINAL)
 public:
-    explicit CameraTrackWrapper(QObject *parent = nullptr);
-    CameraTrackWrapper(const std::shared_ptr<LiveKitCpp::CameraTrack>& impl,
-                       QObject *parent = nullptr);
+    explicit CameraTrack(QObject *parent = nullptr);
+    CameraTrack(const std::shared_ptr<LiveKitCpp::CameraTrack>& impl, QObject *parent = nullptr);
     Q_INVOKABLE MediaDeviceInfo deviceInfo() const;
     Q_INVOKABLE CameraOptions options() const;
 public slots:
@@ -34,6 +33,6 @@ private:
     const std::weak_ptr<LiveKitCpp::CameraTrack> _impl;
 };
 
-Q_DECLARE_METATYPE(CameraTrackWrapper*)
+Q_DECLARE_METATYPE(CameraTrack*)
 
-#endif // CAMERATRACKWRAPPER_H
+#endif // CAMERATRACK_H

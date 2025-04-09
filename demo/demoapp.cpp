@@ -1,7 +1,7 @@
 #include "demoapp.h"
 #include "logger.h"
 #include "session.h"
-#include <Service.h>
+#include <livekit/Service.h>
 #include <ZaphoydTppFactory.h>
 #include <QDebug>
 #include <memory>
@@ -143,12 +143,12 @@ AudioDevice* DemoApp::createMicrophone()
     return nullptr;
 }
 
-CameraDeviceWrapper* DemoApp::createCamera(const MediaDeviceInfo& info,
+CameraDevice* DemoApp::createCamera(const MediaDeviceInfo& info,
                                            const CameraOptions& options)
 {
     if (_service) {
         if (auto device = _service->createCamera(info, options)) {
-            return new CameraDeviceWrapper(std::move(device), this);
+            return new CameraDevice(std::move(device), this);
         }
     }
     return nullptr;

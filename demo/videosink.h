@@ -1,31 +1,31 @@
-#ifndef VIDEOSINKWRAPPER_H
-#define VIDEOSINKWRAPPER_H
+#ifndef VIDEOSINK_H
+#define VIDEOSINK_H
 #include "safeobj.h"
-#include <media/CameraEventsListener.h>
+#include <livekit/media/CameraEventsListener.h>
+#include <livekit/media/VideoSink.h>
 #include <QObject>
 #include <QQmlEngine>
 #include <QBasicTimer>
-#include <media/VideoSink.h>
 #include <QPointer>
 #include <QReadWriteLock>
 #include <QSize>
 #include <QVideoSink>
 #include <atomic>
 
-class VideoSinkWrapper : public QObject,
-                         protected LiveKitCpp::VideoSink,
-                         protected LiveKitCpp::CameraEventsListener
+class VideoSink : public QObject,
+                  protected LiveKitCpp::VideoSink,
+                  protected LiveKitCpp::CameraEventsListener
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(VideoSinkWrapper)
-    QML_UNCREATABLE("Create CameraDeviceWrapper or CameraTrackWrapper instead of")
+    QML_NAMED_ELEMENT(VideoSink)
+    QML_UNCREATABLE("Create CameraDevice or CameraTrack instead of")
     Q_PROPERTY(QVideoSink* videoOutput READ videoOutput WRITE setVideoOutput NOTIFY videoOutputChanged FINAL)
     Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
     Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged FINAL)
 public:
-    explicit VideoSinkWrapper(QObject *parent = nullptr);
-    ~VideoSinkWrapper() override;
+    explicit VideoSink(QObject *parent = nullptr);
+    ~VideoSink() override;
     Q_INVOKABLE QVideoSink* videoOutput() const;
     Q_INVOKABLE quint16 fps() const noexcept { return _fps; }
     Q_INVOKABLE QSize frameSize() const { return _frameSize; }
@@ -69,6 +69,6 @@ private:
     std::atomic_bool _active = false;
 };
 
-Q_DECLARE_METATYPE(VideoSinkWrapper*)
+Q_DECLARE_METATYPE(VideoSink*)
 
-#endif // VIDEOSINKWRAPPER_H
+#endif // VIDEOSINK_H

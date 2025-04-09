@@ -2,12 +2,12 @@
 #define DEMOAPP_H
 #include "safeobj.h"
 #include "mediadevicesmodel.h"
-#include "audiotrackwrapper.h"
-#include "cameratrackwrapper.h"
+#include "audiotrack.h"
+#include "cameratrack.h"
 #include "audiodevice.h"
-#include "cameradevicewrapper.h"
+#include "cameradevice.h"
 #include "cameraoptions.h"
-#include <ServiceListener.h>
+#include <livekit/ServiceListener.h>
 #include <QGuiApplication>
 #include <QScopedPointer>
 #include <QPointer>
@@ -52,8 +52,7 @@ public slots:
     Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE Session* createSession(QObject* parent) const;
     Q_INVOKABLE AudioDevice* createMicrophone();
-    Q_INVOKABLE CameraDeviceWrapper* createCamera(const MediaDeviceInfo& info = {},
-                                                  const CameraOptions& options = {});
+    Q_INVOKABLE CameraDevice* createCamera(const MediaDeviceInfo& info = {}, const CameraOptions& options = {});
 public:
     Q_INVOKABLE bool isValid() const;
     Q_INVOKABLE bool audioRecordingEnabled() const;

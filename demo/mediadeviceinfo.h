@@ -1,6 +1,6 @@
 #ifndef MEDIADEVICEINFO_H
 #define MEDIADEVICEINFO_H
-#include <media/MediaDeviceInfo.h>
+#include <livekit/media/MediaDeviceInfo.h>
 #include <QMetaType>
 #include <QObject>
 #include <QString>

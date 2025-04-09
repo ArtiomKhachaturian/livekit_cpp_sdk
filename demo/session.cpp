@@ -1,6 +1,6 @@
 #include "session.h"
 #include "demoapp.h"
-#include <Service.h>
+#include <livekit/Service.h>
 
 namespace
 {
@@ -35,29 +35,29 @@ bool Session::connectToSfu(const QString& url, const QString& token)
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
-AudioTrackWrapper* Session::addAudioTrack(AudioDevice* device)
+AudioTrack* Session::addAudioTrack(AudioDevice* device)
 {
     if (_impl && device) {
         if (const auto track = _impl->addAudioTrack(device->device())) {
-            return new AudioTrackWrapper(track, this);
+            return new AudioTrack(track, this);
         }
     }
     return nullptr;
 }
 
-CameraTrackWrapper* Session::addCameraTrack(CameraDeviceWrapper* device)
+CameraTrack* Session::addCameraTrack(CameraDevice* device)
 {
     if (_impl && device) {
         if (const auto track = _impl->addCameraTrack(device->device())) {
-            return new CameraTrackWrapper(track, this);
+            return new CameraTrack(track, this);
         }
     }
     return nullptr;
 }
 
-AudioTrackWrapper* Session::addMicrophoneTrack()
+AudioTrack* Session::addMicrophoneTrack()
 {
-    AudioTrackWrapper* track = nullptr;
+    AudioTrack* track = nullptr;
     if (const auto app = appInstance()) {
         if (const auto device = app->createMicrophone()) {
             track = addAudioTrack(device);
@@ -67,10 +67,10 @@ AudioTrackWrapper* Session::addMicrophoneTrack()
     return track;
 }
 
-CameraTrackWrapper* Session::addCameraTrack(const MediaDeviceInfo& info,
+CameraTrack* Session::addCameraTrack(const MediaDeviceInfo& info,
                                                    const CameraOptions& options)
 {
-    CameraTrackWrapper* track = nullptr;
+    CameraTrack* track = nullptr;
     if (const auto app = appInstance()) {
         if (const auto device = app->createCamera(info, options)) {
             track = addCameraTrack(device);
@@ -80,7 +80,7 @@ CameraTrackWrapper* Session::addCameraTrack(const MediaDeviceInfo& info,
     return track;
 }
 
-void Session::destroyAudioTrack(AudioTrackWrapper* track)
+void Session::destroyAudioTrack(AudioTrack* track)
 {
     if (_impl && track && track->parent() == this) {
         const auto& sdkTrack = track->track();
@@ -91,7 +91,7 @@ void Session::destroyAudioTrack(AudioTrackWrapper* track)
     }
 }
 
-void Session::destroyVideoTrack(VideoTrackWrapper* track)
+void Session::destroyVideoTrack(VideoTrack* track)
 {
     if (_impl && track && track->parent() == this) {
         const auto& sdkTrack = track->track();

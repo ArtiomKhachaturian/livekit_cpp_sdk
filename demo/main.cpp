@@ -12,10 +12,10 @@ int main(int argc, char *argv[])
     qRegisterMetaType<VideoOptions>();
     qRegisterMetaType<CameraOptions>();
     qRegisterMetaType<Session*>();
-    qRegisterMetaType<AudioTrackWrapper*>();
-    qRegisterMetaType<VideoSinkWrapper*>();
-    qRegisterMetaType<VideoTrackWrapper*>();
-    qRegisterMetaType<CameraTrackWrapper*>();
+    qRegisterMetaType<AudioTrack*>();
+    qRegisterMetaType<VideoSink*>();
+    qRegisterMetaType<VideoTrack*>();
+    qRegisterMetaType<CameraTrack*>();
 
     DemoApp app(argc, argv);
     QQmlApplicationEngine engine;

@@ -5,7 +5,7 @@ Item {
     property var options: app.defaultCameraOptions
     property var deviceInfo: undefined
     property alias muted: renderer.muted
-    property CameraTrackWrapper track: null
+    property CameraTrack track: null
 
     function takeTrack() {
         var oldTrack = track

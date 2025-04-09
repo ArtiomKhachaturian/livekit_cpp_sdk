@@ -1,6 +1,6 @@
 #include "cameraoptionsmodel.h"
 #include "demoapp.h"
-#include <Service.h>
+#include <livekit/Service.h>
 
 namespace
 {

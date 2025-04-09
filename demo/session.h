@@ -1,9 +1,9 @@
 #ifndef Session_H
 #define Session_H
-#include "audiotrackwrapper.h"
-#include "cameratrackwrapper.h"
+#include "audiotrack.h"
+#include "cameratrack.h"
 #include "audiodevice.h"
-#include "cameradevicewrapper.h"
+#include "cameradevice.h"
 #include <livekit/SessionListener.h>
 #include <livekit/RemoteParticipantListener.h>
 #include <livekit/Session.h>
@@ -42,13 +42,13 @@ public:
     Session(std::unique_ptr<LiveKitCpp::Session> impl = {}, QObject *parent = nullptr);
     ~Session() override;
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
-    Q_INVOKABLE AudioTrackWrapper* addAudioTrack(AudioDevice* device);
-    Q_INVOKABLE CameraTrackWrapper* addCameraTrack(CameraDeviceWrapper* device);
-    Q_INVOKABLE AudioTrackWrapper* addMicrophoneTrack();
-    Q_INVOKABLE CameraTrackWrapper* addCameraTrack(const MediaDeviceInfo& info = {},
-                                                   const CameraOptions& options = {});
-    Q_INVOKABLE void destroyAudioTrack(AudioTrackWrapper* track);
-    Q_INVOKABLE void destroyVideoTrack(VideoTrackWrapper* track);
+    Q_INVOKABLE AudioTrack* addAudioTrack(AudioDevice* device);
+    Q_INVOKABLE CameraTrack* addCameraTrack(CameraDevice* device);
+    Q_INVOKABLE AudioTrack* addMicrophoneTrack();
+    Q_INVOKABLE CameraTrack* addCameraTrack(const MediaDeviceInfo& info = {},
+                                            const CameraOptions& options = {});
+    Q_INVOKABLE void destroyAudioTrack(AudioTrack* track);
+    Q_INVOKABLE void destroyVideoTrack(VideoTrack* track);
     bool connecting() const;
     State state() const;
     QString sid() const;

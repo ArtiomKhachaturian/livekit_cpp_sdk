@@ -1,6 +1,6 @@
-#ifndef AUDIOTRACKWRAPPER_H
-#define AUDIOTRACKWRAPPER_H
-#include <media/MediaEventsListener.h>
+#ifndef AUDIOTRACK_H
+#define AUDIOTRACK_H
+#include <livekit/media/MediaEventsListener.h>
 #include <QObject>
 #include <QMetaType>
 #include <QtQml/qqmlregistration.h>
@@ -9,17 +9,17 @@ namespace LiveKitCpp {
 class AudioTrack;
 }
 
-class AudioTrackWrapper : public QObject, private LiveKitCpp::MediaEventsListener
+class AudioTrack : public QObject, private LiveKitCpp::MediaEventsListener
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(AudioTrackWrapper)
+    QML_NAMED_ELEMENT(AudioTrack)
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY muteChanged)
 public:
-    explicit AudioTrackWrapper(QObject* parent = nullptr);
-    AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl,
-                      QObject* parent = nullptr);
-    ~AudioTrackWrapper() override;
+    explicit AudioTrack(QObject* parent = nullptr);
+    AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl,
+               QObject* parent = nullptr);
+    ~AudioTrack() override;
     const auto& track() const noexcept { return _impl; }
     Q_INVOKABLE QString id() const;
     Q_INVOKABLE bool muted() const;
@@ -35,6 +35,6 @@ private:
     const std::shared_ptr<LiveKitCpp::AudioTrack> _impl;
 };
 
-Q_DECLARE_METATYPE(AudioTrackWrapper*)
+Q_DECLARE_METATYPE(AudioTrack*)
 
-#endif // AUDIOTRACKWRAPPER_H
+#endif // AUDIOTRACK_H

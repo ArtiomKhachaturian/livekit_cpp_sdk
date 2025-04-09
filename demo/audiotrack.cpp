@@ -1,12 +1,12 @@
-#include "audiotrackwrapper.h"
-#include <media/AudioTrack.h>
+#include "audiotrack.h"
+#include <livekit/media/AudioTrack.h>
 
-AudioTrackWrapper::AudioTrackWrapper(QObject* parent)
+AudioTrack::AudioTrack(QObject* parent)
     : QObject(parent)
 {
 }
 
-AudioTrackWrapper::AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl,
+AudioTrack::AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl,
                                      QObject *parent)
     : QObject(parent)
     , _impl(impl)
@@ -16,21 +16,21 @@ AudioTrackWrapper::AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrac
     }
 }
 
-AudioTrackWrapper::~AudioTrackWrapper()
+AudioTrack::~AudioTrack()
 {
     if (_impl) {
         _impl->removeListener(this);
     }
 }
 
-void AudioTrackWrapper::setVolume(qreal volume)
+void AudioTrack::setVolume(qreal volume)
 {
     if (_impl) {
         _impl->setVolume(volume);
     }
 }
 
-QString AudioTrackWrapper::id() const
+QString AudioTrack::id() const
 {
     if (_impl) {
         return QString::fromStdString(_impl->id());
@@ -38,12 +38,12 @@ QString AudioTrackWrapper::id() const
     return {};
 }
 
-bool AudioTrackWrapper::muted() const
+bool AudioTrack::muted() const
 {
     return _impl && _impl->muted();
 }
 
-void AudioTrackWrapper::setMuted(bool mute)
+void AudioTrack::setMuted(bool mute)
 {
     if (_impl) {
         _impl->mute(mute);

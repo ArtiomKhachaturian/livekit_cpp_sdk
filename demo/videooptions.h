@@ -1,6 +1,6 @@
 #ifndef VIDEOOPTIONS_H
 #define VIDEOOPTIONS_H
-#include <media/VideoOptions.h>
+#include <livekit/media/VideoOptions.h>
 #include <QCoreApplication>
 #include <QMetaType>
 #include <QObject>
