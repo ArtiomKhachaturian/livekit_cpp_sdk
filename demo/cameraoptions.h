@@ -37,6 +37,4 @@ private:
     bool _interlaced = false;
 };
 
-Q_DECLARE_METATYPE(CameraOptions)
-
 #endif // CAMERAOPTIONS_H

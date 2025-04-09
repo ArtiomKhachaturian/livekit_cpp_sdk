@@ -117,6 +117,4 @@ inline TTrack* Participant::add(const std::shared_ptr<TSdkTrack>& sdkTrack,
     return track;
 }
 
-Q_DECLARE_METATYPE(Participant*)
-
 #endif // PARTICIPANT_H

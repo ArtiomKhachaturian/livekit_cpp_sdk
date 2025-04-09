@@ -3,7 +3,6 @@
 #include "safeobj.h"
 #include <livekit/media/MediaEventsListener.h>
 #include <QObject>
-#include <QMetaType>
 #include <QtQml/qqmlregistration.h>
 
 namespace LiveKitCpp {
@@ -35,7 +34,5 @@ private:
 private:
     SafeObj<std::shared_ptr<LiveKitCpp::AudioTrack>> _sdkTrack;
 };
-
-Q_DECLARE_METATYPE(AudioTrack*)
 
 #endif // AUDIOTRACK_H

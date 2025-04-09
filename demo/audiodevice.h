@@ -23,6 +23,4 @@ private:
     const std::shared_ptr<LiveKitCpp::AudioDevice> _device;
 };
 
-Q_DECLARE_METATYPE(AudioDevice*)
-
 #endif // AUDIODEVICE_H

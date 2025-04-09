@@ -40,6 +40,4 @@ private:
     SafeObj<std::shared_ptr<LiveKitCpp::VideoTrack>> _sdkTrack;
 };
 
-Q_DECLARE_METATYPE(VideoTrack*)
-
 #endif // VIDEOTRACK_H

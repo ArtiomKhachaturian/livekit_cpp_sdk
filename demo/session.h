@@ -95,6 +95,4 @@ private:
     LocalParticipant* const _localParticipant;
 };
 
-Q_DECLARE_METATYPE(Session*)
-
 #endif // Session_H

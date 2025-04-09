@@ -2,8 +2,6 @@
 #define VIDEOOPTIONS_H
 #include <livekit/media/VideoOptions.h>
 #include <QCoreApplication>
-#include <QMetaType>
-#include <QObject>
 #include <QSize>
 #include <QtQml/qqmlregistration.h>
 
@@ -44,7 +42,5 @@ private:
     qint32 _height = 0;
     qint32 _maxFPS = 0;
 };
-
-Q_DECLARE_METATYPE(VideoOptions)
 
 #endif // VIDEOOPTIONS_H

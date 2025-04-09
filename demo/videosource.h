@@ -76,6 +76,4 @@ private:
     std::atomic<LiveKitCpp::VideoFrameType> _frameType;
 };
 
-Q_DECLARE_METATYPE(VideoSource*)
-
 #endif // VIDEOSOURCE_H

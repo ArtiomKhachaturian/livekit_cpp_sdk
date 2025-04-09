@@ -82,6 +82,4 @@ private:
     QPointer<AudioTrack> _microphone;
 };
 
-Q_DECLARE_METATYPE(LocalParticipant*)
-
 #endif // LOCALPARTICIPANT_H

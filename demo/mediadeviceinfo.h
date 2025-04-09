@@ -1,7 +1,6 @@
 #ifndef MEDIADEVICEINFO_H
 #define MEDIADEVICEINFO_H
 #include <livekit/media/MediaDeviceInfo.h>
-#include <QMetaType>
 #include <QObject>
 #include <QString>
 #include <QtQml/qqmlregistration.h>
@@ -34,7 +33,5 @@ private:
     QString _name;
     QString _guid;
 };
-
-Q_DECLARE_METATYPE(MediaDeviceInfo)
 
 #endif // MEDIADEVICEINFO_H

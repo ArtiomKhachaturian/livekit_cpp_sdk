@@ -33,6 +33,4 @@ private:
     const std::weak_ptr<LiveKitCpp::CameraTrack> _impl;
 };
 
-Q_DECLARE_METATYPE(CameraTrack*)
-
 #endif // CAMERATRACK_H
