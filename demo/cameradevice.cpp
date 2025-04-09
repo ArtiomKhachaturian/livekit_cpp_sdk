@@ -3,7 +3,7 @@
 
 CameraDevice::CameraDevice(std::shared_ptr<LiveKitCpp::CameraDevice> device,
                            QObject *parent)
-    : VideoSink(parent)
+    : VideoSource(parent)
     , _device(std::move(device))
 {
     if (_device) {

@@ -1,5 +1,5 @@
-#ifndef VIDEOSINK_H
-#define VIDEOSINK_H
+#ifndef VIDEOSOURCE_H
+#define VIDEOSOURCE_H
 #include "safeobj.h"
 #include <livekit/media/CameraEventsListener.h>
 #include <livekit/media/VideoSink.h>
@@ -12,28 +12,28 @@
 #include <QVideoSink>
 #include <atomic>
 
-class VideoSink : public QObject,
-                  protected LiveKitCpp::VideoSink,
-                  protected LiveKitCpp::CameraEventsListener
+class VideoSource : public QObject,
+                    protected LiveKitCpp::VideoSink,
+                    protected LiveKitCpp::CameraEventsListener
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(VideoSink)
+    QML_NAMED_ELEMENT(VideoSource)
     QML_UNCREATABLE("Create CameraDevice or CameraTrack instead of")
-    Q_PROPERTY(QVideoSink* videoOutput READ videoOutput WRITE setVideoOutput NOTIFY videoOutputChanged FINAL)
+    Q_PROPERTY(QVideoSink* output READ output WRITE setOutput NOTIFY outputChanged FINAL)
     Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
     Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged FINAL)
 public:
-    explicit VideoSink(QObject *parent = nullptr);
-    ~VideoSink() override;
-    Q_INVOKABLE QVideoSink* videoOutput() const;
+    explicit VideoSource(QObject *parent = nullptr);
+    ~VideoSource() override;
+    Q_INVOKABLE QVideoSink* output() const;
     Q_INVOKABLE quint16 fps() const noexcept { return _fps; }
     Q_INVOKABLE QSize frameSize() const { return _frameSize; }
     Q_INVOKABLE bool isActive() const { return _active; }
 public slots:
-    void setVideoOutput(QVideoSink* output);
+    void setOutput(QVideoSink* output);
 signals:
-    void videoOutputChanged();
+    void outputChanged();
     void fpsChanged();
     void frameSizeChanged();
     void activeChanged();
@@ -51,7 +51,7 @@ private:
     void setFps(quint16 fps);
     void setFrameSize(QSize frameSize, bool updateFps = true);
     void setFrameSize(int width, int height, bool updateFps = true);
-    // impl. of LiveKitCpp::VideoSink
+    // impl. of LiveKitCpp::VideoSource
     void onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame) override;
     // impl. of LiveKitCpp::CameraEventsListener
     void onCapturingStarted(const std::string&, const LiveKitCpp::CameraOptions&) override;
@@ -69,6 +69,6 @@ private:
     std::atomic_bool _active = false;
 };
 
-Q_DECLARE_METATYPE(VideoSink*)
+Q_DECLARE_METATYPE(VideoSource*)
 
-#endif // VIDEOSINK_H
+#endif // VIDEOSOURCE_H

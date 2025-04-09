@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<CameraOptions>();
     qRegisterMetaType<Session*>();
     qRegisterMetaType<AudioTrack*>();
-    qRegisterMetaType<VideoSink*>();
+    qRegisterMetaType<VideoSource*>();
     qRegisterMetaType<VideoTrack*>();
     qRegisterMetaType<CameraTrack*>();
 

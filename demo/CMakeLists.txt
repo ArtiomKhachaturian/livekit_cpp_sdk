@@ -32,7 +32,7 @@ target_sources(${PROJECT_NAME} PRIVATE
         itemmodel.h
         audiodevice.cpp
         cameradevice.cpp
-        videosink.cpp
+        videosource.cpp
         videotrack.cpp
 )
 
@@ -62,7 +62,7 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             cameraoptions.h
             cameraoptionsmodel.h
             audiodevice.h
-            videosink.h
+            videosource.h
             cameradevice.h
             videotrack.h
 )

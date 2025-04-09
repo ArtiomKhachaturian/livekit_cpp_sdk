@@ -1,6 +1,6 @@
 #ifndef VIDEOTRACK_H
 #define VIDEOTRACK_H
-#include "videosink.h"
+#include "videosource.h"
 #include <QObject>
 #include <QQmlEngine>
 #include <memory>
@@ -9,7 +9,7 @@ namespace LiveKitCpp {
 class VideoTrack;
 }
 
-class VideoTrack : public VideoSink
+class VideoTrack : public VideoSource
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(VideoTrack)
@@ -27,7 +27,7 @@ public slots:
 signals:
     void muteChanged();
 protected:
-    // overrides of VideoSink
+    // overrides of VideoSource
     bool hasVideoInput() const final { return nullptr != _impl; }
     bool isMuted() const final { return muted(); }
     void subsribe(bool subscribe) final;

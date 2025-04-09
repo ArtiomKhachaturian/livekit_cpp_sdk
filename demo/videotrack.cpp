@@ -2,13 +2,13 @@
 #include <livekit/media/VideoTrack.h>
 
 VideoTrack::VideoTrack(QObject* parent)
-    : VideoSink{parent}
+    : VideoSource{parent}
 {
 }
 
 VideoTrack::VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& impl,
                                      QObject* parent)
-    : VideoSink(parent)
+    : VideoSource(parent)
     , _impl(impl)
 {
     if (_impl) {

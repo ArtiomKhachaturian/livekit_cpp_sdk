@@ -3,13 +3,13 @@ import QtMultimedia
 
 Item {
     id: root
-    property VideoSink source: null
+    property VideoSource source: null
     property bool muted: false
 
     VideoOutput {
         id: renderer
         anchors.fill: parent
-        property VideoSink source: null
+        property VideoSource source: null
         // TODO: replace to https://doc.qt.io/qt-6/qml-qtmultimedia-videooutput.html#clearOutput-method in QT >= 6.9.x
         visible: !muted && source !== null && source.active
         VideoDiagnosticsView {
@@ -22,11 +22,11 @@ Item {
 
     onSourceChanged: {
         if (renderer.source !== null) {
-            renderer.source.videoOutput = null
+            renderer.source.output = null
             renderer.source = null
         }
         if (source !== null) {
-            source.videoOutput = renderer.videoSink
+            source.output = renderer.videoSink
             fpsArea.fps = Qt.binding(function() {
                 if (source !== null) {
                     return source.fps

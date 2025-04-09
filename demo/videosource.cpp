@@ -1,4 +1,4 @@
-#include "videosink.h"
+#include "videosource.h"
 #include <livekit/media/VideoFrame.h>
 #include <livekit/media/VideoFrameQtHelper.h>
 #include <QTimerEvent>
@@ -6,23 +6,23 @@
 
 using namespace std::chrono_literals;
 
-VideoSink::VideoSink(QObject *parent)
+VideoSource::VideoSource(QObject *parent)
     : QObject{parent}
 {
 }
 
-VideoSink::~VideoSink()
+VideoSource::~VideoSource()
 {
     stopMetricsCollection();
 }
 
-QVideoSink* VideoSink::videoOutput() const
+QVideoSink* VideoSource::output() const
 {
     const QReadLocker locker(&_outputLock);
     return _output;
 }
 
-void VideoSink::setVideoOutput(QVideoSink* output)
+void VideoSource::setOutput(QVideoSink* output)
 {
     bool changed = false;
     if (hasVideoInput()) {
@@ -41,23 +41,23 @@ void VideoSink::setVideoOutput(QVideoSink* output)
     }
     if (changed) {
         setActive(nullptr != output);
-        emit videoOutputChanged();
+        emit outputChanged();
     }
 }
 
-void VideoSink::startMetricsCollection()
+void VideoSource::startMetricsCollection()
 {
     if (isActive() && hasVideoInput()) {
         if (QThread::currentThread() == thread()) {
             _fpsTimer.start(1000ms, this);
         }
         else {
-            QMetaObject::invokeMethod(this, &VideoSink::startMetricsCollection);
+            QMetaObject::invokeMethod(this, &VideoSource::startMetricsCollection);
         }
     }
 }
 
-void VideoSink::stopMetricsCollection()
+void VideoSource::stopMetricsCollection()
 {
     _framesCounter = 0U;
     setFps(0U);
@@ -66,17 +66,17 @@ void VideoSink::stopMetricsCollection()
         _fpsTimer.stop();
     }
     else {
-        QMetaObject::invokeMethod(this, &VideoSink::stopMetricsCollection);
+        QMetaObject::invokeMethod(this, &VideoSource::stopMetricsCollection);
     }
 }
 
-bool VideoSink::hasOutput() const
+bool VideoSource::hasOutput() const
 {
     const QReadLocker locker(&_outputLock);
     return nullptr != _output;
 }
 
-void VideoSink::timerEvent(QTimerEvent* e)
+void VideoSource::timerEvent(QTimerEvent* e)
 {
     if (e && e->timerId() == _fpsTimer.timerId()) {
         setFps(_framesCounter.exchange(0U));
@@ -84,7 +84,7 @@ void VideoSink::timerEvent(QTimerEvent* e)
     QObject::timerEvent(e);
 }
 
-void VideoSink::setActive(bool active)
+void VideoSource::setActive(bool active)
 {
     if (active != _active.exchange(active)) {
         if (active) {
@@ -97,7 +97,7 @@ void VideoSink::setActive(bool active)
     }
 }
 
-void VideoSink::setFps(quint16 fps)
+void VideoSource::setFps(quint16 fps)
 {
     if (fps != _fps) {
         _fps = fps;
@@ -105,7 +105,7 @@ void VideoSink::setFps(quint16 fps)
     }
 }
 
-void VideoSink::setFrameSize(QSize frameSize, bool updateFps)
+void VideoSource::setFrameSize(QSize frameSize, bool updateFps)
 {
     if (updateFps) {
         _framesCounter.fetch_add(1U);
@@ -115,12 +115,12 @@ void VideoSink::setFrameSize(QSize frameSize, bool updateFps)
     }
 }
 
-void VideoSink::setFrameSize(int width, int height, bool updateFps)
+void VideoSource::setFrameSize(int width, int height, bool updateFps)
 {
     setFrameSize(QSize(width, height), updateFps);
 }
 
-void VideoSink::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
+void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
 {
     if (frame && frame->planesCount()) {
         const QReadLocker locker(&_outputLock);
@@ -140,12 +140,12 @@ void VideoSink::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
 }
 
 
-void VideoSink::onCapturingStarted(const std::string&, const LiveKitCpp::CameraOptions&)
+void VideoSource::onCapturingStarted(const std::string&, const LiveKitCpp::CameraOptions&)
 {
     setActive(true);
 }
 
-void VideoSink::onCapturingStartFailed(const std::string&, const LiveKitCpp::CameraOptions&)
+void VideoSource::onCapturingStartFailed(const std::string&, const LiveKitCpp::CameraOptions&)
 {
     setActive(false);
 }

@@ -1,6 +1,6 @@
 #ifndef CAMERADEVICE_H
 #define CAMERADEVICE_H
-#include "videosink.h"
+#include "videosource.h"
 #include <QObject>
 #include <QQmlEngine>
 #include <memory>
@@ -9,7 +9,7 @@ namespace LiveKitCpp {
 class CameraDevice;
 }
 
-class CameraDevice : public VideoSink
+class CameraDevice : public VideoSource
 {
     Q_OBJECT
     QML_ELEMENT
@@ -23,7 +23,7 @@ public:
 protected:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final {}
-    // overrides of VideoSink
+    // overrides of VideoSource
     bool hasVideoInput() const final { return isValid(); }
     bool isMuted() const final;
     void subsribe(bool subscribe) final;
