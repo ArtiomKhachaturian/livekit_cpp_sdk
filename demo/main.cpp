@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<SessionWrapper*>();
     qRegisterMetaType<AudioTrackWrapper*>();
     qRegisterMetaType<VideoSinkWrapper*>();
+    qRegisterMetaType<VideoTrackWrapper*>();
     qRegisterMetaType<CameraTrackWrapper*>();
 
     DemoApp app(argc, argv);

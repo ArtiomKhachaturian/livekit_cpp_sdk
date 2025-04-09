@@ -11,7 +11,6 @@ Item {
         var oldTrack = track
         if (oldTrack) {
             oldTrack.videoOutput = null
-            oldTrack.close()
         }
         renderer.source = null
         track = null

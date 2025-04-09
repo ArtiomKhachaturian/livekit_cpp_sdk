@@ -16,10 +16,11 @@ class AudioTrackWrapper : public QObject, private LiveKitCpp::MediaEventsListene
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY muteChanged)
 public:
-    AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl = {},
-                      QObject *parent = nullptr);
-    ~AudioTrackWrapper();
-    std::shared_ptr<LiveKitCpp::AudioTrack> track() const noexcept { return _impl.lock(); }
+    explicit AudioTrackWrapper(QObject* parent = nullptr);
+    AudioTrackWrapper(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl,
+                      QObject* parent = nullptr);
+    ~AudioTrackWrapper() override;
+    const auto& track() const noexcept { return _impl; }
     Q_INVOKABLE QString id() const;
     Q_INVOKABLE bool muted() const;
 public slots:
@@ -31,7 +32,7 @@ private:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final { emit muteChanged(); }
 private:
-    const std::weak_ptr<LiveKitCpp::AudioTrack> _impl;
+    const std::shared_ptr<LiveKitCpp::AudioTrack> _impl;
 };
 
 Q_DECLARE_METATYPE(AudioTrackWrapper*)

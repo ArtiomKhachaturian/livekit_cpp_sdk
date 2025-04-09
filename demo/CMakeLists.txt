@@ -33,6 +33,7 @@ target_sources(${PROJECT_NAME} PRIVATE
         audiodevicewrapper.cpp
         cameradevicewrapper.cpp
         videosinkwrapper.cpp
+        videotrackwrapper.cpp
 )
 
 qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
@@ -63,6 +64,7 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             audiodevicewrapper.h
             videosinkwrapper.h
             cameradevicewrapper.h
+            videotrackwrapper.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
