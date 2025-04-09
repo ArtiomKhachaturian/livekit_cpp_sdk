@@ -1,7 +1,6 @@
-#ifndef SAFEOBJ_H
+#ifndef SAFEOBJ_H // safeobj.h
 #define SAFEOBJ_H
-// safeobj.h
-#include <QReadWriteLock>
+#include "lockable.h"
 
 template <typename T>
 class SafeObj
@@ -20,21 +19,21 @@ public:
     template <typename U = T>
     bool exchange(U src);
     T get() const;
+    T take();
 private:
-    T _val;
-    mutable QReadWriteLock _lock;
+    Lockable<T> _data;
 };
 
 template <typename T>
 inline SafeObj<T>::SafeObj(T val)
-    : _val(std::move(val))
+    : _data(std::move(val))
 {
 }
 
 template <typename T>
 template <class... Args>
 inline SafeObj<T>::SafeObj(Args&&... args)
-    : _val(std::forward<Args>(args)...)
+    : _data(std::forward<Args>(args)...)
 {
 }
 
@@ -50,17 +49,17 @@ template <typename T>
 template <typename U>
 inline void SafeObj<T>::set(U src)
 {
-    const QWriteLocker locker(&_lock);
-    _val = std::move(src);
+    const QWriteLocker locker(&_data._lock);
+    _data._val = std::move(src);
 }
 
 template <typename T>
 template <typename U>
 inline bool SafeObj<T>::exchange(U src)
 {
-    const QWriteLocker locker(&_lock);
-    if (src != _val) {
-        _val = std::move(src);
+    const QWriteLocker locker(&_data._lock);
+    if (src != _data._val) {
+        _data._val = std::move(src);
         return true;
     }
     return false;
@@ -69,8 +68,15 @@ inline bool SafeObj<T>::exchange(U src)
 template <typename T>
 inline T SafeObj<T>::get() const
 {
-    const QReadLocker locker(&_lock);
-    return _val;
+    const QReadLocker locker(&_data._lock);
+    return _data._val;
+}
+
+template <typename T>
+inline T SafeObj<T>::take()
+{
+    const QWriteLocker locker(&_data._lock);
+    return std::move(_data._val);
 }
 
 #endif // SAFEOBJ_H

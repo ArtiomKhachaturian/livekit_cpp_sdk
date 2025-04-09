@@ -18,7 +18,7 @@ public:
     CameraDevice(std::shared_ptr<LiveKitCpp::CameraDevice> device = {},
                  QObject *parent = nullptr);
     ~CameraDevice() override;
-    Q_INVOKABLE bool isValid() const { return nullptr != _device; }
+    bool isValid() const { return nullptr != _device; }
     const auto& device() const noexcept { return _device; }
 protected:
     // impl. of LiveKitCpp::MediaEventsListener

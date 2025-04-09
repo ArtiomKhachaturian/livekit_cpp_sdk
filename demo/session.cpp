@@ -5,19 +5,39 @@
 namespace
 {
 
-inline DemoApp* appInstance()
-{
+inline DemoApp* appInstance() {
     return qobject_cast<DemoApp*>(QCoreApplication::instance());
 }
 
+inline std::shared_ptr<LiveKitCpp::Service> getService() {
+    if (const auto app = appInstance()) {
+        return app->service().lock();
+    }
+    return {};
 }
 
-Session::Session(std::unique_ptr<LiveKitCpp::Session> impl,
-                               QObject *parent)
+}
+
+Session::Session(QObject *parent)
     : QObject{parent}
-    , _impl(std::move(impl))
+    , _impl(create())
+    , _localParticipant(new LocalParticipant(this))
 {
     if (_impl) {
+        QObject::connect(_localParticipant, &LocalParticipant::activeCameraChanged,
+                         this, &Session::activeCameraChanged);
+        QObject::connect(_localParticipant, &LocalParticipant::activeMicrophoneChanged,
+                         this, &Session::activeMicrophoneChanged);
+        QObject::connect(_localParticipant, &LocalParticipant::cameraDeviceInfoChanged,
+                         this, &Session::cameraDeviceInfoChanged);
+        QObject::connect(_localParticipant, &LocalParticipant::cameraOptionsChanged,
+                         this, &Session::cameraOptionsChanged);
+        QObject::connect(_localParticipant, &LocalParticipant::cameraMutedChanged,
+                         this, &Session::cameraMutedChanged);
+        QObject::connect(_localParticipant, &LocalParticipant::microphoneMutedChanged,
+                         this, &Session::microphoneMutedChanged);
+        QObject::connect(_localParticipant, &LocalParticipant::identityChanged,
+                         this, &Session::identityChanged);
         _impl->setListener(this);
     }
 }
@@ -25,8 +45,11 @@ Session::Session(std::unique_ptr<LiveKitCpp::Session> impl,
 Session::~Session()
 {
     disconnectFromSfu();
+    setActiveCamera(false);
+    setActiveMicrophone(false);
     if (_impl) {
         _impl->setListener(nullptr);
+        _localParticipant->disconnect(this);
     }
 }
 
@@ -35,71 +58,24 @@ bool Session::connectToSfu(const QString& url, const QString& token)
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
-AudioTrack* Session::addAudioTrack(AudioDevice* device)
+bool Session::activeCamera() const
 {
-    if (_impl && device) {
-        if (const auto track = _impl->addAudioTrack(device->device())) {
-            return new AudioTrack(track, this);
-        }
-    }
-    return nullptr;
+    return _localParticipant->activeCamera();
 }
 
-CameraTrack* Session::addCameraTrack(CameraDevice* device)
+bool Session::activeMicrophone() const
 {
-    if (_impl && device) {
-        if (const auto track = _impl->addCameraTrack(device->device())) {
-            return new CameraTrack(track, this);
-        }
-    }
-    return nullptr;
+    return _localParticipant->activeMicrophone();
 }
 
-AudioTrack* Session::addMicrophoneTrack()
+QString Session::cameraTrackId() const
 {
-    AudioTrack* track = nullptr;
-    if (const auto app = appInstance()) {
-        if (const auto device = app->createMicrophone()) {
-            track = addAudioTrack(device);
-            device->deleteLater();
-        }
-    }
-    return track;
+    return _localParticipant->cameraTrackId();
 }
 
-CameraTrack* Session::addCameraTrack(const MediaDeviceInfo& info,
-                                                   const CameraOptions& options)
+QString Session::microphoneTrackId() const
 {
-    CameraTrack* track = nullptr;
-    if (const auto app = appInstance()) {
-        if (const auto device = app->createCamera(info, options)) {
-            track = addCameraTrack(device);
-            device->deleteLater();
-        }
-    }
-    return track;
-}
-
-void Session::destroyAudioTrack(AudioTrack* track)
-{
-    if (_impl && track && track->parent() == this) {
-        const auto& sdkTrack = track->track();
-        if (sdkTrack && !sdkTrack->remote()) {
-            _impl->removeAudioTrack(sdkTrack);
-        }
-        delete track;
-    }
-}
-
-void Session::destroyVideoTrack(VideoTrack* track)
-{
-    if (_impl && track && track->parent() == this) {
-        const auto& sdkTrack = track->track();
-        if (sdkTrack && !sdkTrack->remote()) {
-            _impl->removeVideoTrack(sdkTrack);
-        }
-        delete track;
-    }
+    return _localParticipant->microphoneTrackId();
 }
 
 bool Session::connecting() const
@@ -113,6 +89,11 @@ bool Session::connecting() const
             break;
     }
     return false;
+}
+
+bool Session::connected() const
+{
+    return State::RtcConnected == state();
 }
 
 Session::State Session::state() const
@@ -142,28 +123,56 @@ Session::State Session::state() const
     return State::TransportDisconnected;
 }
 
-QString Session::sid() const
+MediaDeviceInfo Session::cameraDeviceInfo() const
 {
-    if (_impl) {
-        return QString::fromStdString(_impl->sid());
-    }
-    return {};
+    return _localParticipant->cameraDeviceInfo();
 }
 
-QString Session::identity() const
+CameraOptions Session::cameraOptions() const
 {
-    if (_impl) {
-        return QString::fromStdString(_impl->identity());
-    }
-    return {};
+    return _localParticipant->cameraOptions();
 }
 
-QString Session::name() const
+void Session::setActiveCamera(bool active)
 {
-    if (_impl) {
-        return QString::fromStdString(_impl->name());
+    if (active != activeCamera()) {
+        if (active) {
+            if (const auto service = getService()) {
+                auto device = service->createCamera(cameraDeviceInfo(), cameraOptions());
+                const auto track = _impl->addCameraTrack(std::move(device));
+                _localParticipant->activateCamera(track);
+            }
+        }
+        else {
+            _impl->removeVideoTrack(_localParticipant->deactivateCamera());
+        }
     }
-    return {};
+}
+
+void Session::setActiveMicrophone(bool active)
+{
+    if (active != activeMicrophone()) {
+        if (active) {
+            if (const auto service = getService()) {
+                auto device = service->createMicrophone();
+                const auto track = _impl->addAudioTrack(std::move(device));
+                _localParticipant->activateMicrophone(track);
+            }
+        }
+        else {
+            _impl->removeAudioTrack(_localParticipant->deactivateMicrophone());
+        }
+    }
+}
+
+void Session::setCameraDeviceInfo(const MediaDeviceInfo& info)
+{
+    _localParticipant->setCameraDeviceInfo(info);
+}
+
+void Session::setCameraOptions(const CameraOptions& options)
+{
+    _localParticipant->setCameraOptions(options);
 }
 
 void Session::disconnectFromSfu()
@@ -178,15 +187,26 @@ bool Session::sendChatMessage(const QString& message)
     return _impl && _impl->sendChatMessage(message.toStdString());
 }
 
-void Session::onError(LiveKitCpp::LiveKitError error, const std::string& what)
+std::unique_ptr<LiveKitCpp::Session> Session::create()
 {
-    emit this->error(QString::fromStdString(LiveKitCpp::toString(error)),
-                     QString::fromStdString(what));
+    if (const auto service = getService()) {
+        return service->createSession();
+    }
+    return {};
 }
 
-void Session::onChanged(const LiveKitCpp::Participant*)
+void Session::onError(LiveKitCpp::LiveKitError liveKitError, const std::string& what)
 {
-    emit localDataChanged();
+    emit error(QString::fromStdString(LiveKitCpp::toString(liveKitError)), QString::fromStdString(what));
+}
+
+void Session::onChanged(const LiveKitCpp::Participant* participant)
+{
+    if (participant && participant == _impl.get()) {
+        _localParticipant->setSid(QString::fromStdString(_impl->sid()));
+        _localParticipant->setIdentity(QString::fromStdString(_impl->identity()));
+        _localParticipant->setName(QString::fromStdString(_impl->name()));
+    }
 }
 
 void Session::onStateChanged(LiveKitCpp::SessionState)

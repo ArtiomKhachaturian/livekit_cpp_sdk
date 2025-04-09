@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import LiveKitClient 1.0
 
 ComboBox {
     textRole: "display"

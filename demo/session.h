@@ -1,9 +1,6 @@
 #ifndef Session_H
 #define Session_H
-#include "audiotrack.h"
-#include "cameratrack.h"
-#include "audiodevice.h"
-#include "cameradevice.h"
+#include "localparticipant.h"
 #include <livekit/SessionListener.h>
 #include <livekit/RemoteParticipantListener.h>
 #include <livekit/Session.h>
@@ -33,37 +30,59 @@ public:
     };
 public:
     Q_ENUM(State)
+    Q_PROPERTY(bool valid READ isValid CONSTANT)
     Q_PROPERTY(bool connecting READ connecting NOTIFY stateChanged)
-    Q_PROPERTY(State state READ state NOTIFY stateChanged)
-    Q_PROPERTY(QString sid READ sid NOTIFY localDataChanged)
-    Q_PROPERTY(QString identity READ identity NOTIFY localDataChanged)
-    Q_PROPERTY(QString name READ name NOTIFY localDataChanged)
+    Q_PROPERTY(bool connected READ connected NOTIFY stateChanged)
+    Q_PROPERTY(bool activeCamera READ activeCamera WRITE setActiveCamera NOTIFY activeCameraChanged FINAL)
+    Q_PROPERTY(bool activeMicrophone READ activeMicrophone WRITE setActiveMicrophone NOTIFY activeMicrophoneChanged FINAL)
+    Q_PROPERTY(QString cameraTrackId READ cameraTrackId NOTIFY activeCameraChanged FINAL)
+    Q_PROPERTY(QString microphoneTrackId READ microphoneTrackId NOTIFY activeMicrophoneChanged FINAL)
+    Q_PROPERTY(MediaDeviceInfo cameraDeviceInfo READ cameraDeviceInfo WRITE setCameraDeviceInfo NOTIFY cameraDeviceInfoChanged FINAL)
+    Q_PROPERTY(CameraOptions cameraOptions READ cameraOptions WRITE setCameraOptions NOTIFY cameraOptionsChanged FINAL)
+    Q_PROPERTY(LocalParticipant* localParticipant MEMBER _localParticipant CONSTANT)
+    Q_PROPERTY(bool cameraMuted READ cameraMuted WRITE setCameraMuted NOTIFY cameraMutedChanged FINAL)
+    Q_PROPERTY(bool microphoneMuted READ microphoneMuted WRITE setMicrophoneMuted NOTIFY microphoneMutedChanged FINAL)
+    Q_PROPERTY(QString identity READ identity NOTIFY identityChanged)
 public:
-    Session(std::unique_ptr<LiveKitCpp::Session> impl = {}, QObject *parent = nullptr);
+    explicit Session(QObject *parent = nullptr);
     ~Session() override;
+    bool isValid() const noexcept { return nullptr != _impl; }
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
-    Q_INVOKABLE AudioTrack* addAudioTrack(AudioDevice* device);
-    Q_INVOKABLE CameraTrack* addCameraTrack(CameraDevice* device);
-    Q_INVOKABLE AudioTrack* addMicrophoneTrack();
-    Q_INVOKABLE CameraTrack* addCameraTrack(const MediaDeviceInfo& info = {},
-                                            const CameraOptions& options = {});
-    Q_INVOKABLE void destroyAudioTrack(AudioTrack* track);
-    Q_INVOKABLE void destroyVideoTrack(VideoTrack* track);
+    bool activeCamera() const;
+    bool activeMicrophone() const;
+    QString cameraTrackId() const;
+    QString microphoneTrackId() const;
     bool connecting() const;
+    bool connected() const;
     State state() const;
-    QString sid() const;
-    QString identity() const;
-    QString name() const;
+    MediaDeviceInfo cameraDeviceInfo() const;
+    CameraOptions cameraOptions() const;
+    bool cameraMuted() const { return _localParticipant->cameraMuted(); }
+    bool microphoneMuted() const { return _localParticipant->microphoneMuted(); }
+    QString identity() const { return _localParticipant->identity(); }
 public slots:
+    void setActiveCamera(bool active);
+    void setActiveMicrophone(bool active);
+    void setCameraDeviceInfo(const MediaDeviceInfo& info = {});
+    void setCameraOptions(const CameraOptions& options);
+    void setCameraMuted(bool muted) { _localParticipant->setCameraMuted(muted); }
+    void setMicrophoneMuted(bool muted) { _localParticipant->setMicrophoneMuted(muted); }
     Q_INVOKABLE void disconnectFromSfu();
     Q_INVOKABLE bool sendChatMessage(const QString& message);
 signals:
     void chatMessageReceived(const QString& participantIdentity,
                              const QString& message, bool deleted);
     void error(const QString& desc, const QString& details = {});
-    void localDataChanged();
     void stateChanged();
+    void activeCameraChanged();
+    void activeMicrophoneChanged();
+    void cameraDeviceInfoChanged();
+    void cameraOptionsChanged();
+    void cameraMutedChanged();
+    void microphoneMutedChanged();
+    void identityChanged();
 private:
+    static std::unique_ptr<LiveKitCpp::Session> create();
     // impl. of SessionListener
     void onError(LiveKitCpp::LiveKitError error, const std::string& what) final;
     void onChanged(const LiveKitCpp::Participant*) final;
@@ -73,6 +92,7 @@ private:
                                int64_t, bool deleted, bool) final;
 private:
     const std::unique_ptr<LiveKitCpp::Session> _impl;
+    LocalParticipant* const _localParticipant;
 };
 
 Q_DECLARE_METATYPE(Session*)

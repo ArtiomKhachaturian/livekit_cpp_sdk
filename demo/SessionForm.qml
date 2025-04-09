@@ -1,30 +1,32 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import LiveKitClient 1.0
 
 Frame {
     id: root
 
-    property Session session: null
-    property bool activeCamera: false
-    property bool activeMicrophone: false
-    property alias camerDeviceInfo: localMediaView.cameraDeviceInfo
-    property alias cameraOptions: localMediaView.cameraOptions
-    property alias cameraMuted: localMediaView.cameraMuted
-    property alias microphoneMuted: localMediaView.microphoneMuted
-    property alias hasMicrophoneTrack: localMediaView.hasMicrophoneTrack
-    property alias hasCameraTrack: localMediaView.hasCameraTrack
-    readonly property bool connecting: session !== null && session.connecting
-    readonly property int state: {
-        if (session === null) {
-            return Session.TransportDisconnected
-        }
-        return session.state
-    }
-    property string identity : session === null ? objectName : session.identity
+    property alias activeCamera: session.activeCamera
+    property alias activeMicrophone: session.activeMicrophone
+    property alias camerDeviceInfo: session.cameraDeviceInfo
+    property alias cameraOptions: session.cameraOptions
+    property alias cameraMuted: session.cameraMuted
+    property alias microphoneMuted: session.microphoneMuted
+    readonly property bool connected: session.connected
+    readonly property bool connecting: session.connecting
+    readonly property string identity : connected ? session.identity : objectName
 
     signal error(string desc, string details)
 
+    Session {
+        id: session
+        onError: (desc, details) => {
+            root.error(desc, details)
+        }
+        onChatMessageReceived: (participantIdentity, message, deleted) => {
+            chatView.append(participantIdentity, message)
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -35,12 +37,9 @@ Frame {
             Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                LocalMediaView {
+                ParticipantView {
                     id: localMediaView
-                    cameraAdded: activeCamera
-                    microphoneAdded: activeMicrophone
-                    //cameraDeviceInfo: cameraModelComboBox.deviceInfo
-                    //cameraOptions: cameraOptionsComboBox.cameraOptions
+                    participant: session.localParticipant
                     anchors.fill: parent
                 }
             }
@@ -51,49 +50,19 @@ Frame {
                 Layout.maximumWidth: 600
                 Layout.fillHeight: true
                 onTextEntered: text => {
-                    if (session != null) {
-                        session.sendChatMessage(text)
-                    }
+                    session.sendChatMessage(text)
                 }
             }
         }
     }
 
     function connect(url, token) {
-        session = app.createSession(this)
-        if (session != null) {
-            if (!session.connectToSfu(url, token)) {
-                // TODO: log error
-            }
-        }
-        else {
-            error(qsTr("Failed to create session"), "")
+        if (!session.connectToSfu(url, token)) {
+            error(qsTr("Failed connect to SFU"), "")
         }
     }
 
-    onSessionChanged: {
-        localMediaView.session = session
-    }
-
-    onStateChanged: {
-        switch (state) {
-            case Session.TransportDisconnected:
-            case Session.RtcClosed:
-                localMediaView.session = null
-                break
-            default:
-                break
-        }
-    }
-
-    Connections {
-        target: session
-        function onError(desc, details) {
-            session = null
-            root.error(desc, details)
-        }
-        function onChatMessageReceived(participantIdentity, message, deleted) {
-            chatView.append(participantIdentity, message)
-        }
+    function disconnect() {
+        session.disconnectFromSfu()
     }
 }

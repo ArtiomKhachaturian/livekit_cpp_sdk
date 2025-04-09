@@ -1,5 +1,6 @@
 #ifndef AUDIOTRACK_H
 #define AUDIOTRACK_H
+#include "safeobj.h"
 #include <livekit/media/MediaEventsListener.h>
 #include <QObject>
 #include <QMetaType>
@@ -17,12 +18,12 @@ class AudioTrack : public QObject, private LiveKitCpp::MediaEventsListener
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY muteChanged)
 public:
     explicit AudioTrack(QObject* parent = nullptr);
-    AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& impl,
+    AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack,
                QObject* parent = nullptr);
     ~AudioTrack() override;
-    const auto& track() const noexcept { return _impl; }
-    Q_INVOKABLE QString id() const;
-    Q_INVOKABLE bool muted() const;
+    std::shared_ptr<LiveKitCpp::AudioTrack> takeSdkTrack();
+    QString id() const;
+    bool muted() const;
 public slots:
     void setVolume(qreal volume);
     void setMuted(bool muted);
@@ -32,7 +33,7 @@ private:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final { emit muteChanged(); }
 private:
-    const std::shared_ptr<LiveKitCpp::AudioTrack> _impl;
+    SafeObj<std::shared_ptr<LiveKitCpp::AudioTrack>> _sdkTrack;
 };
 
 Q_DECLARE_METATYPE(AudioTrack*)

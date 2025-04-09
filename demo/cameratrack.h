@@ -17,8 +17,8 @@ class CameraTrack : public VideoTrack
 public:
     explicit CameraTrack(QObject *parent = nullptr);
     CameraTrack(const std::shared_ptr<LiveKitCpp::CameraTrack>& impl, QObject *parent = nullptr);
-    Q_INVOKABLE MediaDeviceInfo deviceInfo() const;
-    Q_INVOKABLE CameraOptions options() const;
+    MediaDeviceInfo deviceInfo() const;
+    CameraOptions options() const;
 public slots:
     void setDeviceInfo(const MediaDeviceInfo& info = {});
     void setOptions(const CameraOptions& options);

@@ -1,6 +1,5 @@
 #include "demoapp.h"
 #include "logger.h"
-#include "session.h"
 #include <livekit/Service.h>
 #include <ZaphoydTppFactory.h>
 #include <QDebug>
@@ -29,7 +28,7 @@ DemoApp::DemoApp(int &argc, char **argv)
 {
     const auto logger = std::make_shared<Logger>();
     const auto wsf = std::make_shared<ZaphoydTppFactory>();
-    auto service = std::make_shared<LiveKitCpp::Service>(wsf, logger);
+    auto service = std::make_shared<LiveKitCpp::Service>(wsf/*, logger*/);
     const auto state = service->state();
     if (LiveKitCpp::ServiceState::OK == state) {
         _service = std::move(service);
@@ -122,17 +121,6 @@ void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
     }
 }
 
-Session* DemoApp::createSession(QObject* parent) const
-{
-    Session* wrapper = nullptr;
-    if (_service) {
-        if (auto sessionImpl = _service->createSession()) {
-            wrapper = new Session(std::move(sessionImpl), parent);
-        }
-    }
-    return wrapper;
-}
-
 AudioDevice* DemoApp::createMicrophone()
 {
     if (_service) {
@@ -144,7 +132,7 @@ AudioDevice* DemoApp::createMicrophone()
 }
 
 CameraDevice* DemoApp::createCamera(const MediaDeviceInfo& info,
-                                           const CameraOptions& options)
+                                    const CameraOptions& options)
 {
     if (_service) {
         if (auto device = _service->createCamera(info, options)) {

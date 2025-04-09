@@ -1,6 +1,7 @@
 #include "session.h"
 #include "mediadeviceinfo.h"
 #include "cameraoptions.h"
+#include "cameratrack.h"
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQmlContext>
@@ -12,6 +13,8 @@ int main(int argc, char *argv[])
     qRegisterMetaType<VideoOptions>();
     qRegisterMetaType<CameraOptions>();
     qRegisterMetaType<Session*>();
+    qRegisterMetaType<Participant*>();
+    qRegisterMetaType<LocalParticipant*>();
     qRegisterMetaType<AudioTrack*>();
     qRegisterMetaType<VideoSource*>();
     qRegisterMetaType<VideoTrack*>();

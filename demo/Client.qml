@@ -9,7 +9,6 @@ Pane {
     property alias urlText: connectionForm.urlText
     property alias tokenText: connectionForm.tokenText
     property alias identity: sessionForm.identity
-    readonly property bool hasActiveSession: sessionForm.visible && sessionForm.session !== null
 
     signal wantsToBeClosed()
     signal error(string desc, string details)
@@ -31,19 +30,19 @@ Pane {
 
         ToolBar {
             Layout.fillWidth: true
+            Layout.minimumHeight: 50
             RowLayout {
                 anchors.fill: parent
                 Switch {
                     id: micAddSwitch
                     text: qsTr("Microphone")
                     checked: false
-                    enabled: connectionForm.visible || hasActiveSession
                 }
 
                 CheckBox {
                     id: micMuteCheckbox
                     text: qsTr("Muted")
-                    enabled: sessionForm.hasMicrophoneTrack
+                    enabled: (sessionForm.connecting || sessionForm.connected) && sessionForm.activeMicrophone
                     checked: false
                 }
 
@@ -52,7 +51,6 @@ Pane {
                 Switch {
                     id: cameraAddSwitch
                     text: qsTr("Camera")
-                    enabled: connectionForm.visible || hasActiveSession
                     checked: false
                     onCheckedChanged: {
                         if (checked) {
@@ -67,7 +65,7 @@ Pane {
                 CheckBox {
                     id: cameraMuteCheckbox
                     text: qsTr("Muted")
-                    enabled: sessionForm.hasCameraTrack
+                    enabled: (sessionForm.connecting || sessionForm.connected) && sessionForm.activeCamera
                     checked: false
                 }
 
@@ -84,7 +82,7 @@ Pane {
 
                 CameraOptionsComboBox {
                     id: cameraOptionsComboBox
-                    visible: !connectionForm.visible
+                    visible: sessionForm.connecting || sessionForm.connected
                     deviceInfo: cameraModelComboBox.deviceInfo
                     Layout.horizontalStretchFactor: 1
                     Layout.fillWidth: true
@@ -96,14 +94,14 @@ Pane {
                     text: qsTr("Chat")
                     checkable: true
                     checked: false
-                    visible: !connectionForm.visible
+                    visible: sessionForm.connected
                 }
 
                 ToolButton {
                     Layout.alignment: Qt.AlignRight
                     icon.name: "network-offline"
-                    visible: !connectionForm.visible
-                    onClicked: disconnect()
+                    visible: sessionForm.connecting || sessionForm.connected
+                    onClicked: sessionForm.disconnect()
                 }
             }
         }
@@ -112,6 +110,7 @@ Pane {
             id: stackView
             Layout.fillWidth: true
             Layout.fillHeight: true
+            currentIndex: sessionForm.connecting || sessionForm.connected ? 1 : 0
             ConnectForm {
                 id: connectionForm
                 Layout.fillHeight: true
@@ -135,18 +134,6 @@ Pane {
                 onError: (desc, details) => {
                     root.error(desc, details)
                 }
-                onStateChanged: {
-                    switch (state) {
-                        case Session.RtcConnecting:
-                        case Session.RtcConnected:
-                        case Session.RtcDisconnected:
-                            stackView.currentIndex = 1
-                            break
-                        default:
-                            stackView.currentIndex = 0
-                            break
-                    }
-                }
             }
         }
     }
@@ -154,12 +141,5 @@ Pane {
     BusyIndicator {
         anchors.centerIn: parent
         running: sessionForm.connecting
-    }
-
-    function disconnect() {
-        if (sessionForm.session != null) {
-            sessionForm.session.disconnectFromSfu()
-            sessionForm.session = null
-        }
     }
 }

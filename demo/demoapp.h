@@ -2,8 +2,6 @@
 #define DEMOAPP_H
 #include "safeobj.h"
 #include "mediadevicesmodel.h"
-#include "audiotrack.h"
-#include "cameratrack.h"
 #include "audiodevice.h"
 #include "cameradevice.h"
 #include "cameraoptions.h"
@@ -22,8 +20,6 @@ namespace LiveKitCpp {
 class Service;
 enum class ServiceState;
 }
-
-class Session;
 
 class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
 {
@@ -44,23 +40,22 @@ public:
     std::weak_ptr<LiveKitCpp::Service> service() const { return _service; }
 public slots:
     void setAppWindow(QObject* appWindow, const QUrl&);
-    Q_INVOKABLE void setAudioRecordingEnabled(bool enabled);
-    Q_INVOKABLE void setAudioPlayoutEnabled(bool enabled);
-    Q_INVOKABLE void setAudioRecordingVolume(int volume);
-    Q_INVOKABLE void setAudioPlayoutVolume(int volume);
-    Q_INVOKABLE void setRecordingAudioDevice(const MediaDeviceInfo& device);
-    Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
-    Q_INVOKABLE Session* createSession(QObject* parent) const;
+    void setAudioRecordingEnabled(bool enabled);
+    void setAudioPlayoutEnabled(bool enabled);
+    void setAudioRecordingVolume(int volume);
+    void setAudioPlayoutVolume(int volume);
+    void setRecordingAudioDevice(const MediaDeviceInfo& device);
+    void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE AudioDevice* createMicrophone();
     Q_INVOKABLE CameraDevice* createCamera(const MediaDeviceInfo& info = {}, const CameraOptions& options = {});
 public:
-    Q_INVOKABLE bool isValid() const;
-    Q_INVOKABLE bool audioRecordingEnabled() const;
-    Q_INVOKABLE bool audioPlayoutEnabled() const;
-    Q_INVOKABLE int audioRecordingVolume() const;
-    Q_INVOKABLE int audioPlayoutVolume() const;
-    Q_INVOKABLE MediaDeviceInfo recordingAudioDevice() const { return _recordingAudioDevice; }
-    Q_INVOKABLE MediaDeviceInfo playoutAudioDevice() const { return _playoutAudioDevice; }
+    bool isValid() const;
+    bool audioRecordingEnabled() const;
+    bool audioPlayoutEnabled() const;
+    int audioRecordingVolume() const;
+    int audioPlayoutVolume() const;
+    MediaDeviceInfo recordingAudioDevice() const { return _recordingAudioDevice; }
+    MediaDeviceInfo playoutAudioDevice() const { return _playoutAudioDevice; }
 signals:
     void showErrorMessage(const QString& message, const QString& details = {});
     void audioRecordingEnabledChanged();

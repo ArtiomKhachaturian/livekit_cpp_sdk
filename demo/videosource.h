@@ -7,7 +7,6 @@
 #include <QQmlEngine>
 #include <QBasicTimer>
 #include <QPointer>
-#include <QReadWriteLock>
 #include <QSize>
 #include <QVideoSink>
 #include <atomic>
@@ -61,11 +60,10 @@ private:
 private:
     static constexpr QSize _nullSize = {0, 0};
     QBasicTimer _fpsTimer;
-    mutable QReadWriteLock _outputLock;
-    QPointer<QVideoSink> _output;
     quint16 _fps = 0U;
-    std::atomic<quint16> _framesCounter = 0U;
+    Lockable<QPointer<QVideoSink>> _output;
     SafeObj<QSize> _frameSize;
+    std::atomic<quint16> _framesCounter = 0U;
     std::atomic_bool _active = false;
 };
 

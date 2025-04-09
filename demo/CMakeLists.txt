@@ -34,6 +34,10 @@ target_sources(${PROJECT_NAME} PRIVATE
         cameradevice.cpp
         videosource.cpp
         videotrack.cpp
+        participant.cpp
+        lockable.h
+        localparticipant.cpp
+        remoteparticipant.cpp
 )
 
 qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
@@ -48,7 +52,7 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             VideoDiagnosticsView.qml
             CameraRenderer.qml
             CameraModelComboBox.qml
-            LocalMediaView.qml
+            ParticipantView.qml
             CameraOptionsComboBox.qml
             TextPanel.qml
     SOURCES
@@ -65,6 +69,9 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             videosource.h
             cameradevice.h
             videotrack.h
+            participant.h
+            localparticipant.h
+            remoteparticipant.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

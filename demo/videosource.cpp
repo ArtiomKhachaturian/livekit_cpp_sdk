@@ -18,23 +18,23 @@ VideoSource::~VideoSource()
 
 QVideoSink* VideoSource::output() const
 {
-    const QReadLocker locker(&_outputLock);
-    return _output;
+    const QReadLocker locker(&_output._lock);
+    return _output._val;
 }
 
 void VideoSource::setOutput(QVideoSink* output)
 {
     bool changed = false;
     if (hasVideoInput()) {
-        const QWriteLocker locker(&_outputLock);
-        if (output != _output) {
-            if (output && !_output) {
+        const QWriteLocker locker(&_output._lock);
+        if (output != _output._val) {
+            if (output && !_output._val) {
                 subsribe(true);
             }
-            else if (!output && _output) {
+            else if (!output && _output._val) {
                 subsribe(false);
             }
-            _output = output;
+            _output._val = output;
             changed = true;
             _framesCounter = 0U;
         }
@@ -72,8 +72,8 @@ void VideoSource::stopMetricsCollection()
 
 bool VideoSource::hasOutput() const
 {
-    const QReadLocker locker(&_outputLock);
-    return nullptr != _output;
+    const QReadLocker locker(&_output._lock);
+    return nullptr != _output._val;
 }
 
 void VideoSource::timerEvent(QTimerEvent* e)
@@ -123,11 +123,11 @@ void VideoSource::setFrameSize(int width, int height, bool updateFps)
 void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
 {
     if (frame && frame->planesCount()) {
-        const QReadLocker locker(&_outputLock);
-        if (_output) {
+        const QReadLocker locker(&_output._lock);
+        if (_output._val) {
             const auto qtFrame = LiveKitCpp::convert(frame);
             if (qtFrame.isValid()) {
-                _output->setVideoFrame(qtFrame);
+                _output._val->setVideoFrame(qtFrame);
                 if (isActive() && !isMuted()) {
                     setFrameSize(qtFrame.width(), qtFrame.height());
                 }

@@ -6,52 +6,60 @@ VideoTrack::VideoTrack(QObject* parent)
 {
 }
 
-VideoTrack::VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& impl,
-                                     QObject* parent)
+VideoTrack::VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& sdkTrack,
+                       QObject* parent)
     : VideoSource(parent)
-    , _impl(impl)
+    , _sdkTrack(sdkTrack)
 {
-    if (_impl) {
-        _impl->addListener(this);
+    if (sdkTrack) {
+        sdkTrack->addListener(this);
     }
 }
 
 VideoTrack::~VideoTrack()
 {
-    if (_impl) {
-        _impl->removeListener(this);
-        _impl->removeSink(this);
+    takeSdkTrack();
+}
+
+std::shared_ptr<LiveKitCpp::VideoTrack> VideoTrack::takeSdkTrack()
+{
+    if (auto sdkTrack = _sdkTrack.take()) {
+        sdkTrack->removeListener(this);
+        sdkTrack->removeSink(this);
+        return sdkTrack;
     }
+    return {};
 }
 
 QString VideoTrack::id() const
 {
-    if (_impl) {
-        return QString::fromStdString(_impl->id());
+    if (const auto sdkTrack = _sdkTrack.get()) {
+        return QString::fromStdString(sdkTrack->id());
     }
     return {};
 }
 
 bool VideoTrack::muted() const
 {
-    return _impl && _impl->muted();
+    const auto sdkTrack = _sdkTrack.get();
+    return sdkTrack && sdkTrack->muted();
 }
 
 void VideoTrack::setMuted(bool mute)
 {
-    if (_impl) {
-        _impl->mute(mute);
+    if (const auto sdkTrack = _sdkTrack.get()) {
+        sdkTrack->mute(mute);
     }
 }
 
 void VideoTrack::subsribe(bool subscribe)
 {
-    if (_impl) {
+    if (const auto sdkTrack = _sdkTrack.get()) {
         if (subscribe) {
-            _impl->addSink(this);
+            sdkTrack->addSink(this);
         }
         else {
-            _impl->removeSink(this);
+            sdkTrack->removeSink(this);
         }
     }
 }
