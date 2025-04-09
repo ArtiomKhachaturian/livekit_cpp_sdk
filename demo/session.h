@@ -1,10 +1,11 @@
-#ifndef SESSIONWRAPPER_H
-#define SESSIONWRAPPER_H
+#ifndef Session_H
+#define Session_H
 #include "audiotrackwrapper.h"
 #include "cameratrackwrapper.h"
 #include "audiodevicewrapper.h"
 #include "cameradevicewrapper.h"
 #include <SessionListener.h>
+#include <RemoteParticipantListener.h>
 #include <Session.h>
 #include <QObject>
 #include <QQmlEngine>
@@ -14,10 +15,10 @@ namespace LiveKitCpp {
 class Service;
 }
 
-class SessionWrapper : public QObject, private LiveKitCpp::SessionListener
+class Session : public QObject, private LiveKitCpp::SessionListener
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(SessionWrapper)
+    QML_NAMED_ELEMENT(Session)
 public:
     enum State
     {
@@ -38,17 +39,17 @@ public:
     Q_PROPERTY(QString identity READ identity NOTIFY localDataChanged)
     Q_PROPERTY(QString name READ name NOTIFY localDataChanged)
 public:
-    SessionWrapper(std::unique_ptr<LiveKitCpp::Session> impl = {},
+    Session(std::unique_ptr<LiveKitCpp::Session> impl = {},
                    QObject *parent = nullptr);
-    ~SessionWrapper() override;
+    ~Session() override;
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
     Q_INVOKABLE AudioTrackWrapper* addAudioTrack(AudioDeviceWrapper* device);
     Q_INVOKABLE CameraTrackWrapper* addCameraTrack(CameraDeviceWrapper* device);
     Q_INVOKABLE AudioTrackWrapper* addMicrophoneTrack();
     Q_INVOKABLE CameraTrackWrapper* addCameraTrack(const MediaDeviceInfo& info = {},
                                                    const CameraOptions& options = {});
-    Q_INVOKABLE void removeMicrophoneTrack(AudioTrackWrapper* track);
-    Q_INVOKABLE void removeCameraTrack(CameraTrackWrapper* track);
+    Q_INVOKABLE void destroyAudioTrack(AudioTrackWrapper* track);
+    Q_INVOKABLE void destroyVideoTrack(VideoTrackWrapper* track);
     bool connecting() const;
     State state() const;
     QString sid() const;
@@ -75,6 +76,6 @@ private:
     const std::unique_ptr<LiveKitCpp::Session> _impl;
 };
 
-Q_DECLARE_METATYPE(SessionWrapper*)
+Q_DECLARE_METATYPE(Session*)
 
-#endif // SESSIONWRAPPER_H
+#endif // Session_H

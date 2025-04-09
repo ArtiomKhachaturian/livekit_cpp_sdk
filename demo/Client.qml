@@ -137,9 +137,9 @@ Pane {
                 }
                 onStateChanged: {
                     switch (state) {
-                        case SessionWrapper.RtcConnecting:
-                        case SessionWrapper.RtcConnected:
-                        case SessionWrapper.RtcDisconnected:
+                        case Session.RtcConnecting:
+                        case Session.RtcConnected:
+                        case Session.RtcDisconnected:
                             stackView.currentIndex = 1
                             break
                         default:

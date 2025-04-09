@@ -1,4 +1,4 @@
-#include "sessionwrapper.h"
+#include "session.h"
 #include "mediadeviceinfo.h"
 #include "cameraoptions.h"
 #include <QQmlApplicationEngine>
@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<MediaDeviceInfo>();
     qRegisterMetaType<VideoOptions>();
     qRegisterMetaType<CameraOptions>();
-    qRegisterMetaType<SessionWrapper*>();
+    qRegisterMetaType<Session*>();
     qRegisterMetaType<AudioTrackWrapper*>();
     qRegisterMetaType<VideoSinkWrapper*>();
     qRegisterMetaType<VideoTrackWrapper*>();

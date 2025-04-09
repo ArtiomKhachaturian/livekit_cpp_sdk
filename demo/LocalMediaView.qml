@@ -3,7 +3,7 @@ import QtQuick
 Item {
     id: root
 
-    property SessionWrapper session: null
+    property Session session: null
     property bool cameraAdded: false
     property bool microphoneAdded: false
     property bool microphoneMuted: false
@@ -21,7 +21,7 @@ Item {
     QtObject {
         id: cachedObjects
         property AudioTrackWrapper micTrack: null
-        property SessionWrapper cachedSession: null
+        property Session cachedSession: null
         onMicTrackChanged: {
             if (micTrack !== null) {
                 micTrack.muted = root.microphoneMuted

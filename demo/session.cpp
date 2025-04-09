@@ -1,4 +1,4 @@
-#include "sessionwrapper.h"
+#include "session.h"
 #include "demoapp.h"
 #include <Service.h>
 
@@ -12,7 +12,7 @@ inline DemoApp* appInstance()
 
 }
 
-SessionWrapper::SessionWrapper(std::unique_ptr<LiveKitCpp::Session> impl,
+Session::Session(std::unique_ptr<LiveKitCpp::Session> impl,
                                QObject *parent)
     : QObject{parent}
     , _impl(std::move(impl))
@@ -22,7 +22,7 @@ SessionWrapper::SessionWrapper(std::unique_ptr<LiveKitCpp::Session> impl,
     }
 }
 
-SessionWrapper::~SessionWrapper()
+Session::~Session()
 {
     disconnectFromSfu();
     if (_impl) {
@@ -30,12 +30,12 @@ SessionWrapper::~SessionWrapper()
     }
 }
 
-bool SessionWrapper::connectToSfu(const QString& url, const QString& token)
+bool Session::connectToSfu(const QString& url, const QString& token)
 {
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
-AudioTrackWrapper* SessionWrapper::addAudioTrack(AudioDeviceWrapper* device)
+AudioTrackWrapper* Session::addAudioTrack(AudioDeviceWrapper* device)
 {
     if (_impl && device) {
         if (const auto track = _impl->addAudioTrack(device->device())) {
@@ -45,7 +45,7 @@ AudioTrackWrapper* SessionWrapper::addAudioTrack(AudioDeviceWrapper* device)
     return nullptr;
 }
 
-CameraTrackWrapper* SessionWrapper::addCameraTrack(CameraDeviceWrapper* device)
+CameraTrackWrapper* Session::addCameraTrack(CameraDeviceWrapper* device)
 {
     if (_impl && device) {
         if (const auto track = _impl->addCameraTrack(device->device())) {
@@ -55,7 +55,7 @@ CameraTrackWrapper* SessionWrapper::addCameraTrack(CameraDeviceWrapper* device)
     return nullptr;
 }
 
-AudioTrackWrapper* SessionWrapper::addMicrophoneTrack()
+AudioTrackWrapper* Session::addMicrophoneTrack()
 {
     AudioTrackWrapper* track = nullptr;
     if (const auto app = appInstance()) {
@@ -67,7 +67,7 @@ AudioTrackWrapper* SessionWrapper::addMicrophoneTrack()
     return track;
 }
 
-CameraTrackWrapper* SessionWrapper::addCameraTrack(const MediaDeviceInfo& info,
+CameraTrackWrapper* Session::addCameraTrack(const MediaDeviceInfo& info,
                                                    const CameraOptions& options)
 {
     CameraTrackWrapper* track = nullptr;
@@ -80,23 +80,29 @@ CameraTrackWrapper* SessionWrapper::addCameraTrack(const MediaDeviceInfo& info,
     return track;
 }
 
-void SessionWrapper::removeMicrophoneTrack(AudioTrackWrapper* track)
+void Session::destroyAudioTrack(AudioTrackWrapper* track)
 {
     if (_impl && track && track->parent() == this) {
-        _impl->removeAudioTrack(track->track());
+        const auto& sdkTrack = track->track();
+        if (sdkTrack && !sdkTrack->remote()) {
+            _impl->removeAudioTrack(sdkTrack);
+        }
         delete track;
     }
 }
 
-void SessionWrapper::removeCameraTrack(CameraTrackWrapper* track)
+void Session::destroyVideoTrack(VideoTrackWrapper* track)
 {
     if (_impl && track && track->parent() == this) {
-        _impl->removeVideoTrack(track->track());
+        const auto& sdkTrack = track->track();
+        if (sdkTrack && !sdkTrack->remote()) {
+            _impl->removeVideoTrack(sdkTrack);
+        }
         delete track;
     }
 }
 
-bool SessionWrapper::connecting() const
+bool Session::connecting() const
 {
     switch (state()) {
         case State::TransportConnecting:
@@ -109,7 +115,7 @@ bool SessionWrapper::connecting() const
     return false;
 }
 
-SessionWrapper::State SessionWrapper::state() const
+Session::State Session::state() const
 {
     if (_impl) {
         switch (_impl->state()) {
@@ -136,7 +142,7 @@ SessionWrapper::State SessionWrapper::state() const
     return State::TransportDisconnected;
 }
 
-QString SessionWrapper::sid() const
+QString Session::sid() const
 {
     if (_impl) {
         return QString::fromStdString(_impl->sid());
@@ -144,7 +150,7 @@ QString SessionWrapper::sid() const
     return {};
 }
 
-QString SessionWrapper::identity() const
+QString Session::identity() const
 {
     if (_impl) {
         return QString::fromStdString(_impl->identity());
@@ -152,7 +158,7 @@ QString SessionWrapper::identity() const
     return {};
 }
 
-QString SessionWrapper::name() const
+QString Session::name() const
 {
     if (_impl) {
         return QString::fromStdString(_impl->name());
@@ -160,35 +166,35 @@ QString SessionWrapper::name() const
     return {};
 }
 
-void SessionWrapper::disconnectFromSfu()
+void Session::disconnectFromSfu()
 {
     if (_impl) {
         _impl->disconnect();
     }
 }
 
-bool SessionWrapper::sendChatMessage(const QString& message)
+bool Session::sendChatMessage(const QString& message)
 {
     return _impl && _impl->sendChatMessage(message.toStdString());
 }
 
-void SessionWrapper::onError(LiveKitCpp::LiveKitError error, const std::string& what)
+void Session::onError(LiveKitCpp::LiveKitError error, const std::string& what)
 {
     emit this->error(QString::fromStdString(LiveKitCpp::toString(error)),
                      QString::fromStdString(what));
 }
 
-void SessionWrapper::onChanged(const LiveKitCpp::Participant*)
+void Session::onChanged(const LiveKitCpp::Participant*)
 {
     emit localDataChanged();
 }
 
-void SessionWrapper::onStateChanged(LiveKitCpp::SessionState)
+void Session::onStateChanged(LiveKitCpp::SessionState)
 {
     emit stateChanged();
 }
 
-void SessionWrapper::onChatMessageReceived(const std::string& identity,
+void Session::onChatMessageReceived(const std::string& identity,
                                            const std::string& message, const std::string&,
                                            int64_t, bool deleted, bool)
 {

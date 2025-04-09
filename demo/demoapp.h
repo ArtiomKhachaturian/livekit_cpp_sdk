@@ -23,7 +23,7 @@ class Service;
 enum class ServiceState;
 }
 
-class SessionWrapper;
+class Session;
 
 class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
 {
@@ -50,7 +50,7 @@ public slots:
     Q_INVOKABLE void setAudioPlayoutVolume(int volume);
     Q_INVOKABLE void setRecordingAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
-    Q_INVOKABLE SessionWrapper* createSession(QObject* parent) const;
+    Q_INVOKABLE Session* createSession(QObject* parent) const;
     Q_INVOKABLE AudioDeviceWrapper* createMicrophone();
     Q_INVOKABLE CameraDeviceWrapper* createCamera(const MediaDeviceInfo& info = {},
                                                   const CameraOptions& options = {});

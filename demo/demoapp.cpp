@@ -1,6 +1,6 @@
 #include "demoapp.h"
 #include "logger.h"
-#include "sessionwrapper.h"
+#include "session.h"
 #include <Service.h>
 #include <ZaphoydTppFactory.h>
 #include <QDebug>
@@ -122,12 +122,12 @@ void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
     }
 }
 
-SessionWrapper* DemoApp::createSession(QObject* parent) const
+Session* DemoApp::createSession(QObject* parent) const
 {
-    SessionWrapper* wrapper = nullptr;
+    Session* wrapper = nullptr;
     if (_service) {
         if (auto sessionImpl = _service->createSession()) {
-            wrapper = new SessionWrapper(std::move(sessionImpl), parent);
+            wrapper = new Session(std::move(sessionImpl), parent);
         }
     }
     return wrapper;

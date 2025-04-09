@@ -5,7 +5,7 @@ import QtQuick.Layouts
 Frame {
     id: root
 
-    property SessionWrapper session: null
+    property Session session: null
     property bool activeCamera: false
     property bool activeMicrophone: false
     property alias camerDeviceInfo: localMediaView.cameraDeviceInfo
@@ -17,7 +17,7 @@ Frame {
     readonly property bool connecting: session !== null && session.connecting
     readonly property int state: {
         if (session === null) {
-            return SessionWrapper.TransportDisconnected
+            return Session.TransportDisconnected
         }
         return session.state
     }
@@ -77,8 +77,8 @@ Frame {
 
     onStateChanged: {
         switch (state) {
-            case SessionWrapper.TransportDisconnected:
-            case SessionWrapper.RtcClosed:
+            case Session.TransportDisconnected:
+            case Session.RtcClosed:
                 localMediaView.session = null
                 break
             default:
