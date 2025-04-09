@@ -2,11 +2,11 @@
 #define Session_H
 #include "audiotrackwrapper.h"
 #include "cameratrackwrapper.h"
-#include "audiodevicewrapper.h"
+#include "audiodevice.h"
 #include "cameradevicewrapper.h"
-#include <SessionListener.h>
-#include <RemoteParticipantListener.h>
-#include <Session.h>
+#include <livekit/SessionListener.h>
+#include <livekit/RemoteParticipantListener.h>
+#include <livekit/Session.h>
 #include <QObject>
 #include <QQmlEngine>
 #include <memory>
@@ -39,11 +39,10 @@ public:
     Q_PROPERTY(QString identity READ identity NOTIFY localDataChanged)
     Q_PROPERTY(QString name READ name NOTIFY localDataChanged)
 public:
-    Session(std::unique_ptr<LiveKitCpp::Session> impl = {},
-                   QObject *parent = nullptr);
+    Session(std::unique_ptr<LiveKitCpp::Session> impl = {}, QObject *parent = nullptr);
     ~Session() override;
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
-    Q_INVOKABLE AudioTrackWrapper* addAudioTrack(AudioDeviceWrapper* device);
+    Q_INVOKABLE AudioTrackWrapper* addAudioTrack(AudioDevice* device);
     Q_INVOKABLE CameraTrackWrapper* addCameraTrack(CameraDeviceWrapper* device);
     Q_INVOKABLE AudioTrackWrapper* addMicrophoneTrack();
     Q_INVOKABLE CameraTrackWrapper* addCameraTrack(const MediaDeviceInfo& info = {},

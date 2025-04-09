@@ -23,14 +23,14 @@ target_sources(${PROJECT_NAME} PRIVATE
         safeobj.h
         mediadeviceinfo.cpp
         mediadevicesmodel.cpp
-        sessionwrapper.cpp
+        session.cpp
         audiotrackwrapper.cpp
         cameratrackwrapper.cpp
         cameraoptions.cpp
         cameraoptionsmodel.cpp
         videooptions.cpp
         itemmodel.h
-        audiodevicewrapper.cpp
+        audiodevice.cpp
         cameradevicewrapper.cpp
         videosinkwrapper.cpp
         videotrackwrapper.cpp
@@ -55,13 +55,13 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             demoapp.h
             mediadeviceinfo.h
             mediadevicesmodel.h
-            sessionwrapper.h
+            session.h
             cameratrackwrapper.h
             audiotrackwrapper.h
             videooptions.h
             cameraoptions.h
             cameraoptionsmodel.h
-            audiodevicewrapper.h
+            audiodevice.h
             videosinkwrapper.h
             cameradevicewrapper.h
             videotrackwrapper.h

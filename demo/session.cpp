@@ -35,7 +35,7 @@ bool Session::connectToSfu(const QString& url, const QString& token)
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
-AudioTrackWrapper* Session::addAudioTrack(AudioDeviceWrapper* device)
+AudioTrackWrapper* Session::addAudioTrack(AudioDevice* device)
 {
     if (_impl && device) {
         if (const auto track = _impl->addAudioTrack(device->device())) {

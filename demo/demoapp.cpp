@@ -133,11 +133,11 @@ Session* DemoApp::createSession(QObject* parent) const
     return wrapper;
 }
 
-AudioDeviceWrapper* DemoApp::createMicrophone()
+AudioDevice* DemoApp::createMicrophone()
 {
     if (_service) {
         if (auto device = _service->createMicrophone()) {
-            return new AudioDeviceWrapper(std::move(device), this);
+            return new AudioDevice(std::move(device), this);
         }
     }
     return nullptr;

@@ -4,7 +4,7 @@
 #include "mediadevicesmodel.h"
 #include "audiotrackwrapper.h"
 #include "cameratrackwrapper.h"
-#include "audiodevicewrapper.h"
+#include "audiodevice.h"
 #include "cameradevicewrapper.h"
 #include "cameraoptions.h"
 #include <ServiceListener.h>
@@ -51,7 +51,7 @@ public slots:
     Q_INVOKABLE void setRecordingAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE Session* createSession(QObject* parent) const;
-    Q_INVOKABLE AudioDeviceWrapper* createMicrophone();
+    Q_INVOKABLE AudioDevice* createMicrophone();
     Q_INVOKABLE CameraDeviceWrapper* createCamera(const MediaDeviceInfo& info = {},
                                                   const CameraOptions& options = {});
 public:
