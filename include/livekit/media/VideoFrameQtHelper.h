@@ -22,7 +22,6 @@ namespace LiveKitCpp
 {
 
 // API
-
 class QtVideoBuffer : public QAbstractVideoBuffer
 {
 public:
@@ -42,7 +41,6 @@ QVideoFrameFormat::PixelFormat qtVideoPixelFormat(VideoFrameType type);
 QVideoFrame convert(const std::shared_ptr<VideoFrame>& frame);
 
 // implementation
-
 inline QtVideoBuffer::QtVideoBuffer(std::shared_ptr<VideoFrame> frame)
 {
     if (frame) {
@@ -153,5 +151,4 @@ inline QVideoFrameFormat::PixelFormat qtVideoPixelFormat(VideoFrameType type)
 }
 
 } // namespace LiveKitCpp
-
 #endif

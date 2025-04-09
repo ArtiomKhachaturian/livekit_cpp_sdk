@@ -11,26 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // AudioTrackSink.h
-#include <cstdint>
-#include <optional>
+#pragma once // VideoSink.h
+#include <memory>
 
 namespace LiveKitCpp
 {
 
-class AudioSink
+class VideoFrame;
+
+class VideoSink
 {
 public:
-    // In this method, `absolute_capture_timestamp_ms`, when available, is
-    // supposed to deliver the timestamp when this audio frame was originally
-    // captured. This timestamp MUST be based on the same clock as
-    // rtc::TimeMillis().
-    virtual void onData(const void* audioData, int bitsPerSample,
-                        int sampleRate, size_t numberOfChannels,
-                        size_t numberOfFrames,
-                        const std::optional<int64_t>& absoluteCaptureTimestampMs) = 0;
+    virtual void onFrame(const std::shared_ptr<VideoFrame>& frame) = 0;
 protected:
-    virtual ~AudioSink() = default;
+    virtual ~VideoSink() = default;
 };
 
 } // namespace LiveKitCpp
