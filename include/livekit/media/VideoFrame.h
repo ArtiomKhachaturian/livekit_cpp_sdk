@@ -14,7 +14,6 @@
 #pragma once // VideoFrame.h
 #include "LiveKitClientExport.h"
 #include "media/VideoFrameType.h"
-#include "LiveKitClientExport.h"
 #include <memory>
 
 namespace LiveKitCpp
