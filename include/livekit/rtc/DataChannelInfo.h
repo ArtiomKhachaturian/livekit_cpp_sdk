@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DataChannelInfo.h
-#include "rtc/SignalTarget.h"
+#include "livekit/rtc/SignalTarget.h"
 #include <string>
 
 namespace LiveKitCpp

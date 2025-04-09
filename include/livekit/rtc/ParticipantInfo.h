@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantInfo.h
-#include "rtc/ParticipantPermission.h"
-#include "rtc/ParticipantKind.h"
-#include "rtc/ParticipantState.h"
-#include "rtc/TrackInfo.h"
-#include "rtc/DisconnectReason.h"
+#include "livekit/rtc/ParticipantPermission.h"
+#include "livekit/rtc/ParticipantKind.h"
+#include "livekit/rtc/ParticipantState.h"
+#include "livekit/rtc/TrackInfo.h"
+#include "livekit/rtc/DisconnectReason.h"
 #include <optional>
 #include <string>
 #include <vector>

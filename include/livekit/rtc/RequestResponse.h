@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RequestResponse.h
-#include "rtc/RequestResponseReason.h"
+#include "livekit/rtc/RequestResponseReason.h"
 #include <string>
 
 namespace LiveKitCpp

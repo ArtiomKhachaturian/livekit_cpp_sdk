@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantKeyHandler.h
-#include "LiveKitClientExport.h"
-#include "e2e/KeySet.h"
+#include "livekit/LiveKitClientExport.h"
+#include "livekit/e2e/KeySet.h"
 #include <memory>
 #include <optional>
 #include <string_view>

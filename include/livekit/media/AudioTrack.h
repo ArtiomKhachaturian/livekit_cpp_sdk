@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // AudioTrack.h
-#include "media/Track.h"
-#include "rtc/AudioTrackFeature.h"
+#include "livekit/media/Track.h"
+#include "livekit/rtc/AudioTrackFeature.h"
 #include <optional>
 #include <vector>
 

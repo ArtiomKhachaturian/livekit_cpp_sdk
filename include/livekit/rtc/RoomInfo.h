@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Room.h
-#include "rtc/Codec.h"
-#include "rtc/TimedVersion.h"
+#include "livekit/rtc/Codec.h"
+#include "livekit/rtc/TimedVersion.h"
 #include <optional>
 #include <string>
 #include <vector>

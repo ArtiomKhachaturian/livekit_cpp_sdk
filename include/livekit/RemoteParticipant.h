@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteParticipant.h
-#include "Participant.h"
-#include "media/RemoteAudioTrack.h"
-#include "media/RemoteVideoTrack.h"
-#include "media/VideoTrack.h"
-#include "rtc/ParticipantState.h"
+#include "livekit/Participant.h"
+#include "livekit/media/RemoteAudioTrack.h"
+#include "livekit/media/RemoteVideoTrack.h"
+#include "livekit/media/VideoTrack.h"
+#include "livekit/rtc/ParticipantState.h"
 
 namespace LiveKitCpp
 {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // UpdateLocalAudioTrack.h
-#include "rtc/AudioTrackFeature.h"
+#include "livekit/rtc/AudioTrackFeature.h"
 #include <string>
 #include <vector>
 

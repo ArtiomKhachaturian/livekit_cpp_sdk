@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Service.h
-#include "LiveKitClientExport.h"
-#include "Session.h"
-#include "ServiceState.h"
-#include "Options.h"
-#include "media/AudioDevice.h"
-#include "media/CameraDevice.h"
-#include "media/CameraOptions.h"
-#include "media/AudioRecordingOptions.h"
-#include "media/MediaAuthorizationLevel.h"
-#include "media/MediaDeviceInfo.h"
+#include "livekit/LiveKitClientExport.h"
+#include "livekit/Session.h"
+#include "livekit/ServiceState.h"
+#include "livekit/Options.h"
+#include "livekit/media/AudioDevice.h"
+#include "livekit/media/CameraDevice.h"
+#include "livekit/media/CameraOptions.h"
+#include "livekit/media/AudioRecordingOptions.h"
+#include "livekit/media/MediaAuthorizationLevel.h"
+#include "livekit/media/MediaDeviceInfo.h"
 #include <memory>
 #include <vector>
 

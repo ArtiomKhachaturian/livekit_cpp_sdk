@@ -197,7 +197,11 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src/webrtc PREFIX "WebRTC" FILES ${WEBRTC_
 
 # Add include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/livekit
+    ${CMAKE_SOURCE_DIR}/bricks/include
+    ${CMAKE_SOURCE_DIR}/bricks/include/logger
+    ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/service
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stats
@@ -205,9 +209,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/media/audio
     ${CMAKE_CURRENT_SOURCE_DIR}/src/media/video
     ${CMAKE_SOURCE_DIR}/websockets_api/include
-    ${CMAKE_SOURCE_DIR}/bricks/include
-    ${CMAKE_SOURCE_DIR}/bricks/include/logger
-    ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
     ${CMAKE_SOURCE_DIR}/src/${PLATFORM_SRC_FOLDER}
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths

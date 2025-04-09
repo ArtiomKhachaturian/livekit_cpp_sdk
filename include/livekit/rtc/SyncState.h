@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SyncState.h
-#include "rtc/DataChannelInfo.h"
-#include "rtc/SessionDescription.h"
-#include "rtc/TrackPublishedResponse.h"
-#include "rtc/UpdateSubscription.h"
+#include "livekit/rtc/DataChannelInfo.h"
+#include "livekit/rtc/SessionDescription.h"
+#include "livekit/rtc/TrackPublishedResponse.h"
+#include "livekit/rtc/UpdateSubscription.h"
 #include <string>
 #include <vector>
 

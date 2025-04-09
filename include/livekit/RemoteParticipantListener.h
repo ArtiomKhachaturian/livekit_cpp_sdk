@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteParticipantListener.h
-#include "ParticipantListener.h"
-#include "rtc/TrackType.h"
-#include "rtc/EncryptionType.h"
+#include "livekit/ParticipantListener.h"
+#include "livekit/rtc/TrackType.h"
+#include "livekit/rtc/EncryptionType.h"
 #include <string>
 
 namespace LiveKitCpp

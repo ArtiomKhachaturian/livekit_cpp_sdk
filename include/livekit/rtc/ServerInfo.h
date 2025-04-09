@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ServerInfo.h
-#include "rtc/ServerEdition.h"
+#include "livekit/rtc/ServerEdition.h"
 #include <string>
 
 namespace LiveKitCpp

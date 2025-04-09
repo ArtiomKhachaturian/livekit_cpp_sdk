@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Session.h
-#include "LiveKitClientExport.h"
-#include "Options.h"
-#include "SessionState.h"
-#include "RemoteParticipant.h"
-#include "e2e/KeyProvider.h"
-#include "e2e/KeyProviderOptions.h"
-#include "media/AudioTrack.h"
-#include "media/CameraTrack.h"
-#include "stats/StatsSource.h"
+#include "livekit/LiveKitClientExport.h"
+#include "livekit/Options.h"
+#include "livekit/SessionState.h"
+#include "livekit/RemoteParticipant.h"
+#include "livekit/e2e/KeyProvider.h"
+#include "livekit/e2e/KeyProviderOptions.h"
+#include "livekit/media/AudioTrack.h"
+#include "livekit/media/CameraTrack.h"
+#include "livekit/stats/StatsSource.h"
 #include <memory>
 #include <string>
 #include <vector>

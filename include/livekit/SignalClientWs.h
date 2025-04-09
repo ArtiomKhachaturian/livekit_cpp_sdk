@@ -11,9 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 #pragma once // SignalClientWs.h
-#include "SignalClient.h"
-#include "CommandSender.h"
-#include "rtc/ClientInfo.h"
+#include "livekit/SignalClient.h"
+#include "livekit/CommandSender.h"
+#include "livekit/rtc/ClientInfo.h"
 #include <memory>
 #include <optional>
 #include <string>

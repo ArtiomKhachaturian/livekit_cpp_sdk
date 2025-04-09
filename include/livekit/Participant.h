@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Participant.h
-#include "rtc/ParticipantPermission.h"
-#include "rtc/ParticipantKind.h"
+#include "livekit/rtc/ParticipantPermission.h"
+#include "livekit/rtc/ParticipantKind.h"
 #include <string>
 
 namespace LiveKitCpp

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SimulateScenario.h
-#include "rtc/CandidateProtocol.h"
+#include "livekit/rtc/CandidateProtocol.h"
 #include <cstdint>
 
 namespace LiveKitCpp
@@ -21,7 +21,8 @@ namespace LiveKitCpp
 // Simulate conditions, for client validations
 struct SimulateScenario
 {
-    enum class Case {
+    enum class Case
+    {
         NotSet = 0,
         SpeakerUpdate = 1,
         NodeFailure = 2,
@@ -34,7 +35,8 @@ struct SimulateScenario
         LeaveRequestFullReconnect = 9,
     };
     
-    union /*scenario*/ {
+    union /*scenario*/
+    {
         // simulate N seconds of speaker activity
         int32_t _speakerUpdate;
         // simulate local node failure

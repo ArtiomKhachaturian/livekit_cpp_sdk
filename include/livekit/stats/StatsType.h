@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsType.h
-#include "LiveKitClientExport.h"
+#include "livekit/LiveKitClientExport.h"
 #include <string>
 
 namespace LiveKitCpp

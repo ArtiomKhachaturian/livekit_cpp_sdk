@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // UpdateSubscription.h
-#include "rtc/ParticipantTracks.h"
+#include "livekit/rtc/ParticipantTracks.h"
 #include <string>
 #include <vector>
 

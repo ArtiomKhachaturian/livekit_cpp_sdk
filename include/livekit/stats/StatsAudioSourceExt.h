@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsAudioSourceExt.h
-#include "stats/StatsMediaSourceExt.h"
+#include "livekit/stats/StatsMediaSourceExt.h"
 
 namespace LiveKitCpp
 {

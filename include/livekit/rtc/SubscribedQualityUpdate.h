@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SubscribedQualityUpdate.h
-#include "rtc/SubscribedCodec.h"
-#include "rtc/SubscribedQuality.h"
+#include "livekit/rtc/SubscribedCodec.h"
+#include "livekit/rtc/SubscribedQuality.h"
 #include <string>
 
 namespace LiveKitCpp

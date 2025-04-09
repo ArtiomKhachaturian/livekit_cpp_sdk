@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraOptions.h
-#include "LiveKitClientExport.h"
-#include "media/VideoOptions.h"
-#include "media/VideoFrameType.h"
+#include "livekit/LiveKitClientExport.h"
+#include "livekit/media/VideoOptions.h"
+#include "livekit/media/VideoFrameType.h"
 #include <optional>
 
 namespace LiveKitCpp

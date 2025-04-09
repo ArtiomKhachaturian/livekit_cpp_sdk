@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SubscriptionResponse.h
-#include "rtc/SubscriptionError.h"
+#include "livekit/rtc/SubscriptionError.h"
 #include <string>
 
 namespace LiveKitCpp

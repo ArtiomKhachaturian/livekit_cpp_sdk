@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ConnectionQualityInfo.h
-#include "rtc/ConnectionQuality.h"
+#include "livekit/rtc/ConnectionQuality.h"
 #include <string>
 
 namespace LiveKitCpp

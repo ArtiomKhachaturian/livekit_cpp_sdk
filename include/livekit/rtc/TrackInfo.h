@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TrackInfo.h
-#include "rtc/AudioTrackFeature.h"
-#include "rtc/BackupCodecPolicy.h"
-#include "rtc/EncryptionType.h"
-#include "rtc/TrackSource.h"
-#include "rtc/TrackType.h"
-#include "rtc/SimulcastCodecInfo.h"
-#include "rtc/TimedVersion.h"
-#include "rtc/VideoLayer.h"
+#include "livekit/rtc/AudioTrackFeature.h"
+#include "livekit/rtc/BackupCodecPolicy.h"
+#include "livekit/rtc/EncryptionType.h"
+#include "livekit/rtc/TrackSource.h"
+#include "livekit/rtc/TrackType.h"
+#include "livekit/rtc/SimulcastCodecInfo.h"
+#include "livekit/rtc/TimedVersion.h"
+#include "livekit/rtc/VideoLayer.h"
 #include <optional>
 #include <string>
 #include <vector>

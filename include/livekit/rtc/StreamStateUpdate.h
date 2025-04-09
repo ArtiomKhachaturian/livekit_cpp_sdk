@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StreamStateUpdate.h
-#include "rtc/StreamStateInfo.h"
+#include "livekit/rtc/StreamStateInfo.h"
 #include <vector>
 
 namespace LiveKitCpp

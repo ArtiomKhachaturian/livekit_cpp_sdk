@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ClientInfo.h
-#include "LiveKitClientExport.h"
-#include "rtc/Sdk.h"
+#include "livekit/LiveKitClientExport.h"
+#include "livekit/rtc/Sdk.h"
 #include <string>
 
 namespace LiveKitCpp

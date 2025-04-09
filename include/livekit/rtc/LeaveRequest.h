@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LeaveRequest.h
-#include "rtc/DisconnectReason.h"
-#include "rtc/LeaveRequestAction.h"
-#include "rtc/RegionSettings.h"
+#include "livekit/rtc/DisconnectReason.h"
+#include "livekit/rtc/LeaveRequestAction.h"
+#include "livekit/rtc/RegionSettings.h"
 
 namespace LiveKitCpp
 {

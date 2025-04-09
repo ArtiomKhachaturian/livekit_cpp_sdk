@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // VideoFrameQtHelper.h
 #if __has_include(<QVideoFrame>)
-#include "media/VideoFrame.h"
+#include "livekit/media/VideoFrame.h"
 #include <QAbstractVideoBuffer> // since QT 6.8
 #include <QVideoFrame>
 #include <memory>

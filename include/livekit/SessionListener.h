@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SessionListener.h
-#include "LiveKitError.h"
-#include "ParticipantListener.h"
-#include "SessionState.h"
+#include "livekit/LiveKitError.h"
+#include "livekit/ParticipantListener.h"
+#include "livekit/SessionState.h"
 #include <string>
 
 namespace LiveKitCpp

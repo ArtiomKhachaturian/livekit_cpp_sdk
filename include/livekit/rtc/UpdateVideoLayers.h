@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // UpdateVideoLayers.h
-#include "rtc/VideoLayer.h"
+#include "livekit/rtc/VideoLayer.h"
 #include <string>
 #include <vector>
 

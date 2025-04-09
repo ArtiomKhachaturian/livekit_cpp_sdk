@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ReconnectResponse.h
-#include "rtc/ICEServer.h"
-#include "rtc/ClientConfiguration.h"
+#include "livekit/rtc/ICEServer.h"
+#include "livekit/rtc/ClientConfiguration.h"
 #include <optional>
 #include <vector>
 

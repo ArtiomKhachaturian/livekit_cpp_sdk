@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantUpdate.h
-#include "rtc/ParticipantInfo.h"
+#include "livekit/rtc/ParticipantInfo.h"
 #include <vector>
 
 namespace LiveKitCpp

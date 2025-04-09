@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // JoinResponse.h
-#include "rtc/ClientConfiguration.h"
-#include "rtc/Codec.h"
-#include "rtc/ICEServer.h"
-#include "rtc/RoomInfo.h"
-#include "rtc/ParticipantInfo.h"
-#include "rtc/ServerInfo.h"
+#include "livekit/rtc/ClientConfiguration.h"
+#include "livekit/rtc/Codec.h"
+#include "livekit/rtc/ICEServer.h"
+#include "livekit/rtc/RoomInfo.h"
+#include "livekit/rtc/ParticipantInfo.h"
+#include "livekit/rtc/ServerInfo.h"
 #include <string>
 #include <vector>
 

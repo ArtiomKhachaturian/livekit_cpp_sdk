@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ClientConfiguration.h
-#include "rtc/ClientConfigSetting.h"
-#include "rtc/DisabledCodecs.h"
-#include "rtc/VideoConfiguration.h"
+#include "livekit/rtc/ClientConfigSetting.h"
+#include "livekit/rtc/DisabledCodecs.h"
+#include "livekit/rtc/VideoConfiguration.h"
 
 namespace LiveKitCpp
 {

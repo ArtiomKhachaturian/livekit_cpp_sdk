@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SpeakersChanged.h
-#include "rtc/SpeakerInfo.h"
+#include "livekit/rtc/SpeakerInfo.h"
 #include <vector>
 
 namespace LiveKitCpp

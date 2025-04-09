@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DisabledCodecs.h
-#include "rtc/Codec.h"
+#include "livekit/rtc/Codec.h"
 #include <vector>
 
 namespace LiveKitCpp

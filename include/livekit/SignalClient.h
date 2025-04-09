@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalClient.h
-#include "LiveKitClientExport.h"
+#include "livekit/LiveKitClientExport.h"
+#include "livekit/TransportState.h"
 #include "Loggable.h"
-#include "TransportState.h"
 #include <memory>
 #include <string>
 

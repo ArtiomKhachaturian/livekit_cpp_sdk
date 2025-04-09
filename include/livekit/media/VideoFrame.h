@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoFrame.h
-#include "LiveKitClientExport.h"
-#include "media/VideoFrameType.h"
+#include "livekit/LiveKitClientExport.h"
+#include "livekit/media/VideoFrameType.h"
 #include <memory>
 
 namespace LiveKitCpp
