@@ -31,6 +31,7 @@ class LocalTrack
 public:
     std::string cid() const;
     cricket::MediaType mediaType() const;
+    virtual void setRemoteSideMute(bool mute) = 0;
     // Terminates all media, closes the capturers, and in general releases any
     // resources used by the local track. This is an irreversible operation.
     virtual void close() {}

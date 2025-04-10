@@ -20,7 +20,15 @@ namespace LiveKitCpp
 class MediaEventsListener
 {
 public:
-    virtual void onMuteChanged(const std::string& id, bool mute) = 0;
+    virtual void onMuteChanged(const std::string& /*id*/, bool /*mute*/) {}
+    // below events related only to Track interface
+    // notify that remote user was muted own track (for remote tracks)
+    // or your track (for local tracks)
+    virtual void onRemoteSideMuteChanged(const std::string& /*id*/, bool /*mute*/) {}
+    // SID maybe changed only for local tracks, after joining
+    virtual void onSidChanged(const std::string& /*id*/, const std::string& /*sid*/) {}
+    // only for remote tracks
+    virtual void onNameChanged(const std::string& /*id*/, const std::string& /*name*/) {}
 protected:
     virtual ~MediaEventsListener() = default;
 };

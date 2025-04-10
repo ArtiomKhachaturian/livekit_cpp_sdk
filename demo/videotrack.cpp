@@ -41,12 +41,28 @@ QString VideoTrack::id() const
 
 bool VideoTrack::muted() const
 {
-    return _sdkTrack && _sdkTrack->muted();
+    if (_sdkTrack) {
+        if (_sdkTrack->muted()) {
+            return true;
+        }
+        // ignore notifications from remote participants that
+        // my video stream was disabled on their side
+        // we accept only of their stream changes
+        if (_sdkTrack->remote() && _sdkTrack->remoteMuted()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool VideoTrack::isScreencast() const
 {
     return _sdkTrack && LiveKitCpp::TrackSource::ScreenShare == _sdkTrack->source();
+}
+
+bool VideoTrack::isRemote() const
+{
+    return _sdkTrack && _sdkTrack->remote();
 }
 
 void VideoTrack::setMuted(bool mute)
@@ -76,6 +92,11 @@ void VideoTrack::onMuteChanged(const std::string&, bool muted)
     else {
         startMetricsCollection();
     }
+    emit muteChanged();
+}
+
+void VideoTrack::onRemoteSideMuteChanged(const std::string&, bool)
+{
     emit muteChanged();
 }
 

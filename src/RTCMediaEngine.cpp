@@ -27,6 +27,7 @@
 #include "rtc/ParticipantUpdate.h"
 #include "rtc/TrackPublishedResponse.h"
 #include "rtc/UpdateLocalAudioTrack.h"
+#include "rtc/MuteTrackRequest.h"
 #include "e2e/KeyProvider.h"
 
 namespace {
@@ -232,6 +233,13 @@ void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
 void RTCMediaEngine::onReconnect(const ReconnectResponse& response)
 {
     notifyAboutLocalParticipantJoinLeave(true);
+}
+
+void RTCMediaEngine::onMute(const MuteTrackRequest& mute)
+{
+    if (!_localParticipant->setRemoteSideTrackMute(mute._sid, mute._muted)) {
+        _remoteParicipants.setRemoteSideTrackMute(mute._sid, mute._muted);
+    }
 }
 
 void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std::string& what)

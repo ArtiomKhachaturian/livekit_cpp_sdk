@@ -45,6 +45,7 @@ public:
                           const ParticipantInfo& info = {});
     ~RemoteParticipantImpl() final { reset(); }
     void reset();
+    bool setRemoteSideTrackMute(const std::string& sid, bool mute);
     std::optional<TrackType> trackType(const std::string& sid) const;
     bool addAudio(const std::string& sid, const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     bool addVideo(const std::string& sid, const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
@@ -70,6 +71,7 @@ public:
     std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const final;
 private:
     const TrackInfo* findBySid(const std::string& sid) const;
+    TrackInfo* findBySid(const std::string& sid);
     template <class TTrack>
     bool addTrack(const std::string& sid,
                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,

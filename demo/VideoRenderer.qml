@@ -5,14 +5,13 @@ import LiveKitClient 1.0
 Item {
     id: root
     property VideoSource source: null
-    property bool muted: false
 
     VideoOutput {
         id: renderer
         anchors.fill: parent
         property VideoSource source: null
         // TODO: replace to https://doc.qt.io/qt-6/qml-qtmultimedia-videooutput.html#clearOutput-method in QT >= 6.9.x
-        visible: !muted && source !== null && source.active
+        visible: renderer.source !== null && renderer.source.active && !renderer.source.muted
         VideoDiagnosticsView {
             id: fpsArea
             x: parent.contentRect.right - 4 - width
@@ -47,7 +46,7 @@ Item {
                 return ""
             })
             fpsArea.visible = Qt.binding(function() {
-                if (!muted && source !== null) {
+                if (source !== null) {
                     var size = source.frameSize
                     var fps = source.fps
                     return (size.width > 0 && size.height > 0) || fps > 0

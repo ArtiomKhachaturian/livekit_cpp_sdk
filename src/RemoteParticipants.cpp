@@ -47,6 +47,19 @@ RemoteParticipants::~RemoteParticipants()
     reset();
 }
 
+bool RemoteParticipants::setRemoteSideTrackMute(const std::string& sid, bool mute)
+{
+    if (!sid.empty()) {
+        LOCK_READ_SAFE_OBJ(_participants);
+        for (const auto& participant : _participants.constRef()) {
+            if (participant->setRemoteSideTrackMute(sid, mute)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void RemoteParticipants::setInfo(const std::vector<ParticipantInfo>& infos)
 {
     LOCK_WRITE_SAFE_OBJ(_participants);

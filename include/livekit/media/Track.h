@@ -36,6 +36,9 @@ public:
     virtual std::string id() const = 0;
     // track name
     virtual std::string name() const = 0;
+    // notify that remote user was muted own track (for [remote] tracks)
+    // or your track (for local tracks) on his side
+    virtual bool remoteMuted() const = 0;
     // local or remote
     virtual bool remote() const noexcept = 0;
     // live or ended, a track will never be live again after becoming ended
@@ -49,8 +52,8 @@ public:
     virtual bool muted() const = 0;
     void unmute() { mute(false); }
     // track events
-    virtual bool addListener(MediaEventsListener* listener) = 0;
-    virtual bool removeListener(MediaEventsListener* listener) = 0;
+    virtual void addListener(MediaEventsListener* listener) = 0;
+    virtual void removeListener(MediaEventsListener* listener) = 0;
 };
 
 } // namespace LiveKitCpp

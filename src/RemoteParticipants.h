@@ -46,6 +46,7 @@ public:
                        RemoteParticipantsListener* listener,
                        const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RemoteParticipants();
+    bool setRemoteSideTrackMute(const std::string& sid, bool mute);
     void setInfo(const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::vector<ParticipantInfo>& infos);
     bool addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver);

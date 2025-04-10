@@ -58,6 +58,7 @@ public:
                      const Participant* session,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipant() final { reset(); }
+    bool setRemoteSideTrackMute(const std::string& sid, bool mute);
     void reset();
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;

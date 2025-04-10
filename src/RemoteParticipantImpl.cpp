@@ -24,6 +24,7 @@
 #include <api/media_stream_interface.h>
 #include <api/rtp_receiver_interface.h>
 #include <optional>
+#include <unordered_map>
 
 namespace {
 
@@ -83,6 +84,21 @@ inline auto makeDevice(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& r
     return std::shared_ptr<Device>{};
 }
 
+inline std::unordered_map<std::string, TrackType>
+    removedSids(const ParticipantInfo& oldInfo, const ParticipantInfo& newInfo) {
+    auto removed = Seq<TrackInfo>::difference(oldInfo._tracks,
+                                              newInfo._tracks,
+                                              compareTrackInfo);
+    std::unordered_map<std::string, TrackType> sids;
+    if (!removed.empty()) {
+        sids.reserve(removed.size());
+        for (auto& track : removed) {
+            sids[std::move(track._sid)] = track._type;
+        }
+    }
+    return sids;
+}
+
 }
 
 namespace LiveKitCpp
@@ -117,6 +133,34 @@ void RemoteParticipantImpl::reset()
     clearTracks(_audioTracks);
     clearTracks(_videoTracks);
     _listener->reset();
+}
+
+bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& sid, bool mute)
+{
+    if (!sid.empty()) {
+        LOCK_WRITE_SAFE_OBJ(_info);
+        if (auto trackInfo = findBySid(sid)) {
+            if (trackInfo->_muted == mute) {
+                return true;
+            }
+            trackInfo->_muted = mute;
+            if (TrackType::Audio == trackInfo->_type) {
+                LOCK_READ_SAFE_OBJ(_audioTracks);
+                if (const auto ndx = findBySid(sid, _audioTracks.constRef())) {
+                    _audioTracks->at(ndx.value())->setInfo(*trackInfo);
+                    return true;
+                }
+            }
+            if (TrackType::Video == trackInfo->_type) {
+                LOCK_READ_SAFE_OBJ(_videoTracks);
+                if (const auto ndx = findBySid(sid, _videoTracks.constRef())) {
+                    _videoTracks->at(ndx.value())->setInfo(*trackInfo);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid) const
@@ -154,20 +198,36 @@ bool RemoteParticipantImpl::removeVideo(const std::string& sid)
 
 void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
 {
-    const auto removed = Seq<TrackInfo>::difference(_info()._tracks,
-                                                    info._tracks,
-                                                    compareTrackInfo);
+    const auto removed = removedSids(_info(), info);
     _info(info);
-    for (const auto& trackInfo : removed) {
-        switch (trackInfo._type) {
+    // remove
+    for (auto it = removed.begin(); it != removed.end(); ++it) {
+        switch (it->second) {
             case TrackType::Audio:
-                removeAudio(trackInfo._sid);
+                removeAudio(it->first);
                 break;
             case TrackType::Video:
-                removeVideo(trackInfo._sid);
+                removeVideo(it->first);
                 break;
             default:
                 break;
+        }
+    }
+    // update
+    for (const auto& track : info._tracks) {
+        if (!removed.count(track._sid)) {
+            if (TrackType::Audio == track._type) {
+                LOCK_READ_SAFE_OBJ(_audioTracks);
+                if (const auto ndx = findBySid(track._sid, _audioTracks.constRef())) {
+                    _audioTracks->at(ndx.value())->setInfo(track);
+                }
+            }
+            else if (TrackType::Video == track._type) {
+                LOCK_READ_SAFE_OBJ(_videoTracks);
+                if (const auto ndx = findBySid(track._sid, _videoTracks.constRef())) {
+                    _videoTracks->at(ndx.value())->setInfo(track);
+                }
+            }
         }
     }
     _listener->invoke(&RemoteParticipantListener::onChanged);
@@ -276,6 +336,18 @@ const TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid) const
 {
     if (!sid.empty()) {
         for (const auto& trackInfo : _info->_tracks) {
+            if (trackInfo._sid == sid) {
+                return &trackInfo;
+            }
+        }
+    }
+    return nullptr;
+}
+
+TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid)
+{
+    if (!sid.empty()) {
+        for (auto& trackInfo : _info->_tracks) {
             if (trackInfo._sid == sid) {
                 return &trackInfo;
             }

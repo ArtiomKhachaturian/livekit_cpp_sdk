@@ -104,6 +104,7 @@ protected:
     void onUpdate(const ParticipantUpdate& update) override;
     void onTrackPublished(const TrackPublishedResponse& published) override;
     void onReconnect(const ReconnectResponse& response) override;
+    void onMute(const MuteTrackRequest& mute);
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,

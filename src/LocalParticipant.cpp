@@ -36,6 +36,21 @@ LocalParticipant::LocalParticipant(TrackManager* manager,
 {
 }
 
+bool LocalParticipant::setRemoteSideTrackMute(const std::string& sid, bool mute)
+{
+    if (!sid.empty()) {
+        if (const auto track = lookup(sid, false, _audioTracks)) {
+            track->setRemoteSideMute(mute);
+            return true;
+        }
+        if (const auto track = lookup(sid, false, _videoTracks)) {
+            track->setRemoteSideMute(mute);
+            return true;
+        }
+    }
+    return false;
+}
+
 void LocalParticipant::reset()
 {
     _session(nullptr);
@@ -218,6 +233,21 @@ void LocalParticipant::setInfo(const ParticipantInfo& info)
     }
     if (exchangeVal(info._kind, _kind)) {
         changed = true;
+    }
+    // update
+    for (const auto& track : info._tracks) {
+        if (TrackType::Audio == track._type) {
+            if (const auto t = lookup(track._sid, false, _audioTracks)) {
+                t->setSid(track._sid);
+                t->setRemoteSideMute(track._muted);
+            }
+        }
+        else if (TrackType::Video == track._type) {
+            if (const auto t = lookup(track._sid, false, _videoTracks)) {
+                t->setSid(track._sid);
+                t->setRemoteSideMute(track._muted);
+            }
+        }
     }
     if (changed) {
         invoke(&ParticipantListener::onChanged);

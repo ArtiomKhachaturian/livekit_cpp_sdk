@@ -16,6 +16,7 @@ class VideoTrack : public VideoSource
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY muteChanged)
     Q_PROPERTY(bool screencast READ isScreencast CONSTANT)
+    Q_PROPERTY(bool remote READ isRemote CONSTANT)
 public:
     explicit VideoTrack(QObject* parent = nullptr);
     VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& sdkTrack,
@@ -25,6 +26,7 @@ public:
     QString id() const;
     bool muted() const;
     bool isScreencast() const;
+    bool isRemote() const;
 public slots:
     void setMuted(bool muted);
 signals:
@@ -37,6 +39,7 @@ protected:
 private:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool muted) final;
+    void onRemoteSideMuteChanged(const std::string&, bool) final;
 private:
     std::shared_ptr<LiveKitCpp::VideoTrack> _sdkTrack;
 };

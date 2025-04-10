@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // TrackImpl.h
 #ifdef WEBRTC_AVAILABLE
+#include "Listeners.h"
 #include "StatsSourceImpl.h"
 #include "TrackManager.h"
 #include "media/MediaDevice.h"
@@ -37,14 +38,16 @@ public:
     bool live() const final { return _mediaDevice && _mediaDevice->live(); }
     void mute(bool mute) final;
     bool muted() const override { return _mediaDevice && _mediaDevice->muted(); }
-    bool addListener(MediaEventsListener* listener) final;
-    bool removeListener(MediaEventsListener* listener) final;
+    void addListener(MediaEventsListener* listener) final;
+    void removeListener(MediaEventsListener* listener) final;
 protected:
     TrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager);
     const auto& mediaDevice() const noexcept { return _mediaDevice; }
     TrackManager* manager() const noexcept { return _manager; }
     webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback> statsCollector() const;
     virtual void notifyAboutMuted(bool /*mute*/) const {}
+    template <class Method, typename... Args>
+    void notify(const Method& method, Args&&... args) const;
 private:
     // impl. of MediaDeviceListener
     void onMuteChanged(const std::string&, bool mute) final;
@@ -52,6 +55,7 @@ private:
     const webrtc::scoped_refptr<StatsSourceImpl> _statsCollector;
     const std::shared_ptr<TMediaDevice> _mediaDevice;
     TrackManager* const _manager;
+    Bricks::Listeners<MediaEventsListener*> _listeners;
 };
 
 template <class TMediaDevice, class TTrackApi>
@@ -112,21 +116,38 @@ inline webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>
 }
 
 template <class TMediaDevice, class TTrackApi>
+template <class Method, typename... Args>
+inline void TrackImpl<TMediaDevice, TTrackApi>::notify(const Method& method, Args&&... args) const
+{
+    _listeners.invoke(method, std::forward<Args>(args)...);
+}
+
+template <class TMediaDevice, class TTrackApi>
 inline void TrackImpl<TMediaDevice, TTrackApi>::onMuteChanged(const std::string&, bool mute)
 {
     notifyAboutMuted(mute);
 }
 
 template <class TMediaDevice, class TTrackApi>
-inline bool TrackImpl<TMediaDevice, TTrackApi>::addListener(MediaEventsListener* listener)
+inline void TrackImpl<TMediaDevice, TTrackApi>::addListener(MediaEventsListener* listener)
 {
-    return listener != this && _mediaDevice && _mediaDevice->addListener(listener);
+    if (listener != this) {
+        if (_mediaDevice) {
+            _mediaDevice->addListener(listener);
+        }
+        _listeners.add(listener);
+    }
 }
 
 template <class TMediaDevice, class TTrackApi>
-inline bool TrackImpl<TMediaDevice, TTrackApi>::removeListener(MediaEventsListener* listener)
+inline void TrackImpl<TMediaDevice, TTrackApi>::removeListener(MediaEventsListener* listener)
 {
-    return listener != this && _mediaDevice && _mediaDevice->removeListener(listener);
+    if (listener != this) {
+        if (_mediaDevice) {
+            _mediaDevice->removeListener(listener);
+        }
+        _listeners.remove(listener);
+    }
 }
 
 } // namespace LiveKitCpp

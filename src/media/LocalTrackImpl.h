@@ -16,9 +16,11 @@
 #include "Logger.h"
 #include "LocalTrack.h"
 #include "SafeScopedRefPtr.h"
-#include "rtc/AddTrackRequest.h"
 #include "TrackManager.h"
+#include "Utils.h"
+#include "rtc/AddTrackRequest.h"
 #include "media/Track.h"
+#include "media/MediaEventsListener.h"
 #include <api/media_stream_interface.h>
 #include <api/rtp_sender_interface.h>
 #include <atomic>
@@ -34,13 +36,15 @@ class LocalTrackImpl : public TBaseImpl, public LocalTrack
 public:
     ~LocalTrackImpl() override = default;
     // impl. of LocalTrack
+    void setRemoteSideMute(bool mute) override;
     void close() override;
-    void setSid(const std::string& sid) final { _sid(sid); }
+    void setSid(const std::string& sid) final;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const final;
     void notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender,
                                          bool encryption) final;
     void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
+    bool remoteMuted() const final { return _remoteMuted; }
     bool muted() const override { return TBaseImpl::muted(); }
     // impl. of StatsSource
     void queryStats() const final;
@@ -61,6 +65,7 @@ private:
 private:
     const std::string _name;
     std::atomic_bool _encryption = false;
+    std::atomic_bool _remoteMuted = false;
     Bricks::SafeObj<std::string> _sid;
     SafeScopedRefPtr<webrtc::RtpSenderInterface> _sender;
 };
@@ -76,10 +81,26 @@ inline LocalTrackImpl<TBaseImpl>::LocalTrackImpl(std::string name,
 }
 
 template <class TBaseImpl>
-void LocalTrackImpl<TBaseImpl>::close()
+inline void LocalTrackImpl<TBaseImpl>::setRemoteSideMute(bool mute)
+{
+    if (exchangeVal(mute, _remoteMuted)) {
+        TBaseImpl::notify(&MediaEventsListener::onRemoteSideMuteChanged, TBaseImpl::id(), mute);
+    }
+}
+
+template <class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::close()
 {
     LocalTrack::close();
     notifyThatMediaRemovedFromTransport();
+}
+
+template <class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::setSid(const std::string& sid)
+{
+    if (exchangeVal(sid, _sid)) {
+        TBaseImpl::notify(&MediaEventsListener::onSidChanged, TBaseImpl::id(), sid);
+    }
 }
 
 template <class TBaseImpl>
