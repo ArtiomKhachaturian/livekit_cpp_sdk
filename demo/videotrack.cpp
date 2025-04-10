@@ -11,8 +11,8 @@ VideoTrack::VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& sdkTrack,
     : VideoSource(parent)
     , _sdkTrack(sdkTrack)
 {
-    if (sdkTrack) {
-        sdkTrack->addListener(this);
+    if (_sdkTrack) {
+        _sdkTrack->addListener(this);
     }
 }
 
@@ -23,43 +23,47 @@ VideoTrack::~VideoTrack()
 
 std::shared_ptr<LiveKitCpp::VideoTrack> VideoTrack::takeSdkTrack()
 {
-    if (auto sdkTrack = _sdkTrack.take()) {
-        sdkTrack->removeListener(this);
-        sdkTrack->removeSink(this);
-        return sdkTrack;
+    if (_sdkTrack) {
+        _sdkTrack->removeListener(this);
+        _sdkTrack->removeSink(this);
+        return std::move(_sdkTrack);
     }
     return {};
 }
 
 QString VideoTrack::id() const
 {
-    if (const auto sdkTrack = _sdkTrack.get()) {
-        return QString::fromStdString(sdkTrack->id());
+    if (_sdkTrack) {
+        return QString::fromStdString(_sdkTrack->id());
     }
     return {};
 }
 
 bool VideoTrack::muted() const
 {
-    const auto sdkTrack = _sdkTrack.get();
-    return sdkTrack && sdkTrack->muted();
+    return _sdkTrack && _sdkTrack->muted();
+}
+
+bool VideoTrack::isScreencast() const
+{
+    return _sdkTrack && LiveKitCpp::TrackSource::ScreenShare == _sdkTrack->source();
 }
 
 void VideoTrack::setMuted(bool mute)
 {
-    if (const auto sdkTrack = _sdkTrack.get()) {
-        sdkTrack->mute(mute);
+    if (_sdkTrack) {
+        _sdkTrack->mute(mute);
     }
 }
 
 void VideoTrack::subsribe(bool subscribe)
 {
-    if (const auto sdkTrack = _sdkTrack.get()) {
+    if (_sdkTrack) {
         if (subscribe) {
-            sdkTrack->addSink(this);
+            _sdkTrack->addSink(this);
         }
         else {
-            sdkTrack->removeSink(this);
+            _sdkTrack->removeSink(this);
         }
     }
 }

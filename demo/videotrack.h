@@ -1,6 +1,5 @@
 #ifndef VIDEOTRACK_H
 #define VIDEOTRACK_H
-#include "safeobj.h"
 #include "videosource.h"
 #include <QObject>
 #include <QQmlEngine>
@@ -16,6 +15,7 @@ class VideoTrack : public VideoSource
     QML_NAMED_ELEMENT(VideoTrack)
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY muteChanged)
+    Q_PROPERTY(bool screencast READ isScreencast CONSTANT)
 public:
     explicit VideoTrack(QObject* parent = nullptr);
     VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& sdkTrack,
@@ -24,20 +24,21 @@ public:
     std::shared_ptr<LiveKitCpp::VideoTrack> takeSdkTrack();
     QString id() const;
     bool muted() const;
+    bool isScreencast() const;
 public slots:
     void setMuted(bool muted);
 signals:
     void muteChanged();
 protected:
     // overrides of VideoSource
-    bool hasVideoInput() const final { return nullptr != _sdkTrack.get(); }
+    bool hasVideoInput() const final { return nullptr != _sdkTrack; }
     bool isMuted() const final { return muted(); }
     void subsribe(bool subscribe) final;
 private:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool muted) final;
 private:
-    SafeObj<std::shared_ptr<LiveKitCpp::VideoTrack>> _sdkTrack;
+    std::shared_ptr<LiveKitCpp::VideoTrack> _sdkTrack;
 };
 
 #endif // VIDEOTRACK_H

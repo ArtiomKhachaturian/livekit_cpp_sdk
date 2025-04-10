@@ -43,7 +43,6 @@ Frame {
 
         function addParticipant(participant) {
             if (null !== participant) {
-                console.log("addParticipant ->" + participant)
                 participants.append({data:participant})
             }
         }
@@ -52,7 +51,6 @@ Frame {
             if (null !== participant) {
                 for (var i = 0; i < participants.count; i++) {
                     if (participants.get(i).data === participant) {
-                        console.log("removeParticipant ->" + participant)
                         participants.remove(i)
                         break
                     }
@@ -74,13 +72,55 @@ Frame {
             Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                GridView {
+                Grid {
+                    id: grid
                     anchors.fill: parent
-                    model: participants
-                    delegate: ParticipantView {
-                        anchors.fill: parent
-                        participant: model.data
+                    horizontalItemAlignment: Grid.AlignHCenter
+                    spacing: -1
+                    columns: Math.ceil(Math.sqrt(participants.count))
+                    rows: Math.ceil(participants.count / columns)
+                    property int cellWidth: width / columns
+                    property int cellHeight: height / rows
+                    Repeater {
+                        id: repeater
+                        model: participants
+                        delegate: Rectangle {
+                            clip: true
+                            width: grid.cellWidth
+                            height: grid.cellHeight
+                            border.width: 1
+                            color: root.palette.window.lighter(1.2)
+                            border.color: root.activeFocus ? root.palette.highlight : root.palette.mid
+                            ParticipantView {
+                                anchors.fill: parent
+                                participant: model.data
+                            }
+                        }
                     }
+
+                    add: Transition {
+                        NumberAnimation {
+                            properties: "x,y"
+                            easing.type: Easing.OutBounce
+                        }
+                    }
+
+                    move: Transition {
+                        NumberAnimation {
+                            properties: "x,y"
+                            easing.type: Easing.OutBounce
+                        }
+                    }
+
+                    populate: Transition {
+                        NumberAnimation {
+                            properties: "x,y"
+                            from: 200
+                            duration: 100
+                            easing.type: Easing.OutBounce
+                        }
+                    }
+
                 }
             }
             ChatView {

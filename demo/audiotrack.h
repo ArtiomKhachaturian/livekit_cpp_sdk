@@ -1,6 +1,5 @@
 #ifndef AUDIOTRACK_H
 #define AUDIOTRACK_H
-#include "safeobj.h"
 #include <livekit/media/MediaEventsListener.h>
 #include <QObject>
 #include <QtQml/qqmlregistration.h>
@@ -32,7 +31,7 @@ private:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final { emit muteChanged(); }
 private:
-    SafeObj<std::shared_ptr<LiveKitCpp::AudioTrack>> _sdkTrack;
+    std::shared_ptr<LiveKitCpp::AudioTrack> _sdkTrack;
 };
 
 #endif // AUDIOTRACK_H

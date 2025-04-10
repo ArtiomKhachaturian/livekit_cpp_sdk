@@ -5,7 +5,6 @@
 #include <livekit/media/Track.h>
 #include <QObject>
 #include <QQmlEngine>
-#include <QHash>
 #include <type_traits>
 
 namespace LiveKitCpp {
@@ -20,15 +19,21 @@ class Participant : public QObject
     Q_PROPERTY(QString sid READ sid NOTIFY sidChanged)
     Q_PROPERTY(QString identity READ identity NOTIFY identityChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
-    template <class TTrack> using Tracks = QHash<QString, TTrack*>;
+    Q_PROPERTY(qsizetype audioTracksCount READ audioTracksCount NOTIFY audioTracksCountChanged)
+    Q_PROPERTY(qsizetype videoTracksCount READ videoTracksCount NOTIFY videoTracksCountChanged)
+    template <class TTrack> using Tracks = QList<TTrack*>;
 public:
     explicit Participant(QObject *parent = nullptr);
     ~Participant() override;
     virtual QString sid() const { return {}; }
     virtual QString identity() const { return {}; }
     virtual QString name() const { return {}; }
+    qsizetype audioTracksCount() const noexcept { return _audioTracks.size(); }
+    qsizetype videoTracksCount() const noexcept { return _videoTracks.size(); }
     Q_INVOKABLE AudioTrack* audioTrack(const QString& id) const;
+    Q_INVOKABLE AudioTrack* audioTrack(qsizetype index) const;
     Q_INVOKABLE VideoTrack* videoTrack(const QString& id) const;
+    Q_INVOKABLE VideoTrack* videoTrack(qsizetype index) const;
     QList<std::shared_ptr<LiveKitCpp::AudioTrack>> clearAudioTracks();
     QList<std::shared_ptr<LiveKitCpp::VideoTrack>> clearVideoTracks();
     // return ID of SDK track
@@ -50,6 +55,8 @@ signals:
     void sidChanged();
     void identityChanged();
     void nameChanged();
+    void audioTracksCountChanged();
+    void videoTracksCountChanged();
 protected:
     template <class TTrack = VideoTrack, class TSdkTrack = LiveKitCpp::VideoTrack>
     TTrack* addVideo(const std::shared_ptr<TSdkTrack>& sdkTrack);
@@ -93,9 +100,8 @@ inline TTrack* Participant::add(const std::shared_ptr<TSdkTrack>& sdkTrack,
     if (sdkTrack) {
         const auto id = QString::fromStdString(sdkTrack->id());
         if (!id.isEmpty()) {
-            Q_ASSERT(!tracks.contains(id));
             track = new TTrack(sdkTrack, this);
-            tracks[id] = track;
+            tracks.append(track);
         }
         else {
             Q_ASSERT(false);
@@ -103,9 +109,11 @@ inline TTrack* Participant::add(const std::shared_ptr<TSdkTrack>& sdkTrack,
         if (track) {
             if constexpr (std::is_base_of_v<VideoTrack, TTrack>) {
                 emit videoTrackAdded(id);
+                emit videoTracksCountChanged();
             }
             else if constexpr (std::is_base_of_v<AudioTrack, TTrack>) {
                 emit audioTrackAdded(id);
+                emit audioTracksCountChanged();
             }
             else {
                 static_assert(false, "incorrect media track type");

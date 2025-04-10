@@ -6,42 +6,72 @@ Item {
     id: root
 
     property Participant participant
-    property bool microphoneAdded: false
-    property bool microphoneMuted: false
+    readonly property bool hasVideo: videoTracks.count > 0
+    readonly property bool hasAudio: participant.audioTracksCount > 0
 
     ListModel {
         id : videoTracks
     }
 
-    StackLayout {
-        id: videoViews
+    ColumnLayout {
         anchors.fill: parent
-        Repeater {
+        anchors.margins: 2
+        StackLayout {
+            id: videoViews
             Layout.fillWidth: true
             Layout.fillHeight: true
-            model: videoTracks
-            VideoRenderer {
-                anchors.fill: parent
-                source: model.track
+            Repeater {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                model: videoTracks
+                VideoRenderer {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    source: model.track
+                }
+            }
+        }
+        TextPanel {
+            Layout.fillWidth: true
+            text: participant.identity
+        }
+    }
+
+    function addVideoTrack(track) {
+        if (null !== track) {
+            videoTracks.append({id:track.id, track:track})
+            if (track.screencast) {
+                videoViews.currentIndex = videoTracks.count - 1
+            }
+        }
+    }
+
+    function addVideoTrackById(id) {
+        addVideoTrack(participant.videoTrack(id))
+    }
+
+    function removeVideoTrackById(id) {
+        for (var i = 0; i < videoTracks.count; i++) {
+            if (videoTracks.get(i).id === id) {
+                if (i > 0 && i === videoViews.currentIndex) {
+                    videoViews.currentIndex = i -1
+                }
+                videoTracks.remove(i)
+                break
             }
         }
     }
 
     Connections {
         target: participant
-        function onVideoTrackAdded(id) {
-            var track = participant.videoTrack(id)
-            if (null !== track) {
-                videoTracks.append({id:id, track:track})
-            }
-        }
-        function onVideoTrackRemoved(id) {
-            for (var i = 0; i < videoTracks.count; i++) {
-                if (videoTracks.get(i).id === id) {
-                    videoTracks.remove(i)
-                    break
-                }
-            }
+        function onVideoTrackAdded(id) { addVideoTrackById(id) }
+        function onVideoTrackRemoved(id) { removeVideoTrackById(id) }
+    }
+
+    onParticipantChanged: {
+        videoTracks.clear()
+        for (var i = 0; i < participant.videoTracksCount; ++i) {
+            addVideoTrack(participant.videoTrack(i))
         }
     }
 }

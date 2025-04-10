@@ -11,8 +11,8 @@ AudioTrack::AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack,
     : QObject(parent)
     , _sdkTrack(sdkTrack)
 {
-    if (sdkTrack) {
-        sdkTrack->addListener(this);
+    if (_sdkTrack) {
+        _sdkTrack->addListener(this);
     }
 }
 
@@ -23,37 +23,36 @@ AudioTrack::~AudioTrack()
 
 std::shared_ptr<LiveKitCpp::AudioTrack> AudioTrack::takeSdkTrack()
 {
-    if (auto sdkTrack = _sdkTrack.take()) {
-        sdkTrack->removeListener(this);
-        return sdkTrack;
+    if (_sdkTrack) {
+        _sdkTrack->removeListener(this);
+        return std::move(_sdkTrack);
     }
     return {};
 }
 
 void AudioTrack::setVolume(qreal volume)
 {
-    if (const auto sdkTrack = _sdkTrack.get()) {
-        sdkTrack->setVolume(volume);
+    if (_sdkTrack) {
+        _sdkTrack->setVolume(volume);
     }
 }
 
 QString AudioTrack::id() const
 {
-    if (const auto sdkTrack = _sdkTrack.get()) {
-        return QString::fromStdString(sdkTrack->id());
+    if (_sdkTrack) {
+        return QString::fromStdString(_sdkTrack->id());
     }
     return {};
 }
 
 bool AudioTrack::muted() const
 {
-    const auto sdkTrack = _sdkTrack.get();
-    return sdkTrack && sdkTrack->muted();
+    return _sdkTrack && _sdkTrack->muted();
 }
 
 void AudioTrack::setMuted(bool mute)
 {
-    if (const auto sdkTrack = _sdkTrack.get()) {
-        sdkTrack->mute(mute);
+    if (_sdkTrack) {
+        _sdkTrack->mute(mute);
     }
 }
