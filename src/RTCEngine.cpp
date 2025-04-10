@@ -158,9 +158,9 @@ std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(std::shared_ptr<
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
-    removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track)
+    removeLocalAudioTrack(std::shared_ptr<AudioTrack> track)
 {
-    auto media = RTCMediaEngine::removeLocalAudioTrack(track);
+    auto media = RTCMediaEngine::removeLocalAudioTrack(std::move(track));
     if (media) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->removeTrack(media);
@@ -170,9 +170,9 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngine::
-    removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track)
+    removeLocalVideoTrack(std::shared_ptr<VideoTrack> track)
 {
-    auto media = RTCMediaEngine::removeLocalVideoTrack(track);
+    auto media = RTCMediaEngine::removeLocalVideoTrack(std::move(track));
     if (media) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->removeTrack(media);

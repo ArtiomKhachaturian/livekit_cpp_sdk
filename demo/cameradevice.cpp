@@ -19,6 +19,13 @@ CameraDevice::~CameraDevice()
     }
 }
 
+void CameraDevice::setDeviceInfo(const MediaDeviceInfo& info)
+{
+    if (_device) {
+        _device->setDeviceInfo(info);
+    }
+}
+
 bool CameraDevice::isMuted() const
 {
     return _device && _device->muted();

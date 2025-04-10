@@ -47,7 +47,10 @@ public slots:
     void setRecordingAudioDevice(const MediaDeviceInfo& device);
     void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE AudioDevice* createMicrophone();
-    Q_INVOKABLE CameraDevice* createCamera(const MediaDeviceInfo& info = {}, const CameraOptions& options = {});
+    Q_INVOKABLE CameraDevice* createCamera(const MediaDeviceInfo& info = {},
+                                           const CameraOptions& options = {});
+    Q_INVOKABLE void destroyMicrophone(AudioDevice* microphone);
+    Q_INVOKABLE void destroyCamera(CameraDevice* camera);
 public:
     bool isValid() const;
     bool audioRecordingEnabled() const;

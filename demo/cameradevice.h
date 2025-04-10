@@ -1,5 +1,6 @@
 #ifndef CAMERADEVICE_H
 #define CAMERADEVICE_H
+#include "mediadeviceinfo.h"
 #include "videosource.h"
 #include <QObject>
 #include <QQmlEngine>
@@ -20,6 +21,7 @@ public:
     ~CameraDevice() override;
     bool isValid() const { return nullptr != _device; }
     const auto& device() const noexcept { return _device; }
+    Q_INVOKABLE void setDeviceInfo(const MediaDeviceInfo& info);
 protected:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final {}

@@ -7,6 +7,7 @@ Item {
     id: root
     property alias urlText: url.text
     property alias tokenText: token.text
+    property bool activeCamera: false
     property var cameraDeviceInfo: undefined
     //property bool autoSubscribe: true
     //property bool adaptiveStream: true
@@ -84,23 +85,46 @@ Item {
         }
     }
 
-    onCameraDeviceInfoChanged: {
-        if (cameraDeviceInfo === undefined) {
-            cameraPreview.source = null
+    Component.onDestruction: {
+        enableCameraPreview(undefined)
+    }
+
+    onActiveCameraChanged: {
+        if (activeCamera && visible) {
+            enableCameraPreview(cameraDeviceInfo)
         }
-        else if (visible) {
-            cameraPreview.source = app.createCamera(cameraDeviceInfo)
+        else {
+            enableCameraPreview(undefined)
+        }
+    }
+
+    onCameraDeviceInfoChanged: {
+        if (activeCamera && visible) {
+            enableCameraPreview(cameraDeviceInfo)
         }
     }
 
     onVisibleChanged: {
-        if (visible) {
-            if (cameraDeviceInfo !== undefined) {
-                cameraPreview.source = app.createCamera(cameraDeviceInfo)
-            }
+        if (activeCamera && visible) {
+            enableCameraPreview(cameraDeviceInfo)
         }
         else {
+            enableCameraPreview(undefined)
+        }
+    }
+
+    function enableCameraPreview(deviceInfo) {
+        if (deviceInfo === undefined) {
+            app.destroyCamera(cameraPreview.source)
             cameraPreview.source = null
+        }
+        else {
+            if (cameraPreview.source === null) {
+                cameraPreview.source = app.createCamera(deviceInfo)
+            }
+            else {
+                cameraPreview.source.setDeviceInfo(deviceInfo)
+            }
         }
     }
 }

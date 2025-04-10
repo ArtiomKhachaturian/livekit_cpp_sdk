@@ -65,9 +65,9 @@ public:
     std::shared_ptr<LocalAudioTrackImpl> addAudioTrack(std::shared_ptr<AudioDevice> device);
     std::shared_ptr<CameraTrackImpl> addCameraTrack(std::shared_ptr<CameraDevice> device);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
+        removeAudioTrack(std::shared_ptr<AudioTrack> track);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeVideoTrack(const std::shared_ptr<VideoTrack>& track);
+        removeVideoTrack(std::shared_ptr<VideoTrack> track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;
     std::shared_ptr<VideoTrack> videoTrack(size_t index) const;
     std::vector<std::shared_ptr<LocalTrack>> tracks() const;

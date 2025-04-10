@@ -142,6 +142,20 @@ CameraDevice* DemoApp::createCamera(const MediaDeviceInfo& info,
     return nullptr;
 }
 
+void DemoApp::destroyMicrophone(AudioDevice* microphone)
+{
+    if (microphone) {
+        delete microphone;
+    }
+}
+
+void DemoApp::destroyCamera(CameraDevice* camera)
+{
+    if (camera) {
+        delete camera;
+    }
+}
+
 bool DemoApp::isValid() const
 {
     return nullptr != _service;

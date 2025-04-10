@@ -91,14 +91,14 @@ std::shared_ptr<CameraTrack> Session::addCameraTrack(std::shared_ptr<CameraDevic
     return _impl->_engine.addLocalCameraTrack(std::move(device));
 }
 
-void Session::removeAudioTrack(const std::shared_ptr<AudioTrack>& track)
+void Session::removeAudioTrack(std::shared_ptr<AudioTrack> track)
 {
-    _impl->_engine.removeLocalAudioTrack(track);
+    _impl->_engine.removeLocalAudioTrack(std::move(track));
 }
 
-void Session::removeVideoTrack(const std::shared_ptr<VideoTrack>& track)
+void Session::removeVideoTrack(std::shared_ptr<VideoTrack> track)
 {
-    _impl->_engine.removeLocalVideoTrack(track);
+    _impl->_engine.removeLocalVideoTrack(std::move(track));
 }
 
 std::shared_ptr<AudioTrack> Session::audioTrack(size_t index) const

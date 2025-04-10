@@ -66,8 +66,8 @@ public:
     size_t localVideoTracksCount() const;
     std::shared_ptr<AudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device);
     std::shared_ptr<CameraTrack> addCameraTrack(std::shared_ptr<CameraDevice> device);
-    void removeAudioTrack(const std::shared_ptr<AudioTrack>& track);
-    void removeVideoTrack(const std::shared_ptr<VideoTrack>& track);
+    void removeAudioTrack(std::shared_ptr<AudioTrack> track);
+    void removeVideoTrack(std::shared_ptr<VideoTrack> track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;
     std::shared_ptr<VideoTrack> videoTrack(size_t index) const;
     // remote

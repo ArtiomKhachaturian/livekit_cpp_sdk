@@ -67,9 +67,9 @@ public:
     virtual std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device);
     virtual std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device);
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track);
+        removeLocalAudioTrack(std::shared_ptr<AudioTrack> track);
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track);
+        removeLocalVideoTrack(std::shared_ptr<VideoTrack> track);
     std::shared_ptr<AudioTrack> localAudioTrack(size_t index) const;
     std::shared_ptr<VideoTrack> localVideoTrack(size_t index) const;
     void enableAesCgmForLocalMedia(bool enable);

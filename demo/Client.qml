@@ -9,21 +9,10 @@ Pane {
     property alias urlText: connectionForm.urlText
     property alias tokenText: connectionForm.tokenText
     property alias identity: sessionForm.identity
+    readonly property bool sessionActive: sessionForm.connecting || sessionForm.connected
 
     signal wantsToBeClosed()
     signal error(string desc, string details)
-
-    ToolButton {
-        visible: closable
-        anchors.right: parent.right
-        anchors.top: parent.top
-        icon.name: "window-close"
-        z: 1
-        onClicked: {
-            sessionForm.disconnect()
-            wantsToBeClosed()
-        }
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -42,7 +31,7 @@ Pane {
                 CheckBox {
                     id: micMuteCheckbox
                     text: qsTr("Muted")
-                    enabled: (sessionForm.connecting || sessionForm.connected) && sessionForm.activeMicrophone
+                    enabled: sessionActive && sessionForm.activeMicrophone
                     checked: false
                 }
 
@@ -52,20 +41,12 @@ Pane {
                     id: cameraAddSwitch
                     text: qsTr("Camera")
                     checked: false
-                    onCheckedChanged: {
-                        if (checked) {
-                            connectionForm.cameraDeviceInfo = cameraModelComboBox.deviceInfo
-                        }
-                        else {
-                            connectionForm.cameraDeviceInfo = undefined
-                        }
-                    }
                 }
 
                 CheckBox {
                     id: cameraMuteCheckbox
                     text: qsTr("Muted")
-                    enabled: (sessionForm.connecting || sessionForm.connected) && sessionForm.activeCamera
+                    enabled: sessionActive && sessionForm.activeCamera
                     checked: false
                 }
 
@@ -73,16 +54,11 @@ Pane {
                     id: cameraModelComboBox
                     Layout.horizontalStretchFactor: 2
                     Layout.fillWidth: true
-                    onCurrentIndexChanged: {
-                        if (cameraAddSwitch.checked) {
-                            connectionForm.cameraDeviceInfo = deviceInfoAt(currentIndex)
-                        }
-                    }
                 }
 
                 CameraOptionsComboBox {
                     id: cameraOptionsComboBox
-                    visible: sessionForm.connecting || sessionForm.connected
+                    visible: sessionActive
                     deviceInfo: cameraModelComboBox.deviceInfo
                     Layout.horizontalStretchFactor: 1
                     Layout.fillWidth: true
@@ -100,8 +76,18 @@ Pane {
                 ToolButton {
                     Layout.alignment: Qt.AlignRight
                     icon.name: "network-offline"
-                    visible: sessionForm.connecting || sessionForm.connected
+                    visible: sessionActive
                     onClicked: sessionForm.disconnect()
+                }
+
+                ToolButton {
+                    Layout.alignment: Qt.AlignRight
+                    visible: closable
+                    icon.name: "window-close"
+                    onClicked: {
+                        sessionForm.disconnect()
+                        wantsToBeClosed()
+                    }
                 }
             }
         }
@@ -110,12 +96,15 @@ Pane {
             id: stackView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: sessionForm.connecting || sessionForm.connected ? 1 : 0
+            currentIndex: sessionActive ? 1 : 0
             ConnectForm {
                 id: connectionForm
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                objectName: root.objectName + "_client_form"
                 enabled: !sessionForm.connecting
+                activeCamera: !sessionActive && cameraAddSwitch.checked
+                cameraDeviceInfo: cameraModelComboBox.deviceInfo
                 onConnectClicked: {
                     sessionForm.connect(urlText, tokenText)
                 }
@@ -123,8 +112,8 @@ Pane {
             SessionForm {
                 id: sessionForm
                 objectName: root.objectName
-                activeCamera: cameraAddSwitch.checked
-                activeMicrophone: micAddSwitch.checked
+                activeCamera: sessionActive && cameraAddSwitch.checked
+                activeMicrophone: sessionActive && micAddSwitch.checked
                 camerDeviceInfo: cameraModelComboBox.deviceInfo
                 cameraOptions: cameraOptionsComboBox.options
                 microphoneMuted: micMuteCheckbox.checked
@@ -141,5 +130,6 @@ Pane {
     BusyIndicator {
         anchors.centerIn: parent
         running: sessionForm.connecting
+        z: 1.
     }
 }

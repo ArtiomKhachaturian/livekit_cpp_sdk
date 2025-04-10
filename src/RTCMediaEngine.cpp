@@ -99,15 +99,15 @@ std::shared_ptr<CameraTrackImpl> RTCMediaEngine::addLocalCameraTrack(std::shared
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCMediaEngine::
-    removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track)
+    removeLocalAudioTrack(std::shared_ptr<AudioTrack> track)
 {
-    return _localParticipant->removeAudioTrack(track);
+    return _localParticipant->removeAudioTrack(std::move(track));
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCMediaEngine::
-    removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track)
+    removeLocalVideoTrack(std::shared_ptr<VideoTrack> track)
 {
-    return _localParticipant->removeVideoTrack(track);
+    return _localParticipant->removeVideoTrack(std::move(track));
 }
 
 std::shared_ptr<AudioTrack> RTCMediaEngine::localAudioTrack(size_t index) const

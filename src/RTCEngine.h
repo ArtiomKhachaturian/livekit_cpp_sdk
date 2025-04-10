@@ -71,9 +71,9 @@ public:
     std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device) final;
     std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device) final;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeLocalAudioTrack(const std::shared_ptr<AudioTrack>& track) final;
+        removeLocalAudioTrack(std::shared_ptr<AudioTrack> track) final;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeLocalVideoTrack(const std::shared_ptr<VideoTrack>& track) final;
+        removeLocalVideoTrack(std::shared_ptr<VideoTrack> track) final;
     // impl. of TrackManager
     void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                     const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
