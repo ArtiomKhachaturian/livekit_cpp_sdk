@@ -15,7 +15,6 @@
 #include "livekit/Participant.h"
 #include "livekit/media/RemoteAudioTrack.h"
 #include "livekit/media/RemoteVideoTrack.h"
-#include "livekit/media/VideoTrack.h"
 #include "livekit/rtc/ParticipantState.h"
 
 namespace LiveKitCpp

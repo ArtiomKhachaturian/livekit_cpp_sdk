@@ -1,6 +1,5 @@
 #ifndef PARTICIPANT_H
 #define PARTICIPANT_H
-#include "lockable.h"
 #include "audiotrack.h"
 #include "videotrack.h"
 #include <livekit/media/Track.h>
@@ -21,7 +20,7 @@ class Participant : public QObject
     Q_PROPERTY(QString sid READ sid NOTIFY sidChanged)
     Q_PROPERTY(QString identity READ identity NOTIFY identityChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
-    template <class TTrack> using Tracks = Lockable<QHash<QString, TTrack*>>;
+    template <class TTrack> using Tracks = QHash<QString, TTrack*>;
 public:
     explicit Participant(QObject *parent = nullptr);
     ~Participant() override;
@@ -94,10 +93,9 @@ inline TTrack* Participant::add(const std::shared_ptr<TSdkTrack>& sdkTrack,
     if (sdkTrack) {
         const auto id = QString::fromStdString(sdkTrack->id());
         if (!id.isEmpty()) {
-            const QWriteLocker locker(&tracks._lock);
-            Q_ASSERT(!tracks._val.contains(id));
+            Q_ASSERT(!tracks.contains(id));
             track = new TTrack(sdkTrack, this);
-            tracks._val[id] = track;
+            tracks[id] = track;
         }
         else {
             Q_ASSERT(false);

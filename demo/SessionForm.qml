@@ -26,6 +26,43 @@ Frame {
         onChatMessageReceived: (participantIdentity, message, deleted) => {
             chatView.append(participantIdentity, message)
         }
+        onRemoteParticipantAdded: participant => {
+            addParticipant(participant)
+        }
+        onRemoteParticipantRemoved:  participant => {
+            removeParticipant(participant)
+        }
+
+        Component.onCompleted: {
+            addParticipant(localParticipant)
+        }
+
+        Component.onDestruction: {
+            removeParticipant(localParticipant)
+        }
+
+        function addParticipant(participant) {
+            if (null !== participant) {
+                console.log("addParticipant ->" + participant)
+                participants.append({data:participant})
+            }
+        }
+
+        function removeParticipant(participant) {
+            if (null !== participant) {
+                for (var i = 0; i < participants.count; i++) {
+                    if (participants.get(i).data === participant) {
+                        console.log("removeParticipant ->" + participant)
+                        participants.remove(i)
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    ListModel {
+        id: participants
     }
 
     ColumnLayout {
@@ -37,10 +74,13 @@ Frame {
             Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                ParticipantView {
-                    id: localMediaView
-                    participant: session.localParticipant
+                GridView {
                     anchors.fill: parent
+                    model: participants
+                    delegate: ParticipantView {
+                        anchors.fill: parent
+                        participant: model.data
+                    }
                 }
             }
             ChatView {

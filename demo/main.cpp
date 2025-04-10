@@ -1,10 +1,13 @@
+#include "demoapp.h"
+#include "remoteparticipant.h"
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQmlContext>
-#include "demoapp.h"
 
 int main(int argc, char *argv[])
 {
+    qRegisterMetaType<RemoteParticipant*>();
+
     DemoApp app(argc, argv);
     QQmlApplicationEngine engine;
 

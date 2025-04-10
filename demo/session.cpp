@@ -1,6 +1,7 @@
 #include "session.h"
 #include "demoapp.h"
 #include <livekit/Service.h>
+#include <QThread>
 
 namespace
 {
@@ -219,4 +220,44 @@ void Session::onChatMessageReceived(const std::string& identity,
                                            int64_t, bool deleted, bool)
 {
     emit chatMessageReceived(QString::fromStdString(identity), QString::fromStdString(message), deleted);
+}
+
+void Session::addRemoteParticipant(const QString& sid)
+{
+    if (_impl && !sid.isEmpty()) {
+        if (const auto sdkParticipant = _impl->remoteParticipant(sid.toStdString())) {
+            removeRemoteParticipant(sid);
+            auto participant = new RemoteParticipant(sdkParticipant, this);
+            _remoteParticipants[sid] = participant;
+            emit remoteParticipantAdded(participant);
+        }
+    }
+}
+
+void Session::removeRemoteParticipant(const QString& sid)
+{
+    if (!sid.isEmpty()) {
+        const auto it = _remoteParticipants.find(sid);
+        if (it != _remoteParticipants.end()) {
+            emit remoteParticipantRemoved(it.value());
+            delete it.value();
+            _remoteParticipants.erase(it);
+        }
+    }
+}
+
+void Session::onRemoteParticipantAdded(const std::string& sid)
+{
+    if (_impl && !sid.empty()) {
+        QMetaObject::invokeMethod(this, &Session::addRemoteParticipant,
+                                  QString::fromStdString(sid));
+    }
+}
+
+void Session::onRemoteParticipantRemoved(const std::string& sid)
+{
+    if (_impl && !sid.empty()) {
+        QMetaObject::invokeMethod(this, &Session::removeRemoteParticipant,
+                                  QString::fromStdString(sid));
+    }
 }

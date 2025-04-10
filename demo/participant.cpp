@@ -74,11 +74,10 @@ std::shared_ptr<TSdkTrack> Participant::remove(const QString& id, Tracks<TTrack>
 {
     std::shared_ptr<TSdkTrack> track;
     if (!id.isEmpty()) {
-        const QWriteLocker locker(&tracks._lock);
-        const auto it = tracks._val.find(id);
-        if (it != tracks._val.end()) {
+        const auto it = tracks.find(id);
+        if (it != tracks.end()) {
             track = takeSdkTrackAndDestroy<TSdkTrack>(it.value());
-            tracks._val.erase(it);
+            tracks.erase(it);
         }
     }
     return track;
@@ -88,9 +87,8 @@ template <class TSdkTrack, class TTrack>
 QList<std::shared_ptr<TSdkTrack>> Participant::clearTracks(Tracks<TTrack>& tracks)
 {
     QList<std::shared_ptr<TSdkTrack>> sdkTracks;
-    const QWriteLocker locker(&tracks._lock);
-    sdkTracks.reserve(tracks._val.size());
-    for (auto it = tracks._val.begin(); it != tracks._val.end(); ++it) {
+    sdkTracks.reserve(tracks.size());
+    for (auto it = tracks.begin(); it != tracks.end(); ++it) {
         sdkTracks.push_back(takeSdkTrackAndDestroy<TSdkTrack>(it.value()));
     }
     return sdkTracks;
@@ -120,9 +118,8 @@ template <class TTrack>
 TTrack* Participant::track(const QString& id, const Tracks<TTrack>& tracks)
 {
     if (!id.isEmpty()) {
-        const QReadLocker locker(&tracks._lock);
-        const auto it = tracks._val.constFind(id);
-        if (it != tracks._val.constEnd()) {
+        const auto it = tracks.constFind(id);
+        if (it != tracks.constEnd()) {
             return it.value();
         }
     }
@@ -133,9 +130,8 @@ template <class TTrack>
 void Participant::muteTrack(const QString& id, bool mute, const Tracks<TTrack>& tracks)
 {
     if (!id.isEmpty()) {
-        const QReadLocker locker(&tracks._lock);
-        const auto it = tracks._val.constFind(id);
-        if (it != tracks._val.constEnd()) {
+        const auto it = tracks.constFind(id);
+        if (it != tracks.constEnd()) {
             it.value()->setMuted(mute);
         }
     }

@@ -1,11 +1,13 @@
 #ifndef Session_H
 #define Session_H
 #include "localparticipant.h"
+#include "remoteparticipant.h"
 #include <livekit/SessionListener.h>
 #include <livekit/RemoteParticipantListener.h>
 #include <livekit/Session.h>
 #include <QObject>
 #include <QQmlEngine>
+#include <QHash>
 #include <memory>
 
 namespace LiveKitCpp {
@@ -81,6 +83,11 @@ signals:
     void cameraMutedChanged();
     void microphoneMutedChanged();
     void identityChanged();
+    void remoteParticipantAdded(RemoteParticipant* participant);
+    void remoteParticipantRemoved(RemoteParticipant* participant);
+private slots:
+    void addRemoteParticipant(const QString& sid);
+    void removeRemoteParticipant(const QString& sid);
 private:
     static std::unique_ptr<LiveKitCpp::Session> create();
     // impl. of SessionListener
@@ -90,9 +97,12 @@ private:
     void onChatMessageReceived(const std::string& identity,
                                const std::string& message, const std::string&,
                                int64_t, bool deleted, bool) final;
+    void onRemoteParticipantAdded(const std::string& sid) final;
+    void onRemoteParticipantRemoved(const std::string& sid) final;
 private:
     const std::unique_ptr<LiveKitCpp::Session> _impl;
     LocalParticipant* const _localParticipant;
+    QHash<QString, RemoteParticipant*> _remoteParticipants;
 };
 
 #endif // Session_H
