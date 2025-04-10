@@ -12,6 +12,8 @@ struct Lockable
     explicit Lockable(T val);
     template <class... Args>
     Lockable(Args&&... args);
+    T* operator->() noexcept { return &_val; }
+    const T* operator->() const noexcept { return &_val; }
 };
 
 template <typename T>

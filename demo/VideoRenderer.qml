@@ -23,11 +23,11 @@ Item {
 
     onSourceChanged: {
         if (renderer.source !== null) {
-            renderer.source.output = null
+            renderer.source.removeOutput(renderer.videoSink)
             renderer.source = null
         }
         if (source !== null) {
-            source.output = renderer.videoSink
+            source.addOutput(renderer.videoSink)
             fpsArea.fps = Qt.binding(function() {
                 if (source !== null) {
                     return source.fps

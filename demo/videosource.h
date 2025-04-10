@@ -6,7 +6,6 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QBasicTimer>
-#include <QPointer>
 #include <QSize>
 #include <QVideoSink>
 #include <atomic>
@@ -22,7 +21,6 @@ class VideoSource : public QObject,
     Q_OBJECT
     QML_NAMED_ELEMENT(VideoSource)
     QML_UNCREATABLE("Create CameraDevice or CameraTrack instead of")
-    Q_PROPERTY(QVideoSink* output READ output WRITE setOutput NOTIFY outputChanged FINAL)
     Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
     Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged FINAL)
@@ -30,15 +28,14 @@ class VideoSource : public QObject,
 public:
     explicit VideoSource(QObject *parent = nullptr);
     ~VideoSource() override;
-    QVideoSink* output() const;
     quint16 fps() const noexcept { return _fps; }
     QSize frameSize() const { return _frameSize; }
     bool isActive() const { return _active; }
     QString frameType() const;
 public slots:
-    void setOutput(QVideoSink* output);
+    Q_INVOKABLE void addOutput(QVideoSink* output);
+    Q_INVOKABLE void removeOutput(QVideoSink* output);
 signals:
-    void outputChanged();
     void fpsChanged();
     void frameSizeChanged();
     void activeChanged();
@@ -47,7 +44,7 @@ protected:
     void startMetricsCollection();
     void stopMetricsCollection();
     bool isMetricsCollectionStarted() const { return _fpsTimer.isActive(); }
-    bool hasOutput() const;
+    bool hasOutputs() const;
     virtual bool hasVideoInput() const { return true; }
     virtual bool isMuted() const { return false; }
     virtual void subsribe(bool /*subscribe*/) {}
@@ -69,7 +66,7 @@ private:
     static constexpr QSize _nullSize = {0, 0};
     QBasicTimer _fpsTimer;
     quint16 _fps = 0U;
-    Lockable<QPointer<QVideoSink>> _output;
+    Lockable<QList<QVideoSink*>> _outputs;
     SafeObj<QSize> _frameSize;
     std::atomic<quint16> _framesCounter = 0U;
     std::atomic_bool _active = false;

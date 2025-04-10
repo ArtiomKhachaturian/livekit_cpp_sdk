@@ -18,37 +18,33 @@ VideoSource::~VideoSource()
     stopMetricsCollection();
 }
 
-QVideoSink* VideoSource::output() const
-{
-    const QReadLocker locker(&_output._lock);
-    return _output._val;
-}
-
 QString VideoSource::frameType() const
 {
     return CameraOptions::toString(_frameType);
 }
 
-void VideoSource::setOutput(QVideoSink* output)
+void VideoSource::addOutput(QVideoSink* output)
 {
-    bool changed = false;
-    if (hasVideoInput()) {
-        const QWriteLocker locker(&_output._lock);
-        if (output != _output._val) {
-            if (output && !_output._val) {
+    if (output) {
+        const QWriteLocker locker(&_outputs._lock);
+        if (-1 == _outputs->indexOf(output)) {
+            _outputs->append(output);
+            if (1 == _outputs->size()) {
                 subsribe(true);
+                setActive(true);
             }
-            else if (!output && _output._val) {
-                subsribe(false);
-            }
-            _output._val = output;
-            changed = true;
-            _framesCounter = 0U;
         }
     }
-    if (changed) {
-        setActive(nullptr != output);
-        emit outputChanged();
+}
+
+void VideoSource::removeOutput(QVideoSink* output)
+{
+    if (output) {
+        const QWriteLocker locker(&_outputs._lock);
+        if (_outputs->removeAll(output) > 0 && _outputs->isEmpty()) {
+            subsribe(false);
+            setActive(false);
+        }
     }
 }
 
@@ -77,10 +73,10 @@ void VideoSource::stopMetricsCollection()
     }
 }
 
-bool VideoSource::hasOutput() const
+bool VideoSource::hasOutputs() const
 {
-    const QReadLocker locker(&_output._lock);
-    return nullptr != _output._val;
+    const QReadLocker locker(&_outputs._lock);
+    return !_outputs->isEmpty();
 }
 
 void VideoSource::timerEvent(QTimerEvent* e)
@@ -137,11 +133,13 @@ void VideoSource::setFrameSize(int width, int height, bool updateFps)
 void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
 {
     if (frame && frame->planesCount()) {
-        const QReadLocker locker(&_output._lock);
-        if (_output._val) {
+        const QReadLocker locker(&_outputs._lock);
+        if (!_outputs->isEmpty()) {
             const auto qtFrame = LiveKitCpp::convert(frame);
             if (qtFrame.isValid()) {
-                _output._val->setVideoFrame(qtFrame);
+                for (qsizetype i = 0; i < _outputs->size(); ++i) {
+                    _outputs->at(i)->setVideoFrame(qtFrame);
+                }
                 if (isActive() && !isMuted()) {
                     setFrameType(frame->type());
                     setFrameSize(qtFrame.width(), qtFrame.height());
