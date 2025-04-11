@@ -1,6 +1,6 @@
 #ifndef AUDIOTRACK_H
 #define AUDIOTRACK_H
-#include <livekit/media/MediaEventsListener.h>
+#include <livekit/rtc/media/MediaEventsListener.h>
 #include <QObject>
 #include <QtQml/qqmlregistration.h>
 

@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Project name
-project("LiveKitCpp" LANGUAGES CXX VERSION 0.0.1)
+project("LiveKitClient" LANGUAGES CXX VERSION 0.0.1)
+set(SIGNALING_LIB "Signaling")
+set(RTC_LIB "Rtc")
 
-include(CMakePackageConfigHelpers)
-include(GNUInstallDirs)
+# how to integrate to your project:
+#       find_package(LiveKitClient REQUIRED)
+#       target_include_directories(<your_target> PRIVATE LiveKitClient::Signaling LiveKitClient::Rtc)
+#       target_link_libraries(<your_target> PRIVATE LiveKitClient::Signaling LiveKitClient::Rtc)
+#       just for reminder - build of LiveKitClient::Rtc is optional
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -113,8 +118,6 @@ file(GLOB_RECURSE SIGNALING_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/src
 file(GLOB_RECURSE SIGNALING_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/src/*.${SOURCE_FILE_EXT})
 file(GLOB SIGNALING_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
 file(GLOB SIGNALING_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
-
-set(SIGNALING_LIB ${PROJECT_NAME}Signaling)
 
 # Create a shared library
 add_library(${SIGNALING_LIB} SHARED
@@ -235,9 +238,6 @@ if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
 endif()
 
 if (WEBRTC_AVAILABLE)
-
-    set(RTC_LIB ${PROJECT_NAME}Rtc)
-
     file(GLOB_RECURSE RTC_PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/livekit/rtc/*.${HEADER_FILE_EXT})
     file(GLOB_RECURSE RTC_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/rtc/src/*.${HEADER_FILE_EXT})
     file(GLOB_RECURSE RTC_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/rtc/src/*.${SOURCE_FILE_EXT})
@@ -320,36 +320,39 @@ if (WEBRTC_AVAILABLE)
                                                  iphlpapi.lib)
     endif()
 
-    target_link_libraries(${RTC_LIB} PRIVATE ${SIGNALING_LIB} ${WEBRTC_LIB_FILES})
+    target_link_libraries(${RTC_LIB} PRIVATE ${WEBRTC_LIB_FILES})
+    target_link_libraries(${RTC_LIB} PUBLIC ${SIGNALING_LIB})
     target_compile_definitions(${RTC_LIB} PRIVATE -DJSON_HAS_CPP_17 -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
 endif()
 
 # install steps
 if (CMAKE_INSTALL_PREFIX)
     set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+    set(CMAKE_INSTALL_INTERFACE_DIR ${CMAKE_INSTALL_PREFIX}/include)
 
-    target_include_directories(${SIGNALING_LIB} INTERFACE $<INSTALL_INTERFACE:include>)
-    install(TARGETS ${SIGNALING_LIB} 
+    target_include_directories(${SIGNALING_LIB} INTERFACE ${CMAKE_INSTALL_INTERFACE_DIR})
+    list(APPEND LIB_TARGETS ${SIGNALING_LIB})
+    if (WEBRTC_AVAILABLE)
+        list(APPEND LIB_TARGETS ${RTC_LIB})
+        target_include_directories(${RTC_LIB} INTERFACE ${CMAKE_INSTALL_INTERFACE_DIR})
+    endif()
+
+    install(TARGETS ${LIB_TARGETS}
             EXPORT ${PROJECT_NAME}Targets
             ARCHIVE DESTINATION lib 
             LIBRARY DESTINATION lib 
-            RUNTIME DESTINATION bin)
-    if (WEBRTC_AVAILABLE)
-        target_include_directories(${RTC_LIB} INTERFACE $<INSTALL_INTERFACE:include>)
-        install(TARGETS ${RTC_LIB} 
-                EXPORT ${PROJECT_NAME}Targets
-                ARCHIVE DESTINATION lib 
-                LIBRARY DESTINATION lib 
-                RUNTIME DESTINATION bin)
-    endif()
-
+            RUNTIME DESTINATION bin
+            INCLUDES DESTINATION include)
     
     # public API installation
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
-    install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ./include/websockets)
-    install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
+    install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ${CMAKE_INSTALL_INTERFACE_DIR}/websockets)
+    install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ${CMAKE_INSTALL_INTERFACE_DIR})
     file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
-    install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
+    install(FILES ${LOGGER_HEADERS} DESTINATION ${CMAKE_INSTALL_INTERFACE_DIR}/logger)
+
+    include(CMakePackageConfigHelpers)
+    #include(GNUInstallDirs)
 
     # generate [config.cmake] and [config-version.cmake] files
     configure_package_config_file(./Config.cmake.in
@@ -368,4 +371,6 @@ if (CMAKE_INSTALL_PREFIX)
     # install targets file
     install(EXPORT "${PROJECT_NAME}Targets" 
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+    export(TARGETS ${LIB_TARGETS} NAMESPACE ${PROJECT_NAME}:: FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake)
 endif(CMAKE_INSTALL_PREFIX)

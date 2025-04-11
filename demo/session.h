@@ -2,9 +2,9 @@
 #define Session_H
 #include "localparticipant.h"
 #include "remoteparticipant.h"
-#include <livekit/SessionListener.h>
-#include <livekit/RemoteParticipantListener.h>
-#include <livekit/Session.h>
+#include <livekit/rtc/SessionListener.h>
+#include <livekit/rtc/RemoteParticipantListener.h>
+#include <livekit/rtc/Session.h>
 #include <QObject>
 #include <QQmlEngine>
 #include <QHash>

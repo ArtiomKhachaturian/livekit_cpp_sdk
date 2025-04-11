@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(LiveKitClient VERSION 0.1 LANGUAGES CXX)
+project(LiveKitClientDemo VERSION 0.1 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FindPackageHandleStandardArgs)
-find_package(LiveKitCppClient REQUIRED)
+find_package(LiveKitClient REQUIRED)
 find_package(ZaphoydTppWebsockets REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia)
 
@@ -91,30 +91,41 @@ if (APPLE)
     )
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE LiveKitCppClient ZaphoydTppWebsockets)
+target_include_directories(${PROJECT_NAME} PRIVATE LiveKitClient::Signaling LiveKitClient::Rtc ZaphoydTppWebsockets)
 
-target_link_libraries(${PROJECT_NAME}
-    PUBLIC Qt6::Quick Qt6::QuickControls2 Qt6::Multimedia LiveKitCppClient ZaphoydTppWebsockets
-)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Quick Qt6::QuickControls2 Qt6::Multimedia
+                                             LiveKitClient::Signaling
+                                             LiveKitClient::Rtc
+                                             ZaphoydTppWebsockets)
+if (APPLE) # TODO: add these copyings to post-build step
+function(copyDylibToBundle FILE APP_BUNDLE_PATH)
+    if (EXISTS ${FILE})
+        message(STATUS "Copy ${FILE} to ${APP_BUNDLE_PATH}")
+        file(COPY ${ZP_LOCATION} DESTINATION ${APP_BUNDLE_PATH})
+    else()
+        message(WARNING "File ${FILE} doesn't exists")
+    endif()
+endfunction()
+
+function(copImportedDylibToBundle TARGET APP_BUNDLE_PATH)
+    get_target_property(FILE ${TARGET} LOCATION)
+    copyDylibToBundle(${FILE} ${APP_BUNDLE_PATH})
+endfunction()
 
 function(copyFrameworksToBundle APP_BUNDLE_PATH)
     if (EXISTS ${APP_BUNDLE_PATH})
         set(APP_BUNDLE_PATH ${APP_BUNDLE_PATH}/Contents/Frameworks)
-        get_target_property(ZP_LOCATION ZaphoydTppWebsockets LOCATION)
-        message(STATUS "Copy ${ZP_LOCATION} to ${APP_BUNDLE_PATH}")
-        file(COPY ${ZP_LOCATION} DESTINATION ${APP_BUNDLE_PATH})
-        get_target_property(LC_LOCATION LiveKitCppClient LOCATION)
-        message(STATUS "Copy ${LC_LOCATION} to ${APP_BUNDLE_PATH}")
-        file(COPY ${LC_LOCATION} DESTINATION ${APP_BUNDLE_PATH})
+        copImportedDylibToBundle(ZaphoydTppWebsockets ${APP_BUNDLE_PATH})
+        copImportedDylibToBundle(LiveKitClient::Signaling ${APP_BUNDLE_PATH})
+        copImportedDylibToBundle(LiveKitClient::Rtc ${APP_BUNDLE_PATH})
     endif()
 endfunction()
 
-if (APPLE)
-    copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app)
-    foreach(CONFIGURATION ${CMAKE_CONFIGURATION_TYPES})
-        copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${CONFIGURATION}/${PROJECT_NAME}.app)
-    endforeach()
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
+copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app)
+foreach(CONFIGURATION ${CMAKE_CONFIGURATION_TYPES})
+    copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${CONFIGURATION}/${PROJECT_NAME}.app)
+endforeach()
+set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
 endif()
 
 include(GNUInstallDirs)

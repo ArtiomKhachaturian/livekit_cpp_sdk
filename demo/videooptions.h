@@ -1,6 +1,6 @@
 #ifndef VIDEOOPTIONS_H
 #define VIDEOOPTIONS_H
-#include <livekit/media/VideoOptions.h>
+#include <livekit/rtc/media/VideoOptions.h>
 #include <QCoreApplication>
 #include <QSize>
 #include <QtQml/qqmlregistration.h>

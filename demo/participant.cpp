@@ -1,6 +1,6 @@
 #include "participant.h"
-#include <livekit/media/AudioTrack.h>
-#include <livekit/media/VideoTrack.h>
+#include <livekit/rtc/media/AudioTrack.h>
+#include <livekit/rtc/media/VideoTrack.h>
 
 Participant::Participant(QObject *parent)
     : QObject{parent}

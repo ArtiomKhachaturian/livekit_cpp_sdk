@@ -1,5 +1,5 @@
 #include "audiotrack.h"
-#include <livekit/media/AudioTrack.h>
+#include <livekit/rtc/media/AudioTrack.h>
 
 AudioTrack::AudioTrack(QObject* parent)
     : QObject(parent)

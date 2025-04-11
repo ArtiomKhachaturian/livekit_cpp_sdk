@@ -1,5 +1,5 @@
 #include "videotrack.h"
-#include <livekit/media/VideoTrack.h>
+#include <livekit/rtc/media/VideoTrack.h>
 
 VideoTrack::VideoTrack(QObject* parent)
     : VideoSource{parent}

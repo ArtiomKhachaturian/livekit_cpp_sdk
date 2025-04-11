@@ -1,8 +1,8 @@
 #ifndef VIDEOSOURCE_H
 #define VIDEOSOURCE_H
 #include "safeobj.h"
-#include <livekit/media/CameraEventsListener.h>
-#include <livekit/media/VideoSink.h>
+#include <livekit/rtc/media/CameraEventsListener.h>
+#include <livekit/rtc/media/VideoSink.h>
 #include <QObject>
 #include <QQmlEngine>
 #include <QBasicTimer>

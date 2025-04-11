@@ -5,7 +5,7 @@
 #include "audiodevice.h"
 #include "cameradevice.h"
 #include "cameraoptions.h"
-#include <livekit/ServiceListener.h>
+#include <livekit/rtc/ServiceListener.h>
 #include <QGuiApplication>
 #include <QScopedPointer>
 #include <QPointer>

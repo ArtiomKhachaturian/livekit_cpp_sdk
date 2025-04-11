@@ -1,5 +1,5 @@
 #include "remoteparticipant.h"
-#include <livekit/RemoteParticipant.h>
+#include <livekit/rtc/RemoteParticipant.h>
 
 RemoteParticipant::RemoteParticipant(QObject* parent)
     : Participant{parent}

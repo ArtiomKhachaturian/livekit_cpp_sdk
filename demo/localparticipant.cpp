@@ -1,7 +1,7 @@
 #include "localparticipant.h"
 #include "cameratrack.h"
-#include <livekit/Service.h>
-#include <livekit/media/CameraTrack.h>
+#include <livekit/rtc/Service.h>
+#include <livekit/rtc/media/CameraTrack.h>
 
 LocalParticipant::LocalParticipant(QObject *parent)
     : Participant(parent)

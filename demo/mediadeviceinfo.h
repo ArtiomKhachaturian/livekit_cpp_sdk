@@ -1,6 +1,6 @@
 #ifndef MEDIADEVICEINFO_H
 #define MEDIADEVICEINFO_H
-#include <livekit/media/MediaDeviceInfo.h>
+#include <livekit/rtc/media/MediaDeviceInfo.h>
 #include <QObject>
 #include <QString>
 #include <QtQml/qqmlregistration.h>

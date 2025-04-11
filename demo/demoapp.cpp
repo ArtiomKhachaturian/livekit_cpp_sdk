@@ -1,6 +1,6 @@
 #include "demoapp.h"
 #include "logger.h"
-#include <livekit/Service.h>
+#include <livekit/rtc/Service.h>
 #include <ZaphoydTppFactory.h>
 #include <QDebug>
 #include <memory>

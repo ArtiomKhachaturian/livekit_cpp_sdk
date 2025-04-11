@@ -1,6 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
-#include <Logger/Logger.h>
+#include <logger/Logger.h>
 #include <QMutex>
 
 class Logger : public Bricks::Logger

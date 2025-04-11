@@ -2,7 +2,7 @@
 #define PARTICIPANT_H
 #include "audiotrack.h"
 #include "videotrack.h"
-#include <livekit/media/Track.h>
+#include <livekit/rtc/media/Track.h>
 #include <QObject>
 #include <QQmlEngine>
 #include <type_traits>

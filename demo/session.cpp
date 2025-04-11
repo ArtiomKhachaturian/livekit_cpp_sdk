@@ -1,6 +1,6 @@
 #include "session.h"
 #include "demoapp.h"
-#include <livekit/Service.h>
+#include <livekit/rtc/Service.h>
 #include <QThread>
 
 namespace

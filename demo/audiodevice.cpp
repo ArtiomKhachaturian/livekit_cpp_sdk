@@ -1,5 +1,5 @@
 #include "audiodevice.h"
-#include <livekit/media/AudioDevice.h>
+#include <livekit/rtc/media/AudioDevice.h>
 
 AudioDevice::AudioDevice(std::shared_ptr<LiveKitCpp::AudioDevice> device,
                          QObject *parent)

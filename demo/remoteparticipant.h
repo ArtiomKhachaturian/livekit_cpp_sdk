@@ -1,7 +1,7 @@
 #ifndef REMOTEPARTICIPANT_H
 #define REMOTEPARTICIPANT_H
 #include "participant.h"
-#include <livekit/RemoteParticipantListener.h>
+#include <livekit/rtc/RemoteParticipantListener.h>
 #include <QQmlEngine>
 #include <memory>
 

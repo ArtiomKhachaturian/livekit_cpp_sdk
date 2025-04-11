@@ -1,5 +1,5 @@
 #include "cameratrack.h"
-#include <livekit/media/CameraTrack.h>
+#include <livekit/rtc/media/CameraTrack.h>
 
 CameraTrack::CameraTrack(QObject* parent)
     : VideoTrack(parent)

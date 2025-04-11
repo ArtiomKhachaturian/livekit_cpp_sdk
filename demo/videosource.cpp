@@ -1,7 +1,7 @@
 #include "videosource.h"
 #include "cameraoptions.h"
-#include <livekit/media/VideoFrame.h>
-#include <livekit/media/VideoFrameQtHelper.h>
+#include <livekit/rtc/media/VideoFrame.h>
+#include <livekit/rtc/media/VideoFrameQtHelper.h>
 #include <QTimerEvent>
 #include <QThread>
 

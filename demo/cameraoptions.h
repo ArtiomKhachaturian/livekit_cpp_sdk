@@ -1,6 +1,6 @@
 #ifndef CAMERAOPTIONS_H
 #define CAMERAOPTIONS_H
-#include <livekit/media/CameraOptions.h>
+#include <livekit/rtc/media/CameraOptions.h>
 #include "videooptions.h"
 
 class CameraOptions : public VideoOptions
