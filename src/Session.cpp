@@ -284,9 +284,9 @@ std::shared_ptr<AudioTrack> Session::addAudioTrack(std::shared_ptr<AudioDevice>)
 
 std::shared_ptr<CameraTrack> Session::addCameraTrack(std::shared_ptr<CameraDevice>) { return {}; }
 
-void Session::removeAudioTrack(const std::shared_ptr<AudioTrack>&) {}
+void Session::removeAudioTrack(std::shared_ptr<AudioTrack>) {}
 
-void Session::removeVideoTrack(const std::shared_ptr<VideoTrack>&) {}
+void Session::removeVideoTrack(std::shared_ptr<VideoTrack>) {}
 
 std::shared_ptr<AudioTrack> Session::audioTrack(size_t) const { return {}; }
 
