@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteAudioTrack.h
-#include "livekit/media/AudioTrack.h"
+#include "livekit/rtc/media/AudioTrack.h"
 
 namespace LiveKitCpp
 {

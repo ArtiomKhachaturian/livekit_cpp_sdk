@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsSource.h
-#include "livekit/stats/StatsListener.h"
+#include "livekit/rtc/stats/StatsListener.h"
 
 namespace LiveKitCpp
 {

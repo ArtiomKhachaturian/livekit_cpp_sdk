@@ -1,0 +1,78 @@
+// Copyright 2025 Artiom Khachaturian
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#pragma once // CameraVideoSourceImpl.h
+#include "Listeners.h"
+#include "CameraCapturerProxySink.h"
+#include "CameraCapturer.h"
+#include "SafeScopedRefPtr.h"
+#include "AsyncVideoSourceImpl.h"
+#include "livekit/rtc/media/MediaDeviceInfo.h"
+
+namespace LiveKitCpp
+{
+
+class CameraEventsListener;
+
+class AsyncCameraSourceImpl : public AsyncVideoSourceImpl, private CameraCapturerProxySink
+{
+public:
+    AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                          const std::shared_ptr<Bricks::Logger>& logger,
+                          const std::string& id,
+                          const MediaDeviceInfo& info,
+                          const webrtc::VideoCaptureCapability& initialCapability);
+    ~AsyncCameraSourceImpl() final { close(); }
+    const std::string& id() const { return _id; }
+    MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }
+    void setDeviceInfo(const MediaDeviceInfo& info);
+    void setCapability(webrtc::VideoCaptureCapability capability);
+    webrtc::VideoCaptureCapability capability() const { return _capability(); }
+    void requestCapturer();
+    void resetCapturer();
+    void addListener(CameraEventsListener* listener);
+    void removeListener(CameraEventsListener* listener);
+protected:
+    // impl. of Bricks::LoggableS<>
+    std::string_view logCategory() const final;
+    // impl. of MediaSourceImpl
+    void onClosed() final;
+    void onEnabled(bool enabled) final;
+private:
+    static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
+                                                      std::string_view guid = {});
+    static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
+                                                      const rtc::scoped_refptr<CameraCapturer>& capturer);
+    bool startCapturer(const webrtc::VideoCaptureCapability& capability); // non-threadsafe
+    bool stopCapturer(bool sendByeFrame); // non-threadsafe
+    void logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                  const std::string& message, int code = 0) const;
+    void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
+    template <class Method, typename... Args>
+    void notify(const Method& method, Args&&... args) const;
+    // impl. of CameraObserver
+    void onStateChanged(CameraState state) final;
+    void onCapturingFatalError() final;
+    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
+    void OnFrame(const webrtc::VideoFrame& frame) final { broadcast(frame, true); }
+    void OnDiscardedFrame() final { discard(); }
+    void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) final;
+private:
+    const std::string _id;
+    Bricks::Listeners<CameraEventsListener*> _listeners;
+    Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
+    SafeScopedRefPtr<CameraCapturer> _capturer;
+    Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
+};
+
+} // namespace LiveKitCpp

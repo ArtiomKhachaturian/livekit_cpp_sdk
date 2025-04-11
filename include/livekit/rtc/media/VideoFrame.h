@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoFrame.h
-#include "livekit/LiveKitClientExport.h"
-#include "livekit/media/VideoFrameType.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
+#include "livekit/rtc/media/VideoFrameType.h"
 #include <memory>
 
 namespace LiveKitCpp
 {
 
-class LIVEKIT_CLIENT_API VideoFrame
+class LIVEKIT_RTC_API VideoFrame
 {
 public:
     virtual ~VideoFrame() = default;

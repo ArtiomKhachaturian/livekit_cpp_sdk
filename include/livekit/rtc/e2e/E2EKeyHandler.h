@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantKeyHandler.h
-#include "livekit/LiveKitClientExport.h"
-#include "livekit/e2e/KeySet.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
+#include "livekit/rtc/e2e/KeySet.h"
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -27,7 +27,7 @@ namespace LiveKitCpp
 
 struct KeyProviderOptions;
 
-class LIVEKIT_CLIENT_API E2EKeyHandler
+class LIVEKIT_RTC_API E2EKeyHandler
 {
     struct Impl;
 public:

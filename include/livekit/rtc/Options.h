@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ConnectOptions.h
-#include "livekit/rtc/ClientInfo.h"
-#include "livekit/rtc/ICEServer.h"
-#include "livekit/rtc/ICETransportPolicy.h"
+#include "livekit/signaling/sfu/ClientInfo.h"
+#include "livekit/signaling/sfu/ICEServer.h"
+#include "livekit/signaling/sfu/ICETransportPolicy.h"
 #include <chrono>
 #include <optional>
 #include <memory>

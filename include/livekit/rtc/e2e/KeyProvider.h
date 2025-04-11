@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // KeyProvider.h
-#include "livekit/LiveKitClientExport.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
 #include <memory>
 #include <optional>
 #include <string>
@@ -25,7 +25,7 @@ class E2EKeyHandler;
 struct KeyProviderOptions;
 
 // [identity] is a participant identity (Participant::identity)
-class LIVEKIT_CLIENT_API KeyProvider
+class LIVEKIT_RTC_API KeyProvider
 {
 public:
     virtual ~KeyProvider() = default;

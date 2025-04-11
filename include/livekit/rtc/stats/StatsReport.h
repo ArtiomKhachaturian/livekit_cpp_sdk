@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsReport.h
-#include "livekit/LiveKitClientExport.h"
-#include "livekit/stats/Stats.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
+#include "livekit/rtc/stats/Stats.h"
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -23,7 +23,7 @@ namespace LiveKitCpp
 
 struct StatsReportData;
 
-class LIVEKIT_CLIENT_API StatsReport
+class LIVEKIT_RTC_API StatsReport
 {
     friend class StatsSourceImpl;
 public:

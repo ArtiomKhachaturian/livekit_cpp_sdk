@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraEventsListener.h
-#include "livekit/media/MediaEventsListener.h"
+#include "livekit/rtc/media/MediaEventsListener.h"
 
 namespace LiveKitCpp
 {

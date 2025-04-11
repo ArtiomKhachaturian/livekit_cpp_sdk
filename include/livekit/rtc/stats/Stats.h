@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Stats.h
-#include "livekit/LiveKitClientExport.h"
-#include "livekit/stats/StatsAttribute.h"
-#include "livekit/stats/StatsAudioPlayoutExt.h"
-#include "livekit/stats/StatsAudioSourceExt.h"
-#include "livekit/stats/StatsCertificateExt.h"
-#include "livekit/stats/StatsCodecExt.h"
-#include "livekit/stats/StatsDataChannelExt.h"
-#include "livekit/stats/StatsIceCandidateExt.h"
-#include "livekit/stats/StatsIceCandidatePairExt.h"
-#include "livekit/stats/StatsInboundRtpStreamExt.h"
-#include "livekit/stats/StatsOutboundRtpStreamExt.h"
-#include "livekit/stats/StatsPeerConnectionExt.h"
-#include "livekit/stats/StatsRemoteInboundRtpStreamExt.h"
-#include "livekit/stats/StatsRemoteOutboundRtpStreamExt.h"
-#include "livekit/stats/StatsTransportExt.h"
-#include "livekit/stats/StatsVideoSourceExt.h"
-#include "livekit/stats/StatsType.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
+#include "livekit/rtc/stats/StatsAttribute.h"
+#include "livekit/rtc/stats/StatsAudioPlayoutExt.h"
+#include "livekit/rtc/stats/StatsAudioSourceExt.h"
+#include "livekit/rtc/stats/StatsCertificateExt.h"
+#include "livekit/rtc/stats/StatsCodecExt.h"
+#include "livekit/rtc/stats/StatsDataChannelExt.h"
+#include "livekit/rtc/stats/StatsIceCandidateExt.h"
+#include "livekit/rtc/stats/StatsIceCandidatePairExt.h"
+#include "livekit/rtc/stats/StatsInboundRtpStreamExt.h"
+#include "livekit/rtc/stats/StatsOutboundRtpStreamExt.h"
+#include "livekit/rtc/stats/StatsPeerConnectionExt.h"
+#include "livekit/rtc/stats/StatsRemoteInboundRtpStreamExt.h"
+#include "livekit/rtc/stats/StatsRemoteOutboundRtpStreamExt.h"
+#include "livekit/rtc/stats/StatsTransportExt.h"
+#include "livekit/rtc/stats/StatsVideoSourceExt.h"
+#include "livekit/rtc/stats/StatsType.h"
 #include <chrono>
 #include <memory>
 #include <string>
@@ -39,7 +39,7 @@ namespace LiveKitCpp
 
 class StatsData;
 
-class LIVEKIT_CLIENT_API Stats
+class LIVEKIT_RTC_API Stats
 {
     friend class StatsReport;
 public:

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraOptions.h
-#include "livekit/LiveKitClientExport.h"
-#include "livekit/media/VideoOptions.h"
-#include "livekit/media/VideoFrameType.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
+#include "livekit/rtc/media/VideoOptions.h"
+#include "livekit/rtc/media/VideoFrameType.h"
 #include <optional>
 
 namespace LiveKitCpp
@@ -24,7 +24,7 @@ struct CameraOptions : public VideoOptions
 {
     std::optional<VideoFrameType> _type;
     bool _interlaced = false;
-    LIVEKIT_CLIENT_API static CameraOptions defaultOptions();
+    LIVEKIT_RTC_API static CameraOptions defaultOptions();
 };
 
 } // namespace LiveKitCpp

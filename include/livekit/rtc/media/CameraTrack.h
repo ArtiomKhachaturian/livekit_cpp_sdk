@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraTrack.h
-#include "livekit/media/VideoTrack.h"
-#include "livekit/media/CameraOptions.h"
-#include "livekit/media/MediaDeviceInfo.h"
+#include "livekit/rtc/media/VideoTrack.h"
+#include "livekit/rtc/media/CameraOptions.h"
+#include "livekit/rtc/media/MediaDeviceInfo.h"
 
 namespace LiveKitCpp
 {

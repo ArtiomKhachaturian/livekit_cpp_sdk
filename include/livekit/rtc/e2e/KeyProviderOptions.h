@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // KeyProviderOptions.h
-#include "livekit/LiveKitClientExport.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -30,7 +30,7 @@ struct KeyProviderOptions
     // key ring size should be between 1 and 255
     uint8_t _keyRingSize = _defaultKeyRingSize;
     bool _discardFrameWhenCryptorNotReady = false;
-    LIVEKIT_CLIENT_API void setRatchetSalt(std::string_view salt);
+    LIVEKIT_RTC_API void setRatchetSalt(std::string_view salt);
     // constants
     static inline constexpr uint8_t _defaultKeyRingSize = 16;
     static inline constexpr uint8_t _maxKeyRingSize = 255;

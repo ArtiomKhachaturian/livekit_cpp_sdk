@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsType.h
-#include "livekit/LiveKitClientExport.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -38,7 +38,7 @@ enum class StatsType
     Certificate
 };
 
-LIVEKIT_CLIENT_API std::string toString(StatsType type);
-LIVEKIT_CLIENT_API StatsType toStatsType(std::string_view type);
+LIVEKIT_RTC_API std::string toString(StatsType type);
+LIVEKIT_RTC_API StatsType toStatsType(std::string_view type);
 
 } // namespace LiveKitCpp

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteVideoTrack.h
-#include "livekit/media/VideoTrack.h"
+#include "livekit/rtc/media/VideoTrack.h"
 #include "livekit/rtc/VideoLayer.h"
 #include "livekit/rtc/SimulcastCodecInfo.h"
 #include <vector>

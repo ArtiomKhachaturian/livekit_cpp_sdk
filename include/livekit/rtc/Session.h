@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Session.h
-#include "livekit/LiveKitClientExport.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
 #include "livekit/Options.h"
 #include "livekit/SessionState.h"
 #include "livekit/RemoteParticipant.h"
 #include "livekit/e2e/KeyProvider.h"
 #include "livekit/e2e/KeyProviderOptions.h"
-#include "livekit/media/AudioTrack.h"
-#include "livekit/media/CameraTrack.h"
-#include "livekit/stats/StatsSource.h"
+#include "livekit/rtc/media/AudioTrack.h"
+#include "livekit/rtc/media/CameraTrack.h"
+#include "livekit/rtc/stats/StatsSource.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -42,7 +42,7 @@ class RemoteParticipant;
 class SessionListener;
 class PeerConnectionFactory;
 
-class LIVEKIT_CLIENT_API Session : public Participant, public StatsSource
+class LIVEKIT_RTC_API Session : public Participant, public StatsSource
 {
     friend class Service;
     struct Impl;

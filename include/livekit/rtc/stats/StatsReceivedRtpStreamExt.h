@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsReceivedRtpStreamExt.h
-#include "livekit/stats/StatsRtpStreamExt.h"
+#include "livekit/rtc/stats/StatsRtpStreamExt.h"
 
 namespace LiveKitCpp
 {

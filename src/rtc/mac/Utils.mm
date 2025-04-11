@@ -12,16 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
-#ifdef WEBRTC_MAC
 #include <rtc_base/time_utils.h>
 #include <api/units/timestamp.h>
-#endif
 #include <optional>
 #import <Foundation/Foundation.h>
-#import <SystemConfiguration/SystemConfiguration.h>
-#import <CoreWLAN/CoreWLAN.h>
 
-#ifdef WEBRTC_MAC
 namespace {
 
 inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
@@ -33,7 +28,6 @@ inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
 }
 
 }
-#endif
 
 namespace LiveKitCpp
 {
@@ -71,7 +65,6 @@ std::string toString(NSError* error)
     return std::string();
 }
 
-#ifdef WEBRTC_MAC
 int64_t cmTimeToMicro(const CMTime& time)
 {
     const auto ts = toTimestamp(time);
@@ -88,74 +81,6 @@ int32_t cmTimeToMilli(const CMTime& time)
         return ts->ms<int32_t>();
     }
     return 0;
-}
-#endif
-
-std::string operatingSystemVersion()
-{
-    @autoreleasepool {
-        NSProcessInfo *processInfo = [NSProcessInfo processInfo];
-        NSOperatingSystemVersion osv = processInfo.operatingSystemVersion;
-        return std::to_string(osv.majorVersion) + "." +
-               std::to_string(osv.minorVersion) + "." +
-               std::to_string(osv.patchVersion);
-    }
-}
-
-std::string operatingSystemName()
-{
-    return "macos";
-}
-
-std::string modelIdentifier()
-{
-    std::string model;
-    @autoreleasepool {
-        const auto service = IOServiceGetMatchingService(kIOMainPortDefault,
-                                                         IOServiceMatching("IOPlatformExpertDevice"));
-        const auto ref = IORegistryEntryCreateCFProperty(service, CFSTR("model"),
-                                                         kCFAllocatorDefault, 0);
-        if (ref) {
-            NSData *modelData = (__bridge_transfer NSData *)ref;
-            NSString* modelId = [[NSString alloc] initWithData:modelData encoding:NSUTF8StringEncoding];
-            modelId = [modelId stringByTrimmingCharactersInSet:[NSCharacterSet controlCharacterSet]];
-            model = fromNSString(modelId);
-        }
-        IOObjectRelease(service);
-    }
-    return model;
-}
-
-NetworkType activeNetworkType()
-{
-    NetworkType type = NetworkType::Unknown;
-    @autoreleasepool {
-        if (const auto storeRef = SCDynamicStoreCreate(nullptr, CFSTR("GetActiveNetworkType"),
-                                                       nullptr, nullptr)) {
-            if (const auto global = SCDynamicStoreCopyValue(storeRef, CFSTR("State:/Network/Global/IPv4"))) {
-                
-                NSDictionary* dict = (__bridge NSDictionary *)global;
-                NSString *primaryInterface = dict[@"PrimaryInterface"];
-                // check network type
-                auto wifiInterface = [CWWiFiClient sharedWiFiClient].interface;
-                if ([primaryInterface isEqualToString:wifiInterface.interfaceName]) {
-                    type = NetworkType::WiFi;
-                } else if ([primaryInterface hasPrefix:@"en"]) {
-                    type = NetworkType::Wired;
-                } else if ([primaryInterface hasPrefix:@"pdp_ip"]) {
-                    type = NetworkType::Cellular;
-                } else if ([primaryInterface hasPrefix:@"utun"]) {
-                    type = NetworkType::Vpn;
-                }
-                CFRelease(global);
-            }
-            else {
-                type = NetworkType::NoNetwork;
-            }
-            CFRelease(storeRef);
-        }
-    }
-    return type;
 }
 
 } // namespace LiveKitCpp

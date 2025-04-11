@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StatsAttribute.h
-#include "livekit/LiveKitClientExport.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
 #include <map>
 #include <optional>
 #include <string>
@@ -22,7 +22,7 @@
 namespace LiveKitCpp
 {
 
-class LIVEKIT_CLIENT_API StatsAttribute
+class LIVEKIT_RTC_API StatsAttribute
 {
     using Value = std::variant<const std::optional<bool>*,
                                const std::optional<int32_t>*,

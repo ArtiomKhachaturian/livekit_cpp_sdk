@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LiveKitError.h
-#include "livekit/LiveKitClientExport.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -50,6 +50,6 @@ enum class LiveKitError
     ServerSipTrunkFailure
 };
 
-LIVEKIT_CLIENT_API std::string toString(LiveKitError error);
+LIVEKIT_RTC_API std::string toString(LiveKitError error);
 
 } // namespace LiveKitCpp

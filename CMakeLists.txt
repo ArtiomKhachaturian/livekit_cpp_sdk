@@ -17,9 +17,6 @@ set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
 set(LIVEKIT_PROTOCOL_VERSION 12)
 
-set(SIGNALING_LIB ${PROJECT_NAME}Signaling)
-set(RTC_LIB ${PROJECT_NAME}Rtc)
-
 set(HEADER_FILE_EXT h)
 set(SOURCE_FILE_EXT cpp)
 
@@ -35,6 +32,8 @@ else()
     endif(WIN32)
 endif(APPLE)
 
+# Signaling library for communicate with SFU throug PROTO messages
+
 # Generate C++ code from proto files
 # Find Protobuf (ensure it is installed)
 # Specify search paths in CMAKE_PREFIX_PATH variable (if needed): "/path/to/module_a;/another/path/to/module_b"
@@ -43,19 +42,9 @@ find_package(absl REQUIRED)
 find_package(utf8_range REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
 
-set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
-set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
-
 # common sources for both librarires
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
 file(GLOB_RECURSE BRICKS_API_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/*.${HEADER_FILE_EXT})
-
-# Specify source files for signaling lib
-file(GLOB_RECURSE SIGNALING_PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/livekit/signaling/*.${HEADER_FILE_EXT})
-file(GLOB SIGNALING_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/*.${HEADER_FILE_EXT})
-file(GLOB SIGNALING_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/*.${SOURCE_FILE_EXT})
-file(GLOB SIGNALING_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
-file(GLOB SIGNALING_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 
 function(recreateDir DIR)
     if (EXISTS ${DIR})
@@ -114,6 +103,15 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 # Generate .cpp and .h files from proto
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
+# Specify source files for signaling lib
+file(GLOB_RECURSE SIGNALING_PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/livekit/signaling/*.${HEADER_FILE_EXT})
+file(GLOB_RECURSE SIGNALING_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/src/*.${HEADER_FILE_EXT})
+file(GLOB_RECURSE SIGNALING_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/src/*.${SOURCE_FILE_EXT})
+file(GLOB SIGNALING_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
+file(GLOB SIGNALING_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
+
+set(SIGNALING_LIB ${PROJECT_NAME}Signaling)
+
 # Create a shared library
 add_library(${SIGNALING_LIB} SHARED
     ${SIGNALING_PUBLIC_HEADERS}
@@ -126,13 +124,14 @@ add_library(${SIGNALING_LIB} SHARED
     ${PROTO_SOURCES} # Add generated .cpp files
     ${PROTO_HEADERS})
 
-source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/signaling PREFIX "SignalingApi" FILES ${SIGNALING_PUBLIC_HEADERS})
-source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling PREFIX "Signaling" FILES ${SIGNALING_COMMON_HEADERS} 
-                                                                             ${SIGNALING_COMMON_SOURCES}
-                                                                             ${SIGNALING_PLATFORM_HEADERS} 
-                                                                             ${SIGNALING_PLATFORM_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsAPI" FILES ${WEBSOCKETS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
+
+source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/signaling PREFIX "SignalingApi" FILES ${SIGNALING_PUBLIC_HEADERS})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling/src PREFIX "Signaling" FILES ${SIGNALING_COMMON_HEADERS} 
+                                                                                 ${SIGNALING_COMMON_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER} PREFIX "Signaling" FILES ${SIGNALING_PLATFORM_HEADERS} ${SIGNALING_PLATFORM_SOURCES})
+source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_HEADERS} ${PROTO_SOURCES})
 
 # Add include directories
 target_include_directories(${SIGNALING_LIB} PRIVATE
@@ -140,7 +139,7 @@ target_include_directories(${SIGNALING_LIB} PRIVATE
     ${CMAKE_SOURCE_DIR}/bricks/include
     ${CMAKE_SOURCE_DIR}/bricks/include/logger
     ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
-    ${CMAKE_SOURCE_DIR}/src/signaling
+    ${CMAKE_SOURCE_DIR}/src/signaling/src
     ${CMAKE_SOURCE_DIR}/websockets_api/include
     ${CMAKE_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
@@ -165,3 +164,158 @@ elseif (APPLE)
 endif()
 target_compile_definitions(${SIGNALING_LIB} PRIVATE -DLIVEKIT_SIGNALING_EXPORTS -DLIVEKIT_PROTOCOL_VERSION=${LIVEKIT_PROTOCOL_VERSION} 
                                                     -DPROJECT_VERSION="${PROJECT_VERSION}")
+
+# RTC/WebRTC SDK
+set(WEBRTC_INCLUDE_DIR CACHE PATH "Path to folder with WebRTC headers")
+set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
+
+# WebRTC -> TODO: split WEBRTC_LIB_DIR for all configurations (debug/release/...)
+if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
+    if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
+        message(STATUS "Found WebRTC")
+        set(WEBRTC_LIBS "webrtc" "common_video")
+        if (APPLE)
+            list(APPEND WEBRTC_LIBS
+                "base_native_additions_objc"
+                "base_objc"
+                "callback_logger_objc"
+                "default_codec_factory_objc"
+                "file_logger_objc"
+                "helpers_objc"
+                "mediaconstraints_objc"
+                "mediasource_objc"
+                "metal_objc"
+                "native_api"
+                "native_video"
+                "peerconnectionfactory_base_objc"
+                "video_toolbox_cc"
+                "videocapture_objc"
+                "videocodec_objc"
+                "videoframebuffer_objc"
+                "videorendereradapter_objc"
+                "videosource_objc"
+                "videotoolbox_objc"
+                "vp8"
+                "vp9"
+                "vpx_codec_constants"
+                "wrapped_native_codec_objc")
+        endif(APPLE)
+        foreach(WEBRTC_LIB ${WEBRTC_LIBS})
+        if (WIN32)
+            set(WEBRTC_LIB ${WEBRTC_LIB}.lib)
+        else()
+            set(WEBRTC_LIB lib${WEBRTC_LIB}.a)
+        endif()
+        file(GLOB_RECURSE WEBRTC_LIB_FILE "${WEBRTC_LIB_DIR}/${WEBRTC_LIB}")
+        if (WEBRTC_LIB_FILE)
+            message(STATUS "Found ${WEBRTC_LIB} static library (${WEBRTC_LIB_FILE})")
+            list(APPEND WEBRTC_LIB_FILES ${WEBRTC_LIB_FILE})
+        else()
+            message(FATAL_ERROR "Static library ${WEBRTC_LIB} was not found")
+        endif()
+        endforeach()
+
+        set(NLOHMANN_ZIP_URL "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip")
+        set(NLOHMANN_SRC_DIR ${CMAKE_BINARY_DIR}/nlohmann_json_src)
+        downloadAndExtract(${NLOHMANN_ZIP_URL} ${CMAKE_BINARY_DIR}/nlohmann_json.zip ${NLOHMANN_SRC_DIR})
+        set(NLOHMANN_HDRS_DIR ${NLOHMANN_SRC_DIR}/single_include)
+
+        set(WEBRTC_AVAILABLE TRUE)
+        file(GLOB_RECURSE WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
+        file(GLOB_RECURSE WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
+        file(GLOB WEBRTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
+    else()
+        if (NOT EXISTS ${WEBRTC_INCLUDE_DIR})
+            message(FATAL_ERROR "WebRTC include folders ${WEBRTC_INCLUDE_DIR} doesn't exists")
+        else()
+            message(FATAL_ERROR "WebRTC libraries folders ${WEBRTC_LIB_DIR} doesn't exists")
+        endif()
+    endif()
+endif()
+
+if (WEBRTC_AVAILABLE)
+
+    set(RTC_LIB ${PROJECT_NAME}Rtc)
+
+    file(GLOB_RECURSE RTC_PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/livekit/rtc/*.${HEADER_FILE_EXT})
+    file(GLOB_RECURSE RTC_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/rtc/src/*.${HEADER_FILE_EXT})
+    file(GLOB_RECURSE RTC_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/rtc/src/*.${SOURCE_FILE_EXT})
+    file(GLOB RTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
+    file(GLOB RTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
+
+    # Create a shared library
+    add_library(${RTC_LIB} SHARED
+        ${RTC_PUBLIC_HEADERS}
+        ${RTC_COMMON_HEADERS}
+        ${RTC_COMMON_SOURCES}
+        ${RTC_PLATFORM_HEADERS}
+        ${RTC_PLATFORM_SOURCES}
+        ${WEBSOCKETS_API_HEADERS}
+        ${BRICKS_API_HEADERS})
+
+    source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/rtc PREFIX "RtcApi" FILES ${RTC_PUBLIC_HEADERS})
+    source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/src PREFIX "Rtc" FILES ${RTC_COMMON_HEADERS} 
+                                                                         ${RTC_COMMON_SOURCES})
+    source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER} PREFIX "Rtc" FILES ${RTC_PLATFORM_HEADERS} ${RTC_PLATFORM_SOURCES})
+
+    set(RTC_SRC_DIR ${CMAKE_SOURCE_DIR}/src/rtc)
+    # Add include directories
+    target_include_directories(${RTC_LIB} PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/bricks/include
+        ${CMAKE_SOURCE_DIR}/bricks/include/logger
+        ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
+        ${CMAKE_SOURCE_DIR}/websockets_api/include
+        ${RTC_SRC_DIR}
+        ${RTC_SRC_DIR}/src/utils
+        ${RTC_SRC_DIR}/src/stats
+        ${RTC_SRC_DIR}/src/media
+        ${RTC_SRC_DIR}/src/media/audio
+        ${RTC_SRC_DIR}/src/media/video
+        ${RTC_SRC_DIR}/src/webrtc
+        ${RTC_SRC_DIR}/src/webrtc/transport
+        ${RTC_SRC_DIR}/src/webrtc/media
+        ${RTC_SRC_DIR}/src/webrtc/media/e2e
+        ${RTC_SRC_DIR}/src/webrtc/media/audio
+        ${RTC_SRC_DIR}/src/webrtc/media/audio/adm
+        ${RTC_SRC_DIR}/src/webrtc/media/data
+        ${RTC_SRC_DIR}/src/webrtc/media/video
+        ${RTC_SRC_DIR}/src/webrtc/media/video/camera
+        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera
+        ${WEBRTC_INCLUDE_DIR}
+        ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include
+        ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp
+        ${NLOHMANN_HDRS_DIR}
+    )
+
+    set_target_properties(${RTC_LIB} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
+
+    if (APPLE)
+        set_target_properties(${SIGNALING_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
+        target_include_directories(${RTC_LIB} PRIVATE ${WEBRTC_INCLUDE_DIR}/sdk/objc ${WEBRTC_INCLUDE_DIR}/sdk/objc/base)
+        target_compile_definitions(${RTC_LIB} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
+        target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
+    elseif(WIN32)
+        target_compile_options(${RTC_LIB} PRIVATE /wd4068 /wd4141)
+        target_compile_definitions(${RTC_LIB} PRIVATE -DWINRT_DIAGNOSTICS -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -DRTC_ENABLE_WIN_WGC -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+        # C++20 required for supporting of designated initializers (related to video codecs) in WebRTC code
+        # maybe we need to review this approach and remove such initializer with replacement to own code
+        target_compile_options(${RTC_LIB} PRIVATE /std:c++20)
+        target_link_libraries(${RTC_LIB} PRIVATE wmcodecdspuuid.lib 
+                                                 dmoguids.lib 
+                                                 msdmo.lib 
+                                                 avrt.lib 
+                                                 strmiids.lib 
+                                                 winmm.lib
+                                                 windowscodecs.lib 
+                                                 crypt32.lib 
+                                                 secur32.lib 
+                                                 ws2_32.lib 
+                                                 d3d11.lib 
+                                                 dxgi.lib 
+                                                 iphlpapi.lib)
+    endif()
+
+    target_link_libraries(${RTC_LIB} PRIVATE ${SIGNALING_LIB} ${WEBRTC_LIB_FILES})
+    target_compile_definitions(${RTC_LIB} PRIVATE -DJSON_HAS_CPP_17 -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
+endif()

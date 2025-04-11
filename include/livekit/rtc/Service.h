@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Service.h
-#include "livekit/LiveKitClientExport.h"
-#include "livekit/Session.h"
-#include "livekit/ServiceState.h"
-#include "livekit/Options.h"
-#include "livekit/media/AudioDevice.h"
-#include "livekit/media/CameraDevice.h"
-#include "livekit/media/CameraOptions.h"
-#include "livekit/media/AudioRecordingOptions.h"
-#include "livekit/media/MediaAuthorizationLevel.h"
-#include "livekit/media/MediaDeviceInfo.h"
+#include "livekit/rtc/LiveKitRtcExport.h"
+#include "livekit/rtc/Session.h"
+#include "livekit/rtc/ServiceState.h"
+#include "livekit/rtc/Options.h"
+#include "livekit/rtc/media/AudioDevice.h"
+#include "livekit/rtc/media/CameraDevice.h"
+#include "livekit/rtc/media/CameraOptions.h"
+#include "livekit/rtc/media/AudioRecordingOptions.h"
+#include "livekit/rtc/media/MediaAuthorizationLevel.h"
+#include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <memory>
 #include <vector>
 
@@ -39,7 +39,7 @@ namespace LiveKitCpp
 class ServiceListener;
 enum class NetworkType;
 
-class LIVEKIT_CLIENT_API Service
+class LIVEKIT_RTC_API Service
 {
     class Impl;
 public:

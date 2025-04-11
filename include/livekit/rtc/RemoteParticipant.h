@@ -13,8 +13,8 @@
 // limitations under the License.
 #pragma once // RemoteParticipant.h
 #include "livekit/Participant.h"
-#include "livekit/media/RemoteAudioTrack.h"
-#include "livekit/media/RemoteVideoTrack.h"
+#include "livekit/rtc/media/RemoteAudioTrack.h"
+#include "livekit/rtc/media/RemoteVideoTrack.h"
 #include "livekit/rtc/ParticipantState.h"
 
 namespace LiveKitCpp

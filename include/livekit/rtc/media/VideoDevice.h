@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoDevice.h
-#include "livekit/media/MediaDevice.h"
+#include "livekit/rtc/media/MediaDevice.h"
 
 namespace LiveKitCpp
 {
