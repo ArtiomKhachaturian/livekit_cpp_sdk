@@ -111,7 +111,8 @@ inline bool hasScreenCaptureAccess(bool askPermissions)
     }
     else if (@available(macOS 10.15, *)) {
         if (askPermissions) {
-            CGDisplayStreamFrameAvailableHandler fakeHandler = ^(CGDisplayStreamFrameStatus, uint64_t,
+            // TODO: migrate to ScreenCaptureKit instead of
+            /*CGDisplayStreamFrameAvailableHandler fakeHandler = ^(CGDisplayStreamFrameStatus, uint64_t,
                                                                  IOSurfaceRef, CGDisplayStreamUpdateRef) {};
             CFAutoRelease<CGDisplayStreamRef> stream = CGDisplayStreamCreate(CGMainDisplayID(), 100UL, 100UL,
                                                                              kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
@@ -119,7 +120,7 @@ inline bool hasScreenCaptureAccess(bool askPermissions)
             if (stream) {
                 CGDisplayStreamStop(stream);
                 has =  true;
-            }
+            }*/
         }
         else { // silent mode
             // TODO: not yet implemented

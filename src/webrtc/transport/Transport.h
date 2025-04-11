@@ -108,7 +108,7 @@ public:
     void close();
 private:
     // return NULL if there are not peer connection or peer connection factory
-    rtc::Thread* signalingThread() const;
+    webrtc::Thread* signalingThread() const;
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onFailure(webrtc::SdpType type, webrtc::RTCError error) final;

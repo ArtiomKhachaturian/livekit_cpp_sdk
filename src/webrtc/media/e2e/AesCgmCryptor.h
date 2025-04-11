@@ -21,10 +21,6 @@ namespace Bricks {
 class Logger;
 }
 
-namespace rtc {
-class Thread;
-}
-
 namespace LiveKitCpp
 {
 

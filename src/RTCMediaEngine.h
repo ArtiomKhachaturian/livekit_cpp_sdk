@@ -27,7 +27,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace rtc {
+namespace webrtc {
 class Thread;
 }
 
@@ -131,7 +131,7 @@ private:
     void onParticipantAdded(const std::string& sid) final;
     void onParticipantRemoved(const std::string& sid) final;
 private:
-    const std::weak_ptr<rtc::Thread> _signalingThread;
+    const std::weak_ptr<webrtc::Thread> _signalingThread;
     const std::shared_ptr<LocalParticipant> _localParticipant;
     RemoteParticipants _remoteParicipants;
     Bricks::Listener<SessionListener*> _listener;

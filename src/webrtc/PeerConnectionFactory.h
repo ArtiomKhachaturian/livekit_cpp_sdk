@@ -19,12 +19,6 @@
 #include <optional>
 #include <vector>
 
-namespace rtc {
-class SocketServer;
-class SSLAdapterFactory;
-class SSLAdapter;
-} // namespace rtc
-
 namespace webrtc {
 class AudioEncoderFactory;
 class AudioDecoderFactory;
@@ -57,7 +51,7 @@ public:
     static webrtc::scoped_refptr<PeerConnectionFactory> create(bool audioProcessing,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& eventsQueue() const noexcept { return _eventsQueue; }
-    std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
+    std::weak_ptr<webrtc::Thread> signalingThread() const noexcept { return _signalingThread; }
     std::weak_ptr<AdmProxyFacade> admProxy() const;
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
@@ -92,9 +86,9 @@ public:
     void StopAecDump() final;
 protected:
     PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webrtcLogSink,
-                          std::shared_ptr<rtc::Thread> networkThread,
-                          std::shared_ptr<rtc::Thread> workingThread,
-                          std::shared_ptr<rtc::Thread> signalingThread,
+                          std::shared_ptr<webrtc::Thread> networkThread,
+                          std::shared_ptr<webrtc::Thread> workingThread,
+                          std::shared_ptr<webrtc::Thread> signalingThread,
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
                           webrtc::scoped_refptr<AdmProxy> admProxy);
 private:
@@ -103,9 +97,9 @@ private:
 private:
     const std::shared_ptr<webrtc::TaskQueueBase> _eventsQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;
-    const std::shared_ptr<rtc::Thread> _networkThread;
-    const std::shared_ptr<rtc::Thread> _workingThread;
-    const std::shared_ptr<rtc::Thread> _signalingThread;
+    const std::shared_ptr<webrtc::Thread> _networkThread;
+    const std::shared_ptr<webrtc::Thread> _workingThread;
+    const std::shared_ptr<webrtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
     std::shared_ptr<AdmFacade> _admProxy;
 };

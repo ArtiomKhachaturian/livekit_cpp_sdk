@@ -65,7 +65,7 @@ public:
          const std::shared_ptr<Bricks::Logger>& logger);
     bool closed() const noexcept { return _closed; }
     SignalTarget target() const { return _target; }
-    rtc::Thread* signalingThread() const;
+    webrtc::Thread* signalingThread() const;
     webrtc::scoped_refptr<webrtc::PeerConnectionInterface> peerConnection() const noexcept;
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;
@@ -569,7 +569,7 @@ void Transport::close()
     }
 }
 
-rtc::Thread* Transport::signalingThread() const
+webrtc::Thread* Transport::signalingThread() const
 {
     if (!closed()) {
         return _impl->signalingThread();
@@ -631,7 +631,7 @@ Transport::Impl::Impl(SignalTarget target,
     }
 }
 
-rtc::Thread* Transport::Impl::signalingThread() const
+webrtc::Thread* Transport::Impl::signalingThread() const
 {
     return _pc ? _pc->signaling_thread() : nullptr;
 }

@@ -22,6 +22,7 @@
 #include "Utils.h"
 #include <modules/video_capture/video_capture_config.h>
 #include <rtc_base/ref_counted_object.h>
+#include <rtc_base/time_utils.h>
 #include <components/capturer/RTCCameraVideoCapturer.h>
 #include <native/api/video_frame_buffer.h>
 #include <helpers/RTCDispatcher+Private.h>
@@ -515,7 +516,7 @@ void MacOSCameraCapturer::Impl::logError(const std::string& error)
                 if (auto rtcFrame = LiveKitCpp::createVideoFrame(buffer)) {
                     rtcFrame->set_rotation(webrtc::VideoRotation(frame.rotation));
                     rtcFrame->set_rtp_timestamp(frame.timeStamp);
-                    rtcFrame->set_timestamp_us(frame.timeStampNs / rtc::kNumNanosecsPerMicrosec);
+                    rtcFrame->set_timestamp_us(frame.timeStampNs / webrtc::kNumNanosecsPerMicrosec);
                     _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnFrame, rtcFrame.value());
                     return;
                 }
