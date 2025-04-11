@@ -14,6 +14,7 @@
 #include "livekit/signaling/SignalClient.h"
 #include "livekit/signaling/CommandSender.h"
 #include "livekit/signaling/sfu/ClientInfo.h"
+#include "livekit/signaling/TransportState.h"
 #include <memory>
 #include <optional>
 #include <string>
@@ -26,6 +27,8 @@ enum class State;
 namespace LiveKitCpp
 {
 
+class SignalTransportListener;
+
 class LIVEKIT_SIGNALING_API SignalClientWs : public SignalClient,
                                              private CommandSender
 {
@@ -36,6 +39,8 @@ public:
     SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket,
                    Bricks::Logger* logger = nullptr);
     ~SignalClientWs() final;
+    void setTransportListener(SignalTransportListener* listener = nullptr);
+    TransportState transportState() const noexcept;
     std::string host() const noexcept;
     std::string authToken() const noexcept;
     std::string participantSid() const noexcept;
@@ -50,9 +55,8 @@ public:
     void setParticipantSid(std::string participantSid);
     void resetParticipantSid() { setParticipantSid({}); }
     void setPublish(std::string publish = {});
-    // impl. of SignalClient
-    bool connect() final;
-    void disconnect() final;
+    bool connect();
+    void disconnect();
     bool ping();
 private:
     void updateState(Websocket::State state);

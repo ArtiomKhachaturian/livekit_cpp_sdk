@@ -19,6 +19,7 @@
 #include "WebsocketListener.h"
 #include "WebsocketOptions.h"
 #include "SysInfo.h"
+#include "livekit/signaling/SignalTransportListener.h"
 #include "livekit/signaling/SignalClientWs.h"
 #include "livekit/signaling/NetworkType.h"
 //#include "Utils.h"
@@ -51,6 +52,13 @@ inline std::string urlQueryItem(const std::string& key, bool val) {
     return {};
 }
 
+enum class ChangeTransportStateResult
+{
+    Changed,
+    NotChanged,
+    Rejected
+};
+
 }
 
 namespace LiveKitCpp
@@ -73,6 +81,9 @@ class SignalClientWs::Listener : public Websocket::Listener
 public:
     Listener() = default;
     void setOwner(SignalClientWs* owner) { _owner = owner; }
+    TransportState transportState() const { return _transportState(); }
+    ChangeTransportStateResult changeTransportState(TransportState state);
+    void setListener(SignalTransportListener* listener) { _listener = listener; }
 private:
     // impl. of WebsocketListener
     void onError(uint64_t, uint64_t, const Websocket::Error& error) final;
@@ -80,6 +91,8 @@ private:
     void onBinaryMessage(uint64_t, uint64_t, const Bricks::Blob& message) final;
 private:
     Bricks::Listener<SignalClientWs*> _owner = nullptr;
+    Bricks::Listener<SignalTransportListener*> _listener;
+    Bricks::SafeObj<TransportState> _transportState = TransportState::Disconnected;
 };
 
 SignalClientWs::SignalClientWs(std::unique_ptr<Websocket::EndPoint> socket,
@@ -102,6 +115,17 @@ SignalClientWs::~SignalClientWs()
         _socket->resetListener();
         _listener->setOwner(nullptr);
     }
+}
+
+
+void SignalClientWs::setTransportListener(SignalTransportListener* listener)
+{
+    _listener->setListener(listener);
+}
+
+TransportState SignalClientWs::transportState() const noexcept
+{
+    return _listener->transportState();
 }
 
 std::string SignalClientWs::host() const noexcept
@@ -180,11 +204,11 @@ bool SignalClientWs::connect()
 {
     bool ok = false;
     if (_socket) {
-        const auto result = changeTransportState(TransportState::Connecting);
+        const auto result = _listener->changeTransportState(TransportState::Connecting);
         if (ChangeTransportStateResult::Changed == result) {
             ok = _socket->open(_urlData->buildOptions());
             if (!ok) {
-                changeTransportState(TransportState::Disconnected);
+                _listener->changeTransportState(TransportState::Disconnected);
             }
         }
     }
@@ -207,16 +231,16 @@ void SignalClientWs::updateState(Websocket::State state)
 {
     switch (state) {
         case Websocket::State::Connecting:
-            changeTransportState(TransportState::Connecting);
+            _listener->changeTransportState(TransportState::Connecting);
             break;
         case Websocket::State::Connected:
-            changeTransportState(TransportState::Connected);
+            _listener->changeTransportState(TransportState::Connected);
             break;
         case Websocket::State::Disconnecting:
-            changeTransportState(TransportState::Disconnecting);
+            _listener->changeTransportState(TransportState::Disconnecting);
             break;
         case Websocket::State::Disconnected:
-            changeTransportState(TransportState::Disconnected);
+            _listener->changeTransportState(TransportState::Disconnected);
             break;
     }
 }
@@ -226,9 +250,47 @@ bool SignalClientWs::sendBinary(const Bricks::Blob& binary)
     return _socket && _socket->sendBinary(binary);
 }
 
+ChangeTransportStateResult SignalClientWs::Listener::changeTransportState(TransportState state)
+{
+    ChangeTransportStateResult result = ChangeTransportStateResult::Rejected;
+    {
+        LOCK_WRITE_SAFE_OBJ(_transportState);
+        if (_transportState != state) {
+            bool accepted = false;
+            switch(_transportState.constRef()) {
+                case TransportState::Connecting:
+                    // any state is good
+                    accepted = true;
+                    break;
+                case TransportState::Connected:
+                    accepted = TransportState::Disconnecting == state || TransportState::Disconnected == state;
+                    break;
+                case TransportState::Disconnecting:
+                    // any state is good
+                    accepted = true;
+                    break;
+                case TransportState::Disconnected:
+                    accepted = TransportState::Connecting == state || TransportState::Connected == state;
+                    break;
+            }
+            if (accepted) {
+                _transportState = state;
+                result = ChangeTransportStateResult::Changed;
+            }
+        }
+        else {
+            result = ChangeTransportStateResult::NotChanged;
+        }
+    }
+    if (ChangeTransportStateResult::Changed == result) {
+        _listener.invoke(&SignalTransportListener::onTransportStateChanged, state);
+    }
+    return result;
+}
+
 void SignalClientWs::Listener::onError(uint64_t, uint64_t, const Websocket::Error& error)
 {
-    _owner.invoke(&SignalClientWs::notifyAboutTransportError, Websocket::toString(error));
+    _listener.invoke(&SignalTransportListener::onTransportError, Websocket::toString(error));
 }
 
 void SignalClientWs::Listener::onStateChanged(uint64_t, uint64_t, Websocket::State state)

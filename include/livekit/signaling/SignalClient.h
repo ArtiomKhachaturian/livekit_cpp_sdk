@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once // SignalClient.h
 #include "livekit/signaling/LiveKitSignalingExport.h"
-#include "livekit/signaling/TransportState.h"
 #include "Loggable.h"
 #include <memory>
 #include <string>
@@ -29,7 +28,6 @@ namespace LiveKitCpp
 class CommandSender;
 class MemoryBlock;
 class SignalServerListener;
-class SignalTransportListener;
 class ResponseInterceptor;
 class RequestSender;
 // these below structs are defined in /include/rtc subfolder
@@ -51,22 +49,10 @@ struct UpdateLocalVideoTrack;
 
 class LIVEKIT_SIGNALING_API SignalClient : protected Bricks::LoggableR<>
 {
-    class Impl;
-protected:
-    enum class ChangeTransportStateResult
-    {
-        Changed,
-        NotChanged,
-        Rejected
-    };
 public:
     SignalClient(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     virtual ~SignalClient();
-    void setTransportListener(SignalTransportListener* listener = nullptr);
     void setServerListener(SignalServerListener* listener = nullptr);
-    virtual bool connect();
-    virtual void disconnect();
-    TransportState transportState() const noexcept;
     // requests sending
     bool sendOffer(const SessionDescription& sdp) const;
     bool sendAnswer(const SessionDescription& sdp) const;
@@ -85,13 +71,10 @@ public:
     bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
 protected:
-    ChangeTransportStateResult changeTransportState(TransportState state);
-    void notifyAboutTransportError(std::string error);
     void handleServerProtobufMessage(const Bricks::Blob& message);
     // impl. of Bricks::LoggableR<>
     std::string_view logCategory() const override;
 private:
-    const std::unique_ptr<Impl> _impl;
     // for handling of incoming messages from the LiveKit SFU
     const std::unique_ptr<ResponseInterceptor> _responseReceiver;
     // for sending requests to the LiveKit SFU

@@ -11,34 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "SafeObj.h"
-#include "Listener.h"
+#include "livekit/signaling/SignalClient.h"
 #include "ResponseInterceptor.h"
 #include "RequestSender.h"
 #include "Blob.h"
-#include "livekit/signaling/SignalTransportListener.h"
-#include "livekit/signaling/SignalClient.h"
 
 namespace LiveKitCpp
 {
 
-class SignalClient::Impl
-{
-public:
-    Impl(const SignalClient* client);
-    TransportState transportState() const noexcept { return _transportState(); }
-    ChangeTransportStateResult changeTransportState(TransportState state);
-    void notifyAboutTransportError(std::string error);
-    void setListener(SignalTransportListener* listener) { _listener = listener; }
-private:
-    const SignalClient* _client;
-    Bricks::Listener<SignalTransportListener*> _listener;
-    Bricks::SafeObj<TransportState> _transportState = TransportState::Disconnected;
-};
-
 SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
     :  Bricks::LoggableR<>(logger)
-    , _impl(std::make_unique<Impl>(this))
     , _responseReceiver(std::make_unique<ResponseInterceptor>(logger))
     , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
 {
@@ -48,29 +30,9 @@ SignalClient::~SignalClient()
 {
 }
 
-void SignalClient::setTransportListener(SignalTransportListener* listener)
-{
-    _impl->setListener(listener);
-}
-
 void SignalClient::setServerListener(SignalServerListener* listener)
 {
     _responseReceiver->setListener(listener);
-}
-
-bool SignalClient::connect()
-{
-    return ChangeTransportStateResult::Rejected != changeTransportState(TransportState::Connected);
-}
-
-void SignalClient::disconnect()
-{
-    changeTransportState(TransportState::Disconnected);
-}
-
-TransportState SignalClient::transportState() const noexcept
-{
-    return _impl->transportState();
 }
 
 bool SignalClient::sendOffer(const SessionDescription& sdp) const
@@ -153,16 +115,6 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
     return _requestSender->updateVideoTrack(track);
 }
 
-SignalClient::ChangeTransportStateResult SignalClient::changeTransportState(TransportState state)
-{
-    return _impl->changeTransportState(state);
-}
-
-void SignalClient::notifyAboutTransportError(std::string error)
-{
-    _impl->notifyAboutTransportError(std::move(error));
-}
-
 void SignalClient::handleServerProtobufMessage(const Bricks::Blob& message)
 {
     if (message) {
@@ -174,59 +126,6 @@ std::string_view SignalClient::logCategory() const
 {
     static const std::string_view category("signaling_client");
     return category;
-}
-
-SignalClient::Impl::Impl(const SignalClient* client)
-    : _client(client)
-{
-}
-
-SignalClient::ChangeTransportStateResult SignalClient::Impl::changeTransportState(TransportState state)
-{
-    ChangeTransportStateResult result = ChangeTransportStateResult::Rejected;
-    {
-        LOCK_WRITE_SAFE_OBJ(_transportState);
-        if (_transportState != state) {
-            bool accepted = false;
-            switch(_transportState.constRef()) {
-                case TransportState::Connecting:
-                    // any state is good
-                    accepted = true;
-                    break;
-                case TransportState::Connected:
-                    accepted = TransportState::Disconnecting == state || TransportState::Disconnected == state;
-                    break;
-                case TransportState::Disconnecting:
-                    // any state is good
-                    accepted = true;
-                    break;
-                case TransportState::Disconnected:
-                    accepted = TransportState::Connecting == state || TransportState::Connected == state;
-                    break;
-            }
-            if (accepted) {
-                if (_client->canLogVerbose()) {
-                    _client->logVerbose("transport state changed from " +
-                                        toString(_transportState) +
-                                        " to " + toString(state));
-                }
-                _transportState = state;
-                result = ChangeTransportStateResult::Changed;
-            }
-        }
-        else {
-            result = ChangeTransportStateResult::NotChanged;
-        }
-    }
-    if (ChangeTransportStateResult::Changed == result) {
-        _listener.invoke(&SignalTransportListener::onTransportStateChanged, state);
-    }
-    return result;
-}
-
-void SignalClient::Impl::notifyAboutTransportError(std::string error)
-{
-    _listener.invoke(&SignalTransportListener::onTransportError, std::move(error));
 }
 
 } // namespace LiveKitCpp
