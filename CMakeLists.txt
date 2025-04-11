@@ -141,6 +141,7 @@ source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_H
 target_include_directories(${SIGNALING_LIB} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/bricks/include
+    ${CMAKE_SOURCE_DIR}/bricks/include/listeners
     ${CMAKE_SOURCE_DIR}/bricks/include/logger
     ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
     ${CMAKE_SOURCE_DIR}/src/signaling/src
@@ -263,6 +264,7 @@ if (WEBRTC_AVAILABLE)
     target_include_directories(${RTC_LIB} PRIVATE
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/bricks/include
+        ${CMAKE_SOURCE_DIR}/bricks/include/listeners
         ${CMAKE_SOURCE_DIR}/bricks/include/logger
         ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
         ${CMAKE_SOURCE_DIR}/websockets_api/include
