@@ -18,7 +18,7 @@
 #include "SafeScopedRefPtr.h"
 #include "TransportManagerListener.h"
 #include "RemoteParticipants.h"
-#include "livekit/rtc/RemoteParticipantsListener.h"
+#include "RemoteParticipantsListener.h"
 #include "livekit/rtc/LiveKitError.h"
 #include "livekit/signaling/SignalServerListener.h"
 #include <memory>

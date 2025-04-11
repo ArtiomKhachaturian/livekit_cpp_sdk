@@ -39,7 +39,6 @@
 #elif defined(_WIN32)
 #include "WSAInitializer.h"
 #endif
-#endif
 
 namespace {
 

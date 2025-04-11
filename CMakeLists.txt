@@ -40,7 +40,6 @@ endif(APPLE)
 find_package(Protobuf 5.29.3 REQUIRED)
 find_package(absl REQUIRED)
 find_package(utf8_range REQUIRED)
-include_directories(${Protobuf_INCLUDE_DIRS}) # Include Protobuf directories
 
 # common sources for both librarires
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
@@ -103,6 +102,11 @@ file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
 # Generate .cpp and .h files from proto
 protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
+set(NLOHMANN_ZIP_URL "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip")
+set(NLOHMANN_SRC_DIR ${CMAKE_BINARY_DIR}/nlohmann_json_src)
+downloadAndExtract(${NLOHMANN_ZIP_URL} ${CMAKE_BINARY_DIR}/nlohmann_json.zip ${NLOHMANN_SRC_DIR})
+set(NLOHMANN_HDRS_DIR ${NLOHMANN_SRC_DIR}/single_include)
+
 # Specify source files for signaling lib
 file(GLOB_RECURSE SIGNALING_PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/livekit/signaling/*.${HEADER_FILE_EXT})
 file(GLOB_RECURSE SIGNALING_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/src/*.${HEADER_FILE_EXT})
@@ -142,6 +146,7 @@ target_include_directories(${SIGNALING_LIB} PRIVATE
     ${CMAKE_SOURCE_DIR}/src/signaling/src
     ${CMAKE_SOURCE_DIR}/websockets_api/include
     ${CMAKE_BINARY_DIR}
+    ${NLOHMANN_HDRS_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )
 
@@ -215,11 +220,6 @@ if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
         endif()
         endforeach()
 
-        set(NLOHMANN_ZIP_URL "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip")
-        set(NLOHMANN_SRC_DIR ${CMAKE_BINARY_DIR}/nlohmann_json_src)
-        downloadAndExtract(${NLOHMANN_ZIP_URL} ${CMAKE_BINARY_DIR}/nlohmann_json.zip ${NLOHMANN_SRC_DIR})
-        set(NLOHMANN_HDRS_DIR ${NLOHMANN_SRC_DIR}/single_include)
-
         set(WEBRTC_AVAILABLE TRUE)
         file(GLOB_RECURSE WEBRTC_HEADERS ${CMAKE_SOURCE_DIR}/src/webrtc/*.${HEADER_FILE_EXT})
         file(GLOB_RECURSE WEBRTC_SOURCES ${CMAKE_SOURCE_DIR}/src/webrtc/*.${SOURCE_FILE_EXT})
@@ -240,8 +240,8 @@ if (WEBRTC_AVAILABLE)
     file(GLOB_RECURSE RTC_PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/include/livekit/rtc/*.${HEADER_FILE_EXT})
     file(GLOB_RECURSE RTC_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/rtc/src/*.${HEADER_FILE_EXT})
     file(GLOB_RECURSE RTC_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/rtc/src/*.${SOURCE_FILE_EXT})
-    file(GLOB RTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
-    file(GLOB RTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
+    file(GLOB_RECURSE RTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
+    file(GLOB_RECURSE RTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 
     # Create a shared library
     add_library(${RTC_LIB} SHARED
@@ -282,16 +282,18 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/src/webrtc/media/video
         ${RTC_SRC_DIR}/src/webrtc/media/video/camera
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera
+        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}
         ${WEBRTC_INCLUDE_DIR}
         ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp
+        ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include
         ${NLOHMANN_HDRS_DIR}
     )
 
     set_target_properties(${RTC_LIB} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 
     if (APPLE)
-        set_target_properties(${SIGNALING_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
+        set_target_properties(${RTC_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
         target_include_directories(${RTC_LIB} PRIVATE ${WEBRTC_INCLUDE_DIR}/sdk/objc ${WEBRTC_INCLUDE_DIR}/sdk/objc/base)
         target_compile_definitions(${RTC_LIB} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
         target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
@@ -319,3 +321,49 @@ if (WEBRTC_AVAILABLE)
     target_link_libraries(${RTC_LIB} PRIVATE ${SIGNALING_LIB} ${WEBRTC_LIB_FILES})
     target_compile_definitions(${RTC_LIB} PRIVATE -DJSON_HAS_CPP_17 -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
 endif()
+
+# install steps
+if (CMAKE_INSTALL_PREFIX)
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+
+    target_include_directories(${SIGNALING_LIB} INTERFACE $<INSTALL_INTERFACE:include>)
+    install(TARGETS ${SIGNALING_LIB} 
+            EXPORT ${PROJECT_NAME}Targets
+            ARCHIVE DESTINATION lib 
+            LIBRARY DESTINATION lib 
+            RUNTIME DESTINATION bin)
+    if (WEBRTC_AVAILABLE)
+        target_include_directories(${RTC_LIB} INTERFACE $<INSTALL_INTERFACE:include>)
+        install(TARGETS ${RTC_LIB} 
+                EXPORT ${PROJECT_NAME}Targets
+                ARCHIVE DESTINATION lib 
+                LIBRARY DESTINATION lib 
+                RUNTIME DESTINATION bin)
+    endif()
+
+    
+    # public API installation
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION .)
+    install(FILES ${WEBSOCKETS_API_HEADERS} DESTINATION ./include/websockets)
+    install(FILES ${CMAKE_SOURCE_DIR}/bricks/include/Blob.h DESTINATION ./include)
+    file(GLOB LOGGER_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/logger/*.${HEADER_FILE_EXT})
+    install(FILES ${LOGGER_HEADERS} DESTINATION ./include/logger)
+
+    # generate [config.cmake] and [config-version.cmake] files
+    configure_package_config_file(./Config.cmake.in
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+      )
+    install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+    write_basic_package_version_file(
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        COMPATIBILITY SameMajorVersion)
+
+    install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+    # install targets file
+    install(EXPORT "${PROJECT_NAME}Targets" 
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+endif(CMAKE_INSTALL_PREFIX)

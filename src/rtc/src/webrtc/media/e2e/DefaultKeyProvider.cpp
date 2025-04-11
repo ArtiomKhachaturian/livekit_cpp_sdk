@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "e2e/DefaultKeyProvider.h"
-#include "e2e/E2EKeyHandler.h"
+#include "livekit/rtc/e2e/E2EKeyHandler.h"
 
 namespace LiveKitCpp
 {

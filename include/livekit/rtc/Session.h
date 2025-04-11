@@ -13,11 +13,11 @@
 // limitations under the License.
 #pragma once // Session.h
 #include "livekit/rtc/LiveKitRtcExport.h"
-#include "livekit/Options.h"
-#include "livekit/SessionState.h"
-#include "livekit/RemoteParticipant.h"
-#include "livekit/e2e/KeyProvider.h"
-#include "livekit/e2e/KeyProviderOptions.h"
+#include "livekit/rtc/Options.h"
+#include "livekit/rtc/SessionState.h"
+#include "livekit/rtc/RemoteParticipant.h"
+#include "livekit/rtc/e2e/KeyProvider.h"
+#include "livekit/rtc/e2e/KeyProviderOptions.h"
 #include "livekit/rtc/media/AudioTrack.h"
 #include "livekit/rtc/media/CameraTrack.h"
 #include "livekit/rtc/stats/StatsSource.h"

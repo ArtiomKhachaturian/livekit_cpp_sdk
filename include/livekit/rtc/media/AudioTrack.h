@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // AudioTrack.h
 #include "livekit/rtc/media/Track.h"
-#include "livekit/rtc/AudioTrackFeature.h"
+#include "livekit/signaling/sfu/AudioTrackFeature.h"
 #include <optional>
 #include <vector>
 

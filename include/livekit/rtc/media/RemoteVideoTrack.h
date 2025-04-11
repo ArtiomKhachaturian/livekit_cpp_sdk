@@ -13,8 +13,8 @@
 // limitations under the License.
 #pragma once // RemoteVideoTrack.h
 #include "livekit/rtc/media/VideoTrack.h"
-#include "livekit/rtc/VideoLayer.h"
-#include "livekit/rtc/SimulcastCodecInfo.h"
+#include "livekit/signaling/sfu/VideoLayer.h"
+#include "livekit/signaling/sfu/SimulcastCodecInfo.h"
 #include <vector>
 
 namespace LiveKitCpp

@@ -13,11 +13,10 @@
 // limitations under the License.
 #pragma once // Track.h
 #include "livekit/signaling/sfu/TrackType.h"
-#include "livekit/signaling/sfu/TrackType.h"
 #include "livekit/signaling/sfu/TrackSource.h"
 #include "livekit/signaling/sfu/EncryptionType.h"
 #include "livekit/signaling/sfu/BackupCodecPolicy.h"
-#include "livekit/signaling/sfu/stats/StatsSource.h"
+#include "livekit/rtc/stats/StatsSource.h"
 #include <string>
 
 namespace LiveKitCpp

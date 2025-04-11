@@ -14,7 +14,7 @@
 #include "SafeObj.h"
 #include "Listener.h"
 #include "ResponseInterceptor.h"
-#include "RequestInterceptor.h"
+#include "RequestSender.h"
 #include "Blob.h"
 #include "livekit/signaling/SignalTransportListener.h"
 #include "livekit/signaling/SignalClient.h"
@@ -40,7 +40,7 @@ SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
     :  Bricks::LoggableR<>(logger)
     , _impl(std::make_unique<Impl>(this))
     , _responseReceiver(std::make_unique<ResponseInterceptor>(logger))
-    , _requestSender(std::make_unique<RequestInterceptor>(commandSender, logger))
+    , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
 {
 }
 

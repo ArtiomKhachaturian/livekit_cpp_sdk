@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "RequestInterceptor.h"
+#include "RequestSender.h"
 #include "MarshalledTypesFwd.h"
 #include "ProtoUtils.h"
 #include "Blob.h"
@@ -56,108 +56,108 @@ MARSHALLED_TYPE_NAME_DECL(Ping)
 MARSHALLED_TYPE_NAME_DECL(UpdateLocalAudioTrack)
 MARSHALLED_TYPE_NAME_DECL(UpdateLocalVideoTrack)
 
-RequestInterceptor::RequestInterceptor(CommandSender* commandSender, Bricks::Logger* logger)
+RequestSender::RequestSender(CommandSender* commandSender, Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
     , _commandSender(commandSender)
     , _marshaller(logger)
 {
 }
 
-bool RequestInterceptor::offer(const SessionDescription& sdp) const
+bool RequestSender::offer(const SessionDescription& sdp) const
 {
     return send(&Request::mutable_offer, sdp,
                 marshalledTypeName<SessionDescription>() + "/offer");
 }
 
-bool RequestInterceptor::answer(const SessionDescription& sdp) const
+bool RequestSender::answer(const SessionDescription& sdp) const
 {
     return send(&Request::mutable_answer, sdp,
                 marshalledTypeName<SessionDescription>() + "/answer");
 }
 
-bool RequestInterceptor::trickle(const TrickleRequest& request) const
+bool RequestSender::trickle(const TrickleRequest& request) const
 {
     return send(&Request::mutable_trickle, request);
 }
 
-bool RequestInterceptor::addTrack(const AddTrackRequest& request) const
+bool RequestSender::addTrack(const AddTrackRequest& request) const
 {
     return send(&Request::mutable_add_track, request);
 }
 
-bool RequestInterceptor::muteTrack(const MuteTrackRequest& request) const
+bool RequestSender::muteTrack(const MuteTrackRequest& request) const
 {
     return send(&Request::mutable_mute, request);
 }
 
-bool RequestInterceptor::subscription(const UpdateSubscription& update) const
+bool RequestSender::subscription(const UpdateSubscription& update) const
 {
     return send(&Request::mutable_subscription, update);
 }
 
-bool RequestInterceptor::trackSettings(const UpdateTrackSettings& update) const
+bool RequestSender::trackSettings(const UpdateTrackSettings& update) const
 {
     return send(&Request::mutable_track_setting, update);
 }
 
-bool RequestInterceptor::leave(const LeaveRequest& request) const
+bool RequestSender::leave(const LeaveRequest& request) const
 {
     return send(&Request::mutable_leave, request);
 }
 
-bool RequestInterceptor::updateVideoLayers(const UpdateVideoLayers& update) const
+bool RequestSender::updateVideoLayers(const UpdateVideoLayers& update) const
 {
     return send(&Request::mutable_update_layers, update);
 }
 
-bool RequestInterceptor::subscriptionPermission(const SubscriptionPermission& permission) const
+bool RequestSender::subscriptionPermission(const SubscriptionPermission& permission) const
 {
     return send(&Request::mutable_subscription_permission, permission);
 }
 
-bool RequestInterceptor::syncState(const SyncState& state) const
+bool RequestSender::syncState(const SyncState& state) const
 {
     return send(&Request::mutable_sync_state, state);
 }
 
-bool RequestInterceptor::simulate(const SimulateScenario& scenario) const
+bool RequestSender::simulate(const SimulateScenario& scenario) const
 {
     return send(&Request::mutable_simulate, scenario);
 }
 
-bool RequestInterceptor::updateMetadata(const UpdateParticipantMetadata& data) const
+bool RequestSender::updateMetadata(const UpdateParticipantMetadata& data) const
 {
     return send(&Request::mutable_update_metadata, data);
 }
 
-bool RequestInterceptor::pingReq(const Ping& ping) const
+bool RequestSender::pingReq(const Ping& ping) const
 {
     return send(&Request::mutable_ping_req, ping);
 }
 
-bool RequestInterceptor::updateAudioTrack(const UpdateLocalAudioTrack& track) const
+bool RequestSender::updateAudioTrack(const UpdateLocalAudioTrack& track) const
 {
     return send(&Request::mutable_update_audio_track, track);
 }
 
-bool RequestInterceptor::updateVideoTrack(const UpdateLocalVideoTrack& track) const
+bool RequestSender::updateVideoTrack(const UpdateLocalVideoTrack& track) const
 {
     return send(&Request::mutable_update_video_track, track);
 }
 
-bool RequestInterceptor::canSend() const
+bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;
 }
 
-std::string_view RequestInterceptor::logCategory() const
+std::string_view RequestSender::logCategory() const
 {
     static const std::string_view category("request_interceptor");
     return category;
 }
 
 template <class TSetMethod, class TObject>
-bool RequestInterceptor::send(const TSetMethod& setMethod, const TObject& object,
+bool RequestSender::send(const TSetMethod& setMethod, const TObject& object,
                               std::string typeName) const
 {
     bool ok = false;

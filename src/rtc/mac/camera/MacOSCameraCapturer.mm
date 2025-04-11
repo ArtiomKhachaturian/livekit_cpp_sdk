@@ -29,6 +29,10 @@
 #include <set>
 #include <unordered_set>
 
+#if ! __has_feature(objc_arc)
+#error "ARC is off"
+#endif
+
 namespace
 {
 

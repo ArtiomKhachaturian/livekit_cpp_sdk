@@ -41,10 +41,10 @@ struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
 
-class RequestInterceptor : private Bricks::LoggableR<>
+class RequestSender : private Bricks::LoggableR<>
 {
 public:
-    RequestInterceptor(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
+    RequestSender(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     // all requests are defined in 'SignalRequest':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L24
     bool offer(const SessionDescription& sdp) const;
