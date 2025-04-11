@@ -159,7 +159,7 @@ if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
     endif()
 endif()
 
-# Create a static library
+# Create a shared library
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}
     ${COMMON_HEADERS}
