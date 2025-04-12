@@ -26,12 +26,12 @@ echo "Set path of depot tools to sys PATH variable - $depot_tools_path"
 export PATH=$depot_tools_path:$PATH
 
 # https://chromiumdash.appspot.com/releases?platform=Mac
-# stable 134
-release_revision=8d78f5de6c27b2c793039989ea381f1428fb0100
+# stable 135
+release_revision=9e5db68b15087eccd8d2493b4e8539c1657e0f75
 
-#echo "Fetch WebRTC sources, revision $release_revision"
-#fetch --nohooks webrtc
-#gclient sync --with_branch_heads -r "${release_revision}"
+echo "Fetch WebRTC sources, revision $release_revision"
+fetch --nohooks webrtc
+gclient sync --with_branch_heads -r "${release_revision}"
 
 echo "Build of WebRTC started"
 cd $(pwd)/src
@@ -56,7 +56,7 @@ else
 fi
 
 echo "Generate config for WebRTC build"
-gn gen ${output_dir} --args="is_debug=$is_debug enable_dsyms=true rtc_include_tests=false rtc_build_tools=false rtc_libvpx_build_vp9=true rtc_include_builtin_audio_codecs=true is_clang=true use_custom_libcxx=false is_component_build=false target_os=\"mac\" target_cpu=\"$arch\" use_rtti=true use_lld=false"
+gn gen ${output_dir} --args="is_debug=$is_debug enable_dsyms=true rtc_include_tests=false rtc_build_tools=false rtc_libvpx_build_vp9=true rtc_include_builtin_audio_codecs=true is_clang=true use_custom_libcxx=false is_component_build=false target_os=\"mac\" target_cpu=\"$arch\" use_rtti=true use_lld=false rtc_use_h264=true rtc_use_h265=true rtc_enable_protobuf=false"
 
 echo "Build of WebRTC started"
 ninja -C ${output_dir}
