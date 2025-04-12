@@ -19,10 +19,15 @@ namespace LiveKitCpp
 // Policy for publisher to handle subscribers that are unable to support the primary codec of a track
 enum class BackupCodecPolicy
 {
-    // default behavior, regress to backup codec and all subscribers will receive the backup codec
-    Regression = 0,
+    // default behavior, the track prefer to regress to backup codec
+    // and all subscribers will receive the backup codec,
+    // the sfu will try to regress codec if possible but not assured.
+    PrefererRegression = 0,
+    // force the track to regress to backup codec,
+    // this option can be used in video conference or the publisher has limited bandwidth/encoding power
+    Regression = 1,
     // Encoding/Send The Primary And Backup Codec Simultaneously
-    Simulcast = 1,
+    Simulcast = 2,
 };
 
 } // namespace LiveKitCpp

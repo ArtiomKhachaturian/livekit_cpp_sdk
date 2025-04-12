@@ -5,6 +5,7 @@ import LiveKitClient 1.0
 Item {
     id: root
 
+    property bool showIdentity: true
     property Participant participant
     readonly property bool hasVideo: videoTracks.count > 0
     readonly property bool hasAudio: participant.audioTracksCount > 0
@@ -33,6 +34,7 @@ Item {
         }
         TextPanel {
             Layout.fillWidth: true
+            visible: showIdentity
             text: participant.identity
         }
     }

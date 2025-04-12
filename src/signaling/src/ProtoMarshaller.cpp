@@ -1013,29 +1013,33 @@ livekit::SimulcastCodecInfo ProtoMarshaller::map(const SimulcastCodecInfo& in) c
 BackupCodecPolicy ProtoMarshaller::map(livekit::BackupCodecPolicy in) const
 {
     switch (in) {
-        case livekit::REGRESSION:
+        case livekit::PREFER_REGRESSION:
             break;
+        case livekit::REGRESSION:
+            return BackupCodecPolicy::Regression;
         case livekit::SIMULCAST:
             return BackupCodecPolicy::Simulcast;
         default:
             TYPE_CONVERSION_ERROR(livekit::BackupCodecPolicy, BackupCodecPolicy)
             break;
     }
-    return BackupCodecPolicy::Regression;
+    return BackupCodecPolicy::PrefererRegression;
 }
 
 livekit::BackupCodecPolicy ProtoMarshaller::map(BackupCodecPolicy in) const
 {
     switch (in) {
-        case BackupCodecPolicy::Regression:
+        case BackupCodecPolicy::PrefererRegression:
             break;
+        case BackupCodecPolicy::Regression:
+            return livekit::REGRESSION;
         case BackupCodecPolicy::Simulcast:
             return livekit::SIMULCAST;
         default:
             TYPE_CONVERSION_ERROR(BackupCodecPolicy, livekit::BackupCodecPolicy)
             break;
     }
-    return livekit::REGRESSION;
+    return livekit::PREFER_REGRESSION;
 }
 
 EncryptionType ProtoMarshaller::map(livekit::Encryption_Type in) const
