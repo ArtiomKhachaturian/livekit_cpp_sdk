@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FindPackageHandleStandardArgs)
-find_package(LiveKitClient REQUIRED)
-find_package(ZaphoydTppWebsockets REQUIRED)
+find_package(LiveKitClient REQUIRED HINTS ${PACKAGES_PATHS_HINT})
+find_package(ZaphoydTppWebsockets REQUIRED HINTS ${PACKAGES_PATHS_HINT})
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia)
 
 qt_standard_project_setup(REQUIRES 6.8)
@@ -97,11 +97,12 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Quick Qt6::QuickControls2 Qt6:
                                              LiveKitClient::Signaling
                                              LiveKitClient::Rtc
                                              ZaphoydTppWebsockets)
-if (APPLE) # TODO: add these copyings to post-build step
+if (APPLE) # TODO: add these copyings to post-build steps
 function(copyDylibToBundle FILE APP_BUNDLE_PATH)
     if (EXISTS ${FILE})
-        message(STATUS "Copy ${FILE} to ${APP_BUNDLE_PATH}")
         file(COPY ${ZP_LOCATION} DESTINATION ${APP_BUNDLE_PATH})
+        get_filename_component(FILE ${FILE} NAME)
+        message(STATUS "${FILE} has been copied to ${APP_BUNDLE_PATH}")
     else()
         message(WARNING "File ${FILE} doesn't exists")
     endif()
@@ -112,13 +113,15 @@ function(copImportedDylibToBundle TARGET APP_BUNDLE_PATH)
     copyDylibToBundle(${FILE} ${APP_BUNDLE_PATH})
 endfunction()
 
-function(copyFrameworksToBundle APP_BUNDLE_PATH)
-    if (EXISTS ${APP_BUNDLE_PATH})
-        set(APP_BUNDLE_PATH ${APP_BUNDLE_PATH}/Contents/Frameworks)
-        copImportedDylibToBundle(ZaphoydTppWebsockets ${APP_BUNDLE_PATH})
-        copImportedDylibToBundle(LiveKitClient::Signaling ${APP_BUNDLE_PATH})
-        copImportedDylibToBundle(LiveKitClient::Rtc ${APP_BUNDLE_PATH})
+function(copyFrameworksToBundle APP_BUNDLE_PATH) # TODO: change it to post-build steps
+    set(APP_BUNDLE_PATH ${APP_BUNDLE_PATH}/Contents/Frameworks)
+    if (NOT EXISTS ${APP_BUNDLE_PATH})
+        file(MAKE_DIRECTORY ${APP_BUNDLE_PATH})
+        message(STATUS "${APP_BUNDLE_PATH} has been created")
     endif()
+    copImportedDylibToBundle(ZaphoydTppWebsockets ${APP_BUNDLE_PATH})
+    copImportedDylibToBundle(LiveKitClient::Signaling ${APP_BUNDLE_PATH})
+    copImportedDylibToBundle(LiveKitClient::Rtc ${APP_BUNDLE_PATH})
 endfunction()
 
 copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app)
