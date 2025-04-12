@@ -28,7 +28,7 @@ namespace LiveKitCpp
 class CommandSender;
 class MemoryBlock;
 class SignalServerListener;
-class ResponseInterceptor;
+class ResponseReceiver;
 class RequestSender;
 // these below structs are defined in /include/rtc subfolder
 struct SessionDescription;
@@ -53,6 +53,8 @@ public:
     SignalClient(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     virtual ~SignalClient();
     void setServerListener(SignalServerListener* listener = nullptr);
+    void open();
+    void close();
     // requests sending
     bool sendOffer(const SessionDescription& sdp) const;
     bool sendAnswer(const SessionDescription& sdp) const;
@@ -76,7 +78,7 @@ protected:
     std::string_view logCategory() const override;
 private:
     // for handling of incoming messages from the LiveKit SFU
-    const std::unique_ptr<ResponseInterceptor> _responseReceiver;
+    const std::unique_ptr<ResponseReceiver> _responseReceiver;
     // for sending requests to the LiveKit SFU
     const std::unique_ptr<const RequestSender> _requestSender;
 };

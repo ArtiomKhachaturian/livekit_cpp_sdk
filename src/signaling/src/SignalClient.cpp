@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "livekit/signaling/SignalClient.h"
-#include "ResponseInterceptor.h"
+#include "ResponseReceiver.h"
 #include "RequestSender.h"
 #include "Blob.h"
 
@@ -21,7 +21,7 @@ namespace LiveKitCpp
 
 SignalClient::SignalClient(CommandSender* commandSender, Bricks::Logger* logger)
     :  Bricks::LoggableR<>(logger)
-    , _responseReceiver(std::make_unique<ResponseInterceptor>(logger))
+    , _responseReceiver(std::make_unique<ResponseReceiver>(logger))
     , _requestSender(std::make_unique<RequestSender>(commandSender, logger))
 {
 }

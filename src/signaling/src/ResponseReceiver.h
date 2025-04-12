@@ -23,10 +23,10 @@ namespace LiveKitCpp
 
 class SignalServerListener;
 
-class ResponseInterceptor : private Bricks::LoggableR<>
+class ResponseReceiver : private Bricks::LoggableR<>
 {
 public:
-    ResponseInterceptor(Bricks::Logger* logger = nullptr);
+    ResponseReceiver(Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
 protected:

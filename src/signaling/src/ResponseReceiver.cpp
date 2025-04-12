@@ -11,10 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "ResponseInterceptor.h"
+#include "ResponseReceiver.h"
 #include "MarshalledTypesFwd.h"
 #include "ProtoUtils.h"
 #include "livekit/signaling/SignalServerListener.h"
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/wire_format_lite.h>
 
 namespace {
 
@@ -55,13 +57,13 @@ MARSHALLED_TYPE_NAME_DECL(livekit::RequestResponse)
 MARSHALLED_TYPE_NAME_DECL(livekit::TrackSubscribed)
 MARSHALLED_TYPE_NAME_DECL(livekit::Pong)
 
-ResponseInterceptor::ResponseInterceptor(Bricks::Logger* logger)
+ResponseReceiver::ResponseReceiver(Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
     , _marshaller(logger)
 {
 }
 
-void ResponseInterceptor::parseBinary(const void* data, size_t dataLen)
+void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
 {
     if (_listener) {
         if (const auto response = parse(data, dataLen)) {
@@ -151,26 +153,26 @@ void ResponseInterceptor::parseBinary(const void* data, size_t dataLen)
     }
 }
 
-std::string_view ResponseInterceptor::logCategory() const
+std::string_view ResponseReceiver::logCategory() const
 {
     static const std::string_view category("response_interceptor");
     return category;
 }
 
-std::optional<livekit::SignalResponse> ResponseInterceptor::
+std::optional<livekit::SignalResponse> ResponseReceiver::
     parse(const void* data, size_t dataLen) const
 {
     return protoFromBytes<livekit::SignalResponse>(data, dataLen, logger(), logCategory());
 }
 
 template <class Method, typename... Args>
-void ResponseInterceptor::notify(const Method& method, Args&&... args) const
+void ResponseReceiver::notify(const Method& method, Args&&... args) const
 {
     _listener.invoke(method, std::forward<Args>(args)...);
 }
 
 template <class Method, class TLiveKitType>
-void ResponseInterceptor::signal(const Method& method, const TLiveKitType& sig,
+void ResponseReceiver::signal(const Method& method, const TLiveKitType& sig,
                                  std::string typeName) const
 {
     if (typeName.empty()) {
@@ -180,12 +182,12 @@ void ResponseInterceptor::signal(const Method& method, const TLiveKitType& sig,
     notify(method, _marshaller.map(sig));
 }
 
-void ResponseInterceptor::handle(const livekit::JoinResponse& response) const
+void ResponseReceiver::handle(const livekit::JoinResponse& response) const
 {
     signal(&SignalServerListener::onJoin, response);
 }
 
-void ResponseInterceptor::handle(const livekit::SessionDescription& desc, bool offer) const
+void ResponseReceiver::handle(const livekit::SessionDescription& desc, bool offer) const
 {
     auto typeName = marshalledTypeName<livekit::SessionDescription>();
     if (offer) {
@@ -196,87 +198,87 @@ void ResponseInterceptor::handle(const livekit::SessionDescription& desc, bool o
     }
 }
 
-void ResponseInterceptor::handle(const livekit::TrickleRequest& request) const
+void ResponseReceiver::handle(const livekit::TrickleRequest& request) const
 {
     signal(&SignalServerListener::onTrickle, request);
 }
 
-void ResponseInterceptor::handle(const livekit::ParticipantUpdate& update) const
+void ResponseReceiver::handle(const livekit::ParticipantUpdate& update) const
 {
     signal(&SignalServerListener::onUpdate, update);
 }
 
-void ResponseInterceptor::handle(const livekit::TrackPublishedResponse& response) const
+void ResponseReceiver::handle(const livekit::TrackPublishedResponse& response) const
 {
     signal(&SignalServerListener::onTrackPublished, response);
 }
 
-void ResponseInterceptor::handle(const livekit::LeaveRequest& request) const
+void ResponseReceiver::handle(const livekit::LeaveRequest& request) const
 {
     signal(&SignalServerListener::onLeave, request);
 }
 
-void ResponseInterceptor::handle(const livekit::MuteTrackRequest& request) const
+void ResponseReceiver::handle(const livekit::MuteTrackRequest& request) const
 {
     signal(&SignalServerListener::onMute, request);
 }
 
-void ResponseInterceptor::handle(const livekit::SpeakersChanged& changed) const
+void ResponseReceiver::handle(const livekit::SpeakersChanged& changed) const
 {
     signal(&SignalServerListener::onSpeakersChanged, changed);
 }
 
-void ResponseInterceptor::handle(const livekit::RoomUpdate& update) const
+void ResponseReceiver::handle(const livekit::RoomUpdate& update) const
 {
     signal(&SignalServerListener::onRoomUpdate, update);
 }
 
-void ResponseInterceptor::handle(const livekit::ConnectionQualityUpdate& update) const
+void ResponseReceiver::handle(const livekit::ConnectionQualityUpdate& update) const
 {
     signal(&SignalServerListener::onConnectionQuality, update);
 }
 
-void ResponseInterceptor::handle(const livekit::StreamStateUpdate& update) const
+void ResponseReceiver::handle(const livekit::StreamStateUpdate& update) const
 {
     signal(&SignalServerListener::onStreamStateUpdate, update);
 }
 
-void ResponseInterceptor::handle(const livekit::SubscribedQualityUpdate& update) const
+void ResponseReceiver::handle(const livekit::SubscribedQualityUpdate& update) const
 {
     signal(&SignalServerListener::onSubscribedQualityUpdate, update);
 }
 
-void ResponseInterceptor::handle(const livekit::SubscriptionPermissionUpdate& update) const
+void ResponseReceiver::handle(const livekit::SubscriptionPermissionUpdate& update) const
 {
     signal(&SignalServerListener::onSubscriptionPermission, update);
 }
 
-void ResponseInterceptor::handle(const livekit::TrackUnpublishedResponse& response) const
+void ResponseReceiver::handle(const livekit::TrackUnpublishedResponse& response) const
 {
     signal(&SignalServerListener::onTrackUnpublished, response);
 }
 
-void ResponseInterceptor::handle(const livekit::ReconnectResponse& response) const
+void ResponseReceiver::handle(const livekit::ReconnectResponse& response) const
 {
     signal(&SignalServerListener::onReconnect, response);
 }
 
-void ResponseInterceptor::handle(const livekit::SubscriptionResponse& response) const
+void ResponseReceiver::handle(const livekit::SubscriptionResponse& response) const
 {
     signal(&SignalServerListener::onSubscriptionResponse, response);
 }
 
-void ResponseInterceptor::handle(const livekit::RequestResponse& response) const
+void ResponseReceiver::handle(const livekit::RequestResponse& response) const
 {
     signal(&SignalServerListener::onRequestResponse, response);
 }
 
-void ResponseInterceptor::handle(const livekit::TrackSubscribed& subscribed) const
+void ResponseReceiver::handle(const livekit::TrackSubscribed& subscribed) const
 {
     signal(&SignalServerListener::onTrackSubscribed, subscribed);
 }
 
-void ResponseInterceptor::handle(const livekit::Pong& pong) const
+void ResponseReceiver::handle(const livekit::Pong& pong) const
 {
     signal(&SignalServerListener::onPong, pong);
 }
