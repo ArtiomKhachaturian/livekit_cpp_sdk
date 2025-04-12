@@ -87,7 +87,11 @@ TrickleRequest ProtoMarshaller::map(const livekit::TrickleRequest& in) const
             out._candidate._sdp = json["candidate"].get<std::string>();
             out._candidate._sdpMid = json["sdpMid"].get<std::string>();
             out._candidate._sdpMLineIndex = json["sdpMLineIndex"].get<int>();
-            // - usernameFragment (may contains null value)
+            // usernameFragment (may contains null value)
+            auto ufrag = json["usernameFragment"];
+            if (!ufrag.is_null()) {
+                out._candidate._usernameFragment = ufrag.get<std::string>();
+            }
         }
         catch (const std::exception& e) {
             logError(e.what());
@@ -105,7 +109,12 @@ livekit::TrickleRequest ProtoMarshaller::map(const TrickleRequest& in) const
     candidateInit["candidate"] = in._candidate._sdp;
     candidateInit["sdpMid"] = in._candidate._sdpMid;
     candidateInit["sdpMLineIndex"] = in._candidate._sdpMLineIndex;
-    candidateInit["usernameFragment"] = nullptr; // ??
+    if (in._candidate._usernameFragment.empty()) {
+        candidateInit["usernameFragment"] = nullptr;
+    }
+    else {
+        candidateInit["usernameFragment"] = in._candidate._usernameFragment;
+    }
     out.set_candidateinit(nlohmann::to_string(candidateInit));
     out.set_target(map(in._target));
     out.set_final(in._final);
@@ -1605,10 +1614,12 @@ void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
 }
 
 IceCandidate::IceCandidate(std::string sdp, std::string sdpMid,
-                           int sdpMLineIndex)
+                           int sdpMLineIndex,
+                           std::string usernameFragment)
     : _sdp(std::move(sdp))
     , _sdpMid(std::move(sdpMid))
     , _sdpMLineIndex(sdpMLineIndex)
+    , _usernameFragment(std::move(usernameFragment))
 {
 }
 
