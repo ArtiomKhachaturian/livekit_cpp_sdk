@@ -11,20 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // TrickleRequest.h
-#include "livekit/signaling/sfu/SignalTarget.h"
-#include "livekit/signaling/sfu/IceCandidate.h"
-#include <string>
+#pragma once // IceCandidate.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
 
 namespace LiveKitCpp
 {
 
-// sent when an ICE candidate is available
-struct TrickleRequest
+struct LIVEKIT_SIGNALING_API IceCandidate
 {
-    IceCandidate _candidate;
-    SignalTarget _target = {};
-    bool _final = {};
+    std::string _sdp;
+    std::string _sdpMid;
+    int _sdpMLineIndex = {};
+    bool valid() const { return !_sdp.empty() && !_sdpMid.empty(); }
+    explicit operator bool () const { return valid(); }
+    IceCandidate() = default;
+    IceCandidate(std::string sdp, std::string sdpMid, int sdpMLineIndex);
 };
 
-} // namespace LiveKitCpp
+}

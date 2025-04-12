@@ -456,18 +456,18 @@ void RTCEngine::onIceCandidateGathered(SignalTarget target,
 {
     RTCMediaEngine::onIceCandidateGathered(target, candidate);
     if (candidate) {
-        auto candidateInit = RoomUtils::map(candidate);
-        if (candidateInit.empty()) {
-            logError("failed to serialize " + candidate->server_url() +
-                     " " + toString(target) + " local ICE candidate");
-            return;
-        }
         TrickleRequest request;
-        request._candidateInit = std::move(candidateInit);
-        request._target = target;
-        request._final = false;
-        if (!_client.sendTrickle(request)) {
-            logError("failed to send " + candidate->server_url() +
+        request._candidate = RoomUtils::map(candidate);
+        if (request._candidate) {
+            request._target = target;
+            request._final = false;
+            if (!_client.sendTrickle(request)) {
+                logError("failed to send " + candidate->server_url() +
+                         " " + toString(target) + " local ICE candidate");
+            }
+        }
+        else {
+            logError("failed to serialize " + candidate->server_url() +
                      " " + toString(target) + " local ICE candidate");
         }
     }
@@ -542,7 +542,7 @@ void RTCEngine::onTrickle(const TrickleRequest& request)
     RTCMediaEngine::onTrickle(request);
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
         webrtc::SdpParseError error;
-        if (auto candidate = RoomUtils::map(request, &error)) {
+        if (auto candidate = RoomUtils::map(request._candidate, &error)) {
             pcManager->addIceCandidate(request._target, std::move(candidate));
         }
         else {

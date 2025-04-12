@@ -13,62 +13,29 @@
 // limitations under the License.
 #include "RoomUtils.h"
 #include "livekit/signaling/sfu/ICETransportPolicy.h"
-#include <nlohmann/json.hpp>
-
-namespace {
-
-struct IceCandidate
-{
-    std::string candidate;
-    std::string sdpMid;
-    int sdpMLineIndex = {};
-    IceCandidate() = default;
-    IceCandidate(std::string candidate, std::string sdpMid, int sdpMLineIndex);
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(IceCandidate, candidate, sdpMid, sdpMLineIndex)
-};
-
-}
 
 namespace LiveKitCpp
 {
 
-std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const TrickleRequest& trickle,
+std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const IceCandidate& candidate,
                                                               webrtc::SdpParseError* error)
 {
-    return map(trickle._candidateInit, error);
-}
-
-std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const std::string& candidateInit,
-                                                              webrtc::SdpParseError* error)
-{
-    std::unique_ptr<webrtc::IceCandidateInterface> iceCandidate;
-    if (!candidateInit.empty()) {
-        try {
-            const auto c = nlohmann::json::parse(candidateInit).get<IceCandidate>();
-            iceCandidate.reset(webrtc::CreateIceCandidate(c.sdpMid,
-                                                          c.sdpMLineIndex,
-                                                          c.candidate,
-                                                          error));
-        }
-        catch (const std::exception& e) {
-            if (error) {
-                error->description = e.what();
-            }
-        }
+    std::unique_ptr<webrtc::IceCandidateInterface> ice;
+    if (candidate) {
+        ice.reset(webrtc::CreateIceCandidate(candidate._sdpMid,
+                                             candidate._sdpMLineIndex,
+                                             candidate._sdp,
+                                             error));
     }
-    return iceCandidate;
+    return ice;
 }
 
-std::string RoomUtils::map(const webrtc::IceCandidateInterface* candidate)
+IceCandidate RoomUtils::map(const webrtc::IceCandidateInterface* candidate)
 {
     if (candidate) {
         std::string sdp;
         if (candidate->ToString(&sdp)) {
-            nlohmann::json json = IceCandidate(std::move(sdp),
-                                               candidate->sdp_mid(),
-                                               candidate->sdp_mline_index());
-            json["usernameFragment"] = nullptr; // ??
-            return nlohmann::to_string(json);
+            return IceCandidate(std::move(sdp), candidate->sdp_mid(), candidate->sdp_mline_index());
         }
     }
     return {};
@@ -135,14 +102,3 @@ webrtc::PeerConnectionInterface::IceTransportsType RoomUtils::map(IceTransportPo
 }
 
 } // namespace LiveKitCpp
-
-namespace {
-
-IceCandidate::IceCandidate(std::string candidate, std::string sdpMid, int sdpMLineIndex)
-{
-    this->candidate = std::move(candidate);
-    this->sdpMid = std::move(sdpMid);
-    this->sdpMLineIndex = sdpMLineIndex;
-}
-
-}

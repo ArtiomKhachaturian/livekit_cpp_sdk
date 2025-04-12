@@ -289,7 +289,6 @@ if (WEBRTC_AVAILABLE)
         ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include
         ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp
         ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include
-        ${NLOHMANN_HDRS_DIR}
     )
 
     set_target_properties(${RTC_LIB} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
@@ -322,7 +321,7 @@ if (WEBRTC_AVAILABLE)
 
     target_link_libraries(${RTC_LIB} PRIVATE ${WEBRTC_LIB_FILES})
     target_link_libraries(${RTC_LIB} PUBLIC ${SIGNALING_LIB})
-    target_compile_definitions(${RTC_LIB} PRIVATE -DJSON_HAS_CPP_17 -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
+    target_compile_definitions(${RTC_LIB} PRIVATE -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
 endif()
 
 # install steps

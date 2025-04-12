@@ -14,7 +14,7 @@
 #pragma once // RoomUtils.h
 #include "livekit/signaling/sfu/ICEServer.h"
 #include "livekit/signaling/sfu/SessionDescription.h"
-#include "livekit/signaling/sfu/TrickleRequest.h"
+#include "livekit/signaling/sfu/IceCandidate.h"
 #include <api/peer_connection_interface.h>
 #include <memory>
 #include <optional>
@@ -28,11 +28,9 @@ enum class IceTransportPolicy;
 class RoomUtils
 {
 public:
-    static std::unique_ptr<webrtc::IceCandidateInterface> map(const TrickleRequest& trickle,
+    static std::unique_ptr<webrtc::IceCandidateInterface> map(const IceCandidate& candidate,
                                                               webrtc::SdpParseError* error = nullptr);
-    static std::unique_ptr<webrtc::IceCandidateInterface> map(const std::string& candidateInit,
-                                                              webrtc::SdpParseError* error = nullptr);
-    static std::string map(const webrtc::IceCandidateInterface* candidate);
+    static IceCandidate map(const webrtc::IceCandidateInterface* candidate);
     static std::optional<SessionDescription> map(const webrtc::SessionDescriptionInterface* desc);
     static std::unique_ptr<webrtc::SessionDescriptionInterface> map(const SessionDescription& desc,
                                                                     webrtc::SdpParseError* error = nullptr);

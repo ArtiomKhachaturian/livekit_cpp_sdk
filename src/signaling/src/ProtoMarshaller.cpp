@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "ProtoMarshaller.h"
 #include "ProtoUtils.h"
+#include <nlohmann/json.hpp>
 
 /*#if defined(_MSC_VER) && !defined(__PRETTY_FUNCTION__)
 #define __PRETTY_FUNCTION__ __FUNCSIG__
@@ -79,7 +80,19 @@ livekit::SessionDescription ProtoMarshaller::map(const SessionDescription& in) c
 TrickleRequest ProtoMarshaller::map(const livekit::TrickleRequest& in) const
 {
     TrickleRequest out;
-    out._candidateInit = in.candidateinit();
+    const auto candidateInit = in.candidateinit();
+    if (!candidateInit.empty()) {
+        try {
+            auto json = nlohmann::json::parse(candidateInit);
+            out._candidate._sdp = json["candidate"].get<std::string>();
+            out._candidate._sdpMid = json["sdpMid"].get<std::string>();
+            out._candidate._sdpMLineIndex = json["sdpMLineIndex"].get<int>();
+            // - usernameFragment (may contains null value)
+        }
+        catch (const std::exception& e) {
+            logError(e.what());
+        }
+    }
     out._target = map(in.target());
     out._final = in.final();
     return out;
@@ -88,7 +101,12 @@ TrickleRequest ProtoMarshaller::map(const livekit::TrickleRequest& in) const
 livekit::TrickleRequest ProtoMarshaller::map(const TrickleRequest& in) const
 {
     livekit::TrickleRequest out;
-    out.set_candidateinit(in._candidateInit);
+    nlohmann::json candidateInit;
+    candidateInit["candidate"] = in._candidate._sdp;
+    candidateInit["sdpMid"] = in._candidate._sdpMid;
+    candidateInit["sdpMLineIndex"] = in._candidate._sdpMLineIndex;
+    candidateInit["usernameFragment"] = nullptr; // ??
+    out.set_candidateinit(nlohmann::to_string(candidateInit));
     out.set_target(map(in._target));
     out.set_final(in._final);
     return out;
@@ -1580,6 +1598,14 @@ void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
                             google::protobuf::Map<K, V>* to) const
 {
     toProtoMap(from, to);
+}
+
+IceCandidate::IceCandidate(std::string sdp, std::string sdpMid,
+                           int sdpMLineIndex)
+    : _sdp(std::move(sdp))
+    , _sdpMid(std::move(sdpMid))
+    , _sdpMLineIndex(sdpMLineIndex)
+{
 }
 
 } // namespace LiveKitCpp
