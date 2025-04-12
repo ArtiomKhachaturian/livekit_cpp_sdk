@@ -42,8 +42,8 @@ namespace {
 static const std::string_view g_pcfInit("PeerConnectionFactory_Init");
 
 inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer,
-                                                        const absl::string_view& threadName,
-                                                        const std::shared_ptr<Bricks::Logger>& logger = {})
+                                                           const absl::string_view& threadName,
+                                                           const std::shared_ptr<Bricks::Logger>& logger = {})
 {
     if (auto thread = withSocketServer ? webrtc::Thread::CreateWithSocketServer() : webrtc::Thread::Create()) {
         thread->SetName(threadName, thread.get());
