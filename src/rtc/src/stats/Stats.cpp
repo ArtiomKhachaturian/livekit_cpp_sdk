@@ -25,6 +25,8 @@ const webrtc::RTCStats* getRtcStats(const std::shared_ptr<const StatsData>& stat
 
 const std::string g_empty;
 
+StatsAttribute::Value map(webrtc::Attribute::StatVariant&& value);
+
 }
 
 namespace LiveKitCpp
@@ -118,9 +120,9 @@ std::vector<StatsAttribute> Stats::attributes() const
         if (const auto s = rtcAttributes.size()) {
             std::vector<StatsAttribute> attributes;
             attributes.reserve(s);
-            for (size_t i = 0U; i < s; ++i) {
-                const auto& attribute = rtcAttributes.at(i);
-                attributes.push_back(StatsAttribute{attribute.name(), std::move(attribute.as_variant())});
+            for (auto& rtcAttribute : rtcAttributes) {
+                auto v = rtcAttribute.as_variant();
+                attributes.push_back(StatsAttribute{rtcAttribute.name(), map(std::move(v))});
             }
             return attributes;
         }
@@ -208,12 +210,23 @@ std::shared_ptr<const StatsVideoSourceExt> Stats::extVideoSource() const
 namespace
 {
 
+struct Visitor
+{
+    template <typename T>
+    StatsAttribute::Value operator()(const std::optional<T>* optional) { return optional; }
+};
+
 const webrtc::RTCStats* getRtcStats(const std::shared_ptr<const StatsData>& stats)
 {
     if (stats) {
         return stats->rtcStats();
     }
     return nullptr;
+}
+
+StatsAttribute::Value map(webrtc::Attribute::StatVariant&& value)
+{
+    return absl::visit(Visitor{}, std::move(value));
 }
 
 }

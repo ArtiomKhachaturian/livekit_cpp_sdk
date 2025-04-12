@@ -24,6 +24,8 @@ namespace LiveKitCpp
 
 class LIVEKIT_RTC_API StatsAttribute
 {
+    friend class Stats;
+public:
     using Value = std::variant<const std::optional<bool>*,
                                const std::optional<int32_t>*,
                                const std::optional<uint32_t>*,
@@ -40,7 +42,6 @@ class LIVEKIT_RTC_API StatsAttribute
                                const std::optional<std::vector<std::string>>*,
                                const std::optional<std::map<std::string, uint64_t>>*,
                                const std::optional<std::map<std::string, double>>*>;
-    friend class Stats;
 public:
     StatsAttribute() = default;
     std::string_view name() const;
@@ -52,6 +53,8 @@ public:
     const std::optional<T>& optional() const { return *std::get<const std::optional<T>*>(_value); }
     template <typename T>
     const T& value() const { return optional<T>().value(); };
+    const auto& variant() const noexcept { return _value; }
+    auto& variant() noexcept { return _value; }
     // is vector or not
     bool isSequence() const;
     // is map or not

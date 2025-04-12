@@ -520,7 +520,7 @@ void MacOSCameraCapturer::Impl::logError(const std::string& error)
                 if (auto rtcFrame = LiveKitCpp::createVideoFrame(buffer)) {
                     rtcFrame->set_rotation(webrtc::VideoRotation(frame.rotation));
                     rtcFrame->set_rtp_timestamp(frame.timeStamp);
-                    rtcFrame->set_timestamp_us(frame.timeStampNs / webrtc::kNumNanosecsPerMicrosec);
+                    rtcFrame->set_timestamp_us(frame.timeStampNs / rtc::kNumNanosecsPerMicrosec);
                     _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnFrame, rtcFrame.value());
                     return;
                 }

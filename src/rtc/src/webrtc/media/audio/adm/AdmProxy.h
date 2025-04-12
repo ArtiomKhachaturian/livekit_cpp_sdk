@@ -22,7 +22,7 @@
 #include <modules/audio_device/include/audio_device.h> //AudioDeviceModule
 #include <type_traits>
 
-namespace webrtc {
+namespace rtc {
 class Thread;
 }
 
@@ -42,7 +42,7 @@ class AdmProxy : public webrtc::AudioDeviceModule
 public:
     ~AdmProxy() override;
     static webrtc::scoped_refptr<AdmProxy>
-        create(const std::shared_ptr<webrtc::Thread>& workingThread,
+        create(const std::shared_ptr<rtc::Thread>& workingThread,
                const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
                webrtc::TaskQueueFactory* taskQueueFactory);
     // impl. of webrtc::AudioDeviceModule
@@ -156,7 +156,7 @@ public:
     std::vector<MediaDeviceInfo> recordingDevices() const;
     std::vector<MediaDeviceInfo> playoutDevices() const;
 protected:
-    AdmProxy(const std::shared_ptr<webrtc::Thread>& workingThread,
+    AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
              const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
              AdmPtr impl);
 private:
@@ -164,7 +164,7 @@ private:
     static std::optional<MediaDeviceInfo> get(bool recording, WindowsDeviceType type, const AdmPtr& adm);
     static std::optional<uint16_t> get(bool recording, const MediaDeviceInfo& info, const AdmPtr& adm);
     static AdmPtr defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory);
-    std::shared_ptr<webrtc::Thread> workingThread() const;
+    std::shared_ptr<rtc::Thread> workingThread() const;
     std::vector<MediaDeviceInfo> enumerate(bool recording) const;
     MediaDeviceInfo defaultDevice(bool recording) const;
     void requestRecordingAuthorizationStatus() const;
@@ -185,7 +185,7 @@ private:
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
 private:
     static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
-    const std::weak_ptr<webrtc::Thread> _workingThread;
+    const std::weak_ptr<rtc::Thread> _workingThread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
     Bricks::SafeUniquePtr<AdmProxyTransport> _transport;
     AdmProxyState _recState;

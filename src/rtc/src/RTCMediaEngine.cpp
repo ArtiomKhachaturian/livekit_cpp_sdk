@@ -50,7 +50,7 @@ RTCMediaEngine::RTCMediaEngine(PeerConnectionFactory* pcf,
                                const Participant* session,
                                const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<SignalServerListener>(logger)
-    , _signalingThread(pcf ? pcf->signalingThread() : std::weak_ptr<webrtc::Thread>())
+    , _signalingThread(pcf ? pcf->signalingThread() : std::weak_ptr<rtc::Thread>())
     , _localParticipant(new LocalParticipant(this, pcf, session, logger))
     , _remoteParicipants(this, this, logger)
 {

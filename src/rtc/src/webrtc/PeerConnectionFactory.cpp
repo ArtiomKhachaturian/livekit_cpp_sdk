@@ -41,15 +41,15 @@ namespace {
 
 static const std::string_view g_pcfInit("PeerConnectionFactory_Init");
 
-inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer,
+inline std::shared_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
                                                            const absl::string_view& threadName,
                                                            const std::shared_ptr<Bricks::Logger>& logger = {})
 {
-    if (auto thread = withSocketServer ? webrtc::Thread::CreateWithSocketServer() : webrtc::Thread::Create()) {
+    if (auto thread = withSocketServer ? rtc::Thread::CreateWithSocketServer() : rtc::Thread::Create()) {
         thread->SetName(threadName, thread.get());
         thread->AllowInvokesToThread(thread.get());
         if (thread->Start()) {
-            return std::shared_ptr<webrtc::Thread>(thread.release());
+            return std::shared_ptr<rtc::Thread>(thread.release());
         }
         if (logger) {
             logger->logError("Failed to start of '" + std::string(threadName)
@@ -108,9 +108,9 @@ private:
 };
 
 PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webrtcLogSink,
-                                             std::shared_ptr<webrtc::Thread> networkThread,
-                                             std::shared_ptr<webrtc::Thread> workingThread,
-                                             std::shared_ptr<webrtc::Thread> signalingThread,
+                                             std::shared_ptr<rtc::Thread> networkThread,
+                                             std::shared_ptr<rtc::Thread> workingThread,
+                                             std::shared_ptr<rtc::Thread> signalingThread,
                                              webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
                                              webrtc::scoped_refptr<AdmProxy> admProxy)
     : _eventsQueue(createTaskQueueS("events_queue"))
