@@ -27,7 +27,7 @@ echo "Fetch WebRTC sources"
 fetch --nohooks webrtc
 gclient sync
 
-gn_args='is_debug=true enable_dsyms=true rtc_include_tests=false rtc_include_builtin_audio_codecs=true rtc_build_tools=false is_clang=true use_custom_libcxx=false is_component_build=false target_os="mac" target_cpu="x64" use_rtti=true use_lld=false rtc_use_h265=true'
+gn_args='is_debug=true enable_dsyms=true rtc_build_examples=false rtc_include_tests=false rtc_include_builtin_audio_codecs=true rtc_build_tools=false is_clang=true use_custom_libcxx=false is_component_build=false target_os="mac" target_cpu="arm64" use_rtti=true use_lld=false rtc_use_h264=true rtc_use_h265=true rtc_enable_protobuf=false'
 
 echo "Build of WebRTC started"
 cd ./src
