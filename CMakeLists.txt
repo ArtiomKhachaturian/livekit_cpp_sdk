@@ -24,6 +24,7 @@ set(LIVEKIT_PROTOCOL_VERSION 12)
 
 set(HEADER_FILE_EXT h)
 set(SOURCE_FILE_EXT cpp)
+set(PROTO_FILE_EXT proto)
 
 if (APPLE)
     set(PLATFORM_SRC_EXT mm)
@@ -42,9 +43,9 @@ endif(APPLE)
 # Generate C++ code from proto files
 # Find Protobuf (ensure it is installed)
 # Specify search paths in CMAKE_PREFIX_PATH variable (if needed): "/path/to/module_a;/another/path/to/module_b"
-find_package(Protobuf 5.29.3 REQUIRED)
 find_package(absl REQUIRED)
 find_package(utf8_range REQUIRED)
+find_package(Protobuf 5.29.3 REQUIRED)
 
 # common sources for both librarires
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
@@ -66,46 +67,27 @@ function(downloadAndExtract ZIP_URL ZIP_FILE EXTRACT_DIR)
     endif()
 endfunction(downloadAndExtract)
 
+function(copyProtoFiles INPUT_DIR OUTPUT_DIR)
+    file(GLOB_RECURSE PROTO_FILES ${INPUT_DIR}/*.${PROTO_FILE_EXT})
+    foreach(PROTO_FILE ${PROTO_FILES})
+        get_filename_component(FILENAME ${PROTO_FILE} NAME)
+        set(DEST_FILE ${OUTPUT_DIR}/${FILENAME})
+        configure_file(${PROTO_FILE} ${DEST_FILE} COPYONLY)
+    endforeach()
+endfunction()
+
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
 recreateDir(${GENERATED_DIR})
 
-file(GLOB_RECURSE PROTO_FILES ${CMAKE_SOURCE_DIR}/protocol/*.proto)
-file(GLOB_RECURSE PSRPC_PROTO_FILES ${CMAKE_SOURCE_DIR}/psrpc/protoc-gen-psrpc/*.proto)
-list(APPEND PROTO_FILES ${PSRPC_PROTO_FILES})
-
 # there is a huge problem with [protobuf_generate_cpp] function:
 # it expects of flat structure for the folder with protofiles,
 # see documentation at https://cmake.org/cmake/help/latest/module/FindProtobuf.html
 # ("Note The protobuf_generate_cpp and protobuf_generate_python 
 # functions and add_executable() or add_library() calls only work properly within the same directory.")
-foreach(PROTO_FILE ${PROTO_FILES})
-    get_filename_component(FILENAME ${PROTO_FILE} NAME)
-    set(DEST_FILE ${GENERATED_DIR}/${FILENAME})
-    configure_file(${PROTO_FILE} ${DEST_FILE} COPYONLY)
-endforeach()
+copyProtoFiles(${CMAKE_SOURCE_DIR}/protocol ${GENERATED_DIR})
+copyProtoFiles(${CMAKE_SOURCE_DIR}/psrpc/protoc-gen-psrpc ${GENERATED_DIR})
+
 file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
-
-# Generate .cpp and .h files from proto
-protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
-
-file(GLOB_RECURSE PROTO_FILES ${CMAKE_SOURCE_DIR}/protocol/*.proto)
-file(GLOB_RECURSE PSRPC_PROTO_FILES ${CMAKE_SOURCE_DIR}/psrpc/protoc-gen-psrpc/*.proto)
-list(APPEND PROTO_FILES ${PSRPC_PROTO_FILES})
-
-# there is a huge problem with [protobuf_generate_cpp] function:
-# it expects of flat structure for the folder with protofiles,
-# see documentation at https://cmake.org/cmake/help/latest/module/FindProtobuf.html
-# ("Note The protobuf_generate_cpp and protobuf_generate_python 
-# functions and add_executable() or add_library() calls only work properly within the same directory.")
-foreach(PROTO_FILE ${PROTO_FILES})
-    get_filename_component(FILENAME ${PROTO_FILE} NAME)
-    set(DEST_FILE ${GENERATED_DIR}/${FILENAME})
-    configure_file(${PROTO_FILE} ${DEST_FILE} COPYONLY)
-endforeach()
-file(GLOB_RECURSE PROTO_FILES ${GENERATED_DIR}/*.proto)
-
-# Generate .cpp and .h files from proto
-protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILES})
 
 set(NLOHMANN_ZIP_URL "https://github.com/nlohmann/json/releases/download/v3.11.3/include.zip")
 set(NLOHMANN_SRC_DIR ${CMAKE_BINARY_DIR}/nlohmann_json_src)
@@ -128,8 +110,17 @@ add_library(${SIGNALING_LIB} SHARED
     ${SIGNALING_PLATFORM_SOURCES}
     ${WEBSOCKETS_API_HEADERS}
     ${BRICKS_API_HEADERS}
-    ${PROTO_SOURCES} # Add generated .cpp files
-    ${PROTO_HEADERS})
+    ${PROTO_FILES})
+
+list(APPEND PROTO_IMPORT_DIRS ${GENERATED_DIR})
+list(APPEND PROTO_IMPORT_DIRS ${Protobuf_INCLUDE_DIRS})
+if (EXISTS ${Protobuf_DIR})
+    set(Protobuf_INCLUDE_DIR "${Protobuf_DIR}/../../../include")
+    file(REAL_PATH ${Protobuf_INCLUDE_DIR} Protobuf_INCLUDE_DIR)
+    list(APPEND PROTO_IMPORT_DIRS ${Protobuf_INCLUDE_DIR})
+endif()
+
+protobuf_generate(TARGET ${SIGNALING_LIB} APPEND_PATH ${PROTO_IMPORT_DIRS} OUT_VAR PROTO_CPP IMPORT_DIRS ${PROTO_IMPORT_DIRS})
 
 source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsAPI" FILES ${WEBSOCKETS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
@@ -138,7 +129,8 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/signaling PREFIX "Signalin
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling/src PREFIX "Signaling" FILES ${SIGNALING_COMMON_HEADERS} 
                                                                                  ${SIGNALING_COMMON_SOURCES})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER} PREFIX "Signaling" FILES ${SIGNALING_PLATFORM_HEADERS} ${SIGNALING_PLATFORM_SOURCES})
-source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "ProtoBufGenerated" FILES ${PROTO_HEADERS} ${PROTO_SOURCES})
+source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "Proto/Generated" FILES ${PROTO_CPP})
+source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "Proto/Sources" FILES ${PROTO_FILES})
 
 # Add include directories
 target_include_directories(${SIGNALING_LIB} PRIVATE
