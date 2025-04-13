@@ -42,13 +42,11 @@ public:
     bool isOpen() const { return _channel && _channel->isOpen(); }
     bool local() const { return _channel && _channel->local(); }
     bool reliable() const { return _channel && _channel->reliable(); }
-    bool sendDataPacket(const DataPacket& packet) const;
-    bool sendChatMessage(const std::string& participantIdentity,
-                         const ChatMessage& mesage,
-                         const std::vector<std::string>& destinationIdentities = {});
-    bool sendUserPacket(const std::string& participantIdentity,
-                        const UserPacket& packet,
-                        const std::vector<std::string>& destinationIdentities = {});
+    bool sendDataPacket(DataPacket packet) const;
+    bool sendChatMessage(std::string participantIdentity, ChatMessage mesage,
+                         std::vector<std::string> destinationIdentities = {});
+    bool sendUserPacket(std::string participantIdentity, UserPacket packet,
+                        std::vector<std::string> destinationIdentities = {});
     // impl. of DataChannelListener
     void onStateChange(DataChannel* channel) final;
     void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
@@ -59,9 +57,8 @@ protected:
     std::string_view logCategory() const final { return _logCategory; }
 private:
     template <class TValue>
-    DataPacket createDataPacket(const std::string& participantIdentity,
-                                const TValue& value,
-                                const std::vector<std::string>& destinationIdentities = {}) const;
+    DataPacket createDataPacket(std::string participantIdentity, TValue value,
+                                std::vector<std::string> destinationIdentities = {}) const;
 private:
     const rtc::scoped_refptr<DataChannel> _channel;
     const std::string _logCategory;
@@ -152,10 +149,9 @@ void DataChannelsStorage::clear()
     _dataChannels->clear();
 }
 
-bool DataChannelsStorage::sendUserPacket(std::string payload, bool reliable,
-                                         const std::string& topic,
-                                         const std::vector<std::string>& destinationSids,
-                                         const std::vector<std::string>& destinationIdentities) const
+bool DataChannelsStorage::sendUserPacket(std::string payload, bool reliable, std::string topic,
+                                         std::vector<std::string> destinationSids,
+                                         std::vector<std::string> destinationIdentities) const
 {
     if (payload.empty()) {
         logError("failed to send user packet - empty payload");
@@ -167,23 +163,22 @@ bool DataChannelsStorage::sendUserPacket(std::string payload, bool reliable,
         return {};
     }
     if (const auto dc = getChannelForSend(reliable)) {
-        const auto identity = _identity();
+        auto identity = _identity();
         UserPacket userPacket;
         userPacket._participantSid = std::move(sid);
         userPacket._participantIdentity = identity;
         userPacket._payload = std::move(payload);
-        userPacket._topic = topic;
-        userPacket._destinationSids = destinationSids;
+        userPacket._topic = std::move(topic);
+        userPacket._destinationSids = std::move(destinationSids);
         userPacket._destinationIdentities = destinationIdentities;
-        return dc->sendUserPacket(identity, userPacket, destinationIdentities);
+        return dc->sendUserPacket(std::move(identity), std::move(userPacket),
+                                  std::move(destinationIdentities));
     }
     return false;
 }
 
-bool DataChannelsStorage::sendChatMessage(std::string message,
-                                          bool deleted,
-                                          bool generated,
-                                          const std::vector<std::string>& destinationIdentities) const
+bool DataChannelsStorage::sendChatMessage(std::string message, bool deleted, bool generated,
+                                          std::vector<std::string> destinationIdentities) const
 {
     if (message.empty()) {
         logError("failed to send chat message - message text is empty");
@@ -196,7 +191,7 @@ bool DataChannelsStorage::sendChatMessage(std::string message,
         chatMessage._id = makeUuid();
         chatMessage._deleted = deleted;
         chatMessage._generated = generated;
-        return dc->sendChatMessage(_identity, chatMessage, destinationIdentities);
+        return dc->sendChatMessage(_identity(), std::move(chatMessage), std::move(destinationIdentities));
     }
     return false;
 }
@@ -233,43 +228,43 @@ std::shared_ptr<DataChannelsStorage::Wrapper> DataChannelsStorage::
     return dc;
 }
 
-void DataChannelsStorage::onDataPacket(const DataPacket& packet)
+void DataChannelsStorage::onDataPacket(DataPacket packet)
 {
     if (std::holds_alternative<UserPacket>(packet._value)) {
         _listener.invoke(&DataExchangeListener::onUserPacket,
-                         std::get<UserPacket>(packet._value),
-                         packet._participantIdentity,
-                         packet._destinationIdentities);
+                         std::move(std::get<UserPacket>(packet._value)),
+                         std::move(packet._participantIdentity),
+                         std::move(packet._destinationIdentities));
     }
     else if (std::holds_alternative<ChatMessage>(packet._value)) {
         _listener.invoke(&DataExchangeListener::onChatMessage,
-                         std::get<ChatMessage>(packet._value),
-                         packet._participantIdentity,
-                         packet._destinationIdentities);
+                         std::move(std::get<ChatMessage>(packet._value)),
+                         std::move(packet._participantIdentity),
+                         std::move(packet._destinationIdentities));
     }
     else if (std::holds_alternative<DataStreamHeader>(packet._value)) {
         _listener.invoke(&DataExchangeListener::onDataStreamHeader,
-                         std::get<DataStreamHeader>(packet._value),
-                         packet._participantIdentity,
-                         packet._destinationIdentities);
+                         std::move(std::get<DataStreamHeader>(packet._value)),
+                         std::move(packet._participantIdentity),
+                         std::move(packet._destinationIdentities));
     }
     else if (std::holds_alternative<DataStreamChunk>(packet._value)) {
         _listener.invoke(&DataExchangeListener::onDataStreamChunk,
-                         std::get<DataStreamChunk>(packet._value),
-                         packet._participantIdentity,
-                         packet._destinationIdentities);
+                         std::move(std::get<DataStreamChunk>(packet._value)),
+                         std::move(packet._participantIdentity),
+                         std::move(packet._destinationIdentities));
     }
     else if (std::holds_alternative<DataStreamTrailer>(packet._value)) {
         _listener.invoke(&DataExchangeListener::onDataStreamTrailer,
-                         std::get<DataStreamTrailer>(packet._value),
-                         packet._participantIdentity,
-                         packet._destinationIdentities);
+                         std::move(std::get<DataStreamTrailer>(packet._value)),
+                         std::move(packet._participantIdentity),
+                         std::move(packet._destinationIdentities));
     }
 }
 
-void DataChannelsStorage::onSignalParseError(const std::string& details)
+void DataChannelsStorage::onSignalParseError(std::string details)
 {
-    _listener.invoke(&DataExchangeListener::onError, details);
+    _listener.invoke(&DataExchangeListener::onError, std::move(details));
 }
 
 DataChannelsStorage::Wrapper::Wrapper(rtc::scoped_refptr<DataChannel> channel,
@@ -296,27 +291,31 @@ void DataChannelsStorage::Wrapper::close()
     _client.setServerListener(nullptr);
 }
 
-bool DataChannelsStorage::Wrapper::sendDataPacket(const DataPacket& packet) const
+bool DataChannelsStorage::Wrapper::sendDataPacket(DataPacket packet) const
 {
-    return _client.sendDataPacket(packet);
+    return _client.sendDataPacket(std::move(packet));
 }
 
-bool DataChannelsStorage::Wrapper::
-    sendChatMessage(const std::string& participantIdentity, const ChatMessage& mesage,
-                    const std::vector<std::string>& destinationIdentities)
+bool DataChannelsStorage::Wrapper::sendChatMessage(std::string participantIdentity,
+                                                   ChatMessage mesage,
+                                                   std::vector<std::string> destinationIdentities)
 {
     if (_channel) {
-        return sendDataPacket(createDataPacket(participantIdentity, mesage, destinationIdentities));
+        return sendDataPacket(createDataPacket(std::move(participantIdentity),
+                                               std::move(mesage),
+                                               std::move(destinationIdentities)));
     }
     return false;
 }
 
-bool DataChannelsStorage::Wrapper::
-    sendUserPacket(const std::string& participantIdentity, const UserPacket& packet,
-                   const std::vector<std::string>& destinationIdentities)
+bool DataChannelsStorage::Wrapper::sendUserPacket(std::string participantIdentity,
+                                                  UserPacket packet,
+                                                  std::vector<std::string> destinationIdentities)
 {
     if (_channel) {
-        return sendDataPacket(createDataPacket(participantIdentity, packet, destinationIdentities));
+        return sendDataPacket(createDataPacket(std::move(participantIdentity),
+                                               std::move(packet),
+                                               std::move(destinationIdentities)));
     }
     return false;
 }
@@ -371,15 +370,15 @@ void DataChannelsStorage::Wrapper::onSendError(DataChannel* channel,
 }
 
 template <class TValue>
-DataPacket DataChannelsStorage::Wrapper::
-    createDataPacket(const std::string& participantIdentity, const TValue& value,
-                     const std::vector<std::string>& destinationIdentities) const
+DataPacket DataChannelsStorage::Wrapper::createDataPacket(std::string participantIdentity,
+                                                          TValue value,
+                                                          std::vector<std::string> destinationIdentities) const
 {
     DataPacket dataPacket;
     dataPacket._kind = reliable() ? DataPacketKind::Reliable : DataPacketKind::Lossy;
-    dataPacket._participantIdentity = participantIdentity;
-    dataPacket._destinationIdentities = destinationIdentities;
-    dataPacket._value = value;
+    dataPacket._participantIdentity = std::move(participantIdentity);
+    dataPacket._destinationIdentities = std::move(destinationIdentities);
+    dataPacket._value = std::move(value);
     return dataPacket;
 }
 

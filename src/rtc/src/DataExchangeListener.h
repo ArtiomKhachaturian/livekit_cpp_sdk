@@ -28,22 +28,22 @@ class DataChannel;
 class DataExchangeListener
 {
 public:
-    virtual void onError(const std::string& /*details*/ = {}) {}
-    virtual void onUserPacket(const UserPacket& /*packet*/,
-                              const std::string& /*participantIdentity*/,
-                              const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
-    virtual void onChatMessage(const ChatMessage& /*message*/,
-                               const std::string& /*participantIdentity*/,
-                               const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
-    virtual void onDataStreamHeader(const DataStreamHeader& /*header*/,
-                                    const std::string& /*participantIdentity*/,
-                                    const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
-    virtual void onDataStreamChunk(const DataStreamChunk& /*chunk*/,
-                                   const std::string& /*participantIdentity*/,
-                                   const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
-    virtual void onDataStreamTrailer(const DataStreamTrailer& /*trailer*/,
-                                     const std::string& /*participantIdentity*/,
-                                     const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
+    virtual void onError(std::string /*details*/ = {}) {}
+    virtual void onUserPacket(UserPacket /*packet*/,
+                              std::string /*participantIdentity*/,
+                              std::vector<std::string> /*destinationIdentities*/ = {}) {}
+    virtual void onChatMessage(ChatMessage /*message*/,
+                               std::string /*participantIdentity*/,
+                               std::vector<std::string> /*destinationIdentities*/ = {}) {}
+    virtual void onDataStreamHeader(DataStreamHeader /*header*/,
+                                    std::string /*participantIdentity*/,
+                                    std::vector<std::string> /*destinationIdentities*/ = {}) {}
+    virtual void onDataStreamChunk(DataStreamChunk /*chunk*/,
+                                   std::string /*participantIdentity*/,
+                                   std::vector<std::string> /*destinationIdentities*/ = {}) {}
+    virtual void onDataStreamTrailer(DataStreamTrailer /*trailer*/,
+                                     std::string /*participantIdentity*/,
+                                     std::vector<std::string> /*destinationIdentities*/ = {}) {}
 protected:
     virtual ~DataExchangeListener() = default;
 };

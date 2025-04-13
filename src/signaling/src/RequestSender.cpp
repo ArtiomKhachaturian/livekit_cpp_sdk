@@ -72,91 +72,91 @@ RequestSender::RequestSender(CommandSender* commandSender, Bricks::Logger* logge
 {
 }
 
-bool RequestSender::offer(const SessionDescription& sdp) const
+bool RequestSender::offer(SessionDescription sdp) const
 {
-    return send(&Request::mutable_offer, sdp,
+    return send(&Request::mutable_offer, std::move(sdp),
                 marshalledTypeName<SessionDescription>() + "/offer");
 }
 
-bool RequestSender::answer(const SessionDescription& sdp) const
+bool RequestSender::answer(SessionDescription sdp) const
 {
-    return send(&Request::mutable_answer, sdp,
+    return send(&Request::mutable_answer, std::move(sdp),
                 marshalledTypeName<SessionDescription>() + "/answer");
 }
 
-bool RequestSender::trickle(const TrickleRequest& request) const
+bool RequestSender::trickle(TrickleRequest request) const
 {
-    return send(&Request::mutable_trickle, request);
+    return send(&Request::mutable_trickle, std::move(request));
 }
 
-bool RequestSender::addTrack(const AddTrackRequest& request) const
+bool RequestSender::addTrack(AddTrackRequest request) const
 {
-    return send(&Request::mutable_add_track, request);
+    return send(&Request::mutable_add_track, std::move(request));
 }
 
-bool RequestSender::muteTrack(const MuteTrackRequest& request) const
+bool RequestSender::muteTrack(MuteTrackRequest request) const
 {
-    return send(&Request::mutable_mute, request);
+    return send(&Request::mutable_mute, std::move(request));
 }
 
-bool RequestSender::subscription(const UpdateSubscription& update) const
+bool RequestSender::subscription(UpdateSubscription update) const
 {
-    return send(&Request::mutable_subscription, update);
+    return send(&Request::mutable_subscription, std::move(update));
 }
 
-bool RequestSender::trackSettings(const UpdateTrackSettings& update) const
+bool RequestSender::trackSettings(UpdateTrackSettings update) const
 {
-    return send(&Request::mutable_track_setting, update);
+    return send(&Request::mutable_track_setting, std::move(update));
 }
 
-bool RequestSender::leave(const LeaveRequest& request) const
+bool RequestSender::leave(LeaveRequest request) const
 {
-    return send(&Request::mutable_leave, request);
+    return send(&Request::mutable_leave, std::move(request));
 }
 
-bool RequestSender::updateVideoLayers(const UpdateVideoLayers& update) const
+bool RequestSender::updateVideoLayers(UpdateVideoLayers update) const
 {
-    return send(&Request::mutable_update_layers, update);
+    return send(&Request::mutable_update_layers, std::move(update));
 }
 
-bool RequestSender::subscriptionPermission(const SubscriptionPermission& permission) const
+bool RequestSender::subscriptionPermission(SubscriptionPermission permission) const
 {
-    return send(&Request::mutable_subscription_permission, permission);
+    return send(&Request::mutable_subscription_permission, std::move(permission));
 }
 
-bool RequestSender::syncState(const SyncState& state) const
+bool RequestSender::syncState(SyncState state) const
 {
-    return send(&Request::mutable_sync_state, state);
+    return send(&Request::mutable_sync_state, std::move(state));
 }
 
-bool RequestSender::simulate(const SimulateScenario& scenario) const
+bool RequestSender::simulate(SimulateScenario scenario) const
 {
-    return send(&Request::mutable_simulate, scenario);
+    return send(&Request::mutable_simulate, std::move(scenario));
 }
 
-bool RequestSender::updateMetadata(const UpdateParticipantMetadata& data) const
+bool RequestSender::updateMetadata(UpdateParticipantMetadata data) const
 {
-    return send(&Request::mutable_update_metadata, data);
+    return send(&Request::mutable_update_metadata, std::move(data));
 }
 
-bool RequestSender::pingReq(const Ping& ping) const
+bool RequestSender::pingReq(Ping ping) const
 {
-    return send(&Request::mutable_ping_req, ping);
+    return send(&Request::mutable_ping_req, std::move(ping));
 }
 
-bool RequestSender::updateAudioTrack(const UpdateLocalAudioTrack& track) const
+bool RequestSender::updateAudioTrack(UpdateLocalAudioTrack track) const
 {
-    return send(&Request::mutable_update_audio_track, track);
+    return send(&Request::mutable_update_audio_track, std::move(track));
 }
 
-bool RequestSender::updateVideoTrack(const UpdateLocalVideoTrack& track) const
+bool RequestSender::updateVideoTrack(UpdateLocalVideoTrack track) const
 {
-    return send(&Request::mutable_update_video_track, track);
+    return send(&Request::mutable_update_video_track, std::move(track));
 }
 
-bool RequestSender::dataPacket(const DataPacket& packet) const
+bool RequestSender::dataPacket(DataPacket packet) const
 {
-    return send(_marshaller.map(packet));
+    return send(_marshaller.map(std::move(packet)));
 }
 
 bool RequestSender::canSend() const
@@ -171,14 +171,14 @@ std::string_view RequestSender::logCategory() const
 }
 
 template <class TSetMethod, class TObject>
-bool RequestSender::send(const TSetMethod& setMethod, const TObject& object,
+bool RequestSender::send(const TSetMethod& setMethod, TObject object,
                          const std::string& typeName) const
 {
     bool ok = false;
     if (canSend()) {
         Request request;
         if (const auto target = (request.*setMethod)()) {
-            *target = _marshaller.map(object);
+            *target = _marshaller.map(std::move(object));
             ok = send(request, detectTypename<TObject>(typeName));
         }
         else {

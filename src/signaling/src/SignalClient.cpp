@@ -45,94 +45,94 @@ void SignalClient::parseProtobufData(const void* data, size_t dataLen)
     _responseReceiver->parseBinary(data, dataLen);
 }
 
-bool SignalClient::sendOffer(const SessionDescription& sdp) const
+bool SignalClient::sendOffer(SessionDescription sdp) const
 {
-    return _requestSender->offer(sdp);
+    return _requestSender->offer(std::move(sdp));
 }
 
-bool SignalClient::sendAnswer(const SessionDescription& sdp) const
+bool SignalClient::sendAnswer(SessionDescription sdp) const
 {
-    return _requestSender->answer(sdp);
+    return _requestSender->answer(std::move(sdp));
 }
 
-bool SignalClient::sendTrickle(const TrickleRequest& request) const
+bool SignalClient::sendTrickle(TrickleRequest request) const
 {
-    return _requestSender->trickle(request);
+    return _requestSender->trickle(std::move(request));
 }
 
-bool SignalClient::sendAddTrack(const AddTrackRequest& request) const
+bool SignalClient::sendAddTrack(AddTrackRequest request) const
 {
-    return _requestSender->addTrack(request);
+    return _requestSender->addTrack(std::move(request));
 }
 
-bool SignalClient::sendMuteTrack(const MuteTrackRequest& request) const
+bool SignalClient::sendMuteTrack(MuteTrackRequest request) const
 {
-    return _requestSender->muteTrack(request);
+    return _requestSender->muteTrack(std::move(request));
 }
 
-bool SignalClient::sendSubscription(const UpdateSubscription& update) const
+bool SignalClient::sendSubscription(UpdateSubscription update) const
 {
-    return _requestSender->subscription(update);
+    return _requestSender->subscription(std::move(update));
 }
 
-bool SignalClient::sendTrackSettings(const UpdateTrackSettings& update) const
+bool SignalClient::sendTrackSettings(UpdateTrackSettings update) const
 {
-    return _requestSender->trackSettings(update);
+    return _requestSender->trackSettings(std::move(update));
 }
 
-bool SignalClient::sendLeave(const LeaveRequest& request) const
+bool SignalClient::sendLeave(LeaveRequest request) const
 {
-    return _requestSender->leave(request);
+    return _requestSender->leave(std::move(request));
 }
 
-bool SignalClient::sendUpdateVideoLayers(const UpdateVideoLayers& update) const
+bool SignalClient::sendUpdateVideoLayers(UpdateVideoLayers update) const
 {
-    return _requestSender->updateVideoLayers(update);
+    return _requestSender->updateVideoLayers(std::move(update));
 }
 
-bool SignalClient::sendSubscriptionPermission(const SubscriptionPermission& permission) const
+bool SignalClient::sendSubscriptionPermission(SubscriptionPermission permission) const
 {
-    return _requestSender->subscriptionPermission(permission);
+    return _requestSender->subscriptionPermission(std::move(permission));
 }
 
-bool SignalClient::sendSyncState(const SyncState& state) const
+bool SignalClient::sendSyncState(SyncState state) const
 {
-    return _requestSender->syncState(state);
+    return _requestSender->syncState(std::move(state));
 }
 
-bool SignalClient::sendSimulate(const SimulateScenario& scenario) const
+bool SignalClient::sendSimulate(SimulateScenario scenario) const
 {
-    return _requestSender->simulate(scenario);
+    return _requestSender->simulate(std::move(scenario));
 }
 
-bool SignalClient::sendUpdateMetadata(const UpdateParticipantMetadata& data) const
+bool SignalClient::sendUpdateMetadata(UpdateParticipantMetadata data) const
 {
-    return _requestSender->updateMetadata(data);
+    return _requestSender->updateMetadata(std::move(data));
 }
 
-bool SignalClient::sendPingReq(const Ping& ping) const
+bool SignalClient::sendPingReq(Ping ping) const
 {
-    return _requestSender->pingReq(ping);
+    return _requestSender->pingReq(std::move(ping));
 }
 
-bool SignalClient::sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const
+bool SignalClient::sendUpdateAudioTrack(UpdateLocalAudioTrack track) const
 {
-    return _requestSender->updateAudioTrack(track);
+    return _requestSender->updateAudioTrack(std::move(track));
 }
 
-bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const
+bool SignalClient::sendUpdateVideoTrack(UpdateLocalVideoTrack track) const
 {
-    return _requestSender->updateVideoTrack(track);
+    return _requestSender->updateVideoTrack(std::move(track));
 }
 
-bool SignalClient::sendDataPacket(const DataPacket& packet) const
+bool SignalClient::sendDataPacket(DataPacket packet) const
 {
-    return _requestSender->dataPacket(packet);
+    return _requestSender->dataPacket(std::move(packet));
 }
 
-void SignalClient::notifyAboutError(const std::string& details)
+void SignalClient::notifyAboutError(std::string details)
 {
-    _responseReceiver->notifyAboutError(details);
+    _responseReceiver->notifyAboutError(std::move(details));
 }
 
 std::string_view SignalClient::logCategory() const

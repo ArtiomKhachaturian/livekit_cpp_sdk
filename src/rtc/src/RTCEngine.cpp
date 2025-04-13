@@ -20,13 +20,6 @@
 #include "Utils.h"
 #include "livekit/rtc/SessionListener.h"
 #include "livekit/signaling/NetworkType.h"
-#include "livekit/signaling/sfu/SignalTarget.h"
-#include "livekit/signaling/sfu/ReconnectResponse.h"
-#include "livekit/signaling/sfu/Ping.h"
-#include "livekit/signaling/sfu/TrickleRequest.h"
-#include "livekit/signaling/sfu/TrackPublishedResponse.h"
-#include "livekit/signaling/sfu/LeaveRequest.h"
-#include "livekit/signaling/sfu/TrackUnpublishedResponse.h"
 #include <algorithm> // for std::min
 #include <thread>
 
@@ -205,19 +198,19 @@ void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>&
     }
 }
 
-RTCEngine::SendResult RTCEngine::sendAddTrack(const AddTrackRequest& request) const
+RTCEngine::SendResult RTCEngine::sendAddTrack(AddTrackRequest request) const
 {
-    return sendRequestToServer(&SignalClient::sendAddTrack, request);
+    return sendRequestToServer(&SignalClient::sendAddTrack, std::move(request));
 }
 
-RTCEngine::SendResult RTCEngine::sendMuteTrack(const MuteTrackRequest& request) const
+RTCEngine::SendResult RTCEngine::sendMuteTrack(MuteTrackRequest request) const
 {
-    return sendRequestToServer(&SignalClient::sendMuteTrack, request);
+    return sendRequestToServer(&SignalClient::sendMuteTrack, std::move(request));
 }
 
-RTCEngine::SendResult RTCEngine::sendUpdateLocalAudioTrack(const UpdateLocalAudioTrack& request) const
+RTCEngine::SendResult RTCEngine::sendUpdateLocalAudioTrack(UpdateLocalAudioTrack request) const
 {
-    return sendRequestToServer(&SignalClient::sendUpdateAudioTrack, request);
+    return sendRequestToServer(&SignalClient::sendUpdateAudioTrack, std::move(request));
 }
 
 void RTCEngine::cleanup(const std::optional<LiveKitError>& error,
@@ -240,7 +233,7 @@ void RTCEngine::sendLeave(DisconnectReason reason, LeaveRequestAction action) co
     LeaveRequest request;
     request._reason = reason;
     request._action = action;
-    sendRequestToServer(&SignalClient::sendLeave, request);
+    sendRequestToServer(&SignalClient::sendLeave, std::move(request));
 }
 
 bool RTCEngine::closed() const
@@ -255,10 +248,10 @@ bool RTCEngine::closed() const
 }
 
 template <class ReqMethod, class TReq>
-RTCEngine::SendResult RTCEngine::sendRequestToServer(const ReqMethod& method, const TReq& req) const
+RTCEngine::SendResult RTCEngine::sendRequestToServer(const ReqMethod& method, TReq req) const
 {
     if (!closed()) {
-        if ((_client.*method)(req)) {
+        if ((_client.*method)(std::move(req))) {
             return SendResult::Ok;
         }
         return SendResult::TransportError;
@@ -426,8 +419,8 @@ void RTCEngine::onNegotiationNeeded()
 void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
     RTCMediaEngine::onPublisherOffer(desc);
-    if (const auto sdp = RoomUtils::map(desc)) {
-        if (!_client.sendOffer(sdp.value())) {
+    if (auto sdp = RoomUtils::map(desc)) {
+        if (!_client.sendOffer(std::move(sdp.value()))) {
             logError("failed to send publisher offer to the server");
         }
         else {
@@ -442,8 +435,8 @@ void RTCEngine::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc
 void RTCEngine::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc)
 {
     RTCMediaEngine::onSubscriberAnswer(desc);
-    if (const auto sdp = RoomUtils::map(desc)) {
-        if (!_client.sendAnswer(sdp.value())) {
+    if (auto sdp = RoomUtils::map(desc)) {
+        if (!_client.sendAnswer(std::move(sdp.value()))) {
             logError("failed to send subscriber answer to the server");
         }
         else {
@@ -465,7 +458,7 @@ void RTCEngine::onIceCandidateGathered(SignalTarget target,
         if (request._candidate) {
             request._target = target;
             request._final = false;
-            if (!_client.sendTrickle(request)) {
+            if (!_client.sendTrickle(std::move(request))) {
                 logError("failed to send " + candidate->server_url() +
                          " " + toString(target) + " local ICE candidate");
             }
@@ -487,7 +480,7 @@ void RTCEngine::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channe
     _remoteDcs.add(std::move(channel));
 }
 
-void RTCEngine::onJoin(const JoinResponse& response)
+void RTCEngine::onJoin(JoinResponse response)
 {
     RTCMediaEngine::onJoin(response);
     if (DisconnectReason::UnknownReason == response._participant._disconnectReason) {
@@ -498,13 +491,13 @@ void RTCEngine::onJoin(const JoinResponse& response)
     }
 }
 
-void RTCEngine::onReconnect(const ReconnectResponse& response)
+void RTCEngine::onReconnect(ReconnectResponse response)
 {
     RTCMediaEngine::onReconnect(response);
     createTransportManager(_lastJoinResponse(), makeConfiguration(response));
 }
 
-void RTCEngine::onOffer(const SessionDescription& sdp)
+void RTCEngine::onOffer(SessionDescription sdp)
 {
     RTCMediaEngine::onOffer(sdp);
     webrtc::SdpParseError error;
@@ -518,7 +511,7 @@ void RTCEngine::onOffer(const SessionDescription& sdp)
     }
 }
 
-void RTCEngine::onAnswer(const SessionDescription& sdp)
+void RTCEngine::onAnswer(SessionDescription sdp)
 {
     RTCMediaEngine::onAnswer(sdp);
     webrtc::SdpParseError error;
@@ -532,7 +525,7 @@ void RTCEngine::onAnswer(const SessionDescription& sdp)
     }
 }
 
-void RTCEngine::onPong(const Pong& pong)
+void RTCEngine::onPong(Pong pong)
 {
     RTCMediaEngine::onPong(pong);
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -541,7 +534,7 @@ void RTCEngine::onPong(const Pong& pong)
     }
 }
 
-void RTCEngine::onTrickle(const TrickleRequest& request)
+void RTCEngine::onTrickle(TrickleRequest request)
 {
     RTCMediaEngine::onTrickle(request);
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -556,7 +549,7 @@ void RTCEngine::onTrickle(const TrickleRequest& request)
     }
 }
 
-void RTCEngine::onLeave(const LeaveRequest& leave)
+void RTCEngine::onLeave(LeaveRequest leave)
 {
     RTCMediaEngine::onLeave(leave);
     cleanup(toLiveKitError(leave._reason));
@@ -585,7 +578,7 @@ void RTCEngine::onLeave(const LeaveRequest& leave)
     }
 }
 
-void RTCEngine::onTrackUnpublished(const TrackUnpublishedResponse& unpublished)
+void RTCEngine::onTrackUnpublished(TrackUnpublishedResponse unpublished)
 {
     RTCMediaEngine::onTrackUnpublished(unpublished);
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -625,7 +618,7 @@ bool RTCEngine::onPingRequested()
     Ping ping;
     const auto epochTime = std::chrono::system_clock::now().time_since_epoch();
     ping._timestamp = static_cast<int64_t>(epochTime / std::chrono::seconds(1));
-    return _client.sendPingReq(ping);
+    return _client.sendPingReq(std::move(ping));
 }
 
 void RTCEngine::onPongTimeout()

@@ -84,9 +84,9 @@ public:
                     const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
 protected:
     // impl. or overrides of RTCMediaEngine
-    SendResult sendAddTrack(const AddTrackRequest& request) const final;
-    SendResult sendMuteTrack(const MuteTrackRequest& request) const final;
-    SendResult sendUpdateLocalAudioTrack(const UpdateLocalAudioTrack& request) const final;
+    SendResult sendAddTrack(AddTrackRequest request) const final;
+    SendResult sendMuteTrack(MuteTrackRequest request) const final;
+    SendResult sendUpdateLocalAudioTrack(UpdateLocalAudioTrack request) const final;
     bool closed() const final;
     void cleanup(const std::optional<LiveKitError>& error = {},
                  const std::string& errorDetails = {}) final;
@@ -94,7 +94,7 @@ private:
     void sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
     template <class ReqMethod, class TReq>
-    SendResult sendRequestToServer(const ReqMethod& method, const TReq& req) const;
+    SendResult sendRequestToServer(const ReqMethod& method, TReq req) const;
     webrtc::PeerConnectionInterface::RTCConfiguration
         makeConfiguration(const std::vector<ICEServer>& iceServers = {},
                           const std::optional<ClientConfiguration>& cc = {}) const;
@@ -120,14 +120,14 @@ private:
     void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
     void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) final;
     // impl. of SignalServerListener
-    void onJoin(const JoinResponse& response) final;
-    void onReconnect(const ReconnectResponse& response) final;
-    void onOffer(const SessionDescription& sdp) final;
-    void onAnswer(const SessionDescription& sdp) final;
-    void onPong(const Pong& pong) final;
-    void onTrickle(const TrickleRequest& request) final;
-    void onLeave(const LeaveRequest& leave) final;
-    void onTrackUnpublished(const TrackUnpublishedResponse& unpublished) final;
+    void onJoin(JoinResponse response) final;
+    void onReconnect(ReconnectResponse response) final;
+    void onOffer(SessionDescription sdp) final;
+    void onAnswer(SessionDescription sdp) final;
+    void onPong(Pong pong) final;
+    void onTrickle(TrickleRequest request) final;
+    void onLeave(LeaveRequest leave) final;
+    void onTrackUnpublished(TrackUnpublishedResponse unpublished) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(TransportState state) final;
     void onTransportError(std::string error) final;

@@ -19,6 +19,7 @@
 #include "livekit/signaling/sfu/EncryptionType.h"
 #include "livekit/signaling/sfu/BackupCodecPolicy.h"
 #include <string>
+#include <vector>
 
 namespace LiveKitCpp
 {

@@ -29,7 +29,7 @@ public:
     ResponseReceiver(Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
-    void notifyAboutError(const std::string& details = {});
+    void notifyAboutError(std::string details = {});
 protected:
     // overrides of Bricks::LoggableR
     std::string_view logCategory() const final;
@@ -39,29 +39,29 @@ private:
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
     template <class Method, class TLiveKitType>
-    void signal(const Method& method, const TLiveKitType& sig, std::string typeName = {}) const;
+    void signal(const Method& method, TLiveKitType sig, std::string typeName = {}) const;
     // all responses are defined in 'SignalResponse':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L61
-    void handle(const livekit::JoinResponse& response) const;
-    void handle(const livekit::SessionDescription& desc, bool offer) const;
-    void handle(const livekit::TrickleRequest& request) const;
-    void handle(const livekit::ParticipantUpdate& update) const;
-    void handle(const livekit::TrackPublishedResponse& response) const;
-    void handle(const livekit::LeaveRequest& request) const;
-    void handle(const livekit::MuteTrackRequest& request) const;
-    void handle(const livekit::SpeakersChanged& changed) const;
-    void handle(const livekit::RoomUpdate& update) const;
-    void handle(const livekit::ConnectionQualityUpdate& update) const;
-    void handle(const livekit::StreamStateUpdate& update) const;
-    void handle(const livekit::SubscribedQualityUpdate& update) const;
-    void handle(const livekit::SubscriptionPermissionUpdate& update) const;
-    void handle(const livekit::TrackUnpublishedResponse& response) const;
-    void handle(const livekit::ReconnectResponse& response) const;
-    void handle(const livekit::SubscriptionResponse& response) const;
-    void handle(const livekit::RequestResponse& response) const;
-    void handle(const livekit::TrackSubscribed& subscribed) const;
-    void handle(const livekit::Pong& pong) const;
-    void handle(const livekit::DataPacket& packet) const;
+    void handle(livekit::JoinResponse response) const;
+    void handle(livekit::SessionDescription desc, bool offer) const;
+    void handle(livekit::TrickleRequest request) const;
+    void handle(livekit::ParticipantUpdate update) const;
+    void handle(livekit::TrackPublishedResponse response) const;
+    void handle(livekit::LeaveRequest request) const;
+    void handle(livekit::MuteTrackRequest request) const;
+    void handle(livekit::SpeakersChanged changed) const;
+    void handle(livekit::RoomUpdate update) const;
+    void handle(livekit::ConnectionQualityUpdate update) const;
+    void handle(livekit::StreamStateUpdate update) const;
+    void handle(livekit::SubscribedQualityUpdate update) const;
+    void handle(livekit::SubscriptionPermissionUpdate update) const;
+    void handle(livekit::TrackUnpublishedResponse response) const;
+    void handle(livekit::ReconnectResponse response) const;
+    void handle(livekit::SubscriptionResponse response) const;
+    void handle(livekit::RequestResponse response) const;
+    void handle(livekit::TrackSubscribed subscribed) const;
+    void handle(livekit::Pong pong) const;
+    void handle(livekit::DataPacket packet) const;
 private:
     const ProtoMarshaller _marshaller;
     Bricks::Listener<SignalServerListener*> _listener;

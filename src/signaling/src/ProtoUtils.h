@@ -57,37 +57,37 @@ inline std::optional<TProto> protoFromBytes(const Bricks::Blob& blob,
 
 
 template <typename KIn, typename VIn, typename KOut, typename VOut, class KConv, class VConv>
-inline void toProtoMap(const std::unordered_map<KIn, VIn>& from,
+inline void toProtoMap(std::unordered_map<KIn, VIn> from,
                        google::protobuf::Map<KOut, VOut>* to,
                        KConv kConv, VConv vConv)
 {
     if (to) {
         for (auto it = from.begin(); it != from.end(); ++it) {
-            to->insert({kConv(it->first), vConv(it->second)});
+            to->insert({kConv(std::move(it->first)), vConv(std::move(it->second))});
         }
     }
 }
 
 template <typename K, typename V>
-inline void toProtoMap(const std::unordered_map<K, V>& from,
+inline void toProtoMap(std::unordered_map<K, V> from,
                        google::protobuf::Map<K, V>* to)
 {
     if (to) {
-        toProtoMap<K, V, K, V>(from, to,
-                               [](const K& val) -> const K& { return val; },
-                               [](const V& val) -> const V& { return val; });
+        toProtoMap<K, V, K, V>(std::move(from), to,
+                               [](K key) -> K { return std::move(key); },
+                               [](V val) -> V { return std::move(val); });
     }
 }
 
 template <typename KIn, typename VIn, typename KOut, typename VOut, class KConv, class VConv>
-inline std::unordered_map<KOut, VOut> fromProtoMap(const google::protobuf::Map<KIn, VIn>& in,
+inline std::unordered_map<KOut, VOut> fromProtoMap(google::protobuf::Map<KIn, VIn> in,
                                                    KConv kConv, VConv vConv)
 {
     if (const auto size = in.size()) {
         std::unordered_map<KOut, VOut> out;
         out.reserve(size);
         for (auto it = in.begin(); it != in.end(); ++it) {
-            out[kConv(it->first)] = vConv(it->second);
+            out[kConv(std::move(it->first))] = vConv(std::move(it->second));
         }
         return out;
     }
@@ -95,51 +95,47 @@ inline std::unordered_map<KOut, VOut> fromProtoMap(const google::protobuf::Map<K
 }
 
 template <typename K, typename V>
-inline std::unordered_map<K, V> fromProtoMap(const google::protobuf::Map<K, V>& in) {
-    return fromProtoMap<K, V, K, V>(in,
-                                    [](const K& val) -> const K& { return val; },
-                                    [](const V& val) -> const V& { return val; });
+inline std::unordered_map<K, V> fromProtoMap(google::protobuf::Map<K, V> in) {
+    return fromProtoMap<K, V, K, V>(std::move(in),
+                                    [](K key) -> K { return std::move(key); },
+                                    [](V val) -> V { return std::move(val); });
 }
 
 template <typename TIn, typename TProtoBufRepeated, class Conv>
-inline void toProtoRepeated(const std::vector<TIn>& in,
-                            TProtoBufRepeated* out,
-                            Conv conv) {
+inline void toProtoRepeated(std::vector<TIn> in, TProtoBufRepeated* out, Conv conv) {
     if (out) {
         if (const auto size = in.size()) {
             out->Reserve(int(out->size() + size));
             for (size_t i = 0U; i < size; ++i) {
-                *out->Add() = conv(in[i]);
+                *out->Add() = conv(std::move(in[i]));
             }
         }
     }
 }
 
 template <typename TIn, typename TProtoBufRepeated>
-inline void toProtoRepeated(const std::vector<TIn>& in,
-                            TProtoBufRepeated* out) {
+inline void toProtoRepeated(std::vector<TIn> in, TProtoBufRepeated* out) {
     if (out) {
-        toProtoRepeated<TIn, TProtoBufRepeated>(in, out, [](const TIn& val) ->
-                                                const TIn& { return val; });
+        toProtoRepeated<TIn, TProtoBufRepeated>(std::move(in), out, [](TIn&& val) ->
+                                                TIn { return std::move(val); });
     }
 }
 
 template <typename TOut, typename TProtoBufRepeated, class Conv>
-inline std::vector<TOut> fromProtoRepeated(const TProtoBufRepeated& in,
-                                           Conv conv) {
+inline std::vector<TOut> fromProtoRepeated(TProtoBufRepeated in, Conv conv) {
     std::vector<TOut> out;
     if (const auto size = in.size()) {
         out.reserve(size_t(size));
-        for (const auto& val : in) {
-            out.push_back(conv(val));
+        for (auto& val : in) {
+            out.push_back(conv(std::move(val)));
         }
     }
     return out;
 }
 
 template <typename TOut, typename TProtoBufRepeated>
-inline std::vector<TOut> fromProtoRepeated(const TProtoBufRepeated& in) {
-    return fromProtoRepeated<TOut, TProtoBufRepeated>(in, [](const auto& val) { return val; });
+inline std::vector<TOut> fromProtoRepeated(TProtoBufRepeated in) {
+    return fromProtoRepeated<TOut, TProtoBufRepeated>(std::move(in), [](auto&& val) { return std::move(val); });
 }
 
 

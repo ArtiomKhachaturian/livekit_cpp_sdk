@@ -12,8 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // SignalClient.h
-#include "livekit/signaling/LiveKitSignalingExport.h"
 #include "Loggable.h"
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include "livekit/signaling/sfu/SessionDescription.h"
+#include "livekit/signaling/sfu/TrickleRequest.h"
+#include "livekit/signaling/sfu/AddTrackRequest.h"
+#include "livekit/signaling/sfu/MuteTrackRequest.h"
+#include "livekit/signaling/sfu/UpdateSubscription.h"
+#include "livekit/signaling/sfu/UpdateTrackSettings.h"
+#include "livekit/signaling/sfu/LeaveRequest.h"
+#include "livekit/signaling/sfu/UpdateVideoLayers.h"
+#include "livekit/signaling/sfu/SubscriptionPermission.h"
+#include "livekit/signaling/sfu/SyncState.h"
+#include "livekit/signaling/sfu/SimulateScenario.h"
+#include "livekit/signaling/sfu/UpdateParticipantMetadata.h"
+#include "livekit/signaling/sfu/Ping.h"
+#include "livekit/signaling/sfu/UpdateLocalAudioTrack.h"
+#include "livekit/signaling/sfu/UpdateLocalVideoTrack.h"
+#include "livekit/signaling/sfu/DataPacket.h"
 #include <memory>
 #include <string>
 
@@ -30,23 +46,6 @@ class MemoryBlock;
 class SignalServerListener;
 class ResponseReceiver;
 class RequestSender;
-// these below structs are defined in /include/rtc subfolder
-struct SessionDescription;
-struct TrickleRequest;
-struct AddTrackRequest;
-struct MuteTrackRequest;
-struct UpdateSubscription;
-struct UpdateTrackSettings;
-struct LeaveRequest;
-struct UpdateVideoLayers;
-struct SubscriptionPermission;
-struct SyncState;
-struct SimulateScenario;
-struct UpdateParticipantMetadata;
-struct Ping;
-struct UpdateLocalAudioTrack;
-struct UpdateLocalVideoTrack;
-struct DataPacket;
 
 class LIVEKIT_SIGNALING_API SignalClient : protected Bricks::LoggableR<>
 {
@@ -56,25 +55,25 @@ public:
     void setServerListener(SignalServerListener* listener = nullptr);
     void parseProtobuBlob(const Bricks::Blob& message);
     void parseProtobufData(const void* data, size_t dataLen);
-    void notifyAboutError(const std::string& details = {});
+    void notifyAboutError(std::string details = {});
     // requests sending
-    bool sendOffer(const SessionDescription& sdp) const;
-    bool sendAnswer(const SessionDescription& sdp) const;
-    bool sendTrickle(const TrickleRequest& request) const;
-    bool sendAddTrack(const AddTrackRequest& request) const;
-    bool sendMuteTrack(const MuteTrackRequest& request) const;
-    bool sendSubscription(const UpdateSubscription& update) const;
-    bool sendTrackSettings(const UpdateTrackSettings& update) const;
-    bool sendLeave(const LeaveRequest& request) const;
-    bool sendUpdateVideoLayers(const UpdateVideoLayers& update) const;
-    bool sendSubscriptionPermission(const SubscriptionPermission& permission) const;
-    bool sendSyncState(const SyncState& state) const;
-    bool sendSimulate(const SimulateScenario& scenario) const;
-    bool sendUpdateMetadata(const UpdateParticipantMetadata& data) const;
-    bool sendPingReq(const Ping& ping) const;
-    bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
-    bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
-    bool sendDataPacket(const DataPacket& packet) const;
+    bool sendOffer(SessionDescription sdp) const;
+    bool sendAnswer(SessionDescription sdp) const;
+    bool sendTrickle(TrickleRequest request) const;
+    bool sendAddTrack(AddTrackRequest request) const;
+    bool sendMuteTrack(MuteTrackRequest request) const;
+    bool sendSubscription(UpdateSubscription update) const;
+    bool sendTrackSettings(UpdateTrackSettings update) const;
+    bool sendLeave(LeaveRequest request) const;
+    bool sendUpdateVideoLayers(UpdateVideoLayers update) const;
+    bool sendSubscriptionPermission(SubscriptionPermission permission) const;
+    bool sendSyncState(SyncState state) const;
+    bool sendSimulate(SimulateScenario scenario) const;
+    bool sendUpdateMetadata(UpdateParticipantMetadata data) const;
+    bool sendPingReq(Ping ping) const;
+    bool sendUpdateAudioTrack(UpdateLocalAudioTrack track) const;
+    bool sendUpdateVideoTrack(UpdateLocalVideoTrack track) const;
+    bool sendDataPacket(DataPacket packet) const;
 protected:
     // impl. of Bricks::LoggableR<>
     std::string_view logCategory() const override;

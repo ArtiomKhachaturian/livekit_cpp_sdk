@@ -31,31 +31,30 @@ public:
     RequestSender(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     // all requests are defined in 'SignalRequest':
     // https://github.com/livekit/protocol/blob/main/protobufs/livekit_rtc.proto#L24
-    bool offer(const SessionDescription& sdp) const;
-    bool answer(const SessionDescription& sdp) const;
-    bool trickle(const TrickleRequest& request) const;
-    bool addTrack(const AddTrackRequest& request) const;
-    bool muteTrack(const MuteTrackRequest& request) const;
-    bool subscription(const UpdateSubscription& update) const;
-    bool trackSettings(const UpdateTrackSettings& update) const;
-    bool leave(const LeaveRequest& request) const;
-    bool updateVideoLayers(const UpdateVideoLayers& update) const;
-    bool subscriptionPermission(const SubscriptionPermission& permission) const;
-    bool syncState(const SyncState& state) const;
-    bool simulate(const SimulateScenario& scenario) const;
-    bool updateMetadata(const UpdateParticipantMetadata& data) const;
-    bool pingReq(const Ping& ping) const;
-    bool updateAudioTrack(const UpdateLocalAudioTrack& track) const;
-    bool updateVideoTrack(const UpdateLocalVideoTrack& track) const;
-    bool dataPacket(const DataPacket& packet) const;
+    bool offer(SessionDescription sdp) const;
+    bool answer(SessionDescription sdp) const;
+    bool trickle(TrickleRequest request) const;
+    bool addTrack(AddTrackRequest request) const;
+    bool muteTrack(MuteTrackRequest request) const;
+    bool subscription(UpdateSubscription update) const;
+    bool trackSettings(UpdateTrackSettings update) const;
+    bool leave(LeaveRequest request) const;
+    bool updateVideoLayers(UpdateVideoLayers update) const;
+    bool subscriptionPermission(SubscriptionPermission permission) const;
+    bool syncState(SyncState state) const;
+    bool simulate(SimulateScenario scenario) const;
+    bool updateMetadata(UpdateParticipantMetadata data) const;
+    bool pingReq(Ping ping) const;
+    bool updateAudioTrack(UpdateLocalAudioTrack track) const;
+    bool updateVideoTrack(UpdateLocalVideoTrack track) const;
+    bool dataPacket(DataPacket packet) const;
 protected:
     // overrides of Bricks::LoggableR
     std::string_view logCategory() const final;
 private:
     bool canSend() const;
     template <class TSetMethod, class TObject>
-    bool send(const TSetMethod& setMethod, const TObject& object,
-              const std::string& typeName = {}) const;
+    bool send(const TSetMethod& setMethod, TObject object, const std::string& typeName = {}) const;
     template <class TProtoObject>
     bool send(const TProtoObject& object, const std::string& typeName = {}) const;
 private:

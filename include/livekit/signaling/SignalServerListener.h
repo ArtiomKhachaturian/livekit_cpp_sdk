@@ -13,59 +13,57 @@
 // limitations under the License.
 #pragma once // SignalServerListener.h
 #include <string>
+#include "livekit/signaling/sfu/ConnectionQualityUpdate.h"
+#include "livekit/signaling/sfu/JoinResponse.h"
+#include "livekit/signaling/sfu/SessionDescription.h"
+#include "livekit/signaling/sfu/TrickleRequest.h"
+#include "livekit/signaling/sfu/ParticipantUpdate.h"
+#include "livekit/signaling/sfu/TrackPublishedResponse.h"
+#include "livekit/signaling/sfu/TrackUnpublishedResponse.h"
+#include "livekit/signaling/sfu/LeaveRequest.h"
+#include "livekit/signaling/sfu/MuteTrackRequest.h"
+#include "livekit/signaling/sfu/SpeakersChanged.h"
+#include "livekit/signaling/sfu/RoomUpdate.h"
+#include "livekit/signaling/sfu/StreamStateUpdate.h"
+#include "livekit/signaling/sfu/SubscribedQualityUpdate.h"
+#include "livekit/signaling/sfu/ReconnectResponse.h"
+#include "livekit/signaling/sfu/TrackSubscribed.h"
+#include "livekit/signaling/sfu/RequestResponse.h"
+#include "livekit/signaling/sfu/SubscriptionResponse.h"
+#include "livekit/signaling/sfu/SubscriptionPermissionUpdate.h"
+#include "livekit/signaling/sfu/Pong.h"
+#include "livekit/signaling/sfu/DataPacket.h"
 
 namespace LiveKitCpp
 {
 
-// these below structs are defined in /include/rtc subfolder
-struct ConnectionQualityUpdate;
-struct JoinResponse;
-struct SessionDescription;
-struct TrickleRequest;
-struct ParticipantUpdate;
-struct TrackPublishedResponse;
-struct TrackUnpublishedResponse;
-struct LeaveRequest;
-struct MuteTrackRequest;
-struct SpeakersChanged;
-struct RoomUpdate;
-struct StreamStateUpdate;
-struct SubscribedQualityUpdate;
-struct ReconnectResponse;
-struct TrackSubscribed;
-struct RequestResponse;
-struct SubscriptionResponse;
-struct SubscriptionPermissionUpdate;
-struct Pong;
-struct DataPacket;
-
 class SignalServerListener
 {
 public:
-    virtual void onJoin(const JoinResponse& /*response*/) {}
-    virtual void onOffer(const SessionDescription& /*sdp*/) {}
-    virtual void onAnswer(const SessionDescription& /*sdp*/) {}
-    virtual void onTrickle(const TrickleRequest& /*request*/) {}
-    virtual void onUpdate(const ParticipantUpdate& /*update*/) {}
-    virtual void onTrackPublished(const TrackPublishedResponse& /*published*/) {}
-    virtual void onTrackUnpublished(const TrackUnpublishedResponse& /*unpublished*/) {}
-    virtual void onLeave(const LeaveRequest& /*leave*/) {}
-    virtual void onMute(const MuteTrackRequest& /*mute*/) {}
-    virtual void onSpeakersChanged(const SpeakersChanged& /*changed*/) {}
-    virtual void onRoomUpdate(const RoomUpdate& /*update*/) {}
-    virtual void onConnectionQuality(const ConnectionQualityUpdate& /*update*/) {}
-    virtual void onStreamStateUpdate(const StreamStateUpdate& /*update*/) {}
-    virtual void onSubscribedQualityUpdate(const SubscribedQualityUpdate& /*update*/) {}
-    virtual void onSubscriptionPermission(const SubscriptionPermissionUpdate& /*update*/) {}
-    virtual void onRefreshToken(const std::string& /*authToken*/) {}
-    virtual void onReconnect(const ReconnectResponse& /*response*/) {}
-    virtual void onTrackSubscribed(const TrackSubscribed& /*subscribed*/) {}
-    virtual void onRequestResponse(const RequestResponse& /*response*/) {}
-    virtual void onSubscriptionResponse(const SubscriptionResponse& /*response*/) {}
-    virtual void onPong(const Pong& /*pong*/) {}
-    virtual void onDataPacket(const DataPacket& /*packet*/) {}
+    virtual void onJoin(JoinResponse /*response*/) {}
+    virtual void onOffer(SessionDescription /*sdp*/) {}
+    virtual void onAnswer(SessionDescription /*sdp*/) {}
+    virtual void onTrickle(TrickleRequest /*request*/) {}
+    virtual void onUpdate(ParticipantUpdate /*update*/) {}
+    virtual void onTrackPublished(TrackPublishedResponse /*published*/) {}
+    virtual void onTrackUnpublished(TrackUnpublishedResponse /*unpublished*/) {}
+    virtual void onLeave(LeaveRequest /*leave*/) {}
+    virtual void onMute(MuteTrackRequest /*mute*/) {}
+    virtual void onSpeakersChanged(SpeakersChanged /*changed*/) {}
+    virtual void onRoomUpdate(RoomUpdate /*update*/) {}
+    virtual void onConnectionQuality(ConnectionQualityUpdate /*update*/) {}
+    virtual void onStreamStateUpdate(StreamStateUpdate /*update*/) {}
+    virtual void onSubscribedQualityUpdate(SubscribedQualityUpdate /*update*/) {}
+    virtual void onSubscriptionPermission(SubscriptionPermissionUpdate /*update*/) {}
+    virtual void onRefreshToken(std::string /*authToken*/) {}
+    virtual void onReconnect(ReconnectResponse /*response*/) {}
+    virtual void onTrackSubscribed(TrackSubscribed /*subscribed*/) {}
+    virtual void onRequestResponse(RequestResponse /*response*/) {}
+    virtual void onSubscriptionResponse(SubscriptionResponse /*response*/) {}
+    virtual void onPong(Pong /*pong*/) {}
+    virtual void onDataPacket(DataPacket /*packet*/) {}
     // error handling
-    virtual void onSignalParseError(const std::string& /*details*/ = {}) {}
+    virtual void onSignalParseError(std::string /*details*/ = {}) {}
 protected:
     virtual ~SignalServerListener() = default;
 };

@@ -88,9 +88,9 @@ protected:
     void resetLocalParticipant();
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> localTracks() const;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
-    virtual SendResult sendAddTrack(const AddTrackRequest& request) const = 0;
-    virtual SendResult sendMuteTrack(const MuteTrackRequest& request) const = 0;
-    virtual SendResult sendUpdateLocalAudioTrack(const UpdateLocalAudioTrack& request) const = 0;
+    virtual SendResult sendAddTrack(AddTrackRequest request) const = 0;
+    virtual SendResult sendMuteTrack(MuteTrackRequest request) const = 0;
+    virtual SendResult sendUpdateLocalAudioTrack(UpdateLocalAudioTrack request) const = 0;
     virtual bool closed() const = 0;
     virtual void cleanup(const std::optional<LiveKitError>& error = {},
                          const std::string& errorDetails = {});
@@ -99,11 +99,11 @@ protected:
         _listener.invoke(method, std::forward<Args>(args)...);
     }
     // impl. of SignalServerListener
-    void onJoin(const JoinResponse& response) override;
-    void onUpdate(const ParticipantUpdate& update) override;
-    void onTrackPublished(const TrackPublishedResponse& published) override;
-    void onReconnect(const ReconnectResponse& response) override;
-    void onMute(const MuteTrackRequest& mute);
+    void onJoin(JoinResponse response) override;
+    void onUpdate(ParticipantUpdate update) override;
+    void onTrackPublished(TrackPublishedResponse published) override;
+    void onReconnect(ReconnectResponse response) override;
+    void onMute(MuteTrackRequest mute) override;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,

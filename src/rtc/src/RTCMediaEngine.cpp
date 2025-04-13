@@ -19,15 +19,7 @@
 #include "livekit/rtc/SessionListener.h"
 #include "livekit/rtc/LiveKitError.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
-#include "livekit/signaling/sfu/AddTrackRequest.h"
-#include "livekit/signaling/sfu/MuteTrackRequest.h"
-#include "livekit/signaling/sfu/TrackPublishedResponse.h"
-#include "livekit/signaling/sfu/TrackUnpublishedResponse.h"
-#include "livekit/signaling/sfu/JoinResponse.h"
-#include "livekit/signaling/sfu/ParticipantUpdate.h"
-#include "livekit/signaling/sfu/TrackPublishedResponse.h"
 #include "livekit/signaling/sfu/UpdateLocalAudioTrack.h"
-#include "livekit/signaling/sfu/MuteTrackRequest.h"
 
 namespace {
 
@@ -155,7 +147,7 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
     return {};
 }
 
-void RTCMediaEngine::onJoin(const JoinResponse& response)
+void RTCMediaEngine::onJoin(JoinResponse response)
 {
     const auto disconnectReason = response._participant._disconnectReason;
     if (DisconnectReason::UnknownReason == disconnectReason) {
@@ -172,7 +164,7 @@ void RTCMediaEngine::onJoin(const JoinResponse& response)
     }
 }
 
-void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
+void RTCMediaEngine::onUpdate(ParticipantUpdate update)
 {
     std::vector<ParticipantInfo> infos = update._participants;
     if (const auto s = infos.size()) {
@@ -197,7 +189,7 @@ void RTCMediaEngine::onUpdate(const ParticipantUpdate& update)
     }
 }
 
-void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
+void RTCMediaEngine::onTrackPublished(TrackPublishedResponse published)
 {
     if (const auto t = _localParticipant->track(published._cid, true)) {
         const auto& sid = published._track._sid;
@@ -217,7 +209,7 @@ void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
                         UpdateLocalAudioTrack request;
                         request._trackSid = sid;
                         request._features = std::move(features);
-                        sendUpdateLocalAudioTrack(request);
+                        sendUpdateLocalAudioTrack(std::move(request));
                     }
                 }
                 break;
@@ -229,12 +221,12 @@ void RTCMediaEngine::onTrackPublished(const TrackPublishedResponse& published)
     }
 }
 
-void RTCMediaEngine::onReconnect(const ReconnectResponse& response)
+void RTCMediaEngine::onReconnect(ReconnectResponse /*response*/)
 {
     notifyAboutLocalParticipantJoinLeave(true);
 }
 
-void RTCMediaEngine::onMute(const MuteTrackRequest& mute)
+void RTCMediaEngine::onMute(MuteTrackRequest mute)
 {
     if (!_localParticipant->setRemoteSideTrackMute(mute._sid, mute._muted)) {
         _remoteParicipants.setRemoteSideTrackMute(mute._sid, mute._muted);
@@ -311,7 +303,7 @@ void RTCMediaEngine::sendAddTrack(const std::shared_ptr<LocalTrack>& track)
     if (track && !closed()) {
         AddTrackRequest request;
         if (track->fillRequest(&request)) {
-            switch (sendAddTrack(request)) {
+            switch (sendAddTrack(std::move(request))) {
                 case SendResult::Ok:
                     logVerbose("add local track '" + track->cid() +
                                "' request has been sent to server");
@@ -374,7 +366,7 @@ void RTCMediaEngine::notifyAboutMuteChanges(const std::string& trackSid, bool mu
         MuteTrackRequest request;
         request._sid = trackSid;
         request._muted = muted;
-        const auto result = sendMuteTrack(request);
+        const auto result = sendMuteTrack(std::move(request));
         if (SendResult::TransportError == result) {
             // TODO: log error
         }
