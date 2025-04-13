@@ -1594,6 +1594,18 @@ livekit::DataPacket ProtoMarshaller::map(const DataPacket& in) const
         auto value = map(std::get<ChatMessage>(in._value));
         out.set_allocated_chat_message(new livekit::ChatMessage(std::move(value)));
     }
+    else if (std::holds_alternative<DataStreamHeader>(in._value)) {
+        auto value = map(std::get<DataStreamHeader>(in._value));
+        out.set_allocated_stream_header(new livekit::DataStream::Header(std::move(value)));
+    }
+    else if (std::holds_alternative<DataStreamChunk>(in._value)) {
+        auto value = map(std::get<DataStreamChunk>(in._value));
+        out.set_allocated_stream_chunk(new livekit::DataStream::Chunk(std::move(value)));
+    }
+    else if (std::holds_alternative<DataStreamTrailer>(in._value)) {
+        auto value = map(std::get<DataStreamTrailer>(in._value));
+        out.set_allocated_stream_trailer(new livekit::DataStream::Trailer(std::move(value)));
+    }
     return out;
 }
 
@@ -1609,6 +1621,15 @@ DataPacket ProtoMarshaller::map(const livekit::DataPacket& in) const
             break;
         case livekit::DataPacket::kChatMessage:
             out._value = map(in.chat_message());
+            break;
+        case livekit::DataPacket::kStreamHeader:
+            out._value = map(in.stream_header());
+            break;
+        case livekit::DataPacket::kStreamChunk:
+            out._value = map(in.stream_chunk());
+            break;
+        case livekit::DataPacket::kStreamTrailer:
+            out._value = map(in.stream_trailer());
             break;
         default:
             logWarning("unsupported data packet value: " + std::to_string(in.value_case()));
@@ -1635,7 +1656,6 @@ livekit::DataPacket::Kind ProtoMarshaller::map(DataPacketKind kind) const
 DataPacketKind ProtoMarshaller::map(livekit::DataPacket::Kind kind) const
 {
     switch (kind) {
-        
         case livekit::DataPacket_Kind_RELIABLE:
             return DataPacketKind::Reliable;
             break;
@@ -1719,6 +1739,171 @@ ChatMessage ProtoMarshaller::map(const livekit::ChatMessage& in) const
     }
     out._deleted = in.deleted();
     out._generated = in.generated();
+    return out;
+}
+
+livekit::DataStream::OperationType ProtoMarshaller::map(DataStreamTextHeaderOperationType type) const
+{
+    switch (type) {
+        case DataStreamTextHeaderOperationType::Create:
+            return livekit::DataStream_OperationType_CREATE;
+        case DataStreamTextHeaderOperationType::Update:
+            return livekit::DataStream_OperationType_UPDATE;
+        case DataStreamTextHeaderOperationType::Delete:
+            return livekit::DataStream_OperationType_DELETE;
+        case DataStreamTextHeaderOperationType::Reaction:
+            break;
+        default:
+            TYPE_CONVERSION_ERROR(DataStreamTextHeaderOperationType, livekit::DataStream::OperationType)
+            break;
+    }
+    return livekit::DataStream_OperationType_REACTION;
+}
+
+DataStreamTextHeaderOperationType ProtoMarshaller::map(livekit::DataStream::OperationType type) const
+{
+    switch (type) {
+        case livekit::DataStream_OperationType_CREATE:
+            return DataStreamTextHeaderOperationType::Create;
+        case livekit::DataStream_OperationType_UPDATE:
+            return DataStreamTextHeaderOperationType::Update;
+        case livekit::DataStream_OperationType_DELETE:
+            return DataStreamTextHeaderOperationType::Delete;
+        case livekit::DataStream_OperationType_REACTION:
+            break;
+        default:
+            TYPE_CONVERSION_ERROR(livekit::DataStream::OperationType, DataStreamTextHeaderOperationType)
+            break;
+    }
+    return DataStreamTextHeaderOperationType::Reaction;
+}
+
+livekit::DataStream::ByteHeader ProtoMarshaller::map(const DataStreamByteHeader& in) const
+{
+    livekit::DataStream::ByteHeader out;
+    out.set_name(in._name);
+    return out;
+}
+
+DataStreamByteHeader ProtoMarshaller::map(const livekit::DataStream::ByteHeader& in) const
+{
+    DataStreamByteHeader out;
+    out._name = in.name();
+    return out;
+}
+
+livekit::DataStream::Chunk ProtoMarshaller::map(const DataStreamChunk& in) const
+{
+    livekit::DataStream::Chunk out;
+    out.set_stream_id(in._streamId);
+    out.set_chunk_index(in._chunkIndex);
+    out.set_content(in._content);
+    out.set_version(in._version);
+    if (in._iv.has_value()) {
+        out.set_iv(in._iv.value());
+    }
+    return out;
+}
+
+DataStreamChunk ProtoMarshaller::map(const livekit::DataStream::Chunk& in) const
+{
+    DataStreamChunk out;
+    out._streamId = in.stream_id();
+    out._chunkIndex = in.chunk_index();
+    out._content = in.content();
+    out._version = in.version();
+    if (in.has_iv()) {
+        out._iv = in.iv();
+    }
+    return out;
+}
+
+livekit::DataStream::TextHeader ProtoMarshaller::map(const DataStreamTextHeader& in) const
+{
+    livekit::DataStream::TextHeader out;
+    out.set_operation_type(map(in._operationType));
+    out.set_version(in._version);
+    out.set_reply_to_stream_id(in._replyToStreamId);
+    rconv(in._attachedStreamIds, out.mutable_attached_stream_ids());
+    out.set_generated(in._generated);
+    return out;
+}
+
+DataStreamTextHeader ProtoMarshaller::map(const livekit::DataStream::TextHeader& in) const
+{
+    DataStreamTextHeader out;
+    out._operationType = map(in.operation_type());
+    out._version = in.version();
+    out._replyToStreamId = in.reply_to_stream_id();
+    out._attachedStreamIds = rconv<std::string>(in.attached_stream_ids());
+    out._generated = in.generated();
+    return out;
+}
+
+livekit::DataStream::Header ProtoMarshaller::map(const DataStreamHeader& in) const
+{
+    livekit::DataStream::Header out;
+    out.set_stream_id(in._streamId);
+    out.set_timestamp(in._timestamp);
+    out.set_topic(in._topic);
+    out.set_mime_type(in._mimeType);
+    if (in._totalLength.has_value()) {
+        out.set_total_length(in._totalLength.value());
+    }
+    out.set_encryption_type(map(in._encryptionType));
+    mconv(in._attributes, out.mutable_attributes());
+    if (std::holds_alternative<DataStreamByteHeader>(in._contentHeader)) {
+        auto value = map(std::get<DataStreamByteHeader>(in._contentHeader));
+        out.set_allocated_byte_header(new livekit::DataStream::ByteHeader(std::move(value)));
+    }
+    else if (std::holds_alternative<DataStreamTextHeader>(in._contentHeader)) {
+        auto value = map(std::get<DataStreamTextHeader>(in._contentHeader));
+        out.set_allocated_text_header(new livekit::DataStream::TextHeader(std::move(value)));
+    }
+    return out;
+}
+
+DataStreamHeader ProtoMarshaller::map(const livekit::DataStream::Header& in) const
+{
+    DataStreamHeader out;
+    out._streamId = in.stream_id();
+    out._timestamp = in.timestamp();
+    out._topic = in.topic();
+    out._mimeType = in.mime_type();
+    if (in.has_total_length()) {
+        out._totalLength = in.total_length();
+    }
+    out._encryptionType = map(in.encryption_type());
+    out._attributes = mconv(in.attributes());
+    switch (in.content_header_case()) {
+        case livekit::DataStream_Header::kTextHeader:
+            out._contentHeader = map(in.text_header());
+            break;
+        case livekit::DataStream_Header::kByteHeader:
+            out._contentHeader = map(in.byte_header());
+            break;
+        default:
+            logWarning("unsupported data stream header: " + std::to_string(in.content_header_case()));
+            break;
+    }
+    return out;
+}
+
+livekit::DataStream::Trailer ProtoMarshaller::map(const DataStreamTrailer& in) const
+{
+    livekit::DataStream::Trailer out;
+    out.set_stream_id(in._streamId);
+    out.set_reason(in._reason);
+    mconv(in._attributes, out.mutable_attributes());
+    return out;
+}
+
+DataStreamTrailer ProtoMarshaller::map(const livekit::DataStream::Trailer& in) const
+{
+    DataStreamTrailer out;
+    out._streamId = in.stream_id();
+    out._reason = in.reason();
+    out._attributes = mconv(in.attributes());
     return out;
 }
 

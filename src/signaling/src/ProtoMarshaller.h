@@ -180,6 +180,18 @@ public:
     UserPacket map(const livekit::UserPacket& in) const;
     livekit::ChatMessage map(const ChatMessage& in) const;
     ChatMessage map(const livekit::ChatMessage& in) const;
+    livekit::DataStream::OperationType map(DataStreamTextHeaderOperationType type) const;
+    DataStreamTextHeaderOperationType map(livekit::DataStream::OperationType type) const;
+    livekit::DataStream::ByteHeader map(const DataStreamByteHeader& in) const;
+    DataStreamByteHeader map(const livekit::DataStream::ByteHeader& in) const;
+    livekit::DataStream::Chunk map(const DataStreamChunk& in) const;
+    DataStreamChunk map(const livekit::DataStream::Chunk& in) const;
+    livekit::DataStream::TextHeader map(const DataStreamTextHeader& in) const;
+    DataStreamTextHeader map(const livekit::DataStream::TextHeader& in) const;
+    livekit::DataStream::Header map(const DataStreamHeader& in) const;
+    DataStreamHeader map(const livekit::DataStream::Header& in) const;
+    livekit::DataStream::Trailer map(const DataStreamTrailer& in) const;
+    DataStreamTrailer map(const livekit::DataStream::Trailer& in) const;
 protected:
     // overrides of Bricks::LoggableR
     std::string_view logCategory() const final;

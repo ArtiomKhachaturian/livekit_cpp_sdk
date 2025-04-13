@@ -11,15 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // DataPacketKind.h
+#pragma once // DataStreamTrailer.h
+#include <string>
+#include <unordered_map>
 
 namespace LiveKitCpp
 {
 
-enum class DataPacketKind
+struct DataStreamTrailer
 {
-    Reliable,
-    Lossy
+    // unique identifier for this data stream
+    std::string _streamId;
+    // reason why the stream was closed
+    // (could contain "error" / "interrupted" / empty for expected end)
+    std::string _reason;
+    // finalizing updates for the stream, can also include additional
+    // insights for errors or endTime for transcription
+    std::unordered_map<std::string, std::string> _attributes;
 };
-	
+
 } // namespace LiveKitCpp

@@ -11,15 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // DataPacketKind.h
+#pragma once // DataStreamByteHeader.h
+#include <string>
 
 namespace LiveKitCpp
 {
 
-enum class DataPacketKind
+struct DataStreamByteHeader
 {
-    Reliable,
-    Lossy
+    std::string _name;
 };
 	
 } // namespace LiveKitCpp

@@ -247,6 +247,24 @@ void DataChannelsStorage::onDataPacket(const DataPacket& packet)
                          packet._participantIdentity,
                          packet._destinationIdentities);
     }
+    else if (std::holds_alternative<DataStreamHeader>(packet._value)) {
+        _listener.invoke(&DataExchangeListener::onDataStreamHeader,
+                         std::get<DataStreamHeader>(packet._value),
+                         packet._participantIdentity,
+                         packet._destinationIdentities);
+    }
+    else if (std::holds_alternative<DataStreamChunk>(packet._value)) {
+        _listener.invoke(&DataExchangeListener::onDataStreamChunk,
+                         std::get<DataStreamChunk>(packet._value),
+                         packet._participantIdentity,
+                         packet._destinationIdentities);
+    }
+    else if (std::holds_alternative<DataStreamTrailer>(packet._value)) {
+        _listener.invoke(&DataExchangeListener::onDataStreamTrailer,
+                         std::get<DataStreamTrailer>(packet._value),
+                         packet._participantIdentity,
+                         packet._destinationIdentities);
+    }
 }
 
 void DataChannelsStorage::onSignalParseError(const std::string& details)

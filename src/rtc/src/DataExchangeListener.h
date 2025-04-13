@@ -14,6 +14,9 @@
 #pragma once // DataExchangeListener.h
 #include "livekit/signaling/sfu/ChatMessage.h"
 #include "livekit/signaling/sfu/UserPacket.h"
+#include "livekit/signaling/sfu/DataStreamHeader.h"
+#include "livekit/signaling/sfu/DataStreamChunk.h"
+#include "livekit/signaling/sfu/DataStreamTrailer.h"
 #include <string>
 #include <vector>
 
@@ -32,6 +35,15 @@ public:
     virtual void onChatMessage(const ChatMessage& /*message*/,
                                const std::string& /*participantIdentity*/,
                                const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
+    virtual void onDataStreamHeader(const DataStreamHeader& /*header*/,
+                                    const std::string& /*participantIdentity*/,
+                                    const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
+    virtual void onDataStreamChunk(const DataStreamChunk& /*chunk*/,
+                                   const std::string& /*participantIdentity*/,
+                                   const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
+    virtual void onDataStreamTrailer(const DataStreamTrailer& /*trailer*/,
+                                     const std::string& /*participantIdentity*/,
+                                     const std::vector<std::string>& /*destinationIdentities*/ = {}) {}
 protected:
     virtual ~DataExchangeListener() = default;
 };

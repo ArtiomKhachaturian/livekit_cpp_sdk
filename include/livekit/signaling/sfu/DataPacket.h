@@ -15,6 +15,9 @@
 #include "livekit/signaling/sfu/ChatMessage.h"
 #include "livekit/signaling/sfu/DataPacketKind.h"
 #include "livekit/signaling/sfu/UserPacket.h"
+#include "livekit/signaling/sfu/DataStreamHeader.h"
+#include "livekit/signaling/sfu/DataStreamChunk.h"
+#include "livekit/signaling/sfu/DataStreamTrailer.h"
 #include <variant>
 
 namespace LiveKitCpp
@@ -27,7 +30,12 @@ struct DataPacket
     std::string _participantIdentity;
     // identities of participants who will receive the message (sent to all by default)
     std::vector<std::string> _destinationIdentities;
-    std::variant<std::nullptr_t, ChatMessage, UserPacket> _value;
+    std::variant<std::nullptr_t,
+                 ChatMessage,
+                 UserPacket,
+                 DataStreamHeader,
+                 DataStreamChunk,
+                 DataStreamTrailer> _value;
 };
 	
-}
+} // namespace LiveKitCpp
