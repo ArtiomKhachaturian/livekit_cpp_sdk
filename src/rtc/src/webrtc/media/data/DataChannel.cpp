@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "DataChannel.h"
 #include "DataChannelListener.h"
+#include "Blob.h"
 #include <api/make_ref_counted.h>
 
 namespace LiveKitCpp
@@ -187,6 +188,20 @@ void DataChannel::send(const webrtc::DataBuffer& buffer)
             }
         }
     });
+}
+
+bool DataChannel::sendBinary(const Bricks::Blob& binary)
+{
+    const webrtc::CopyOnWriteBuffer buffer(binary.data(), binary.size());
+    send(webrtc::DataBuffer{buffer, true});
+    return true;
+}
+
+bool DataChannel::sendText(std::string_view text)
+{
+    const webrtc::CopyOnWriteBuffer buffer(std::move(text));
+    send(webrtc::DataBuffer{buffer, false});
+    return true;
 }
 
 DataChannel::Impl::Impl(DataChannel* self, bool local,

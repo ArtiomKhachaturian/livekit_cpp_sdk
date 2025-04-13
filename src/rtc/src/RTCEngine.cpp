@@ -113,17 +113,21 @@ void RTCEngine::disconnect()
     }
 }
 
-bool RTCEngine::sendUserPacket(std::string payload,
-                               bool reliable,
-                               const std::vector<std::string>& destinationIdentities,
-                               const std::string& topic) const
+bool RTCEngine::sendUserPacket(std::string payload, bool reliable,
+                               const std::string& topic,
+                               const std::vector<std::string>& destinationSids,
+                               const std::vector<std::string>& destinationIdentities) const
 {
-    return _localDcs.sendUserPacket(std::move(payload), reliable, destinationIdentities, topic);
+    return _localDcs.sendUserPacket(std::move(payload), reliable, topic,
+                                    destinationSids, destinationIdentities);
 }
 
-bool RTCEngine::sendChatMessage(std::string message, bool deleted) const
+bool RTCEngine::sendChatMessage(std::string message,
+                                bool deleted,
+                                bool generated,
+                                const std::vector<std::string>& destinationIdentities) const
 {
-    return _localDcs.sendChatMessage(std::move(message), deleted);
+    return _localDcs.sendChatMessage(std::move(message), deleted, generated, destinationIdentities);
 }
 
 void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
@@ -630,22 +634,20 @@ void RTCEngine::onPongTimeout()
     cleanup(LiveKitError::ServerPingTimedOut);
 }
 
-void RTCEngine::onUserPacket(const std::string& participantSid,
+void RTCEngine::onUserPacket(const UserPacket& packet,
                              const std::string& participantIdentity,
-                             const std::string& payload,
-                             const std::vector<std::string>& /*destinationIdentities*/,
-                             const std::string& topic)
+                             const std::vector<std::string>& destinationIdentities)
 {
-    invoke(&SessionListener::onUserPacketReceived, participantSid,
-           participantIdentity, payload, topic);
+    invoke(&SessionListener::onUserPacketReceived, packet,
+           participantIdentity, destinationIdentities);
 }
 
-void RTCEngine::onChatMessage(const std::string& remoteParticipantIdentity,
-                              const std::string& message, const std::string& id,
-                              int64_t timestamp, bool deleted, bool generated)
+void RTCEngine::onChatMessage(const ChatMessage& message,
+                              const std::string& participantIdentity,
+                              const std::vector<std::string>& destinationIdentities)
 {
-    invoke(&SessionListener::onChatMessageReceived, remoteParticipantIdentity,
-           message, id, timestamp, deleted, generated);
+    invoke(&SessionListener::onChatMessageReceived, message,
+           participantIdentity, destinationIdentities);
 }
 
 std::string_view RTCEngine::logCategory() const

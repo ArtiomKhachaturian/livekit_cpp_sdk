@@ -22,7 +22,6 @@ enum class ServiceState
     WSAFailure, // Windows only
     SSLInitError,
     NoWebsoketsFactory,
-    NoWebRTC,
     WebRTCInitError
 };
 

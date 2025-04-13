@@ -301,7 +301,7 @@ void SignalClientWs::Listener::onStateChanged(uint64_t, uint64_t, Websocket::Sta
 void SignalClientWs::Listener::onBinaryMessage(uint64_t, uint64_t,
                                                const Bricks::Blob& message)
 {
-    _owner.invoke(&SignalClientWs::handleServerProtobufMessage, message);
+    _owner.invoke(&SignalClientWs::parseProtobuBlob, message);
 }
 
 Websocket::Options SignalClientWs::UrlData::buildOptions() const

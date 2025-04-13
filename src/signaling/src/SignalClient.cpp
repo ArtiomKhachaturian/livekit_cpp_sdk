@@ -35,6 +35,16 @@ void SignalClient::setServerListener(SignalServerListener* listener)
     _responseReceiver->setListener(listener);
 }
 
+void SignalClient::parseProtobuBlob(const Bricks::Blob& message)
+{
+    parseProtobufData(message.data(), message.size());
+}
+
+void SignalClient::parseProtobufData(const void* data, size_t dataLen)
+{
+    _responseReceiver->parseBinary(data, dataLen);
+}
+
 bool SignalClient::sendOffer(const SessionDescription& sdp) const
 {
     return _requestSender->offer(sdp);
@@ -115,11 +125,14 @@ bool SignalClient::sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) cons
     return _requestSender->updateVideoTrack(track);
 }
 
-void SignalClient::handleServerProtobufMessage(const Bricks::Blob& message)
+bool SignalClient::sendDataPacket(const DataPacket& packet) const
 {
-    if (message) {
-        _responseReceiver->parseBinary(message.data(), message.size());
-    }
+    return _requestSender->dataPacket(packet);
+}
+
+void SignalClient::notifyAboutError(const std::string& details)
+{
+    _responseReceiver->notifyAboutError(details);
 }
 
 std::string_view SignalClient::logCategory() const

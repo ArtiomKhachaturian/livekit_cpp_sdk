@@ -215,11 +215,13 @@ void Session::onStateChanged(LiveKitCpp::SessionState)
     emit stateChanged();
 }
 
-void Session::onChatMessageReceived(const std::string& identity,
-                                           const std::string& message, const std::string&,
-                                           int64_t, bool deleted, bool)
+void Session::onChatMessageReceived(const LiveKitCpp::ChatMessage& message,
+                                    const std::string& participantIdentity,
+                                    const std::vector<std::string>&)
 {
-    emit chatMessageReceived(QString::fromStdString(identity), QString::fromStdString(message), deleted);
+    emit chatMessageReceived(QString::fromStdString(participantIdentity),
+                             QString::fromStdString(message._message),
+                             message._deleted);
 }
 
 void Session::addRemoteParticipant(const QString& sid)

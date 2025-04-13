@@ -62,9 +62,13 @@ public:
     bool connect(std::string url, std::string authToken);
     void disconnect();
     bool sendUserPacket(std::string payload, bool reliable,
-                        const std::vector<std::string>& destinationIdentities = {},
-                        const std::string& topic = {}) const;
-    bool sendChatMessage(std::string message, bool deleted) const;
+                        const std::string& topic = {},
+                        const std::vector<std::string>& destinationSids = {},
+                        const std::vector<std::string>& destinationIdentities = {}) const;
+    bool sendChatMessage(std::string message,
+                         bool deleted,
+                         bool generated,
+                         const std::vector<std::string>& destinationIdentities = {}) const;
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     // override of RTCMediaEngine
     std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device) final;
@@ -131,14 +135,12 @@ private:
     bool onPingRequested() final;
     void onPongTimeout() final;
     // impl. of DataExchangeListener
-    void onUserPacket(const std::string& participantSid,
+    void onUserPacket(const UserPacket& packet,
                       const std::string& participantIdentity,
-                      const std::string& payload,
-                      const std::vector<std::string>& /*destinationIdentities*/,
-                      const std::string& topic) final;
-    void onChatMessage(const std::string& remoteParticipantIdentity,
-                       const std::string& message, const std::string& id,
-                       int64_t timestamp, bool deleted, bool generated) final;
+                      const std::vector<std::string>& destinationIdentities) final;
+    void onChatMessage(const ChatMessage& message,
+                       const std::string& participantIdentity,
+                       const std::vector<std::string>& destinationIdentities) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:

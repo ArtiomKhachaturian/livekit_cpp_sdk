@@ -13,64 +13,71 @@
 // limitations under the License.
 #include "DataChannelsStorage.h"
 #include "DataExchangeListener.h"
-#include "DataChannel.h"
+#include "DataChannelListener.h"
 #include "Utils.h"
-//#include "MarshalledTypesFwd.h"
-//#include "livekit_models.pb.h"
-//#include <nlohmann/json.hpp>
-//#include <rtc_base/time_utils.h>
+#include "livekit/signaling/SignalClient.h"
+#include "livekit/signaling/sfu/ChatMessage.h"
+#include "livekit/signaling/sfu/DataPacket.h"
+#include "livekit/signaling/sfu/UserPacket.h"
+#include <rtc_base/time_utils.h>
 
 namespace {
 
-/*inline livekit::UserPacket makeUserPacket(std::string payload,
-                                          std::string sid,
-                                          const std::string& topic = {},
-                                          const std::vector<std::string>& destinationIdentities = {}) {
-    livekit::UserPacket packet;
-    packet.set_payload(std::move(payload));
-    packet.set_participant_sid(std::move(sid));
-    packet.set_topic(topic);
-    LiveKitCpp::toProtoRepeated(destinationIdentities,
-                                packet.mutable_destination_sids());
-    return packet;
-}
-
-struct NonCompliantChatMessage // usually from Swift client
-{
-    std::string messageId;
-    //std::string senderIdentity;
-    std::string text;
-    //std::string senderSid;
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(NonCompliantChatMessage, messageId, text)
-};*/
+inline std::string dcType(bool local) { return local ? "local" : "remote"; }
 
 }
 
 namespace LiveKitCpp
 {
 
-//MARSHALLED_TYPE_NAME_DECL(livekit::DataPacket)
-//MARSHALLED_TYPE_NAME_DECL(livekit::UserPacket)
-//MARSHALLED_TYPE_NAME_DECL(livekit::ChatMessage)
-
-/*struct DataChannelsStorage::ChatMessage
+class DataChannelsStorage::Wrapper : public Bricks::LoggableS<DataChannelListener>
 {
-    std::string id;
-    std::string message;
-    int64_t timestamp = {};
-    bool ignore = false;
-    bool deleted = false;
-    bool generated = false;
-    ChatMessage() = default;
-    ChatMessage(std::string id, std::string message, int64_t timestamp = rtc::TimeMillis());
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(ChatMessage, id, message, timestamp, ignore)
-};*/
+public:
+    Wrapper(rtc::scoped_refptr<DataChannel> channel,
+            SignalServerListener* listener,
+            const std::shared_ptr<Bricks::Logger>& logger,
+            const std::string& logCategory);
+    ~Wrapper() final { close(); }
+    void close();
+    bool isOpen() const { return _channel && _channel->isOpen(); }
+    bool local() const { return _channel && _channel->local(); }
+    bool reliable() const { return _channel && _channel->reliable(); }
+    bool sendDataPacket(const DataPacket& packet) const;
+    bool sendChatMessage(const std::string& participantIdentity,
+                         const ChatMessage& mesage,
+                         const std::vector<std::string>& destinationIdentities = {});
+    bool sendUserPacket(const std::string& participantIdentity,
+                        const UserPacket& packet,
+                        const std::vector<std::string>& destinationIdentities = {});
+    // impl. of DataChannelListener
+    void onStateChange(DataChannel* channel) final;
+    void onMessage(DataChannel* channel, const webrtc::DataBuffer& buffer) final;
+    void onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize) final;
+    void onSendError(DataChannel* channel, webrtc::RTCError error) final;
+protected:
+    // overrides of Bricks::LoggableS<>
+    std::string_view logCategory() const final { return _logCategory; }
+private:
+    template <class TValue>
+    DataPacket createDataPacket(const std::string& participantIdentity,
+                                const TValue& value,
+                                const std::vector<std::string>& destinationIdentities = {}) const;
+private:
+    const rtc::scoped_refptr<DataChannel> _channel;
+    const std::string _logCategory;
+    SignalClient _client;
+};
 
 DataChannelsStorage::DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger,
                                          std::string logCategory)
-    : Bricks::LoggableS<DataChannelListener>(logger)
+    : Bricks::LoggableS<SignalServerListener>(logger)
     , _logCategory(std::move(logCategory))
 {
+}
+
+DataChannelsStorage::~DataChannelsStorage()
+{
+    clear();
 }
 
 void DataChannelsStorage::setListener(DataExchangeListener* listener)
@@ -87,19 +94,21 @@ bool DataChannelsStorage::add(rtc::scoped_refptr<DataChannel> channel)
             logWarning("unnamed " + dcType(local) + " data channel, processing denied");
         }
         else {
-            channel->setListener(this);
+            SignalServerListener* const listener = this;
+            auto wrapper = std::make_shared<Wrapper>(std::move(channel),
+                                                     listener,
+                                                     logger(),
+                                                     _logCategory);
             LOCK_WRITE_SAFE_OBJ(_dataChannels);
             const auto it = _dataChannels->find(label);
             if (it == _dataChannels->end()) {
-                _dataChannels->insert(std::make_pair(label, std::move(channel)));
+                _dataChannels->insert(std::make_pair(label, std::move(wrapper)));
                 logVerbose(dcType(local) + " data channel '" + label + "' was added for observation");
             }
             else {
-                logWarning(dcType(local) + " data channel '" + label + "' is already present but will be overwritten");
-                if (it->second) {
-                    it->second->setListener(nullptr);
-                }
-                it->second = std::move(channel);
+                logWarning(dcType(local) + " data channel '" + label +
+                           "' is already present but will be overwritten");
+                it->second = std::move(wrapper);
             }
             return true;
         }
@@ -115,7 +124,6 @@ bool DataChannelsStorage::remove(const std::string& label)
         const auto it = _dataChannels->find(label);
         if (it != _dataChannels->end()) {
             const auto local = it->second->local();
-            it->second->setListener(nullptr);
             _dataChannels->erase(it);
             if (canLogVerbose()) {
                 logVerbose(dcType(local) + " data channel '" + label +
@@ -139,89 +147,62 @@ void DataChannelsStorage::clear()
 {
     LOCK_WRITE_SAFE_OBJ(_dataChannels);
     for (auto it = _dataChannels->begin(); it != _dataChannels->end(); ++it) {
-        it->second->setListener(nullptr);
+        it->second->close();
     }
     _dataChannels->clear();
 }
 
-rtc::scoped_refptr<DataChannel> DataChannelsStorage::get(const std::string& label) const
-{
-    if (!label.empty()) {
-        LOCK_READ_SAFE_OBJ(_dataChannels);
-        const auto it = _dataChannels->find(label);
-        if (it != _dataChannels->end()) {
-            return it->second;
-        }
-    }
-    return {};
-}
-
 bool DataChannelsStorage::sendUserPacket(std::string payload, bool reliable,
-                                         const std::vector<std::string>& destinationIdentities,
-                                         const std::string& topic) const
+                                         const std::string& topic,
+                                         const std::vector<std::string>& destinationSids,
+                                         const std::vector<std::string>& destinationIdentities) const
 {
-    /*if (payload.empty()) {
+    if (payload.empty()) {
         logError("failed to send user packet - empty payload");
         return false;
     }
-    {
-        LOCK_READ_SAFE_OBJ(_sid);
-        if (_sid->empty()) {
-            logError("failed to send user packet - unknown user sid");
-            return {};
-        }
+    auto sid = _sid();
+    if (sid.empty()) {
+        logError("failed to send user packet - unknown user sid");
+        return {};
     }
     if (const auto dc = getChannelForSend(reliable)) {
-        auto packet = makeUserPacket(std::move(payload), _sid(),
-                                     topic, destinationIdentities);
-        return send(dc, &livekit::DataPacket::mutable_user, std::move(packet));
-    }*/
+        const auto identity = _identity();
+        UserPacket userPacket;
+        userPacket._participantSid = std::move(sid);
+        userPacket._participantIdentity = identity;
+        userPacket._payload = std::move(payload);
+        userPacket._topic = topic;
+        userPacket._destinationSids = destinationSids;
+        userPacket._destinationIdentities = destinationIdentities;
+        return dc->sendUserPacket(identity, userPacket, destinationIdentities);
+    }
     return false;
 }
 
-bool DataChannelsStorage::sendChatMessage(std::string message, bool deleted) const
+bool DataChannelsStorage::sendChatMessage(std::string message,
+                                          bool deleted,
+                                          bool generated,
+                                          const std::vector<std::string>& destinationIdentities) const
 {
-    /*if (message.empty()) {
+    if (message.empty()) {
         logError("failed to send chat message - message text is empty");
         return false;
     }
     if (const auto dc = getChannelForSend(true)) {
-        livekit::ChatMessage chatMessage;
-        chatMessage.set_message(std::move(message));
-        chatMessage.set_timestamp(rtc::TimeMillis());
-        chatMessage.set_id(makeUuid());
-        chatMessage.set_deleted(deleted);
-        // true if the chat message has been generated by an agent from a participant's audio transcription
-        chatMessage.set_generated(false);
-        return send(dc, &livekit::DataPacket::mutable_chat_message, std::move(chatMessage));
-    }*/
+        ChatMessage chatMessage;
+        chatMessage._message = std::move(message);
+        chatMessage._timestamp = rtc::TimeMillis();
+        chatMessage._id = makeUuid();
+        chatMessage._deleted = deleted;
+        chatMessage._generated = generated;
+        return dc->sendChatMessage(_identity, chatMessage, destinationIdentities);
+    }
     return false;
 }
 
-/*std::optional<DataChannelsStorage::ChatMessage> DataChannelsStorage::
-    maybeChatMessage(const livekit::UserPacket& packet)
-{
-    /onst auto& payload = packet.payload();
-    if (!payload.empty()) {
-        try {
-            // standard chat packet
-            return nlohmann::json::parse(payload).get<ChatMessage>();
-        }
-        catch(const std::exception&) {
-            // ignore JSON parser errors
-        }
-        try {
-            auto message = nlohmann::json::parse(payload).get<NonCompliantChatMessage>();
-            return ChatMessage(std::move(message.messageId), std::move(message.text));
-        }
-        catch(const std::exception&) {
-             //ignore JSON parser errors
-        }
-    }
-    return std::nullopt;
-}*/
-
-rtc::scoped_refptr<DataChannel> DataChannelsStorage::getChannelForSend(bool reliable) const
+std::shared_ptr<DataChannelsStorage::Wrapper> DataChannelsStorage::
+    getChannelForSend(bool reliable) const
 {
     {
         LOCK_READ_SAFE_OBJ(_identity);
@@ -230,8 +211,17 @@ rtc::scoped_refptr<DataChannel> DataChannelsStorage::getChannelForSend(bool reli
             return {};
         }
     }
+    
     const auto& label = DataChannel::label(reliable);
-    const auto dc = get(label);
+    std::shared_ptr<Wrapper> dc;
+    if (!label.empty()) {
+        LOCK_READ_SAFE_OBJ(_dataChannels);
+        const auto it = _dataChannels->find(label);
+        if (it != _dataChannels->end()) {
+            dc = it->second;
+        }
+    }
+
     if (!dc) {
         logError("failed to send data - data channel '" + label + "' was not found");
         return {};
@@ -243,93 +233,77 @@ rtc::scoped_refptr<DataChannel> DataChannelsStorage::getChannelForSend(bool reli
     return dc;
 }
 
-template <class TSetMethod, class TObject>
-bool DataChannelsStorage::send(const rtc::scoped_refptr<DataChannel>& dc,
-                               const TSetMethod& setMethod,
-                               TObject object) const
+void DataChannelsStorage::onDataPacket(const DataPacket& packet)
 {
-    /*if (dc) {
-        auto identity = _identity();
-        if (identity.empty()) {
-            logError("failed to send data - unknown user identity");
-            return false;
-        }
-        livekit::DataPacket packet;
-        if (const auto target = (packet.*setMethod)()) {
-            *target = std::move(object);
-            if (dc->reliable()) {
-                packet.set_kind(livekit::DataPacket_Kind_RELIABLE);
-            }
-            else {
-                packet.set_kind(livekit::DataPacket_Kind_LOSSY);
-            }
-            packet.set_participant_identity(std::move(identity));
-            const auto bytes = protoToBytes(packet, logger().get(), logCategory());
-            if (const auto size = bytes.size()) {
-                const rtc::CopyOnWriteBuffer data(bytes.data(), size);
-                dc->send(webrtc::DataBuffer(data, true));
-                return true;
-            }
-        }
-        else {
-            logError("proto method not available for set of '" +
-                     marshalledTypeName<TObject>() + "'");
-        }
-    }*/
+    if (std::holds_alternative<UserPacket>(packet._value)) {
+        _listener.invoke(&DataExchangeListener::onUserPacket,
+                         std::get<UserPacket>(packet._value),
+                         packet._participantIdentity,
+                         packet._destinationIdentities);
+    }
+    else if (std::holds_alternative<ChatMessage>(packet._value)) {
+        _listener.invoke(&DataExchangeListener::onChatMessage,
+                         std::get<ChatMessage>(packet._value),
+                         packet._participantIdentity,
+                         packet._destinationIdentities);
+    }
+}
+
+void DataChannelsStorage::onSignalParseError(const std::string& details)
+{
+    _listener.invoke(&DataExchangeListener::onError, details);
+}
+
+DataChannelsStorage::Wrapper::Wrapper(rtc::scoped_refptr<DataChannel> channel,
+                                      SignalServerListener* listener,
+                                      const std::shared_ptr<Bricks::Logger>& logger,
+                                      const std::string& logCategory)
+    :  Bricks::LoggableS<DataChannelListener>(logger)
+    , _channel(std::move(channel))
+    , _logCategory(logCategory)
+    , _client(_channel.get(), logger.get())
+{
+    _client.setServerListener(listener);
+    if (_channel) {
+        _channel->setListener(this);
+    }
+}
+
+void DataChannelsStorage::Wrapper::close()
+{
+    if (_channel) {
+        _channel->close();
+        _channel->setListener(nullptr);
+    }
+    _client.setServerListener(nullptr);
+}
+
+bool DataChannelsStorage::Wrapper::sendDataPacket(const DataPacket& packet) const
+{
+    return _client.sendDataPacket(packet);
+}
+
+bool DataChannelsStorage::Wrapper::
+    sendChatMessage(const std::string& participantIdentity, const ChatMessage& mesage,
+                    const std::vector<std::string>& destinationIdentities)
+{
+    if (_channel) {
+        return sendDataPacket(createDataPacket(participantIdentity, mesage, destinationIdentities));
+    }
     return false;
 }
 
-/*
-void DataChannelsStorage::handle(const std::string& senderIdentity,
-                                 const livekit::UserPacket& packet)
+bool DataChannelsStorage::Wrapper::
+    sendUserPacket(const std::string& participantIdentity, const UserPacket& packet,
+                   const std::vector<std::string>& destinationIdentities)
 {
-    bool defaultCallback = true;
-    if (const auto chatMessage = maybeChatMessage(packet)) {
-        if (updateLastChatMessageId(chatMessage->id)) {
-            handle(senderIdentity, chatMessage.value());
-        }
-        defaultCallback = false;
+    if (_channel) {
+        return sendDataPacket(createDataPacket(participantIdentity, packet, destinationIdentities));
     }
-    if (defaultCallback) {
-        _listener.invoke(&DataExchangeListener::onUserPacket,
-                         packet.participant_sid(),
-                         packet.participant_identity(),
-                         packet.payload(),
-                         fromProtoRepeated<std::string>(packet.destination_sids()),
-                         packet.topic());
-    }
+    return false;
 }
 
-void DataChannelsStorage::handle(const std::string& senderIdentity,
-                                 const livekit::ChatMessage& message)
-{
-    if (updateLastChatMessageId(message.id())) {
-        ChatMessage msg(message.id(), message.message(), message.timestamp());
-        msg.deleted = message.deleted();
-        msg.generated = message.generated();
-        handle(senderIdentity, msg);
-    }
-}
-
-void DataChannelsStorage::handle(const std::string& senderIdentity, const ChatMessage& message)
-{
-    _listener.invoke(&DataExchangeListener::onChatMessage,
-                     senderIdentity,
-                     message.message,
-                     message.id,
-                     message.timestamp,
-                     message.deleted,
-                     message.generated);
-}*/
-
-bool DataChannelsStorage::updateLastChatMessageId(const std::string& id)
-{
-    LOCK_WRITE_SAFE_OBJ(_lastChatMessageId);
-    const auto prev = _lastChatMessageId.exchange(id);
-    return prev.empty() || prev != id;
-}
-
-void DataChannelsStorage::onStateChange(DataChannel* channel)
+void DataChannelsStorage::Wrapper::onStateChange(DataChannel* channel)
 {
     if (channel && canLogVerbose()) {
         logVerbose(dcType(channel->local()) + " data channel '" +
@@ -338,64 +312,22 @@ void DataChannelsStorage::onStateChange(DataChannel* channel)
     }
 }
 
-void DataChannelsStorage::onMessage(DataChannel* channel,
-                                    const webrtc::DataBuffer& buffer)
+void DataChannelsStorage::Wrapper::onMessage(DataChannel* channel,
+                                             const webrtc::DataBuffer& buffer)
 {
-    /*if (channel) {
+    if (channel && channel == _channel.get() && buffer.binary) {
         if (canLogVerbose()) {
             logVerbose("a message buffer was successfully received for '" +
                        channel->label() + "' " + dcType(channel->local()) +
                        " data channel");
         }
-        if (_listener) { // parse
-            if (buffer.binary) {
-                using namespace livekit;
-                const auto data = buffer.data.data();
-                const auto size = buffer.data.size();
-                const auto packet = protoFromBytes<DataPacket>(data, size,
-                                                               logger().get(),
-                                                               logCategory());
-                if (packet.has_value()) {
-                    switch (packet->value_case()) {
-                        case livekit::DataPacket::kUser:
-                            handle(packet->participant_identity(), packet->user());
-                            break;
-                        case livekit::DataPacket::kSpeaker:
-                            break;
-                        case livekit::DataPacket::kSipDtmf:
-                            break;
-                        case livekit::DataPacket::kTranscription:
-                            break;
-                        case livekit::DataPacket::kMetrics:
-                            break;
-                        case livekit::DataPacket::kChatMessage:
-                            handle(packet->participant_identity(), packet->chat_message());
-                            break;
-                        case livekit::DataPacket::kRpcRequest:
-                            break;
-                        case livekit::DataPacket::kRpcAck:
-                            break;
-                        case livekit::DataPacket::kRpcResponse:
-                            break;
-                        case livekit::DataPacket::kStreamHeader:
-                            break;
-                        case livekit::DataPacket::kStreamChunk:
-                            break;
-                        case livekit::DataPacket::kStreamTrailer:
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            else {
-                
-            }
-        }
-    }*/
+        const auto& data = buffer.data;
+        _client.parseProtobufData(data.data(), data.size());
+    }
 }
 
-void DataChannelsStorage::onBufferedAmountChange(DataChannel* channel, uint64_t sentDataSize)
+void DataChannelsStorage::Wrapper::onBufferedAmountChange(DataChannel* channel,
+                                                          uint64_t sentDataSize)
 {
     if (channel) {
         if (canLogVerbose()) {
@@ -406,7 +338,8 @@ void DataChannelsStorage::onBufferedAmountChange(DataChannel* channel, uint64_t 
     }
 }
 
-void DataChannelsStorage::onSendError(DataChannel* channel, webrtc::RTCError error)
+void DataChannelsStorage::Wrapper::onSendError(DataChannel* channel,
+                                               webrtc::RTCError error)
 {
     if (channel) {
         const auto label = channel->label();
@@ -415,16 +348,21 @@ void DataChannelsStorage::onSendError(DataChannel* channel, webrtc::RTCError err
                      dcType(channel->local()) +
                      " data channel: " + error.message());
         }
-        _listener.invoke(&DataExchangeListener::onSendError, label, std::move(error));
+        _client.notifyAboutError(error.message());
     }
 }
 
-/*DataChannelsStorage::ChatMessage::ChatMessage(std::string id, std::string message,
-                                              int64_t timestamp)
+template <class TValue>
+DataPacket DataChannelsStorage::Wrapper::
+    createDataPacket(const std::string& participantIdentity, const TValue& value,
+                     const std::vector<std::string>& destinationIdentities) const
 {
-    this->id = std::move(id);
-    this->message = std::move(message);
-    this->timestamp = timestamp;
-}*/
+    DataPacket dataPacket;
+    dataPacket._kind = reliable() ? DataPacketKind::Reliable : DataPacketKind::Lossy;
+    dataPacket._participantIdentity = participantIdentity;
+    dataPacket._destinationIdentities = destinationIdentities;
+    dataPacket._value = value;
+    return dataPacket;
+}
 
 } // namespace LiveKitCpp

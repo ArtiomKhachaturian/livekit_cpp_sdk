@@ -26,15 +26,10 @@ class SignalServerListener;
 class ResponseReceiver : private Bricks::LoggableR<>
 {
 public:
-    enum class Mode
-    {
-        SignalResponse,
-        DataPacket
-    };
-public:
-    ResponseReceiver(Mode mode, Bricks::Logger* logger = nullptr);
+    ResponseReceiver(Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
+    void notifyAboutError(const std::string& details = {});
 protected:
     // overrides of Bricks::LoggableR
     std::string_view logCategory() const final;
@@ -68,7 +63,6 @@ private:
     void handle(const livekit::Pong& pong) const;
     void handle(const livekit::DataPacket& packet) const;
 private:
-    const Mode _mode;
     const ProtoMarshaller _marshaller;
     Bricks::Listener<SignalServerListener*> _listener;
 };

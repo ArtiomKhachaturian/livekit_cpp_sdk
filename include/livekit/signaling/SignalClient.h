@@ -46,6 +46,7 @@ struct UpdateParticipantMetadata;
 struct Ping;
 struct UpdateLocalAudioTrack;
 struct UpdateLocalVideoTrack;
+struct DataPacket;
 
 class LIVEKIT_SIGNALING_API SignalClient : protected Bricks::LoggableR<>
 {
@@ -53,8 +54,9 @@ public:
     SignalClient(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     virtual ~SignalClient();
     void setServerListener(SignalServerListener* listener = nullptr);
-    void open();
-    void close();
+    void parseProtobuBlob(const Bricks::Blob& message);
+    void parseProtobufData(const void* data, size_t dataLen);
+    void notifyAboutError(const std::string& details = {});
     // requests sending
     bool sendOffer(const SessionDescription& sdp) const;
     bool sendAnswer(const SessionDescription& sdp) const;
@@ -72,8 +74,8 @@ public:
     bool sendPingReq(const Ping& ping) const;
     bool sendUpdateAudioTrack(const UpdateLocalAudioTrack& track) const;
     bool sendUpdateVideoTrack(const UpdateLocalVideoTrack& track) const;
+    bool sendDataPacket(const DataPacket& packet) const;
 protected:
-    void handleServerProtobufMessage(const Bricks::Blob& message);
     // impl. of Bricks::LoggableR<>
     std::string_view logCategory() const override;
 private:

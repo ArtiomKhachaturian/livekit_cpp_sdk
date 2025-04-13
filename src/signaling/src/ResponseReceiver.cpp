@@ -58,9 +58,8 @@ MARSHALLED_TYPE_NAME_DECL(livekit::TrackSubscribed)
 MARSHALLED_TYPE_NAME_DECL(livekit::Pong)
 MARSHALLED_TYPE_NAME_DECL(livekit::DataPacket)
 
-ResponseReceiver::ResponseReceiver(Mode mode, Bricks::Logger* logger)
+ResponseReceiver::ResponseReceiver(Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
-    , _mode(mode)
     , _marshaller(logger)
 {
 }
@@ -153,9 +152,14 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
             handle(dataPacket.value());
         }
         else {
-            notify(&SignalServerListener::onSignalParseError);
+            notifyAboutError();
         }
     }
+}
+
+void ResponseReceiver::notifyAboutError(const std::string& details)
+{
+    notify(&SignalServerListener::onSignalParseError, details);
 }
 
 std::string_view ResponseReceiver::logCategory() const
@@ -167,19 +171,13 @@ std::string_view ResponseReceiver::logCategory() const
 std::optional<livekit::SignalResponse> ResponseReceiver::
     parseResponse(const void* data, size_t dataLen) const
 {
-    if (Mode::SignalResponse == _mode) {
-        return protoFromBytes<livekit::SignalResponse>(data, dataLen, logger(), logCategory());
-    }
-    return {};
+    return protoFromBytes<livekit::SignalResponse>(data, dataLen);
 }
 
 std::optional<livekit::DataPacket>  ResponseReceiver::
     parseDataPacket(const void* data, size_t dataLen) const
 {
-    if (Mode::DataPacket == _mode) {
-        return protoFromBytes<livekit::DataPacket>(data, dataLen, logger(), logCategory());
-    }
-    return {};
+    return protoFromBytes<livekit::DataPacket>(data, dataLen);
 }
 
 template <class Method, typename... Args>

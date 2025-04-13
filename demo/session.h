@@ -94,9 +94,9 @@ private:
     void onError(LiveKitCpp::LiveKitError error, const std::string& what) final;
     void onChanged(const LiveKitCpp::Participant*) final;
     void onStateChanged(LiveKitCpp::SessionState) final;
-    void onChatMessageReceived(const std::string& identity,
-                               const std::string& message, const std::string&,
-                               int64_t, bool deleted, bool) final;
+    void onChatMessageReceived(const LiveKitCpp::ChatMessage& message,
+                               const std::string& participantIdentity,
+                               const std::vector<std::string>&) final;
     void onRemoteParticipantAdded(const std::string& sid) final;
     void onRemoteParticipantRemoved(const std::string& sid) final;
 private:

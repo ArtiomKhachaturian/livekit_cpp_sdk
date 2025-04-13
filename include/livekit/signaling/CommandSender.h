@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CommandSender.h
-#include <string>
+#include <string_view>
 
 // prototype defined in 'Bricks' library,
 // see https://github.com/ArtiomKhachaturian/Bricks
@@ -27,7 +27,7 @@ class CommandSender
 {
 public:
     virtual bool sendBinary(const Bricks::Blob& /*binary*/) { return false; }
-    virtual bool sendText(const std::string_view& /*text*/) { return false; }
+    virtual bool sendText(std::string_view /*text*/) { return false; }
 protected:
     virtual ~CommandSender() = default;
 };

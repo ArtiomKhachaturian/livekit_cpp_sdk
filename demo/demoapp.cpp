@@ -68,9 +68,6 @@ void DemoApp::setAppWindow(QObject* appWindow, const QUrl&)
                 case LiveKitCpp::ServiceState::NoWebsoketsFactory:
                     emit showErrorMessage(tr("Websockets factory is not available"));
                     break;
-                case LiveKitCpp::ServiceState::NoWebRTC:
-                    emit showErrorMessage(tr("WebRTC is not available"));
-                    break;
                 case LiveKitCpp::ServiceState::WebRTCInitError:
                     emit showErrorMessage(tr("Failed to intialize of WebRTC"));
                     break;

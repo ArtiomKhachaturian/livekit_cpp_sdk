@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // DataChannelObserver.h
 #include "Listener.h"
+#include "livekit/signaling/CommandSender.h"
 #include <api/data_channel_interface.h>
 #include <memory>
 
@@ -23,7 +24,7 @@ class DataChannelListener;
 
 // wrapper with support of more convenient
 // callback in comparing with WebRTC stock
-class DataChannel : public webrtc::RefCountInterface
+class DataChannel : public webrtc::RefCountInterface, public CommandSender
 {
     struct Impl;
 public:
@@ -93,6 +94,9 @@ public:
     // `on_complete` implementations do not block the current thread but rather
     // post any expensive operations to other worker threads.
     void send(const webrtc::DataBuffer& buffer);
+    // impl. of CommandSender
+    bool sendBinary(const Bricks::Blob& binary) final;
+    bool sendText(std::string_view text) final;
 protected:
     DataChannel(bool local, webrtc::scoped_refptr<webrtc::DataChannelInterface> channel);
 private:

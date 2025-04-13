@@ -104,12 +104,15 @@ public:
       * the identities of participants who will receive the message, will be sent to every one if empty
       */
     /** the topic under which the message gets published */
-    bool sendUserPacket(std::string payload,
-                        bool reliable = false,
-                        const std::vector<std::string>& destinationIdentities = {},
-                        const std::string& topic = {});
+    bool sendUserPacket(std::string payload, bool reliable,
+                        const std::string& topic = {},
+                        const std::vector<std::string>& destinationSids = {},
+                        const std::vector<std::string>& destinationIdentities = {});
     // [deleted] true to remove message
-    bool sendChatMessage(std::string message, bool deleted = false);
+    bool sendChatMessage(std::string message,
+                         bool deleted = false,
+                         bool generated = false,
+                         const std::vector<std::string>& destinationIdentities = {});
     // connect & state
     SessionState state() const;
     bool connect(std::string host, std::string authToken);

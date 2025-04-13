@@ -170,16 +170,20 @@ bool Session::aesCgmEnabledForLocalMedia() const
 }
 
 bool Session::sendUserPacket(std::string payload, bool reliable,
-                             const std::vector<std::string>& destinationIdentities,
-                             const std::string& topic)
+                             const std::string& topic,
+                             const std::vector<std::string>& destinationSids,
+                             const std::vector<std::string>& destinationIdentities)
 {
     return _impl->_engine.sendUserPacket(std::move(payload), reliable,
-                                         destinationIdentities, topic);
+                                         topic, destinationSids, destinationIdentities);
 }
 
-bool Session::sendChatMessage(std::string message, bool deleted)
+bool Session::sendChatMessage(std::string message, bool deleted, bool generated,
+                              const std::vector<std::string>& destinationIdentities)
 {
-    return _impl->_engine.sendChatMessage(std::move(message), deleted);
+    return _impl->_engine.sendChatMessage(std::move(message),
+                                          deleted, generated,
+                                          destinationIdentities);
 }
 
 SessionState Session::state() const
