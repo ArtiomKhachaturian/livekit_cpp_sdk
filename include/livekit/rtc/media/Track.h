@@ -29,7 +29,7 @@ class Track : public StatsSource
 public:
     ~Track() override = default;
     virtual EncryptionType encryption() const = 0;
-    virtual BackupCodecPolicy backupCodecPolicy() const { return BackupCodecPolicy::Regression; }
+    virtual BackupCodecPolicy backupCodecPolicy() const { return BackupCodecPolicy::PrefererRegression; }
     // server track ID if any
     virtual std::string sid() const = 0;
     // track ID
