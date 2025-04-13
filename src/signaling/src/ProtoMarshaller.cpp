@@ -87,7 +87,11 @@ TrickleRequest ProtoMarshaller::map(const livekit::TrickleRequest& in) const
             out._candidate._sdp = json["candidate"].get<std::string>();
             out._candidate._sdpMid = json["sdpMid"].get<std::string>();
             out._candidate._sdpMLineIndex = json["sdpMLineIndex"].get<int>();
-            // - usernameFragment (may contains null value)
+            // usernameFragment (may contains null value)
+            auto ufrag = json["usernameFragment"];
+            if (!ufrag.is_null()) {
+                out._candidate._usernameFragment = ufrag.get<std::string>();
+            }
         }
         catch (const std::exception& e) {
             logError(e.what());
@@ -105,7 +109,12 @@ livekit::TrickleRequest ProtoMarshaller::map(const TrickleRequest& in) const
     candidateInit["candidate"] = in._candidate._sdp;
     candidateInit["sdpMid"] = in._candidate._sdpMid;
     candidateInit["sdpMLineIndex"] = in._candidate._sdpMLineIndex;
-    candidateInit["usernameFragment"] = nullptr; // ??
+    if (in._candidate._usernameFragment.empty()) {
+        candidateInit["usernameFragment"] = nullptr;
+    }
+    else {
+        candidateInit["usernameFragment"] = in._candidate._usernameFragment;
+    }
     out.set_candidateinit(nlohmann::to_string(candidateInit));
     out.set_target(map(in._target));
     out.set_final(in._final);
@@ -1013,29 +1022,33 @@ livekit::SimulcastCodecInfo ProtoMarshaller::map(const SimulcastCodecInfo& in) c
 BackupCodecPolicy ProtoMarshaller::map(livekit::BackupCodecPolicy in) const
 {
     switch (in) {
-        case livekit::REGRESSION:
+        case livekit::PREFER_REGRESSION:
             break;
+        case livekit::REGRESSION:
+            return BackupCodecPolicy::Regression;
         case livekit::SIMULCAST:
             return BackupCodecPolicy::Simulcast;
         default:
             TYPE_CONVERSION_ERROR(livekit::BackupCodecPolicy, BackupCodecPolicy)
             break;
     }
-    return BackupCodecPolicy::Regression;
+    return BackupCodecPolicy::PrefererRegression;
 }
 
 livekit::BackupCodecPolicy ProtoMarshaller::map(BackupCodecPolicy in) const
 {
     switch (in) {
-        case BackupCodecPolicy::Regression:
+        case BackupCodecPolicy::PrefererRegression:
             break;
+        case BackupCodecPolicy::Regression:
+            return livekit::REGRESSION;
         case BackupCodecPolicy::Simulcast:
             return livekit::SIMULCAST;
         default:
             TYPE_CONVERSION_ERROR(BackupCodecPolicy, livekit::BackupCodecPolicy)
             break;
     }
-    return livekit::REGRESSION;
+    return livekit::PREFER_REGRESSION;
 }
 
 EncryptionType ProtoMarshaller::map(livekit::Encryption_Type in) const
@@ -1743,10 +1756,12 @@ void ProtoMarshaller::mconv(const std::unordered_map<K, V>& from,
 }
 
 IceCandidate::IceCandidate(std::string sdp, std::string sdpMid,
-                           int sdpMLineIndex)
+                           int sdpMLineIndex,
+                           std::string usernameFragment)
     : _sdp(std::move(sdp))
     , _sdpMid(std::move(sdpMid))
     , _sdpMLineIndex(sdpMLineIndex)
+    , _usernameFragment(std::move(usernameFragment))
 {
 }
 

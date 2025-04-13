@@ -94,6 +94,7 @@ Frame {
                             ParticipantView {
                                 anchors.fill: parent
                                 participant: model.data
+                                showIdentity: repeater.count > 1
                             }
                         }
                     }

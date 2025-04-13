@@ -26,6 +26,10 @@ std::unique_ptr<webrtc::IceCandidateInterface> RoomUtils::map(const IceCandidate
                                              candidate._sdpMLineIndex,
                                              candidate._sdp,
                                              error));
+        if (!candidate._usernameFragment.empty()) {
+            auto& cricketIce = const_cast<cricket::Candidate&>(ice->candidate());
+            cricketIce.set_username(candidate._usernameFragment);
+        }
     }
     return ice;
 }
@@ -35,7 +39,10 @@ IceCandidate RoomUtils::map(const webrtc::IceCandidateInterface* candidate)
     if (candidate) {
         std::string sdp;
         if (candidate->ToString(&sdp)) {
-            return IceCandidate(std::move(sdp), candidate->sdp_mid(), candidate->sdp_mline_index());
+            return IceCandidate(std::move(sdp),
+                                candidate->sdp_mid(),
+                                candidate->sdp_mline_index(),
+                                candidate->candidate().username());
         }
     }
     return {};
