@@ -1567,6 +1567,148 @@ SDK ProtoMarshaller::map(livekit::ClientInfo_SDK sdk) const
     return SDK::Unknown;
 }
 
+livekit::DataPacket ProtoMarshaller::map(const DataPacket& in) const
+{
+    livekit::DataPacket out;
+    out.set_kind(map(in._kind));
+    out.set_participant_identity(in._participantIdentity);
+    rconv(in._destinationIdentities, out.mutable_destination_identities());
+    if (std::holds_alternative<UserPacket>(in._value)) {
+        auto value = map(std::get<UserPacket>(in._value));
+        out.set_allocated_user(new livekit::UserPacket(std::move(value)));
+    }
+    else if (std::holds_alternative<ChatMessage>(in._value)) {
+        auto value = map(std::get<ChatMessage>(in._value));
+        out.set_allocated_chat_message(new livekit::ChatMessage(std::move(value)));
+    }
+    return out;
+}
+
+DataPacket ProtoMarshaller::map(const livekit::DataPacket& in) const
+{
+    DataPacket out;
+    out._kind = map(in.kind());
+    out._participantIdentity = in.participant_identity();
+    out._destinationIdentities = rconv<std::string>(in.destination_identities());
+    switch (in.value_case()) {
+        case livekit::DataPacket::kUser:
+            out._value = map(in.user());
+            break;
+        case livekit::DataPacket::kChatMessage:
+            out._value = map(in.chat_message());
+            break;
+        default:
+            logWarning("unsupported data packet value: " + std::to_string(in.value_case()));
+            break;
+    }
+    return out;
+}
+
+livekit::DataPacket::Kind ProtoMarshaller::map(DataPacketKind kind) const
+{
+    switch (kind) {
+        case DataPacketKind::Reliable:
+            return livekit::DataPacket::Kind::DataPacket_Kind_RELIABLE;
+            break;
+        case DataPacketKind::Lossy:
+            break;
+        default:
+            TYPE_CONVERSION_ERROR(DataPacketKind, livekit::DataPacket::Kind)
+            break;
+    }
+    return livekit::DataPacket::Kind::DataPacket_Kind_LOSSY;
+}
+
+DataPacketKind ProtoMarshaller::map(livekit::DataPacket::Kind kind) const
+{
+    switch (kind) {
+        
+        case livekit::DataPacket_Kind_RELIABLE:
+            return DataPacketKind::Reliable;
+            break;
+        case livekit::DataPacket_Kind_LOSSY:
+            break;
+        default:
+            TYPE_CONVERSION_ERROR(livekit::DataPacket::Kind, DataPacketKind)
+            break;
+    }
+    return DataPacketKind::Lossy;
+}
+
+livekit::UserPacket ProtoMarshaller::map(const UserPacket& in) const
+{
+    livekit::UserPacket out;
+    out.set_participant_sid(in._participantSid);
+    out.set_participant_identity(in._participantIdentity);
+    out.set_payload(in._payload);
+    rconv(in._destinationSids, out.mutable_destination_sids());
+    rconv(in._destinationIdentities, out.mutable_destination_identities());
+    if (in._topic.has_value()) {
+        out.set_topic(in._topic.value());
+    }
+    if (in._id.has_value()) {
+        out.set_id(in._id.value());
+    }
+    if (in._startTime.has_value()) {
+        out.set_start_time(in._startTime.value());
+    }
+    if (in._endTime.has_value()) {
+        out.set_end_time(in._endTime.value());
+    }
+    out.set_nonce(in._nonce);
+    return out;
+}
+
+UserPacket ProtoMarshaller::map(const livekit::UserPacket& in) const
+{
+    UserPacket out;
+    out._participantSid = in.participant_sid();
+    out._participantIdentity = in.participant_identity();
+    out._payload = in.payload();
+    out._destinationSids = rconv<std::string>(in.destination_sids());
+    out._destinationIdentities = rconv<std::string>(in.destination_identities());
+    if (in.has_topic()) {
+        out._topic = in.topic();
+    }
+    if (in.has_id()) {
+        out._id = in.id();
+    }
+    if (in.has_start_time()) {
+        out._startTime = in.start_time();
+    }
+    if (in.has_end_time()) {
+        out._endTime = in.end_time();
+    }
+    out._nonce = in.nonce();
+    return out;
+}
+
+livekit::ChatMessage ProtoMarshaller::map(const ChatMessage& in) const
+{
+    livekit::ChatMessage out;
+    out.set_id(in._id);
+    out.set_timestamp(in._timestamp);
+    if (in._editTimestamp.has_value()) {
+        out.set_edit_timestamp(in._editTimestamp.value());
+    }
+    out.set_deleted(in._deleted);
+    out.set_generated(in._generated);
+    return out;
+}
+
+ChatMessage ProtoMarshaller::map(const livekit::ChatMessage& in) const
+{
+    ChatMessage out;
+    out._id = in.id();
+    out._timestamp = in.timestamp();
+    if (in.has_edit_timestamp()) {
+        out._editTimestamp = in.edit_timestamp();
+    }
+    out._deleted = in.deleted();
+    out._generated = in.generated();
+    return out;
+}
+
 std::string_view ProtoMarshaller::logCategory() const
 {
     static const std::string_view category("proto_marshaller");

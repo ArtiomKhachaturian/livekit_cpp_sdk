@@ -26,14 +26,21 @@ class SignalServerListener;
 class ResponseReceiver : private Bricks::LoggableR<>
 {
 public:
-    ResponseReceiver(Bricks::Logger* logger = nullptr);
+    enum class Mode
+    {
+        SignalResponse,
+        DataPacket
+    };
+public:
+    ResponseReceiver(Mode mode, Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
     void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
 protected:
     // overrides of Bricks::LoggableR
     std::string_view logCategory() const final;
 private:
-    std::optional<livekit::SignalResponse> parse(const void* data, size_t dataLen) const;
+    std::optional<livekit::SignalResponse> parseResponse(const void* data, size_t dataLen) const;
+    std::optional<livekit::DataPacket> parseDataPacket(const void* data, size_t dataLen) const;
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
     template <class Method, class TLiveKitType>
@@ -59,7 +66,9 @@ private:
     void handle(const livekit::RequestResponse& response) const;
     void handle(const livekit::TrackSubscribed& subscribed) const;
     void handle(const livekit::Pong& pong) const;
+    void handle(const livekit::DataPacket& packet) const;
 private:
+    const Mode _mode;
     const ProtoMarshaller _marshaller;
     Bricks::Listener<SignalServerListener*> _listener;
 };

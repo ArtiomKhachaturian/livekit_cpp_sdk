@@ -37,6 +37,7 @@ struct RequestResponse;
 struct SubscriptionResponse;
 struct SubscriptionPermissionUpdate;
 struct Pong;
+struct DataPacket;
 
 class SignalServerListener
 {
@@ -62,6 +63,7 @@ public:
     virtual void onRequestResponse(const RequestResponse& /*response*/) {}
     virtual void onSubscriptionResponse(const SubscriptionResponse& /*response*/) {}
     virtual void onPong(const Pong& /*pong*/) {}
+    virtual void onDataPacket(const DataPacket& /*packet*/) {}
     // error handling
     virtual void onSignalParseError() {}
 protected:

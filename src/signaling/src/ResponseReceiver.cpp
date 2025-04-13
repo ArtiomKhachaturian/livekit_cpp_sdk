@@ -56,17 +56,19 @@ MARSHALLED_TYPE_NAME_DECL(livekit::SubscriptionResponse)
 MARSHALLED_TYPE_NAME_DECL(livekit::RequestResponse)
 MARSHALLED_TYPE_NAME_DECL(livekit::TrackSubscribed)
 MARSHALLED_TYPE_NAME_DECL(livekit::Pong)
+MARSHALLED_TYPE_NAME_DECL(livekit::DataPacket)
 
-ResponseReceiver::ResponseReceiver(Bricks::Logger* logger)
+ResponseReceiver::ResponseReceiver(Mode mode, Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
+    , _mode(mode)
     , _marshaller(logger)
 {
 }
 
 void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
 {
-    if (_listener) {
-        if (const auto response = parse(data, dataLen)) {
+    if (_listener && data && dataLen) {
+        if (const auto response = parseResponse(data, dataLen)) {
             switch (response->message_case()) {
                 case livekit::SignalResponse::kJoin:
                     handle(response->join());
@@ -147,6 +149,9 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
                     break;
             }
         }
+        else if (const auto dataPacket = parseDataPacket(data, dataLen)) {
+            handle(dataPacket.value());
+        }
         else {
             notify(&SignalServerListener::onSignalParseError);
         }
@@ -160,9 +165,21 @@ std::string_view ResponseReceiver::logCategory() const
 }
 
 std::optional<livekit::SignalResponse> ResponseReceiver::
-    parse(const void* data, size_t dataLen) const
+    parseResponse(const void* data, size_t dataLen) const
 {
-    return protoFromBytes<livekit::SignalResponse>(data, dataLen, logger(), logCategory());
+    if (Mode::SignalResponse == _mode) {
+        return protoFromBytes<livekit::SignalResponse>(data, dataLen, logger(), logCategory());
+    }
+    return {};
+}
+
+std::optional<livekit::DataPacket>  ResponseReceiver::
+    parseDataPacket(const void* data, size_t dataLen) const
+{
+    if (Mode::DataPacket == _mode) {
+        return protoFromBytes<livekit::DataPacket>(data, dataLen, logger(), logCategory());
+    }
+    return {};
 }
 
 template <class Method, typename... Args>
@@ -281,6 +298,11 @@ void ResponseReceiver::handle(const livekit::TrackSubscribed& subscribed) const
 void ResponseReceiver::handle(const livekit::Pong& pong) const
 {
     signal(&SignalServerListener::onPong, pong);
+}
+
+void ResponseReceiver::handle(const livekit::DataPacket& packet) const
+{
+    signal(&SignalServerListener::onDataPacket, packet);
 }
 
 } // namespace LiveKitCpp

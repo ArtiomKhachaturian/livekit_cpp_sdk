@@ -44,6 +44,7 @@
 #include "livekit/signaling/sfu/UpdateLocalAudioTrack.h"
 #include "livekit/signaling/sfu/UpdateLocalVideoTrack.h"
 #include "livekit/signaling/sfu/ClientInfo.h"
+#include "livekit/signaling/sfu/DataPacket.h"
 #include "livekit_rtc.pb.h"
 #include "livekit_models.pb.h"
 #include <optional>
@@ -171,6 +172,14 @@ public:
     livekit::CandidateProtocol map(CandidateProtocol in) const;
     livekit::ClientInfo_SDK map(SDK sdk) const;
     SDK map(livekit::ClientInfo_SDK sdk) const;
+    livekit::DataPacket map(const DataPacket& in) const;
+    DataPacket map(const livekit::DataPacket& in) const;
+    livekit::DataPacket::Kind map(DataPacketKind kind) const;
+    DataPacketKind map(livekit::DataPacket::Kind kind) const;
+    livekit::UserPacket map(const UserPacket& in) const;
+    UserPacket map(const livekit::UserPacket& in) const;
+    livekit::ChatMessage map(const ChatMessage& in) const;
+    ChatMessage map(const livekit::ChatMessage& in) const;
 protected:
     // overrides of Bricks::LoggableR
     std::string_view logCategory() const final;

@@ -55,6 +55,15 @@ MARSHALLED_TYPE_NAME_DECL(UpdateParticipantMetadata)
 MARSHALLED_TYPE_NAME_DECL(Ping)
 MARSHALLED_TYPE_NAME_DECL(UpdateLocalAudioTrack)
 MARSHALLED_TYPE_NAME_DECL(UpdateLocalVideoTrack)
+MARSHALLED_TYPE_NAME_DECL(DataPacket)
+
+template <typename T>
+inline std::string detectTypename(const std::string& typeName) {
+    if (typeName.empty()) {
+        return marshalledTypeName<T>();
+    }
+    return typeName;
+}
 
 RequestSender::RequestSender(CommandSender* commandSender, Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
@@ -145,6 +154,11 @@ bool RequestSender::updateVideoTrack(const UpdateLocalVideoTrack& track) const
     return send(&Request::mutable_update_video_track, track);
 }
 
+bool RequestSender::dataPacket(const DataPacket& packet) const
+{
+    return send(_marshaller.map(packet));
+}
+
 bool RequestSender::canSend() const
 {
     return nullptr != _commandSender;
@@ -158,35 +172,39 @@ std::string_view RequestSender::logCategory() const
 
 template <class TSetMethod, class TObject>
 bool RequestSender::send(const TSetMethod& setMethod, const TObject& object,
-                              std::string typeName) const
+                         const std::string& typeName) const
 {
     bool ok = false;
     if (canSend()) {
         Request request;
-        if (typeName.empty()) {
-            typeName = marshalledTypeName<TObject>();
-        }
         if (const auto target = (request.*setMethod)()) {
             *target = _marshaller.map(object);
-            const auto bytes = protoToBytes(request, logger(), logCategory());
-            if (!bytes.empty()) {
-                ok = _commandSender->sendBinary(VectorBlob(bytes));
-                if (ok) {
-                    logVerbose("sending '" + typeName + "' signal to server");
-                }
-                else {
-                    logError("send of '" + typeName + "' signal has been failed");
-                }
-            }
-            else {
-                logError("failed to serialize of '" + typeName + "' into a bytes array");
-            }
+            ok = send(request, detectTypename<TObject>(typeName));
         }
         else {
-            logError("proto method not available for set of '" + typeName + "'");
+            logError("proto method not available for set of '" +
+                     detectTypename<TObject>(typeName) + "'");
         }
     }
     return ok;
+}
+
+template <class TProtoObject>
+bool RequestSender::send(const TProtoObject& object, const std::string& typeName) const
+{
+    const auto bytes = protoToBytes(object, logger(), logCategory());
+    if (!bytes.empty()) {
+        const auto ok = _commandSender->sendBinary(VectorBlob(bytes));
+        if (ok) {
+            logVerbose("sending '" + typeName + "' to server");
+        }
+        else {
+            logError("send of '" + typeName + "' signal has been failed");
+        }
+    }
+    else {
+        logError("failed to serialize of '" + typeName + "' into a bytes array");
+    }
 }
 
 } // namespace LiveKitCpp
