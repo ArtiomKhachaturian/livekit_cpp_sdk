@@ -43,20 +43,20 @@ ProtoMarshaller::ProtoMarshaller(Bricks::Logger* logger)
 JoinResponse ProtoMarshaller::map(livekit::JoinResponse in) const
 {
     JoinResponse out;
-    out._room = map(std::move(*in.mutable_room()));
-    out._participant = map(std::move(*in.mutable_participant()));
-    out._otherParticipants = rconv<ParticipantInfo, livekit::ParticipantInfo>(std::move(*in.mutable_other_participants()));
-    out._serverVersion = std::move(*in.mutable_server_version());
-    out._iceServers = rconv<ICEServer, livekit::ICEServer>(std::move(*in.mutable_ice_servers()));
+    out._room = map(in.room());
+    out._participant = map(in.participant());
+    out._otherParticipants = rconv<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
+    out._serverVersion = in.server_version();
+    out._iceServers = rconv<ICEServer, livekit::ICEServer>(in.ice_servers());
     out._subscriberPrimary = in.subscriber_primary();
-    out._alternativeUrl = std::move(*in.mutable_alternative_url());
-    out._clientConfiguration = map(std::move(*in.mutable_client_configuration()));
-    out._serverRegion = std::move(*in.mutable_server_region());
+    out._alternativeUrl = in.alternative_url();
+    out._clientConfiguration = map(in.client_configuration());
+    out._serverRegion = in.server_region();
     out._pingTimeout = in.ping_timeout();
     out._pingInterval = in.ping_interval();
-    out._serverInfo = map(std::move(*in.mutable_server_info()));
-    out._sifTrailer = std::move(*in.mutable_sif_trailer());
-    out._enabledPublishCodecs = rconv<Codec, livekit::Codec>(std::move(*in.mutable_enabled_publish_codecs()));
+    out._serverInfo = map(in.server_info());
+    out._sifTrailer = in.sif_trailer();
+    out._enabledPublishCodecs = rconv<Codec, livekit::Codec>(in.enabled_publish_codecs());
     out._fastPublish = in.fast_publish();
     return out;
 }
@@ -80,7 +80,7 @@ livekit::SessionDescription ProtoMarshaller::map(SessionDescription in) const
 TrickleRequest ProtoMarshaller::map(livekit::TrickleRequest in) const
 {
     TrickleRequest out;
-    const auto candidateInit = in.candidateinit();
+    const auto& candidateInit = in.candidateinit();
     if (!candidateInit.empty()) {
         try {
             auto json = nlohmann::json::parse(candidateInit);
@@ -106,14 +106,14 @@ livekit::TrickleRequest ProtoMarshaller::map(TrickleRequest in) const
 {
     livekit::TrickleRequest out;
     nlohmann::json candidateInit;
-    candidateInit["candidate"] = in._candidate._sdp;
-    candidateInit["sdpMid"] = in._candidate._sdpMid;
+    candidateInit["candidate"] = std::move(in._candidate._sdp);
+    candidateInit["sdpMid"] = std::move(in._candidate._sdpMid);
     candidateInit["sdpMLineIndex"] = in._candidate._sdpMLineIndex;
     if (in._candidate._usernameFragment.empty()) {
         candidateInit["usernameFragment"] = nullptr;
     }
     else {
-        candidateInit["usernameFragment"] = in._candidate._usernameFragment;
+        candidateInit["usernameFragment"] = std::move(in._candidate._usernameFragment);
     }
     out.set_candidateinit(nlohmann::to_string(candidateInit));
     out.set_target(map(in._target));
