@@ -627,17 +627,17 @@ void RTCEngine::onPongTimeout()
     cleanup(LiveKitError::ServerPingTimedOut);
 }
 
-void RTCEngine::onUserPacket(const UserPacket& packet,
-                             const std::string& participantIdentity,
-                             const std::vector<std::string>& destinationIdentities)
+void RTCEngine::onUserPacket(UserPacket packet,
+                             std::string participantIdentity,
+                             std::vector<std::string> destinationIdentities)
 {
     invoke(&SessionListener::onUserPacketReceived, packet,
            participantIdentity, destinationIdentities);
 }
 
-void RTCEngine::onChatMessage(const ChatMessage& message,
-                              const std::string& participantIdentity,
-                              const std::vector<std::string>& destinationIdentities)
+void RTCEngine::onChatMessage(ChatMessage message,
+                              std::string participantIdentity,
+                              std::vector<std::string> destinationIdentities)
 {
     invoke(&SessionListener::onChatMessageReceived, message,
            participantIdentity, destinationIdentities);

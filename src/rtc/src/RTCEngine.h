@@ -135,12 +135,10 @@ private:
     bool onPingRequested() final;
     void onPongTimeout() final;
     // impl. of DataExchangeListener
-    void onUserPacket(const UserPacket& packet,
-                      const std::string& participantIdentity,
-                      const std::vector<std::string>& destinationIdentities) final;
-    void onChatMessage(const ChatMessage& message,
-                       const std::string& participantIdentity,
-                       const std::vector<std::string>& destinationIdentities) final;
+    void onUserPacket(UserPacket packet, std::string participantIdentity,
+                      std::vector<std::string> destinationIdentities) final;
+    void onChatMessage(ChatMessage message, std::string participantIdentity,
+                       std::vector<std::string> destinationIdentities) final;
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
