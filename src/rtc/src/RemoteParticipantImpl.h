@@ -19,6 +19,7 @@
 #include "livekit/signaling/sfu/ParticipantInfo.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -31,6 +32,7 @@ namespace LiveKitCpp
 
 class RemoteAudioTrackImpl;
 class RemoteVideoTrackImpl;
+class RtpReceiversStorage;
 class E2ESecurityFactory;
 
 class RemoteParticipantImpl : public RemoteParticipant
@@ -41,13 +43,16 @@ class RemoteParticipantImpl : public RemoteParticipant
     class ListenerImpl;
 public:
     RemoteParticipantImpl(E2ESecurityFactory* securityFactory,
+                          const std::shared_ptr<RtpReceiversStorage>& receiversStorage,
                           const ParticipantInfo& info = {});
     ~RemoteParticipantImpl() final { reset(); }
     void reset();
     bool setRemoteSideTrackMute(const std::string& sid, bool mute);
     std::optional<TrackType> trackType(const std::string& sid) const;
-    bool addAudio(const std::string& sid, const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
-    bool addVideo(const std::string& sid, const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
+    bool addAudio(const std::string& sid);
+    bool addAudio(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
+    bool addVideo(const std::string& sid);
+    bool addVideo(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     bool removeAudio(const std::string& sid);
     bool removeVideo(const std::string& sid);
     ParticipantInfo info() const { return _info(); }
@@ -69,11 +74,12 @@ public:
     std::shared_ptr<RemoteVideoTrack> videoTrack(size_t index) const final;
     std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const final;
 private:
+    bool updateAudio(const TrackInfo& trackInfo) const;
+    bool updateVideo(const TrackInfo& trackInfo) const;
     const TrackInfo* findBySid(const std::string& sid) const;
     TrackInfo* findBySid(const std::string& sid);
     template <class TTrack>
-    bool addTrack(const std::string& sid,
-                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+    bool addTrack(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                   Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     template <class TTrack>
     bool removeTrack(const std::string& sid, Bricks::SafeObj<Tracks<TTrack>>& collection) const;
@@ -86,6 +92,7 @@ private:
                                            const Tracks<TTrack>& collection);
 private:
     E2ESecurityFactory* const _securityFactory;
+    const std::shared_ptr<RtpReceiversStorage> _receiversStorage;
     const std::shared_ptr<ListenerImpl> _listener;
     Bricks::SafeObj<ParticipantInfo> _info;
     Bricks::SafeObj<AudioTracks> _audioTracks;

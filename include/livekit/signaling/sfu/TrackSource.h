@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TrackSource.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
 
 namespace LiveKitCpp
 {
@@ -24,5 +25,7 @@ enum class TrackSource
     ScreenShare = 3,
     ScreenShareAudio = 4,
 };
+
+LIVEKIT_SIGNALING_API std::string toString(TrackSource source);
 
 } // namespace LiveKitCpp

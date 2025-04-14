@@ -15,6 +15,8 @@
 #include "livekit/signaling/NetworkType.h"
 #include "livekit/signaling/sfu/SignalTarget.h"
 #include "livekit/signaling/sfu/Sdk.h"
+#include "livekit/signaling/sfu/TrackSource.h"
+#include "livekit/signaling/sfu/TrackType.h"
 #include <cassert>
 
 namespace LiveKitCpp
@@ -106,6 +108,42 @@ std::string toString(SDK sdk)
             break;
     }
     return "UNKNOWN";
+}
+
+std::string toString(TrackSource source)
+{
+    switch (source) {
+        case TrackSource::Unknown:
+            break;
+        case TrackSource::Camera:
+            return "camera";
+        case TrackSource::Microphone:
+            return "microphone";
+        case TrackSource::ScreenShare:
+            return "screen-share";
+        case TrackSource::ScreenShareAudio:
+            return "screen-share audio";
+        default:
+            assert(false);
+            break;
+    }
+    return "unknown";
+}
+
+std::string toString(TrackType type)
+{
+    switch (type) {
+        case TrackType::Audio:
+            return "audio";
+        case TrackType::Video:
+            return "video";
+        case TrackType::Data:
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    return "data";
 }
 
 } // namespace LiveKitCpp

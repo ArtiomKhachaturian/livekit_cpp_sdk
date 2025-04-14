@@ -435,11 +435,22 @@ void TransportManager::onIceCandidateGathered(SignalTarget target,
     }
 }
 
+void TransportManager::onTrackAdded(SignalTarget target,
+                                    rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                                    const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>&)
+{
+    if (SignalTarget::Subscriber == target) {
+        _listener.invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(receiver));
+    }
+}
+
 void TransportManager::onRemoteTrackAdded(SignalTarget target,
                                           rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (SignalTarget::Subscriber == target) {
-        _listener.invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(transceiver));
+        if (auto receiver = transceiver->receiver()) {
+            _listener.invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(receiver));
+        }
     }
 }
 

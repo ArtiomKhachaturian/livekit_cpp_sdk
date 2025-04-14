@@ -38,6 +38,7 @@ RemoteParticipants::RemoteParticipants(E2ESecurityFactory* securityFactory,
     : Bricks::LoggableS<>(logger)
     , _securityFactory(securityFactory)
     , _listener(listener)
+    , _nonBindedReceivers(std::make_shared<NonBindedRtpReceivers>())
 {
 }
 
@@ -67,7 +68,9 @@ void RemoteParticipants::setInfo(const std::vector<ParticipantInfo>& infos)
         _participants->reserve(infos.size());
         for (const auto& info : infos) {
             if (ParticipantState::Disconnected != info._state) {
-                addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory, info));
+                addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory,
+                                                                       _nonBindedReceivers,
+                                                                       info));
             }
         }
     }
@@ -84,7 +87,9 @@ void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
         const auto updated = SeqType::intersection(current, infos, compareParticipantInfo);
         // add new
         for (const auto& info : added) {
-            addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory, info));
+            addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory,
+                                                                   _nonBindedReceivers,
+                                                                   info));
         }
         // remove
         for (const auto& info : removed) {
@@ -92,40 +97,44 @@ void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
         }
         // update existed
         for (const auto& info : updated) {
-            if (const auto ndx = findBySid(info._sid)) {
+            if (const auto ndx = participantIndexBySid(info._sid)) {
                 const auto participant = _participants->at(ndx.value());
                 participant->setInfo(info);
                 if (ParticipantState::Disconnected == info._state) {
                     _participants->erase(_participants->begin() + ndx.value());
-                    removeParticipant(participant);
+                    dispose(participant);
                 }
             }
         }
     }
 }
 
-bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpTransceiverInterface>& transceiver)
-{
-    return transceiver && addMedia(transceiver->receiver());
-}
-
 bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
-    bool added = false;
     if (receiver) {
-        auto sid = receiver->id();
-        if (!sid.empty()) {
-            LOCK_WRITE_SAFE_OBJ(_orphans);
-            added = addMedia(sid, receiver);
-            if (!added) {
-                added = addToOrphans(std::move(sid), receiver);
+        const auto type = receiver->media_type();
+        LOCK_READ_SAFE_OBJ(_participants);
+        for (const auto& participant : _participants.constRef()) {
+            switch (type) {
+                case cricket::MEDIA_TYPE_AUDIO:
+                    if (participant->addAudio(receiver)) {
+                        return true;
+                    }
+                    break;
+                case cricket::MEDIA_TYPE_VIDEO:
+                    if (participant->addVideo(receiver)) {
+                        return true;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
-        else {
-            logWarning("empty ID of track receiver");
+        if (_nonBindedReceivers->add(receiver)) {
+            return true;
         }
     }
-    return added;
+    return false;
 }
 
 bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
@@ -133,11 +142,8 @@ bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceive
     if (receiver) {
         const auto sid = receiver->id();
         if (!sid.empty()) {
+            _nonBindedReceivers->take(sid);
             LOCK_READ_SAFE_OBJ(_participants);
-            {
-                LOCK_WRITE_SAFE_OBJ(_orphans);
-                _orphans->erase(sid);
-            }
             const auto type = receiver->media_type();
             for (const auto& participant : _participants.constRef()) {
                 if (cricket::MEDIA_TYPE_VIDEO == type) {
@@ -159,7 +165,7 @@ bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceive
 
 void RemoteParticipants::reset()
 {
-    _orphans({});
+    _nonBindedReceivers->clear();
     LOCK_WRITE_SAFE_OBJ(_participants);
     clearParticipants();
 }
@@ -170,7 +176,7 @@ size_t RemoteParticipants::count() const
     return _participants->size();
 }
 
-std::shared_ptr<RemoteParticipant> RemoteParticipants::at(size_t index) const
+std::shared_ptr<RemoteParticipantImpl> RemoteParticipants::at(size_t index) const
 {
     LOCK_READ_SAFE_OBJ(_participants);
     if (index < _participants->size()) {
@@ -179,11 +185,11 @@ std::shared_ptr<RemoteParticipant> RemoteParticipants::at(size_t index) const
     return {};
 }
 
-std::shared_ptr<RemoteParticipant> RemoteParticipants::at(const std::string& sid) const
+std::shared_ptr<RemoteParticipantImpl> RemoteParticipants::at(const std::string& sid) const
 {
     if (!sid.empty()) {
         LOCK_READ_SAFE_OBJ(_participants);
-        if (const auto ndx = findBySid(sid)) {
+        if (const auto ndx = participantIndexBySid(sid)) {
             return _participants->at(ndx.value());
         }
     }
@@ -209,97 +215,12 @@ std::vector<ParticipantInfo> RemoteParticipants::infos() const
     return {};
 }
 
-bool RemoteParticipants::addMedia(const std::string& sid,
-                                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
-{
-    if (receiver && !sid.empty()) {
-        std::shared_ptr<RemoteParticipantImpl> target;
-        TrackType trackType;
-        {
-            LOCK_READ_SAFE_OBJ(_participants);
-            for (const auto& participant : _participants.constRef()) {
-                if (const auto type = participant->trackType(sid)) {
-                    target = participant;
-                    trackType = type.value();
-                    break;
-                }
-            }
-        }
-        if (target) {
-            addMedia(target, trackType, sid, receiver);
-            return true;
-        }
-    }
-    return false;
-}
-
-void RemoteParticipants::addMedia(const std::shared_ptr<RemoteParticipantImpl>& participant,
-                                  TrackType type, const std::string& sid,
-                                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
-{
-    if (participant && receiver) {
-        bool added = false;
-        switch (type) {
-            case TrackType::Audio:
-                added = participant->addAudio(sid, receiver);
-                break;
-            case TrackType::Video:
-                added = participant->addVideo(sid, receiver);
-                break;
-            default:
-                break;
-        }
-        if (!added) {
-            // TODO: log error
-        }
-    }
-}
-
-bool RemoteParticipants::addToOrphans(std::string sid,
-                                      const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
-{
-    if (receiver && !sid.empty()) {
-        _orphans->insert(std::make_pair(std::move(sid), receiver));
-        return true;
-    }
-    return false;
-}
-
 void RemoteParticipants::addParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant)
 {
     if (participant) {
-        {
-            LOCK_WRITE_SAFE_OBJ(_orphans);
-            // fill tracks or keep references for the future orphans
-            for (const auto& trackInfo : participant->info()._tracks) {
-                const auto& sid = trackInfo._sid;
-                const auto type = trackInfo._type;
-                const auto orphan = _orphans->find(sid);
-                if (orphan != _orphans->end()) {
-                    addMedia(participant, type, sid, orphan->second);
-                    _orphans->erase(orphan);
-                }
-            }
-        }
         _participants->push_back(participant);
         if (_listener) {
             _listener->onParticipantAdded(participant->sid());
-        }
-    }
-}
-
-void RemoteParticipants::removeParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant)
-{
-    if (participant) {
-        {
-            LOCK_WRITE_SAFE_OBJ(_orphans);
-            for (const auto& trackInfo : participant->info()._tracks) {
-                _orphans->erase(trackInfo._sid);
-            }
-        }
-        participant->reset();
-        if (_listener) {
-            _listener->onParticipantRemoved(participant->sid());
         }
     }
 }
@@ -308,24 +229,35 @@ void RemoteParticipants::removeParticipant(const std::string& sid)
 {
     if (!sid.empty()) {
         std::shared_ptr<RemoteParticipantImpl> participant;
-        if (const auto ndx = findBySid(sid)) {
+        if (const auto ndx = participantIndexBySid(sid)) {
             participant = _participants->at(ndx.value());
             _participants->erase(_participants->begin() + ndx.value());
         }
-        if (participant) {
-            removeParticipant(participant);
-        }
+        dispose(participant);
     }
 }
 
 void RemoteParticipants::clearParticipants()
 {
     for (const auto& participant : _participants.take()) {
-        removeParticipant(participant);
+        dispose(participant);
     }
 }
 
-std::optional<size_t> RemoteParticipants::findBySid(const std::string& sid) const
+void RemoteParticipants::dispose(const std::shared_ptr<RemoteParticipantImpl>& participant)
+{
+    if (participant) {
+        for (const auto& trackInfo : participant->info()._tracks) {
+            _nonBindedReceivers->take(trackInfo._sid);
+        }
+        participant->reset();
+        if (_listener) {
+            _listener->onParticipantRemoved(participant->sid());
+        }
+    }
+}
+
+std::optional<size_t> RemoteParticipants::participantIndexBySid(const std::string& sid) const
 {
     if (!sid.empty()) {
         if (const auto s = _participants->size()) {

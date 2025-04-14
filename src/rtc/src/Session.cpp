@@ -15,6 +15,7 @@
 #include "DefaultKeyProvider.h"
 #include "LocalAudioTrackImpl.h"
 #include "CameraTrackImpl.h"
+#include "RemoteParticipantImpl.h"
 #include "RTCEngine.h"
 #include "StatsSourceImpl.h"
 #include "PeerConnectionFactory.h"

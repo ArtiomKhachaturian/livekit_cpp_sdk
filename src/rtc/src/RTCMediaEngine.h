@@ -110,7 +110,7 @@ protected:
                        webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                        webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) override;
     void onLocalTrackRemoved(const std::string& id, cricket::MediaType) override;
-    void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
+    void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
     void handleLocalParticipantDisconnection(DisconnectReason reason);

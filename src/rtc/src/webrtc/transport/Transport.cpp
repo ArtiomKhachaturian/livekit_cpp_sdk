@@ -801,7 +801,7 @@ void Transport::Impl::OnIceSelectedCandidatePairChanged(const cricket::Candidate
 }
 
 void Transport::Impl::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                           const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
+                                 const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
 {
     invoke(&TransportListener::onTrackAdded, std::move(receiver), streams);
 }

@@ -11,19 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // TrackType.h
-#include "livekit/signaling/LiveKitSignalingExport.h"
+#pragma once // RtpReceiversStorage.h
+#include <api/rtp_receiver_interface.h>
 
 namespace LiveKitCpp
 {
 
-enum class TrackType
+class RtpReceiversStorage
 {
-    Audio = 0,
-    Video = 1,
-    Data = 2,
+public:
+    virtual ~RtpReceiversStorage() = default;
+    virtual rtc::scoped_refptr<webrtc::RtpReceiverInterface> take(const std::string& id) = 0;
 };
-
-LIVEKIT_SIGNALING_API std::string toString(TrackType type);
-
+	
 } // namespace LiveKitCpp
