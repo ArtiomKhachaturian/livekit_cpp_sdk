@@ -93,7 +93,7 @@ public:
     void OnIceSelectedCandidatePairChanged(const cricket::CandidatePairChangeEvent& event) final;
     void OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                     const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) final;
-    void OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    //void OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     void OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     void OnInterestingUsage(int usagePattern) final;
 protected:
@@ -803,13 +803,18 @@ void Transport::Impl::OnIceSelectedCandidatePairChanged(const cricket::Candidate
 void Transport::Impl::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                                  const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
 {
-    invoke(&TransportListener::onTrackAdded, std::move(receiver), streams);
+    invoke(&TransportListener::onRemoteTrackAdded, std::move(receiver), streams);
 }
 
-void Transport::Impl::OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+/*void Transport::Impl::OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
+    if (transceiver) {
+        if (auto receiver = transceiver->receiver()) {
+            const auto streams = receiver->streams();
+        }
+    }
     invoke(&TransportListener::onRemoteTrackAdded, std::move(transceiver));
-}
+}*/
 
 void Transport::Impl::OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {

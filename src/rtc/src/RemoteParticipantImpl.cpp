@@ -126,25 +126,25 @@ void RemoteParticipantImpl::reset()
     _listener->reset();
 }
 
-bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& sid, bool mute)
+bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         LOCK_WRITE_SAFE_OBJ(_info);
-        if (auto trackInfo = findBySid(sid)) {
+        if (auto trackInfo = findBySid(trackSid)) {
             if (trackInfo->_muted == mute) {
                 return true;
             }
             trackInfo->_muted = mute;
             if (TrackType::Audio == trackInfo->_type) {
                 LOCK_READ_SAFE_OBJ(_audioTracks);
-                if (const auto ndx = findBySid(sid, _audioTracks.constRef())) {
+                if (const auto ndx = findBySid(trackSid, _audioTracks.constRef())) {
                     _audioTracks->at(ndx.value())->setInfo(*trackInfo);
                     return true;
                 }
             }
             if (TrackType::Video == trackInfo->_type) {
                 LOCK_READ_SAFE_OBJ(_videoTracks);
-                if (const auto ndx = findBySid(sid, _videoTracks.constRef())) {
+                if (const auto ndx = findBySid(trackSid, _videoTracks.constRef())) {
                     _videoTracks->at(ndx.value())->setInfo(*trackInfo);
                     return true;
                 }
@@ -154,57 +154,47 @@ bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& sid, bool 
     return false;
 }
 
-std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& sid) const
+std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& trackSid) const
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         LOCK_READ_SAFE_OBJ(_info);
-        if (const auto trackInfo = findBySid(sid)) {
+        if (const auto trackInfo = findBySid(trackSid)) {
             return trackInfo->_type;
         }
     }
     return std::nullopt;
 }
 
-bool RemoteParticipantImpl::addAudio(const std::string& sid)
+bool RemoteParticipantImpl::addAudio(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
-    if (_receiversStorage) {
-        return addAudio(_receiversStorage->take(sid));
+    if (!receiver && _receiversStorage) {
+        receiver = _receiversStorage->take(trackSid);
     }
-    return false;
-}
-
-bool RemoteParticipantImpl::addAudio(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
-{
     if (receiver && cricket::MEDIA_TYPE_AUDIO == receiver->media_type()) {
-        return addTrack(receiver, _audioTracks);
+        return addTrack(trackSid, receiver, _audioTracks);
     }
     return false;
 }
 
-bool RemoteParticipantImpl::addVideo(const std::string& sid)
+bool RemoteParticipantImpl::addVideo(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
-    if (_receiversStorage) {
-        return addVideo(_receiversStorage->take(sid));
+    if (!receiver && _receiversStorage) {
+        receiver = _receiversStorage->take(trackSid);
     }
-    return false;
-}
-
-bool RemoteParticipantImpl::addVideo(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
-{
     if (receiver && cricket::MEDIA_TYPE_VIDEO == receiver->media_type()) {
-        return addTrack(receiver, _videoTracks);
+        return addTrack(trackSid, receiver, _videoTracks);
     }
     return false;
 }
 
-bool RemoteParticipantImpl::removeAudio(const std::string& sid)
+bool RemoteParticipantImpl::removeAudio(const std::string& trackSid)
 {
-    return removeTrack(sid, _audioTracks);
+    return removeTrack(trackSid, _audioTracks);
 }
 
-bool RemoteParticipantImpl::removeVideo(const std::string& sid)
+bool RemoteParticipantImpl::removeVideo(const std::string& trackSid)
 {
-    return removeTrack(sid, _videoTracks);
+    return removeTrack(trackSid, _videoTracks);
 }
 
 void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
@@ -331,11 +321,11 @@ std::shared_ptr<RemoteAudioTrack> RemoteParticipantImpl::audioTrack(size_t index
     return {};
 }
 
-std::shared_ptr<RemoteAudioTrack> RemoteParticipantImpl::audioTrack(const std::string& sid) const
+std::shared_ptr<RemoteAudioTrack> RemoteParticipantImpl::audioTrack(const std::string& trackSid) const
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         LOCK_READ_SAFE_OBJ(_audioTracks);
-        if (const auto ndx = findBySid(sid, _audioTracks.constRef())) {
+        if (const auto ndx = findBySid(trackSid, _audioTracks.constRef())) {
             return _audioTracks->at(ndx.value());
         }
     }
@@ -351,11 +341,11 @@ std::shared_ptr<RemoteVideoTrack> RemoteParticipantImpl::videoTrack(size_t index
     return {};
 }
 
-std::shared_ptr<RemoteVideoTrack> RemoteParticipantImpl::videoTrack(const std::string& sid) const
+std::shared_ptr<RemoteVideoTrack> RemoteParticipantImpl::videoTrack(const std::string& trackSid) const
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         LOCK_READ_SAFE_OBJ(_videoTracks);
-        if (const auto ndx = findBySid(sid, _videoTracks.constRef())) {
+        if (const auto ndx = findBySid(trackSid, _videoTracks.constRef())) {
             return _videoTracks->at(ndx.value());
         }
     }
@@ -386,11 +376,11 @@ bool RemoteParticipantImpl::updateVideo(const TrackInfo& trackInfo) const
     return false;
 }
 
-const TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid) const
+const TrackInfo* RemoteParticipantImpl::findBySid(const std::string& trackSid) const
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         for (const auto& trackInfo : _info->_tracks) {
-            if (trackInfo._sid == sid) {
+            if (trackInfo._sid == trackSid) {
                 return &trackInfo;
             }
         }
@@ -398,11 +388,11 @@ const TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid) const
     return nullptr;
 }
 
-TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid)
+TrackInfo* RemoteParticipantImpl::findBySid(const std::string& trackSid)
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         for (auto& trackInfo : _info->_tracks) {
-            if (trackInfo._sid == sid) {
+            if (trackInfo._sid == trackSid) {
                 return &trackInfo;
             }
         }
@@ -411,31 +401,33 @@ TrackInfo* RemoteParticipantImpl::findBySid(const std::string& sid)
 }
 
 template <class TTrack>
-bool RemoteParticipantImpl::addTrack(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+bool RemoteParticipantImpl::addTrack(const std::string& trackSid,
+                                     const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                      Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
     bool added = false;
-    if (auto device = makeDevice<TTrack>(receiver)) {
-        const auto sid = device->id();
-        LOCK_READ_SAFE_OBJ(_info);
-        if (const auto trackInfo = findBySid(sid)) {
-            auto trackImpl = std::make_shared<TTrack>(*trackInfo,
-                                                      std::move(receiver),
-                                                      std::move(device),
-                                                      _securityFactory);
-            if (attachCryptor(trackInfo->_encryption, receiver)) {
-                {
-                    const std::lock_guard guard(collection.mutex());
-                    collection->push_back(std::move(trackImpl));
+    if (!trackSid.empty()) {
+        if (auto device = makeDevice<TTrack>(receiver)) {
+            LOCK_READ_SAFE_OBJ(_info);
+            if (const auto trackInfo = findBySid(trackSid)) {
+                auto trackImpl = std::make_shared<TTrack>(*trackInfo,
+                                                          std::move(receiver),
+                                                          std::move(device),
+                                                          _securityFactory);
+                if (attachCryptor(trackInfo->_encryption, receiver)) {
+                    {
+                        const std::lock_guard guard(collection.mutex());
+                        collection->push_back(std::move(trackImpl));
+                    }
+                    _listener->invoke(&RemoteParticipantListener::onRemoteTrackAdded,
+                                      trackInfo->_type, trackInfo->_encryption, trackSid);
+                    added = true;
                 }
-                _listener->invoke(&RemoteParticipantListener::onRemoteTrackAdded,
-                                  trackInfo->_type, trackInfo->_encryption, sid);
-                added = true;
-            }
-            else {
-                _listener->invoke(&RemoteParticipantListener::onTrackCryptoError,
-                                  trackInfo->_type, trackInfo->_encryption,
-                                  sid, E2ECryptoError::CryptorCreationFailure);
+                else {
+                    _listener->invoke(&RemoteParticipantListener::onTrackCryptoError,
+                                      trackInfo->_type, trackInfo->_encryption,
+                                      trackSid, E2ECryptoError::CryptorCreationFailure);
+                }
             }
         }
     }
@@ -443,14 +435,14 @@ bool RemoteParticipantImpl::addTrack(const rtc::scoped_refptr<webrtc::RtpReceive
 }
 
 template <class TTrack>
-bool RemoteParticipantImpl::removeTrack(const std::string& sid,
+bool RemoteParticipantImpl::removeTrack(const std::string& trackSid,
                                         Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         std::shared_ptr<TTrack> removed;
         {
             const std::lock_guard guard(collection.mutex());
-            if (const auto ndx = findBySid(sid, collection.constRef())) {
+            if (const auto ndx = findBySid(trackSid, collection.constRef())) {
                 removed = collection->at(ndx.value());
                 collection->erase(collection->begin() + ndx.value());
             }
@@ -507,13 +499,13 @@ bool RemoteParticipantImpl::attachCryptor(EncryptionType encryption,
 }
 
 template <class TTrack>
-std::optional<size_t> RemoteParticipantImpl::findBySid(const std::string& sid,
+std::optional<size_t> RemoteParticipantImpl::findBySid(const std::string& trackSid,
                                                        const Tracks<TTrack>& collection)
 {
-    if (!sid.empty()) {
+    if (!trackSid.empty()) {
         if (const auto s = collection.size()) {
             for (size_t i = 0U; i < s; ++i) {
-                if (sid == collection[i]->sid()) {
+                if (trackSid == collection[i]->sid()) {
                     return i;
                 }
             }

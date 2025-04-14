@@ -47,14 +47,12 @@ public:
                           const ParticipantInfo& info = {});
     ~RemoteParticipantImpl() final { reset(); }
     void reset();
-    bool setRemoteSideTrackMute(const std::string& sid, bool mute);
-    std::optional<TrackType> trackType(const std::string& sid) const;
-    bool addAudio(const std::string& sid);
-    bool addAudio(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
-    bool addVideo(const std::string& sid);
-    bool addVideo(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
-    bool removeAudio(const std::string& sid);
-    bool removeVideo(const std::string& sid);
+    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute);
+    std::optional<TrackType> trackType(const std::string& trackSid) const;
+    bool addAudio(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
+    bool addVideo(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
+    bool removeAudio(const std::string& trackSid);
+    bool removeVideo(const std::string& trackSid);
     ParticipantInfo info() const { return _info(); }
     void setInfo(const ParticipantInfo& info);
     // impl. of Participant
@@ -76,19 +74,20 @@ public:
 private:
     bool updateAudio(const TrackInfo& trackInfo) const;
     bool updateVideo(const TrackInfo& trackInfo) const;
-    const TrackInfo* findBySid(const std::string& sid) const;
-    TrackInfo* findBySid(const std::string& sid);
+    const TrackInfo* findBySid(const std::string& trackSid) const;
+    TrackInfo* findBySid(const std::string& trackSid);
     template <class TTrack>
-    bool addTrack(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+    bool addTrack(const std::string& trackSid,
+                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                   Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     template <class TTrack>
-    bool removeTrack(const std::string& sid, Bricks::SafeObj<Tracks<TTrack>>& collection) const;
+    bool removeTrack(const std::string& trackSid, Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     template <class TTrack>
     void clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     bool attachCryptor(EncryptionType encryption,
                        const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const;
     template <class TTrack>
-    static std::optional<size_t> findBySid(const std::string& sid,
+    static std::optional<size_t> findBySid(const std::string& trackSid,
                                            const Tracks<TTrack>& collection);
 private:
     E2ESecurityFactory* const _securityFactory;

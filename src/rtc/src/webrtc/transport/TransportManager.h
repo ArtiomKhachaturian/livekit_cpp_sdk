@@ -95,10 +95,8 @@ private:
     void onRemoteDataChannelOpened(SignalTarget target,
                                    rtc::scoped_refptr<DataChannel> channel) final;
     void onIceCandidateGathered(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
-    void onTrackAdded(SignalTarget target,
-                      rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                      const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>&) final;
-    void onRemoteTrackAdded(SignalTarget target, rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void onRemoteTrackAdded(SignalTarget target, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                            const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) final;
     void onRemotedTrackRemoved(SignalTarget target,
                                rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     // impl. of PingPongKitListener

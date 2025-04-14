@@ -20,9 +20,25 @@
 
 namespace {
 
+using namespace LiveKitCpp;
+
 template <typename T>
 inline uint32_t positiveOrZero(T value) {
     return value > 0 ? static_cast<uint32_t>(value) : 0U;
+}
+
+inline std::pair<std::string, std::string> unpackStreamId(std::string streamId) {
+    if (!streamId.empty()) {
+        auto parts = split(streamId, "|");
+        if (parts.size() > 1U) {
+            if (2U == parts.size()) {
+                return {std::move(parts[0U]), std::move(parts[1U])};
+            }
+            const auto p1s = parts[0].size();
+            return {std::move(parts[0]), streamId.substr(p1s + 1)};
+        }
+    }
+    return {streamId, std::string{}};
 }
 
 }
@@ -435,22 +451,24 @@ void TransportManager::onIceCandidateGathered(SignalTarget target,
     }
 }
 
-void TransportManager::onTrackAdded(SignalTarget target,
-                                    rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                                    const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>&)
-{
-    if (SignalTarget::Subscriber == target) {
-        _listener.invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(receiver));
-    }
-}
-
 void TransportManager::onRemoteTrackAdded(SignalTarget target,
-                                          rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+                                          rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                                          const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
 {
-    if (SignalTarget::Subscriber == target) {
-        if (auto receiver = transceiver->receiver()) {
-            _listener.invoke(&TransportManagerListener::onRemoteTrackAdded, std::move(receiver));
+    if (SignalTarget::Subscriber == target && receiver) {
+        std::string participantSid, streamId, trackId = receiver->id();
+        if (!streams.empty() && streams.front()) {
+            auto parts = unpackStreamId(streams.front()->id());
+            participantSid = std::move(parts.first);
+            streamId = std::move(parts.second);
+            // firefox will get streamId (pID|trackId) instead of (pID|streamId) as it doesn't support sync tracks by stream
+            // and generates its own track id instead of infer from sdp track id.
+            if (!streamId.empty() && 0U == streamId.rfind("TR", 0)) {
+                trackId = std::move(streamId);
+            }
         }
+        _listener.invoke(&TransportManagerListener::onRemoteTrackAdded,
+                         std::move(receiver), std::move(trackId), std::move(participantSid));
     }
 }
 

@@ -269,9 +269,10 @@ void RTCMediaEngine::onLocalTrackRemoved(const std::string& id, cricket::MediaTy
     }
 }
 
-void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                                        std::string trackId, std::string participantSid)
 {
-    _remoteParicipants.addMedia(receiver);
+    _remoteParicipants.addMedia(receiver, std::move(trackId), std::move(participantSid));
 }
 
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)

@@ -46,7 +46,8 @@ public:
     bool setRemoteSideTrackMute(const std::string& sid, bool mute);
     void setInfo(const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::vector<ParticipantInfo>& infos);
-    bool addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
+    bool addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                  std::string trackSid, std::string participantSid = {});
     bool removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     void reset();
     size_t count() const;

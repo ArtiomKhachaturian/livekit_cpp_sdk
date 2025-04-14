@@ -39,7 +39,9 @@ public:
                                         const std::vector<std::string>& /*streamIds*/,
                                         webrtc::RTCError /*error*/) {}
     virtual void onLocalTrackRemoved(const std::string& /*id*/, cricket::MediaType /*type*/) {}
-    virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
+    virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
+                                    std::string /*trackId*/,
+                                    std::string /*participantSid*/ = {}) {}
     virtual void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
     virtual void onPublisherOffer(const webrtc::SessionDescriptionInterface* /*desc*/) {}
     virtual void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* /*desc*/) {}

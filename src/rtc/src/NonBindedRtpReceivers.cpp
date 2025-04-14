@@ -18,25 +18,23 @@
 namespace LiveKitCpp
 {
 
-bool NonBindedRtpReceivers::add(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+bool NonBindedRtpReceivers::add(std::string trackSid,
+                                rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
-    if (receiver) {
-        auto id = receiver->id();
-        if (!id.empty()) {
-            LOCK_WRITE_SAFE_OBJ(_receivers);
-            _receivers->insert(std::make_pair(std::move(id), std::move(receiver)));
-            return true;
-        }
+    if (receiver && !trackSid.empty()) {
+        LOCK_WRITE_SAFE_OBJ(_receivers);
+        _receivers->insert(std::make_pair(std::move(trackSid), std::move(receiver)));
+        return true;
     }
     return false;
 }
 
-rtc::scoped_refptr<webrtc::RtpReceiverInterface> NonBindedRtpReceivers::take(const std::string& id)
+rtc::scoped_refptr<webrtc::RtpReceiverInterface> NonBindedRtpReceivers::take(const std::string& trackSid)
 {
     rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver;
-    if (!id.empty()) {
+    if (!trackSid.empty()) {
         LOCK_WRITE_SAFE_OBJ(_receivers);
-        const auto it = _receivers->find(id);
+        const auto it = _receivers->find(trackSid);
         if (it != _receivers->end()) {
             receiver = std::move(it->second);
             _receivers->erase(it);

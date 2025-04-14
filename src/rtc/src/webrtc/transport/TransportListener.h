@@ -346,21 +346,9 @@ public:
      * @param receiver The RTP receiver interface.
      * @param streams The associated media streams.
      */
-    virtual void onTrackAdded(SignalTarget /*target*/,
-                              rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
-                              const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& /*streams*/) {}
-
-    /**
-     * @brief Called when signaling indicates a transceiver will be receiving media from the remote endpoint.
-     * @note This will only be called if Unified Plan semantics are specified.
-     * This behavior is specified in section 2.2.8.2.5 of the "Set the RTCSessionDescription" algorithm:
-     * https://w3c.github.io/webrtc-pc/#set-description
-     *
-     * @param target The signal target.
-     * @param transceiver The RTP transceiver interface.
-     */
     virtual void onRemoteTrackAdded(SignalTarget /*target*/,
-                                    rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+                                    rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
+                                    const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& /*streams*/) {}
 
     /**
      * @brief Called when signaling indicates that media will no longer be received on a track.

@@ -27,6 +27,28 @@ inline bool compareParticipantInfo(const ParticipantInfo& l, const ParticipantIn
     return l._sid == r._sid;
 }
 
+inline bool addToParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant,
+                             const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                             const std::string& trackSid) {
+    if (participant && receiver) {
+        switch (receiver->media_type()) {
+            case cricket::MEDIA_TYPE_AUDIO:
+                if (participant->addAudio(trackSid, receiver)) {
+                    return true;
+                }
+                break;
+            case cricket::MEDIA_TYPE_VIDEO:
+                if (participant->addVideo(trackSid, receiver)) {
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
 }
 
 namespace LiveKitCpp
@@ -109,30 +131,25 @@ void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
     }
 }
 
-bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                  std::string trackSid, std::string participantSid)
 {
-    if (receiver) {
-        const auto type = receiver->media_type();
+    if (receiver && !trackSid.empty()) {
         LOCK_READ_SAFE_OBJ(_participants);
-        for (const auto& participant : _participants.constRef()) {
-            switch (type) {
-                case cricket::MEDIA_TYPE_AUDIO:
-                    if (participant->addAudio(receiver)) {
-                        return true;
-                    }
-                    break;
-                case cricket::MEDIA_TYPE_VIDEO:
-                    if (participant->addVideo(receiver)) {
-                        return true;
-                    }
-                    break;
-                default:
-                    break;
+        if (!participantSid.empty()) {
+            const auto ndx = participantIndexBySid(participantSid);
+            if (ndx && addToParticipant(_participants->at(ndx.value()), receiver, trackSid)) {
+                return true;
             }
         }
-        if (_nonBindedReceivers->add(receiver)) {
-            return true;
+        else {
+            for (const auto& participant : _participants.constRef()) {
+                if (addToParticipant(participant, receiver, trackSid)) {
+                    return true;
+                }
+            }
         }
+        return _nonBindedReceivers->add(std::move(trackSid), receiver);
     }
     return false;
 }

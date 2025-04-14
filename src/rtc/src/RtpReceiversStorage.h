@@ -21,7 +21,7 @@ class RtpReceiversStorage
 {
 public:
     virtual ~RtpReceiversStorage() = default;
-    virtual rtc::scoped_refptr<webrtc::RtpReceiverInterface> take(const std::string& id) = 0;
+    virtual rtc::scoped_refptr<webrtc::RtpReceiverInterface> take(const std::string& trackSid) = 0;
 };
 	
 } // namespace LiveKitCpp
