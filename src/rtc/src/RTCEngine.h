@@ -82,6 +82,8 @@ public:
                     const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
     void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
                     const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
+    // overrides of RemoteParticipantsListener
+    void onUpdateSubscription(UpdateSubscription subscription) final;
 protected:
     // impl. or overrides of RTCMediaEngine
     SendResult sendAddTrack(AddTrackRequest request) const final;

@@ -18,14 +18,14 @@ RemoteParticipant::RemoteParticipant(const std::shared_ptr<LiveKitCpp::RemotePar
         for (size_t i = 0U; i < participant->videoTracksCount(); ++i) {
             addVideoTrack(participant->videoTrack(i));
         }
-        participant->setListener(this);
+        participant->addListener(this);
     }
 }
 
 RemoteParticipant::~RemoteParticipant()
 {
     if (_participant) {
-        _participant->setListener(nullptr);
+        _participant->removeListener(this);
     }
 }
 

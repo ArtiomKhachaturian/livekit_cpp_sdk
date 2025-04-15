@@ -39,7 +39,7 @@ RTCEngine::RTCEngine(Options options,
                      const Participant* session,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : RTCMediaEngine(pcf, session, logger)
+    : RTCMediaEngine(pcf, session, options._autoSubscribe, logger)
     , _options(std::move(options))
     , _pcf(pcf)
     , _localDcs(logger)
@@ -195,6 +195,13 @@ void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>&
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->queryStats(sender, callback);
         }
+    }
+}
+
+void RTCEngine::onUpdateSubscription(UpdateSubscription subscription)
+{
+    if (!closed()) {
+        _client.sendSubscription(std::move(subscription));
     }
 }
 

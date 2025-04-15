@@ -54,10 +54,12 @@ inline bool addToParticipant(const std::shared_ptr<RemoteParticipantImpl>& parti
 namespace LiveKitCpp
 {
     
-RemoteParticipants::RemoteParticipants(E2ESecurityFactory* securityFactory,
+RemoteParticipants::RemoteParticipants(bool autoSubscribe,
+                                       E2ESecurityFactory* securityFactory,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<>(logger)
+    : Bricks::LoggableS<RemoteParticipantListener>(logger)
+    , _autoSubscribe(autoSubscribe)
     , _securityFactory(securityFactory)
     , _listener(listener)
     , _nonBindedReceivers(std::make_shared<NonBindedRtpReceivers>())
@@ -219,6 +221,28 @@ std::string_view RemoteParticipants::logCategory() const
     return category;
 }
 
+void RemoteParticipants::requestSubscriptionChanges(const RemoteParticipantImpl* participant,
+                                                    bool subscribe,
+                                                    std::vector<std::string> trackSids) const
+{
+    if (participant) {
+        if (trackSids.empty()) {
+            const auto info = participant->info();
+            trackSids.reserve(info._tracks.size());
+            for (auto& track : info._tracks) {
+                trackSids.push_back(std::move(track._sid));
+            }
+        }
+        if (!trackSids.empty()) {
+            UpdateSubscription update;
+            update._subscribe = subscribe;
+            update._trackSids = trackSids;
+            update._participantTracks.push_back(ParticipantTracks{participant->sid(), std::move(trackSids)});
+            _listener->onUpdateSubscription(std::move(update));
+        }
+    }
+}
+
 std::vector<ParticipantInfo> RemoteParticipants::infos() const
 {
     if (const auto s = _participants->size()) {
@@ -236,6 +260,10 @@ void RemoteParticipants::addParticipant(const std::shared_ptr<RemoteParticipantI
 {
     if (participant) {
         _participants->push_back(participant);
+        if (_autoSubscribe) {
+            participant->addListener(this);
+            requestSubscriptionChanges(participant.get(), true);
+        }
         if (_listener) {
             _listener->onParticipantAdded(participant->sid());
         }
@@ -264,6 +292,9 @@ void RemoteParticipants::clearParticipants()
 void RemoteParticipants::dispose(const std::shared_ptr<RemoteParticipantImpl>& participant)
 {
     if (participant) {
+        if (_autoSubscribe) {
+            participant->removeListener(this);
+        }
         for (const auto& trackInfo : participant->info()._tracks) {
             _nonBindedReceivers->take(trackInfo._sid);
         }
@@ -286,6 +317,15 @@ std::optional<size_t> RemoteParticipants::participantIndexBySid(const std::strin
         }
     }
     return std::nullopt;
+}
+
+void RemoteParticipants::onRemoteTrackAdded(const RemoteParticipant* participant, TrackType,
+                                            EncryptionType, const std::string& sid)
+{
+    if (_autoSubscribe) {
+        requestSubscriptionChanges(dynamic_cast<const RemoteParticipantImpl*>(participant),
+                                   true, {sid});
+    }
 }
 
 } // namespace LiveKitCpp

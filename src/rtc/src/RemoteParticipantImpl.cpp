@@ -17,6 +17,7 @@
 #include "RtpReceiversStorage.h"
 #include "E2ESecurityFactory.h"
 #include "AesCgmCryptor.h"
+#include "Listeners.h"
 #include "Seq.h"
 #include "Utils.h"
 #include "e2e/AesCgmCryptorObserver.h"
@@ -99,14 +100,15 @@ public:
     ListenerImpl(RemoteParticipantImpl* owner);
     template <class Method, typename... Args>
     void invoke(const Method& method, Args&&... args) const;
-    void set(RemoteParticipantListener* listener) { _listener = listener; }
+    void add(RemoteParticipantListener* listener) { _listeners.add(listener); }
+    void remove(RemoteParticipantListener* listener) { _listeners.remove(listener); }
     void reset();
     // impl. of AesCgmCryptorObserver
     void onDecryptionStateChanged(cricket::MediaType mediaType, const std::string&,
                                   const std::string& trackSid, AesCgmCryptorState state) final;
 private:
     Bricks::SafeObj<RemoteParticipantImpl*> _owner;
-    Bricks::Listener<RemoteParticipantListener*> _listener;
+    Bricks::Listeners<RemoteParticipantListener*> _listeners;
 };
 
 RemoteParticipantImpl::RemoteParticipantImpl(E2ESecurityFactory* securityFactory,
@@ -255,9 +257,14 @@ ParticipantKind RemoteParticipantImpl::kind() const
     return _info->_kind;
 }
 
-void RemoteParticipantImpl::setListener(RemoteParticipantListener* listener)
+void RemoteParticipantImpl::addListener(RemoteParticipantListener* listener)
 {
-    _listener->set(listener);
+    _listener->add(listener);
+}
+
+void RemoteParticipantImpl::removeListener(RemoteParticipantListener* listener)
+{
+    _listener->remove(listener);
 }
 
 bool RemoteParticipantImpl::hasActivePublisher() const
@@ -535,14 +542,14 @@ void RemoteParticipantImpl::ListenerImpl::invoke(const Method& method, Args&&...
 {
     LOCK_READ_SAFE_OBJ(_owner);
     if (const auto owner = _owner.constRef()) {
-        _listener.invoke(method, owner, std::forward<Args>(args)...);
+        _listeners.invoke(method, owner, std::forward<Args>(args)...);
     }
 }
 
 void RemoteParticipantImpl::ListenerImpl::reset()
 {
     _owner(nullptr);
-    _listener.reset();
+    _listeners.clear();
 }
 
 void RemoteParticipantImpl::ListenerImpl::

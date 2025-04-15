@@ -62,7 +62,8 @@ public:
     std::string metadata() const final;
     ParticipantKind kind() const final;
     // impl. of RemoteParticipant
-    void setListener(RemoteParticipantListener* listener) final;
+    void addListener(RemoteParticipantListener* listener) final;
+    void removeListener(RemoteParticipantListener* listener) final;
     bool hasActivePublisher() const final;
     ParticipantState state() const final;
     size_t audioTracksCount() const final;

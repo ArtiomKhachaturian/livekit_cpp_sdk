@@ -15,6 +15,7 @@
 #include "Loggable.h"
 #include "NonBindedRtpReceivers.h"
 #include "SafeObj.h"
+#include "livekit/rtc/RemoteParticipantListener.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
 #include <vector>
@@ -35,11 +36,11 @@ class RemoteParticipant;
 struct ParticipantInfo;
 enum class TrackType;
 
-class RemoteParticipants : private Bricks::LoggableS<>
+class RemoteParticipants : private Bricks::LoggableS<RemoteParticipantListener>
 {
     using Participants = std::vector<std::shared_ptr<RemoteParticipantImpl>>;
 public:
-    RemoteParticipants(E2ESecurityFactory* securityFactory,
+    RemoteParticipants(bool autoSubscribe, E2ESecurityFactory* securityFactory,
                        RemoteParticipantsListener* listener,
                        const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RemoteParticipants();
@@ -57,6 +58,8 @@ protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
 private:
+    void requestSubscriptionChanges(const RemoteParticipantImpl* participant, bool subscribe,
+                                    std::vector<std::string> trackSids = {}) const;
     // non thread-safe to [_participants]
     std::vector<ParticipantInfo> infos() const;
     // service methods, non thread-safe to [_participants]
@@ -65,7 +68,11 @@ private:
     void clearParticipants();
     void dispose(const std::shared_ptr<RemoteParticipantImpl>& participant);
     std::optional<size_t> participantIndexBySid(const std::string& sid) const;
+    // impl. of RemoteParticipantListener
+    void onRemoteTrackAdded(const RemoteParticipant* participant, TrackType,
+                            EncryptionType, const std::string& sid) final;
 private:
+    const bool _autoSubscribe;
     E2ESecurityFactory* const _securityFactory;
     RemoteParticipantsListener* const _listener;
     const std::shared_ptr<NonBindedRtpReceivers> _nonBindedReceivers;

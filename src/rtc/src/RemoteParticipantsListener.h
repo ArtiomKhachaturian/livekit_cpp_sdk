@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RemoteParticipantsListener.h
+#include "livekit/signaling/sfu/UpdateSubscription.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -22,6 +23,7 @@ class RemoteParticipantsListener
 public:
     virtual void onParticipantAdded(const std::string& /*sid*/) {}
     virtual void onParticipantRemoved(const std::string& /*sid*/) {}
+    virtual void onUpdateSubscription(UpdateSubscription /*subscription*/) {}
 protected:
     virtual ~RemoteParticipantsListener() = default;
 };

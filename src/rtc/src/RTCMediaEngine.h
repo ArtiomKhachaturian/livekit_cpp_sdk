@@ -56,7 +56,7 @@ enum class DisconnectReason;
 class RTCMediaEngine : public Bricks::LoggableS<ResponsesListener>,
                        protected TransportManagerListener,
                        protected E2ESecurityFactory,
-                       private RemoteParticipantsListener
+                       protected RemoteParticipantsListener
 {
 public:
     void setListener(SessionListener* listener);
@@ -84,7 +84,7 @@ protected:
     };
 protected:
     RTCMediaEngine(PeerConnectionFactory* pcf, const Participant* session,
-                   const std::shared_ptr<Bricks::Logger>& logger = {});
+                   bool autoSubscribe, const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RTCMediaEngine() override;
     void resetLocalParticipant();
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> localTracks() const;

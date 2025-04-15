@@ -25,7 +25,8 @@ class RemoteParticipantListener;
 class RemoteParticipant : public Participant
 {
 public:
-    virtual void setListener(RemoteParticipantListener* listener = nullptr) = 0;
+    virtual void addListener(RemoteParticipantListener* listener) = 0;
+    virtual void removeListener(RemoteParticipantListener* listener) = 0;
     virtual bool hasActivePublisher() const = 0;
     virtual ParticipantState state() const = 0;
     // given track by index or server ID
