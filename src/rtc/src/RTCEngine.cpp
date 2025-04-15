@@ -586,6 +586,11 @@ void RTCEngine::onTrackUnpublished(TrackUnpublishedResponse unpublished)
     }
 }
 
+void RTCEngine::onRefreshToken(std::string authToken)
+{
+    invoke(&SessionListener::onRefreshToken, std::move(authToken));
+}
+
 void RTCEngine::onTransportStateChanged(TransportState state)
 {
     switch (state) {

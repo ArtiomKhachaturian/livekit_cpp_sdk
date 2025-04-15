@@ -128,6 +128,7 @@ private:
     void onTrickle(TrickleRequest request) final;
     void onLeave(LeaveRequest leave) final;
     void onTrackUnpublished(TrackUnpublishedResponse unpublished) final;
+    void onRefreshToken(std::string authToken) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(TransportState state) final;
     void onTransportError(std::string error) final;

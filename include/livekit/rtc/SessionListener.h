@@ -25,6 +25,7 @@ namespace LiveKitCpp
 class SessionListener : public ParticipantListener
 {
 public:
+    virtual void onRefreshToken(std::string /*authToken*/) {}
     virtual void onStateChanged(SessionState /*state*/) {}
     virtual void onError(LiveKitError /*error*/, const std::string& /*what*/ = {}) {}
     virtual void onLocalParticipantJoined() {}
