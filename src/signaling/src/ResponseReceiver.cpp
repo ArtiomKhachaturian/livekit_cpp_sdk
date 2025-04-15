@@ -14,7 +14,7 @@
 #include "ResponseReceiver.h"
 #include "MarshalledTypesFwd.h"
 #include "ProtoUtils.h"
-#include "livekit/signaling/SignalServerListener.h"
+#include "livekit/signaling/ResponsesListener.h"
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite.h>
 
@@ -114,7 +114,7 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
                 case livekit::SignalResponse::kRefreshToken:
                     if (response->has_refresh_token()) {
                         logVerbose(formatVerboseMsg("RefreshToken"));
-                        notify(&SignalServerListener::onRefreshToken, response->refresh_token());
+                        notify(&ResponsesListener::onRefreshToken, response->refresh_token());
                     }
                     break;
                 case livekit::SignalResponse::kTrackUnpublished:
@@ -125,7 +125,7 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
                         logVerbose(formatVerboseMsg<livekit::Pong>());
                         Pong pong;
                         pong._timestamp = response->pong();
-                        notify(&SignalServerListener::onPong, pong);
+                        notify(&ResponsesListener::onPong, pong);
                     }
                     break;
                 case livekit::SignalResponse::kReconnect:
@@ -159,7 +159,7 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
 
 void ResponseReceiver::notifyAboutError(std::string details)
 {
-    notify(&SignalServerListener::onSignalParseError, std::move(details));
+    notify(&ResponsesListener::onSignalParseError, std::move(details));
 }
 
 std::string_view ResponseReceiver::logCategory() const
@@ -199,108 +199,108 @@ void ResponseReceiver::signal(const Method& method, TLiveKitType sig,
 
 void ResponseReceiver::handle(livekit::JoinResponse response) const
 {
-    signal(&SignalServerListener::onJoin, std::move(response));
+    signal(&ResponsesListener::onJoin, std::move(response));
 }
 
 void ResponseReceiver::handle(livekit::SessionDescription desc, bool offer) const
 {
     auto typeName = marshalledTypeName<livekit::SessionDescription>();
     if (offer) {
-        signal(&SignalServerListener::onOffer, std::move(desc), typeName + "/offer");
+        signal(&ResponsesListener::onOffer, std::move(desc), typeName + "/offer");
     }
     else {
-        signal(&SignalServerListener::onAnswer, std::move(desc), typeName + "/answer");
+        signal(&ResponsesListener::onAnswer, std::move(desc), typeName + "/answer");
     }
 }
 
 void ResponseReceiver::handle(livekit::TrickleRequest request) const
 {
-    signal(&SignalServerListener::onTrickle, std::move(request));
+    signal(&ResponsesListener::onTrickle, std::move(request));
 }
 
 void ResponseReceiver::handle(livekit::ParticipantUpdate update) const
 {
-    signal(&SignalServerListener::onUpdate, std::move(update));
+    signal(&ResponsesListener::onUpdate, std::move(update));
 }
 
 void ResponseReceiver::handle(livekit::TrackPublishedResponse response) const
 {
-    signal(&SignalServerListener::onTrackPublished, std::move(response));
+    signal(&ResponsesListener::onTrackPublished, std::move(response));
 }
 
 void ResponseReceiver::handle(livekit::LeaveRequest request) const
 {
-    signal(&SignalServerListener::onLeave, std::move(request));
+    signal(&ResponsesListener::onLeave, std::move(request));
 }
 
 void ResponseReceiver::handle(livekit::MuteTrackRequest request) const
 {
-    signal(&SignalServerListener::onMute, std::move(request));
+    signal(&ResponsesListener::onMute, std::move(request));
 }
 
 void ResponseReceiver::handle(livekit::SpeakersChanged changed) const
 {
-    signal(&SignalServerListener::onSpeakersChanged, std::move(changed));
+    signal(&ResponsesListener::onSpeakersChanged, std::move(changed));
 }
 
 void ResponseReceiver::handle(livekit::RoomUpdate update) const
 {
-    signal(&SignalServerListener::onRoomUpdate, std::move(update));
+    signal(&ResponsesListener::onRoomUpdate, std::move(update));
 }
 
 void ResponseReceiver::handle(livekit::ConnectionQualityUpdate update) const
 {
-    signal(&SignalServerListener::onConnectionQuality, std::move(update));
+    signal(&ResponsesListener::onConnectionQuality, std::move(update));
 }
 
 void ResponseReceiver::handle(livekit::StreamStateUpdate update) const
 {
-    signal(&SignalServerListener::onStreamStateUpdate, std::move(update));
+    signal(&ResponsesListener::onStreamStateUpdate, std::move(update));
 }
 
 void ResponseReceiver::handle(livekit::SubscribedQualityUpdate update) const
 {
-    signal(&SignalServerListener::onSubscribedQualityUpdate, std::move(update));
+    signal(&ResponsesListener::onSubscribedQualityUpdate, std::move(update));
 }
 
 void ResponseReceiver::handle(livekit::SubscriptionPermissionUpdate update) const
 {
-    signal(&SignalServerListener::onSubscriptionPermission, std::move(update));
+    signal(&ResponsesListener::onSubscriptionPermission, std::move(update));
 }
 
 void ResponseReceiver::handle(livekit::TrackUnpublishedResponse response) const
 {
-    signal(&SignalServerListener::onTrackUnpublished, std::move(response));
+    signal(&ResponsesListener::onTrackUnpublished, std::move(response));
 }
 
 void ResponseReceiver::handle(livekit::ReconnectResponse response) const
 {
-    signal(&SignalServerListener::onReconnect, std::move(response));
+    signal(&ResponsesListener::onReconnect, std::move(response));
 }
 
 void ResponseReceiver::handle(livekit::SubscriptionResponse response) const
 {
-    signal(&SignalServerListener::onSubscriptionResponse, std::move(response));
+    signal(&ResponsesListener::onSubscriptionResponse, std::move(response));
 }
 
 void ResponseReceiver::handle(livekit::RequestResponse response) const
 {
-    signal(&SignalServerListener::onRequestResponse, std::move(response));
+    signal(&ResponsesListener::onRequestResponse, std::move(response));
 }
 
 void ResponseReceiver::handle(livekit::TrackSubscribed subscribed) const
 {
-    signal(&SignalServerListener::onTrackSubscribed, std::move(subscribed));
+    signal(&ResponsesListener::onTrackSubscribed, std::move(subscribed));
 }
 
 void ResponseReceiver::handle(livekit::Pong pong) const
 {
-    signal(&SignalServerListener::onPong, std::move(pong));
+    signal(&ResponsesListener::onPong, std::move(pong));
 }
 
 void ResponseReceiver::handle(livekit::DataPacket packet) const
 {
-    signal(&SignalServerListener::onDataPacket, std::move(packet));
+    signal(&ResponsesListener::onDataPacket, std::move(packet));
 }
 
 } // namespace LiveKitCpp

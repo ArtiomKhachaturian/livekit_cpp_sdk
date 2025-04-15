@@ -16,7 +16,7 @@
 #include "Loggable.h"
 #include "Listener.h"
 #include "SafeObj.h"
-#include "livekit/signaling/SignalServerListener.h"
+#include "livekit/signaling/ResponsesListener.h"
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -27,7 +27,7 @@ namespace LiveKitCpp
 
 class DataExchangeListener;
 
-class DataChannelsStorage : private Bricks::LoggableS<SignalServerListener>
+class DataChannelsStorage : private Bricks::LoggableS<ResponsesListener>
 {
     class Wrapper;
     // key is channel label

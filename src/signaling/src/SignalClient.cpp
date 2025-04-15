@@ -30,7 +30,7 @@ SignalClient::~SignalClient()
 {
 }
 
-void SignalClient::setServerListener(SignalServerListener* listener)
+void SignalClient::setServerListener(ResponsesListener* listener)
 {
     _responseReceiver->setListener(listener);
 }

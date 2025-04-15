@@ -37,7 +37,7 @@
 namespace LiveKitCpp
 {
 
-class SignalServerListener
+class ResponsesListener
 {
 public:
     virtual void onJoin(JoinResponse /*response*/) {}
@@ -65,7 +65,7 @@ public:
     // error handling
     virtual void onSignalParseError(std::string /*details*/ = {}) {}
 protected:
-    virtual ~SignalServerListener() = default;
+    virtual ~ResponsesListener() = default;
 };
 
 } // namespace LiveKitCpp

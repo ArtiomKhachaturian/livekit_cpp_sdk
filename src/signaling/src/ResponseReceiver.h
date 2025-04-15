@@ -21,14 +21,14 @@
 namespace LiveKitCpp
 {
 
-class SignalServerListener;
+class ResponsesListener;
 
 class ResponseReceiver : private Bricks::LoggableR<>
 {
 public:
     ResponseReceiver(Bricks::Logger* logger = nullptr);
     void parseBinary(const void* data, size_t dataLen);
-    void setListener(SignalServerListener* listener = nullptr) { _listener = listener; }
+    void setListener(ResponsesListener* listener = nullptr) { _listener = listener; }
     void notifyAboutError(std::string details = {});
 protected:
     // overrides of Bricks::LoggableR
@@ -64,7 +64,7 @@ private:
     void handle(livekit::DataPacket packet) const;
 private:
     const ProtoMarshaller _marshaller;
-    Bricks::Listener<SignalServerListener*> _listener;
+    Bricks::Listener<ResponsesListener*> _listener;
 };
 
 } // namespace LiveKitCpp

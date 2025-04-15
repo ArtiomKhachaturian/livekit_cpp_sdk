@@ -34,7 +34,7 @@ class DataChannelsStorage::Wrapper : public Bricks::LoggableS<DataChannelListene
 {
 public:
     Wrapper(rtc::scoped_refptr<DataChannel> channel,
-            SignalServerListener* listener,
+            ResponsesListener* listener,
             const std::shared_ptr<Bricks::Logger>& logger,
             const std::string& logCategory);
     ~Wrapper() final { close(); }
@@ -67,7 +67,7 @@ private:
 
 DataChannelsStorage::DataChannelsStorage(const std::shared_ptr<Bricks::Logger>& logger,
                                          std::string logCategory)
-    : Bricks::LoggableS<SignalServerListener>(logger)
+    : Bricks::LoggableS<ResponsesListener>(logger)
     , _logCategory(std::move(logCategory))
 {
 }
@@ -91,7 +91,7 @@ bool DataChannelsStorage::add(rtc::scoped_refptr<DataChannel> channel)
             logWarning("unnamed " + dcType(local) + " data channel, processing denied");
         }
         else {
-            SignalServerListener* const listener = this;
+            ResponsesListener* const listener = this;
             auto wrapper = std::make_shared<Wrapper>(std::move(channel),
                                                      listener,
                                                      logger(),
@@ -268,7 +268,7 @@ void DataChannelsStorage::onSignalParseError(std::string details)
 }
 
 DataChannelsStorage::Wrapper::Wrapper(rtc::scoped_refptr<DataChannel> channel,
-                                      SignalServerListener* listener,
+                                      ResponsesListener* listener,
                                       const std::shared_ptr<Bricks::Logger>& logger,
                                       const std::string& logCategory)
     :  Bricks::LoggableS<DataChannelListener>(logger)

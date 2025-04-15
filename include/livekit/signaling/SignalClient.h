@@ -43,7 +43,7 @@ namespace LiveKitCpp
 
 class CommandSender;
 class MemoryBlock;
-class SignalServerListener;
+class ResponsesListener;
 class ResponseReceiver;
 class RequestSender;
 
@@ -52,7 +52,7 @@ class LIVEKIT_SIGNALING_API SignalClient : protected Bricks::LoggableR<>
 public:
     SignalClient(CommandSender* commandSender, Bricks::Logger* logger = nullptr);
     virtual ~SignalClient();
-    void setServerListener(SignalServerListener* listener = nullptr);
+    void setServerListener(ResponsesListener* listener = nullptr);
     void parseProtobuBlob(const Bricks::Blob& message);
     void parseProtobufData(const void* data, size_t dataLen);
     void notifyAboutError(std::string details = {});

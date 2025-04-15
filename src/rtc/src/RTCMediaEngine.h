@@ -20,7 +20,7 @@
 #include "RemoteParticipants.h"
 #include "RemoteParticipantsListener.h"
 #include "livekit/rtc/LiveKitError.h"
-#include "livekit/signaling/SignalServerListener.h"
+#include "livekit/signaling/ResponsesListener.h"
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -52,7 +52,7 @@ struct MuteTrackRequest;
 struct UpdateLocalAudioTrack;
 enum class DisconnectReason;
 
-class RTCMediaEngine : public Bricks::LoggableS<SignalServerListener>,
+class RTCMediaEngine : public Bricks::LoggableS<ResponsesListener>,
                        protected TransportManagerListener,
                        protected E2ESecurityFactory,
                        private RemoteParticipantsListener
