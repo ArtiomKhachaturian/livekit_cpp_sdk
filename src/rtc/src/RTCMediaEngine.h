@@ -106,6 +106,7 @@ protected:
     void onReconnect(ReconnectResponse response) override;
     void onMute(MuteTrackRequest mute) override;
     void onSpeakersChanged(SpeakersChanged changed) override;
+    void onConnectionQuality(ConnectionQualityUpdate update) override;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,

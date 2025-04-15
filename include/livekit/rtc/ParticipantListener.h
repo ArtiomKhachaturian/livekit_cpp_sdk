@@ -14,6 +14,7 @@
 #pragma once // ParticipantListener.h
 #include "livekit/signaling/sfu/TrackType.h"
 #include "livekit/signaling/sfu/EncryptionType.h"
+#include "livekit/signaling/sfu/ConnectionQuality.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -29,6 +30,9 @@ public:
     // true if speaker is currently active
     virtual void onSpeakerInfoChanged(const Participant* /*participant*/,
                                       float /*level*/, bool /*active*/) {}
+    virtual void onConnectionQualityChanged(const Participant* /*participant*/,
+                                            ConnectionQuality /*quality*/,
+                                            float /*score*/) {}
     virtual void onChanged(const Participant* /*participant*/) {}
     // trackId - for local is a track ID, for remotes - SID
     virtual void onTrackCryptoError(const Participant* /*participant*/,

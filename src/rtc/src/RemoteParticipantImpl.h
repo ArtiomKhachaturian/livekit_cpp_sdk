@@ -74,6 +74,7 @@ public:
     // impl. of ParticipantImpl
     bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
     void notifyAboutSpeakerChanges(float level, bool active) const final;
+    void notifyAboutConnectionQualityChanges(ConnectionQuality quality, float score) final;
 private:
     bool updateAudio(const TrackInfo& trackInfo) const;
     bool updateVideo(const TrackInfo& trackInfo) const;

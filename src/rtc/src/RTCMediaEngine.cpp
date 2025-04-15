@@ -236,11 +236,18 @@ void RTCMediaEngine::onMute(MuteTrackRequest mute)
 
 void RTCMediaEngine::onSpeakersChanged(SpeakersChanged changed)
 {
-    if (!changed._speakers.empty()) {
-        for (const auto& speakerInfo : changed._speakers) {
-            if (const auto p = participant(speakerInfo._sid)) {
-                p->notifyAboutSpeakerChanges(speakerInfo._level, speakerInfo._active);
-            }
+    for (const auto& speakerInfo : changed._speakers) {
+        if (const auto p = participant(speakerInfo._sid)) {
+            p->notifyAboutSpeakerChanges(speakerInfo._level, speakerInfo._active);
+        }
+    }
+}
+
+void RTCMediaEngine::onConnectionQuality(ConnectionQualityUpdate update)
+{
+    for (const auto& updateInfo : update._updates) {
+        if (const auto p = participant(updateInfo._participantSid)) {
+            p->notifyAboutConnectionQualityChanges(updateInfo._quality, updateInfo._score);
         }
     }
 }

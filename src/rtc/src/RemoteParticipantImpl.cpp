@@ -357,6 +357,12 @@ void RemoteParticipantImpl::notifyAboutSpeakerChanges(float level, bool active) 
     _listener->invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
+void RemoteParticipantImpl::notifyAboutConnectionQualityChanges(ConnectionQuality quality,
+                                                                float score)
+{
+    _listener->invoke(&ParticipantListener::onConnectionQualityChanged, quality, score);
+}
+
 bool RemoteParticipantImpl::updateAudio(const TrackInfo& trackInfo) const
 {
     if (TrackType::Audio == trackInfo._type && !trackInfo._sid.empty()) {

@@ -88,6 +88,7 @@ public:
     // impl. of ParticipantImpl
     bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
     void notifyAboutSpeakerChanges(float level, bool active) const final;
+    void notifyAboutConnectionQualityChanges(ConnectionQuality quality, float score) final;
 private:
     template <class TTracks>
     static std::shared_ptr<LocalTrack> lookup(const std::string& id, bool cid,

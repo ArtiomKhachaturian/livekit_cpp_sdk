@@ -258,6 +258,12 @@ void LocalParticipant::notifyAboutSpeakerChanges(float level, bool active) const
     invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
+void LocalParticipant::notifyAboutConnectionQualityChanges(ConnectionQuality quality,
+                                                           float score)
+{
+    invoke(&ParticipantListener::onConnectionQualityChanged, quality, score);
+}
+
 template <class TTracks>
 std::shared_ptr<LocalTrack> LocalParticipant::lookup(const std::string& id,
                                                      bool cid,

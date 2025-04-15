@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantImpl.h
+#include "livekit/signaling/sfu/ConnectionQuality.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -23,6 +24,7 @@ public:
     virtual ~ParticipantImpl() = default;
     virtual bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) = 0;
     virtual void notifyAboutSpeakerChanges(float level, bool active) const = 0;
+    virtual void notifyAboutConnectionQualityChanges(ConnectionQuality quality, float score) = 0;
 };
 	
 } // namespace LiveKitCpp
