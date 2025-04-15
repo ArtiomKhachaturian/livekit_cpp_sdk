@@ -232,6 +232,16 @@ ParticipantKind Session::kind() const
     return _impl->_engine.localParticipant().kind();
 }
 
+size_t Session::audioTracksCount() const
+{
+    return _impl->_engine.localParticipant().audioTracksCount();
+}
+
+size_t Session::videoTracksCount() const
+{
+    return _impl->_engine.localParticipant().videoTracksCount();
+}
+
 void Session::addListener(StatsListener* listener)
 {
     _impl->_statsCollector->addListener(listener);

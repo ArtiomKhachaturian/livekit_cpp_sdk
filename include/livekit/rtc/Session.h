@@ -124,6 +124,8 @@ public:
     std::string name() const final;
     std::string metadata() const final;
     ParticipantKind kind() const final;
+    size_t audioTracksCount() const final;
+    size_t videoTracksCount() const final;
     // impl. of StatsSource
     void addListener(StatsListener* listener) final;
     void removeListener(StatsListener* listener) final;

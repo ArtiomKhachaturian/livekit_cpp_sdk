@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ClientConfigSetting.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -22,5 +24,7 @@ enum class ClientConfigSetting
     Disabled = 1,
     Enabled = 2,
 };
+
+LIVEKIT_SIGNALING_API std::string toString(ClientConfigSetting setting);
 
 } // namespace LiveKitCpp

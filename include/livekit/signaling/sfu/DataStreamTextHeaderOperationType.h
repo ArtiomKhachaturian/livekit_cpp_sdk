@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DataStreamTextHeaderOperationType.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -24,5 +26,7 @@ enum class DataStreamTextHeaderOperationType
     Delete,
     Reaction
 };
+
+LIVEKIT_SIGNALING_API std::string toString(DataStreamTextHeaderOperationType type);
 	
 } // namespace LiveKitCpp

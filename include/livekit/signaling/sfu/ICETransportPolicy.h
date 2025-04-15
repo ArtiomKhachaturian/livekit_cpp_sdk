@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // IceTransportPolicy.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -45,5 +47,7 @@ enum class IceTransportPolicy
     NoHost, ///< Excludes local candidates.
     All,    ///< No candidates are used.
 };
+
+LIVEKIT_SIGNALING_API std::string toString(IceTransportPolicy policy);
 
 } // namespace LiveKitCpp

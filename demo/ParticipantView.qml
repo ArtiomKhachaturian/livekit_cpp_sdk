@@ -56,6 +56,7 @@ Item {
             if (track.screencast) {
                 videoViews.currentIndex = videoTracks.count - 1
             }
+            //console.log("video track added, ID: " + track.id)
         }
     }
 
@@ -70,6 +71,7 @@ Item {
                     videoViews.currentIndex = i -1
                 }
                 videoTracks.remove(i)
+                //console.log("video track removed, ID: " + id)
                 break
             }
         }

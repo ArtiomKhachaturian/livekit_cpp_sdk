@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ConnectionQuality.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -23,5 +25,7 @@ enum class ConnectionQuality
     Excellent = 2,
     Lost = 3,
 };
+
+LIVEKIT_SIGNALING_API std::string toString(ConnectionQuality quality);
 
 } // namespace LiveKitCpp

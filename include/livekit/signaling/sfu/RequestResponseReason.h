@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RequestResponseReason.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
 #include <string>
 
 namespace LiveKitCpp
@@ -24,5 +25,7 @@ enum class RequestResponseReason
     NotAllowed = 2,
     LimitExceeded = 3,
 };
+
+LIVEKIT_SIGNALING_API std::string toString(RequestResponseReason reason);
 
 } // namespace LiveKitCpp

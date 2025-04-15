@@ -23,8 +23,8 @@ class ParticipantImpl
 public:
     virtual ~ParticipantImpl() = default;
     virtual bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) = 0;
-    virtual void notifyAboutSpeakerChanges(float level, bool active) const = 0;
-    virtual void notifyAboutConnectionQualityChanges(ConnectionQuality quality, float score) = 0;
+    virtual void setSpeakerChanges(float level, bool active) const = 0;
+    virtual void setConnectionQuality(ConnectionQuality quality, float score) = 0;
 };
 	
 } // namespace LiveKitCpp

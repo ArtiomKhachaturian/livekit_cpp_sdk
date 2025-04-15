@@ -105,6 +105,8 @@ protected:
     void onTrackPublished(TrackPublishedResponse published) override;
     void onReconnect(ReconnectResponse response) override;
     void onMute(MuteTrackRequest mute) override;
+    // always received StreamState::Active from the SFU, maybe this is a bug
+    void onStreamStateUpdate(StreamStateUpdate /*update*/) override {}
     void onSpeakersChanged(SpeakersChanged changed) override;
     void onConnectionQuality(ConnectionQualityUpdate update) override;
     // impl. of TransportManagerListener

@@ -352,12 +352,12 @@ bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& trackSid, 
     return false;
 }
 
-void RemoteParticipantImpl::notifyAboutSpeakerChanges(float level, bool active) const
+void RemoteParticipantImpl::setSpeakerChanges(float level, bool active) const
 {
     _listener->invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
-void RemoteParticipantImpl::notifyAboutConnectionQualityChanges(ConnectionQuality quality,
+void RemoteParticipantImpl::setConnectionQuality(ConnectionQuality quality,
                                                                 float score)
 {
     _listener->invoke(&ParticipantListener::onConnectionQualityChanged, quality, score);

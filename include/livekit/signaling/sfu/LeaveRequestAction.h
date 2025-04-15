@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LeaveRequestAction.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -23,5 +25,7 @@ enum class LeaveRequestAction
     Resume = 1,      // should attempt a resume with `reconnect=1` in join URL
     Reconnect = 2,   // should attempt a reconnect, i. e. no `reconnect=1`
 };
+
+LIVEKIT_SIGNALING_API std::string toString(LeaveRequestAction action);
 
 } // namespace LiveKitCpp

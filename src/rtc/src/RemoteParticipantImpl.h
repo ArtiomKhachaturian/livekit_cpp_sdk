@@ -73,8 +73,8 @@ public:
     std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const final;
     // impl. of ParticipantImpl
     bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
-    void notifyAboutSpeakerChanges(float level, bool active) const final;
-    void notifyAboutConnectionQualityChanges(ConnectionQuality quality, float score) final;
+    void setSpeakerChanges(float level, bool active) const final;
+    void setConnectionQuality(ConnectionQuality quality, float score) final;
 private:
     bool updateAudio(const TrackInfo& trackInfo) const;
     bool updateVideo(const TrackInfo& trackInfo) const;

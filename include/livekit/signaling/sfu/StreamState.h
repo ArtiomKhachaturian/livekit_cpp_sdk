@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // StreamState.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -21,5 +23,7 @@ enum class StreamState
     Active = 0,
     Paused = 1,
 };
+
+LIVEKIT_SIGNALING_API std::string toString(StreamState state);
 
 } // namespace LiveKitCpp

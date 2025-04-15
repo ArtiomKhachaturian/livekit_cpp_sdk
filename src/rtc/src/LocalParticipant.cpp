@@ -21,6 +21,8 @@
 #include "PeerConnectionFactory.h"
 #include "livekit/signaling/sfu/ParticipantInfo.h"
 
+#include <iostream>
+
 namespace LiveKitCpp
 {
 
@@ -253,12 +255,12 @@ bool LocalParticipant::setRemoteSideTrackMute(const std::string& trackSid, bool 
     return false;
 }
 
-void LocalParticipant::notifyAboutSpeakerChanges(float level, bool active) const
+void LocalParticipant::setSpeakerChanges(float level, bool active) const
 {
     invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
-void LocalParticipant::notifyAboutConnectionQualityChanges(ConnectionQuality quality,
+void LocalParticipant::setConnectionQuality(ConnectionQuality quality,
                                                            float score)
 {
     invoke(&ParticipantListener::onConnectionQualityChanged, quality, score);

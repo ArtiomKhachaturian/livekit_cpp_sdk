@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DisconnectReason.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -45,6 +47,10 @@ enum class DisconnectReason
     UserRejected = 12,
     // Sip Protocol Failure Or Unexpected Response
     SipTrunkFailure = 13,
+    // server timed out a participant session
+    ConnectionTimeout = 14
 };
+
+LIVEKIT_SIGNALING_API std::string toString(DisconnectReason reason);
 
 } // namespace LiveKitCpp

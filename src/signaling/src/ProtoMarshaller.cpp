@@ -769,6 +769,8 @@ DisconnectReason ProtoMarshaller::map(livekit::DisconnectReason in) const
             return DisconnectReason::UserRejected;
         case livekit::SIP_TRUNK_FAILURE:
             return DisconnectReason::SipTrunkFailure;
+        case livekit::CONNECTION_TIMEOUT:
+            return DisconnectReason::ConnectionTimeout;
         default:
             TYPE_CONVERSION_ERROR(livekit::DisconnectReason, DisconnectReason)
             break;
@@ -807,6 +809,8 @@ livekit::DisconnectReason ProtoMarshaller::map(DisconnectReason in) const
             return livekit::USER_REJECTED;
         case DisconnectReason::SipTrunkFailure:
             return livekit::SIP_TRUNK_FAILURE;
+        case DisconnectReason::ConnectionTimeout:
+            return livekit::CONNECTION_TIMEOUT;
         default:
             TYPE_CONVERSION_ERROR(DisconnectReason, livekit::DisconnectReason)
             break;

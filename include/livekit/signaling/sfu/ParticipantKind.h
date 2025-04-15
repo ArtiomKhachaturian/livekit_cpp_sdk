@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // ParticipantKind.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -29,5 +31,7 @@ enum class ParticipantKind
     // Livekit Agents
     Agent = 4,
 };
+
+LIVEKIT_SIGNALING_API std::string toString(ParticipantKind kind);
 
 } // namespace LiveKitCpp

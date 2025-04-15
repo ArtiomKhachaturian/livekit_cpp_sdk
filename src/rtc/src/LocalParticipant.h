@@ -87,8 +87,8 @@ public:
     ParticipantKind kind() const final { return _kind; }
     // impl. of ParticipantImpl
     bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
-    void notifyAboutSpeakerChanges(float level, bool active) const final;
-    void notifyAboutConnectionQualityChanges(ConnectionQuality quality, float score) final;
+    void setSpeakerChanges(float level, bool active) const final;
+    void setConnectionQuality(ConnectionQuality quality, float score) final;
 private:
     template <class TTracks>
     static std::shared_ptr<LocalTrack> lookup(const std::string& id, bool cid,

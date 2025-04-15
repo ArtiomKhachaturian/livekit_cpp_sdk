@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // BackupCodecPolicy.h
+#include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -29,5 +31,7 @@ enum class BackupCodecPolicy
     // Encoding/Send The Primary And Backup Codec Simultaneously
     Simulcast = 2,
 };
+
+LIVEKIT_SIGNALING_API std::string toString(BackupCodecPolicy policy);
 
 } // namespace LiveKitCpp

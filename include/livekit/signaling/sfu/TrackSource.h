@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // TrackSource.h
 #include "livekit/signaling/LiveKitSignalingExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
