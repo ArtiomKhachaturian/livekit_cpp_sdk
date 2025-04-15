@@ -44,7 +44,7 @@ class LocalTrack;
 class LocalAudioTrackImpl;
 class Participant;
 class PeerConnectionFactory;
-class ParticipantImpl;
+class ParticipantAccessor;
 class SessionListener;
 class VideoDevice;
 class VideoTrack;
@@ -119,7 +119,7 @@ protected:
                             std::string trackId, std::string participantSid) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
-    std::shared_ptr<ParticipantImpl> participant(const std::string& sid) const;
+    std::shared_ptr<ParticipantAccessor> participant(const std::string& sid) const;
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     void notifyAboutLocalParticipantJoinLeave(bool join) const;
     // search by cid or sid

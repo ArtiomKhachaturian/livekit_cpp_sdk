@@ -31,9 +31,9 @@ public:
     virtual ParticipantState state() const = 0;
     // given track by index or server ID
     virtual std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const = 0;
-    virtual std::shared_ptr<RemoteAudioTrack> audioTrack(const std::string& sid) const = 0;
+    virtual std::shared_ptr<RemoteAudioTrack> audioTrack(const std::string& trackSid) const = 0;
     virtual std::shared_ptr<RemoteVideoTrack> videoTrack(size_t index) const = 0;
-    virtual std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const = 0;
+    virtual std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& trackSid) const = 0;
 };
 
 } // namespace LiveKitCpp

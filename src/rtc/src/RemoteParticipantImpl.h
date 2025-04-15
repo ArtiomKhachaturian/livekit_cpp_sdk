@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // RemoteParticipantImpl.h
 #include "Listener.h"
-#include "ParticipantImpl.h"
+#include "ParticipantAccessor.h"
 #include "SafeObj.h"
 #include "livekit/rtc/RemoteParticipant.h"
 #include "livekit/rtc/RemoteParticipantListener.h"
@@ -36,7 +36,7 @@ class RemoteVideoTrackImpl;
 class RtpReceiversStorage;
 class E2ESecurityFactory;
 
-class RemoteParticipantImpl : public RemoteParticipant, public ParticipantImpl
+class RemoteParticipantImpl : public RemoteParticipant, public ParticipantAccessor
 {
     template <class T> using Tracks = std::vector<std::shared_ptr<T>>;
     using AudioTracks = Tracks<RemoteAudioTrackImpl>;

@@ -99,7 +99,7 @@ class RemoteParticipantImpl::ListenerImpl : public AesCgmCryptorObserver
 public:
     ListenerImpl(RemoteParticipantImpl* owner);
     template <class Method, typename... Args>
-    void invoke(const Method& method, Args&&... args) const;
+    void notify(const Method& method, Args&&... args) const;
     void add(RemoteParticipantListener* listener) { _listeners.add(listener); }
     void remove(RemoteParticipantListener* listener) { _listeners.remove(listener); }
     void reset();
@@ -173,58 +173,80 @@ bool RemoteParticipantImpl::removeVideo(const std::string& trackSid)
 
 void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
 {
+    bool sidChanged = false, identityChanged = false, nameChanged = false;
+    bool metadataChanged = false, kindChanged = false;
+    std::vector<TrackInfo> added, removed, updated;
     {
         LOCK_WRITE_SAFE_OBJ(_info);
         using SeqType = Seq<TrackInfo>;
-        const auto added = SeqType::difference(info._tracks, _info->_tracks, compareTrackInfo);
-        const auto removed = SeqType::difference(_info->_tracks, info._tracks, compareTrackInfo);
-        const auto updated = SeqType::intersection(_info->_tracks, info._tracks, compareTrackInfo);
+        added = SeqType::difference(info._tracks, _info->_tracks, compareTrackInfo);
+        removed = SeqType::difference(_info->_tracks, info._tracks, compareTrackInfo);
+        updated = SeqType::intersection(_info->_tracks, info._tracks, compareTrackInfo);
+        sidChanged = info._sid != _info->_sid;
+        identityChanged = info._identity != _info->_identity;
+        nameChanged = info._name != _info->_name;
+        metadataChanged = info._metadata != _info->_metadata;
+        kindChanged = info._kind != _info->_kind;
         _info = info;
-        // add new
-        for (const auto& track : added) {
-            switch (track._type) {
-                case TrackType::Audio:
-                    addAudio(track._sid);
-                    break;
-                case TrackType::Video:
-                    addVideo(track._sid);
-                    break;
-                default:
-                    break;
-            }
-        }
-        // remove
-        for (const auto& track : removed) {
-            switch (track._type) {
-                case TrackType::Audio:
-                    removeAudio(track._sid);
-                    break;
-                case TrackType::Video:
-                    removeVideo(track._sid);
-                    break;
-                default:
-                    break;
-            }
-        }
-        // update existed
-        for (const auto& track : updated) {
-            switch (track._type) {
-                case TrackType::Audio:
-                    if (!updateAudio(track)) {
-                        addAudio(track._sid);
-                    }
-                    break;
-                case TrackType::Video:
-                    if (!updateVideo(track)) {
-                        addVideo(track._sid);
-                    }
-                    break;
-                default:
-                    break;
-            }
+    }
+    // add new
+    for (const auto& track : added) {
+        switch (track._type) {
+            case TrackType::Audio:
+                addAudio(track._sid);
+                break;
+            case TrackType::Video:
+                addVideo(track._sid);
+                break;
+            default:
+                break;
         }
     }
-    _listener->invoke(&RemoteParticipantListener::onChanged);
+    // remove
+    for (const auto& track : removed) {
+        switch (track._type) {
+            case TrackType::Audio:
+                removeAudio(track._sid);
+                break;
+            case TrackType::Video:
+                removeVideo(track._sid);
+                break;
+            default:
+                break;
+        }
+    }
+    // update existed
+    for (const auto& track : updated) {
+        switch (track._type) {
+            case TrackType::Audio:
+                if (!updateAudio(track)) {
+                    addAudio(track._sid);
+                }
+                break;
+            case TrackType::Video:
+                if (!updateVideo(track)) {
+                    addVideo(track._sid);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    if (sidChanged) {
+        _listener->notify(&RemoteParticipantListener::onSidChanged);
+    }
+    if (identityChanged) {
+        _listener->notify(&RemoteParticipantListener::onIdentityChanged);
+    }
+    if (nameChanged) {
+        _listener->notify(&RemoteParticipantListener::onNameChanged);
+    }
+    if (metadataChanged) {
+        _listener->notify(&RemoteParticipantListener::onMetadataChanged);
+    }
+    if (kindChanged) {
+        _listener->notify(&RemoteParticipantListener::onKindChanged);
+    }
 }
 
 std::string RemoteParticipantImpl::sid() const
@@ -361,13 +383,13 @@ bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& trackSid, 
 
 void RemoteParticipantImpl::setSpeakerChanges(float level, bool active) const
 {
-    _listener->invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
+    _listener->notify(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
 void RemoteParticipantImpl::setConnectionQuality(ConnectionQuality quality,
                                                                 float score)
 {
-    _listener->invoke(&ParticipantListener::onConnectionQualityChanged, quality, score);
+    _listener->notify(&ParticipantListener::onConnectionQualityChanged, quality, score);
 }
 
 bool RemoteParticipantImpl::updateAudio(const TrackInfo& trackInfo) const
@@ -437,12 +459,12 @@ bool RemoteParticipantImpl::addTrack(const std::string& trackSid,
                         const std::lock_guard guard(collection.mutex());
                         collection->push_back(std::move(trackImpl));
                     }
-                    _listener->invoke(&RemoteParticipantListener::onRemoteTrackAdded,
+                    _listener->notify(&RemoteParticipantListener::onRemoteTrackAdded,
                                       trackInfo->_type, trackInfo->_encryption, trackSid);
                     added = true;
                 }
                 else {
-                    _listener->invoke(&RemoteParticipantListener::onTrackCryptoError,
+                    _listener->notify(&RemoteParticipantListener::onTrackCryptoError,
                                       trackInfo->_type, trackInfo->_encryption,
                                       trackSid, E2ECryptoError::CryptorCreationFailure);
                 }
@@ -466,7 +488,7 @@ bool RemoteParticipantImpl::removeTrack(const std::string& trackSid,
             }
         }
         if (removed) {
-            _listener->invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
+            _listener->notify(&RemoteParticipantListener::onRemoteTrackRemoved,
                               removed->type(), removed->sid());
             return true;
         }
@@ -483,7 +505,7 @@ void RemoteParticipantImpl::clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collect
         removed = collection.take();
     }
     for (const auto& track : removed) {
-        _listener->invoke(&RemoteParticipantListener::onRemoteTrackRemoved,
+        _listener->notify(&RemoteParticipantListener::onRemoteTrackRemoved,
                           track->type(), track->sid());
     }
 }
@@ -538,7 +560,7 @@ RemoteParticipantImpl::ListenerImpl::ListenerImpl(RemoteParticipantImpl* owner)
 }
 
 template <class Method, typename... Args>
-void RemoteParticipantImpl::ListenerImpl::invoke(const Method& method, Args&&... args) const
+void RemoteParticipantImpl::ListenerImpl::notify(const Method& method, Args&&... args) const
 {
     LOCK_READ_SAFE_OBJ(_owner);
     if (const auto owner = _owner.constRef()) {
@@ -557,7 +579,7 @@ void RemoteParticipantImpl::ListenerImpl::
                              const std::string& trackSid, AesCgmCryptorState state)
 {
     if (const auto err = toCryptoError(state)) {
-        invoke(&ParticipantListener::onTrackCryptoError,
+        notify(&ParticipantListener::onTrackCryptoError,
                mediaTypeToTrackType(mediaType),
                EncryptionType::Gcm, trackSid, err.value());
     }

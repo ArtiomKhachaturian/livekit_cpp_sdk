@@ -18,10 +18,10 @@
 namespace LiveKitCpp
 {
 
-class ParticipantImpl
+class ParticipantAccessor
 {
 public:
-    virtual ~ParticipantImpl() = default;
+    virtual ~ParticipantAccessor() = default;
     virtual bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) = 0;
     virtual void setSpeakerChanges(float level, bool active) const = 0;
     virtual void setConnectionQuality(ConnectionQuality quality, float score) = 0;

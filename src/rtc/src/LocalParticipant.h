@@ -17,7 +17,7 @@
 #include "Listener.h"
 #include "LocalAudioTrackImpl.h"
 #include "Loggable.h"
-#include "ParticipantImpl.h"
+#include "ParticipantAccessor.h"
 #include "SafeObjAliases.h"
 #include "livekit/rtc/Participant.h"
 #include "livekit/rtc/ParticipantListener.h"
@@ -49,9 +49,9 @@ class VideoDevice;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 
-class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantImpl>
+class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantAccessor>
 {
-    using Base = Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantImpl>;
+    using Base = Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantAccessor>;
     template <class T> using Tracks = Bricks::SafeObj<std::vector<std::shared_ptr<T>>>;
 public:
     LocalParticipant(TrackManager* manager, PeerConnectionFactory* pcf,
@@ -98,7 +98,7 @@ private:
     template <class TTracks>
     static void clear(TTracks& tracks);
     template <class Method, typename... Args>
-    void invoke(const Method& method, Args&&... args) const;
+    void notify(const Method& method, Args&&... args) const;
     // impl. of AesCgmCryptorObserver
     void onEncryptionStateChanged(cricket::MediaType mediaType, const std::string&,
                                   const std::string& trackId, AesCgmCryptorState state) final;

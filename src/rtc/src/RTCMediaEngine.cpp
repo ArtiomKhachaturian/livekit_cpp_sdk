@@ -299,7 +299,7 @@ void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceive
     _remoteParicipants.removeMedia(receiver);
 }
 
-std::shared_ptr<ParticipantImpl> RTCMediaEngine::participant(const std::string& sid) const
+std::shared_ptr<ParticipantAccessor> RTCMediaEngine::participant(const std::string& sid) const
 {
     if (sid == _localParticipant->sid()) {
         return _localParticipant;

@@ -201,11 +201,23 @@ void Session::onError(LiveKitCpp::LiveKitError liveKitError, const std::string& 
     emit error(QString::fromStdString(LiveKitCpp::toString(liveKitError)), QString::fromStdString(what));
 }
 
-void Session::onChanged(const LiveKitCpp::Participant* participant)
+void Session::onSidChanged(const LiveKitCpp::Participant* participant)
 {
     if (participant && participant == _impl.get()) {
         _localParticipant->setSid(QString::fromStdString(_impl->sid()));
+    }
+}
+
+void Session::onIdentityChanged(const LiveKitCpp::Participant* participant)
+{
+    if (participant && participant == _impl.get()) {
         _localParticipant->setIdentity(QString::fromStdString(_impl->identity()));
+    }
+}
+
+void Session::onNameChanged(const LiveKitCpp::Participant* participant)
+{
+    if (participant && participant == _impl.get()) {
         _localParticipant->setName(QString::fromStdString(_impl->name()));
     }
 }

@@ -92,7 +92,9 @@ private:
     static std::unique_ptr<LiveKitCpp::Session> create();
     // impl. of SessionListener
     void onError(LiveKitCpp::LiveKitError error, const std::string& what) final;
-    void onChanged(const LiveKitCpp::Participant*) final;
+    void onSidChanged(const LiveKitCpp::Participant* participant) final;
+    void onIdentityChanged(const LiveKitCpp::Participant* participant) final;
+    void onNameChanged(const LiveKitCpp::Participant* participant) final;
     void onSpeakerInfoChanged(const LiveKitCpp::Participant* participant,
                               float level, bool active) final;
     void onStateChanged(LiveKitCpp::SessionState) final;

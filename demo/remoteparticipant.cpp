@@ -53,11 +53,23 @@ QString RemoteParticipant::name() const
     return {};
 }
 
-void RemoteParticipant::onChanged(const LiveKitCpp::Participant* sender)
+void RemoteParticipant::onSidChanged(const LiveKitCpp::Participant* sender)
 {
     if (sender && sender == _participant.get()) {
         emit sidChanged();
+    }
+}
+
+void RemoteParticipant::onIdentityChanged(const LiveKitCpp::Participant* sender)
+{
+    if (sender && sender == _participant.get()) {
         emit identityChanged();
+    }
+}
+
+void RemoteParticipant::onNameChanged(const LiveKitCpp::Participant* sender)
+{
+    if (sender && sender == _participant.get()) {
         emit nameChanged();
     }
 }

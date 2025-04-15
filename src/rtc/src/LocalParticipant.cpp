@@ -204,22 +204,6 @@ std::shared_ptr<LocalTrack> LocalParticipant::
 
 void LocalParticipant::setInfo(const ParticipantInfo& info)
 {
-    bool changed = false;
-    if (exchangeVal(info._sid, _sid)) {
-        changed = true;
-    }
-    if (exchangeVal(info._identity, _identity)) {
-        changed = true;
-    }
-    if (exchangeVal(info._name, _name)) {
-        changed = true;
-    }
-    if (exchangeVal(info._metadata, _metadata)) {
-        changed = true;
-    }
-    if (exchangeVal(info._kind, _kind)) {
-        changed = true;
-    }
     // update
     for (const auto& track : info._tracks) {
         if (TrackType::Audio == track._type) {
@@ -235,8 +219,20 @@ void LocalParticipant::setInfo(const ParticipantInfo& info)
             }
         }
     }
-    if (changed) {
-        invoke(&ParticipantListener::onChanged);
+    if (exchangeVal(info._sid, _sid)) {
+        notify(&ParticipantListener::onSidChanged);
+    }
+    if (exchangeVal(info._identity, _identity)) {
+        notify(&ParticipantListener::onIdentityChanged);
+    }
+    if (exchangeVal(info._name, _name)) {
+        notify(&ParticipantListener::onNameChanged);
+    }
+    if (exchangeVal(info._metadata, _metadata)) {
+        notify(&ParticipantListener::onMetadataChanged);
+    }
+    if (exchangeVal(info._kind, _kind)) {
+        notify(&ParticipantListener::onKindChanged);
     }
 }
 
@@ -257,13 +253,13 @@ bool LocalParticipant::setRemoteSideTrackMute(const std::string& trackSid, bool 
 
 void LocalParticipant::setSpeakerChanges(float level, bool active) const
 {
-    invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
+    notify(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
 void LocalParticipant::setConnectionQuality(ConnectionQuality quality,
                                                            float score)
 {
-    invoke(&ParticipantListener::onConnectionQualityChanged, quality, score);
+    notify(&ParticipantListener::onConnectionQualityChanged, quality, score);
 }
 
 template <class TTracks>
@@ -305,7 +301,7 @@ void LocalParticipant::clear(TTracks& tracks)
 }
 
 template <class Method, typename... Args>
-void LocalParticipant::invoke(const Method& method, Args&&... args) const
+void LocalParticipant::notify(const Method& method, Args&&... args) const
 {
     LOCK_READ_SAFE_OBJ(_session);
     if (const auto session = _session.constRef()) {
@@ -319,7 +315,7 @@ void LocalParticipant::onEncryptionStateChanged(cricket::MediaType mediaType,
                                                 AesCgmCryptorState state)
 {
     if (const auto err = toCryptoError(state)) {
-        invoke(&ParticipantListener::onTrackCryptoError,
+        notify(&ParticipantListener::onTrackCryptoError,
                mediaTypeToTrackType(mediaType),
                EncryptionType::Gcm, trackId, err.value());
     }

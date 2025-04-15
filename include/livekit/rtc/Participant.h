@@ -30,11 +30,6 @@ public:
     virtual ParticipantKind kind() const = 0;
     virtual size_t audioTracksCount() const = 0;
     virtual size_t videoTracksCount() const = 0;
-    /* int64_t _joinedAt = {};
-    uint32_t _version = {};
-    std::optional<ParticipantPermission> _permission;
-    std::string _region;
-    std::unordered_map<std::string, std::string> _attributes;*/
 };
 
 } // namespace LiveKitCpp
