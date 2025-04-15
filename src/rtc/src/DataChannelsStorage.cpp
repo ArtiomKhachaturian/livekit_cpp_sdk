@@ -262,7 +262,7 @@ void DataChannelsStorage::onDataPacket(DataPacket packet)
     }
 }
 
-void DataChannelsStorage::onSignalParseError(std::string details)
+void DataChannelsStorage::onResponseParseError(std::string details)
 {
     _listener.invoke(&DataExchangeListener::onError, std::move(details));
 }

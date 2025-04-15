@@ -76,7 +76,7 @@ Frame {
                     id: grid
                     anchors.fill: parent
                     horizontalItemAlignment: Grid.AlignHCenter
-                    spacing: -1
+                    spacing: 2
                     columns: Math.ceil(Math.sqrt(participants.count))
                     rows: Math.ceil(participants.count / columns)
                     property int cellWidth: width / columns

@@ -25,6 +25,7 @@ class Participant : public QObject
 public:
     explicit Participant(QObject *parent = nullptr);
     ~Participant() override;
+    void notifyThatSpeakerInfoChanged(float level, bool active);
     virtual QString sid() const { return {}; }
     virtual QString identity() const { return {}; }
     virtual QString name() const { return {}; }
@@ -57,6 +58,7 @@ signals:
     void nameChanged();
     void audioTracksCountChanged();
     void videoTracksCountChanged();
+    void speakerInfoChanged(float level, bool active);
 protected:
     template <class TTrack = VideoTrack, class TSdkTrack = LiveKitCpp::VideoTrack>
     TTrack* addVideo(const std::shared_ptr<TSdkTrack>& sdkTrack);

@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "RTCMediaEngine.h"
 #include "LocalParticipant.h"
+#include "RemoteParticipantImpl.h"
 #include "PeerConnectionFactory.h"
 #include "Utils.h"
 #include "AesCgmCryptor.h"
@@ -233,6 +234,17 @@ void RTCMediaEngine::onMute(MuteTrackRequest mute)
     }
 }
 
+void RTCMediaEngine::onSpeakersChanged(SpeakersChanged changed)
+{
+    if (!changed._speakers.empty()) {
+        for (const auto& speakerInfo : changed._speakers) {
+            if (const auto p = participant(speakerInfo._sid)) {
+                p->notifyAboutSpeakerChanges(speakerInfo._level, speakerInfo._active);
+            }
+        }
+    }
+}
+
 void RTCMediaEngine::cleanup(const std::optional<LiveKitError>& error, const std::string& what)
 {
     for (const auto& track : _localParticipant->tracks()) {
@@ -278,6 +290,14 @@ void RTCMediaEngine::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverIn
 void RTCMediaEngine::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     _remoteParicipants.removeMedia(receiver);
+}
+
+std::shared_ptr<ParticipantImpl> RTCMediaEngine::participant(const std::string& sid) const
+{
+    if (sid == _localParticipant->sid()) {
+        return _localParticipant;
+    }
+    return _remoteParicipants.at(sid);
 }
 
 void RTCMediaEngine::handleLocalParticipantDisconnection(DisconnectReason reason)

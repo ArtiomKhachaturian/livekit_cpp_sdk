@@ -31,6 +31,7 @@ public:
     virtual void onLocalParticipantLeaved() {}
     virtual void onRemoteParticipantAdded(const std::string& /*remoteParticipantSid*/) {}
     virtual void onRemoteParticipantRemoved(const std::string& /*remoteParticipantSid*/) {}
+    // chat
     virtual void onUserPacketReceived(const UserPacket& /*packet*/,
                                       const std::string& /*participantIdentity*/,
                                       const std::vector<std::string>& /*destinationIdentities*/ = {}) {}

@@ -25,6 +25,10 @@ enum class E2ECryptoError;
 class ParticipantListener
 {
 public:
+    // audio level, 0-1.0, 1 is loudest
+    // true if speaker is currently active
+    virtual void onSpeakerInfoChanged(const Participant* /*participant*/,
+                                      float /*level*/, bool /*active*/) {}
     virtual void onChanged(const Participant* /*participant*/) {}
     // trackId - for local is a track ID, for remotes - SID
     virtual void onTrackCryptoError(const Participant* /*participant*/,

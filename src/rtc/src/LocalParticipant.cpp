@@ -35,21 +35,6 @@ LocalParticipant::LocalParticipant(TrackManager* manager,
 {
 }
 
-bool LocalParticipant::setRemoteSideTrackMute(const std::string& sid, bool mute)
-{
-    if (!sid.empty()) {
-        if (const auto track = lookup(sid, false, _audioTracks)) {
-            track->setRemoteSideMute(mute);
-            return true;
-        }
-        if (const auto track = lookup(sid, false, _videoTracks)) {
-            track->setRemoteSideMute(mute);
-            return true;
-        }
-    }
-    return false;
-}
-
 void LocalParticipant::reset()
 {
     _session(nullptr);
@@ -251,6 +236,26 @@ void LocalParticipant::setInfo(const ParticipantInfo& info)
     if (changed) {
         invoke(&ParticipantListener::onChanged);
     }
+}
+
+bool LocalParticipant::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
+{
+    if (!trackSid.empty()) {
+        if (const auto track = lookup(trackSid, false, _audioTracks)) {
+            track->setRemoteSideMute(mute);
+            return true;
+        }
+        if (const auto track = lookup(trackSid, false, _videoTracks)) {
+            track->setRemoteSideMute(mute);
+            return true;
+        }
+    }
+    return false;
+}
+
+void LocalParticipant::notifyAboutSpeakerChanges(float level, bool active) const
+{
+    invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
 template <class TTracks>

@@ -44,6 +44,7 @@ class LocalTrack;
 class LocalAudioTrackImpl;
 class Participant;
 class PeerConnectionFactory;
+class ParticipantImpl;
 class SessionListener;
 class VideoDevice;
 class VideoTrack;
@@ -104,6 +105,7 @@ protected:
     void onTrackPublished(TrackPublishedResponse published) override;
     void onReconnect(ReconnectResponse response) override;
     void onMute(MuteTrackRequest mute) override;
+    void onSpeakersChanged(SpeakersChanged changed) override;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) override;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
@@ -114,6 +116,7 @@ protected:
                             std::string trackId, std::string participantSid) override;
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) override;
 private:
+    std::shared_ptr<ParticipantImpl> participant(const std::string& sid) const;
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     void notifyAboutLocalParticipantJoinLeave(bool join) const;
     // search by cid or sid

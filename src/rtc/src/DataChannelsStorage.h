@@ -56,7 +56,7 @@ private:
     std::string_view logCategory() const final { return _logCategory; }
     // overrides OF SignalServerListener
     void onDataPacket(DataPacket packet) final;
-    void onSignalParseError(std::string details) final;
+    void onResponseParseError(std::string details) final;
 private:
     const std::string _logCategory;
     Bricks::SafeObj<DataChannels> _dataChannels;

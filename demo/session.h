@@ -93,6 +93,8 @@ private:
     // impl. of SessionListener
     void onError(LiveKitCpp::LiveKitError error, const std::string& what) final;
     void onChanged(const LiveKitCpp::Participant*) final;
+    void onSpeakerInfoChanged(const LiveKitCpp::Participant* participant,
+                              float level, bool active) final;
     void onStateChanged(LiveKitCpp::SessionState) final;
     void onChatMessageReceived(const LiveKitCpp::ChatMessage& message,
                                const std::string& participantIdentity,

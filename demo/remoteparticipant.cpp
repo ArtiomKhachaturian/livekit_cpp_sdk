@@ -62,6 +62,14 @@ void RemoteParticipant::onChanged(const LiveKitCpp::Participant* sender)
     }
 }
 
+void RemoteParticipant::onSpeakerInfoChanged(const LiveKitCpp::Participant* sender,
+                                             float level, bool active)
+{
+    if (sender && sender == _participant.get()) {
+        notifyThatSpeakerInfoChanged(level, active);
+    }
+}
+
 void RemoteParticipant::addMediaTrack(bool audio, const QString& sid)
 {
     if (_participant) {

@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalParticipant.h
-#include "Loggable.h"
-#include "Listener.h"
-#include "CameraTrackImpl.h"
-#include "LocalAudioTrackImpl.h"
 #include "AesCgmCryptorObserver.h"
+#include "CameraTrackImpl.h"
+#include "Listener.h"
+#include "LocalAudioTrackImpl.h"
+#include "Loggable.h"
+#include "ParticipantImpl.h"
 #include "SafeObjAliases.h"
 #include "livekit/rtc/Participant.h"
 #include "livekit/rtc/ParticipantListener.h"
@@ -48,16 +49,15 @@ class VideoDevice;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
 
-class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver>
+class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantImpl>
 {
-    using Base = Bricks::LoggableS<Participant, AesCgmCryptorObserver>;
+    using Base = Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantImpl>;
     template <class T> using Tracks = Bricks::SafeObj<std::vector<std::shared_ptr<T>>>;
 public:
     LocalParticipant(TrackManager* manager, PeerConnectionFactory* pcf,
                      const Participant* session,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipant() final { reset(); }
-    bool setRemoteSideTrackMute(const std::string& sid, bool mute);
     void reset();
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
@@ -85,6 +85,9 @@ public:
     std::string name() const final { return _name(); }
     std::string metadata() const final { return _metadata(); }
     ParticipantKind kind() const final { return _kind; }
+    // impl. of ParticipantImpl
+    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
+    void notifyAboutSpeakerChanges(float level, bool active) const final;
 private:
     template <class TTracks>
     static std::shared_ptr<LocalTrack> lookup(const std::string& id, bool cid,

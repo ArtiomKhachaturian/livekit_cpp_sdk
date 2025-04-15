@@ -14,28 +14,39 @@ Item {
         id : videoTracks
     }
 
-    ColumnLayout {
+    Rectangle {
+        id: mediaRoot
+        property bool activeSpeaker: false
+        property real audioLevel: 0
         anchors.fill: parent
-        anchors.margins: 2
-        StackLayout {
-            id: videoViews
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Repeater {
+        border.width: activeSpeaker ? 4 : 0
+        border.color: Qt.rgba(0, audioLevel * 0.3, audioLevel, audioLevel)
+        Behavior on border.color {
+            ColorAnimation { duration: 200 }
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: mediaRoot.border.width
+            StackLayout {
+                id: videoViews
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                model: videoTracks
-                VideoRenderer {
+                Repeater {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    source: model.track
+                    model: videoTracks
+                    VideoRenderer {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        source: model.track
+                    }
                 }
             }
-        }
-        TextPanel {
-            Layout.fillWidth: true
-            visible: showIdentity
-            text: participant.identity
+            TextPanel {
+                Layout.fillWidth: true
+                visible: showIdentity
+                text: participant.identity
+            }
         }
     }
 
@@ -68,6 +79,11 @@ Item {
         target: participant
         function onVideoTrackAdded(id) { addVideoTrackById(id) }
         function onVideoTrackRemoved(id) { removeVideoTrackById(id) }
+        function onSpeakerInfoChanged(level, active) {
+            //console.log("level = " + level + ", active = " + active)
+            mediaRoot.audioLevel = level
+            mediaRoot.activeSpeaker = active
+        }
     }
 
     onParticipantChanged: {

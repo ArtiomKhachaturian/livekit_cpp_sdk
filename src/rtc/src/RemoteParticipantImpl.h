@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // RemoteParticipantImpl.h
 #include "Listener.h"
+#include "ParticipantImpl.h"
 #include "SafeObj.h"
 #include "livekit/rtc/RemoteParticipant.h"
 #include "livekit/rtc/RemoteParticipantListener.h"
@@ -35,7 +36,7 @@ class RemoteVideoTrackImpl;
 class RtpReceiversStorage;
 class E2ESecurityFactory;
 
-class RemoteParticipantImpl : public RemoteParticipant
+class RemoteParticipantImpl : public RemoteParticipant, public ParticipantImpl
 {
     template <class T> using Tracks = std::vector<std::shared_ptr<T>>;
     using AudioTracks = Tracks<RemoteAudioTrackImpl>;
@@ -47,7 +48,6 @@ public:
                           const ParticipantInfo& info = {});
     ~RemoteParticipantImpl() final { reset(); }
     void reset();
-    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute);
     std::optional<TrackType> trackType(const std::string& trackSid) const;
     bool addAudio(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
     bool addVideo(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
@@ -71,6 +71,9 @@ public:
     std::shared_ptr<RemoteAudioTrack> audioTrack(const std::string& sid) const final;
     std::shared_ptr<RemoteVideoTrack> videoTrack(size_t index) const final;
     std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const final;
+    // impl. of ParticipantImpl
+    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
+    void notifyAboutSpeakerChanges(float level, bool active) const final;
 private:
     bool updateAudio(const TrackInfo& trackInfo) const;
     bool updateVideo(const TrackInfo& trackInfo) const;

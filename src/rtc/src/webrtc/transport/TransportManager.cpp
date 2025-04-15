@@ -27,6 +27,7 @@ inline uint32_t positiveOrZero(T value) {
     return value > 0 ? static_cast<uint32_t>(value) : 0U;
 }
 
+// https://github.com/livekit/client-sdk-js/blob/main/src/room/utils.ts#L33
 inline std::pair<std::string, std::string> unpackStreamId(std::string streamId) {
     if (!streamId.empty()) {
         auto parts = split(streamId, "|");

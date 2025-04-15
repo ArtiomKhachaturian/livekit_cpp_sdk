@@ -126,34 +126,6 @@ void RemoteParticipantImpl::reset()
     _listener->reset();
 }
 
-bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
-{
-    if (!trackSid.empty()) {
-        LOCK_WRITE_SAFE_OBJ(_info);
-        if (auto trackInfo = findBySid(trackSid)) {
-            if (trackInfo->_muted == mute) {
-                return true;
-            }
-            trackInfo->_muted = mute;
-            if (TrackType::Audio == trackInfo->_type) {
-                LOCK_READ_SAFE_OBJ(_audioTracks);
-                if (const auto ndx = findBySid(trackSid, _audioTracks.constRef())) {
-                    _audioTracks->at(ndx.value())->setInfo(*trackInfo);
-                    return true;
-                }
-            }
-            if (TrackType::Video == trackInfo->_type) {
-                LOCK_READ_SAFE_OBJ(_videoTracks);
-                if (const auto ndx = findBySid(trackSid, _videoTracks.constRef())) {
-                    _videoTracks->at(ndx.value())->setInfo(*trackInfo);
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
 std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& trackSid) const
 {
     if (!trackSid.empty()) {
@@ -350,6 +322,39 @@ std::shared_ptr<RemoteVideoTrack> RemoteParticipantImpl::videoTrack(const std::s
         }
     }
     return {};
+}
+
+bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
+{
+    if (!trackSid.empty()) {
+        LOCK_WRITE_SAFE_OBJ(_info);
+        if (auto trackInfo = findBySid(trackSid)) {
+            if (trackInfo->_muted == mute) {
+                return true;
+            }
+            trackInfo->_muted = mute;
+            if (TrackType::Audio == trackInfo->_type) {
+                LOCK_READ_SAFE_OBJ(_audioTracks);
+                if (const auto ndx = findBySid(trackSid, _audioTracks.constRef())) {
+                    _audioTracks->at(ndx.value())->setInfo(*trackInfo);
+                    return true;
+                }
+            }
+            if (TrackType::Video == trackInfo->_type) {
+                LOCK_READ_SAFE_OBJ(_videoTracks);
+                if (const auto ndx = findBySid(trackSid, _videoTracks.constRef())) {
+                    _videoTracks->at(ndx.value())->setInfo(*trackInfo);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void RemoteParticipantImpl::notifyAboutSpeakerChanges(float level, bool active) const
+{
+    _listener->invoke(&ParticipantListener::onSpeakerInfoChanged, level, active);
 }
 
 bool RemoteParticipantImpl::updateAudio(const TrackInfo& trackInfo) const

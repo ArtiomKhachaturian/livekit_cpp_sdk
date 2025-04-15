@@ -210,6 +210,14 @@ void Session::onChanged(const LiveKitCpp::Participant* participant)
     }
 }
 
+void Session::onSpeakerInfoChanged(const LiveKitCpp::Participant* participant,
+                                   float level, bool active)
+{
+    if (participant && participant == _impl.get()) {
+        _localParticipant->notifyThatSpeakerInfoChanged(level, active);
+    }
+}
+
 void Session::onStateChanged(LiveKitCpp::SessionState)
 {
     emit stateChanged();

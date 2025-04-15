@@ -29,6 +29,8 @@ private slots:
 private:
     // impl. of LiveKitCpp::RemoteParticipantListener
     void onChanged(const LiveKitCpp::Participant* sender) final;
+    void onSpeakerInfoChanged(const LiveKitCpp::Participant* sender,
+                              float level, bool active) final;
     void onRemoteTrackAdded(const LiveKitCpp::RemoteParticipant* sender,
                             LiveKitCpp::TrackType type,
                             LiveKitCpp::EncryptionType,

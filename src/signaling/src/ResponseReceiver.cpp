@@ -152,14 +152,14 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
             handle(dataPacket.value());
         }
         else {
-            notifyAboutError();
+            notifyAboutError("unknown proto packet, size is " + std::to_string(dataLen) + " bytes");
         }
     }
 }
 
 void ResponseReceiver::notifyAboutError(std::string details)
 {
-    notify(&ResponsesListener::onSignalParseError, std::move(details));
+    notify(&ResponsesListener::onResponseParseError, std::move(details));
 }
 
 std::string_view ResponseReceiver::logCategory() const

@@ -13,6 +13,11 @@ Participant::~Participant()
     clearVideoTracks();
 }
 
+void Participant::notifyThatSpeakerInfoChanged(float level, bool active)
+{
+    emit speakerInfoChanged(level, active);
+}
+
 AudioTrack* Participant::audioTrack(const QString& id) const
 {
     return track(id, _audioTracks);

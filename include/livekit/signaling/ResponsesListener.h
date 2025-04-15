@@ -63,7 +63,7 @@ public:
     virtual void onPong(Pong /*pong*/) {}
     virtual void onDataPacket(DataPacket /*packet*/) {}
     // error handling
-    virtual void onSignalParseError(std::string /*details*/ = {}) {}
+    virtual void onResponseParseError(std::string /*details*/ = {}) {}
 protected:
     virtual ~ResponsesListener() = default;
 };
