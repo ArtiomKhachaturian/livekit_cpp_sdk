@@ -14,6 +14,7 @@
 #pragma once // Transport.h
 #include "CreateSdpListener.h"
 #include "SetSdpListener.h"
+#include "RtcObject.h"
 #include "livekit/signaling/sfu/SignalTarget.h"
 #include <api/peer_connection_interface.h>
 #include <atomic>
@@ -37,10 +38,10 @@ class CreateSdpObserver;
 class SetLocalSdpObserver;
 class SetRemoteSdpObserver;
 class TransportListener;
+class TransportImpl;
 
-class Transport : private CreateSdpListener, SetSdpListener
+class Transport : private RtcObject<TransportImpl, CreateSdpListener, SetSdpListener>
 {
-    class Impl;
 public:
     Transport(SignalTarget target, TransportListener* listener,
               const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
@@ -48,7 +49,7 @@ public:
               const std::string& identity,
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~Transport() override;
-    SignalTarget target() const noexcept;
+    SignalTarget target() const noexcept { return _target; }
     // config & media (fully async)
     bool setConfiguration(const webrtc::PeerConnectionInterface::RTCConfiguration& config);
     bool createDataChannel(const std::string& label,
@@ -107,8 +108,6 @@ public:
     // thus the listener object can be safely destroyed.
     void close();
 private:
-    // return NULL if there are not peer connection or peer connection factory
-    rtc::Thread* signalingThread() const;
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onFailure(webrtc::SdpType type, webrtc::RTCError error) final;
@@ -116,7 +115,7 @@ private:
     void onCompleted(bool local) final;
     void onFailure(bool local, webrtc::RTCError error) final;
 private:
-    const std::shared_ptr<Impl> _impl;
+    const SignalTarget _target;
     webrtc::scoped_refptr<CreateSdpObserver> _offerCreationObserver;
     webrtc::scoped_refptr<CreateSdpObserver> _answerCreationObserver;
     webrtc::scoped_refptr<SetLocalSdpObserver> _setLocalSdpObserver;

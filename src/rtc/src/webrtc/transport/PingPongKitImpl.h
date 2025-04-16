@@ -11,28 +11,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // PingPongKit.h
+#pragma once // PingPongKitImpl.h
+#include "Listener.h"
 #include "MediaTimer.h"
 #include "MediaTimerCallback.h"
-#include "RtcObject.h"
-
 
 namespace LiveKitCpp
 {
 
 class PingPongKitListener;
-class PingPongKitImpl;
 
-class PingPongKit : private RtcObject<PingPongKitImpl>
+class PingPongKitImpl : private MediaTimerCallback
 {
 public:
     // interval & timeout in seconds
-    PingPongKit(uint32_t pingInterval, uint32_t pingTimeout,
-                const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
-    ~PingPongKit();
+    PingPongKitImpl(uint32_t pingInterval, uint32_t pingTimeout,
+                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
+    ~PingPongKitImpl() final;
     void start(PingPongKitListener* listener);
     void stop();
     void notifyThatPongReceived();
+private:
+    // impl. of MediaTimerCallback
+    void onTimeout(uint64_t timerId) final;
+private:
+    // interval & timeout in milliseconds
+    const uint64_t _pingInterval;
+    const uint64_t _pingTimeout;
+    Bricks::Listener<PingPongKitListener*> _listener;
+    MediaTimer _pingIntervalTimer;
+    MediaTimer _pingTimeoutTimer;
 };
 
 } // namespace LiveKitCpp

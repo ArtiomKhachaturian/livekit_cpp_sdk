@@ -1,6 +1,8 @@
 #include "demoapp.h"
 #include "logger.h"
+#include <livekit/rtc/Options.h>
 #include <livekit/rtc/Service.h>
+#include <livekit/signaling/sfu/ICETransportPolicy.h>
 #include <ZaphoydTppFactory.h>
 #include <QDebug>
 #include <memory>
@@ -18,6 +20,22 @@ inline double normalizedVolume(double volume) {
     return qRound(volume * 100);
 }
 
+inline QString toQString(LiveKitCpp::IceTransportPolicy policy) {
+    return QString::fromStdString(LiveKitCpp::toString(policy));
+}
+
+inline QStringList iceTransportPolicies() {
+    using namespace LiveKitCpp;
+    QStringList policies;
+    for (auto policy : {IceTransportPolicy::None,
+                        IceTransportPolicy::Relay,
+                        IceTransportPolicy::NoHost,
+                        IceTransportPolicy::All}) {
+        policies.append(toQString(policy));
+    }
+    return policies;
+}
+
 }
 
 DemoApp::DemoApp(int &argc, char **argv)
@@ -25,6 +43,9 @@ DemoApp::DemoApp(int &argc, char **argv)
     , _recordingAudioDevicesModel(new MediaDevicesModel(this))
     , _playoutAudioDevicesModel(new MediaDevicesModel(this))
     , _camerasModel(new MediaDevicesModel(this))
+    , _iceTransportPolicies(iceTransportPolicies())
+    , _defaultIceTransportPolicy(toQString(LiveKitCpp::Options()._iceTransportPolicy))
+    , _defaultIceTransportPolicyIndex(_iceTransportPolicies.indexOf(_defaultIceTransportPolicy))
 {
     const auto logger = std::make_shared<Logger>();
     const auto wsf = std::make_shared<ZaphoydTppFactory>();

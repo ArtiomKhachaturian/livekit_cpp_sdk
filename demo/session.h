@@ -5,6 +5,7 @@
 #include <livekit/rtc/SessionListener.h>
 #include <livekit/rtc/RemoteParticipantListener.h>
 #include <livekit/rtc/Session.h>
+#include <livekit/signaling/sfu/EncryptionType.h>
 #include <QObject>
 #include <QQmlEngine>
 #include <QHash>
@@ -49,9 +50,11 @@ public:
     explicit Session(QObject *parent = nullptr);
     ~Session() override;
     bool isValid() const noexcept { return nullptr != _impl; }
-    Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token);
-    bool activeCamera() const;
-    bool activeMicrophone() const;
+    Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token,
+                                  bool autoSubscribe, bool adaptiveStream,
+                                  bool e2e, const QString& iceTransportPolicy);
+    bool activeCamera() const { return _activeCamera; }
+    bool activeMicrophone() const { return _activeMicrophone; }
     QString cameraTrackId() const;
     QString microphoneTrackId() const;
     bool connecting() const;
@@ -89,7 +92,13 @@ private slots:
     void addRemoteParticipant(const QString& sid);
     void removeRemoteParticipant(const QString& sid);
 private:
-    static std::unique_ptr<LiveKitCpp::Session> create();
+    static std::unique_ptr<LiveKitCpp::Session> create(LiveKitCpp::Options options);
+    void setSessionImpl(std::unique_ptr<LiveKitCpp::Session> impl);
+    void resetSessionImpl() { setSessionImpl(nullptr); }
+    void addCameraTrack();
+    void addMicrophoneTrack();
+    void removeCameraTrack();
+    void removeMicrophoneTrack();
     // impl. of SessionListener
     void onError(LiveKitCpp::LiveKitError error, const std::string& what) final;
     void onSidChanged(const LiveKitCpp::Participant* participant) final;
@@ -104,9 +113,12 @@ private:
     void onRemoteParticipantAdded(const std::string& sid) final;
     void onRemoteParticipantRemoved(const std::string& sid) final;
 private:
-    const std::unique_ptr<LiveKitCpp::Session> _impl;
     LocalParticipant* const _localParticipant;
+    std::unique_ptr<LiveKitCpp::Session> _impl;
     QHash<QString, RemoteParticipant*> _remoteParticipants;
+    LiveKitCpp::EncryptionType _encryption = LiveKitCpp::EncryptionType::None;
+    bool _activeCamera = false;
+    bool _activeMicrophone = false;
 };
 
 #endif // Session_H

@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MediaTimer.h
 #include "MediaTimerCallback.h"
+#include "RtcObject.h"
 #include <api/media_types.h>
 #include <api/scoped_refptr.h>
 #include <api/task_queue/task_queue_base.h>
@@ -23,8 +24,9 @@ namespace LiveKitCpp
 {
 
 class PeerConnectionFactory;
+class MediaTimerImpl;
 
-class MediaTimer
+class MediaTimer : public RtcObject<MediaTimerImpl>
 {
     struct Impl;
 public:
@@ -36,9 +38,6 @@ public:
     MediaTimer(const webrtc::scoped_refptr<const PeerConnectionFactory>& pcf,
                MediaTimerCallback* callback = nullptr);
     ~MediaTimer();
-    // means that timer's queue is valid, and default callback (which already passed via constructor)
-    // maybe NULL but [singleShot] methods is available for work
-    bool valid() const noexcept;
     bool started() const noexcept;
     // Low by default
     webrtc::TaskQueueBase::DelayPrecision precision() const;
@@ -60,8 +59,6 @@ public:
     void singleShot(std::unique_ptr<MediaTimerCallback> callback,
                     uint64_t delayMs = 0ULL, uint64_t id = 0ULL);
     void cancelSingleShot(uint64_t id);
-private:
-    const std::shared_ptr<Impl> _impl;
 };
 
 } // namespace LiveKitCpp

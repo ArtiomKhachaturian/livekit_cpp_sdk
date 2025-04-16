@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MediaTimerCallback.h
+#include <cstdint>
 
 namespace LiveKitCpp
 {
-
-class MediaTimer;
 
 class MediaTimerCallback
 {
 public:
     virtual ~MediaTimerCallback() = default;
-    virtual void onTimeout(MediaTimer* timer) = 0;
+    virtual void onTimeout(uint64_t timerId) = 0;
 };
 
 } // namespace LiveKitCpp

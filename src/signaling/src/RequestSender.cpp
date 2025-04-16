@@ -192,9 +192,10 @@ bool RequestSender::send(const TSetMethod& setMethod, TObject object,
 template <class TProtoObject>
 bool RequestSender::send(const TProtoObject& object, const std::string& typeName) const
 {
+    bool ok = false;
     const auto bytes = protoToBytes(object, logger(), logCategory());
     if (!bytes.empty()) {
-        const auto ok = _commandSender->sendBinary(VectorBlob(bytes));
+        ok = _commandSender->sendBinary(VectorBlob(bytes));
         if (ok) {
             logVerbose("sending '" + typeName + "' to server");
         }
@@ -205,6 +206,7 @@ bool RequestSender::send(const TProtoObject& object, const std::string& typeName
     else {
         logError("failed to serialize of '" + typeName + "' into a bytes array");
     }
+    return ok;
 }
 
 } // namespace LiveKitCpp

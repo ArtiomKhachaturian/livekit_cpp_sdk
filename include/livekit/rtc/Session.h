@@ -21,6 +21,7 @@
 #include "livekit/rtc/media/AudioTrack.h"
 #include "livekit/rtc/media/CameraTrack.h"
 #include "livekit/rtc/stats/StatsSource.h"
+#include "livekit/signaling/sfu/EncryptionType.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -64,8 +65,10 @@ public:
     bool audioRecordingEnabled() const;
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    std::shared_ptr<AudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device);
-    std::shared_ptr<CameraTrack> addCameraTrack(std::shared_ptr<CameraDevice> device);
+    std::shared_ptr<AudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device,
+                                              EncryptionType ecnryption = EncryptionType::None);
+    std::shared_ptr<CameraTrack> addCameraTrack(std::shared_ptr<CameraDevice> device,
+                                                EncryptionType ecnryption = EncryptionType::None);
     void removeAudioTrack(std::shared_ptr<AudioTrack> track);
     void removeVideoTrack(std::shared_ptr<VideoTrack> track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;

@@ -2,6 +2,7 @@
 #include "demoapp.h"
 #include <livekit/rtc/Service.h>
 #include <QThread>
+#include <optional>
 
 namespace
 {
@@ -17,30 +18,38 @@ inline std::shared_ptr<LiveKitCpp::Service> getService() {
     return {};
 }
 
+inline std::optional<LiveKitCpp::IceTransportPolicy> toIceTransportPolicy(const QString& policy) {
+    const auto utf8Policy = policy.toStdString();
+    if (!utf8Policy.empty()) {
+        for (const auto policy : {LiveKitCpp::IceTransportPolicy::None,
+                                  LiveKitCpp::IceTransportPolicy::Relay,
+                                  LiveKitCpp::IceTransportPolicy::NoHost,
+                                  LiveKitCpp::IceTransportPolicy::All}) {
+            if (utf8Policy == toString(policy)) {
+                return policy;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+
 }
 
 Session::Session(QObject *parent)
     : QObject{parent}
-    , _impl(create())
     , _localParticipant(new LocalParticipant(this))
 {
-    if (_impl) {
-        QObject::connect(_localParticipant, &LocalParticipant::activeCameraChanged,
-                         this, &Session::activeCameraChanged);
-        QObject::connect(_localParticipant, &LocalParticipant::activeMicrophoneChanged,
-                         this, &Session::activeMicrophoneChanged);
-        QObject::connect(_localParticipant, &LocalParticipant::cameraDeviceInfoChanged,
-                         this, &Session::cameraDeviceInfoChanged);
-        QObject::connect(_localParticipant, &LocalParticipant::cameraOptionsChanged,
-                         this, &Session::cameraOptionsChanged);
-        QObject::connect(_localParticipant, &LocalParticipant::cameraMutedChanged,
-                         this, &Session::cameraMutedChanged);
-        QObject::connect(_localParticipant, &LocalParticipant::microphoneMutedChanged,
-                         this, &Session::microphoneMutedChanged);
-        QObject::connect(_localParticipant, &LocalParticipant::identityChanged,
-                         this, &Session::identityChanged);
-        _impl->setListener(this);
-    }
+    QObject::connect(_localParticipant, &LocalParticipant::cameraDeviceInfoChanged,
+                     this, &Session::cameraDeviceInfoChanged);
+    QObject::connect(_localParticipant, &LocalParticipant::cameraOptionsChanged,
+                     this, &Session::cameraOptionsChanged);
+    QObject::connect(_localParticipant, &LocalParticipant::cameraMutedChanged,
+                     this, &Session::cameraMutedChanged);
+    QObject::connect(_localParticipant, &LocalParticipant::microphoneMutedChanged,
+                     this, &Session::microphoneMutedChanged);
+    QObject::connect(_localParticipant, &LocalParticipant::identityChanged,
+                     this, &Session::identityChanged);
 }
 
 Session::~Session()
@@ -48,25 +57,23 @@ Session::~Session()
     disconnectFromSfu();
     setActiveCamera(false);
     setActiveMicrophone(false);
-    if (_impl) {
-        _impl->setListener(nullptr);
-        _localParticipant->disconnect(this);
+    resetSessionImpl();
+    _localParticipant->disconnect(this);
+}
+
+bool Session::connectToSfu(const QString& url, const QString& token,
+                           bool autoSubscribe, bool adaptiveStream,
+                           bool e2e, const QString& iceTransportPolicy)
+{
+    LiveKitCpp::Options options;
+    options._autoSubscribe = autoSubscribe;
+    options._adaptiveStream = adaptiveStream;
+    if (const auto policy = toIceTransportPolicy(iceTransportPolicy)) {
+        options._iceTransportPolicy = policy.value();
     }
-}
-
-bool Session::connectToSfu(const QString& url, const QString& token)
-{
+    _encryption  = e2e ? LiveKitCpp::EncryptionType::Gcm : LiveKitCpp::EncryptionType::None;
+    setSessionImpl(create(std::move(options)));
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
-}
-
-bool Session::activeCamera() const
-{
-    return _localParticipant->activeCamera();
-}
-
-bool Session::activeMicrophone() const
-{
-    return _localParticipant->activeMicrophone();
 }
 
 QString Session::cameraTrackId() const
@@ -136,33 +143,29 @@ CameraOptions Session::cameraOptions() const
 
 void Session::setActiveCamera(bool active)
 {
-    if (active != activeCamera()) {
+    if (active != _activeCamera) {
+        _activeCamera = active;
         if (active) {
-            if (const auto service = getService()) {
-                auto device = service->createCamera(cameraDeviceInfo(), cameraOptions());
-                const auto track = _impl->addCameraTrack(std::move(device));
-                _localParticipant->activateCamera(track);
-            }
+            addCameraTrack();
         }
         else {
-            _impl->removeVideoTrack(_localParticipant->deactivateCamera());
+            removeCameraTrack();
         }
+        emit activeCameraChanged();
     }
 }
 
 void Session::setActiveMicrophone(bool active)
 {
     if (active != activeMicrophone()) {
+        _activeMicrophone = active;
         if (active) {
-            if (const auto service = getService()) {
-                auto device = service->createMicrophone();
-                const auto track = _impl->addAudioTrack(std::move(device));
-                _localParticipant->activateMicrophone(track);
-            }
+            addMicrophoneTrack();
         }
         else {
-            _impl->removeAudioTrack(_localParticipant->deactivateMicrophone());
+            removeMicrophoneTrack();
         }
+        emit activeMicrophoneChanged();
     }
 }
 
@@ -188,12 +191,72 @@ bool Session::sendChatMessage(const QString& message)
     return _impl && _impl->sendChatMessage(message.toStdString());
 }
 
-std::unique_ptr<LiveKitCpp::Session> Session::create()
+std::unique_ptr<LiveKitCpp::Session> Session::create(LiveKitCpp::Options options)
 {
     if (const auto service = getService()) {
-        return service->createSession();
+        return service->createSession(std::move(options));
     }
     return {};
+}
+
+void Session::addCameraTrack()
+{
+    if (_impl) {
+        if (const auto service = getService()) {
+            auto device = service->createCamera(cameraDeviceInfo(), cameraOptions());
+            const auto track = _impl->addCameraTrack(std::move(device), _encryption);
+            _localParticipant->activateCamera(track);
+        }
+    }
+}
+
+void Session::addMicrophoneTrack()
+{
+    if (_impl) {
+        if (const auto service = getService()) {
+            auto device = service->createMicrophone();
+            const auto track = _impl->addAudioTrack(std::move(device), _encryption);
+            _localParticipant->activateMicrophone(track);
+        }
+    }
+}
+
+void Session::removeCameraTrack()
+{
+    auto track = _localParticipant->deactivateCamera();
+    if (track && _impl) {
+        _impl->removeVideoTrack(std::move(track));
+    }
+}
+
+void Session::removeMicrophoneTrack()
+{
+    auto track = _localParticipant->deactivateMicrophone();
+    if (track && _impl) {
+        _impl->removeAudioTrack(std::move(track));
+    }
+}
+
+void Session::setSessionImpl(std::unique_ptr<LiveKitCpp::Session> impl)
+{
+    if (_impl.get() != impl.get()) {
+        removeCameraTrack();
+        removeMicrophoneTrack();
+        if (_impl) {
+            _impl->setListener(nullptr);
+        }
+        _impl = std::move(impl);
+        if (_impl) {
+            _impl->setListener(this);
+            if (_activeCamera) {
+                addCameraTrack();
+            }
+            if (_activeMicrophone) {
+                addMicrophoneTrack();
+            }
+        }
+        emit stateChanged();
+    }
 }
 
 void Session::onError(LiveKitCpp::LiveKitError liveKitError, const std::string& what)
@@ -230,8 +293,16 @@ void Session::onSpeakerInfoChanged(const LiveKitCpp::Participant* participant,
     }
 }
 
-void Session::onStateChanged(LiveKitCpp::SessionState)
+void Session::onStateChanged(LiveKitCpp::SessionState state)
 {
+    switch (state) {
+        case LiveKitCpp::SessionState::TransportDisconnected:
+        case LiveKitCpp::SessionState::RtcClosed:
+            QMetaObject::invokeMethod(this, &Session::resetSessionImpl);
+            break;
+        default:
+            break;
+    }
     emit stateChanged();
 }
 

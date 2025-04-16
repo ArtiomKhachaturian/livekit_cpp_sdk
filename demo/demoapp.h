@@ -7,6 +7,7 @@
 #include "cameraoptions.h"
 #include <livekit/rtc/ServiceListener.h>
 #include <QGuiApplication>
+#include <QStringList>
 #include <QScopedPointer>
 #include <QPointer>
 #include <memory>
@@ -34,6 +35,9 @@ class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
     Q_PROPERTY(MediaDevicesModel* camerasModel MEMBER _camerasModel CONSTANT)
     Q_PROPERTY(MediaDeviceInfo recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
     Q_PROPERTY(MediaDeviceInfo playoutAudioDevice READ playoutAudioDevice WRITE setPlayoutAudioDevice NOTIFY playoutAudioDeviceChanged)
+    Q_PROPERTY(QStringList iceTransportPolicies MEMBER _iceTransportPolicies CONSTANT)
+    Q_PROPERTY(QString defaultIceTransportPolicy MEMBER _defaultIceTransportPolicy CONSTANT)
+    Q_PROPERTY(int defaultIceTransportPolicyIndex MEMBER _defaultIceTransportPolicyIndex CONSTANT)
 public:
     DemoApp(int &argc, char **argv);
     ~DemoApp() override;
@@ -83,6 +87,9 @@ private:
     MediaDevicesModel* const _recordingAudioDevicesModel;
     MediaDevicesModel* const _playoutAudioDevicesModel;
     MediaDevicesModel* const _camerasModel;
+    const QStringList _iceTransportPolicies;
+    const QString _defaultIceTransportPolicy;
+    const int _defaultIceTransportPolicyIndex;
     std::shared_ptr<LiveKitCpp::Service> _service;
     std::optional<LiveKitCpp::ServiceState> _serviceInitFailure;
     QPointer<QObject> _appWindow;

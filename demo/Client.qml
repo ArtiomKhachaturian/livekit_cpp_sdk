@@ -106,7 +106,9 @@ Pane {
                 activeCamera: !sessionActive && cameraAddSwitch.checked
                 cameraDeviceInfo: cameraModelComboBox.deviceInfo
                 onConnectClicked: {
-                    sessionForm.connect(urlText, tokenText)
+                    sessionForm.connect(urlText, tokenText,
+                                        autoSubscribe, adaptiveStream,
+                                        e2e, iceTransportPolicy)
                 }
             }
             SessionForm {

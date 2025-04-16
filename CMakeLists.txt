@@ -269,6 +269,7 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/src/webrtc
         ${RTC_SRC_DIR}/src/webrtc/transport
         ${RTC_SRC_DIR}/src/webrtc/media
+        ${RTC_SRC_DIR}/src/webrtc/media/timer
         ${RTC_SRC_DIR}/src/webrtc/media/e2e
         ${RTC_SRC_DIR}/src/webrtc/media/audio
         ${RTC_SRC_DIR}/src/webrtc/media/audio/adm

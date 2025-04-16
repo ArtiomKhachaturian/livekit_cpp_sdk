@@ -9,9 +9,10 @@ Item {
     property alias tokenText: token.text
     property bool activeCamera: false
     property var cameraDeviceInfo: undefined
-    //property bool autoSubscribe: true
-    //property bool adaptiveStream: true
-    //property int iceTransportPolicy: 0 // all
+    property alias autoSubscribe: autoSubscribeChx.checked
+    property alias adaptiveStream: adaptiveStreamChx.checked
+    property alias e2e: e2eChx.checked
+    property alias iceTransportPolicy: iceTransportPoliciesCombo.currentText
 
     signal connectClicked
 
@@ -64,19 +65,38 @@ Item {
                     Layout.fillWidth: true
                 }
 
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    Switch {
+                        id: autoSubscribeChx
+                        text: qsTr("Auto subscribe")
+                        checked: true
+                    }
+                    Switch {
+                        id: adaptiveStreamChx
+                        text: qsTr("Adaptive stream")
+                        checked: true
+                    }
+                    Switch {
+                        id: e2eChx
+                        text: qsTr("E2E security")
+                        checked: true
+                    }
+                    Label {
+                        text: qsTr("ICE transport policy:")
+                    }
+                    ComboBox {
+                        id: iceTransportPoliciesCombo
+                        model: app.iceTransportPolicies
+                        currentIndex: app.defaultIceTransportPolicyIndex
+                    }
+                }
+
                 Button {
                     id: connect
                     Layout.fillWidth: true
                     text: qsTr("Connect")
                     enabled: url.text !== "" && token.text !== ""
-                    onClicked: {
-                        connectClicked()
-                    }
-                }
-
-                Button {
-                    Layout.fillWidth: true
-                    text: qsTr("Options")
                     onClicked: {
                         connectClicked()
                     }
