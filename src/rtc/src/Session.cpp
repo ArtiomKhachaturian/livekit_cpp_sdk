@@ -185,16 +185,6 @@ void Session::setAesCgmKeyProvider(KeyProviderOptions options,
     }
 }
 
-void Session::enableAesCgmForLocalMedia(bool enable)
-{
-    //_impl->_engine.enableAesCgmForLocalMedia(enable);
-}
-
-bool Session::aesCgmEnabledForLocalMedia() const
-{
-    //return _impl->_engine.aesCgmEnabledForLocalMedia();
-}
-
 bool Session::sendUserPacket(std::string payload, bool reliable,
                              const std::string& topic,
                              const std::vector<std::string>& destinationSids,

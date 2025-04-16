@@ -10,8 +10,6 @@ Item {
         id: renderer
         anchors.fill: parent
         property VideoSource source: null
-        // TODO: replace to https://doc.qt.io/qt-6/qml-qtmultimedia-videooutput.html#clearOutput-method in QT >= 6.9.x
-        visible: renderer.source !== null && renderer.source.active && !renderer.source.muted
         VideoDiagnosticsView {
             id: fpsArea
             x: parent.contentRect.right - 4 - width
@@ -54,6 +52,18 @@ Item {
                 return false
             })
             renderer.source = source
+        }
+        else {
+            renderer.clearOutput()
+        }
+    }
+
+    Connections {
+        target: renderer.source
+        function onActiveChanged() {
+            if (!renderer.source.active) {
+                renderer.clearOutput()
+            }
         }
     }
 }

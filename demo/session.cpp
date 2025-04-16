@@ -247,13 +247,14 @@ void Session::setSessionImpl(std::unique_ptr<LiveKitCpp::Session> impl)
         }
         _impl = std::move(impl);
         if (_impl) {
+            // https://github.com/livekit/client-sdk-js/blob/main/src/e2ee/constants.ts
             LiveKitCpp::KeyProviderOptions keyProvOptions;
             keyProvOptions._sharedKey = true;
             keyProvOptions.setRatchetSalt("LKFrameEncryptionKey");
             keyProvOptions._ratchetWindowSize = 8;
             keyProvOptions._keyRingSize = 16;
             keyProvOptions._failureTolerance = 10;
-            _impl->setAesCgmKeyProvider(std::move(keyProvOptions));
+            _impl->setAesCgmKeyProvider(std::move(keyProvOptions), "paralax");
             _impl->setListener(this);
             if (_activeCamera) {
                 addCameraTrack();

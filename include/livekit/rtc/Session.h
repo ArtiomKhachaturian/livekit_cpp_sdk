@@ -87,8 +87,6 @@ public:
     void setAesCgmKeyProvider(KeyProviderOptions options,
                               std::vector<uint8_t> sharedKey,
                               const std::optional<uint8_t>& sharedKeyIndex = {});
-    void enableAesCgmForLocalMedia(bool enable);
-    bool aesCgmEnabledForLocalMedia() const; // true by default
     // chat & data channels
     /**
       * Publish a new data payload to the room. Data will be forwarded to each
