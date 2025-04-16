@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // RemoteParticipantImpl.h
 #include "Listener.h"
+#include "Loggable.h"
 #include "ParticipantAccessor.h"
 #include "SafeObj.h"
 #include "livekit/rtc/RemoteParticipant.h"
@@ -34,27 +35,30 @@ namespace LiveKitCpp
 class RemoteAudioTrackImpl;
 class RemoteVideoTrackImpl;
 class RtpReceiversStorage;
-class E2ESecurityFactory;
+class TrackManager;
 
-class RemoteParticipantImpl : public RemoteParticipant, public ParticipantAccessor
+class RemoteParticipantImpl : public Bricks::LoggableS<RemoteParticipant, ParticipantAccessor>
 {
     template <class T> using Tracks = std::vector<std::shared_ptr<T>>;
     using AudioTracks = Tracks<RemoteAudioTrackImpl>;
     using VideoTracks = Tracks<RemoteVideoTrackImpl>;
     class ListenerImpl;
 public:
-    RemoteParticipantImpl(E2ESecurityFactory* securityFactory,
-                          const std::shared_ptr<RtpReceiversStorage>& receiversStorage,
-                          const ParticipantInfo& info = {});
+    RemoteParticipantImpl(const std::shared_ptr<RtpReceiversStorage>& receiversStorage,
+                          const std::shared_ptr<Bricks::Logger>& logger = {});
     ~RemoteParticipantImpl() final { reset(); }
     void reset();
     std::optional<TrackType> trackType(const std::string& trackSid) const;
-    bool addAudio(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
-    bool addVideo(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
+    bool addAudio(const std::string& trackSid,
+                  const std::weak_ptr<TrackManager>& trackManager,
+                  rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
+    bool addVideo(const std::string& trackSid,
+                  const std::weak_ptr<TrackManager>& trackManager,
+                  rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
     bool removeAudio(const std::string& trackSid);
     bool removeVideo(const std::string& trackSid);
     ParticipantInfo info() const { return _info(); }
-    void setInfo(const ParticipantInfo& info);
+    void setInfo(const std::weak_ptr<TrackManager>& trackManager, const ParticipantInfo& info);
     // impl. of Participant
     std::string sid() const final;
     std::string identity() const final;
@@ -76,6 +80,9 @@ public:
     bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
     void setSpeakerChanges(float level, bool active) const final;
     void setConnectionQuality(ConnectionQuality quality, float score) final;
+protected:
+    // impl. of Bricks::LoggableS<>
+    std::string_view logCategory() const final;
 private:
     bool updateAudio(const TrackInfo& trackInfo) const;
     bool updateVideo(const TrackInfo& trackInfo) const;
@@ -83,19 +90,17 @@ private:
     TrackInfo* findBySid(const std::string& trackSid);
     template <class TTrack>
     bool addTrack(const std::string& trackSid,
-                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                  const std::weak_ptr<TrackManager>& trackManager,
+                  rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                   Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     template <class TTrack>
     bool removeTrack(const std::string& trackSid, Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     template <class TTrack>
     void clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collection) const;
-    bool attachCryptor(EncryptionType encryption,
-                       const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const;
     template <class TTrack>
     static std::optional<size_t> findBySid(const std::string& trackSid,
                                            const Tracks<TTrack>& collection);
 private:
-    E2ESecurityFactory* const _securityFactory;
     const std::shared_ptr<RtpReceiversStorage> _receiversStorage;
     const std::shared_ptr<ListenerImpl> _listener;
     Bricks::SafeObj<ParticipantInfo> _info;

@@ -48,13 +48,14 @@ class PeerConnectionFactory;
 class VideoDevice;
 struct TrackPublishedResponse;
 struct TrackUnpublishedResponse;
+enum class EncryptionType;
 
 class LocalParticipant : public Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantAccessor>
 {
     using Base = Bricks::LoggableS<Participant, AesCgmCryptorObserver, ParticipantAccessor>;
     template <class T> using Tracks = Bricks::SafeObj<std::vector<std::shared_ptr<T>>>;
 public:
-    LocalParticipant(TrackManager* manager, PeerConnectionFactory* pcf,
+    LocalParticipant(PeerConnectionFactory* pcf,
                      const Participant* session,
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~LocalParticipant() final { reset(); }
@@ -62,8 +63,12 @@ public:
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
     size_t videoTracksCount() const;
-    std::shared_ptr<LocalAudioTrackImpl> addAudioTrack(std::shared_ptr<AudioDevice> device);
-    std::shared_ptr<CameraTrackImpl> addCameraTrack(std::shared_ptr<CameraDevice> device);
+    std::shared_ptr<LocalAudioTrackImpl> addAudioTrack(std::shared_ptr<AudioDevice> device,
+                                                       EncryptionType encryption,
+                                                       const std::weak_ptr<TrackManager>& trackManager);
+    std::shared_ptr<CameraTrackImpl> addCameraTrack(std::shared_ptr<CameraDevice> device,
+                                                    EncryptionType encryption,
+                                                    const std::weak_ptr<TrackManager>& trackManager);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeAudioTrack(std::shared_ptr<AudioTrack> track);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
@@ -77,8 +82,6 @@ public:
     std::shared_ptr<LocalTrack> track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
     void setListener(ParticipantListener* listener) { _listener = listener; }
     void setInfo(const ParticipantInfo& info);
-    void enableAesCgmForLocalMedia(bool enable) { _aesCgmEnabledForLocalMedia = enable; }
-    bool aesCgmEnabledForLocalMedia() const { return _aesCgmEnabledForLocalMedia; }
     // impl. of Participant
     std::string sid() const final { return _sid(); }
     std::string identity() const final { return _identity(); }
@@ -103,7 +106,6 @@ private:
     void onEncryptionStateChanged(cricket::MediaType mediaType, const std::string&,
                                   const std::string& trackId, AesCgmCryptorState state) final;
 private:
-    TrackManager* const _manager;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     Bricks::SafeObj<const Participant*> _session;
     Bricks::Listener<ParticipantListener*> _listener;
@@ -114,7 +116,6 @@ private:
     Bricks::SafeObj<std::string> _name;
     Bricks::SafeObj<std::string> _metadata;
     std::atomic<ParticipantKind> _kind = ParticipantKind::Standard;
-    std::atomic_bool _aesCgmEnabledForLocalMedia = true;
 };
 
 } // namespace LiveKitCpp

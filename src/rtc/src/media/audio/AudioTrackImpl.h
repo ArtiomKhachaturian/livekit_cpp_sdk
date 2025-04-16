@@ -33,14 +33,15 @@ public:
     std::optional<int> signalLevel() const final;
     void setVolume(double volume) final;
 protected:
-    AudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice, TrackManager* manager);
+    AudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
+                   const std::weak_ptr<TrackManager>& trackManager);
     webrtc::AudioSourceInterface* audioSource() const;
 };
 
 template <class TTrackApi>
 inline AudioTrackImpl<TTrackApi>::AudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
-                                                 TrackManager* manager)
-    : Base(std::move(audioDevice), manager)
+                                                 const std::weak_ptr<TrackManager>& trackManager)
+    : Base(std::move(audioDevice), trackManager)
 {
 }
 

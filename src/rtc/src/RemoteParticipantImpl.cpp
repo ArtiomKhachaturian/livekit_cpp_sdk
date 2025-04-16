@@ -15,7 +15,6 @@
 #include "RemoteAudioTrackImpl.h"
 #include "RemoteVideoTrackImpl.h"
 #include "RtpReceiversStorage.h"
-#include "E2ESecurityFactory.h"
 #include "AesCgmCryptor.h"
 #include "Listeners.h"
 #include "Seq.h"
@@ -111,14 +110,12 @@ private:
     Bricks::Listeners<RemoteParticipantListener*> _listeners;
 };
 
-RemoteParticipantImpl::RemoteParticipantImpl(E2ESecurityFactory* securityFactory,
-                                             const std::shared_ptr<RtpReceiversStorage>& receiversStorage,
-                                             const ParticipantInfo& info)
-    : _securityFactory(securityFactory)
+RemoteParticipantImpl::RemoteParticipantImpl(const std::shared_ptr<RtpReceiversStorage>& receiversStorage,
+                                             const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<RemoteParticipant, ParticipantAccessor>(logger)
     , _receiversStorage(receiversStorage)
     , _listener(std::make_shared<ListenerImpl>(this))
 {
-    setInfo(info);
 }
 
 void RemoteParticipantImpl::reset()
@@ -139,24 +136,28 @@ std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& tra
     return std::nullopt;
 }
 
-bool RemoteParticipantImpl::addAudio(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+bool RemoteParticipantImpl::addAudio(const std::string& trackSid,
+                                     const std::weak_ptr<TrackManager>& trackManager,
+                                     rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     if (!receiver && _receiversStorage) {
         receiver = _receiversStorage->take(trackSid);
     }
     if (receiver && cricket::MEDIA_TYPE_AUDIO == receiver->media_type()) {
-        return addTrack(trackSid, receiver, _audioTracks);
+        return addTrack(trackSid, trackManager, std::move(receiver), _audioTracks);
     }
     return false;
 }
 
-bool RemoteParticipantImpl::addVideo(const std::string& trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+bool RemoteParticipantImpl::addVideo(const std::string& trackSid,
+                                     const std::weak_ptr<TrackManager>& trackManager,
+                                     rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     if (!receiver && _receiversStorage) {
         receiver = _receiversStorage->take(trackSid);
     }
     if (receiver && cricket::MEDIA_TYPE_VIDEO == receiver->media_type()) {
-        return addTrack(trackSid, receiver, _videoTracks);
+        return addTrack(trackSid, trackManager, std::move(receiver), _videoTracks);
     }
     return false;
 }
@@ -171,7 +172,8 @@ bool RemoteParticipantImpl::removeVideo(const std::string& trackSid)
     return removeTrack(trackSid, _videoTracks);
 }
 
-void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
+void RemoteParticipantImpl::setInfo(const std::weak_ptr<TrackManager>& trackManager,
+                                    const ParticipantInfo& info)
 {
     bool sidChanged = false, identityChanged = false, nameChanged = false;
     bool metadataChanged = false, kindChanged = false;
@@ -193,10 +195,10 @@ void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
     for (const auto& track : added) {
         switch (track._type) {
             case TrackType::Audio:
-                addAudio(track._sid);
+                addAudio(track._sid, trackManager);
                 break;
             case TrackType::Video:
-                addVideo(track._sid);
+                addVideo(track._sid, trackManager);
                 break;
             default:
                 break;
@@ -220,12 +222,12 @@ void RemoteParticipantImpl::setInfo(const ParticipantInfo& info)
         switch (track._type) {
             case TrackType::Audio:
                 if (!updateAudio(track)) {
-                    addAudio(track._sid);
+                    addAudio(track._sid, trackManager);
                 }
                 break;
             case TrackType::Video:
                 if (!updateVideo(track)) {
-                    addVideo(track._sid);
+                    addVideo(track._sid, trackManager);
                 }
                 break;
             default:
@@ -392,6 +394,12 @@ void RemoteParticipantImpl::setConnectionQuality(ConnectionQuality quality,
     _listener->notify(&ParticipantListener::onConnectionQualityChanged, quality, score);
 }
 
+std::string_view RemoteParticipantImpl::logCategory() const
+{
+    //return "remote_participant#" + identity();
+    return "remote_participant";
+}
+
 bool RemoteParticipantImpl::updateAudio(const TrackInfo& trackInfo) const
 {
     if (TrackType::Audio == trackInfo._type && !trackInfo._sid.empty()) {
@@ -442,36 +450,47 @@ TrackInfo* RemoteParticipantImpl::findBySid(const std::string& trackSid)
 
 template <class TTrack>
 bool RemoteParticipantImpl::addTrack(const std::string& trackSid,
-                                     const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                     const std::weak_ptr<TrackManager>& trackManager,
+                                     rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                                      Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
-    bool added = false;
-    if (!trackSid.empty()) {
+    if (!trackManager.expired() && !trackSid.empty()) {
         if (auto device = makeDevice<TTrack>(receiver)) {
             LOCK_READ_SAFE_OBJ(_info);
             if (const auto trackInfo = findBySid(trackSid)) {
-                auto trackImpl = std::make_shared<TTrack>(*trackInfo,
-                                                          std::move(receiver),
-                                                          std::move(device),
-                                                          _securityFactory);
-                if (attachCryptor(trackInfo->_encryption, receiver)) {
-                    {
-                        const std::lock_guard guard(collection.mutex());
-                        collection->push_back(std::move(trackImpl));
-                    }
-                    _listener->notify(&RemoteParticipantListener::onRemoteTrackAdded,
-                                      trackInfo->_type, trackInfo->_encryption, trackSid);
-                    added = true;
+                auto track = std::make_shared<TTrack>(*trackInfo, receiver,
+                                                      std::move(device),
+                                                      trackManager);
+                switch (track->encryption()) {
+                    case EncryptionType::None:
+                        break;
+                    case EncryptionType::Gcm:
+                        if (const auto m = trackManager.lock()) {
+                            if (auto cryptor = m->createCryptor(false, track->mediaType(),
+                                                                identity(), trackSid)) {
+                                cryptor->setObserver(_listener);
+                                receiver->SetFrameTransformer(std::move(cryptor));
+                            }
+                            else {
+                                logError("failed to create GCM crypto for remote track " + trackSid);
+                            }
+                        }
+                        break;
+                    case EncryptionType::Custom:
+                        logWarning("custom crypto doesn't supported for remote track " + trackSid);
+                        break;
                 }
-                else {
-                    _listener->notify(&RemoteParticipantListener::onTrackCryptoError,
-                                      trackInfo->_type, trackInfo->_encryption,
-                                      trackSid, E2ECryptoError::CryptorCreationFailure);
+                {
+                    const std::lock_guard guard(collection.mutex());
+                    collection->push_back(std::move(track));
                 }
+                _listener->notify(&RemoteParticipantListener::onRemoteTrackAdded,
+                                  trackInfo->_type, trackInfo->_encryption, trackSid);
+                return true;
             }
         }
     }
-    return added;
+    return false;
 }
 
 template <class TTrack>
@@ -508,34 +527,6 @@ void RemoteParticipantImpl::clearTracks(Bricks::SafeObj<Tracks<TTrack>>& collect
         _listener->notify(&RemoteParticipantListener::onRemoteTrackRemoved,
                           track->type(), track->sid());
     }
-}
-
-bool RemoteParticipantImpl::attachCryptor(EncryptionType encryption,
-                                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
-{
-    if (receiver) {
-        switch (encryption) {
-            case EncryptionType::None:
-                return true;
-            case EncryptionType::Gcm:
-                if (_securityFactory && receiver) {
-                    auto cryptor = _securityFactory->createCryptor(false,
-                                                                   receiver->media_type(),
-                                                                   identity(),
-                                                                   receiver->id());
-                    if (cryptor) {
-                        cryptor->setObserver(_listener);
-                        receiver->SetFrameTransformer(std::move(cryptor));
-                        return true;
-                    }
-                }
-                break;
-            default:
-                // TODO: log error
-                break;
-        }
-    }
-    return false;
 }
 
 template <class TTrack>

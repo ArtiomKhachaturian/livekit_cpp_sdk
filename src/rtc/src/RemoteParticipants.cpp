@@ -28,17 +28,18 @@ inline bool compareParticipantInfo(const ParticipantInfo& l, const ParticipantIn
 }
 
 inline bool addToParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant,
-                             const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                             const std::string& trackSid) {
+                             const std::string& trackSid,
+                             const std::weak_ptr<TrackManager>& trackManager,
+                             const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
     if (participant && receiver) {
         switch (receiver->media_type()) {
             case cricket::MEDIA_TYPE_AUDIO:
-                if (participant->addAudio(trackSid, receiver)) {
+                if (participant->addAudio(trackSid, trackManager, receiver)) {
                     return true;
                 }
                 break;
             case cricket::MEDIA_TYPE_VIDEO:
-                if (participant->addVideo(trackSid, receiver)) {
+                if (participant->addVideo(trackSid, trackManager, receiver)) {
                     return true;
                 }
                 break;
@@ -55,12 +56,10 @@ namespace LiveKitCpp
 {
     
 RemoteParticipants::RemoteParticipants(bool autoSubscribe,
-                                       E2ESecurityFactory* securityFactory,
                                        RemoteParticipantsListener* listener,
                                        const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<RemoteParticipantListener>(logger)
     , _autoSubscribe(autoSubscribe)
-    , _securityFactory(securityFactory)
     , _listener(listener)
     , _nonBindedReceivers(std::make_shared<NonBindedRtpReceivers>())
 {
@@ -84,7 +83,8 @@ bool RemoteParticipants::setRemoteSideTrackMute(const std::string& sid, bool mut
     return false;
 }
 
-void RemoteParticipants::setInfo(const std::vector<ParticipantInfo>& infos)
+void RemoteParticipants::setInfo(const std::weak_ptr<TrackManager>& trackManager,
+                                 const std::vector<ParticipantInfo>& infos)
 {
     LOCK_WRITE_SAFE_OBJ(_participants);
     clearParticipants();
@@ -92,15 +92,16 @@ void RemoteParticipants::setInfo(const std::vector<ParticipantInfo>& infos)
         _participants->reserve(infos.size());
         for (const auto& info : infos) {
             if (ParticipantState::Disconnected != info._state) {
-                addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory,
-                                                                       _nonBindedReceivers,
-                                                                       info));
+                auto participant = std::make_shared<RemoteParticipantImpl>(_nonBindedReceivers, logger());
+                participant->setInfo(trackManager, info);
+                addParticipant(participant);
             }
         }
     }
 }
 
-void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
+void RemoteParticipants::updateInfo(const std::weak_ptr<TrackManager>& trackManager,
+                                    const std::vector<ParticipantInfo>& infos)
 {
     if (!infos.empty()) {
         using SeqType = Seq<ParticipantInfo>;
@@ -111,9 +112,9 @@ void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
         const auto updated = SeqType::intersection(current, infos, compareParticipantInfo);
         // add new
         for (const auto& info : added) {
-            addParticipant(std::make_shared<RemoteParticipantImpl>(_securityFactory,
-                                                                   _nonBindedReceivers,
-                                                                   info));
+            auto participant = std::make_shared<RemoteParticipantImpl>(_nonBindedReceivers, logger());
+            participant->setInfo(trackManager, info);
+            addParticipant(participant);
         }
         // remove
         for (const auto& info : removed) {
@@ -123,7 +124,7 @@ void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
         for (const auto& info : updated) {
             if (const auto ndx = participantIndexBySid(info._sid)) {
                 const auto participant = _participants->at(ndx.value());
-                participant->setInfo(info);
+                participant->setInfo(trackManager, info);
                 if (ParticipantState::Disconnected == info._state) {
                     _participants->erase(_participants->begin() + ndx.value());
                     dispose(participant);
@@ -133,20 +134,21 @@ void RemoteParticipants::updateInfo(const std::vector<ParticipantInfo>& infos)
     }
 }
 
-bool RemoteParticipants::addMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+bool RemoteParticipants::addMedia(const std::weak_ptr<TrackManager>& trackManager,
+                                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                   std::string trackSid, std::string participantSid)
 {
     if (receiver && !trackSid.empty()) {
         LOCK_READ_SAFE_OBJ(_participants);
         if (!participantSid.empty()) {
             const auto ndx = participantIndexBySid(participantSid);
-            if (ndx && addToParticipant(_participants->at(ndx.value()), receiver, trackSid)) {
+            if (ndx && addToParticipant(_participants->at(ndx.value()), trackSid, trackManager, receiver)) {
                 return true;
             }
         }
         else {
             for (const auto& participant : _participants.constRef()) {
-                if (addToParticipant(participant, receiver, trackSid)) {
+                if (addToParticipant(participant, trackSid, trackManager, receiver)) {
                     return true;
                 }
             }

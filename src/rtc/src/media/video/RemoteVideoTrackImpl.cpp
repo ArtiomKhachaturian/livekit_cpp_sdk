@@ -19,8 +19,8 @@ namespace LiveKitCpp
 RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
                                            const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                            std::shared_ptr<VideoDeviceImpl> videoDevice,
-                                           TrackManager* manager)
-    : Base(info, receiver, std::move(videoDevice), manager)
+                                           const std::weak_ptr<TrackManager>& trackManager)
+    : Base(info, receiver, std::move(videoDevice), trackManager)
 {
 }
 

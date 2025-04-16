@@ -14,7 +14,7 @@
 #pragma once // RTCEngineImpl.h
 #include "Listener.h"
 #include "Loggable.h"
-#include "E2ESecurityFactory.h"
+#include "TrackManager.h"
 #include "SafeScopedRefPtr.h"
 #include "TransportManagerListener.h"
 #include "RemoteParticipants.h"
@@ -73,10 +73,12 @@ struct AddTrackRequest;
 struct MuteTrackRequest;
 struct UpdateLocalAudioTrack;
 enum class DisconnectReason;
+enum class EncryptionType;
 
-class RTCEngineImpl : private Bricks::LoggableS<ResponsesListener>,
+class RTCEngineImpl : public std::enable_shared_from_this<RTCEngineImpl>,
+                      public TrackManager,
+                      private Bricks::LoggableS<ResponsesListener>,
                       private TransportManagerListener,
-                      private E2ESecurityFactory,
                       private RemoteParticipantsListener,
                       private SignalTransportListener,
                       private DataExchangeListener
@@ -97,12 +99,12 @@ public:
     void setListener(SessionListener* listener);
     const auto& localParticipant() const noexcept { return _localParticipant; }
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
-    std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device);
-    std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device);
+    std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
+                                                            EncryptionType encryption);
+    std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device,
+                                                         EncryptionType encryption);
     bool removeLocalAudioTrack(std::shared_ptr<AudioTrack> track);
     bool removeLocalVideoTrack(std::shared_ptr<VideoTrack> track);
-    void enableAesCgmForLocalMedia(bool enable);
-    bool aesCgmEnabledForLocalMedia() const noexcept;
     void setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider = {});
     void setAudioPlayout(bool playout);
     bool audioPlayoutEnabled() const { return _playout; }
@@ -165,7 +167,6 @@ private:
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
     std::optional<bool> stereoRecording() const final;
-    EncryptionType localEncryptionType() const final;
     // impl. of RemoteParticipantsListener
     void onParticipantAdded(const std::string& sid) final;
     void onParticipantRemoved(const std::string& sid) final;

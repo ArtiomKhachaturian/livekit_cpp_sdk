@@ -24,7 +24,9 @@ class CameraTrackImpl : public LocalTrackImpl<VideoTrackImpl<CameraDeviceImpl, C
 {
     using Base = LocalTrackImpl<VideoTrackImpl<CameraDeviceImpl, CameraTrack>>;
 public:
-    CameraTrackImpl(std::shared_ptr<CameraDeviceImpl> cameraDevice, TrackManager* manager);
+    CameraTrackImpl(EncryptionType encryption,
+                    std::shared_ptr<CameraDeviceImpl> cameraDevice,
+                    const std::weak_ptr<TrackManager>& trackManager);
     ~CameraTrackImpl();
     // impl. of CameraTrack
     void setDeviceInfo(const MediaDeviceInfo& info) final;

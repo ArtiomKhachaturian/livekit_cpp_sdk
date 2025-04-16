@@ -53,6 +53,7 @@ class RTCEngineImpl;
 class SessionListener;
 class VideoTrack;
 enum class SessionState;
+enum class EncryptionType;
 
 // https://github.com/livekit/client-sdk-js/blob/main/src/room/RTCEngine.ts
 class RTCEngine : public RtcObject<RTCEngineImpl>
@@ -82,8 +83,10 @@ public:
                          bool generated,
                          const std::vector<std::string>& destinationIdentities = {}) const;
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
-    std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device);
-    std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device);
+    std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
+                                                            EncryptionType encryption);
+    std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device,
+                                                         EncryptionType encryption);
     bool removeLocalAudioTrack(std::shared_ptr<AudioTrack> track);
     bool removeLocalVideoTrack(std::shared_ptr<VideoTrack> track);
     std::shared_ptr<const LocalParticipant> localParticipant() const;

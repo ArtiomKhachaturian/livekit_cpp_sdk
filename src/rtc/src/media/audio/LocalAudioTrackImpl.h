@@ -24,8 +24,10 @@ class LocalAudioTrackImpl : public LocalTrackImpl<AudioTrackImpl<>>
 {
     using Base = LocalTrackImpl<AudioTrackImpl<>>;
 public:
-    LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
-                        TrackManager* manager, bool microphone = true);
+    LocalAudioTrackImpl(EncryptionType encryption,
+                        std::shared_ptr<AudioDeviceImpl> audioDevice,
+                        const std::weak_ptr<TrackManager>& trackManager,
+                        bool microphone = true);
     // impl. of AudioTrack
     std::vector<AudioTrackFeature> features() const final;
     // impl. of LocalTrack

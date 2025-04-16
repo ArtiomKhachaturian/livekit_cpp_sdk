@@ -21,8 +21,7 @@ enum class E2ECryptoError
     EncryptionFailed,
     DecryptionFailed,
     MissingKey,
-    InternalError,
-    CryptorCreationFailure
+    InternalError
 };
 
 } // namespace LiveKitCpp

@@ -114,8 +114,8 @@ Pane {
             SessionForm {
                 id: sessionForm
                 objectName: root.objectName
-                activeCamera: sessionActive && cameraAddSwitch.checked
-                activeMicrophone: sessionActive && micAddSwitch.checked
+                activeCamera: cameraAddSwitch.checked
+                activeMicrophone: micAddSwitch.checked
                 camerDeviceInfo: cameraModelComboBox.deviceInfo
                 cameraOptions: cameraOptionsComboBox.options
                 microphoneMuted: micMuteCheckbox.checked

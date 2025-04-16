@@ -18,6 +18,7 @@
 #include "TrackManager.h"
 #include "Utils.h"
 #include "livekit/signaling/sfu/AddTrackRequest.h"
+#include "livekit/signaling/sfu/EncryptionType.h"
 #include "livekit/rtc/media/Track.h"
 #include "livekit/rtc/media/MediaEventsListener.h"
 #include <api/media_stream_interface.h>
@@ -39,8 +40,7 @@ public:
     void close() override;
     void setSid(const std::string& sid) final;
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const final;
-    void notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender,
-                                         bool encryption) final;
+    EncryptionType notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
     void notifyThatMediaRemovedFromTransport() final;
     bool fillRequest(AddTrackRequest* request) const override;
     bool remoteMuted() const final { return _remoteMuted; }
@@ -49,21 +49,22 @@ public:
     void queryStats() const final;
     // impl. of Track
     std::string sid() const final { return _sid(); }
-    EncryptionType encryption() const final;
+    EncryptionType encryption() const final { return _encryption; }
     std::string name() const final { return _name; }
     bool remote() const noexcept final { return false; }
 protected:
     template <class TMediaDevice>
     LocalTrackImpl(std::string name,
+                   EncryptionType encryption,
                    std::shared_ptr<TMediaDevice> mediaDevice,
-                   TrackManager* manager);
+                   const std::weak_ptr<TrackManager>& trackManager);
     // overrides of TrackImpl<>
     void notifyAboutMuted(bool mute) const final;
 private:
     bool added() const;
 private:
     const std::string _name;
-    std::atomic_bool _encryption = false;
+    const EncryptionType _encryption;
     std::atomic_bool _remoteMuted = false;
     Bricks::SafeObj<std::string> _sid;
     SafeScopedRefPtr<webrtc::RtpSenderInterface> _sender;
@@ -72,10 +73,12 @@ private:
 template <class TBaseImpl>
 template <class TMediaDevice>
 inline LocalTrackImpl<TBaseImpl>::LocalTrackImpl(std::string name,
+                                                 EncryptionType encryption,
                                                  std::shared_ptr<TMediaDevice> mediaDevice,
-                                                 TrackManager* manager)
-    : TBaseImpl(std::move(mediaDevice), manager)
+                                                 const std::weak_ptr<TrackManager>& trackManager)
+    : TBaseImpl(std::move(mediaDevice), trackManager)
     , _name(std::move(name))
+    , _encryption(encryption)
 {
 }
 
@@ -112,22 +115,21 @@ inline webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalTrackImpl<T
 }
 
 template <class TBaseImpl>
-inline void LocalTrackImpl<TBaseImpl>::
-    notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender,
-                                    bool encryption)
+inline EncryptionType LocalTrackImpl<TBaseImpl>::
+    notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (sender && sender->track() == media()) {
         _sender(std::move(sender));
-        _encryption = encryption;
         notifyAboutMuted(muted());
+        return _encryption;
     }
+    return EncryptionType::None;
 }
 
 template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::notifyThatMediaRemovedFromTransport()
 {
     _sender({});
-    _encryption = false;
 }
 
 template <class TBaseImpl>
@@ -147,18 +149,9 @@ inline bool LocalTrackImpl<TBaseImpl>::fillRequest(AddTrackRequest* request) con
 template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::queryStats() const
 {
-    if (const auto m = TBaseImpl::manager()) {
+    if (const auto m = TBaseImpl::trackManager()) {
         m->queryStats(_sender(), TBaseImpl::statsCollector());
     }
-}
-
-template <class TBaseImpl>
-inline EncryptionType LocalTrackImpl<TBaseImpl>::encryption() const
-{
-    if (TBaseImpl::manager() && _encryption) {
-        return TBaseImpl::manager()->localEncryptionType();
-    }
-    return EncryptionType::None;
 }
 
 template <class TBaseImpl>
@@ -172,10 +165,12 @@ template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::notifyAboutMuted(bool mute) const
 {
     TBaseImpl::notifyAboutMuted(mute);
-    if (TBaseImpl::manager() && added()) {
-        const auto sid = this->sid();
-        if (!sid.empty()) {
-            TBaseImpl::manager()->notifyAboutMuteChanges(sid, mute);
+    if (added()) {
+        if (const auto m = TBaseImpl::trackManager()) {
+            const auto sid = this->sid();
+            if (!sid.empty()) {
+                m->notifyAboutMuteChanges(sid, mute);
+            }
         }
     }
 }

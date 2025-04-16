@@ -56,8 +56,8 @@ RTCEngineImpl::RTCEngineImpl(Options options,
                              std::unique_ptr<Websocket::EndPoint> socket,
                              const std::shared_ptr<Bricks::Logger>& logger)
     :  Bricks::LoggableS<ResponsesListener>(logger)
-    , _localParticipant(new LocalParticipant(this, pcf, session, logger))
-    , _remoteParicipants(new RemoteParticipants(options._autoSubscribe, this, this, logger))
+    , _localParticipant(new LocalParticipant(pcf, session, logger))
+    , _remoteParicipants(new RemoteParticipants(options._autoSubscribe, this, logger))
     , _options(std::move(options))
     , _pcf(pcf)
     , _localDcs(logger)
@@ -86,9 +86,10 @@ void RTCEngineImpl::setListener(SessionListener* listener)
     _localParticipant->setListener(listener);
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCEngineImpl::addLocalAudioTrack(std::shared_ptr<AudioDevice> device)
+std::shared_ptr<LocalAudioTrackImpl> RTCEngineImpl::addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
+                                                                       EncryptionType encryption)
 {
-    auto track = _localParticipant->addAudioTrack(std::move(device));
+    auto track = _localParticipant->addAudioTrack(std::move(device), encryption, weak_from_this());
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());
@@ -97,9 +98,10 @@ std::shared_ptr<LocalAudioTrackImpl> RTCEngineImpl::addLocalAudioTrack(std::shar
     return track;
 }
 
-std::shared_ptr<CameraTrackImpl> RTCEngineImpl::addLocalCameraTrack(std::shared_ptr<CameraDevice> device)
+std::shared_ptr<CameraTrackImpl> RTCEngineImpl::addLocalCameraTrack(std::shared_ptr<CameraDevice> device,
+                                                                    EncryptionType encryption)
 {
-    auto track = _localParticipant->addCameraTrack(std::move(device));
+    auto track = _localParticipant->addCameraTrack(std::move(device), encryption, weak_from_this());
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());
@@ -128,16 +130,6 @@ bool RTCEngineImpl::removeLocalVideoTrack(std::shared_ptr<VideoTrack> track)
         return true;
     }
     return false;
-}
-
-void RTCEngineImpl::enableAesCgmForLocalMedia(bool enable)
-{
-    _localParticipant->enableAesCgmForLocalMedia(enable);
-}
-
-bool RTCEngineImpl::aesCgmEnabledForLocalMedia() const noexcept
-{
-    return _localParticipant->aesCgmEnabledForLocalMedia();
 }
 
 void RTCEngineImpl::setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider)
@@ -334,7 +326,7 @@ void RTCEngineImpl::sendLeave(DisconnectReason reason, LeaveRequestAction action
     LeaveRequest request;
     request._reason = reason;
     request._action = action;
-    sendRequestToServer(&SignalClient::sendLeave, std::move(request));
+    _client.sendLeave(std::move(request));
 }
 
 template <class ReqMethod, class TReq>
@@ -535,15 +527,6 @@ std::optional<bool> RTCEngineImpl::stereoRecording() const
     return _localParticipant->stereoRecording();
 }
 
-EncryptionType RTCEngineImpl::localEncryptionType() const
-{
-    if (_localParticipant->aesCgmEnabledForLocalMedia() &&
-        std::atomic_load(&_aesCgmKeyProvider)) {
-        return EncryptionType::Gcm;
-    }
-    return EncryptionType::None;
-}
-
 void RTCEngineImpl::onParticipantAdded(const std::string& sid)
 {
     notify(&SessionListener::onRemoteParticipantAdded, sid);
@@ -563,7 +546,7 @@ void RTCEngineImpl::onJoin(JoinResponse response)
             provider->setSifTrailer(response._sifTrailer);
         }
         _localParticipant->setInfo(response._participant);
-        _remoteParicipants->setInfo(response._otherParticipants);
+        _remoteParicipants->setInfo(weak_from_this(), response._otherParticipants);
         _localDcs.setSid(response._participant._sid);
         _localDcs.setIdentity(response._participant._identity);
         notifyAboutLocalParticipantJoinLeave(true);
@@ -592,7 +575,7 @@ void RTCEngineImpl::onUpdate(ParticipantUpdate update)
             }
         }
         if (DisconnectReason::UnknownReason == disconnectReason) {
-            _remoteParicipants->updateInfo(infos);
+            _remoteParicipants->updateInfo(weak_from_this(), infos);
         }
         else {
             handleLocalParticipantDisconnection(disconnectReason);
@@ -754,15 +737,23 @@ void RTCEngineImpl::onRefreshToken(std::string authToken)
 void RTCEngineImpl::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant->track(sender)) {
-        if (auto cryptor = createCryptor(true, sender->media_type(),
-                                         _localParticipant->identity(),
-                                         sender->id())) {
-            cryptor->setObserver(_localParticipant);
-            sender->SetFrameTransformer(std::move(cryptor));
-            track->notifyThatMediaAddedToTransport(std::move(sender), true);
-        }
-        else {
-            track->notifyThatMediaAddedToTransport(std::move(sender), false);
+        switch (track->notifyThatMediaAddedToTransport(sender)) {
+            case EncryptionType::None:
+                break;
+            case EncryptionType::Gcm:
+                if (auto cryptor = createCryptor(true, track->mediaType(),
+                                                 _localParticipant->identity(),
+                                                 sender->id())) {
+                    cryptor->setObserver(_localParticipant);
+                    sender->SetFrameTransformer(std::move(cryptor));
+                }
+                else {
+                    logError("failed to create GCM crypto for local " + track->kind() + " track " + track->cid());
+                }
+                break;
+            case EncryptionType::Custom:
+                logWarning("custom crypto doesn't supported for local " + track->kind() + " track " + track->cid());
+                break;
         }
         sendAddTrack(track);
     }
@@ -812,7 +803,7 @@ void RTCEngineImpl::onStateChange(webrtc::PeerConnectionInterface::PeerConnectio
 void RTCEngineImpl::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                                        std::string trackId, std::string participantSid)
 {
-    _remoteParicipants->addMedia(receiver, std::move(trackId), std::move(participantSid));
+    _remoteParicipants->addMedia(weak_from_this(), receiver, std::move(trackId), std::move(participantSid));
 }
 
 void RTCEngineImpl::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
@@ -836,11 +827,16 @@ void RTCEngineImpl::onNegotiationNeeded()
 void RTCEngineImpl::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (auto sdp = RoomUtils::map(desc)) {
-        if (!_client.sendOffer(std::move(sdp.value()))) {
-            logError("failed to send publisher offer to the server");
-        }
-        else {
-            logInfo("publisher offer has been sent to server");
+        switch (sendRequestToServer(&SignalClient::sendOffer, std::move(sdp.value()))) {
+            case SendResult::Ok:
+                logInfo("publisher offer has been sent to server");
+                break;
+            case SendResult::TransportError:
+                logError("failed to send publisher offer to the server - transport error");
+                break;
+            case SendResult::TransportClosed:
+                logWarning("failed to send publisher offer to the server - transport is already closed");
+                break;
         }
     }
     else {
@@ -851,15 +847,20 @@ void RTCEngineImpl::onPublisherOffer(const webrtc::SessionDescriptionInterface* 
 void RTCEngineImpl::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc)
 {
     if (auto sdp = RoomUtils::map(desc)) {
-        if (!_client.sendAnswer(std::move(sdp.value()))) {
-            logError("failed to send subscriber answer to the server");
-        }
-        else {
-            logInfo("subscriber answer has been sent to server");
+        switch (sendRequestToServer(&SignalClient::sendAnswer, std::move(sdp.value()))) {
+            case SendResult::Ok:
+                logInfo("publisher answer has been sent to server");
+                break;
+            case SendResult::TransportError:
+                logError("failed to send publisher answer to the server - transport error");
+                break;
+            case SendResult::TransportClosed:
+                logWarning("failed to send publisher answer to the server - transport is already closed");
+                break;
         }
     }
     else {
-        logError("failed to serialize subscriber answer into a string");
+        logError("failed to serialize publisher answer into a string");
     }
 }
 

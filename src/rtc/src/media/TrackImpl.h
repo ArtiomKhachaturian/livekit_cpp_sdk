@@ -40,9 +40,9 @@ public:
     void addListener(MediaEventsListener* listener) final;
     void removeListener(MediaEventsListener* listener) final;
 protected:
-    TrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager);
+    TrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, const std::weak_ptr<TrackManager>& trackManager);
     const auto& mediaDevice() const noexcept { return _mediaDevice; }
-    TrackManager* manager() const noexcept { return _manager; }
+    std::shared_ptr<TrackManager> trackManager() const noexcept { return _trackManager.lock(); }
     webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback> statsCollector() const;
     virtual void notifyAboutMuted(bool /*mute*/) const {}
     template <class Method, typename... Args>
@@ -53,16 +53,16 @@ private:
 private:
     const webrtc::scoped_refptr<StatsSourceImpl> _statsCollector;
     const std::shared_ptr<TMediaDevice> _mediaDevice;
-    TrackManager* const _manager;
+    const std::weak_ptr<TrackManager> _trackManager;
     Bricks::Listeners<MediaEventsListener*> _listeners;
 };
 
 template <class TMediaDevice, class TTrackApi>
 inline TrackImpl<TMediaDevice, TTrackApi>::TrackImpl(std::shared_ptr<TMediaDevice> mediaDevice,
-                                                     TrackManager* manager)
+                                                     const std::weak_ptr<TrackManager>& trackManager)
     : _statsCollector(webrtc::make_ref_counted<StatsSourceImpl>())
     , _mediaDevice(std::move(mediaDevice))
-    , _manager(manager)
+    , _trackManager(trackManager)
 {
     if (_mediaDevice) {
         _mediaDevice->addListener(this);

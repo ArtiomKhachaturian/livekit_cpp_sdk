@@ -26,12 +26,10 @@
 namespace LiveKitCpp
 {
 
-LocalParticipant::LocalParticipant(TrackManager* manager,
-                                   PeerConnectionFactory* pcf,
+LocalParticipant::LocalParticipant(PeerConnectionFactory* pcf,
                                    const Participant* session,
                                    const std::shared_ptr<Bricks::Logger>& logger)
     : Base(logger)
-    , _manager(manager)
     , _pcf(pcf)
     , _session(session)
 {
@@ -66,20 +64,24 @@ size_t LocalParticipant::videoTracksCount() const
     return _videoTracks->size();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addAudioTrack(std::shared_ptr<AudioDevice> device)
+std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addAudioTrack(std::shared_ptr<AudioDevice> device,
+                                                                     EncryptionType encryption,
+                                                                     const std::weak_ptr<TrackManager>& trackManager)
 {
     if (auto audio = std::dynamic_pointer_cast<AudioDeviceImpl>(device)) {
-        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(audio), _manager, true);
+        auto track = std::make_shared<LocalAudioTrackImpl>(encryption, std::move(audio),  trackManager, true);
         addTrack(track, _audioTracks);
         return track;
     }
     return {};
 }
 
-std::shared_ptr<CameraTrackImpl> LocalParticipant::addCameraTrack(std::shared_ptr<CameraDevice> device)
+std::shared_ptr<CameraTrackImpl> LocalParticipant::addCameraTrack(std::shared_ptr<CameraDevice> device,
+                                                                  EncryptionType encryption,
+                                                                  const std::weak_ptr<TrackManager>& trackManager)
 {
     if (auto camera = std::dynamic_pointer_cast<CameraDeviceImpl>(device)) {
-        auto track = std::make_shared<CameraTrackImpl>(std::move(camera), _manager);
+        auto track = std::make_shared<CameraTrackImpl>(encryption, std::move(camera), trackManager);
         addTrack(track, _videoTracks);
         return track;
     }

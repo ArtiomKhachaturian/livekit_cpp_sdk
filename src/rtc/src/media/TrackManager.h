@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TrackManager.h
-#include "livekit/signaling/sfu/EncryptionType.h"
 #include <api/scoped_refptr.h>
+#include <api/media_types.h>
 #include <optional>
 #include <string>
 
@@ -26,12 +26,17 @@ class RTCStatsCollectorCallback;
 namespace LiveKitCpp
 {
 
+class AesCgmCryptor;
+
 class TrackManager
 {
 public:
+    virtual webrtc::scoped_refptr<AesCgmCryptor> createCryptor(bool local,
+                                                               cricket::MediaType mediaType,
+                                                               std::string identity,
+                                                               std::string trackId) const = 0;
     virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
     virtual std::optional<bool> stereoRecording() const = 0;
-    virtual EncryptionType localEncryptionType() const = 0;
     virtual void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                             const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;
     virtual void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,

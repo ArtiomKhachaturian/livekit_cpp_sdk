@@ -26,16 +26,22 @@ std::string LocalTrack::cid() const
 
 cricket::MediaType LocalTrack::mediaType() const
 {
-    if (const auto& m = media()) {
-        const auto kind = m->kind();
-        if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_AUDIO) == kind) {
-            return cricket::MEDIA_TYPE_AUDIO;
-        }
-        if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_VIDEO) == kind) {
-            return cricket::MEDIA_TYPE_VIDEO;
-        }
+    const auto kind = this->kind();
+    if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_AUDIO) == kind) {
+        return cricket::MEDIA_TYPE_AUDIO;
+    }
+    if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_VIDEO) == kind) {
+        return cricket::MEDIA_TYPE_VIDEO;
     }
     return cricket::MEDIA_TYPE_UNSUPPORTED;
+}
+
+std::string LocalTrack::kind() const
+{
+    if (const auto& m = media()) {
+        return m->kind();
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp

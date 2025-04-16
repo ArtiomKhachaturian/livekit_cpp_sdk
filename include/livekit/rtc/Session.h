@@ -66,9 +66,9 @@ public:
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
     std::shared_ptr<AudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device,
-                                              EncryptionType ecnryption = EncryptionType::None);
+                                              EncryptionType encryption = EncryptionType::None);
     std::shared_ptr<CameraTrack> addCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                EncryptionType ecnryption = EncryptionType::None);
+                                                EncryptionType encryption = EncryptionType::None);
     void removeAudioTrack(std::shared_ptr<AudioTrack> track);
     void removeVideoTrack(std::shared_ptr<VideoTrack> track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;

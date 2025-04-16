@@ -32,13 +32,14 @@ public:
     void addSink(VideoSink* sink) final;
     void removeSink(VideoSink* sink) final;
 protected:
-    VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager);
+    VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice,
+                   const std::weak_ptr<TrackManager>& trackManager);
 };
 
 template <class TMediaDevice, class TTrackApi>
 inline VideoTrackImpl<TMediaDevice, TTrackApi>::
-    VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, TrackManager* manager)
-        : Base(std::move(mediaDevice), manager)
+    VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice, const std::weak_ptr<TrackManager>& trackManager)
+        : Base(std::move(mediaDevice), trackManager)
 {
 }
 

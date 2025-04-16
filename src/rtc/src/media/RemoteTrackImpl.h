@@ -32,6 +32,7 @@ class RemoteTrackImpl : public TBaseImpl
     static_assert(std::is_base_of_v<Track, TBaseImpl>);
 public:
     void setInfo(const TrackInfo& info);
+    cricket::MediaType mediaType() const;
     // impl. of StatsSource
     void queryStats() const final;
     // impl. of Track
@@ -48,7 +49,7 @@ protected:
     RemoteTrackImpl(const TrackInfo& initialInfo,
                     const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                     std::shared_ptr<TMediaDevice> mediaDevice,
-                    TrackManager* manager);
+                    const std::weak_ptr<TrackManager>& trackManager);
     const auto& info() const noexcept { return _info; }
     void notifyAboutMuted(bool mute) const override;
 private:
@@ -61,8 +62,8 @@ template <class TMediaDevice>
 inline RemoteTrackImpl<TBaseImpl>::RemoteTrackImpl(const TrackInfo& initialInfo,
                                                    const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                                    std::shared_ptr<TMediaDevice> mediaDevice,
-                                                   TrackManager* manager)
-    : TBaseImpl(std::move(mediaDevice), manager)
+                                                   const std::weak_ptr<TrackManager>& trackManager)
+    : TBaseImpl(std::move(mediaDevice), trackManager)
     , _info(initialInfo)
     , _receiver(receiver)
 {
@@ -87,9 +88,18 @@ inline void RemoteTrackImpl<TBaseImpl>::setInfo(const TrackInfo& info)
 }
 
 template <class TBaseImpl>
+inline cricket::MediaType RemoteTrackImpl<TBaseImpl>::mediaType() const
+{
+    if (_receiver) {
+        return _receiver->media_type();
+    }
+    return cricket::MEDIA_TYPE_UNSUPPORTED;
+}
+
+template <class TBaseImpl>
 inline void RemoteTrackImpl<TBaseImpl>::queryStats() const
 {
-    if (const auto m = TBaseImpl::manager()) {
+    if (const auto m = TBaseImpl::trackManager()) {
         m->queryStats(_receiver, TBaseImpl::statsCollector());
     }
 }
@@ -146,7 +156,7 @@ template <class TBaseImpl>
 inline void RemoteTrackImpl<TBaseImpl>::notifyAboutMuted(bool mute) const
 {
     TBaseImpl::notifyAboutMuted(mute);
-    if (const auto m = TBaseImpl::manager()) {
+    if (const auto m = TBaseImpl::trackManager()) {
         m->notifyAboutMuteChanges(sid(), mute);
     }
 }

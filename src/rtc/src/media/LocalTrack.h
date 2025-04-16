@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // LocalTrack.h
+#include "livekit/signaling/sfu/EncryptionType.h"
 #include <api/media_stream_interface.h>
 #include <api/media_types.h>
 #include <string>
@@ -30,6 +31,7 @@ class LocalTrack
 public:
     std::string cid() const;
     cricket::MediaType mediaType() const;
+    std::string kind() const;
     virtual void setRemoteSideMute(bool mute) = 0;
     // Terminates all media, closes the capturers, and in general releases any
     // resources used by the local track. This is an irreversible operation.
@@ -39,8 +41,7 @@ public:
     virtual bool fillRequest(AddTrackRequest* request) const = 0;
     // transport layer
     virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const = 0;
-    virtual void notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender,
-                                                 bool encryption) = 0;
+    virtual EncryptionType notifyThatMediaAddedToTransport(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) = 0;
     virtual void notifyThatMediaRemovedFromTransport() = 0;
     // state
     virtual bool muted() const = 0;

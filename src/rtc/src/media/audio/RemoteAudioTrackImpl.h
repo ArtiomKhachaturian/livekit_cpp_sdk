@@ -26,7 +26,7 @@ public:
     RemoteAudioTrackImpl(const TrackInfo& info,
                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                          std::shared_ptr<AudioDeviceImpl> audioDevice,
-                         TrackManager* manager);
+                         const std::weak_ptr<TrackManager>& trackManager);
     // impl. of RemoteAudioTrack
     bool dtx() const final { return !info()()._disableDtx; }
     bool stereo() const final { return info()()._stereo; }

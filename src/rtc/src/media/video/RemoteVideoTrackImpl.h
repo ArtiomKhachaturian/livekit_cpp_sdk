@@ -26,7 +26,7 @@ public:
     RemoteVideoTrackImpl(const TrackInfo& info,
                          const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                          std::shared_ptr<VideoDeviceImpl> videoDevice,
-                         TrackManager* manager);
+                         const std::weak_ptr<TrackManager>& trackManager);
     // impl. of RemoteVideoTrack
     uint32_t originalWidth() const final { return info()()._width; }
     uint32_t originalHeight() const final { return info()()._height; }

@@ -24,9 +24,11 @@ inline std::string audioLabel(bool microphone) {
 namespace LiveKitCpp
 {
 
-LocalAudioTrackImpl::LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
-                                         TrackManager* manager, bool microphone)
-    : Base(audioLabel(microphone), std::move(audioDevice), manager)
+LocalAudioTrackImpl::LocalAudioTrackImpl(EncryptionType encryption,
+                                         std::shared_ptr<AudioDeviceImpl> audioDevice,
+                                         const std::weak_ptr<TrackManager>& trackManager,
+                                         bool microphone)
+    : Base(audioLabel(microphone), encryption, std::move(audioDevice), trackManager)
     , _microphone(microphone)
 {
 }
@@ -75,7 +77,7 @@ bool LocalAudioTrackImpl::fillRequest(AddTrackRequest* request) const
 
 std::optional<bool> LocalAudioTrackImpl::stereoRecording() const
 {
-    if (const auto m = manager()) {
+    if (const auto m = trackManager()) {
         return m->stereoRecording();
     }
     return std::nullopt;

@@ -17,9 +17,10 @@
 namespace LiveKitCpp
 {
 
-CameraTrackImpl::CameraTrackImpl(std::shared_ptr<CameraDeviceImpl> cameraDevice,
-                                 TrackManager* manager)
-    : Base("camera", std::move(cameraDevice), manager)
+CameraTrackImpl::CameraTrackImpl(EncryptionType encryption,
+                                 std::shared_ptr<CameraDeviceImpl> cameraDevice,
+                                 const std::weak_ptr<TrackManager>& trackManager)
+    : Base("camera", encryption, std::move(cameraDevice), trackManager)
 {
 }
 
