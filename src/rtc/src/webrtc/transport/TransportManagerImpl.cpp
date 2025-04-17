@@ -56,6 +56,7 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
                                            const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportListener, PingPongKitListener>(logger)
     , _negotiationTimerId(reinterpret_cast<uint64_t>(this))
+    , _listener(pcf)
     , _negotiationDelay(negotiationDelay)
     , _subscriberPrimary(subscriberPrimary)
     , _fastPublish(fastPublish)
@@ -314,15 +315,25 @@ void TransportManagerImpl::onSdpSet(SignalTarget target, bool local,
                                     const webrtc::SessionDescriptionInterface* desc)
 {
     if (local) {
-        // offer is always from publisher (see also [negotiate])
-        // answer from subscriber
-        switch (target) {
-            case SignalTarget::Publisher:
-                _listener.invoke(&TransportManagerListener::onPublisherOffer, desc);
-                break;
-            case SignalTarget::Subscriber:
-                _listener.invoke(&TransportManagerListener::onSubscriberAnswer, desc);
-                break;
+        if (desc) {
+            std::string sdp;
+            if (desc->ToString(&sdp)) {
+                // offer is always from publisher (see also [negotiate])
+                // answer from subscriber
+                switch (target) {
+                    case SignalTarget::Publisher:
+                        _listener.invoke(&TransportManagerListener::onPublisherOffer,
+                                         desc->type(), std::move(sdp));
+                        break;
+                    case SignalTarget::Subscriber:
+                        _listener.invoke(&TransportManagerListener::onSubscriberAnswer,
+                                         desc->type(), std::move(sdp));
+                        break;
+                }
+            }
+            else {
+                logError("Failed to serialize " + desc->type() + std::string(" SDP for ") + toString(target));
+            }
         }
     }
     else { // remote
@@ -448,7 +459,9 @@ void TransportManagerImpl::onIceCandidateGathered(SignalTarget target,
                                                   const webrtc::IceCandidateInterface* candidate)
 {
     if (candidate) {
-        _listener.invoke(&TransportManagerListener::onIceCandidateGathered, target, candidate);
+        _listener.invoke(&TransportManagerListener::onIceCandidateGathered, target,
+                         candidate->sdp_mid(), candidate->sdp_mline_index(),
+                         candidate->candidate());
     }
 }
 

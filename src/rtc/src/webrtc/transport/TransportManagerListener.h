@@ -31,20 +31,20 @@ public:
     virtual void onNegotiationNeeded() {}
     virtual void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> /*channel*/) {}
     virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> /*channel*/) {}
-    virtual void onIceCandidateGathered(SignalTarget /*target*/,
-                                        const webrtc::IceCandidateInterface* /*candidate*/) {}
+    virtual void onIceCandidateGathered(SignalTarget /*target*/, std::string /*sdpMid*/,
+                                        int /*sdpMlineIndex*/, cricket::Candidate /*candidate*/) {}
     virtual void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
-    virtual void onLocalTrackAddFailure(const std::string& /*id*/,
+    virtual void onLocalTrackAddFailure(std::string /*id*/,
                                         cricket::MediaType /*type*/,
-                                        const std::vector<std::string>& /*streamIds*/,
+                                        std::vector<std::string> /*streamIds*/,
                                         webrtc::RTCError /*error*/) {}
-    virtual void onLocalTrackRemoved(const std::string& /*id*/, cricket::MediaType /*type*/) {}
+    virtual void onLocalTrackRemoved(std::string /*id*/, cricket::MediaType /*type*/) {}
     virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
                                     std::string /*trackId*/,
                                     std::string /*participantSid*/ = {}) {}
     virtual void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
-    virtual void onPublisherOffer(const webrtc::SessionDescriptionInterface* /*desc*/) {}
-    virtual void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* /*desc*/) {}
+    virtual void onPublisherOffer(std::string /*type*/, std::string /*sdp*/) {}
+    virtual void onSubscriberAnswer(std::string /*type*/, std::string /*sdp*/) {}
 protected:
     virtual ~TransportManagerListener() = default;
 };

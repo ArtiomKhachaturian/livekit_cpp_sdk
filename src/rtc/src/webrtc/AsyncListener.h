@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // AsyncListener.h
 #include "Listener.h"
+#include "PeerConnectionFactory.h"
 #include <api/task_queue/task_queue_base.h>
 #include <memory>
 #include <type_traits>
@@ -20,18 +21,19 @@
 namespace LiveKitCpp
 {
 
-template <class TListener, bool forcePost = false>
+template <class T, bool forcePost = false>
 class AsyncListener
 {
-    using Listener = Bricks::Listener<TListener>;
+    using Listener = Bricks::Listener<T>;
 public:
     AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue);
+    AsyncListener(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
     AsyncListener(AsyncListener&&) = delete;
     AsyncListener(const AsyncListener&) = delete;
     ~AsyncListener() { reset(); }
     const auto& queue() const noexcept { return _queue; }
     bool async() const noexcept { return !queue().expired(); }
-    template <typename U = TListener>
+    template <typename U = T>
     void set(U listener = {}) { _listener->set(std::move(listener)); }
     void reset() { _listener->reset(); }
     bool empty() const noexcept { return _listener->empty(); }
@@ -39,25 +41,35 @@ public:
     void invoke(Method method, Args&&... args) const;
     AsyncListener& operator = (const AsyncListener&) = delete;
     AsyncListener& operator = (AsyncListener&&) noexcept = delete;
-    template <typename U = TListener>
+    template <typename U = T>
     AsyncListener& operator=(U listener) noexcept;
     explicit operator bool() const noexcept { return !_listener->empty(); }
+    // sync operation in the caller thread
+    template <typename R, class Method, typename... Args>
+    R invokeR(const Method& method, Args&&... args) const;
 private:
     const std::weak_ptr<webrtc::TaskQueueBase> _queue;
     const std::shared_ptr<Listener> _listener;
 };
 
-template <class TListener, bool forcePost>
-inline AsyncListener<TListener, forcePost>::
+template <class T, bool forcePost>
+inline AsyncListener<T, forcePost>::
     AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue)
-    : _queue(std::move(queue))
-    , _listener(std::make_shared<Listener>())
+        : _queue(std::move(queue))
+        , _listener(std::make_shared<Listener>())
 {
 }
 
-template <class TListener, bool forcePost>
+template <class T, bool forcePost>
+inline AsyncListener<T, forcePost>::
+    AsyncListener(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf)
+        : AsyncListener(pcf ? pcf->eventsQueue() : std::weak_ptr<webrtc::TaskQueueBase>())
+{
+}
+
+template <class T, bool forcePost>
 template <class Method, typename... Args>
-inline void AsyncListener<TListener, forcePost>::
+inline void AsyncListener<T, forcePost>::
     invoke(Method method, Args&&... args) const
 {
     if (const auto queue = _queue.lock()) {
@@ -79,13 +91,20 @@ inline void AsyncListener<TListener, forcePost>::
     }
 }
 
-template <class TListener, bool forcePost>
+template <class T, bool forcePost>
 template <typename U>
-inline AsyncListener<TListener, forcePost>& AsyncListener<TListener, forcePost>::
+inline AsyncListener<T, forcePost>& AsyncListener<T, forcePost>::
     operator=(U listener) noexcept
 {
     set(std::move(listener));
     return *this;
+}
+
+template <class T, bool forcePost>
+template <typename R, class Method, typename... Args>
+inline R AsyncListener<T, forcePost>::invokeR(const Method& method, Args&&... args) const
+{
+    
 }
 
 } // namespace LiveKitCpp

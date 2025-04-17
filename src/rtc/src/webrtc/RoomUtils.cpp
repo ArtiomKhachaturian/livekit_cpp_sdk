@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "RoomUtils.h"
 #include "livekit/signaling/sfu/ICETransportPolicy.h"
+#include <pc/webrtc_sdp.h>
 
 namespace LiveKitCpp
 {
@@ -48,14 +49,30 @@ IceCandidate RoomUtils::map(const webrtc::IceCandidateInterface* candidate)
     return {};
 }
 
+IceCandidate RoomUtils::map(std::string sdpMid, int sdpMlineIndex, const cricket::Candidate& candidate)
+{
+    std::string sdp = webrtc::SdpSerializeCandidate(candidate);
+    if (!sdp.empty()) {
+        return IceCandidate(std::move(sdp), std::move(sdpMid), sdpMlineIndex, candidate.username());
+    }
+    return {};
+}
+
 std::optional<SessionDescription> RoomUtils::map(const webrtc::SessionDescriptionInterface* desc)
 {
     if (desc) {
-        SessionDescription sdp;
-        if (desc->ToString(&sdp._sdp)) {
-            sdp._type = desc->type();
-            return sdp;
+        std::string sdp;
+        if (desc->ToString(&sdp)) {
+            return map(desc->type(), std::move(sdp));
         }
+    }
+    return std::nullopt;
+}
+
+std::optional<SessionDescription> RoomUtils::map(std::string type, std::string sdp)
+{
+    if (!type.empty() && !sdp.empty()) {
+        return SessionDescription{std::move(type), std::move(sdp)};
     }
     return std::nullopt;
 }

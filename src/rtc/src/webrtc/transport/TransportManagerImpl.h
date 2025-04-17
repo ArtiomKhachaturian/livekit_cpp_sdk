@@ -14,7 +14,7 @@
 #pragma once // TransportManagerImpl.h
 #include "Loggable.h"
 #include "Transport.h"
-#include "Listener.h"
+#include "AsyncListener.h"
 #include "PingPongKit.h"
 #include "TransportListener.h"
 #include "PingPongKitListener.h"
@@ -106,7 +106,7 @@ private:
     const bool _fastPublish;
     const std::string _logCategory;
     const std::unique_ptr<MediaTimer> _negotiationTimer;
-    Bricks::Listener<TransportManagerListener*> _listener;
+    AsyncListener<TransportManagerListener*> _listener;
     Transport _publisher;
     Transport _subscriber;
     PingPongKit _pingPongKit;

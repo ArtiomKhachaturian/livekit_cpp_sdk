@@ -759,7 +759,7 @@ void RTCEngineImpl::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterf
     }
 }
 
-void RTCEngineImpl::onLocalTrackRemoved(const std::string& id, cricket::MediaType)
+void RTCEngineImpl::onLocalTrackRemoved(std::string id, cricket::MediaType)
 {
     if (const auto track = _localParticipant->track(id, true)) {
         track->notifyThatMediaRemovedFromTransport();
@@ -824,10 +824,10 @@ void RTCEngineImpl::onNegotiationNeeded()
     }
 }
 
-void RTCEngineImpl::onPublisherOffer(const webrtc::SessionDescriptionInterface* desc)
+void RTCEngineImpl::onPublisherOffer(std::string type, std::string sdp)
 {
-    if (auto sdp = RoomUtils::map(desc)) {
-        switch (sendRequestToServer(&SignalClient::sendOffer, std::move(sdp.value()))) {
+    if (auto offer = RoomUtils::map(std::move(type), std::move(sdp))) {
+        switch (sendRequestToServer(&SignalClient::sendOffer, std::move(offer.value()))) {
             case SendResult::Ok:
                 logInfo("publisher offer has been sent to server");
                 break;
@@ -844,10 +844,10 @@ void RTCEngineImpl::onPublisherOffer(const webrtc::SessionDescriptionInterface* 
     }
 }
 
-void RTCEngineImpl::onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc)
+void RTCEngineImpl::onSubscriberAnswer(std::string type, std::string sdp)
 {
-    if (auto sdp = RoomUtils::map(desc)) {
-        switch (sendRequestToServer(&SignalClient::sendAnswer, std::move(sdp.value()))) {
+    if (auto answer = RoomUtils::map(std::move(type), std::move(sdp))) {
+        switch (sendRequestToServer(&SignalClient::sendAnswer, std::move(answer.value()))) {
             case SendResult::Ok:
                 logInfo("publisher answer has been sent to server");
                 break;
@@ -864,24 +864,22 @@ void RTCEngineImpl::onSubscriberAnswer(const webrtc::SessionDescriptionInterface
     }
 }
 
-void RTCEngineImpl::onIceCandidateGathered(SignalTarget target,
-                                           const webrtc::IceCandidateInterface* candidate)
+void RTCEngineImpl::onIceCandidateGathered(SignalTarget target, std::string sdpMid,
+                                           int sdpMlineIndex, cricket::Candidate candidate)
 {
-    if (candidate) {
-        TrickleRequest request;
-        request._candidate = RoomUtils::map(candidate);
-        if (request._candidate) {
-            request._target = target;
-            request._final = false;
-            if (!_client.sendTrickle(std::move(request))) {
-                logError("failed to send " + candidate->server_url() +
-                         " " + toString(target) + " local ICE candidate");
-            }
-        }
-        else {
-            logError("failed to serialize " + candidate->server_url() +
+    TrickleRequest request;
+    request._candidate = RoomUtils::map(std::move(sdpMid), sdpMlineIndex, candidate);
+    if (request._candidate) {
+        request._target = target;
+        request._final = false;
+        if (!_client.sendTrickle(std::move(request))) {
+            logError("failed to send " + candidate.url() +
                      " " + toString(target) + " local ICE candidate");
         }
+    }
+    else {
+        logError("failed to serialize " + candidate.url() +
+                 " " + toString(target) + " local ICE candidate");
     }
 }
 

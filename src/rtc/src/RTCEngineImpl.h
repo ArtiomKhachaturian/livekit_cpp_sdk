@@ -189,7 +189,7 @@ private:
     void onRefreshToken(std::string authToken) final;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
-    void onLocalTrackRemoved(const std::string& id, cricket::MediaType) final;
+    void onLocalTrackRemoved(std::string id, cricket::MediaType) final;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
                        webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                        webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) final;
@@ -198,10 +198,10 @@ private:
     void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     void onSdpOperationFailed(SignalTarget, webrtc::RTCError error) final;
     void onNegotiationNeeded() final;
-    void onPublisherOffer(const webrtc::SessionDescriptionInterface* desc) final;
-    void onSubscriberAnswer(const webrtc::SessionDescriptionInterface* desc) final;
-    void onIceCandidateGathered(SignalTarget target,
-                                const webrtc::IceCandidateInterface* candidate) final;
+    void onPublisherOffer(std::string type, std::string sdp) final;
+    void onSubscriberAnswer(std::string type, std::string sdp) final;
+    void onIceCandidateGathered(SignalTarget target, std::string sdpMid,
+                                int sdpMlineIndex, cricket::Candidate candidate) final;
     void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
     void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) final;
     // impl. of SignalTransportListener
