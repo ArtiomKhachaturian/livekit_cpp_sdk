@@ -107,7 +107,7 @@ Item {
                     Switch {
                         id: e2eChx
                         text: qsTr("E2E security")
-                        checked: true
+                        checked: false
                     }
                     Label {
                         text: qsTr("Passphrase:")

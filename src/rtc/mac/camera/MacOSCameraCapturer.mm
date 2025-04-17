@@ -71,6 +71,7 @@ public:
     Impl(AVCaptureDevice* device, const std::shared_ptr<Bricks::Logger>& logger);
     ~Impl();
     AVCaptureDevice* device() const noexcept { return _device; }
+    void setContentHint(webrtc::VideoTrackInterface::ContentHint hint);
     bool startCapture(AVCaptureDeviceFormat* format, NSInteger fps);
     void stopCapture();
     void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) { _delegate.sink = sink; }
@@ -198,8 +199,15 @@ std::string MacOSCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
     return {};
 }
 
+void MacOSCameraCapturer::setContentHint(webrtc::VideoTrackInterface::ContentHint hint)
+{
+    CameraCapturer::setContentHint(hint);
+    _impl->setContentHint(hint);
+}
+
 void MacOSCameraCapturer::setObserver(CameraObserver* observer)
 {
+    CameraCapturer::setObserver(observer);
     _impl->setObserver(observer);
 }
 
@@ -360,6 +368,26 @@ MacOSCameraCapturer::Impl::~Impl()
     stopCapture();
     @autoreleasepool {
         [[NSNotificationCenter defaultCenter] removeObserver:_delegate];
+    }
+}
+
+void MacOSCameraCapturer::Impl::setContentHint(webrtc::VideoTrackInterface::ContentHint hint)
+{
+    @autoreleasepool {
+        AVCaptureSession* session = _capturer.captureSession;
+        if (session) {
+            switch (hint) {
+                case webrtc::VideoTrackInterface::ContentHint::kFluid:
+                    session.sessionPreset = AVCaptureSessionPresetHigh;
+                    break;
+                case webrtc::VideoTrackInterface::ContentHint::kDetailed:
+                    session.sessionPreset = AVCaptureSessionPresetPhoto;
+                    break;
+                default:
+                    session.sessionPreset = AVCaptureSessionPresetMedium;
+                    break;
+            }
+        }
     }
 }
 

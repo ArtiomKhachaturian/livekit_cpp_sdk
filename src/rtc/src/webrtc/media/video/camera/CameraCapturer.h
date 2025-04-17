@@ -30,6 +30,7 @@ class CameraCapturer : public webrtc::VideoCaptureModule
 {
 public:
     ~CameraCapturer() override;
+    virtual void setContentHint(webrtc::VideoTrackInterface::ContentHint /*hint*/) {}
     virtual void setObserver(CameraObserver* /*observer*/ = nullptr) {}
     const auto& guid() const noexcept { return _deviceInfo._guid; }
     // impl. of webrtc::VideoCaptureModule

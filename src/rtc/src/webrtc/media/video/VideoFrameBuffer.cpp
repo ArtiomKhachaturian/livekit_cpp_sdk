@@ -18,6 +18,7 @@
 #include <api/video/i410_buffer.h>
 #include <api/video/i422_buffer.h>
 #include <api/video/i444_buffer.h>
+#include <cassert>
 
 namespace LiveKitCpp
 {
@@ -104,5 +105,40 @@ std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
     return std::nullopt;
 }
 
+webrtc::VideoTrackInterface::ContentHint map(VideoContentHint hint)
+{
+    switch (hint) {
+        case VideoContentHint::None:
+            break;
+        case VideoContentHint::Fluid:
+            return webrtc::VideoTrackInterface::ContentHint::kFluid;
+        case VideoContentHint::Detailed:
+            return webrtc::VideoTrackInterface::ContentHint::kDetailed;
+        case VideoContentHint::Text:
+            return webrtc::VideoTrackInterface::ContentHint::kText;
+        default:
+            assert(false);
+            break;
+    }
+    return webrtc::VideoTrackInterface::ContentHint::kNone;
+}
+
+VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint)
+{
+    switch (hint) {
+        case webrtc::VideoTrackInterface::ContentHint::kNone:
+            break;
+        case webrtc::VideoTrackInterface::ContentHint::kFluid:
+            return VideoContentHint::Fluid;
+        case webrtc::VideoTrackInterface::ContentHint::kDetailed:
+            return VideoContentHint::Detailed;
+        case webrtc::VideoTrackInterface::ContentHint::kText:
+            return VideoContentHint::Text;
+        default:
+            assert(false);
+            break;
+    }
+    return VideoContentHint::None;
+}
 
 } // namespace LiveKitCpp

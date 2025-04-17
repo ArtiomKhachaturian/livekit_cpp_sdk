@@ -11,22 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // VideoDevice.h
-#include "livekit/rtc/media/MediaDevice.h"
-#include "livekit/rtc/media/VideoContentHint.h"
+#pragma once // VideoContentHint.h
 
 namespace LiveKitCpp
 {
 
-class VideoSink;
-
-class VideoDevice : public MediaDevice
+// Video track content hint, used to override the source is_screencast
+// property.
+// See https://crbug.com/653531 and https://w3c.github.io/mst-content-hint.
+enum class VideoContentHint
 {
-public:
-    virtual void addSink(VideoSink* sink) = 0;
-    virtual void removeSink(VideoSink* sink) = 0;
-    virtual void setContentHint(VideoContentHint /*hint*/) {}
-    virtual VideoContentHint contentHint() const { return VideoContentHint::None; }
+    None,
+    Fluid,
+    Detailed,
+    Text
 };
-
+	
 } // namespace LiveKitCpp

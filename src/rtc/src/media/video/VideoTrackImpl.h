@@ -28,9 +28,15 @@ class VideoTrackImpl : public TrackImpl<TMediaDevice, TTrackApi>
     using Base = TrackImpl<TMediaDevice, TTrackApi>;
 public:
     ~VideoTrackImpl() override = default;
+    // required for proper selection of encoding mode inside of WebRTC codecs
+    static constexpr VideoContentHint cameraContentHint() { return VideoContentHint::Fluid; }
+    // or VideoContentHint::Detailed?
+    static constexpr VideoContentHint sharingContentHint() { return VideoContentHint::Text; }
     // impl. of VideoTrack
     void addSink(VideoSink* sink) final;
     void removeSink(VideoSink* sink) final;
+    void setContentHint(VideoContentHint hint) final;
+    VideoContentHint contentHint() const final;
 protected:
     VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice,
                    const std::weak_ptr<TrackManager>& trackManager);
@@ -57,6 +63,23 @@ inline void VideoTrackImpl<TMediaDevice, TTrackApi>::removeSink(VideoSink* sink)
     if (const auto& md = Base::mediaDevice()) {
         md->removeSink(sink);
     }
+}
+
+template <class TMediaDevice, class TTrackApi>
+inline void VideoTrackImpl<TMediaDevice, TTrackApi>::setContentHint(VideoContentHint hint)
+{
+    if (const auto& md = Base::mediaDevice()) {
+        md->setContentHint(hint);
+    }
+}
+
+template <class TMediaDevice, class TTrackApi>
+inline VideoContentHint VideoTrackImpl<TMediaDevice, TTrackApi>::contentHint() const
+{
+    if (const auto& md = Base::mediaDevice()) {
+        return md->contentHint();
+    }
+    return TTrackApi::contentHint();
 }
 
 } // namespace LiveKitCpp

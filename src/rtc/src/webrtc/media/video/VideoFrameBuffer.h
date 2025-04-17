@@ -13,6 +13,8 @@
 // limitations under the License.
 #pragma once // VideoFrameBuffer.h
 #include "SafeScopedRefPtr.h"
+#include "livekit/rtc/media/VideoContentHint.h"
+#include <api/media_stream_interface.h>
 #include <api/video/i420_buffer.h>
 #include <api/video/nv12_buffer.h>
 #include <api/video/video_frame.h>
@@ -93,6 +95,7 @@ std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
                                                         int64_t timeStampMicro = 0LL,
                                                         uint16_t id = 0U,
                                                         const std::optional<webrtc::ColorSpace>& colorSpace = {});
-
+webrtc::VideoTrackInterface::ContentHint map(VideoContentHint hint);
+VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint);
 
 } // namespace LiveKitCpp

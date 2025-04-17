@@ -31,6 +31,8 @@ public:
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     bool stats(int& inputWidth, int& inputHeight) const;
     uint16_t lastFrameId() const noexcept { return _lastFrameId; }
+    webrtc::VideoTrackInterface::ContentHint contentHint() const;
+    void setContentHint(webrtc::VideoTrackInterface::ContentHint hint);
     // return true if need to request capturer
     bool addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                          const rtc::VideoSinkWants& wants);
@@ -43,6 +45,7 @@ protected:
     bool frameWanted() const;
     void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
     void discard();
+    virtual void onContentHintChanged(webrtc::VideoTrackInterface::ContentHint /*hint*/) {}
     // impl. of MediaSourceImpl
     void onClosed() override;
     void onMuted() override;
@@ -50,6 +53,7 @@ private:
     Bricks::SafeObj<Broadcasters> _broadcasters;
     std::atomic<uint64_t> _lastResolution = 0ULL;
     std::atomic<uint16_t> _lastFrameId = 0U;
+    std::atomic<webrtc::VideoTrackInterface::ContentHint> _contentHint;
 };
 
 } // namespace LiveKitCpp

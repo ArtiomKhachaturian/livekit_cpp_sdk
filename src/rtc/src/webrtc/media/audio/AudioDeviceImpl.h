@@ -26,7 +26,7 @@ public:
     AudioDeviceImpl(webrtc::scoped_refptr<webrtc::AudioTrackInterface> track);
     ~AudioDeviceImpl() override;
     // impl. of MediaDevice
-    bool audio() const final { return true; }
+    //bool audio() const final { return true; }
     // impl. of AudioDevice
     void addSink(AudioSink* sink) final;
     void removeSink(AudioSink* sink) final;

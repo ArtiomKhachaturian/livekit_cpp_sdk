@@ -27,8 +27,6 @@ public:
     virtual bool removeListener(MediaEventsListener* listener) = 0;
     // live or ended, a device will never be live again after becoming ended
     virtual bool live() const = 0;
-    // source
-    virtual bool audio() const = 0;
     // device unique ID
     virtual std::string id() const = 0;
     // mute/unmute state

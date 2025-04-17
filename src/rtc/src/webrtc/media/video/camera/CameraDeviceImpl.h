@@ -44,14 +44,14 @@ public:
                                                     const CameraOptions& options = {},
                                                     const std::shared_ptr<Bricks::Logger>& logger = {});
     ~CameraDeviceImpl() final;
-    // impl. of MediaDevice
-    bool audio() const final { return false; }
     // overrides of MediaDeviceImpl<>
     bool addListener(MediaEventsListener* listener) final;
     bool removeListener(MediaEventsListener* listener) final;
     // impl. of VideoDevice
     void addSink(VideoSink* sink) final;
     void removeSink(VideoSink* sink) final;
+    void setContentHint(VideoContentHint hint) final;
+    VideoContentHint contentHint() const final;
     // impl. of CameraDevice
     void setDeviceInfo(const MediaDeviceInfo& info) final;
     MediaDeviceInfo deviceInfo() const final;

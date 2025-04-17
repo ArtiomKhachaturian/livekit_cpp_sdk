@@ -39,6 +39,8 @@ public:
     void addListener(CameraEventsListener* listener);
     void removeListener(CameraEventsListener* listener);
     const std::string& id() const;
+    webrtc::VideoTrackInterface::ContentHint contentHint() const;
+    void setContentHint(webrtc::VideoTrackInterface::ContentHint hint);
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
     std::optional<bool> needs_denoising() const final { return {}; }

@@ -22,6 +22,7 @@ CameraTrackImpl::CameraTrackImpl(EncryptionType encryption,
                                  const std::weak_ptr<TrackManager>& trackManager)
     : Base("camera", encryption, std::move(cameraDevice), trackManager)
 {
+    setContentHint(cameraContentHint());
 }
 
 CameraTrackImpl::~CameraTrackImpl()

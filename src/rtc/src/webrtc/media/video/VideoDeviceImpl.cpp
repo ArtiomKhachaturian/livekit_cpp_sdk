@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoDeviceImpl.h"
+#include "VideoFrameBuffer.h"
 
 namespace LiveKitCpp
 {
@@ -44,6 +45,21 @@ void VideoDeviceImpl::removeSink(VideoSink* sink)
     if (Bricks::RemoveResult::OkLast == _sinks.remove(sink) && t) {
         t->RemoveSink(&_sinks);
     }
+}
+
+void VideoDeviceImpl::setContentHint(VideoContentHint hint)
+{
+    if (const auto& t = track()) {
+        t->set_content_hint(map(hint));
+    }
+}
+
+VideoContentHint VideoDeviceImpl::contentHint() const
+{
+    if (const auto& t = track()) {
+        return map(t->content_hint());
+    }
+    return VideoDevice::contentHint();
 }
 
 } // namespace LiveKitCpp

@@ -22,6 +22,7 @@ struct MediaDeviceInfo
     std::string _name;
     std::string _guid;
     bool empty() const noexcept { return _guid.empty() && _name.empty(); }
+    explicit operator bool() const noexcept { return !empty(); }
 };
 
 } // namespace LiveKitCpp

@@ -25,11 +25,11 @@ class VideoDeviceImpl : public MediaDeviceImpl<webrtc::VideoTrackInterface, Vide
 public:
     VideoDeviceImpl(webrtc::scoped_refptr<webrtc::VideoTrackInterface> track);
     ~VideoDeviceImpl() override;
-    // impl. of MediaDevice
-    bool audio() const final { return false; }
     // impl. of VideoDevice
     void addSink(VideoSink* sink) final;
     void removeSink(VideoSink* sink) final;
+    void setContentHint(VideoContentHint hint) final;
+    VideoContentHint contentHint() const final;
 private:
     VideoSinks _sinks;
 };

@@ -22,6 +22,7 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
                                            const std::shared_ptr<Bricks::Logger>& logger,
                                            bool liveImmediately)
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
+    , _contentHint(webrtc::VideoTrackInterface::ContentHint::kNone)
 {
 }
 
@@ -54,6 +55,18 @@ bool AsyncVideoSourceImpl::stats(int& inputWidth, int& inputHeight) const
         }
     }
     return false;
+}
+
+webrtc::VideoTrackInterface::ContentHint AsyncVideoSourceImpl::contentHint() const
+{
+    return _contentHint;
+}
+
+void AsyncVideoSourceImpl::setContentHint(webrtc::VideoTrackInterface::ContentHint hint)
+{
+    if (exchangeVal(hint, _contentHint)) {
+        onContentHintChanged(hint);
+    }
 }
 
 bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,

@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // VideoTrack.h
 #include "livekit/rtc/media/Track.h"
+#include "livekit/rtc/media/VideoContentHint.h"
 
 namespace LiveKitCpp
 {
@@ -26,6 +27,8 @@ public:
     TrackType type() const final { return TrackType::Video; }
     virtual void addSink(VideoSink* sink) = 0;
     virtual void removeSink(VideoSink* sink) = 0;
+    virtual void setContentHint(VideoContentHint /*hint*/) {}
+    virtual VideoContentHint contentHint() const { return VideoContentHint::None; }
 };
 
 } // namespace LiveKitCpp

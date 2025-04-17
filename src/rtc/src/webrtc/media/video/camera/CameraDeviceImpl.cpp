@@ -14,6 +14,7 @@
 #include "CameraDeviceImpl.h"
 #include "CameraManager.h"
 #include "PeerConnectionFactory.h"
+#include "VideoFrameBuffer.h"
 #include "Utils.h"
 #include "livekit/rtc/media/CameraEventsListener.h"
 
@@ -102,6 +103,21 @@ void CameraDeviceImpl::removeSink(VideoSink* sink)
     if (Bricks::RemoveResult::OkLast == _sinks.remove(sink) && t) {
         t->RemoveSink(&_sinks);
     }
+}
+
+void CameraDeviceImpl::setContentHint(VideoContentHint hint)
+{
+    if (const auto& t = track()) {
+        t->set_content_hint(map(hint));
+    }
+}
+
+VideoContentHint CameraDeviceImpl::contentHint() const
+{
+    if (const auto& t = track()) {
+        return map(t->content_hint());
+    }
+    return VideoDevice::contentHint();
 }
 
 void CameraDeviceImpl::setDeviceInfo(const MediaDeviceInfo& info)

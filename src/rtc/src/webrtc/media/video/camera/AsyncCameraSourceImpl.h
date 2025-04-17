@@ -45,6 +45,8 @@ public:
 protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
+    // overrides of AsyncVideoSourceImpl
+    void onContentHintChanged(webrtc::VideoTrackInterface::ContentHint hint) final;
     // impl. of MediaSourceImpl
     void onClosed() final;
     void onEnabled(bool enabled) final;

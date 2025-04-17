@@ -117,6 +117,7 @@ void AsyncCameraSourceImpl::requestCapturer()
         if (!_capturer.constRef()) {
             const auto di = deviceInfo();
             if (auto capturer = CameraManager::createCapturer(di)) {
+                capturer->setContentHint(contentHint());
                 capturer->RegisterCaptureDataCallback(this);
                 capturer->setObserver(this);
                 LOCK_WRITE_SAFE_OBJ(_capability);
@@ -157,6 +158,15 @@ void AsyncCameraSourceImpl::removeListener(CameraEventsListener* listener)
 std::string_view AsyncCameraSourceImpl::logCategory() const
 {
     return CameraManager::logCategory();
+}
+
+void AsyncCameraSourceImpl::onContentHintChanged(webrtc::VideoTrackInterface::ContentHint hint)
+{
+    AsyncVideoSourceImpl::onContentHintChanged(hint);
+    LOCK_READ_SAFE_OBJ(_capturer);
+    if (const auto& capturer = _capturer.constRef()) {
+        capturer->setContentHint(hint);
+    }
 }
 
 void AsyncCameraSourceImpl::onClosed()

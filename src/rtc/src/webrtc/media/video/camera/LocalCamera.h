@@ -41,6 +41,8 @@ public:
     void addListener(CameraEventsListener* listener);
     void removeListener(CameraEventsListener* listener);
     // impl. of webrtc::VideoTrackInterface
+    ContentHint content_hint() const final;
+    void set_content_hint(ContentHint hint) final;
     void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                          const rtc::VideoSinkWants& wants) final;
     void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;

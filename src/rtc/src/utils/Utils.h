@@ -72,6 +72,9 @@ std::string join(const std::vector<std::string>& strings,
                  std::string_view delim, bool skipEmpty = false);
 std::string join(const std::vector<std::string_view>& strings,
                  std::string_view delim, bool skipEmpty = false);
+inline bool startWith(std::string_view string, std::string_view sv) {
+    return  0U == string.rfind(sv, 0U);
+}
 
 template <unsigned flag>
 inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); }

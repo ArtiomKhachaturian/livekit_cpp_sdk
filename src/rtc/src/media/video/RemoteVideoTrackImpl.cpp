@@ -22,6 +22,16 @@ RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
                                            const std::weak_ptr<TrackManager>& trackManager)
     : Base(info, receiver, std::move(videoDevice), trackManager)
 {
+    switch (info._source) {
+        case TrackSource::Camera:
+            setContentHint(cameraContentHint());
+            break;
+        case TrackSource::ScreenShare:
+            setContentHint(sharingContentHint());
+            break;
+        default:
+            break;
+    }
 }
 
 } // namespace LiveKitCpp

@@ -71,6 +71,16 @@ const std::string& CameraSource::id() const
     return _impl->id();
 }
 
+webrtc::VideoTrackInterface::ContentHint CameraSource::contentHint() const
+{
+    return _impl->contentHint();
+}
+
+void CameraSource::setContentHint(webrtc::VideoTrackInterface::ContentHint hint)
+{
+    _impl->setContentHint(hint);
+}
+
 bool CameraSource::GetStats(Stats* stats)
 {
     if (stats) {

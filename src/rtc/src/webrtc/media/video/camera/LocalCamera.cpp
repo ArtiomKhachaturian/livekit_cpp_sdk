@@ -66,6 +66,16 @@ void LocalCamera::removeListener(CameraEventsListener* listener)
     _source->removeListener(listener);
 }
 
+LocalCamera::ContentHint LocalCamera::content_hint() const
+{
+    return _source->contentHint();
+}
+
+void LocalCamera::set_content_hint(ContentHint hint)
+{
+    _source->setContentHint(hint);
+}
+
 void LocalCamera::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                                   const rtc::VideoSinkWants& wants)
 {

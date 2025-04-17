@@ -477,7 +477,7 @@ void TransportManagerImpl::onRemoteTrackAdded(SignalTarget target,
             streamId = std::move(parts.second);
             // firefox will get streamId (pID|trackId) instead of (pID|streamId) as it doesn't support sync tracks by stream
             // and generates its own track id instead of infer from sdp track id.
-            if (!streamId.empty() && 0U == streamId.rfind("TR", 0)) {
+            if (!streamId.empty() && startWith(streamId, "TR")) {
                 trackId = std::move(streamId);
             }
         }
