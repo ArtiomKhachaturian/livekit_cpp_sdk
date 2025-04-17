@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MediaDeviceImpl.h
 #include "Listeners.h"
+#include "MediaDeviceListener.h"
 #include "Utils.h"
 #include "livekit/rtc/media/MediaDevice.h"
 #include "livekit/rtc/media/MediaDevice.h"
@@ -25,7 +26,7 @@ namespace LiveKitCpp
 {
 
 template <class TTrack, class TBaseInterface = MediaDevice>
-class MediaDeviceImpl : public TBaseInterface
+class MediaDeviceImpl : public TBaseInterface, protected MediaDeviceListener
 {
     static_assert(std::is_base_of_v<webrtc::MediaStreamTrackInterface, TTrack>);
     static_assert(std::is_base_of_v<MediaDevice, TBaseInterface>);
@@ -34,14 +35,24 @@ public:
     // for manipulations with peer connection
     const auto& track() const noexcept { return _track; }
     // impl. of MediaDevice
-    bool addListener(MediaEventsListener* listener) override;
-    bool removeListener(MediaEventsListener* listener) override;
+    bool addListener(MediaEventsListener* listener) final;
+    bool removeListener(MediaEventsListener* listener) final;
     bool live() const final;
     std::string id() const override { return _id; }
     void mute(bool mute) final;
     bool muted() const override { return _muted; }
 protected:
     MediaDeviceImpl(webrtc::scoped_refptr<TTrack> track);
+    MediaDeviceListener* deviceListener() { return this; }
+    // overrides of MediaDeviceListener
+    void onMediaChanged() final;
+    void onMediaCreationFailed(const std::string& details) final;
+    void onMediaOptionsChanged() final;
+    void onMediaStarted() final;
+    void onMediaStartFailed(const std::string& details) final;
+    void onMediaStopped() final;
+    void onMediaStopFailed(const std::string& details) final;
+    void onMediaFatalError(const std::string& details) final;
 private:
     const webrtc::scoped_refptr<TTrack> _track;
     const std::string _id;
@@ -82,9 +93,57 @@ inline void MediaDeviceImpl<TTrack, TBaseInterface>::mute(bool mute)
         const auto wasEnabled = _track->enabled();
         if (wasEnabled == mute) {
             _track->set_enabled(!mute);
-            _listeners.invoke(&MediaEventsListener::onMuteChanged, _track->id(), mute);
+            _listeners.invoke(&MediaEventsListener::onMuteChanged, _id, mute);
         }
     }
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaChanged()
+{
+    _listeners.invoke(&MediaEventsListener::onMediaChanged, _id);
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaCreationFailed(const std::string& details)
+{
+    _listeners.invoke(&MediaEventsListener::onMediaCreationFailed, _id, details);
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaOptionsChanged()
+{
+    _listeners.invoke(&MediaEventsListener::onMediaOptionsChanged, _id);
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaStarted()
+{
+    _listeners.invoke(&MediaEventsListener::onMediaStarted, _id);
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaStartFailed(const std::string& details)
+{
+    _listeners.invoke(&MediaEventsListener::onMediaStartFailed, _id, details);
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaStopped()
+{
+    _listeners.invoke(&MediaEventsListener::onMediaStopped, _id);
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaStopFailed(const std::string& details)
+{
+    _listeners.invoke(&MediaEventsListener::onMediaStopFailed, _id, details);
+}
+
+template <class TTrack, class TBaseInterface>
+inline void MediaDeviceImpl<TTrack, TBaseInterface>::onMediaFatalError(const std::string& details)
+{
+    _listeners.invoke(&MediaEventsListener::onMediaFatalError, _id, details);
 }
 
 } // namespace LiveKitCpp

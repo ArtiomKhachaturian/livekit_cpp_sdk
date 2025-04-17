@@ -14,6 +14,7 @@
 #pragma once // MediaSourceImpl.h
 #include "AsyncListeners.h"
 #include "Loggable.h"
+#include "MediaDeviceListener.h"
 #include <api/media_stream_interface.h>
 #include <atomic>
 
@@ -34,11 +35,17 @@ public:
     void close();
     void registerObserver(webrtc::ObserverInterface* observer);
     void unregisterObserver(webrtc::ObserverInterface* observer);
+    void addListener(MediaDeviceListener* listener) { _listeners.add(listener); }
+    void removeListener(MediaDeviceListener* listener) { _listeners.remove(listener); }
 protected:
     AsyncMediaSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                          const std::shared_ptr<Bricks::Logger>& logger = {},
                          bool liveImmediately = false);
     void changeState(webrtc::MediaSourceInterface::SourceState state);
+    template <class Method, typename... Args>
+    void notify(const Method& method, Args&&... args) const {
+        _listeners.invoke(method, std::forward<Args>(args)...);
+    }
     virtual void onClosed() {}
     virtual void onEnabled(bool /*enabled*/) {}
     virtual void onMuted() {}
@@ -46,6 +53,7 @@ protected:
 private:
     static constexpr auto _ended = webrtc::MediaSourceInterface::kEnded;
     AsyncListeners<webrtc::ObserverInterface*> _observers;
+    Bricks::Listeners<MediaDeviceListener*> _listeners;
     std::atomic_bool _enabled = true;
     std::atomic_bool _active = true;
     std::atomic<webrtc::MediaSourceInterface::SourceState> _state;

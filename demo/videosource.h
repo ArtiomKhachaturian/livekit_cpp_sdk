@@ -1,7 +1,7 @@
 #ifndef VIDEOSOURCE_H
 #define VIDEOSOURCE_H
 #include "safeobj.h"
-#include <livekit/rtc/media/CameraEventsListener.h>
+#include <livekit/rtc/media/MediaEventsListener.h>
 #include <livekit/rtc/media/VideoSink.h>
 #include <QObject>
 #include <QQmlEngine>
@@ -16,7 +16,7 @@ enum class VideoFrameType;
 
 class VideoSource : public QObject,
                     protected LiveKitCpp::VideoSink,
-                    protected LiveKitCpp::CameraEventsListener
+                    protected LiveKitCpp::MediaEventsListener
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(VideoSource)
@@ -51,17 +51,18 @@ protected:
     void timerEvent(QTimerEvent* e) override;
 private:
     void setFrameType(LiveKitCpp::VideoFrameType type);
-    void setActive(bool active);
+    void setActive(bool active = true);
+    void setInactive() { setActive(false); }
     void setFps(quint16 fps);
     void setFrameSize(QSize frameSize, bool updateFps = true);
     void setFrameSize(int width, int height, bool updateFps = true);
     // impl. of LiveKitCpp::VideoSource
     void onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame) override;
     // impl. of LiveKitCpp::CameraEventsListener
-    void onCapturingStarted(const std::string&, const LiveKitCpp::CameraOptions&) override;
-    void onCapturingStartFailed(const std::string&, const LiveKitCpp::CameraOptions&) override;
-    void onCapturingStopped(const std::string&) override { setActive(false); }
-    void onCapturingFatalError(const std::string&) override { setActive(false); }
+    void onMediaStarted(const std::string&) override { setActive(); }
+    void onMediaStartFailed(const std::string&, const std::string&) override { setInactive(); }
+    void onMediaStopped(const std::string&) override { setInactive(); }
+    void onMediaFatalError(const std::string&, const std::string&) override { setInactive(); }
 private:
     static constexpr QSize _nullSize = {0, 0};
     QBasicTimer _fpsTimer;

@@ -22,7 +22,7 @@
 namespace LiveKitCpp
 {
 
-class CameraEventsListener;
+class MediaDeviceListener;
 
 class LocalCamera : public webrtc::VideoTrackInterface
 {
@@ -38,8 +38,8 @@ public:
     MediaDeviceInfo deviceInfo() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);
     webrtc::VideoCaptureCapability capability() const;
-    void addListener(CameraEventsListener* listener);
-    void removeListener(CameraEventsListener* listener);
+    void addListener(MediaDeviceListener* listener);
+    void removeListener(MediaDeviceListener* listener);
     // impl. of webrtc::VideoTrackInterface
     ContentHint content_hint() const final;
     void set_content_hint(ContentHint hint) final;
@@ -49,7 +49,7 @@ public:
     webrtc::VideoTrackSourceInterface* GetSource() const final;
     // impl. of MediaStreamTrackInterface
     std::string kind() const final { return webrtc::VideoTrackInterface::kVideoKind; }
-    std::string id() const final;
+    std::string id() const final { return _id; }
     bool enabled() const final;
     bool set_enabled(bool enable) final;
     webrtc::MediaStreamTrackInterface::TrackState state() const final;
@@ -57,6 +57,7 @@ public:
     void RegisterObserver(webrtc::ObserverInterface* observer) final;
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
+    const std::string _id;
     const webrtc::scoped_refptr<CameraSource> _source;
 };
 

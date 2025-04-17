@@ -42,12 +42,12 @@ void CameraTrack::setOptions(const CameraOptions& options)
     }
 }
 
-void CameraTrack::onCapturerChanged(const std::string&, const LiveKitCpp::MediaDeviceInfo&)
+void CameraTrack::onMediaChanged(const std::string&)
 {
     emit deviceInfoChanged();
 }
 
-void CameraTrack::onOptionsChanged(const std::string&, const LiveKitCpp::CameraOptions&)
+void CameraTrack::onMediaOptionsChanged(const std::string&)
 {
     emit optionsChanged();
 }

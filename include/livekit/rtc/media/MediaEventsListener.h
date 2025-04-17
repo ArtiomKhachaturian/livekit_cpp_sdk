@@ -27,8 +27,18 @@ public:
     virtual void onRemoteSideMuteChanged(const std::string& /*id*/, bool /*mute*/) {}
     // SID maybe changed only for local tracks, after joining
     virtual void onSidChanged(const std::string& /*id*/, const std::string& /*sid*/) {}
-    // only for remote tracks
+    // only for remote tracks & devices
     virtual void onNameChanged(const std::string& /*id*/, const std::string& /*name*/) {}
+    // device events, only for local tracks & devices
+    virtual void onMediaChanged(const std::string& /*id*/) {}
+    virtual void onMediaCreationFailed(const std::string& /*id*/, const std::string& /*details*/ = {}) {}
+    virtual void onMediaOptionsChanged(const std::string& /*id*/) {}
+    virtual void onMediaStarted(const std::string& /*id*/) {}
+    virtual void onMediaStartFailed(const std::string& /*id*/, const std::string& /*details*/ = {}) {}
+    virtual void onMediaStopped(const std::string& /*id*/) {}
+    virtual void onMediaStopFailed(const std::string& /*id*/, const std::string& /*details*/ = {}) {}
+    // during the streaming
+    virtual void onMediaFatalError(const std::string& /*id*/, const std::string& /*details*/ = {}) {}
 protected:
     virtual ~MediaEventsListener() = default;
 };

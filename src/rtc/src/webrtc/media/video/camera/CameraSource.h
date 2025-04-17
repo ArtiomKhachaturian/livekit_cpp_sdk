@@ -20,14 +20,13 @@
 namespace LiveKitCpp
 {
 
-class CameraEventsListener;
+class MediaDeviceListener;
 
 class CameraSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncCameraSourceImpl>
 {
     using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncCameraSourceImpl>;
 public:
-    CameraSource(const std::string& id,
-                 std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+    CameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                  const MediaDeviceInfo& info = {},
                  const webrtc::VideoCaptureCapability& initialCapability = {},
                  const std::shared_ptr<Bricks::Logger>& logger = {});
@@ -36,9 +35,8 @@ public:
     MediaDeviceInfo deviceInfo() const;
     void setCapability(const webrtc::VideoCaptureCapability& capability);
     webrtc::VideoCaptureCapability capability() const;
-    void addListener(CameraEventsListener* listener);
-    void removeListener(CameraEventsListener* listener);
-    const std::string& id() const;
+    void addListener(MediaDeviceListener* listener);
+    void removeListener(MediaDeviceListener* listener);
     webrtc::VideoTrackInterface::ContentHint contentHint() const;
     void setContentHint(webrtc::VideoTrackInterface::ContentHint hint);
     // impl. of webrtc::VideoTrackSourceInterface

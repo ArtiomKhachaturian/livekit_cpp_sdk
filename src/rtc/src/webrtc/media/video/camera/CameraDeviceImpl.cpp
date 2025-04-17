@@ -16,7 +16,6 @@
 #include "PeerConnectionFactory.h"
 #include "VideoFrameBuffer.h"
 #include "Utils.h"
-#include "livekit/rtc/media/CameraEventsListener.h"
 
 namespace LiveKitCpp
 {
@@ -52,41 +51,22 @@ std::shared_ptr<CameraDeviceImpl> CameraDeviceImpl::create(const PeerConnectionF
 CameraDeviceImpl::CameraDeviceImpl(webrtc::scoped_refptr<LocalCamera> track)
     : Base(std::move(track))
 {
+    if (const auto& t = this->track()) {
+        t->addListener(this);
+    }
 }
 
 CameraDeviceImpl::~CameraDeviceImpl()
 {
-    if (_sinks.clear()) {
-        if (const auto& t = track()) {
+    if (const auto& t = track()) {
+        if (_sinks.clear()) {
             t->RemoveSink(&_sinks);
         }
-    }
-}
-
-bool CameraDeviceImpl::addListener(MediaEventsListener* listener)
-{
-    if (Base::addListener(listener)) {
-        if (const auto& t = track()) {
-            if (const auto cameraListener = dynamic_cast<CameraEventsListener*>(listener)) {
-                t->addListener(cameraListener);
-            }
+        t->removeListener(this);
+        if (webrtc::MediaStreamTrackInterface::kLive == t->state()) {
+            onMediaStopped();
         }
-        return true;
     }
-    return false;
-}
-
-bool CameraDeviceImpl::removeListener(MediaEventsListener* listener)
-{
-    if (Base::removeListener(listener)) {
-        if (const auto& t = track()) {
-            if (const auto cameraListener = dynamic_cast<CameraEventsListener*>(listener)) {
-                t->removeListener(cameraListener);
-            }
-        }
-        return true;
-    }
-    return false;
 }
 
 void CameraDeviceImpl::addSink(VideoSink* sink)

@@ -27,8 +27,8 @@ signals:
     void optionsChanged();
 private:
     // impl. of LiveKitCpp::CameraEventsListener
-    void onCapturerChanged(const std::string&, const LiveKitCpp::MediaDeviceInfo&) final;
-    void onOptionsChanged(const std::string&, const LiveKitCpp::CameraOptions&) final;
+    void onMediaChanged(const std::string&) final;
+    void onMediaOptionsChanged(const std::string&) final;
 private:
     const std::weak_ptr<LiveKitCpp::CameraTrack> _impl;
 };

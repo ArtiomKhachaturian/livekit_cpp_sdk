@@ -152,14 +152,3 @@ void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
     }
 }
 
-
-void VideoSource::onCapturingStarted(const std::string&, const LiveKitCpp::CameraOptions&)
-{
-    setActive(true);
-}
-
-void VideoSource::onCapturingStartFailed(const std::string&, const LiveKitCpp::CameraOptions&)
-{
-    setActive(false);
-}
-
