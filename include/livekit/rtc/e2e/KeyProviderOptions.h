@@ -23,17 +23,19 @@ namespace LiveKitCpp
 // https://github.com/livekit/client-sdk-js/blob/main/src/e2ee/constants.ts#L34
 struct KeyProviderOptions
 {
-    bool _sharedKey = true;
+    bool _sharedKey = {};
     std::vector<uint8_t> _ratchetSalt;
-    size_t _ratchetWindowSize = 0U;
+    size_t _ratchetWindowSize = {};
     std::optional<uint64_t> _failureTolerance;
     // key ring size should be between 1 and 255
     uint8_t _keyRingSize = _defaultKeyRingSize;
-    bool _discardFrameWhenCryptorNotReady = false;
+    bool _discardFrameWhenCryptorNotReady = {};
     LIVEKIT_RTC_API void setRatchetSalt(std::string_view salt);
     // constants
     static inline constexpr uint8_t _defaultKeyRingSize = 16;
     static inline constexpr uint8_t _maxKeyRingSize = 255;
+    // https://github.com/livekit/client-sdk-js/blob/main/src/e2ee/constants.ts
+    LIVEKIT_RTC_API static KeyProviderOptions defaultOptions();
 };
 
 } // namespace LiveKitCpp

@@ -76,14 +76,8 @@ bool Session::connectToSfu(const QString& url, const QString& token,
     if (impl) {
         if (e2e) {
             _encryption = LiveKitCpp::EncryptionType::Gcm;
-            // https://github.com/livekit/client-sdk-js/blob/main/src/e2ee/constants.ts
-            LiveKitCpp::KeyProviderOptions keyProvOptions;
-            keyProvOptions._sharedKey = true;
-            keyProvOptions.setRatchetSalt("LKFrameEncryptionKey");
-            keyProvOptions._ratchetWindowSize = 8;
-            keyProvOptions._keyRingSize = 16;
-            keyProvOptions._failureTolerance = 10;
-            impl->setAesCgmKeyProvider(std::move(keyProvOptions), e2ePassPhrase.toStdString());
+            impl->setAesCgmKeyProvider(LiveKitCpp::KeyProviderOptions::defaultOptions(),
+                                       e2ePassPhrase.toStdString());
         }
         else {
             _encryption = LiveKitCpp::EncryptionType::None;

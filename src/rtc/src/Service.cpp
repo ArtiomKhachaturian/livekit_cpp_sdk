@@ -736,6 +736,17 @@ void KeyProviderOptions::setRatchetSalt(std::string_view salt)
     _ratchetSalt = binaryFromString(std::move(salt));
 }
 
+KeyProviderOptions KeyProviderOptions::defaultOptions()
+{
+    KeyProviderOptions options;
+    options._sharedKey = false;
+    options.setRatchetSalt("LKFrameEncryptionKey");
+    options._ratchetWindowSize = 8;
+    options._keyRingSize = 16;
+    options._failureTolerance = 10;
+    return options;
+}
+
 CameraOptions CameraOptions::defaultOptions()
 {
     return map(CameraManager::defaultCapability());

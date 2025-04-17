@@ -22,6 +22,12 @@ DefaultKeyProvider::DefaultKeyProvider(KeyProviderOptions options,
     : Bricks::LoggableS<KeyProvider>(logger)
     , _options(std::move(options))
 {
+    _options._sharedKey = true;
+    // for a shared key provider failing to decrypt for a specific participant
+    // should not mark the key as invalid, so we accept wrong keys forever
+    // and won't try to auto-ratchet
+    _options._ratchetWindowSize = 0U;
+    _options._failureTolerance = std::nullopt;
 }
 
 DefaultKeyProvider::~DefaultKeyProvider()

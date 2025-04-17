@@ -53,7 +53,7 @@ private:
     std::shared_ptr<E2EKeyHandler> emplaceHandler(const std::string& identity);
 private:
     static inline const std::string _shared = "shared";
-    const KeyProviderOptions _options;
+    KeyProviderOptions _options;
     Bricks::SafeObj<ParticipantKeyHandlers> _keys;
     Bricks::SafeObj<std::vector<uint8_t>> _sifTrailer; // sif
 };
