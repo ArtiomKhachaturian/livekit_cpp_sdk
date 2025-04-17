@@ -132,6 +132,8 @@ inline size_t hashCombineRange(InputIt first, InputIt last)
     return seed;
 }
 
+uint16_t checksumISO3309(const uint8_t* data, size_t len);
+
 TrackType mediaTypeToTrackType(cricket::MediaType type);
 std::string fourccToString(int fourcc);
 std::string makeUuid();

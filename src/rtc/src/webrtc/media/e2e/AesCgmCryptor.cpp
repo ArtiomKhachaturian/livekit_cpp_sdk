@@ -12,11 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "AesCgmCryptor.h"
-#include "AesCgmCryptorState.h"
 #include "AesCgmCryptorObserver.h"
-#include "AsyncListener.h"
-#include "Loggable.h"
-#include "SafeScopedRefPtr.h"
 #include "Utils.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
 #include "livekit/rtc/e2e/KeyProviderOptions.h"
@@ -36,7 +32,7 @@ const std::string_view g_category("frame_codec");
 
 inline void logInitError(const std::shared_ptr<Bricks::Logger>& logger,
                          std::string_view errorMessage) {
-    if (logger) {
+    if (logger && logger->canLogError()) {
         logger->logError(errorMessage, g_category);
     }
 }
@@ -74,132 +70,24 @@ bool frameIsH265(const webrtc::TransformableFrameInterface* frame, cricket::Medi
 namespace LiveKitCpp
 {
 
-struct AesCgmCryptor::Impl : public Bricks::LoggableS<>
-{
-    // data
-    const cricket::MediaType _mediaType;
-    const std::string _identity;
-    const std::string _trackId;
-    const std::shared_ptr<KeyProvider> _keyProvider;
-    const std::string _logCategory;
-    std::atomic<uint8_t> _keyIndex = 0;
-    std::atomic_bool _enabledCryption = true;
-    AsyncListener<std::weak_ptr<AesCgmCryptorObserver>, true> _observer;
-    SafeScopedRefPtr<webrtc::TransformedFrameCallback> _sink;
-    Bricks::SafeObj<Sinks> _sinks;
-    // methods
-    Impl(cricket::MediaType mediaType,
-         std::string identity,
-         std::string trackId,
-         std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-         const std::shared_ptr<KeyProvider>& keyProvider,
-         const std::shared_ptr<Bricks::Logger>& logger);
-    bool hasSink() const;
-    bool hasSinks() const;
-    void transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
-protected:
-    // override of Bricks::LoggableS<>
-    std::string_view logCategory() const final { return _logCategory; }
-private:
-    void encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
-    void decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame);
-    void setLastEncryptState(AesCgmCryptorState state,
-                             const std::string& comment = {},
-                             Bricks::LoggingSeverity severity = Bricks::LoggingSeverity::Verbose);
-    void setLastDecryptState(AesCgmCryptorState state,
-                             const std::string& comment = {},
-                             Bricks::LoggingSeverity severity = Bricks::LoggingSeverity::Verbose);
-    std::shared_ptr<E2EKeyHandler> keyHandler() const;
-    bool encryptOrDecrypt(bool encrypt,
-                          const std::vector<uint8_t>& rawKey,
-                          const rtc::ArrayView<uint8_t>& iv,
-                          const rtc::ArrayView<uint8_t>& additionalData,
-                          const rtc::ArrayView<uint8_t>& data,
-                          std::vector<uint8_t>& buffer) const;
-    rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
-    static constexpr uint8_t ivSize() noexcept { return 12; }
-private:
-    std::atomic<AesCgmCryptorState> _lastEncState = AesCgmCryptorState::New;
-    std::atomic<AesCgmCryptorState> _lastDecState = AesCgmCryptorState::New;
-    static thread_local inline std::map<uint32_t, uint32_t> _sendCounts;
-};
-
 AesCgmCryptor::AesCgmCryptor(cricket::MediaType mediaType,
                              std::string identity,
                              std::string trackId,
                              std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                              const std::shared_ptr<KeyProvider>& keyProvider,
                              const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(std::make_shared<Impl>(mediaType, std::move(identity), std::move(trackId),
-                                   std::move(signalingQueue), keyProvider, logger))
+    : Bricks::LoggableS<webrtc::FrameTransformerInterface>(logger)
+    , _mediaType(mediaType)
+    , _identity(std::move(identity))
+    , _trackId(std::move(trackId))
+    , _keyProvider(keyProvider)
+    , _logCategory(std::string(g_category) + "_" + _trackId)
+    , _observer(std::move(signalingQueue))
 {
 }
 
 AesCgmCryptor::~AesCgmCryptor()
 {
-}
-
-void AesCgmCryptor::setKeyIndex(uint8_t keyIndex)
-{
-    _impl->_keyIndex = keyIndex;
-}
-
-uint8_t AesCgmCryptor::keyIndex() const
-{
-    return _impl->_keyIndex;
-}
-
-void AesCgmCryptor::setEnabled(bool enabled)
-{
-    _impl->_enabledCryption = enabled;
-}
-
-bool AesCgmCryptor::enabled() const
-{
-    return _impl->_enabledCryption;
-}
-
-void AesCgmCryptor::setObserver(const std::weak_ptr<AesCgmCryptorObserver>& observer)
-{
-    _impl->_observer = observer;
-}
-
-void AesCgmCryptor::Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
-{
-    if (frame) {
-        if (!_impl->hasSink() && !_impl->hasSinks()) {
-            _impl->logWarning("no transformation callbacks");
-            return;
-        }
-        _impl->transform(std::move(frame));
-    }
-}
-
-void AesCgmCryptor::RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback)
-{
-    if (callback) {
-        _impl->_sink(std::move(callback));
-    }
-}
-
-void AesCgmCryptor::RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
-                                                         uint32_t ssrc)
-{
-    if (callback) {
-        LOCK_WRITE_SAFE_OBJ(_impl->_sinks);
-        _impl->_sinks->insert(std::make_pair(ssrc, std::move(callback)));
-    }
-}
-
-void AesCgmCryptor::UnregisterTransformedFrameCallback()
-{
-    _impl->_sink({});
-}
-
-void AesCgmCryptor::UnregisterTransformedFrameSinkCallback(uint32_t ssrc)
-{
-    LOCK_WRITE_SAFE_OBJ(_impl->_sinks);
-    _impl->_sinks->erase(ssrc);
 }
 
 webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
@@ -230,44 +118,29 @@ webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
         logInitError(logger, "unknown track ID");
         return {};
     }
-    return webrtc::make_ref_counted<AesCgmCryptor>(mediaType,
-                                                   std::move(identity),
-                                                   std::move(trackId),
-                                                   std::move(signalingQueue),
-                                                   keyProvider, logger);
+    return webrtc::make_ref_counted<AesCgmCryptor>(mediaType, std::move(identity), std::move(trackId),
+                                                   std::move(signalingQueue), keyProvider, logger);
 }
 
-AesCgmCryptor::Impl::Impl(cricket::MediaType mediaType,
-                          std::string identity,
-                          std::string trackId,
-                          std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                          const std::shared_ptr<KeyProvider>& keyProvider,
-                          const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<>(logger)
-    , _mediaType(mediaType)
-    , _identity(std::move(identity))
-    , _trackId(std::move(trackId))
-    , _keyProvider(keyProvider)
-    , _logCategory(std::string(g_category) + "_" + _trackId)
-    , _observer(std::move(signalingQueue))
-{
-}
-
-bool AesCgmCryptor::Impl::hasSink() const
+bool AesCgmCryptor::hasSink() const
 {
     LOCK_READ_SAFE_OBJ(_sink);
     return nullptr != _sink->get();
 }
 
-bool AesCgmCryptor::Impl::hasSinks() const
+bool AesCgmCryptor::hasSinks() const
 {
     LOCK_READ_SAFE_OBJ(_sinks);
     return !_sinks->empty();
 }
 
-void AesCgmCryptor::Impl::transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
+void AesCgmCryptor::Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame) {
+        if (!hasSink() && !hasSinks()) {
+            logWarning("no transformation callbacks");
+            return;
+        }
         switch (frame->GetDirection()) {
             case webrtc::TransformableFrameInterface::Direction::kSender:
                 encryptFrame(std::move(frame));
@@ -282,7 +155,34 @@ void AesCgmCryptor::Impl::transform(std::unique_ptr<webrtc::TransformableFrameIn
     }
 }
 
-void AesCgmCryptor::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
+void AesCgmCryptor::RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback)
+{
+    if (callback) {
+        _sink(std::move(callback));
+    }
+}
+
+void AesCgmCryptor::RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
+                                                         uint32_t ssrc)
+{
+    if (callback) {
+        LOCK_WRITE_SAFE_OBJ(_sinks);
+        _sinks->insert(std::make_pair(ssrc, std::move(callback)));
+    }
+}
+
+void AesCgmCryptor::UnregisterTransformedFrameCallback()
+{
+    _sink({});
+}
+
+void AesCgmCryptor::UnregisterTransformedFrameSinkCallback(uint32_t ssrc)
+{
+    LOCK_WRITE_SAFE_OBJ(_sinks);
+    _sinks->erase(ssrc);
+}
+
+void AesCgmCryptor::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame) {
         webrtc::scoped_refptr<webrtc::TransformedFrameCallback> sink;
@@ -387,7 +287,7 @@ void AesCgmCryptor::Impl::encryptFrame(std::unique_ptr<webrtc::TransformableFram
     }
 }
 
-void AesCgmCryptor::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
+void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
     if (frame) {
         webrtc::scoped_refptr<webrtc::TransformedFrameCallback> sink;
@@ -574,9 +474,9 @@ void AesCgmCryptor::Impl::decryptFrame(std::unique_ptr<webrtc::TransformableFram
     }
 }
 
-void AesCgmCryptor::Impl::setLastEncryptState(AesCgmCryptorState state,
-                                              const std::string& comment,
-                                              Bricks::LoggingSeverity severity)
+void AesCgmCryptor::setLastEncryptState(AesCgmCryptorState state,
+                                        const std::string& comment,
+                                        Bricks::LoggingSeverity severity)
 {
     if (exchangeVal(state, _lastEncState)) {
         if (!comment.empty() && canLog(severity)) {
@@ -587,9 +487,9 @@ void AesCgmCryptor::Impl::setLastEncryptState(AesCgmCryptorState state,
     }
 }
 
-void AesCgmCryptor::Impl::setLastDecryptState(AesCgmCryptorState state,
-                                              const std::string& comment,
-                                              Bricks::LoggingSeverity severity)
+void AesCgmCryptor::setLastDecryptState(AesCgmCryptorState state,
+                                        const std::string& comment,
+                                        Bricks::LoggingSeverity severity)
 {
     if (exchangeVal(state, _lastDecState)) {
         if (!comment.empty() && canLog(severity)) {
@@ -600,7 +500,7 @@ void AesCgmCryptor::Impl::setLastDecryptState(AesCgmCryptorState state,
     }
 }
 
-std::shared_ptr<E2EKeyHandler> AesCgmCryptor::Impl::keyHandler() const
+std::shared_ptr<E2EKeyHandler> AesCgmCryptor::keyHandler() const
 {
     if (_keyProvider->options()._sharedKey) {
         return _keyProvider->sharedKey(_identity);
@@ -608,12 +508,12 @@ std::shared_ptr<E2EKeyHandler> AesCgmCryptor::Impl::keyHandler() const
     return _keyProvider->key(_identity);
 }
 
-bool AesCgmCryptor::Impl::encryptOrDecrypt(bool encrypt,
-                                           const std::vector<uint8_t>& rawKey,
-                                           const rtc::ArrayView<uint8_t>& iv,
-                                           const rtc::ArrayView<uint8_t>& additionalData,
-                                           const rtc::ArrayView<uint8_t>& data,
-                                           std::vector<uint8_t>& buffer) const
+bool AesCgmCryptor::encryptOrDecrypt(bool encrypt,
+                                     const std::vector<uint8_t>& rawKey,
+                                     const rtc::ArrayView<uint8_t>& iv,
+                                     const rtc::ArrayView<uint8_t>& additionalData,
+                                     const rtc::ArrayView<uint8_t>& data,
+                                     std::vector<uint8_t>& buffer) const
 {
     const EVP_AEAD* aeadAlg = aesGcmAlgorithmFromKeySize(rawKey.size());
     if (!aeadAlg) {
@@ -656,7 +556,7 @@ bool AesCgmCryptor::Impl::encryptOrDecrypt(bool encrypt,
     return true;
 }
 
-rtc::Buffer AesCgmCryptor::Impl::makeIv(uint32_t ssrc, uint32_t timestamp)
+rtc::Buffer AesCgmCryptor::makeIv(uint32_t ssrc, uint32_t timestamp)
 {
     uint32_t sendCount = 0U;
     const auto it = _sendCounts.find(ssrc);
@@ -748,14 +648,6 @@ uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, crick
                         return 10;
                     }
                     return 3;
-                case webrtc::kVideoCodecVP9:
-                    if (webrtc::VideoFrameType::kVideoFrameKey == metaData.GetFrameType()) {
-                        return 10;
-                    }
-                    // 1 byte is mandatory + Picture ID (1-2 bytes, opt.) + TL0PICIDX (opt.)
-                    return 5;
-                case webrtc::kVideoCodecAV1:
-                    return 5; // OBU header
                 case webrtc::kVideoCodecH264:
                     return unencryptedH264Bytes(frame->GetData());
                 case webrtc::kVideoCodecH265:

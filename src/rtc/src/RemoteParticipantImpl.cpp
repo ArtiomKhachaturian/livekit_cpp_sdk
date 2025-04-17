@@ -461,24 +461,19 @@ bool RemoteParticipantImpl::addTrack(const std::string& trackSid,
                 auto track = std::make_shared<TTrack>(*trackInfo, receiver,
                                                       std::move(device),
                                                       trackManager);
-                switch (track->encryption()) {
-                    case EncryptionType::None:
-                        break;
-                    case EncryptionType::Gcm:
-                        if (const auto m = trackManager.lock()) {
-                            if (auto cryptor = m->createCryptor(false, track->mediaType(),
-                                                                identity(), trackSid)) {
-                                cryptor->setObserver(_listener);
-                                receiver->SetFrameTransformer(std::move(cryptor));
-                            }
-                            else {
-                                logError("failed to create GCM crypto for remote track " + trackSid);
-                            }
+                if (EncryptionType::None != track->encryption()) {
+                    if (const auto m = trackManager.lock()) {
+                        if (auto cryptor = m->createCryptor(track->encryption(),
+                                                            track->mediaType(),
+                                                            identity(), trackSid,
+                                                            _listener)) {
+                            receiver->SetFrameTransformer(std::move(cryptor));
                         }
-                        break;
-                    case EncryptionType::Custom:
-                        logWarning("custom crypto doesn't supported for remote track " + trackSid);
-                        break;
+                        else {
+                            logError("failed to create " + toString(track->encryption()) +
+                                     " decryptor for remote track " + trackSid);
+                        }
+                    }
                 }
                 {
                     const std::lock_guard guard(collection.mutex());

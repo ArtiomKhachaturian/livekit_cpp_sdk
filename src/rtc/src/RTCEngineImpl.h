@@ -157,11 +157,10 @@ private:
                     const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
     void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
                     const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
-    // impl. of E2ESecurityFactory
-    webrtc::scoped_refptr<AesCgmCryptor> createCryptor(bool local,
-                                                       cricket::MediaType mediaType,
-                                                       std::string identity,
-                                                       std::string trackId) const final;
+    webrtc::scoped_refptr<webrtc::FrameTransformerInterface> createCryptor(EncryptionType encryption,
+                                                                           cricket::MediaType mediaType,
+                                                                           std::string identity, std::string trackId,
+                                                                           const std::weak_ptr<AesCgmCryptorObserver>& observer) const final;
     // overrides of RemoteParticipantsListener
     void onUpdateSubscription(UpdateSubscription subscription) final;
     // impl. TrackManager

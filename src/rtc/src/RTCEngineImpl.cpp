@@ -24,6 +24,7 @@
 #include "livekit/rtc/SessionListener.h"
 #include "livekit/rtc/LiveKitError.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
+#include "livekit/rtc/e2e/KeyProviderOptions.h"
 #include "livekit/signaling/NetworkType.h"
 #include "livekit/signaling/sfu/UpdateLocalAudioTrack.h"
 #include <algorithm> // for std::min
@@ -488,17 +489,21 @@ void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterfa
     }
 }
 
-webrtc::scoped_refptr<AesCgmCryptor> RTCEngineImpl::createCryptor(bool local,
-                                                                  cricket::MediaType mediaType,
-                                                                  std::string identity,
-                                                                  std::string trackId) const
+webrtc::scoped_refptr<webrtc::FrameTransformerInterface> RTCEngineImpl::
+    createCryptor(EncryptionType encryption, cricket::MediaType mediaType,
+                  std::string identity, std::string trackId,
+                  const std::weak_ptr<AesCgmCryptorObserver>& observer) const
 {
-    if (_pcf) {
+    if (_pcf && EncryptionType::Gcm == encryption) {
         if (const auto provider = std::atomic_load(&_aesCgmKeyProvider)) {
-            return AesCgmCryptor::create(mediaType,
-                                         std::move(identity), std::move(trackId),
-                                         _pcf->signalingThread(), provider,
-                                         logger());
+            auto cryptor = AesCgmCryptor::create(mediaType, std::move(identity),
+                                                 std::move(trackId),
+                                                 _pcf->eventsQueue(),
+                                                 provider, logger());
+            if (cryptor) {
+                cryptor->setObserver(observer);
+                return cryptor;
+            }
         }
     }
     return {};
@@ -737,23 +742,16 @@ void RTCEngineImpl::onRefreshToken(std::string authToken)
 void RTCEngineImpl::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
 {
     if (const auto track = _localParticipant->track(sender)) {
-        switch (track->notifyThatMediaAddedToTransport(sender)) {
-            case EncryptionType::None:
-                break;
-            case EncryptionType::Gcm:
-                if (auto cryptor = createCryptor(true, track->mediaType(),
-                                                 _localParticipant->identity(),
-                                                 sender->id())) {
-                    cryptor->setObserver(_localParticipant);
-                    sender->SetFrameTransformer(std::move(cryptor));
-                }
-                else {
-                    logError("failed to create GCM crypto for local " + track->kind() + " track " + track->cid());
-                }
-                break;
-            case EncryptionType::Custom:
-                logWarning("custom crypto doesn't supported for local " + track->kind() + " track " + track->cid());
-                break;
+        const auto encryption = track->notifyThatMediaAddedToTransport(sender);
+        if (EncryptionType::None != encryption) {
+            if (auto cryptor = createCryptor(encryption, track->mediaType(),
+                                             _localParticipant->identity(),
+                                             sender->id(), _localParticipant)) {
+                sender->SetFrameTransformer(std::move(cryptor));
+            }
+            else {
+                logError("failed to create " + toString(encryption) + " encryptor for track " + track->cid());
+            }
         }
         sendAddTrack(track);
     }

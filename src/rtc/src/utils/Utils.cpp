@@ -27,6 +27,17 @@
 #include <codecvt>
 #include <locale>
 
+namespace {
+
+constexpr uint16_t g_crcTable[16] = {
+    0x0000, 0x1081, 0x2102, 0x3183,
+    0x4204, 0x5285, 0x6306, 0x7387,
+    0x8408, 0x9489, 0xa50a, 0xb58b,
+    0xc60c, 0xd68d, 0xe70e, 0xf78f
+};
+
+}
+
 using ConvertType = std::codecvt_utf8<wchar_t>;
 
 namespace LiveKitCpp
@@ -180,6 +191,23 @@ inline std::string stateToString(webrtc::TaskQueueBase::DelayPrecision precision
             break;
     }
     return {};
+}
+
+uint16_t checksumISO3309(const uint8_t* data, size_t len)
+{
+    if (data && len) {
+        uint16_t crc = 0xffff;
+        uint8_t c;
+        while (len--) {
+            c = *data++;
+            crc = ((crc >> 4) & 0x0fff) ^ g_crcTable[((crc ^ c) & 15)];
+            c >>= 4;
+            crc = ((crc >> 4) & 0x0fff) ^ g_crcTable[((crc ^ c) & 15)];
+        }
+        crc = ~crc;
+        return crc & 0xffff;
+    }
+    return 0U;
 }
 
 TrackType mediaTypeToTrackType(cricket::MediaType type)
