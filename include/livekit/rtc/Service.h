@@ -74,6 +74,8 @@ public:
     void setAudioPlayoutEnabled(bool enabled);
     bool audioPlayoutEnabled() const;
     // enumeration
+    std::vector<MediaDeviceInfo> screens() const;
+    std::vector<MediaDeviceInfo> windows() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     std::vector<MediaDeviceInfo> cameraDevices() const;

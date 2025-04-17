@@ -16,6 +16,7 @@
 #include <api/units/timestamp.h>
 #include <optional>
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
 
 namespace {
 
@@ -25,6 +26,29 @@ inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
         return webrtc::Timestamp::Seconds(CMTimeGetSeconds(time));
     }
     return std::nullopt;
+}
+
+inline NSScreen* findScreen(CGDirectDisplayID guid)
+{
+    NSScreen* result = nil;
+    @autoreleasepool {
+        auto screens = [NSScreen screens];
+        const auto count = screens ? [screens count] : 0U;
+        if (count > 0U) {
+            if (1U == count) {
+                result = [screens firstObject];
+            }
+            else {
+                for (NSScreen* screen in screens) {
+                    auto description = [screen deviceDescription];
+                    if (guid == [description[@"NSScreenNumber"] unsignedIntValue]) {
+                        result = screen;
+                    }
+                }
+            }
+        }
+    }
+    return result;
 }
 
 }
@@ -81,6 +105,28 @@ int32_t cmTimeToMilli(const CMTime& time)
         return ts->ms<int32_t>();
     }
     return 0;
+}
+
+std::string screenTitle(webrtc::ScreenId screenId)
+{
+    if (webrtc::kInvalidScreenId != screenId) {
+        if (webrtc::kFullDesktopScreenId == screenId) {
+            return "Full desktop";
+        }
+        const auto guid = static_cast<CGDirectDisplayID>(screenId);
+        @autoreleasepool {
+            NSScreen* screen = findScreen(guid);
+            if (screen) {
+                return fromNSString(screen.localizedName);
+            }
+        }
+    }
+    return {};
+}
+
+std::string windowTitle(webrtc::WindowId wId)
+{
+    return {};
 }
 
 } // namespace LiveKitCpp

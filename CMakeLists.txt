@@ -274,6 +274,7 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/src/webrtc/media/audio
         ${RTC_SRC_DIR}/src/webrtc/media/audio/adm
         ${RTC_SRC_DIR}/src/webrtc/media/data
+        ${RTC_SRC_DIR}/src/webrtc/media/sharing
         ${RTC_SRC_DIR}/src/webrtc/media/video
         ${RTC_SRC_DIR}/src/webrtc/media/video/camera
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera
@@ -290,7 +291,7 @@ if (WEBRTC_AVAILABLE)
         set_target_properties(${RTC_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
         target_include_directories(${RTC_LIB} PRIVATE ${WEBRTC_INCLUDE_DIR}/sdk/objc ${WEBRTC_INCLUDE_DIR}/sdk/objc/base)
         target_compile_definitions(${RTC_LIB} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
-        target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration")
+        target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit")
     elseif(WIN32)
         target_compile_options(${RTC_LIB} PRIVATE /wd4068 /wd4141)
         target_compile_definitions(${RTC_LIB} PRIVATE -DWINRT_DIAGNOSTICS -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -DRTC_ENABLE_WIN_WGC -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "livekit/rtc/Service.h"
+#include "DesktopConfiguration.h"
 #include "Logger.h"
 #include "MediaAuthorization.h"
 #include "WebsocketEndPoint.h"
@@ -66,6 +67,8 @@ public:
     MediaDeviceInfo recordingAudioDevice() const;
     bool setAudioPlayoutDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo playoutAudioDevice() const;
+    std::vector<MediaDeviceInfo> screens() const { return _desktopConfiguration.enumerateScreens(); }
+    std::vector<MediaDeviceInfo> windows() const { return _desktopConfiguration.enumerateWindows(); }
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     double recordingAudioVolume() const noexcept;
@@ -109,6 +112,7 @@ private:
     static inline const VolumeControl _defaultPlayout = {51U, 0U, 255U};
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
+    const DesktopConfiguration _desktopConfiguration;
     Bricks::SafeObj<VolumeControl> _recordingVolume;
     Bricks::SafeObj<VolumeControl> _playoutVolume;
     std::atomic_bool _recordingMuted;
@@ -263,6 +267,22 @@ bool Service::audioPlayoutEnabled() const
     return _impl && !_impl->playoutMuted();
 }
 
+std::vector<MediaDeviceInfo> Service::screens() const
+{
+    if (_impl) {
+        return _impl->screens();
+    }
+    return {};
+}
+
+std::vector<MediaDeviceInfo> Service::windows() const
+{
+    if (_impl) {
+        return _impl->windows();
+    }
+    return {};
+}
+
 std::vector<MediaDeviceInfo> Service::recordingAudioDevices() const
 {
     if (_impl) {
@@ -345,6 +365,12 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
         dev = _pcf->playoutAudioDevice();
         if (!dev.empty()) {
             logInfo("playout audio device is '" + dev._name + "'");
+        }
+        if (!_desktopConfiguration.screensEnumerationIsAvailable()) {
+            logWarning("screens enumeration is not available");
+        }
+        if (!_desktopConfiguration.windowsEnumerationIsAvailable()) {
+            logWarning("windows enumeration is not available");
         }
     }
 }

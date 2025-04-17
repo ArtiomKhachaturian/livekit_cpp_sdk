@@ -16,6 +16,7 @@
 #include <api/media_types.h>
 #include <api/peer_connection_interface.h>
 #include <api/task_queue/task_queue_base.h>
+#include <modules/desktop_capture/desktop_capture_types.h>
 #include <memory>
 #ifdef __APPLE__
 #include <CoreMedia/CMTime.h>
@@ -161,5 +162,9 @@ std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
     createTaskQueueU(absl::string_view queueName = {},
                      webrtc::TaskQueueFactory::Priority priority = webrtc::TaskQueueFactory::Priority::LOW,
                      const webrtc::FieldTrialsView* fieldTrials = nullptr);
+
+// screencast
+std::string screenTitle(webrtc::ScreenId screenId);
+std::string windowTitle(webrtc::WindowId wId);
 
 } // namespace LiveKitCpp
