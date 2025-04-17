@@ -55,6 +55,7 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             ParticipantView.qml
             CameraOptionsComboBox.qml
             TextPanel.qml
+            TextMultiLine.qml
     SOURCES
             demoapp.h
             mediadeviceinfo.h

@@ -137,8 +137,9 @@ Frame {
         }
     }
 
-    function connect(url, token, autoSubscribe, adaptiveStream, e2e, iceTransportPolicy) {
-        if (!session.connectToSfu(url, token, autoSubscribe, adaptiveStream, e2e, iceTransportPolicy)) {
+    function connect(url, token, autoSubscribe, adaptiveStream, e2e, iceTransportPolicy, passPhrase = "") {
+        if (!session.connectToSfu(url, token, autoSubscribe, adaptiveStream,
+                                  e2e, iceTransportPolicy, passPhrase)) {
             error(qsTr("Failed connect to SFU"), "")
         }
     }

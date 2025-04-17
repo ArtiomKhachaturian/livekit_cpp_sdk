@@ -63,7 +63,8 @@ Session::~Session()
 
 bool Session::connectToSfu(const QString& url, const QString& token,
                            bool autoSubscribe, bool adaptiveStream,
-                           bool e2e, const QString& iceTransportPolicy)
+                           bool e2e, const QString& iceTransportPolicy,
+                           const QString& e2ePassPhrase)
 {
     LiveKitCpp::Options options;
     options._autoSubscribe = autoSubscribe;
@@ -71,8 +72,24 @@ bool Session::connectToSfu(const QString& url, const QString& token,
     if (const auto policy = toIceTransportPolicy(iceTransportPolicy)) {
         options._iceTransportPolicy = policy.value();
     }
-    _encryption  = e2e ? LiveKitCpp::EncryptionType::Gcm : LiveKitCpp::EncryptionType::None;
-    setSessionImpl(create(std::move(options)));
+    auto impl = create(std::move(options));
+    if (impl) {
+        if (e2e) {
+            _encryption = LiveKitCpp::EncryptionType::Gcm;
+            // https://github.com/livekit/client-sdk-js/blob/main/src/e2ee/constants.ts
+            LiveKitCpp::KeyProviderOptions keyProvOptions;
+            keyProvOptions._sharedKey = true;
+            keyProvOptions.setRatchetSalt("LKFrameEncryptionKey");
+            keyProvOptions._ratchetWindowSize = 8;
+            keyProvOptions._keyRingSize = 16;
+            keyProvOptions._failureTolerance = 10;
+            impl->setAesCgmKeyProvider(std::move(keyProvOptions), e2ePassPhrase.toStdString());
+        }
+        else {
+            _encryption = LiveKitCpp::EncryptionType::None;
+        }
+    }
+    setSessionImpl(std::move(impl));
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
 }
 
@@ -247,14 +264,6 @@ void Session::setSessionImpl(std::unique_ptr<LiveKitCpp::Session> impl)
         }
         _impl = std::move(impl);
         if (_impl) {
-            // https://github.com/livekit/client-sdk-js/blob/main/src/e2ee/constants.ts
-            LiveKitCpp::KeyProviderOptions keyProvOptions;
-            keyProvOptions._sharedKey = true;
-            keyProvOptions.setRatchetSalt("LKFrameEncryptionKey");
-            keyProvOptions._ratchetWindowSize = 8;
-            keyProvOptions._keyRingSize = 16;
-            keyProvOptions._failureTolerance = 10;
-            _impl->setAesCgmKeyProvider(std::move(keyProvOptions), "paralax");
             _impl->setListener(this);
             if (_activeCamera) {
                 addCameraTrack();

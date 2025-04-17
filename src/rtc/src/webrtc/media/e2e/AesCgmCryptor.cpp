@@ -132,7 +132,6 @@ AesCgmCryptor::AesCgmCryptor(cricket::MediaType mediaType,
                              const std::shared_ptr<Bricks::Logger>& logger)
     : _impl(std::make_shared<Impl>(mediaType, std::move(identity), std::move(trackId),
                                    std::move(signalingQueue), keyProvider, logger))
-    , _queue(createTaskQueueU(_impl->_logCategory, webrtc::TaskQueueFactory::Priority::HIGH))
 {
 }
 
@@ -167,18 +166,12 @@ void AesCgmCryptor::setObserver(const std::weak_ptr<AesCgmCryptorObserver>& obse
 
 void AesCgmCryptor::Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame)
 {
-    if (frame && _queue) {
+    if (frame) {
         if (!_impl->hasSink() && !_impl->hasSinks()) {
             _impl->logWarning("no transformation callbacks");
             return;
         }
-        // do encrypt or decrypt here...
-        _queue->PostTask([frame = std::move(frame),
-                          weakRef = std::weak_ptr<Impl>(_impl)]() mutable {
-            if (const auto self = weakRef.lock()) {
-                self->transform(std::move(frame));
-            }
-        });
+        _impl->transform(std::move(frame));
     }
 }
 

@@ -108,7 +108,7 @@ Pane {
                 onConnectClicked: {
                     sessionForm.connect(urlText, tokenText,
                                         autoSubscribe, adaptiveStream,
-                                        e2e, iceTransportPolicy)
+                                        e2e, iceTransportPolicy, passPhrase)
                 }
             }
             SessionForm {

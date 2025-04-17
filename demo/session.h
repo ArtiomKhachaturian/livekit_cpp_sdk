@@ -52,7 +52,8 @@ public:
     bool isValid() const noexcept { return nullptr != _impl; }
     Q_INVOKABLE bool connectToSfu(const QString& url, const QString& token,
                                   bool autoSubscribe, bool adaptiveStream,
-                                  bool e2e, const QString& iceTransportPolicy);
+                                  bool e2e, const QString& iceTransportPolicy,
+                                  const QString& e2ePassPhrase = {});
     bool activeCamera() const { return _activeCamera; }
     bool activeMicrophone() const { return _activeMicrophone; }
     QString cameraTrackId() const;

@@ -61,7 +61,6 @@ protected:
                   const std::shared_ptr<Bricks::Logger>& logger);
 private:
     const std::shared_ptr<Impl> _impl;
-    const std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter> _queue;
 };
 
 } // namespace LiveKitCpp

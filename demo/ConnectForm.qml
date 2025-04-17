@@ -5,6 +5,7 @@ import QtQuick.Layouts
 Item {
 
     id: root
+    readonly property alias passPhrase: passPhrase.text
     property alias urlText: url.text
     property alias tokenText: token.text
     property bool activeCamera: false
@@ -23,10 +24,9 @@ Item {
         spacing: -1
 
         Frame {
-            Layout.minimumHeight: 400
+            Layout.preferredHeight: 300
             Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.verticalStretchFactor: 2
             VideoRenderer {
                 id: cameraPreview
                 anchors.fill: parent
@@ -34,25 +34,10 @@ Item {
         }
 
         Frame {
-            Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.verticalStretchFactor: 1
             ColumnLayout {
                 id: elementsLayout
                 anchors.fill: parent
-
-                Label {
-                    text: qsTr("Server URL")
-                    Layout.alignment: Qt.AlignHCenter
-                    horizontalAlignment: Qt.AlignHCenter
-                    verticalAlignment: Qt.AlignVCenter
-                }
-                TextField {
-                    id: url
-                    Layout.fillWidth: true
-                    horizontalAlignment: TextField.AlignHCenter
-                    verticalAlignment: TextField.AlignVCenter
-                }
 
                 Label {
                     text: qsTr("Token")
@@ -60,9 +45,39 @@ Item {
                     horizontalAlignment: Qt.AlignHCenter
                     verticalAlignment: Qt.AlignVCenter
                 }
-                TextField {
+
+                TextMultiLine {
                     id: token
+                    placeholderText: qsTr("Token")
                     Layout.fillWidth: true
+                    Layout.minimumHeight: 60
+                    Layout.maximumHeight: Layout.minimumHeight
+                }
+
+                RowLayout {
+                    Label {
+                        text: qsTr("Server URL")
+                        Layout.alignment: Qt.AlignHCenter
+                        horizontalAlignment: Qt.AlignHCenter
+                        verticalAlignment: Qt.AlignVCenter
+                    }
+                    TextField {
+                        id: url
+                        placeholderText: qsTr("LiveKit Server URL: wss://*.livekit.cloud")
+                        Layout.fillWidth: true
+                        horizontalAlignment: TextField.AlignHCenter
+                        verticalAlignment: TextField.AlignVCenter
+                    }
+
+                    Button {
+                        id: connect
+                        highlighted: true
+                        text: qsTr("Connect")
+                        enabled: url.text !== "" && token.text !== ""
+                        onClicked: {
+                            connectClicked()
+                        }
+                    }
                 }
 
                 RowLayout {
@@ -77,11 +92,6 @@ Item {
                         text: qsTr("Adaptive stream")
                         checked: true
                     }
-                    Switch {
-                        id: e2eChx
-                        text: qsTr("E2E security")
-                        checked: true
-                    }
                     Label {
                         text: qsTr("ICE transport policy:")
                     }
@@ -92,13 +102,31 @@ Item {
                     }
                 }
 
-                Button {
-                    id: connect
-                    Layout.fillWidth: true
-                    text: qsTr("Connect")
-                    enabled: url.text !== "" && token.text !== ""
-                    onClicked: {
-                        connectClicked()
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    Switch {
+                        id: e2eChx
+                        text: qsTr("E2E security")
+                        checked: true
+                    }
+                    Label {
+                        text: qsTr("Passphrase:")
+                        enabled: e2eChx.checked
+                    }
+                    TextField {
+                        id: passPhrase
+                        enabled: e2eChx.checked
+                        echoMode: TextInput.Password
+                        Layout.fillWidth: true
+                        horizontalAlignment: TextField.AlignHCenter
+                        verticalAlignment: TextField.AlignVCenter
+                        text: "2ze2xwut7f06k5zei50zjwmwncsp2exsseu0u79hcq97qduhpy3dwki2xz6rvrfl"
+                        onPressed: {
+                            echoMode = TextInput.Normal
+                        }
+                        onReleased: {
+                            echoMode = TextInput.Password
+                        }
                     }
                 }
             }
