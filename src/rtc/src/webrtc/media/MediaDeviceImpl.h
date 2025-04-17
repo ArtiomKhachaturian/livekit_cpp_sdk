@@ -43,7 +43,6 @@ public:
     bool muted() const override { return _muted; }
 protected:
     MediaDeviceImpl(webrtc::scoped_refptr<TTrack> track);
-    MediaDeviceListener* deviceListener() { return this; }
     // overrides of MediaDeviceListener
     void onMediaChanged() final;
     void onMediaCreationFailed(const std::string& details) final;

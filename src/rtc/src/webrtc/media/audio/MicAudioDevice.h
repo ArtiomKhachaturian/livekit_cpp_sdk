@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MicAudioDevice.h
 #include "AudioDeviceImpl.h"
+#include "ListenedAudio.h"
 #include <memory>
 
 namespace webrtc {
@@ -40,8 +41,9 @@ public:
     static std::shared_ptr<MicAudioDevice> create(const PeerConnectionFactory* pcf,
                                                   const AudioRecordingOptions& options,
                                                   const std::shared_ptr<Bricks::Logger>& logger = {});
+    ~MicAudioDevice() final;
 private:
-    MicAudioDevice(webrtc::scoped_refptr<webrtc::AudioTrackInterface> track);
+    MicAudioDevice(const webrtc::scoped_refptr<ListenedAudio>& track);
 };
 
 } // namespace LiveKitCpp

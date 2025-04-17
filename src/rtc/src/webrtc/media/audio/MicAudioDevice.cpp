@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MicAudioDevice.h"
-#include "LocalAudioDevice.h"
+#include "LocalAudioRecorder.h"
 #include "AsyncMicSourceImpl.h"
 #include "PeerConnectionFactory.h"
 #include "livekit/rtc/media/AudioRecordingOptions.h"
@@ -37,9 +37,22 @@ inline cricket::AudioOptions toCricketOptions(const LiveKitCpp::AudioRecordingOp
 namespace LiveKitCpp
 {
 
-MicAudioDevice::MicAudioDevice(webrtc::scoped_refptr<webrtc::AudioTrackInterface> track)
-    : AudioDeviceImpl(std::move(track))
+MicAudioDevice::MicAudioDevice(const webrtc::scoped_refptr<ListenedAudio>& track)
+    : AudioDeviceImpl(track)
 {
+    if (track) {
+        track->addListener(this);
+    }
+}
+
+MicAudioDevice::~MicAudioDevice()
+{
+    if (const auto t = dynamic_cast<ListenedAudio*>(track().get())) {
+        t->removeListener(this);
+        if (webrtc::MediaStreamTrackInterface::kLive == t->state()) {
+            onMediaStopped();
+        }
+    }
 }
 
 std::shared_ptr<MicAudioDevice> MicAudioDevice::
@@ -50,7 +63,7 @@ std::shared_ptr<MicAudioDevice> MicAudioDevice::
 {
     std::shared_ptr<MicAudioDevice> device;
     if (!admProxy.expired()) {
-        using TrackType = LocalAudioDevice<AsyncMicSourceImpl>;
+        using TrackType = LocalAudioRecorder<AsyncMicSourceImpl>;
         auto track = TrackType::create(std::move(signalingQueue),
                                        logger,
                                        toCricketOptions(options),

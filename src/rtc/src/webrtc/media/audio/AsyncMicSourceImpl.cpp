@@ -87,6 +87,7 @@ void AsyncMicSourceImpl::onStarted(bool)
     else {
         changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
     }
+    notify(&MediaDeviceListener::onMediaStarted);
 }
 
 void AsyncMicSourceImpl::onStopped(bool)
@@ -97,6 +98,7 @@ void AsyncMicSourceImpl::onStopped(bool)
     else {
         changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
     }
+    notify(&MediaDeviceListener::onMediaStopped);
 }
 
 void AsyncMicSourceImpl::onMuteChanged(bool, bool mute)
@@ -122,6 +124,11 @@ void AsyncMicSourceImpl::onMuteChanged(bool, bool mute)
         newState = webrtc::MediaSourceInterface::SourceState::kEnded;
     }
     changeState(newState);
+}
+
+void AsyncMicSourceImpl::onDeviceChanged(bool, const MediaDeviceInfo&)
+{
+    notify(&MediaDeviceListener::onMediaChanged);
 }
 
 } // namespace LiveKitCpp

@@ -18,6 +18,8 @@
 namespace LiveKitCpp
 {
 
+class MediaDeviceListener;
+
 template <class TAsyncImpl>
 class AsyncAudioSource : public AsyncMediaSource<webrtc::AudioSourceInterface, TAsyncImpl>
 {
@@ -29,6 +31,8 @@ public:
                      const std::shared_ptr<Bricks::Logger>& logger,
                      Args&&... args);
     bool signalLevel(int& level) const;
+    void addListener(MediaDeviceListener* listener);
+    void removeListener(MediaDeviceListener* listener);
     // impl. of webrtc::AudioSourceInterface
     void SetVolume(double volume) final;
     void RegisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer) final;
@@ -48,13 +52,25 @@ inline AsyncAudioSource<TAsyncImpl>::AsyncAudioSource(std::weak_ptr<webrtc::Task
 }
 
 template <class TAsyncImpl>
-bool AsyncAudioSource<TAsyncImpl>::signalLevel(int& level) const
+inline bool AsyncAudioSource<TAsyncImpl>::signalLevel(int& level) const
 {
     return Base::_impl->signalLevel(level);
 }
 
 template <class TAsyncImpl>
-void AsyncAudioSource<TAsyncImpl>::SetVolume(double volume)
+inline void AsyncAudioSource<TAsyncImpl>::addListener(MediaDeviceListener* listener)
+{
+    Base::_impl->addListener(listener);
+}
+
+template <class TAsyncImpl>
+inline void AsyncAudioSource<TAsyncImpl>::removeListener(MediaDeviceListener* listener)
+{
+    Base::_impl->removeListener(listener);
+}
+
+template <class TAsyncImpl>
+inline void AsyncAudioSource<TAsyncImpl>::SetVolume(double volume)
 {
     Base::postToImpl(&AsyncAudioSourceImpl::setVolume, volume);
 }

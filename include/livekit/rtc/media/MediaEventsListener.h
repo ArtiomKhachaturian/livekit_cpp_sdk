@@ -30,7 +30,7 @@ public:
     // only for remote tracks & devices
     virtual void onNameChanged(const std::string& /*id*/, const std::string& /*name*/) {}
     // device events, only for local tracks & devices
-    virtual void onMediaChanged(const std::string& /*id*/) {}
+    virtual void onMediaChanged(const std::string& /*id*/) {} // called when internal device has been changed
     virtual void onMediaCreationFailed(const std::string& /*id*/, const std::string& /*details*/ = {}) {}
     virtual void onMediaOptionsChanged(const std::string& /*id*/) {}
     virtual void onMediaStarted(const std::string& /*id*/) {}

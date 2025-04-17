@@ -45,6 +45,7 @@ private:
     void onStarted(bool) final;
     void onStopped(bool) final;
     void onMuteChanged(bool, bool mute) final;
+    void onDeviceChanged(bool, const MediaDeviceInfo&) final;
 private:
     const cricket::AudioOptions _options;
     const std::weak_ptr<AdmProxyFacade> _admProxy;
