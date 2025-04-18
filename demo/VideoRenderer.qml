@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import QtMultimedia
 import LiveKitClient 1.0
 
@@ -7,31 +6,25 @@ Item {
     id: root
     property VideoSource source: null
     property bool showSourceName: false
+    property bool showDiagnostics: true
 
-    ColumnLayout {
+    VideoOutput {
+        id: renderer
         anchors.fill: parent
-        VideoOutput {
-            id: renderer
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            property VideoSource source: null
-            VideoDiagnosticsView {
-                id: fpsArea
-                x: parent.contentRect.right - 4 - width
-                y: parent.contentRect.top + 4
-                visible: false
-            }
+        property VideoSource source: null
+        VideoDiagnosticsView {
+            id: fpsArea
+            x: parent.contentRect.right - 4 - width
+            y: parent.contentRect.top + 4
+            z: 1
+            visible: false
         }
         TextPanel {
             id: sourceNameText
-            Layout.fillWidth: true
-            visible: root.showSourceName && text !== ""
-            text: {
-                if (source !== null) {
-                    return source.name
-                }
-                return ""
-            }
+            width: parent.width
+            anchors.bottom: parent.bottom
+            visible: root.showSourceName && source !== null && text !== ""
+            text: source ? source.name : ""
         }
     }
 
@@ -61,7 +54,7 @@ Item {
                 return ""
             })
             fpsArea.visible = Qt.binding(function() {
-                if (source !== null) {
+                if (source !== null && showDiagnostics) {
                     var size = source.frameSize
                     var fps = source.fps
                     return (size.width > 0 && size.height > 0) || fps > 0

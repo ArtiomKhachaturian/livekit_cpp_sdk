@@ -8,7 +8,7 @@ Item {
     property bool showIdentity: true
     property Participant participant
     readonly property bool hasVideo: videoTracks.count > 0
-    readonly property bool hasAudio: participant.audioTracksCount > 0
+    readonly property bool hasAudio: participant && participant.audioTracksCount > 0
 
     ListModel {
         id : videoTracks
@@ -45,7 +45,7 @@ Item {
             TextPanel {
                 Layout.fillWidth: true
                 visible: showIdentity
-                text: participant.identity
+                text: participant ? participant.identity : ""
             }
         }
     }
@@ -90,8 +90,10 @@ Item {
 
     onParticipantChanged: {
         videoTracks.clear()
-        for (var i = 0; i < participant.videoTracksCount; ++i) {
-            addVideoTrack(participant.videoTrack(i))
+        if (participant !== null) {
+            for (var i = 0; i < participant.videoTracksCount; ++i) {
+                addVideoTrack(participant.videoTrack(i))
+            }
         }
     }
 }

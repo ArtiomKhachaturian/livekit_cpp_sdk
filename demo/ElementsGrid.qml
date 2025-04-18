@@ -37,7 +37,7 @@ Item {
                 height: grid.cellHeight
                 border.width: 1
                 color: root.palette.window.lighter(1.2)
-                border.color: root.activeFocus ? root.palette.highlight : root.palette.mid
+                border.color: activeFocus ? root.palette.highlight : root.palette.mid
                 Loader {
                     anchors.fill: parent
                     sourceComponent: root.delegate

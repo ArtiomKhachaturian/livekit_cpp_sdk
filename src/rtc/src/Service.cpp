@@ -15,6 +15,7 @@
 #include "AdmProxyListener.h"
 #include "AdmProxyFacade.h"
 #include "AsyncCameraSourceImpl.h"
+#include "AsyncSharingSourceImpl.h"
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
 #include "DesktopConfiguration.h"
@@ -56,6 +57,18 @@ public:
                       const std::shared_ptr<Bricks::Logger>& logger);
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
+};
+
+class AsyncSharingSource : public AsyncVideoSource
+{
+public:
+    AsyncSharingSource(bool windowCapturer,
+                       std::unique_ptr<webrtc::DesktopCapturer> capturer,
+                       std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                       const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                       const std::shared_ptr<Bricks::Logger>& logger);
+    // impl. of webrtc::VideoTrackSourceInterface
+    bool is_screencast() const final { return true;}
 };
 
 }
@@ -752,8 +765,15 @@ webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createCameraTrack() const
 webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createSharingTrack(const MediaDeviceInfo& info) const
 {
     if (_pcf && _desktopConfiguration) {
-        auto source = webrtc::make_ref_counted<AsyncCameraSource>(_pcf->signalingThread(), logger());
-        return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
+        bool windowCapturer = false;
+        if (auto capturer = _desktopConfiguration->createCapturer(info._guid, &windowCapturer)) {
+            auto source = webrtc::make_ref_counted<AsyncSharingSource>(windowCapturer,
+                                                                       std::move(capturer),
+                                                                       _pcf->signalingThread(),
+                                                                       _pcf->eventsQueue(),
+                                                                       logger());
+            return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
+        }
     }
     return {};
 }
@@ -860,6 +880,19 @@ namespace
 AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                      const std::shared_ptr<Bricks::Logger>& logger)
     : AsyncVideoSource(std::make_shared<AsyncCameraSourceImpl>(std::move(signalingQueue), logger))
+{
+}
+
+AsyncSharingSource::AsyncSharingSource(bool windowCapturer,
+                                       std::unique_ptr<webrtc::DesktopCapturer> capturer,
+                                       std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                                       const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                                       const std::shared_ptr<Bricks::Logger>& logger)
+    : AsyncVideoSource(std::make_shared<AsyncSharingSourceImpl>(windowCapturer,
+                                                                std::move(capturer),
+                                                                std::move(signalingQueue),
+                                                                timerQueue,
+                                                                logger))
 {
 }
 

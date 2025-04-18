@@ -78,18 +78,26 @@ class SharingsVideoModel : public LocalVideoSourcesModel
 {
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(bool enumerateScreens READ enumerateScreens WRITE setEnumerateScreens NOTIFY enumerateScreensChanged FINAL)
+    Q_PROPERTY(Mode mode READ mode WRITE setMode NOTIFY modeChanged FINAL)
+public:
+    enum Mode
+    {
+        Inactive,
+        Screens,
+        Windows,
+    };
+    Q_ENUM(Mode)
 public:
     explicit SharingsVideoModel(QObject* parent = nullptr);
-    bool enumerateScreens() const noexcept { return _enumerateScreens; }
+    Mode mode() const noexcept { return _mode; }
 public slots:
-    void setEnumerateScreens(bool screens);
+    void setMode(Mode mode);
 signals:
-    void enumerateScreensChanged();
+    void modeChanged();
 private:
     void resetContent();
 private:
-    bool _enumerateScreens = true; // or windows
+    Mode _mode = Mode::Inactive;
 };
 
 #endif // VIDEOMODELS_H

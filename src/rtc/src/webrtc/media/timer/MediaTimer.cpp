@@ -14,6 +14,7 @@
 #include "MediaTimer.h"
 #include "MediaTimerImpl.h"
 #include "PeerConnectionFactory.h"
+#include <cmath>
 
 namespace LiveKitCpp
 {
@@ -76,6 +77,13 @@ void MediaTimer::start(uint64_t intervalMs)
 {
     if (const auto impl = loadImpl()) {
         impl->start(intervalMs);
+    }
+}
+
+void MediaTimer::start(float fps)
+{
+    if (FP_ZERO != std::fpclassify(fps)) {
+        start(uint64_t(std::round(1000ULL / fps)));
     }
 }
 

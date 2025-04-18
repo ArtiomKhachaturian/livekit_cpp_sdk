@@ -14,47 +14,53 @@ Dialog {
         id: contentComponentLoader
         sourceComponent: contentComponent
         active: false
-        anchors.fill: parent
+        focus: true
     }
 
     Component {
         id: contentComponent
         ColumnLayout {
+            readonly property bool noWindows: 0 == windowsPreview.elementsCount
             Label {
                 text: qsTr("Screens:")
                 Layout.alignment: Qt.AlignLeft
             }
             ElementsGrid {
                 id: screensPreview
-                autoLayout: false
+                autoLayout: noWindows
                 implicitHeight: cellHeight
                 Layout.fillWidth: true
+                Layout.fillHeight: noWindows
                 model: SharingsVideoModel {
                     id: screensModel
-                    enumerateScreens: true
+                    mode: SharingsVideoModel.Screens
                 }
                 delegate: VideoRenderer {
                     anchors.fill: parent
                     showSourceName: true
+                    showDiagnostics: false
                     source: screensModel.sourceAt(index)
                 }
-                focus: true
+                //focus: true
             }
             Label {
                 text: qsTr("Windows:")
                 Layout.alignment: Qt.AlignLeft
+                visible: windowsPreview.visible
             }
             ElementsGrid {
                 id: windowsPreview
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                visible: !noWindows
                 model: SharingsVideoModel {
                     id: windowsModel
-                    enumerateScreens: false
+                    mode: SharingsVideoModel.Windows
                 }
                 delegate: VideoRenderer {
                     anchors.fill: parent
                     showSourceName: true
+                    showDiagnostics: false
                     source: windowsModel.sourceAt(index)
                 }
                 onCellHeightChanged: {

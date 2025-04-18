@@ -33,10 +33,23 @@ public:
     std::vector<MediaDeviceInfo> enumerate(bool windows) const;
     std::vector<MediaDeviceInfo> enumerateScreens() const;
     std::vector<MediaDeviceInfo> enumerateWindows() const;
+    static std::unique_ptr<webrtc::DesktopCapturer> createCapturer(std::string_view guid,
+                                                                   bool *windowCapturer = nullptr);
+    static bool deviceIsValid(std::string_view guid);
+    static bool deviceIsValid(const MediaDeviceInfo& info);
+    static int32_t maxFramerate(bool /*windows*/) { return 30; }
 private:
     webrtc::DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool lightweightMode = false);
+    static webrtc::ScreenId extractScreenId(std::string_view guid);
+    static webrtc::WindowId extractWindowId(std::string_view guid);
+    static bool hasScreenMarker(std::string_view guid);
+    static bool hasWindowMarker(std::string_view guid);
+    static std::string_view unmarkedScreenGuid(std::string_view guid);
+    static std::string_view unmarkedWindowGuid(std::string_view guid);
 private:
+    static inline const std::string _screenMarker = "!eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9<";
+    static inline const std::string _windowMarker = "!ikUaGOaxzKw0JlNj080oEkPG2S42GIck3O65<";
     const std::unique_ptr<webrtc::DesktopCapturer> _screensEnumerator;
     const std::unique_ptr<webrtc::DesktopCapturer> _windowsEnumerator;
 };

@@ -47,6 +47,7 @@ public:
     void setCallback(MediaTimerCallback* callback = nullptr);
     // ignored if already started
     void start(uint64_t intervalMs);
+    void start(float fps);
     void stop();
     // ID of event or 0 for non-cancellable single shots
     void singleShot(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL,

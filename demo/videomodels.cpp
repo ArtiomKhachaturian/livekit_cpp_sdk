@@ -152,23 +152,43 @@ void ConnectionFormVideoModel::setSharingIndex(qsizetype index)
 SharingsVideoModel::SharingsVideoModel(QObject* parent)
     : LocalVideoSourcesModel(parent)
 {
-    resetContent();
 }
 
-void SharingsVideoModel::setEnumerateScreens(bool enumerateScreens)
+void SharingsVideoModel::setMode(Mode mode)
 {
-    if (_enumerateScreens != enumerateScreens) {
-        _enumerateScreens = enumerateScreens;
-        resetContent();
-        emit enumerateScreensChanged();
+    if (mode != _mode) {
+        _mode = mode;
+        clear();
+        switch (mode) {
+            case Mode::Inactive:
+                break;
+            case Mode::Screens:
+            case Mode::Windows:
+                resetContent();
+                break;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
     }
 }
 
 void SharingsVideoModel::resetContent()
 {
-    clear();
-    const auto devices = _enumerateScreens ? screens() : windows();
-    for (qsizetype i = 0; i < devices.size(); ++i) {
-        addSharing(devices[i]);
+    if (Mode::Inactive != _mode) {
+        QList<MediaDeviceInfo> devices;
+        switch (_mode) {
+            case Mode::Screens:
+                devices = screens();
+                break;
+            case Mode::Windows:
+                devices = windows();
+                break;
+            default:
+                break;
+        }
+        for (qsizetype i = 0; i < devices.size(); ++i) {
+            addSharing(devices[i]);
+        }
     }
 }

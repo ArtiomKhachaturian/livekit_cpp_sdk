@@ -11,12 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraVideoSourceImpl.h
+#pragma once // AsyncCameraSourceImpl.h
 #include "CameraCapturerProxySink.h"
 #include "CameraCapturer.h"
 #include "SafeScopedRefPtr.h"
 #include "AsyncVideoSourceImpl.h"
-#include "livekit/rtc/media/MediaDeviceInfo.h"
 
 namespace LiveKitCpp
 {

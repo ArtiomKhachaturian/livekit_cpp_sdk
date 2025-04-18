@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "DesktopConfiguration.h"
 #include "Utils.h"
+#include <charconv>
 
 namespace LiveKitCpp
 {
@@ -45,7 +46,7 @@ std::vector<MediaDeviceInfo> DesktopConfiguration::enumerate(bool windows) const
                 if (info._name.empty()) {
                     info._name = windows ? windowTitle(source.id) : screenTitle(source.id);
                 }
-                info._guid = std::to_string(source.id);
+                info._guid = (windows ? _windowMarker : _screenMarker) + std::to_string(source.id);
                 devices.push_back(std::move(info));
             }
         }
@@ -63,8 +64,45 @@ std::vector<MediaDeviceInfo> DesktopConfiguration::enumerateWindows() const
     return enumerate(true);
 }
 
+std::unique_ptr<webrtc::DesktopCapturer> DesktopConfiguration::createCapturer(std::string_view guid,
+                                                                              bool *windowCapturer)
+{
+    const auto screenId = extractScreenId(guid);
+    if (webrtc::kInvalidScreenId != screenId) {
+        auto capturer = webrtc::DesktopCapturer::CreateScreenCapturer(makeOptions(false));
+        if (capturer && capturer->SelectSource(screenId)) {
+            if (windowCapturer) {
+                *windowCapturer = false;
+            }
+            return capturer;
+        }
+    }
+    const auto windowId = extractWindowId(guid);
+    if (webrtc::kNullWindowId != windowId) {
+        auto capturer = webrtc::DesktopCapturer::CreateWindowCapturer(makeOptions(false));
+        if (capturer && capturer->SelectSource(windowId)) {
+            if (windowCapturer) {
+                *windowCapturer = true;
+            }
+            return capturer;
+        }
+    }
+    return {};
+}
+
+bool DesktopConfiguration::deviceIsValid(std::string_view guid)
+{
+    return hasScreenMarker(guid) || hasWindowMarker(guid);
+}
+
+bool DesktopConfiguration::deviceIsValid(const MediaDeviceInfo& info)
+{
+    return deviceIsValid(info._guid);
+}
+
 webrtc::DesktopCapturer* DesktopConfiguration::enumerator(bool windows) const
 {
+    //windows = false;
     return windows ? _windowsEnumerator.get() : _screensEnumerator.get();
 }
 
@@ -88,6 +126,56 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweight
     }
 #endif
     return options;
+}
+
+webrtc::ScreenId DesktopConfiguration::extractScreenId(std::string_view guid)
+{
+    guid = unmarkedScreenGuid(std::move(guid));
+    if (!guid.empty()) {
+        webrtc::ScreenId screenId = webrtc::kInvalidDisplayId;
+        if (std::errc() == std::from_chars(guid.data(), guid.data() + guid.size(), screenId).ec) {
+            return screenId;
+        }
+    }
+    return webrtc::kInvalidScreenId;
+}
+
+webrtc::WindowId DesktopConfiguration::extractWindowId(std::string_view guid)
+{
+    guid = unmarkedWindowGuid(guid);
+    if (!guid.empty()) {
+        webrtc::WindowId windowId = webrtc::kNullWindowId;
+        if (std::errc() == std::from_chars(guid.data(), guid.data() + guid.size(), windowId).ec) {
+            return windowId;
+        }
+    }
+    return webrtc::kNullWindowId;
+}
+
+bool DesktopConfiguration::hasScreenMarker(std::string_view guid)
+{
+    return startWith(guid, _screenMarker);
+}
+
+bool DesktopConfiguration::hasWindowMarker(std::string_view guid)
+{
+    return startWith(guid, _windowMarker);
+}
+
+std::string_view DesktopConfiguration::unmarkedScreenGuid(std::string_view guid)
+{
+    if (hasScreenMarker(guid)) {
+        return guid.substr(_screenMarker.size());;
+    }
+    return {};
+}
+
+std::string_view DesktopConfiguration::unmarkedWindowGuid(std::string_view guid)
+{
+    if (hasWindowMarker(guid)) {
+        return guid.substr(_windowMarker.size());;
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp
