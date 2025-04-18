@@ -23,24 +23,22 @@ public:
     bool operator == (const LiveKitCpp::VideoOptions& other) const noexcept;
     bool operator != (const VideoOptions& other) const noexcept;
     bool operator != (const LiveKitCpp::VideoOptions& other) const noexcept;
-    operator LiveKitCpp::VideoOptions() const;
+    operator LiveKitCpp::VideoOptions() const { return _impl; }
     operator QString() const { return toString(); }
     explicit operator bool () const noexcept { return isValid(); }
-    qint32 width() const noexcept { return _width; }
-    qint32 height() const noexcept { return _height; }
-    qint32 maxFPS() const noexcept { return _maxFPS; }
-    void setWidth(qint32 width) noexcept { _width = width; }
-    void setHeight(qint32 height) noexcept { _height = height; }
-    void setMaxFPS(qint32 maxFps) noexcept { _maxFPS = maxFps; }
+    qint32 width() const noexcept { return _impl._width; }
+    qint32 height() const noexcept { return _impl._height; }
+    qint32 maxFPS() const noexcept { return _impl._maxFPS; }
+    void setWidth(qint32 width) noexcept { _impl._width = width; }
+    void setHeight(qint32 height) noexcept { _impl._height = height; }
+    void setMaxFPS(qint32 maxFps) noexcept { _impl._maxFPS = maxFps; }
     void setResolution(qint32 width, qint32 height) noexcept;
     void setResolution(const QSize& resolution) noexcept;
     QSize resolution() const noexcept { return {width(), height()}; }
-    virtual QString toString() const;
-    virtual bool isValid() const noexcept { return width() > 0 && height() > 0 && maxFPS() > 0; }
+    QString toString() const;
+    bool isValid() const noexcept { return !_impl.null(); }
 private:
-    qint32 _width = 0;
-    qint32 _height = 0;
-    qint32 _maxFPS = 0;
+    LiveKitCpp::VideoOptions _impl;
 };
 
 #endif // VIDEOOPTIONS_H

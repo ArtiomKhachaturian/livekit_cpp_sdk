@@ -41,7 +41,7 @@ public:
     Q_PROPERTY(QString cameraTrackId READ cameraTrackId NOTIFY activeCameraChanged FINAL)
     Q_PROPERTY(QString microphoneTrackId READ microphoneTrackId NOTIFY activeMicrophoneChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo cameraDeviceInfo READ cameraDeviceInfo WRITE setCameraDeviceInfo NOTIFY cameraDeviceInfoChanged FINAL)
-    Q_PROPERTY(CameraOptions cameraOptions READ cameraOptions WRITE setCameraOptions NOTIFY cameraOptionsChanged FINAL)
+    Q_PROPERTY(VideoOptions cameraOptions READ cameraOptions WRITE setCameraOptions NOTIFY cameraOptionsChanged FINAL)
     Q_PROPERTY(LocalParticipant* localParticipant MEMBER _localParticipant CONSTANT)
     Q_PROPERTY(bool cameraMuted READ cameraMuted WRITE setCameraMuted NOTIFY cameraMutedChanged FINAL)
     Q_PROPERTY(bool microphoneMuted READ microphoneMuted WRITE setMicrophoneMuted NOTIFY microphoneMutedChanged FINAL)
@@ -62,7 +62,7 @@ public:
     bool connected() const;
     State state() const;
     MediaDeviceInfo cameraDeviceInfo() const;
-    CameraOptions cameraOptions() const;
+    VideoOptions cameraOptions() const;
     bool cameraMuted() const { return _localParticipant->cameraMuted(); }
     bool microphoneMuted() const { return _localParticipant->microphoneMuted(); }
     QString identity() const { return _localParticipant->identity(); }
@@ -70,7 +70,7 @@ public slots:
     void setActiveCamera(bool active);
     void setActiveMicrophone(bool active);
     void setCameraDeviceInfo(const MediaDeviceInfo& info = {});
-    void setCameraOptions(const CameraOptions& options);
+    void setCameraOptions(const VideoOptions& options);
     void setCameraMuted(bool muted) { _localParticipant->setCameraMuted(muted); }
     void setMicrophoneMuted(bool muted) { _localParticipant->setMicrophoneMuted(muted); }
     Q_INVOKABLE void disconnectFromSfu();

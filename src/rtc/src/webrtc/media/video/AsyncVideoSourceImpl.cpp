@@ -22,7 +22,6 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
                                            const std::shared_ptr<Bricks::Logger>& logger,
                                            bool liveImmediately)
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
-    , _contentHint(webrtc::VideoTrackInterface::ContentHint::kNone)
 {
 }
 
@@ -57,14 +56,9 @@ bool AsyncVideoSourceImpl::stats(int& inputWidth, int& inputHeight) const
     return false;
 }
 
-webrtc::VideoTrackInterface::ContentHint AsyncVideoSourceImpl::contentHint() const
+void AsyncVideoSourceImpl::setContentHint(VideoContentHint hint)
 {
-    return _contentHint;
-}
-
-void AsyncVideoSourceImpl::setContentHint(webrtc::VideoTrackInterface::ContentHint hint)
-{
-    if (exchangeVal(hint, _contentHint)) {
+    if (active() && exchangeVal(hint, _contentHint)) {
         onContentHintChanged(hint);
     }
 }
@@ -96,6 +90,30 @@ bool AsyncVideoSourceImpl::removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame
         }
     }
     return false;
+}
+
+void AsyncVideoSourceImpl::setDeviceInfo(MediaDeviceInfo info)
+{
+    if (active()) {
+        info = validate(info);
+        if (info && exchangeVal(std::move(info), _deviceInfo)) {
+            notify(&MediaDeviceListener::onMediaChanged);
+            resetCapturer();
+            resetStats();
+            requestCapturer();
+        }
+    }
+}
+
+void AsyncVideoSourceImpl::setOptions(VideoOptions options)
+{
+    if (active()) {
+        options = validate(options);
+        if (options && exchangeVal(options, _options)) {
+            notify(&MediaDeviceListener::onMediaOptionsChanged);
+            onOptionsChanged(options);
+        }
+    }
 }
 
 bool AsyncVideoSourceImpl::frameWanted() const
@@ -132,12 +150,18 @@ void AsyncVideoSourceImpl::discard()
 void AsyncVideoSourceImpl::onClosed()
 {
     AsyncMediaSourceImpl::onClosed();
+    resetStats();
     _broadcasters({});
 }
 
 void AsyncVideoSourceImpl::onMuted()
 {
     AsyncMediaSourceImpl::onMuted();
+    resetStats();
+}
+
+void AsyncVideoSourceImpl::resetStats()
+{
     _lastResolution = 0ULL;
     _lastFrameId = 0U;
 }

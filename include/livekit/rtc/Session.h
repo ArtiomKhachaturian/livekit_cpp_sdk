@@ -19,7 +19,7 @@
 #include "livekit/rtc/e2e/KeyProvider.h"
 #include "livekit/rtc/e2e/KeyProviderOptions.h"
 #include "livekit/rtc/media/AudioTrack.h"
-#include "livekit/rtc/media/CameraTrack.h"
+#include "livekit/rtc/media/LocalVideoTrack.h"
 #include "livekit/rtc/stats/StatsSource.h"
 #include "livekit/signaling/sfu/EncryptionType.h"
 #include <memory>
@@ -38,7 +38,7 @@ namespace LiveKitCpp
 {
 
 class AudioDevice;
-class CameraDevice;
+class LocalVideoDevice;
 class RemoteParticipant;
 class SessionListener;
 class PeerConnectionFactory;
@@ -67,12 +67,12 @@ public:
     size_t localVideoTracksCount() const;
     std::shared_ptr<AudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device,
                                               EncryptionType encryption = EncryptionType::None);
-    std::shared_ptr<CameraTrack> addCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                EncryptionType encryption = EncryptionType::None);
+    std::shared_ptr<LocalVideoTrack> addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                   EncryptionType encryption = EncryptionType::None);
     void removeAudioTrack(std::shared_ptr<AudioTrack> track);
-    void removeVideoTrack(std::shared_ptr<VideoTrack> track);
+    void removeVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;
-    std::shared_ptr<VideoTrack> videoTrack(size_t index) const;
+    std::shared_ptr<LocalVideoTrack> videoTrack(size_t index) const;
     // remote
     size_t remoteParticipantsCount() const;
     // given participant by index or server ID

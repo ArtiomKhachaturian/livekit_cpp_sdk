@@ -1,6 +1,6 @@
 #ifndef CAMERAOPTIONSMODEL_H
 #define CAMERAOPTIONSMODEL_H
-#include "cameraoptions.h"
+#include "videooptions.h"
 #include "mediadeviceinfo.h"
 #include "itemmodel.h"
 #include <memory>
@@ -9,20 +9,20 @@ namespace LiveKitCpp {
 class Service;
 }
 
-class CameraOptionsModel : public ItemModel<CameraOptions>
+class CameraOptionsModel : public ItemModel<VideoOptions>
 {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(MediaDeviceInfo deviceInfo READ deviceInfo WRITE setDeviceInfo NOTIFY deviceInfoChanged FINAL)
     Q_PROPERTY(bool valid READ isValid CONSTANT)
-    Q_PROPERTY(CameraOptions defaultOptions READ defaultOptions CONSTANT)
+    Q_PROPERTY(VideoOptions defaultOptions READ defaultOptions CONSTANT)
 public:
     explicit CameraOptionsModel(QObject* parent = nullptr);
     const MediaDeviceInfo& deviceInfo() const noexcept { return _deviceInfo; }
-    Q_INVOKABLE CameraOptions itemAt(qsizetype index) const;
-    Q_INVOKABLE qsizetype indexOf(const CameraOptions& item) const;
+    Q_INVOKABLE VideoOptions itemAt(qsizetype index) const;
+    Q_INVOKABLE qsizetype indexOf(const VideoOptions& item) const;
     bool isValid() const { return !_service.expired(); }
-    CameraOptions defaultOptions() const { return LiveKitCpp::CameraOptions::defaultOptions(); }
+    VideoOptions defaultOptions() const;
     Q_INVOKABLE qsizetype defaultOptionsIndex() const;
 public slots:
     void setDeviceInfo(const MediaDeviceInfo& info);

@@ -99,10 +99,10 @@ std::shared_ptr<LocalAudioTrackImpl> RTCEngineImpl::addLocalAudioTrack(std::shar
     return track;
 }
 
-std::shared_ptr<CameraTrackImpl> RTCEngineImpl::addLocalCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                                    EncryptionType encryption)
+std::shared_ptr<LocalVideoTrackImpl> RTCEngineImpl::addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                                       EncryptionType encryption)
 {
-    auto track = _localParticipant->addCameraTrack(std::move(device), encryption, weak_from_this());
+    auto track = _localParticipant->addVideoTrack(std::move(device), encryption, weak_from_this());
     if (track) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
             pcManager->addTrack(track->media());
@@ -122,7 +122,7 @@ bool RTCEngineImpl::removeLocalAudioTrack(std::shared_ptr<AudioTrack> track)
     return false;
 }
 
-bool RTCEngineImpl::removeLocalVideoTrack(std::shared_ptr<VideoTrack> track)
+bool RTCEngineImpl::removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track)
 {
     if (auto rtcTrack = _localParticipant->removeVideoTrack(track)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -301,7 +301,7 @@ void RTCEngineImpl::notifyAboutLocalParticipantJoinLeave(bool join) const
     }
 }
 
-void RTCEngineImpl::sendAddTrack(const std::shared_ptr<LocalTrack>& track)
+void RTCEngineImpl::sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track)
 {
     if (track && !closed()) {
         AddTrackRequest request;

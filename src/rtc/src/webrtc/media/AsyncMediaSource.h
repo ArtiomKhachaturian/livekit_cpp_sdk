@@ -29,6 +29,7 @@ class AsyncMediaSource : public TMediaSource
     static_assert(std::is_base_of_v<webrtc::MediaSourceInterface, TMediaSource>);
 public:
     ~AsyncMediaSource() override { close(); }
+    bool active() const noexcept { return _impl && _impl->active(); }
     const auto& signalingQueue() const noexcept { return _impl->signalingQueue(); }
     bool enabled() const noexcept { return _enabled; }
     bool setEnabled(bool enabled);
@@ -44,6 +45,7 @@ protected:
     AsyncMediaSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                      const std::shared_ptr<Bricks::Logger>& logger,
                      Args&&... args);
+    AsyncMediaSource(std::shared_ptr<TAsyncImpl> impl);
     template <class Method, typename... Args>
     void postToImpl(Method method, Args&&... args) const;
 protected:
@@ -58,15 +60,21 @@ inline AsyncMediaSource<TMediaSource, TAsyncImpl>::
     AsyncMediaSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                      const std::shared_ptr<Bricks::Logger>& logger,
                      Args&&... args)
-    : _impl(std::make_shared<TAsyncImpl>(std::move(signalingQueue), logger,
-                                         std::forward<Args>(args)...))
+    : AsyncMediaSource(std::make_shared<TAsyncImpl>(std::move(signalingQueue), logger,
+                                                    std::forward<Args>(args)...))
+{
+}
+
+template <class TMediaSource, class TAsyncImpl>
+inline AsyncMediaSource<TMediaSource, TAsyncImpl>::AsyncMediaSource(std::shared_ptr<TAsyncImpl> impl)
+    : _impl(std::move(impl))
 {
 }
 
 template <class TMediaSource, class TAsyncImpl>
 inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
 {
-    if (_impl->active() && exchangeVal(enabled, _enabled)) {
+    if (_impl && _impl->active() && exchangeVal(enabled, _enabled)) {
         postToImpl(&TAsyncImpl::setEnabled, enabled);
         _impl->notifyAboutChanges();
         return true;
@@ -77,7 +85,7 @@ inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
 template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::close()
 {
-    if (_impl->deactivate()) {
+    if (_impl && _impl->deactivate()) {
         postToImpl(&TAsyncImpl::close);
     }
 }
@@ -85,13 +93,17 @@ inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::close()
 template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::RegisterObserver(webrtc::ObserverInterface* observer)
 {
-    _impl->registerObserver(observer);
+    if (_impl) {
+        _impl->registerObserver(observer);
+    }
 }
 
 template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::UnregisterObserver(webrtc::ObserverInterface* observer)
 {
-    _impl->unregisterObserver(observer);
+    if (_impl) {
+        _impl->unregisterObserver(observer);
+    }
 }
 
 template <class TMediaSource, class TAsyncImpl>
@@ -99,7 +111,9 @@ template <class Method, typename... Args>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::
     postToImpl(Method method, Args&&... args) const
 {
-    postOrInvokeW(signalingQueue(), _impl, false, method, std::forward<Args>(args)...);
+    if (_impl) {
+        postOrInvokeW(signalingQueue(), _impl, false, method, std::forward<Args>(args)...);
+    }
 }
 
 } // namespace LiveKitCpp

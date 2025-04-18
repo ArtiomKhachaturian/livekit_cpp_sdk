@@ -1,7 +1,7 @@
 #include "cameradevice.h"
-#include <livekit/rtc/media/CameraDevice.h>
+#include <livekit/rtc/media/LocalVideoDevice.h>
 
-CameraDevice::CameraDevice(std::shared_ptr<LiveKitCpp::CameraDevice> device,
+CameraDevice::CameraDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice> device,
                            QObject *parent)
     : VideoSource(parent)
     , _device(std::move(device))

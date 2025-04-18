@@ -50,7 +50,7 @@ public:
     static std::string localizedDeviceName(AVCaptureDevice* device);
     static std::string deviceUniqueIdUTF8(AVCaptureDevice* device);
     // impl. of CameraCapturer
-    void setContentHint(webrtc::VideoTrackInterface::ContentHint hint) final;
+    void setContentHint(VideoContentHint hint) final;
     void setObserver(CameraObserver* observer) final;
     // impl. of webrtc::VideoCaptureModule
     int32_t StartCapture(const webrtc::VideoCaptureCapability& capability) final;

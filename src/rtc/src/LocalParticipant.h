@@ -13,9 +13,9 @@
 // limitations under the License.
 #pragma once // LocalParticipant.h
 #include "AesCgmCryptorObserver.h"
-#include "CameraTrackImpl.h"
 #include "Listener.h"
 #include "LocalAudioTrackImpl.h"
+#include "LocalVideoTrackImpl.h"
 #include "Loggable.h"
 #include "ParticipantAccessor.h"
 #include "SafeObjAliases.h"
@@ -40,8 +40,8 @@ namespace LiveKitCpp
 {
 
 class AudioDevice;
-class CameraDevice;
-class LocalCamera;
+class LocalVideoDevice;
+class LocalWebRtcTrack;
 class TrackManager;
 class ParticipantListener;
 class PeerConnectionFactory;
@@ -66,20 +66,20 @@ public:
     std::shared_ptr<LocalAudioTrackImpl> addAudioTrack(std::shared_ptr<AudioDevice> device,
                                                        EncryptionType encryption,
                                                        const std::weak_ptr<TrackManager>& trackManager);
-    std::shared_ptr<CameraTrackImpl> addCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                    EncryptionType encryption,
-                                                    const std::weak_ptr<TrackManager>& trackManager);
+    std::shared_ptr<LocalVideoTrackImpl> addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                       EncryptionType encryption,
+                                                       const std::weak_ptr<TrackManager>& trackManager);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeAudioTrack(std::shared_ptr<AudioTrack> track);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeVideoTrack(std::shared_ptr<VideoTrack> track);
+        removeVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<AudioTrack> audioTrack(size_t index) const;
-    std::shared_ptr<VideoTrack> videoTrack(size_t index) const;
-    std::vector<std::shared_ptr<LocalTrack>> tracks() const;
+    std::shared_ptr<LocalVideoTrack> videoTrack(size_t index) const;
+    std::vector<std::shared_ptr<LocalTrackAccessor>> tracks() const;
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> media() const;
-    std::shared_ptr<LocalTrack> track(const std::string& id, bool cid,
+    std::shared_ptr<LocalTrackAccessor> track(const std::string& id, bool cid,
                                       const std::optional<cricket::MediaType>& hint = {}) const;
-    std::shared_ptr<LocalTrack> track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
+    std::shared_ptr<LocalTrackAccessor> track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
     void setListener(ParticipantListener* listener) { _listener = listener; }
     void setInfo(const ParticipantInfo& info);
     // impl. of Participant
@@ -94,8 +94,8 @@ public:
     void setConnectionQuality(ConnectionQuality quality, float score) final;
 private:
     template <class TTracks>
-    static std::shared_ptr<LocalTrack> lookup(const std::string& id, bool cid,
-                                              const TTracks& tracks);
+    static std::shared_ptr<LocalTrackAccessor> lookup(const std::string& id, bool cid,
+                                                      const TTracks& tracks);
     template <class TTrack, class TTracks>
     static void addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks);
     template <class TTracks>
@@ -109,8 +109,8 @@ private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     Bricks::SafeObj<const Participant*> _session;
     Bricks::Listener<ParticipantListener*> _listener;
-    Tracks<AudioTrack> _audioTracks;
-    Tracks<VideoTrack> _videoTracks;
+    Tracks<LocalAudioTrackImpl> _audioTracks;
+    Tracks<LocalVideoTrackImpl> _videoTracks;
     Bricks::SafeObj<std::string> _sid;
     Bricks::SafeObj<std::string> _identity;
     Bricks::SafeObj<std::string> _name;

@@ -17,8 +17,7 @@
 #include "livekit/rtc/ServiceState.h"
 #include "livekit/rtc/Options.h"
 #include "livekit/rtc/media/AudioDevice.h"
-#include "livekit/rtc/media/CameraDevice.h"
-#include "livekit/rtc/media/CameraOptions.h"
+#include "livekit/rtc/media/LocalVideoDevice.h"
 #include "livekit/rtc/media/AudioRecordingOptions.h"
 #include "livekit/rtc/media/MediaAuthorizationLevel.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
@@ -51,8 +50,8 @@ public:
     std::unique_ptr<Session> createSession(Options options = {}) const;
     // local media
     std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options = {}) const;
-    std::shared_ptr<CameraDevice> createCamera(const MediaDeviceInfo& info = {},
-                                               const CameraOptions& options = {}) const;
+    std::shared_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info = {},
+                                                   VideoOptions options = {}) const;
     // global media
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
@@ -79,7 +78,7 @@ public:
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     std::vector<MediaDeviceInfo> cameraDevices() const;
-    std::vector<CameraOptions> cameraOptions(const MediaDeviceInfo& info) const;
+    std::vector<VideoOptions> cameraOptions(const MediaDeviceInfo& info) const;
     // listeners
     void addListener(ServiceListener* listener);
     void removeListener(ServiceListener* listener);
@@ -88,6 +87,8 @@ public:
     static void setMediaAuthorizationLevel(MediaAuthorizationLevel level);
     // network
     static NetworkType activeNetworkType();
+    // default camera options
+    static VideoOptions defaultCameraOptions();
 private:
     const std::unique_ptr<Impl> _impl;
 };

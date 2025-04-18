@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraManager.h
-#include "livekit/rtc/media/CameraOptions.h"
+#include "livekit/rtc/media/VideoOptions.h"
 #include <api/scoped_refptr.h>
 #include <api/video/video_rotation.h>
 #include <modules/video_capture/video_capture_factory.h> // VideoCaptureFactory & VideoCaptureCapability
@@ -77,8 +77,8 @@ private:
 };
 
 std::string toString(const webrtc::VideoCaptureCapability& capability);
-CameraOptions map(const webrtc::VideoCaptureCapability& capability);
-webrtc::VideoCaptureCapability map(const CameraOptions& options);
+VideoOptions map(const webrtc::VideoCaptureCapability& capability);
+webrtc::VideoCaptureCapability map(const VideoOptions& options);
 webrtc::VideoType map(VideoFrameType type);
 std::optional<VideoFrameType> map(webrtc::VideoType type);
 

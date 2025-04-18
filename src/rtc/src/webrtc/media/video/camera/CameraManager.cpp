@@ -231,9 +231,9 @@ std::string toString(const webrtc::VideoCaptureCapability& capability)
             fourccToString(webrtc::ConvertVideoType(capability.videoType));
 }
 
-CameraOptions map(const webrtc::VideoCaptureCapability& capability)
+VideoOptions map(const webrtc::VideoCaptureCapability& capability)
 {
-    CameraOptions options;
+    VideoOptions options;
     options._width = capability.width;
     options._height = capability.height;
     options._maxFPS = capability.maxFPS;
@@ -242,13 +242,15 @@ CameraOptions map(const webrtc::VideoCaptureCapability& capability)
     return options;
 }
 
-webrtc::VideoCaptureCapability map(const CameraOptions& options)
+webrtc::VideoCaptureCapability map(const VideoOptions& options)
 {
     webrtc::VideoCaptureCapability capability;
     capability.width = options._width;
     capability.height = options._height;
     capability.maxFPS = options._maxFPS;
-    capability.interlaced = options._interlaced;
+    if (options._interlaced.has_value()) {
+        capability.interlaced = options._interlaced.value();
+    }
     if (options._type.has_value()) {
         capability.videoType = map(options._type.value());
     }

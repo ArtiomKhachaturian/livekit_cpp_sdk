@@ -150,7 +150,7 @@ AudioDevice* DemoApp::createMicrophone()
 }
 
 CameraDevice* DemoApp::createCamera(const MediaDeviceInfo& info,
-                                    const CameraOptions& options)
+                                    const VideoOptions& options)
 {
     if (_service) {
         if (auto device = _service->createCamera(info, options)) {
@@ -203,6 +203,11 @@ int DemoApp::audioPlayoutVolume() const
         return normalizedVolume(_service->playoutAudioVolume());
     }
     return 0;
+}
+
+VideoOptions DemoApp::defaultCameraOptions() const
+{
+    return LiveKitCpp::Service::defaultCameraOptions();
 }
 
 void DemoApp::onAudioRecordingStarted()

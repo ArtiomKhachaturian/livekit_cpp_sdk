@@ -11,37 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "LocalTrack.h"
+#pragma once // CameraTrack.h
+#include "livekit/rtc/media/VideoTrack.h"
+#include "livekit/rtc/media/VideoOptions.h"
+#include "livekit/rtc/media/MediaDeviceInfo.h"
 
 namespace LiveKitCpp
 {
 
-std::string LocalTrack::cid() const
+class LocalVideoTrack : public VideoTrack
 {
-    if (const auto& m = media()) {
-        return m->id();
-    }
-    return {};
-}
-
-cricket::MediaType LocalTrack::mediaType() const
-{
-    const auto kind = this->kind();
-    if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_AUDIO) == kind) {
-        return cricket::MEDIA_TYPE_AUDIO;
-    }
-    if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_VIDEO) == kind) {
-        return cricket::MEDIA_TYPE_VIDEO;
-    }
-    return cricket::MEDIA_TYPE_UNSUPPORTED;
-}
-
-std::string LocalTrack::kind() const
-{
-    if (const auto& m = media()) {
-        return m->kind();
-    }
-    return {};
-}
+public:
+    virtual void setDeviceInfo(MediaDeviceInfo info = {}) = 0;
+    virtual MediaDeviceInfo deviceInfo() const = 0;
+    virtual void setOptions(VideoOptions options = {}) = 0;
+    virtual VideoOptions options() const = 0;
+};
 
 } // namespace LiveKitCpp

@@ -13,6 +13,9 @@
 // limitations under the License.
 #pragma once // VideoSourceImpl.h
 #include "AsyncMediaSourceImpl.h"
+#include "livekit/rtc/media/MediaDeviceInfo.h"
+#include "livekit/rtc/media/VideoOptions.h"
+#include "livekit/rtc/media/VideoContentHint.h"
 #include <memory>
 #include <unordered_map>
 
@@ -24,20 +27,26 @@ class VideoSinkBroadcast;
 class AsyncVideoSourceImpl : public AsyncMediaSourceImpl
 {
     using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
-                                            std::unique_ptr<VideoSinkBroadcast>>;
+    std::unique_ptr<VideoSinkBroadcast>>;
 public:
     ~AsyncVideoSourceImpl() override;
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     bool stats(int& inputWidth, int& inputHeight) const;
     uint16_t lastFrameId() const noexcept { return _lastFrameId; }
-    webrtc::VideoTrackInterface::ContentHint contentHint() const;
-    void setContentHint(webrtc::VideoTrackInterface::ContentHint hint);
+    VideoContentHint contentHint() const { return _contentHint; }
+    void setContentHint(VideoContentHint hint);
+    MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }
+    void setDeviceInfo(MediaDeviceInfo info);
+    void setOptions(VideoOptions options = {});
+    VideoOptions options() const { return _options(); }
     // return true if need to request capturer
     bool addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                          const rtc::VideoSinkWants& wants);
     // return true if need to reset capturer
     bool removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
+    virtual void requestCapturer() {}
+    virtual void resetCapturer() {}
 protected:
     AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                          const std::shared_ptr<Bricks::Logger>& logger = {},
@@ -45,15 +54,22 @@ protected:
     bool frameWanted() const;
     void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
     void discard();
-    virtual void onContentHintChanged(webrtc::VideoTrackInterface::ContentHint /*hint*/) {}
+    virtual void onContentHintChanged(VideoContentHint /*hint*/) {}
+    virtual void onOptionsChanged(const VideoOptions& /*options*/ ) {}
+    virtual MediaDeviceInfo validate(MediaDeviceInfo info) const { return info; }
+    virtual VideoOptions validate(VideoOptions options) const { return options; }
     // impl. of MediaSourceImpl
     void onClosed() override;
     void onMuted() override;
 private:
+    void resetStats();
+private:
     Bricks::SafeObj<Broadcasters> _broadcasters;
+    Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
+    Bricks::SafeObj<VideoOptions> _options;
     std::atomic<uint64_t> _lastResolution = 0ULL;
     std::atomic<uint16_t> _lastFrameId = 0U;
-    std::atomic<webrtc::VideoTrackInterface::ContentHint> _contentHint;
+    std::atomic<VideoContentHint> _contentHint = VideoContentHint::None;
 };
 
 } // namespace LiveKitCpp

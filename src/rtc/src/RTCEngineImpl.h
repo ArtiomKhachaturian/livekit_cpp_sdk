@@ -56,12 +56,14 @@ namespace LiveKitCpp
 class AudioTrack;
 class AudioDevice;
 class AesCgmCryptor;
-class CameraDevice;
+class LocalVideoDevice;
 class CameraTrackImpl;
 class KeyProvider;
 class LocalParticipant;
-class LocalTrack;
+class LocalTrackAccessor;
+class LocalVideoTrack;
 class LocalAudioTrackImpl;
+class LocalVideoTrackImpl;
 class Participant;
 class PeerConnectionFactory;
 class ParticipantAccessor;
@@ -101,10 +103,10 @@ public:
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
     std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
                                                             EncryptionType encryption);
-    std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                         EncryptionType encryption);
+    std::shared_ptr<LocalVideoTrackImpl> addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                            EncryptionType encryption);
     bool removeLocalAudioTrack(std::shared_ptr<AudioTrack> track);
-    bool removeLocalVideoTrack(std::shared_ptr<VideoTrack> track);
+    bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     void setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider = {});
     void setAudioPlayout(bool playout);
     bool audioPlayoutEnabled() const { return _playout; }
@@ -135,7 +137,7 @@ private:
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     void notifyAboutLocalParticipantJoinLeave(bool join) const;
     // search by cid or sid
-    void sendAddTrack(const std::shared_ptr<LocalTrack>& track);
+    void sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track);
     void sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
     template <class ReqMethod, class TReq>

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoFrameType.h
+#include "livekit/rtc/LiveKitRtcExport.h"
+#include <string>
 
 namespace LiveKitCpp
 {
@@ -40,5 +42,7 @@ enum class VideoFrameType
     YV12,
     IYUV, // similar to I420
 };
+
+LIVEKIT_RTC_API std::string toString(VideoFrameType type);
 
 } // namespace LiveKitCpp

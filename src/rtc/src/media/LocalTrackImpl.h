@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // LocalTrack.h
 #include "Logger.h"
-#include "LocalTrack.h"
+#include "LocalTrackAccessor.h"
 #include "SafeScopedRefPtr.h"
 #include "TrackManager.h"
 #include "Utils.h"
@@ -30,7 +30,7 @@ namespace LiveKitCpp
 {
 
 template <class TBaseImpl>
-class LocalTrackImpl : public TBaseImpl, public LocalTrack
+class LocalTrackImpl : public TBaseImpl, public LocalTrackAccessor
 {
     static_assert(std::is_base_of_v<Track, TBaseImpl>);
 public:
@@ -93,7 +93,7 @@ inline void LocalTrackImpl<TBaseImpl>::setRemoteSideMute(bool mute)
 template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::close()
 {
-    LocalTrack::close();
+    LocalTrackAccessor::close();
     notifyThatMediaRemovedFromTransport();
 }
 

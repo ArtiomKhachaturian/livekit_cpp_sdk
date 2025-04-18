@@ -1,11 +1,11 @@
 #include "localparticipant.h"
 #include "cameratrack.h"
 #include <livekit/rtc/Service.h>
-#include <livekit/rtc/media/CameraTrack.h>
+#include <livekit/rtc/media/LocalVideoTrack.h>
 
 LocalParticipant::LocalParticipant(QObject *parent)
     : Participant(parent)
-    , _cameraOptions(CameraOptions::defaultOptions())
+    , _cameraOptions(LiveKitCpp::Service::defaultCameraOptions())
 {
 }
 
@@ -36,7 +36,7 @@ void LocalParticipant::setName(const QString& name)
     }
 }
 
-void LocalParticipant::activateCamera(const std::shared_ptr<LiveKitCpp::CameraTrack>& sdkTrack)
+void LocalParticipant::activateCamera(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack)
 {
     if (sdkTrack && !_camera) {
         _camera = addVideo<CameraTrack>(sdkTrack);
@@ -53,7 +53,7 @@ void LocalParticipant::activateCamera(const std::shared_ptr<LiveKitCpp::CameraTr
     }
 }
 
-std::shared_ptr<LiveKitCpp::VideoTrack> LocalParticipant::deactivateCamera()
+std::shared_ptr<LiveKitCpp::LocalVideoTrack> LocalParticipant::deactivateCamera()
 {
     std::shared_ptr<LiveKitCpp::VideoTrack> track;
     if (_camera) {
@@ -64,7 +64,7 @@ std::shared_ptr<LiveKitCpp::VideoTrack> LocalParticipant::deactivateCamera()
             emit activeCameraChanged();
         }
     }
-    return track;
+    return std::dynamic_pointer_cast<LiveKitCpp::LocalVideoTrack>(track);
 }
 
 void LocalParticipant::activateMicrophone(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack)
@@ -125,7 +125,7 @@ MediaDeviceInfo LocalParticipant::cameraDeviceInfo() const
     return _camera ? _camera->deviceInfo() : _cameraDeviceinfo;
 }
 
-CameraOptions LocalParticipant::cameraOptions() const
+VideoOptions LocalParticipant::cameraOptions() const
 {
     return _camera ? _camera->options() : _cameraOptions;
 }
@@ -151,7 +151,7 @@ void LocalParticipant::setCameraDeviceInfo(const MediaDeviceInfo& info)
     }
 }
 
-void LocalParticipant::setCameraOptions(const CameraOptions& options)
+void LocalParticipant::setCameraOptions(const VideoOptions& options)
 {
     if (_camera) {
         _cameraOptions = options;
@@ -220,7 +220,7 @@ void LocalParticipant::changeCameraDeviceInfo(const MediaDeviceInfo& info)
     }
 }
 
-void LocalParticipant::changeCameraOptions(const CameraOptions& options)
+void LocalParticipant::changeCameraOptions(const VideoOptions& options)
 {
     if (_cameraOptions != options) {
         _cameraOptions = options;

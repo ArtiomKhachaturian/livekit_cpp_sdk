@@ -14,7 +14,6 @@
 #pragma once
 #include "SafeObj.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
-#include <api/media_stream_interface.h>
 #include <modules/video_capture/video_capture.h>
 #include <modules/video_capture/video_capture_config.h>
 #include <atomic>
@@ -25,12 +24,13 @@ namespace LiveKitCpp
 {
 
 class CameraObserver;
+enum class VideoContentHint;
 
 class CameraCapturer : public webrtc::VideoCaptureModule
 {
 public:
     ~CameraCapturer() override;
-    virtual void setContentHint(webrtc::VideoTrackInterface::ContentHint /*hint*/) {}
+    virtual void setContentHint(VideoContentHint /*hint*/) {}
     virtual void setObserver(CameraObserver* /*observer*/ = nullptr) {}
     const auto& guid() const noexcept { return _deviceInfo._guid; }
     // impl. of webrtc::VideoCaptureModule

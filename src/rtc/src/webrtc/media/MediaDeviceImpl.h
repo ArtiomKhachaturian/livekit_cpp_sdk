@@ -16,7 +16,6 @@
 #include "MediaDeviceListener.h"
 #include "Utils.h"
 #include "livekit/rtc/media/MediaDevice.h"
-#include "livekit/rtc/media/MediaDevice.h"
 #include "livekit/rtc/media/MediaEventsListener.h"
 #include <api/media_stream_interface.h>
 #include <atomic>

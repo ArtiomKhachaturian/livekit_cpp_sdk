@@ -39,9 +39,10 @@ namespace LiveKitCpp
 
 class AudioTrack;
 class AudioDevice;
-class CameraDevice;
+class LocalVideoDevice;
 class CameraTrackImpl;
 class LocalAudioTrackImpl;
+class LocalVideoTrackImpl;
 class LocalParticipant;
 class KeyProvider;
 class PeerConnectionFactory;
@@ -51,7 +52,7 @@ class RemoteParticipants;
 class RemoteParticipant;
 class RTCEngineImpl;
 class SessionListener;
-class VideoTrack;
+class LocalVideoTrack;
 enum class SessionState;
 enum class EncryptionType;
 
@@ -85,10 +86,10 @@ public:
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
                                                             EncryptionType encryption);
-    std::shared_ptr<CameraTrackImpl> addLocalCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                         EncryptionType encryption);
+    std::shared_ptr<LocalVideoTrackImpl> addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                            EncryptionType encryption);
     bool removeLocalAudioTrack(std::shared_ptr<AudioTrack> track);
-    bool removeLocalVideoTrack(std::shared_ptr<VideoTrack> track);
+    bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<const LocalParticipant> localParticipant() const;
     std::shared_ptr<const RemoteParticipants> remoteParticipants() const;
 };

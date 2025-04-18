@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MediaDeviceInfo.h
 #include <string>
+#include <tuple>
 
 namespace LiveKitCpp
 {
@@ -28,10 +29,10 @@ struct MediaDeviceInfo
 } // namespace LiveKitCpp
 
 inline bool operator == (const LiveKitCpp::MediaDeviceInfo& l, const LiveKitCpp::MediaDeviceInfo& r) {
-    return l._name == r._name && l._guid == r._guid;
+    return std::tie(l._name, l._guid) == std::tie(r._name, r._guid);
 }
 
 inline bool operator != (const LiveKitCpp::MediaDeviceInfo& l, const LiveKitCpp::MediaDeviceInfo& r) {
-    return l._name != r._name || l._guid != r._guid;
+    return std::tie(l._name, l._guid) != std::tie(r._name, r._guid);
 }
 

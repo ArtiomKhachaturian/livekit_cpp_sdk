@@ -26,7 +26,7 @@ namespace LiveKitCpp
 
 struct AddTrackRequest;
 
-class LocalTrack
+class LocalTrackAccessor
 {
 public:
     std::string cid() const;
@@ -46,7 +46,7 @@ public:
     // state
     virtual bool muted() const = 0;
 protected:
-    ~LocalTrack() = default;
+    ~LocalTrackAccessor() = default;
 };
 
 } // namespace LiveKitCpp

@@ -147,7 +147,7 @@ MediaDeviceInfo Session::cameraDeviceInfo() const
     return _localParticipant->cameraDeviceInfo();
 }
 
-CameraOptions Session::cameraOptions() const
+VideoOptions Session::cameraOptions() const
 {
     return _localParticipant->cameraOptions();
 }
@@ -185,7 +185,7 @@ void Session::setCameraDeviceInfo(const MediaDeviceInfo& info)
     _localParticipant->setCameraDeviceInfo(info);
 }
 
-void Session::setCameraOptions(const CameraOptions& options)
+void Session::setCameraOptions(const VideoOptions& options)
 {
     _localParticipant->setCameraOptions(options);
 }
@@ -215,7 +215,7 @@ void Session::addCameraTrack()
     if (_impl) {
         if (const auto service = getService()) {
             auto device = service->createCamera(cameraDeviceInfo(), cameraOptions());
-            const auto track = _impl->addCameraTrack(std::move(device), _encryption);
+            const auto track = _impl->addVideoTrack(std::move(device), _encryption);
             _localParticipant->activateCamera(track);
         }
     }

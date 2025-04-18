@@ -15,19 +15,19 @@ inline std::weak_ptr<LiveKitCpp::Service> service() {
 }
 
 CameraOptionsModel::CameraOptionsModel(QObject* parent)
-    : ItemModel<CameraOptions>(parent)
+    : ItemModel<VideoOptions>(parent)
     , _service(service())
 {
 }
 
-CameraOptions CameraOptionsModel::itemAt(qsizetype index) const
+VideoOptions CameraOptionsModel::itemAt(qsizetype index) const
 {
-    return ItemModel<CameraOptions>::itemAt(index);
+    return ItemModel<VideoOptions>::itemAt(index);
 }
 
-qsizetype CameraOptionsModel::indexOf(const CameraOptions& item) const
+qsizetype CameraOptionsModel::indexOf(const VideoOptions& item) const
 {
-    return ItemModel<CameraOptions>::indexOf(item);
+    return ItemModel<VideoOptions>::indexOf(item);
 }
 
 void CameraOptionsModel::setDeviceInfo(const MediaDeviceInfo& info)
@@ -44,4 +44,10 @@ void CameraOptionsModel::setDeviceInfo(const MediaDeviceInfo& info)
 qsizetype CameraOptionsModel::defaultOptionsIndex() const
 {
     return qMax<qsizetype>(0, indexOf(defaultOptions()));
+}
+
+
+VideoOptions CameraOptionsModel::defaultOptions() const
+{
+    return LiveKitCpp::Service::defaultCameraOptions();
 }

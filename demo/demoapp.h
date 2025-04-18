@@ -4,7 +4,7 @@
 #include "mediadevicesmodel.h"
 #include "audiodevice.h"
 #include "cameradevice.h"
-#include "cameraoptions.h"
+#include "videooptions.h"
 #include <livekit/rtc/ServiceListener.h>
 #include <QGuiApplication>
 #include <QStringList>
@@ -38,6 +38,7 @@ class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
     Q_PROPERTY(QStringList iceTransportPolicies MEMBER _iceTransportPolicies CONSTANT)
     Q_PROPERTY(QString defaultIceTransportPolicy MEMBER _defaultIceTransportPolicy CONSTANT)
     Q_PROPERTY(int defaultIceTransportPolicyIndex MEMBER _defaultIceTransportPolicyIndex CONSTANT)
+    Q_PROPERTY(VideoOptions defaultCameraOptions READ defaultCameraOptions CONSTANT)
 public:
     DemoApp(int &argc, char **argv);
     ~DemoApp() override;
@@ -52,7 +53,7 @@ public slots:
     void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE AudioDevice* createMicrophone();
     Q_INVOKABLE CameraDevice* createCamera(const MediaDeviceInfo& info = {},
-                                           const CameraOptions& options = {});
+                                           const VideoOptions& options = {});
     Q_INVOKABLE void destroyMicrophone(AudioDevice* microphone);
     Q_INVOKABLE void destroyCamera(CameraDevice* camera);
 public:
@@ -63,6 +64,7 @@ public:
     int audioPlayoutVolume() const;
     MediaDeviceInfo recordingAudioDevice() const { return _recordingAudioDevice; }
     MediaDeviceInfo playoutAudioDevice() const { return _playoutAudioDevice; }
+    VideoOptions defaultCameraOptions() const;
 signals:
     void showErrorMessage(const QString& message, const QString& details = {});
     void audioRecordingEnabledChanged();

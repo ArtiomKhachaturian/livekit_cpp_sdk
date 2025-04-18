@@ -14,7 +14,7 @@
 #include "livekit/rtc/Session.h"
 #include "DefaultKeyProvider.h"
 #include "LocalAudioTrackImpl.h"
-#include "CameraTrackImpl.h"
+#include "LocalVideoTrackImpl.h"
 #include "LocalParticipant.h"
 #include "RemoteParticipantImpl.h"
 #include "RemoteParticipants.h"
@@ -93,10 +93,10 @@ std::shared_ptr<AudioTrack> Session::addAudioTrack(std::shared_ptr<AudioDevice> 
     return _impl->_engine.addLocalAudioTrack(std::move(device), encryption);
 }
 
-std::shared_ptr<CameraTrack> Session::addCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                     EncryptionType encryption)
+std::shared_ptr<LocalVideoTrack> Session::addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                        EncryptionType encryption)
 {
-    return _impl->_engine.addLocalCameraTrack(std::move(device), encryption);
+    return _impl->_engine.addLocalVideoTrack(std::move(device), encryption);
 }
 
 void Session::removeAudioTrack(std::shared_ptr<AudioTrack> track)
@@ -104,7 +104,7 @@ void Session::removeAudioTrack(std::shared_ptr<AudioTrack> track)
     _impl->_engine.removeLocalAudioTrack(std::move(track));
 }
 
-void Session::removeVideoTrack(std::shared_ptr<VideoTrack> track)
+void Session::removeVideoTrack(std::shared_ptr<LocalVideoTrack> track)
 {
     _impl->_engine.removeLocalVideoTrack(std::move(track));
 }
@@ -117,7 +117,7 @@ std::shared_ptr<AudioTrack> Session::audioTrack(size_t index) const
     return {};
 }
 
-std::shared_ptr<VideoTrack> Session::videoTrack(size_t index) const
+std::shared_ptr<LocalVideoTrack> Session::videoTrack(size_t index) const
 {
     if (const auto participant = _impl->_engine.localParticipant()) {
         return participant->videoTrack(index);

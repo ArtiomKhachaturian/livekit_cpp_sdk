@@ -21,6 +21,7 @@ inline std::string audioLabel(bool microphone) {
 }
 
 }
+
 namespace LiveKitCpp
 {
 

@@ -25,29 +25,26 @@ class AsyncCameraSourceImpl : public AsyncVideoSourceImpl, private CameraCapture
 {
 public:
     AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                          const std::shared_ptr<Bricks::Logger>& logger,
-                          const MediaDeviceInfo& info = {},
-                          const webrtc::VideoCaptureCapability& initialCapability = {});
+                          const std::shared_ptr<Bricks::Logger>& logger);
     ~AsyncCameraSourceImpl() final { close(); }
-    MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }
-    void setDeviceInfo(const MediaDeviceInfo& info);
-    void setCapability(webrtc::VideoCaptureCapability capability);
-    webrtc::VideoCaptureCapability capability() const { return _capability(); }
-    void requestCapturer();
-    void resetCapturer();
+    // override of AsyncVideoSourceImpl
+    void requestCapturer() final;
+    void resetCapturer() final;
 protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
     // overrides of AsyncVideoSourceImpl
-    void onContentHintChanged(webrtc::VideoTrackInterface::ContentHint hint) final;
+    void onContentHintChanged(VideoContentHint hint) final;
+    void onOptionsChanged(const VideoOptions& options) final;
+    MediaDeviceInfo validate(MediaDeviceInfo info) const final;
+    VideoOptions validate(VideoOptions options) const final;
     // impl. of MediaSourceImpl
     void onClosed() final;
     void onEnabled(bool enabled) final;
 private:
     static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
-                                                      std::string_view guid = {});
-    static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
                                                       const rtc::scoped_refptr<CameraCapturer>& capturer);
+    webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability) const;
     bool startCapturer(const webrtc::VideoCaptureCapability& capability); // non-threadsafe
     bool stopCapturer(bool sendByeFrame); // non-threadsafe
     void logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
@@ -61,9 +58,7 @@ private:
     void OnDiscardedFrame() final { discard(); }
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) final;
 private:
-    Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
     SafeScopedRefPtr<CameraCapturer> _capturer;
-    Bricks::SafeObj<webrtc::VideoCaptureCapability> _capability;
 };
 
 } // namespace LiveKitCpp

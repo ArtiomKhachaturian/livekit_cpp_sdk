@@ -11,9 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraVideoDevice.h
+#pragma once // LocalWebRtcTrack.h
 #include "AsyncListeners.h"
-#include "CameraSource.h"
+#include "AsyncVideoSource.h"
 #include "Loggable.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <api/media_stream_interface.h>
@@ -24,25 +24,21 @@ namespace LiveKitCpp
 
 class MediaDeviceListener;
 
-class LocalCamera : public webrtc::VideoTrackInterface
+class LocalWebRtcTrack : public webrtc::VideoTrackInterface
 {
 public:
-    LocalCamera(const std::string& id,
-                std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                const MediaDeviceInfo& info = {},
-                const webrtc::VideoCaptureCapability& initialCapability = {},
-                const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~LocalCamera() override;
+    LocalWebRtcTrack(const std::string& id, webrtc::scoped_refptr<AsyncVideoSource> source);
+    ~LocalWebRtcTrack() override;
     void close();
-    void setDeviceInfo(const MediaDeviceInfo& info);
+    void setDeviceInfo(MediaDeviceInfo info);
     MediaDeviceInfo deviceInfo() const;
-    void setCapability(const webrtc::VideoCaptureCapability& capability);
-    webrtc::VideoCaptureCapability capability() const;
+    void setOptions(VideoOptions options);
+    VideoOptions options() const;
     void addListener(MediaDeviceListener* listener);
     void removeListener(MediaDeviceListener* listener);
     // impl. of webrtc::VideoTrackInterface
-    ContentHint content_hint() const final;
-    void set_content_hint(ContentHint hint) final;
+    webrtc::VideoTrackInterface::ContentHint content_hint() const final;
+    void set_content_hint(webrtc::VideoTrackInterface::ContentHint hint) final;
     void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                          const rtc::VideoSinkWants& wants) final;
     void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
@@ -58,7 +54,7 @@ public:
     void UnregisterObserver(webrtc::ObserverInterface* observer) final;
 private:
     const std::string _id;
-    const webrtc::scoped_refptr<CameraSource> _source;
+    const webrtc::scoped_refptr<AsyncVideoSource> _source;
 };
 
 } // namespace LiveKitCpp

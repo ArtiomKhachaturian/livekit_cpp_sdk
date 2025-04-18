@@ -20,6 +20,7 @@
 #include "VideoFrameBuffer.h"
 #include "VTSupportedPixelFormats.h"
 #include "Utils.h"
+#include "livekit/rtc/media/VideoContentHint.h"
 #include <modules/video_capture/video_capture_config.h>
 #include <rtc_base/ref_counted_object.h>
 #include <rtc_base/time_utils.h>
@@ -71,7 +72,7 @@ public:
     Impl(AVCaptureDevice* device, const std::shared_ptr<Bricks::Logger>& logger);
     ~Impl();
     AVCaptureDevice* device() const noexcept { return _device; }
-    void setContentHint(webrtc::VideoTrackInterface::ContentHint hint);
+    void setContentHint(VideoContentHint hint);
     bool startCapture(AVCaptureDeviceFormat* format, NSInteger fps);
     void stopCapture();
     void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) { _delegate.sink = sink; }
@@ -199,7 +200,7 @@ std::string MacOSCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
     return {};
 }
 
-void MacOSCameraCapturer::setContentHint(webrtc::VideoTrackInterface::ContentHint hint)
+void MacOSCameraCapturer::setContentHint(VideoContentHint hint)
 {
     CameraCapturer::setContentHint(hint);
     _impl->setContentHint(hint);
@@ -371,16 +372,16 @@ MacOSCameraCapturer::Impl::~Impl()
     }
 }
 
-void MacOSCameraCapturer::Impl::setContentHint(webrtc::VideoTrackInterface::ContentHint hint)
+void MacOSCameraCapturer::Impl::setContentHint(VideoContentHint hint)
 {
     @autoreleasepool {
         AVCaptureSession* session = _capturer.captureSession;
         if (session) {
             switch (hint) {
-                case webrtc::VideoTrackInterface::ContentHint::kFluid:
+                case VideoContentHint::Fluid:
                     session.sessionPreset = AVCaptureSessionPresetHigh;
                     break;
-                case webrtc::VideoTrackInterface::ContentHint::kDetailed:
+                case VideoContentHint::Detailed:
                     session.sessionPreset = AVCaptureSessionPresetPhoto;
                     break;
                 default:

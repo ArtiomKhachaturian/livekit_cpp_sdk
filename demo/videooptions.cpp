@@ -7,43 +7,34 @@ VideoOptions::VideoOptions(qint32 width, qint32 height, qint32 maxFps)
 }
 
 VideoOptions::VideoOptions(const LiveKitCpp::VideoOptions& src)
-    : VideoOptions(src._width, src._height, src._maxFPS)
+    : _impl(src)
 {
 }
 
 VideoOptions& VideoOptions::operator = (const LiveKitCpp::VideoOptions& src)
 {
-    setResolution(src._width, src._height);
-    setMaxFPS(src._maxFPS);
+    _impl = src;
     return *this;
 }
 
 bool VideoOptions::operator == (const VideoOptions& other) const noexcept
 {
-    return this == &other || (width() == other.width() && height() == other.height() && maxFPS() == other.maxFPS());
+    return _impl == other._impl;
 }
 
 bool VideoOptions::operator == (const LiveKitCpp::VideoOptions& other) const noexcept
 {
-    return width() == other._width && height() == other._height && maxFPS() == other._maxFPS;
+    return _impl == other;
 }
 
 bool VideoOptions::operator != (const VideoOptions& other) const noexcept
 {
-    if (this != &other) {
-        return width() != other.width() || height() != other.height() || maxFPS() != other.maxFPS();
-    }
-    return false;
+    return _impl != other._impl;
 }
 
 bool VideoOptions::operator != (const LiveKitCpp::VideoOptions& other) const noexcept
 {
-    return width() != other._width || height() != other._height || maxFPS() != other._maxFPS;
-}
-
-VideoOptions::operator LiveKitCpp::VideoOptions() const
-{
-    return {width(), height(), maxFPS()};
+    return _impl != other;
 }
 
 void VideoOptions::setResolution(qint32 width, qint32 height) noexcept
@@ -59,6 +50,10 @@ void VideoOptions::setResolution(const QSize& resolution) noexcept
 
 QString VideoOptions::toString() const
 {
-    return tr("%1x%2 %3 fps").arg(width()).arg(height()).arg(maxFPS());
+    auto desc = tr("%1x%2 %3 fps").arg(width()).arg(height()).arg(maxFPS());
+    if (_impl._type.has_value()) {
+        desc += QStringLiteral(", ") + QString::fromStdString(LiveKitCpp::toString(_impl._type.value()));
+    }
+    return desc;
 }
 

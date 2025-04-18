@@ -1,5 +1,4 @@
 #include "videosource.h"
-#include "cameraoptions.h"
 #include <livekit/rtc/media/VideoFrame.h>
 #include <livekit/rtc/media/VideoFrameQtHelper.h>
 #include <QTimerEvent>
@@ -20,7 +19,7 @@ VideoSource::~VideoSource()
 
 QString VideoSource::frameType() const
 {
-    return CameraOptions::toString(_frameType);
+    return QString::fromStdString(LiveKitCpp::toString(_frameType));
 }
 
 void VideoSource::addOutput(QVideoSink* output)

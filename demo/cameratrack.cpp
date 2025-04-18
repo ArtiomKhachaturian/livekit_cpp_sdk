@@ -1,12 +1,12 @@
 #include "cameratrack.h"
-#include <livekit/rtc/media/CameraTrack.h>
+#include <livekit/rtc/media/LocalVideoTrack.h>
 
 CameraTrack::CameraTrack(QObject* parent)
     : VideoTrack(parent)
 {
 }
 
-CameraTrack::CameraTrack(const std::shared_ptr<LiveKitCpp::CameraTrack>& impl, QObject* parent)
+CameraTrack::CameraTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& impl, QObject* parent)
     : VideoTrack(impl, parent)
     , _impl(impl)
 {
@@ -20,7 +20,7 @@ MediaDeviceInfo CameraTrack::deviceInfo() const
     return {};
 }
 
-CameraOptions CameraTrack::options() const
+VideoOptions CameraTrack::options() const
 {
     if (const auto impl = _impl.lock()) {
         return impl->options();
@@ -35,7 +35,7 @@ void CameraTrack::setDeviceInfo(const MediaDeviceInfo& info)
     }
 }
 
-void CameraTrack::setOptions(const CameraOptions& options)
+void CameraTrack::setOptions(const VideoOptions& options)
 {
     if (const auto impl = _impl.lock()) {
         impl->setOptions(options);

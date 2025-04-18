@@ -11,38 +11,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#pragma once // AsyncVideoSource.h
 #include "AsyncMediaSource.h"
-#include "AsyncCameraSourceImpl.h"
+#include "AsyncVideoSourceImpl.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
-#include <modules/video_capture/video_capture_defines.h>
 
 namespace LiveKitCpp
 {
 
-class MediaDeviceListener;
-
-class CameraSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncCameraSourceImpl>
+class AsyncVideoSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncVideoSourceImpl>
 {
-    using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncCameraSourceImpl>;
+    using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncVideoSourceImpl>;
 public:
-    CameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                 const MediaDeviceInfo& info = {},
-                 const webrtc::VideoCaptureCapability& initialCapability = {},
-                 const std::shared_ptr<Bricks::Logger>& logger = {});
-    ~CameraSource() override;
-    void setDeviceInfo(const MediaDeviceInfo& info);
+    AsyncVideoSource(std::shared_ptr<AsyncVideoSourceImpl> impl);
+    void setDeviceInfo(MediaDeviceInfo info);
     MediaDeviceInfo deviceInfo() const;
-    void setCapability(const webrtc::VideoCaptureCapability& capability);
-    webrtc::VideoCaptureCapability capability() const;
+    void setOptions(VideoOptions options = {});
+    VideoOptions options() const;
     void addListener(MediaDeviceListener* listener);
     void removeListener(MediaDeviceListener* listener);
-    webrtc::VideoTrackInterface::ContentHint contentHint() const;
-    void setContentHint(webrtc::VideoTrackInterface::ContentHint hint);
+    VideoContentHint contentHint() const;
+    void setContentHint(VideoContentHint hint);
     // impl. of webrtc::VideoTrackSourceInterface
-    bool is_screencast() const final { return false;}
     std::optional<bool> needs_denoising() const final { return {}; }
-    bool GetStats(Stats* stats) final;
+    bool GetStats(webrtc::VideoTrackSourceInterface::Stats* stats) final;
     bool SupportsEncodedOutput() const final { return false; }
     void GenerateKeyFrame() final {}
     void AddEncodedSink(rtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>*) final {}
@@ -53,5 +45,5 @@ public:
                          const rtc::VideoSinkWants& wants) final;
     void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
 };
-
+	
 } // namespace LiveKitCpp

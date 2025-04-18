@@ -15,7 +15,7 @@
 #include "AdmProxyFacade.h"
 #include "AudioDeviceImpl.h"
 #include "Blob.h"
-#include "CameraDeviceImpl.h"
+#include "LocalVideoDeviceImpl.h"
 #include "DataChannel.h"
 #include "Utils.h"
 #include "PeerConnectionFactory.h"
@@ -76,12 +76,12 @@ std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addAudioTrack(std::shared
     return {};
 }
 
-std::shared_ptr<CameraTrackImpl> LocalParticipant::addCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                                  EncryptionType encryption,
-                                                                  const std::weak_ptr<TrackManager>& trackManager)
+std::shared_ptr<LocalVideoTrackImpl> LocalParticipant::addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                                     EncryptionType encryption,
+                                                                     const std::weak_ptr<TrackManager>& trackManager)
 {
-    if (auto camera = std::dynamic_pointer_cast<CameraDeviceImpl>(device)) {
-        auto track = std::make_shared<CameraTrackImpl>(encryption, std::move(camera), trackManager);
+    if (auto video = std::dynamic_pointer_cast<LocalVideoDeviceImpl>(device)) {
+        auto track = std::make_shared<LocalVideoTrackImpl>(encryption, std::move(video),  trackManager);
         addTrack(track, _videoTracks);
         return track;
     }
@@ -104,9 +104,9 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
-    removeVideoTrack(std::shared_ptr<VideoTrack> track)
+    removeVideoTrack(std::shared_ptr<LocalVideoTrack> track)
 {
-    if (const auto local = std::dynamic_pointer_cast<LocalTrack>(track)) {
+    if (const auto local = std::dynamic_pointer_cast<LocalVideoTrackImpl>(track)) {
         LOCK_WRITE_SAFE_OBJ(_videoTracks);
         for (auto it = _videoTracks->begin(); it != _videoTracks->end(); ++it) {
             if (*it == track) {
@@ -127,7 +127,7 @@ std::shared_ptr<AudioTrack> LocalParticipant::audioTrack(size_t index) const
     return {};
 }
 
-std::shared_ptr<VideoTrack> LocalParticipant::videoTrack(size_t index) const
+std::shared_ptr<LocalVideoTrack> LocalParticipant::videoTrack(size_t index) const
 {
     LOCK_READ_SAFE_OBJ(_videoTracks);
     if (index < _videoTracks->size()) {
@@ -136,19 +136,19 @@ std::shared_ptr<VideoTrack> LocalParticipant::videoTrack(size_t index) const
     return {};
 }
 
-std::vector<std::shared_ptr<LocalTrack>> LocalParticipant::tracks() const
+std::vector<std::shared_ptr<LocalTrackAccessor>> LocalParticipant::tracks() const
 {
-    std::vector<std::shared_ptr<LocalTrack>> tracks;
+    std::vector<std::shared_ptr<LocalTrackAccessor>> tracks;
     LOCK_READ_SAFE_OBJ(_audioTracks);
     LOCK_READ_SAFE_OBJ(_videoTracks);
     tracks.reserve(_audioTracks->size() + _videoTracks->size());
     for (const auto& track : _audioTracks.constRef()) {
-        if (auto localTrack = std::dynamic_pointer_cast<LocalTrack>(track)) {
+        if (auto localTrack = std::dynamic_pointer_cast<LocalTrackAccessor>(track)) {
             tracks.push_back(std::move(localTrack));
         }
     }
     for (const auto& track : _videoTracks.constRef()) {
-        if (auto localTrack = std::dynamic_pointer_cast<LocalTrack>(track)) {
+        if (auto localTrack = std::dynamic_pointer_cast<LocalTrackAccessor>(track)) {
             tracks.push_back(std::move(localTrack));
         }
     }
@@ -168,10 +168,10 @@ std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> LocalParti
     return {};
 }
 
-std::shared_ptr<LocalTrack> LocalParticipant::track(const std::string& id, bool cid,
-                                                    const std::optional<cricket::MediaType>& hint) const
+std::shared_ptr<LocalTrackAccessor> LocalParticipant::track(const std::string& id, bool cid,
+                                                            const std::optional<cricket::MediaType>& hint) const
 {
-    std::shared_ptr<LocalTrack> result;
+    std::shared_ptr<LocalTrackAccessor> result;
     if (!id.empty()) {
         if (hint.has_value()) {
             switch (hint.value()) {
@@ -195,7 +195,7 @@ std::shared_ptr<LocalTrack> LocalParticipant::track(const std::string& id, bool 
     return result;
 }
 
-std::shared_ptr<LocalTrack> LocalParticipant::
+std::shared_ptr<LocalTrackAccessor> LocalParticipant::
     track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
 {
     if (sender) {
@@ -265,14 +265,14 @@ void LocalParticipant::setConnectionQuality(ConnectionQuality quality,
 }
 
 template <class TTracks>
-std::shared_ptr<LocalTrack> LocalParticipant::lookup(const std::string& id,
-                                                     bool cid,
-                                                     const TTracks& tracks)
+std::shared_ptr<LocalTrackAccessor> LocalParticipant::lookup(const std::string& id,
+                                                             bool cid,
+                                                             const TTracks& tracks)
 {
     if (!id.empty()) {
         const std::lock_guard guard(tracks.mutex());
         for (const auto& track : tracks.constRef()) {
-            const auto local = std::dynamic_pointer_cast<LocalTrack>(track);
+            const auto local = std::dynamic_pointer_cast<LocalTrackAccessor>(track);
             if (local && id == (cid ? local->cid() : track->sid())) {
                 return local;
             }
@@ -295,7 +295,7 @@ void LocalParticipant::clear(TTracks& tracks)
 {
     const std::lock_guard guard(tracks.mutex());
     for (const auto& track : tracks.constRef()) {
-        if (const auto local = std::dynamic_pointer_cast<LocalTrack>(track)) {
+        if (const auto local = std::dynamic_pointer_cast<LocalTrackAccessor>(track)) {
             local->close();
         }
     }

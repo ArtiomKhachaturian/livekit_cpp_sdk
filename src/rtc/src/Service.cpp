@@ -12,29 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "livekit/rtc/Service.h"
+#include "AdmProxyListener.h"
+#include "AdmProxyFacade.h"
+#include "AsyncCameraSourceImpl.h"
+#include "CameraManager.h"
+#include "DefaultKeyProvider.h"
 #include "DesktopConfiguration.h"
+#include "Listeners.h"
+#include "LocalVideoDeviceImpl.h"
+#include "LocalWebRtcTrack.h"
+#include "Loggable.h"
 #include "Logger.h"
 #include "MediaAuthorization.h"
+#include "MicAudioDevice.h"
+#include "PeerConnectionFactory.h"
+#include "RtcInitializer.h"
 #include "WebsocketEndPoint.h"
 #include "WebsocketFactory.h"
-#include "livekit/signaling/NetworkType.h"
+#include "VolumeControl.h"
 #include "Utils.h"
+#include "livekit/signaling/NetworkType.h"
 #include "livekit/rtc/e2e/KeyProviderOptions.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include "livekit/rtc/media/VideoFrame.h"
-#include "AdmProxyListener.h"
-#include "AdmProxyFacade.h"
-#include "MicAudioDevice.h"
-#include "CameraDeviceImpl.h"
-#include "CameraManager.h"
-#include "DefaultKeyProvider.h"
-#include "Loggable.h"
-#include "Listeners.h"
-#include "PeerConnectionFactory.h"
-#include "RtcInitializer.h"
 #include "livekit/rtc/ServiceListener.h"
-#include "VolumeControl.h"
 #ifdef __APPLE__
 #include "AppEnvironment.h"
 #elif defined(_WIN32)
@@ -45,10 +47,22 @@ namespace {
 
 const std::string_view g_logCategory("service");
 
+using namespace LiveKitCpp;
+
+class AsyncCameraSource : public AsyncVideoSource
+{
+public:
+    AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                      const std::shared_ptr<Bricks::Logger>& logger);
+    // impl. of webrtc::VideoTrackSourceInterface
+    bool is_screencast() const final { return false;}
+};
+
 }
 
 namespace LiveKitCpp
 {
+
 class Service::Impl : public Bricks::LoggableS<AdmProxyListener>
 {
 public:
@@ -59,8 +73,7 @@ public:
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options) const;
-    std::shared_ptr<CameraDevice> createCamera(const MediaDeviceInfo& info,
-                                               const CameraOptions& options) const;
+    std::shared_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info, VideoOptions options) const;
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
     bool setAudioRecordingDevice(const MediaDeviceInfo& info);
@@ -98,6 +111,7 @@ protected:
     // final of Bricks::LoggableS<>
     std::string_view logCategory() const final { return g_logCategory; }
 private:
+    webrtc::scoped_refptr<LocalWebRtcTrack> createCameraTrack() const;
     uint32_t recordingDevAudioVolume() const;
     uint32_t playoutDevAudioVolume() const noexcept;
     void updateAdmVolume(bool recording, uint32_t volume) const;
@@ -164,11 +178,10 @@ std::shared_ptr<AudioDevice> Service::createMicrophone(const AudioRecordingOptio
     return {};
 }
 
-std::shared_ptr<CameraDevice> Service::createCamera(const MediaDeviceInfo& info,
-                                                    const CameraOptions& options) const
+std::shared_ptr<LocalVideoDevice> Service::createCamera(MediaDeviceInfo info, VideoOptions options) const
 {
     if (_impl) {
-        return _impl->createCamera(info, options);
+        return _impl->createCamera(std::move(info), std::move(options));
     }
     return {};
 }
@@ -307,11 +320,11 @@ std::vector<MediaDeviceInfo> Service::cameraDevices() const
     return {};
 }
 
-std::vector<CameraOptions> Service::cameraOptions(const MediaDeviceInfo& info) const
+std::vector<VideoOptions> Service::cameraOptions(const MediaDeviceInfo& info) const
 {
     if (_impl) {
         if (const uint32_t number = CameraManager::capabilitiesNumber(info)) {
-            std::vector<CameraOptions> options;
+            std::vector<VideoOptions> options;
             options.reserve(number);
             for (uint32_t i = 0U; i < number; ++i) {
                 webrtc::VideoCaptureCapability capability;
@@ -337,6 +350,12 @@ void Service::removeListener(ServiceListener* listener)
     if (_impl) {
         _impl->removeListener(listener);
     }
+}
+
+
+VideoOptions Service::defaultCameraOptions()
+{
+    return map(CameraManager::defaultCapability());
 }
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
@@ -391,11 +410,12 @@ std::shared_ptr<AudioDevice> Service::Impl::createMicrophone(const AudioRecordin
     return {};
 }
 
-std::shared_ptr<CameraDevice> Service::Impl::createCamera(const MediaDeviceInfo& info,
-                                                          const CameraOptions& options) const
+std::shared_ptr<LocalVideoDevice> Service::Impl::createCamera(MediaDeviceInfo info, VideoOptions options) const
 {
-    if (_pcf) {
-        return CameraDeviceImpl::create(_pcf.get(), info, options, logger());
+    if (auto track = createCameraTrack()) {
+        track->setOptions(std::move(options));
+        track->setDeviceInfo(std::move(info));
+        return std::make_shared<LocalVideoDeviceImpl>(std::move(track));
     }
     return {};
 }
@@ -680,6 +700,15 @@ void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
     }
 }
 
+webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createCameraTrack() const
+{
+    if (_pcf) {
+        auto source = webrtc::make_ref_counted<AsyncCameraSource>(_pcf->signalingThread(), logger());
+        return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
+    }
+    return {};
+}
+
 uint32_t Service::Impl::recordingDevAudioVolume() const
 {
     LOCK_READ_SAFE_OBJ(_recordingVolume);
@@ -773,47 +802,16 @@ KeyProviderOptions KeyProviderOptions::defaultOptions()
     return options;
 }
 
-CameraOptions CameraOptions::defaultOptions()
-{
-    return map(CameraManager::defaultCapability());
-}
-
-VideoFrame::VideoFrame(VideoFrameType type, int rotation)
-    : _type(type)
-    , _rotation(rotation)
-{
-}
-
-size_t VideoFrame::planesCount() const
-{
-    switch (type()) {
-        case VideoFrameType::RGB24:
-        case VideoFrameType::BGR24:
-        case VideoFrameType::BGRA32:
-        case VideoFrameType::ARGB32:
-        case VideoFrameType::RGBA32:
-        case VideoFrameType::ABGR32:
-        case VideoFrameType::RGB565:
-        case VideoFrameType::MJPEG:
-        case VideoFrameType::UYVY:
-        case VideoFrameType::YUY2:
-            return 1U;
-        case VideoFrameType::NV12:
-            return 2U;
-        case VideoFrameType::I420:
-        case VideoFrameType::I422:
-        case VideoFrameType::I444:
-        case VideoFrameType::I010:
-        case VideoFrameType::I210:
-        case VideoFrameType::I410:
-        case VideoFrameType::YV12:
-        case VideoFrameType::IYUV:
-            return 3U;
-        default:
-            assert(false);
-            break;
-    }
-    return 0U;
-}
-
 } // namespace LiveKitCpp
+
+
+namespace
+{
+
+AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                                     const std::shared_ptr<Bricks::Logger>& logger)
+    : AsyncVideoSource(std::make_shared<AsyncCameraSourceImpl>(std::move(signalingQueue), logger))
+{
+}
+
+}

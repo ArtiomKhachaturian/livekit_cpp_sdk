@@ -26,7 +26,6 @@ target_sources(${PROJECT_NAME} PRIVATE
         session.cpp
         audiotrack.cpp
         cameratrack.cpp
-        cameraoptions.cpp
         cameraoptionsmodel.cpp
         videooptions.cpp
         itemmodel.h
@@ -64,7 +63,6 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             cameratrack.h
             audiotrack.h
             videooptions.h
-            cameraoptions.h
             cameraoptionsmodel.h
             audiodevice.h
             videosource.h

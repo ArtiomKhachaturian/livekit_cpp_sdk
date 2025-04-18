@@ -377,4 +377,89 @@ int VideoFrameImpl::dataSizeNV12(size_t planeIndex, int width, int height)
     return 0;
 }
 
+VideoFrame::VideoFrame(VideoFrameType type, int rotation)
+    : _type(type)
+    , _rotation(rotation)
+{
+}
+
+size_t VideoFrame::planesCount() const
+{
+    switch (type()) {
+        case VideoFrameType::RGB24:
+        case VideoFrameType::BGR24:
+        case VideoFrameType::BGRA32:
+        case VideoFrameType::ARGB32:
+        case VideoFrameType::RGBA32:
+        case VideoFrameType::ABGR32:
+        case VideoFrameType::RGB565:
+        case VideoFrameType::MJPEG:
+        case VideoFrameType::UYVY:
+        case VideoFrameType::YUY2:
+            return 1U;
+        case VideoFrameType::NV12:
+            return 2U;
+        case VideoFrameType::I420:
+        case VideoFrameType::I422:
+        case VideoFrameType::I444:
+        case VideoFrameType::I010:
+        case VideoFrameType::I210:
+        case VideoFrameType::I410:
+        case VideoFrameType::YV12:
+        case VideoFrameType::IYUV:
+            return 3U;
+        default:
+            assert(false);
+            break;
+    }
+    return 0U;
+}
+
+std::string toString(VideoFrameType type)
+{
+    switch (type) {
+        case VideoFrameType::RGB24:
+            return "RGB24";
+        case VideoFrameType::BGR24:
+            return "BGR24";
+        case VideoFrameType::BGRA32:
+            return "BGRA32";
+        case VideoFrameType::ARGB32:
+            return "ARGB32";
+        case VideoFrameType::RGBA32:
+            return "RGBA32";
+        case VideoFrameType::ABGR32:
+            return "ABGR32";
+        case VideoFrameType::RGB565:
+            return "ABGR32";
+        case VideoFrameType::MJPEG:
+            return "MJPEG";
+        case VideoFrameType::UYVY:
+            return "UYVY";
+        case VideoFrameType::YUY2:
+            return "YUY2";
+        case VideoFrameType::NV12:
+            return "NV12";
+        case VideoFrameType::I420:
+            return "I420";
+        case VideoFrameType::I422:
+            return "I422";
+        case VideoFrameType::I444:
+            return "I444";
+        case VideoFrameType::I010:
+            return "I010";
+        case VideoFrameType::I210:
+            return "I210";
+        case VideoFrameType::I410:
+            return "I410";
+        case VideoFrameType::YV12:
+            return "YV12";
+        case VideoFrameType::IYUV:
+            return "IYUV";
+        default:
+            assert(false);
+            break;
+    }
+}
+
 } // namespace LiveKitCpp

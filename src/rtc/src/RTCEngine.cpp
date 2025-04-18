@@ -138,12 +138,12 @@ std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalAudioTrack(std::shared_p
     return {};
 }
 
-std::shared_ptr<CameraTrackImpl> RTCEngine::addLocalCameraTrack(std::shared_ptr<CameraDevice> device,
-                                                                EncryptionType encryption)
+std::shared_ptr<LocalVideoTrackImpl> RTCEngine::addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                                                                   EncryptionType encryption)
 {
     if (device) {
         if (const auto impl = loadImpl()) {
-            return impl->addLocalCameraTrack(std::move(device), encryption);
+            return impl->addLocalVideoTrack(std::move(device), encryption);
         }
     }
     return {};
@@ -159,7 +159,7 @@ bool RTCEngine::removeLocalAudioTrack(std::shared_ptr<AudioTrack> track)
     return false;
 }
 
-bool RTCEngine::removeLocalVideoTrack(std::shared_ptr<VideoTrack> track)
+bool RTCEngine::removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track)
 {
     if (track) {
         if (const auto impl = loadImpl()) {
