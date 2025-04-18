@@ -20,11 +20,12 @@ class VideoSource : public QObject,
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(VideoSource)
-    QML_UNCREATABLE("Create CameraDevice or CameraTrack instead of")
+    QML_UNCREATABLE("Create LocalVideoDevice or LocalVideoTrack instead of")
     Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
     Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged FINAL)
     Q_PROPERTY(QString frameType READ frameType NOTIFY frameTypeChanged FINAL)
+    Q_PROPERTY(QString name READ name NOTIFY nameChanged)
 public:
     explicit VideoSource(QObject *parent = nullptr);
     ~VideoSource() override;
@@ -32,6 +33,7 @@ public:
     QSize frameSize() const { return _frameSize; }
     bool isActive() const { return _active; }
     QString frameType() const;
+    virtual QString name() const { return {}; }
 public slots:
     Q_INVOKABLE void addOutput(QVideoSink* output);
     Q_INVOKABLE void removeOutput(QVideoSink* output);
@@ -40,6 +42,7 @@ signals:
     void frameSizeChanged();
     void activeChanged();
     void frameTypeChanged();
+    void nameChanged();
 protected:
     void startMetricsCollection();
     void stopMetricsCollection();

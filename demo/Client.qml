@@ -38,6 +38,27 @@ Pane {
                 ToolSeparator {}
 
                 Switch {
+                    id: sharingAddSwitch
+                    text: qsTr("Sharing")
+                    checkable: false
+                    checked: false
+                    onClicked: {
+                        sharingSelection.width = root.width
+                        sharingSelection.height = root.height
+                        sharingSelection.open()
+                    }
+                }
+
+                CheckBox {
+                    id: sharingMuteCheckbox
+                    text: qsTr("Muted")
+                    //enabled: sessionActive && sessionForm.activeCamera
+                    checked: false
+                }
+
+                ToolSeparator {}
+
+                Switch {
                     id: cameraAddSwitch
                     text: qsTr("Camera")
                     checked: false
@@ -64,6 +85,8 @@ Pane {
                     Layout.fillWidth: true
                 }
 
+                ToolSeparator {}
+
                 ToolButton {
                     Layout.alignment: Qt.AlignRight
                     id: chatButton
@@ -72,6 +95,8 @@ Pane {
                     checked: false
                     visible: sessionForm.connected
                 }
+
+                ToolSeparator {}
 
                 ToolButton {
                     Layout.alignment: Qt.AlignRight
@@ -133,5 +158,13 @@ Pane {
         anchors.centerIn: parent
         running: sessionForm.connecting
         z: 1.
+    }
+
+    SharingSelectionForm {
+        id: sharingSelection
+        anchors.centerIn: parent
+        onAccepted: {
+            connectionForm.sharingDeviceInfo = deviceInfo
+        }
     }
 }

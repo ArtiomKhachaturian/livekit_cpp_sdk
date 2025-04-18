@@ -3,7 +3,7 @@
 #include "safeobj.h"
 #include "mediadevicesmodel.h"
 #include "audiodevice.h"
-#include "cameradevice.h"
+#include "localvideodevice.h"
 #include "videooptions.h"
 #include <livekit/rtc/ServiceListener.h>
 #include <QGuiApplication>
@@ -52,10 +52,10 @@ public slots:
     void setRecordingAudioDevice(const MediaDeviceInfo& device);
     void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE AudioDevice* createMicrophone();
-    Q_INVOKABLE CameraDevice* createCamera(const MediaDeviceInfo& info = {},
-                                           const VideoOptions& options = {});
+    Q_INVOKABLE LocalVideoDevice* createCamera(const MediaDeviceInfo& info = {},
+                                               const VideoOptions& options = {});
     Q_INVOKABLE void destroyMicrophone(AudioDevice* microphone);
-    Q_INVOKABLE void destroyCamera(CameraDevice* camera);
+    Q_INVOKABLE void destroyLocalVideoDevice(LocalVideoDevice* device) { delete device; }
 public:
     bool isValid() const;
     bool audioRecordingEnabled() const;

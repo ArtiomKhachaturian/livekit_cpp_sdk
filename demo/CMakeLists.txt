@@ -25,13 +25,14 @@ target_sources(${PROJECT_NAME} PRIVATE
         mediadevicesmodel.cpp
         session.cpp
         audiotrack.cpp
-        cameratrack.cpp
+        localvideotrack.cpp
         cameraoptionsmodel.cpp
         videooptions.cpp
         itemmodel.h
         audiodevice.cpp
-        cameradevice.cpp
+        localvideodevice.cpp
         videosource.cpp
+        videomodels.cpp
         videotrack.cpp
         participant.cpp
         lockable.h
@@ -49,24 +50,26 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             AudioServiceControl.qml
             VideoRenderer.qml
             VideoDiagnosticsView.qml
-            CameraRenderer.qml
             CameraModelComboBox.qml
             ParticipantView.qml
             CameraOptionsComboBox.qml
             TextPanel.qml
             TextMultiLine.qml
+            ElementsGrid.qml
+            SharingSelectionForm.qml
     SOURCES
             demoapp.h
             mediadeviceinfo.h
             mediadevicesmodel.h
             session.h
-            cameratrack.h
+            localvideotrack.h
             audiotrack.h
             videooptions.h
             cameraoptionsmodel.h
             audiodevice.h
             videosource.h
-            cameradevice.h
+            videomodels.h
+            localvideodevice.h
             videotrack.h
             participant.h
             localparticipant.h

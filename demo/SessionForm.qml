@@ -72,56 +72,15 @@ Frame {
             Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Grid {
-                    id: grid
+                ElementsGrid {
                     anchors.fill: parent
-                    horizontalItemAlignment: Grid.AlignHCenter
-                    spacing: 2
-                    columns: Math.ceil(Math.sqrt(participants.count))
-                    rows: Math.ceil(participants.count / columns)
-                    property int cellWidth: width / columns
-                    property int cellHeight: height / rows
-                    Repeater {
-                        id: repeater
-                        model: participants
-                        delegate: Rectangle {
-                            clip: true
-                            width: grid.cellWidth
-                            height: grid.cellHeight
-                            border.width: 1
-                            color: root.palette.window.lighter(1.2)
-                            border.color: root.activeFocus ? root.palette.highlight : root.palette.mid
-                            ParticipantView {
-                                anchors.fill: parent
-                                participant: model.data
-                                showIdentity: repeater.count > 1
-                            }
-                        }
+                    model: participants
+                    delegate: ParticipantView {
+                        anchors.fill: parent
+                        property var modelData
+                        participant: modelData
+                        showIdentity: participants.count > 1
                     }
-
-                    add: Transition {
-                        NumberAnimation {
-                            properties: "x,y"
-                            easing.type: Easing.OutBounce
-                        }
-                    }
-
-                    move: Transition {
-                        NumberAnimation {
-                            properties: "x,y"
-                            easing.type: Easing.OutBounce
-                        }
-                    }
-
-                    populate: Transition {
-                        NumberAnimation {
-                            properties: "x,y"
-                            from: 200
-                            duration: 100
-                            easing.type: Easing.OutBounce
-                        }
-                    }
-
                 }
             }
             ChatView {

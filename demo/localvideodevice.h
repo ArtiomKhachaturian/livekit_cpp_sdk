@@ -1,5 +1,5 @@
-#ifndef CAMERADEVICE_H
-#define CAMERADEVICE_H
+#ifndef LOCALVIDEODEVICE_H
+#define LOCALVIDEODEVICE_H
 #include "mediadeviceinfo.h"
 #include "videosource.h"
 #include <QObject>
@@ -10,18 +10,20 @@ namespace LiveKitCpp {
 class LocalVideoDevice;
 }
 
-class CameraDevice : public VideoSource
+class LocalVideoDevice : public VideoSource
 {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(bool valid READ isValid CONSTANT)
 public:
-    CameraDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice> device = {},
-                 QObject *parent = nullptr);
-    ~CameraDevice() override;
+    explicit LocalVideoDevice(QObject *parent = nullptr);
+    LocalVideoDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice> device, QObject *parent = nullptr);
+    ~LocalVideoDevice() override;
     bool isValid() const { return nullptr != _device; }
     const auto& device() const noexcept { return _device; }
     Q_INVOKABLE void setDeviceInfo(const MediaDeviceInfo& info);
+    // overrides of VideoSource
+    QString name() const final;
 protected:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final {}
@@ -33,4 +35,4 @@ private:
     const std::shared_ptr<LiveKitCpp::LocalVideoDevice> _device;
 };
 
-#endif // CAMERADEVICE_H
+#endif // LOCALVIDEODEVICE_H

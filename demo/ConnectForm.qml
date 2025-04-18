@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import LiveKitClient 1.0
 
 Item {
 
@@ -8,15 +9,16 @@ Item {
     readonly property alias passPhrase: passPhrase.text
     property alias urlText: url.text
     property alias tokenText: token.text
-    property bool activeCamera: false
-    property var cameraDeviceInfo: undefined
+    property alias activeCamera: previewTracksModel.activeCamera
+    property alias activeSharing: previewTracksModel.activeSharing
+    property alias cameraDeviceInfo: previewTracksModel.cameraDeviceInfo
+    property alias sharingDeviceInfo: previewTracksModel.sharingDeviceInfo
     property alias autoSubscribe: autoSubscribeChx.checked
     property alias adaptiveStream: adaptiveStreamChx.checked
     property alias e2e: e2eChx.checked
     property alias iceTransportPolicy: iceTransportPoliciesCombo.currentText
 
     signal connectClicked
-
 
     ColumnLayout {
         width: parent.width - 200
@@ -27,9 +29,18 @@ Item {
             Layout.preferredHeight: 300
             Layout.fillHeight: true
             Layout.fillWidth: true
-            VideoRenderer {
-                id: cameraPreview
+            RowLayout {
                 anchors.fill: parent
+                Repeater {
+                    model: ConnectionFormVideoModel {
+                        id: previewTracksModel
+                    }
+                    delegate: VideoRenderer {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        source: previewTracksModel.sourceAt(index)
+                    }
+                }
             }
         }
 
@@ -129,49 +140,6 @@ Item {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    Component.onDestruction: {
-        enableCameraPreview(undefined)
-    }
-
-    onActiveCameraChanged: {
-        if (activeCamera && visible) {
-            enableCameraPreview(cameraDeviceInfo)
-        }
-        else {
-            enableCameraPreview(undefined)
-        }
-    }
-
-    onCameraDeviceInfoChanged: {
-        if (activeCamera && visible) {
-            enableCameraPreview(cameraDeviceInfo)
-        }
-    }
-
-    onVisibleChanged: {
-        if (activeCamera && visible) {
-            enableCameraPreview(cameraDeviceInfo)
-        }
-        else {
-            enableCameraPreview(undefined)
-        }
-    }
-
-    function enableCameraPreview(deviceInfo) {
-        if (deviceInfo === undefined) {
-            app.destroyCamera(cameraPreview.source)
-            cameraPreview.source = null
-        }
-        else {
-            if (cameraPreview.source === null) {
-                cameraPreview.source = app.createCamera(deviceInfo)
-            }
-            else {
-                cameraPreview.source.setDeviceInfo(deviceInfo)
             }
         }
     }

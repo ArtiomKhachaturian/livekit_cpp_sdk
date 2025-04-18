@@ -12,7 +12,7 @@ class LocalVideoTrack;
 }
 
 class AudioTrack;
-class CameraTrack;
+class LocalVideoTrack;
 
 class LocalParticipant : public Participant
 {
@@ -78,7 +78,7 @@ private:
     SafeObj<QString> _sid;
     SafeObj<QString> _identity;
     SafeObj<QString> _name;
-    QPointer<CameraTrack> _camera;
+    QPointer<LocalVideoTrack> _camera;
     QPointer<AudioTrack> _microphone;
 };
 

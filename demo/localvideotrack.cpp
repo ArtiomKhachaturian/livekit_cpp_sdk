@@ -1,18 +1,18 @@
-#include "cameratrack.h"
+#include "localvideotrack.h"
 #include <livekit/rtc/media/LocalVideoTrack.h>
 
-CameraTrack::CameraTrack(QObject* parent)
+LocalVideoTrack::LocalVideoTrack(QObject* parent)
     : VideoTrack(parent)
 {
 }
 
-CameraTrack::CameraTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& impl, QObject* parent)
+LocalVideoTrack::LocalVideoTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& impl, QObject* parent)
     : VideoTrack(impl, parent)
     , _impl(impl)
 {
 }
 
-MediaDeviceInfo CameraTrack::deviceInfo() const
+MediaDeviceInfo LocalVideoTrack::deviceInfo() const
 {
     if (const auto impl = _impl.lock()) {
         return impl->deviceInfo();
@@ -20,7 +20,7 @@ MediaDeviceInfo CameraTrack::deviceInfo() const
     return {};
 }
 
-VideoOptions CameraTrack::options() const
+VideoOptions LocalVideoTrack::options() const
 {
     if (const auto impl = _impl.lock()) {
         return impl->options();
@@ -28,26 +28,26 @@ VideoOptions CameraTrack::options() const
     return {};
 }
 
-void CameraTrack::setDeviceInfo(const MediaDeviceInfo& info)
+void LocalVideoTrack::setDeviceInfo(const MediaDeviceInfo& info)
 {
     if (const auto impl = _impl.lock()) {
         impl->setDeviceInfo(info);
     }
 }
 
-void CameraTrack::setOptions(const VideoOptions& options)
+void LocalVideoTrack::setOptions(const VideoOptions& options)
 {
     if (const auto impl = _impl.lock()) {
         impl->setOptions(options);
     }
 }
 
-void CameraTrack::onMediaChanged(const std::string&)
+void LocalVideoTrack::onMediaChanged(const std::string&)
 {
     emit deviceInfoChanged();
 }
 
-void CameraTrack::onMediaOptionsChanged(const std::string&)
+void LocalVideoTrack::onMediaOptionsChanged(const std::string&)
 {
     emit optionsChanged();
 }

@@ -49,7 +49,7 @@ DemoApp::DemoApp(int &argc, char **argv)
 {
     const auto logger = std::make_shared<Logger>();
     const auto wsf = std::make_shared<ZaphoydTppFactory>();
-    auto service = std::make_shared<LiveKitCpp::Service>(wsf, logger);
+    auto service = std::make_shared<LiveKitCpp::Service>(wsf/*, logger*/);
     const auto state = service->state();
     if (LiveKitCpp::ServiceState::OK == state) {
         _service = std::move(service);
@@ -149,12 +149,12 @@ AudioDevice* DemoApp::createMicrophone()
     return nullptr;
 }
 
-CameraDevice* DemoApp::createCamera(const MediaDeviceInfo& info,
-                                    const VideoOptions& options)
+LocalVideoDevice* DemoApp::createCamera(const MediaDeviceInfo& info,
+                                        const VideoOptions& options)
 {
     if (_service) {
         if (auto device = _service->createCamera(info, options)) {
-            return new CameraDevice(std::move(device), this);
+            return new LocalVideoDevice(std::move(device), this);
         }
     }
     return nullptr;
@@ -164,13 +164,6 @@ void DemoApp::destroyMicrophone(AudioDevice* microphone)
 {
     if (microphone) {
         delete microphone;
-    }
-}
-
-void DemoApp::destroyCamera(CameraDevice* camera)
-{
-    if (camera) {
-        delete camera;
     }
 }
 

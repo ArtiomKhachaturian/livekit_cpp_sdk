@@ -1,5 +1,5 @@
-#ifndef CAMERATRACK_H
-#define CAMERATRACK_H
+#ifndef LOCALVIDEOTRACK_H
+#define LOCALVIDEOTRACK_H
 #include "mediadeviceinfo.h"
 #include "videooptions.h"
 #include "videotrack.h"
@@ -8,15 +8,15 @@ namespace LiveKitCpp {
 class LocalVideoTrack;
 }
 
-class CameraTrack : public VideoTrack
+class LocalVideoTrack : public VideoTrack
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(CameraTrack)
+    QML_NAMED_ELEMENT(LocalVideoTrack)
     Q_PROPERTY(MediaDeviceInfo deviceInfo READ deviceInfo WRITE setDeviceInfo NOTIFY deviceInfoChanged FINAL)
     Q_PROPERTY(VideoOptions options READ options WRITE setOptions NOTIFY optionsChanged FINAL)
 public:
-    explicit CameraTrack(QObject *parent = nullptr);
-    CameraTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& impl, QObject *parent = nullptr);
+    explicit LocalVideoTrack(QObject *parent = nullptr);
+    LocalVideoTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& impl, QObject *parent = nullptr);
     MediaDeviceInfo deviceInfo() const;
     VideoOptions options() const;
 public slots:
@@ -33,4 +33,4 @@ private:
     const std::weak_ptr<LiveKitCpp::LocalVideoTrack> _impl;
 };
 
-#endif // CAMERATRACK_H
+#endif // LOCALVIDEOTRACK_H

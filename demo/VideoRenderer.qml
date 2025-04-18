@@ -1,20 +1,37 @@
 import QtQuick
+import QtQuick.Layouts
 import QtMultimedia
 import LiveKitClient 1.0
 
 Item {
     id: root
     property VideoSource source: null
+    property bool showSourceName: false
 
-    VideoOutput {
-        id: renderer
+    ColumnLayout {
         anchors.fill: parent
-        property VideoSource source: null
-        VideoDiagnosticsView {
-            id: fpsArea
-            x: parent.contentRect.right - 4 - width
-            y: parent.contentRect.top + 4
-            visible: false
+        VideoOutput {
+            id: renderer
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            property VideoSource source: null
+            VideoDiagnosticsView {
+                id: fpsArea
+                x: parent.contentRect.right - 4 - width
+                y: parent.contentRect.top + 4
+                visible: false
+            }
+        }
+        TextPanel {
+            id: sourceNameText
+            Layout.fillWidth: true
+            visible: root.showSourceName && text !== ""
+            text: {
+                if (source !== null) {
+                    return source.name
+                }
+                return ""
+            }
         }
     }
 

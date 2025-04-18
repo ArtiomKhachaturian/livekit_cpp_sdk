@@ -74,14 +74,15 @@ public:
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options) const;
     std::shared_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info, VideoOptions options) const;
+    std::shared_ptr<LocalVideoDevice> createSharing(MediaDeviceInfo info, VideoOptions options) const;
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
     bool setAudioRecordingDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo recordingAudioDevice() const;
     bool setAudioPlayoutDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo playoutAudioDevice() const;
-    std::vector<MediaDeviceInfo> screens() const { return _desktopConfiguration.enumerateScreens(); }
-    std::vector<MediaDeviceInfo> windows() const { return _desktopConfiguration.enumerateWindows(); }
+    std::vector<MediaDeviceInfo> screens() const;
+    std::vector<MediaDeviceInfo> windows() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     double recordingAudioVolume() const noexcept;
@@ -112,6 +113,7 @@ protected:
     std::string_view logCategory() const final { return g_logCategory; }
 private:
     webrtc::scoped_refptr<LocalWebRtcTrack> createCameraTrack() const;
+    webrtc::scoped_refptr<LocalWebRtcTrack> createSharingTrack(const MediaDeviceInfo& info) const;
     uint32_t recordingDevAudioVolume() const;
     uint32_t playoutDevAudioVolume() const noexcept;
     void updateAdmVolume(bool recording, uint32_t volume) const;
@@ -126,7 +128,7 @@ private:
     static inline const VolumeControl _defaultPlayout = {51U, 0U, 255U};
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    const DesktopConfiguration _desktopConfiguration;
+    const std::shared_ptr<DesktopConfiguration> _desktopConfiguration;
     Bricks::SafeObj<VolumeControl> _recordingVolume;
     Bricks::SafeObj<VolumeControl> _playoutVolume;
     std::atomic_bool _recordingMuted;
@@ -182,6 +184,14 @@ std::shared_ptr<LocalVideoDevice> Service::createCamera(MediaDeviceInfo info, Vi
 {
     if (_impl) {
         return _impl->createCamera(std::move(info), std::move(options));
+    }
+    return {};
+}
+
+std::shared_ptr<LocalVideoDevice> Service::createSharing(MediaDeviceInfo info, VideoOptions options) const
+{
+    if (_impl) {
+        return _impl->createSharing(std::move(info), std::move(options));
     }
     return {};
 }
@@ -364,6 +374,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::create(true, logWebrtcEvents ? logger : nullptr))
+    , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>() : std::shared_ptr<DesktopConfiguration>())
     , _recordingVolume(_defaultRecording)
     , _playoutVolume(_defaultPlayout)
 {
@@ -385,11 +396,13 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
         if (!dev.empty()) {
             logInfo("playout audio device is '" + dev._name + "'");
         }
-        if (!_desktopConfiguration.screensEnumerationIsAvailable()) {
-            logWarning("screens enumeration is not available");
-        }
-        if (!_desktopConfiguration.windowsEnumerationIsAvailable()) {
-            logWarning("windows enumeration is not available");
+        if (_desktopConfiguration) {
+            if (!_desktopConfiguration->screensEnumerationIsAvailable()) {
+                logWarning("screens enumeration is not available");
+            }
+            if (!_desktopConfiguration->windowsEnumerationIsAvailable()) {
+                logWarning("windows enumeration is not available");
+            }
         }
     }
 }
@@ -413,6 +426,17 @@ std::shared_ptr<AudioDevice> Service::Impl::createMicrophone(const AudioRecordin
 std::shared_ptr<LocalVideoDevice> Service::Impl::createCamera(MediaDeviceInfo info, VideoOptions options) const
 {
     if (auto track = createCameraTrack()) {
+        track->setOptions(std::move(options));
+        track->setDeviceInfo(std::move(info));
+        return std::make_shared<LocalVideoDeviceImpl>(std::move(track));
+    }
+    return {};
+}
+
+std::shared_ptr<LocalVideoDevice> Service::Impl::createSharing(MediaDeviceInfo info,
+                                                               VideoOptions options) const
+{
+    if (auto track = createSharingTrack(info)) {
         track->setOptions(std::move(options));
         track->setDeviceInfo(std::move(info));
         return std::make_shared<LocalVideoDeviceImpl>(std::move(track));
@@ -458,6 +482,22 @@ MediaDeviceInfo Service::Impl::playoutAudioDevice() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevice();
+    }
+    return {};
+}
+
+std::vector<MediaDeviceInfo> Service::Impl::screens() const
+{
+    if (_desktopConfiguration) {
+        return _desktopConfiguration->enumerateScreens();
+    }
+    return {};
+}
+
+std::vector<MediaDeviceInfo> Service::Impl::windows() const
+{
+    if (_desktopConfiguration) {
+        return _desktopConfiguration->enumerateWindows();
     }
     return {};
 }
@@ -703,6 +743,15 @@ void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
 webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createCameraTrack() const
 {
     if (_pcf) {
+        auto source = webrtc::make_ref_counted<AsyncCameraSource>(_pcf->signalingThread(), logger());
+        return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
+    }
+    return {};
+}
+
+webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createSharingTrack(const MediaDeviceInfo& info) const
+{
+    if (_pcf && _desktopConfiguration) {
         auto source = webrtc::make_ref_counted<AsyncCameraSource>(_pcf->signalingThread(), logger());
         return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
     }

@@ -1,5 +1,5 @@
 #include "localparticipant.h"
-#include "cameratrack.h"
+#include "localvideotrack.h"
 #include <livekit/rtc/Service.h>
 #include <livekit/rtc/media/LocalVideoTrack.h>
 
@@ -39,12 +39,12 @@ void LocalParticipant::setName(const QString& name)
 void LocalParticipant::activateCamera(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack)
 {
     if (sdkTrack && !_camera) {
-        _camera = addVideo<CameraTrack>(sdkTrack);
+        _camera = addVideo<LocalVideoTrack>(sdkTrack);
         if (_camera) {
             _camera->setMuted(_cameraMuted);
-            QObject::connect(_camera, &CameraTrack::deviceInfoChanged,
+            QObject::connect(_camera, &LocalVideoTrack::deviceInfoChanged,
                              this, &LocalParticipant::onCameraDeviceInfoChanged);
-            QObject::connect(_camera, &CameraTrack::optionsChanged,
+            QObject::connect(_camera, &LocalVideoTrack::optionsChanged,
                              this, &LocalParticipant::onCameraOptionsChanged);
             QObject::connect(_camera, &VideoTrack::muteChanged,
                              this, &LocalParticipant::onCameraMuted);
