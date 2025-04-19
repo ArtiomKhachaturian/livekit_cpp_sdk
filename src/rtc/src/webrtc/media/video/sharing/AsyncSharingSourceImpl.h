@@ -34,6 +34,7 @@ public:
 protected:
     // overrides of AsyncVideoSourceImpl
     void onOptionsChanged(const VideoOptions& options) final;
+    void onDeviceInfoChanged(const MediaDeviceInfo& info) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
 private:
     void startCapturer();

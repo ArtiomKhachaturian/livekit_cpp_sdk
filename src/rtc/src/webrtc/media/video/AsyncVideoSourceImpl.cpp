@@ -97,11 +97,9 @@ void AsyncVideoSourceImpl::setDeviceInfo(MediaDeviceInfo info)
     if (active()) {
         info = validate(info);
         if (info) {
-            if (exchangeVal(std::move(info), _deviceInfo)) {
+            if (exchangeVal(info, _deviceInfo)) {
                 notify(&MediaDeviceListener::onMediaChanged);
-                resetCapturer();
-                resetStats();
-                requestCapturer();
+                onDeviceInfoChanged(info);
             }
         }
         else {
@@ -150,6 +148,13 @@ void AsyncVideoSourceImpl::discard()
     for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
         it->second->OnDiscardedFrame();
     }
+}
+
+void AsyncVideoSourceImpl::onDeviceInfoChanged(const MediaDeviceInfo&)
+{
+    resetCapturer();
+    resetStats();
+    requestCapturer();
 }
 
 void AsyncVideoSourceImpl::onClosed()

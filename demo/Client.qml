@@ -44,11 +44,17 @@ Pane {
                     checked: false
                     onClicked: {
                         if (!checked) {
-                            sharingAddSwitch.checked = true
                             sharingSelection.visible = true
+                            sharingAddSwitch.checked = true
+
                         }
                         else {
                             sharingAddSwitch.checked = false
+                        }
+                    }
+                    onPressAndHold: {
+                        if (checked) {
+                            sharingSelection.visible = true
                         }
                     }
                 }

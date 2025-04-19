@@ -87,6 +87,25 @@ void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
     }
 }
 
+void AsyncSharingSourceImpl::onDeviceInfoChanged(const MediaDeviceInfo& info)
+{
+    bool defaultBehavior = true;
+    if (const auto conf = _desktopConfiguration.lock()) {
+        LOCK_WRITE_SAFE_OBJ(_capturer);
+        const auto& prev = _capturer.constRef();
+        if (prev && conf->hasTheSameType(info._guid, prev->selectedSource())) {
+            stopCapturer();
+            if (prev->selectSource(info._guid)) {
+                defaultBehavior = false;
+                startCapturer();
+            }
+        }
+    }
+    if (defaultBehavior) {
+        AsyncVideoSourceImpl::onDeviceInfoChanged(info);
+    }
+}
+
 MediaDeviceInfo AsyncSharingSourceImpl::validate(MediaDeviceInfo info) const
 {
     const auto conf = _desktopConfiguration.lock();

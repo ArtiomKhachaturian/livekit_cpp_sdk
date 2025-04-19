@@ -57,6 +57,7 @@ protected:
     void discard();
     virtual void onContentHintChanged(VideoContentHint /*hint*/) {}
     virtual void onOptionsChanged(const VideoOptions& /*options*/ ) {}
+    virtual void onDeviceInfoChanged(const MediaDeviceInfo& info);
     virtual MediaDeviceInfo validate(MediaDeviceInfo info) const { return info; }
     virtual VideoOptions validate(VideoOptions options) const { return options; }
     // impl. of MediaSourceImpl
