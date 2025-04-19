@@ -129,7 +129,7 @@ void ConnectionFormVideoModel::setSharingDeviceInfo(const MediaDeviceInfo& info)
         if (const auto device = qobject_cast<LocalVideoDevice*>(itemAt(_sharingIndex))) {
             device->setDeviceInfo(info);
         }
-        emit cameraDeviceInfoChanged();
+        emit sharingDeviceInfoChanged();
     }
 }
 
@@ -157,6 +157,14 @@ SharingsVideoModel::SharingsVideoModel(QObject* parent)
     _windowsOptions.setResolution(640, 480);
     _screenOptions = _windowsOptions;
     _windowsOptions.setMaxFPS(5);
+}
+
+MediaDeviceInfo SharingsVideoModel::deviceInfo(qsizetype index) const
+{
+    if (const auto device = qobject_cast<LocalVideoDevice*>(itemAt(index))) {
+        return device->deviceInfo();
+    }
+    return {};
 }
 
 void SharingsVideoModel::setMode(Mode mode)

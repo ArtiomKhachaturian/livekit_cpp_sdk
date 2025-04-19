@@ -43,9 +43,14 @@ Pane {
                     checkable: false
                     checked: false
                     onClicked: {
-                        sharingSelection.width = root.width
-                        sharingSelection.height = root.height
-                        sharingSelection.open()
+                        if (!checked) {
+                            sharingAddSwitch.checked = true
+                            sharingSelection.visible = true
+                        }
+                        else {
+                            sharingAddSwitch.checked = false
+                            connectionForm.activeSharing = false
+                        }
                     }
                 }
 
@@ -157,14 +162,20 @@ Pane {
     BusyIndicator {
         anchors.centerIn: parent
         running: sessionForm.connecting
-        z: 1.
+        z: 2.
     }
 
     SharingSelectionForm {
         id: sharingSelection
-        anchors.centerIn: parent
+        anchors.fill: parent
+        visible: false
+        z: 1
         onAccepted: {
             connectionForm.sharingDeviceInfo = deviceInfo
+            connectionForm.activeSharing = true
+        }
+        onRejected: {
+            //sharingAddSwitch.checked = false
         }
     }
 }

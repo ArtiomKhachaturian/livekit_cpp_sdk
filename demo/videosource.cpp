@@ -137,7 +137,9 @@ void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
             const auto qtFrame = LiveKitCpp::convert(frame);
             if (qtFrame.isValid()) {
                 for (qsizetype i = 0; i < _outputs->size(); ++i) {
-                    _outputs->at(i)->setVideoFrame(qtFrame);
+                    if (const auto output = _outputs->at(i)) {
+                        output->setVideoFrame(qtFrame);
+                    }
                 }
                 if (isActive() && !isMuted()) {
                     setFrameType(frame->type());

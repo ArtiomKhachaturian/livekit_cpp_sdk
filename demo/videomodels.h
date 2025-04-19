@@ -90,6 +90,7 @@ public:
 public:
     explicit SharingsVideoModel(QObject* parent = nullptr);
     Mode mode() const noexcept { return _mode; }
+    Q_INVOKABLE MediaDeviceInfo deviceInfo(qsizetype index) const;
 public slots:
     void setMode(Mode mode);
 signals:

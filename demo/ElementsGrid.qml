@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 
 Item {
     id: root
@@ -37,15 +38,25 @@ Item {
                 height: grid.cellHeight
                 border.width: 1
                 color: root.palette.window.lighter(1.2)
-                border.color: activeFocus ? root.palette.highlight : root.palette.mid
+                border.color: root.palette.mid
+                property alias item: delegateLoader.item
                 Loader {
+                    id: delegateLoader
                     anchors.fill: parent
                     sourceComponent: root.delegate
                     onLoaded: {
-                        if (item && "modelData" in item) {
-                            item.modelData = modelData
+                        if (delegateLoader.item) {
+                            if ("modelData" in delegateLoader.item) {
+                                delegateLoader.item.modelData = modelData
+                            }
+                            if ("index" in item) {
+                                delegateLoader.item.index = index
+                            }
                         }
                     }
+                }
+                onFocusChanged: {
+                    delegateLoader.item.focus = focus
                 }
             }
         }
@@ -80,6 +91,14 @@ Item {
 
     onAutoLayoutChanged: {
         bindAutoLayout()
+    }
+
+    function itemAt(index) {
+        var item = repeater.itemAt(index)
+        if (item) {
+            return item.item
+        }
+        return null
     }
 
     function bindAutoLayout() {

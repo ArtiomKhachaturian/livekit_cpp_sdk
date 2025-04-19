@@ -31,6 +31,14 @@ void LocalVideoDevice::setDeviceInfo(const MediaDeviceInfo& info)
     }
 }
 
+MediaDeviceInfo LocalVideoDevice::deviceInfo() const
+{
+    if (_device) {
+        return _device->deviceInfo();
+    }
+    return {};
+}
+
 QString LocalVideoDevice::name() const
 {
     if (_device) {

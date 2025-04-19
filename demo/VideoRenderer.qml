@@ -23,7 +23,6 @@ Item {
             id: sourceNameText
             width: parent.width
             y: renderer.contentRect.bottom - height
-            //anchors.bottom: parent.bottom
             visible: root.showSourceName && source !== null && text !== ""
             text: source ? source.name : ""
             showBorder: false

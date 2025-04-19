@@ -4,6 +4,7 @@
 #include <livekit/rtc/media/MediaEventsListener.h>
 #include <livekit/rtc/media/VideoSink.h>
 #include <QObject>
+#include <QPointer>
 #include <QQmlEngine>
 #include <QBasicTimer>
 #include <QSize>
@@ -70,7 +71,7 @@ private:
     static constexpr QSize _nullSize = {0, 0};
     QBasicTimer _fpsTimer;
     quint16 _fps = 0U;
-    Lockable<QList<QVideoSink*>> _outputs;
+    Lockable<QList<QPointer<QVideoSink>>> _outputs;
     SafeObj<QSize> _frameSize;
     std::atomic<quint16> _framesCounter = 0U;
     std::atomic_bool _active = false;
