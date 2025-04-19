@@ -206,8 +206,7 @@ bool CameraManager::orientation(const MediaDeviceInfo& info, webrtc::VideoRotati
     return CameraManager::orientation(info._guid, orientation);
 }
 
-rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_view guid,
-                                                                 const std::shared_ptr<Bricks::Logger>& logger)
+rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_view guid)
 {
     if (!guid.empty()) {
         if (const auto di = deviceInfo()) {
@@ -215,7 +214,7 @@ rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_vie
                 MediaDeviceInfo deviceInfo;
                 for (uint32_t i = 0U; i < count; ++i) {
                     if (CameraManager::device(i, deviceInfo) && deviceInfo._guid == guid) {
-                        return createCapturer(deviceInfo, logger);
+                        return createCapturer(deviceInfo);
                     }
                 }
             }

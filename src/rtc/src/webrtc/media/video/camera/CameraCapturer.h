@@ -23,7 +23,7 @@
 namespace LiveKitCpp
 {
 
-class CameraObserver;
+class CapturerObserver;
 enum class VideoContentHint;
 
 class CameraCapturer : public webrtc::VideoCaptureModule
@@ -31,7 +31,7 @@ class CameraCapturer : public webrtc::VideoCaptureModule
 public:
     ~CameraCapturer() override;
     virtual void setContentHint(VideoContentHint /*hint*/) {}
-    virtual void setObserver(CameraObserver* /*observer*/ = nullptr) {}
+    virtual void setObserver(CapturerObserver* /*observer*/ = nullptr) {}
     const auto& guid() const noexcept { return _deviceInfo._guid; }
     // impl. of webrtc::VideoCaptureModule
     void RegisterCaptureDataCallback(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;

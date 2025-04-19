@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "CameraObserver.h"
+#include "CapturerObserver.h"
 #include "Listeners.h"
 #include "SafeObjAliases.h"
 #include <api/video/video_frame.h>
@@ -25,9 +25,9 @@ namespace LiveKitCpp
 {
 
 class CameraCapturer;
-class CameraCapturerProxySink;
+class CapturerProxySink;
 
-class CameraCapturerProxy : private CameraObserver,
+class CameraCapturerProxy : private CapturerObserver,
                             private rtc::VideoSinkInterface<webrtc::VideoFrame>
 {
 public:
@@ -35,21 +35,21 @@ public:
     static std::shared_ptr<CameraCapturerProxy> create(rtc::scoped_refptr<CameraCapturer> impl);
     bool started() const;
     bool captureCapability(webrtc::VideoCaptureCapability& capability) const;
-    int32_t startCapture(const webrtc::VideoCaptureCapability& capability, CameraCapturerProxySink* sink);
-    int32_t stopCapture(CameraCapturerProxySink* sink);
+    int32_t startCapture(const webrtc::VideoCaptureCapability& capability, CapturerProxySink* sink);
+    int32_t stopCapture(CapturerProxySink* sink);
     const char* currentDeviceName() const;
 protected:
     CameraCapturerProxy(rtc::scoped_refptr<CameraCapturer> impl);
 private:
     // impl. of CameraObserver
-    void onStateChanged(CameraState state) final;
+    void onStateChanged(CapturerState state) final;
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final;
     void OnDiscardedFrame() final;
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints) final;
 private:
     const rtc::scoped_refptr<CameraCapturer> _impl;
-    Bricks::Listeners<CameraCapturerProxySink*> _sinks;
+    Bricks::Listeners<CapturerProxySink*> _sinks;
     Bricks::SafeOptional<webrtc::VideoCaptureCapability> _activeCapability;
 };
 

@@ -11,19 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "CameraObserver.h"
-#include <api/video/video_sink_interface.h>
-#include <api/video/video_frame.h>
+#pragma once // CapturerState.h
 
 namespace LiveKitCpp
 {
 
-class CameraCapturerProxySink : public CameraObserver,
-                                public rtc::VideoSinkInterface<webrtc::VideoFrame>
+enum class CapturerState
 {
-protected:
-    CameraCapturerProxySink() = default;
+    Stopping,
+    Stopped,
+    Starting,
+    Started
 };
+
+bool acceptState(CapturerState currentState, CapturerState newState);
 
 } // namespace LiveKitCpp

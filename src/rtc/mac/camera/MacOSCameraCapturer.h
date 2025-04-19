@@ -28,10 +28,6 @@ typedef struct objc_object AVCaptureDevice;
 typedef struct objc_object AVCaptureDeviceFormat;
 #endif
 
-namespace Bricks {
-class Logger;
-}
-
 namespace LiveKitCpp
 {
 
@@ -41,9 +37,7 @@ class MacOSCameraCapturer : public CameraCapturer,
     class Impl;
 public:
     ~MacOSCameraCapturer() override;
-    static rtc::scoped_refptr<MacOSCameraCapturer>
-        create(const MediaDeviceInfo& deviceInfo,
-               const std::shared_ptr<Bricks::Logger>& logger = {});
+    static rtc::scoped_refptr<MacOSCameraCapturer> create(const MediaDeviceInfo& deviceInfo);
     static AVCaptureDevice* deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(const char* deviceUniqueIdUTF8);
@@ -51,7 +45,7 @@ public:
     static std::string deviceUniqueIdUTF8(AVCaptureDevice* device);
     // impl. of CameraCapturer
     void setContentHint(VideoContentHint hint) final;
-    void setObserver(CameraObserver* observer) final;
+    void setObserver(CapturerObserver* observer) final;
     // impl. of webrtc::VideoCaptureModule
     int32_t StartCapture(const webrtc::VideoCaptureCapability& capability) final;
     int32_t StopCapture() final;

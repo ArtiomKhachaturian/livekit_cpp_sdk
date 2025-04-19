@@ -11,19 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "CameraState.h"
+#pragma once // CapturerObserver.h
+#include "CapturerState.h"
+#include <string>
 
 namespace LiveKitCpp
 {
 
-class CameraObserver
+class CapturerObserver
 {
 public:
-    virtual void onStateChanged(CameraState state) = 0;
-    virtual void onCapturingFatalError() {} // during the streaming
+    virtual void onStateChanged(CapturerState state) = 0;
+    virtual void onCapturingFatalError(const std::string& /*details*/ = {}) {} // during the streaming
 protected:
-    ~CameraObserver() = default;
+    ~CapturerObserver() = default;
 };
 
 } // namespace LiveKitCpp

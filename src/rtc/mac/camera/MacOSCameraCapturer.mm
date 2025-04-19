@@ -13,10 +13,9 @@
 // limitations under the License.
 #ifdef WEBRTC_MAC
 #include "MacOSCameraCapturer.h"
-#include "CameraObserver.h"
+#include "CapturerObserver.h"
 #include "CameraManager.h"
 #include "Listener.h"
-#include "Logger.h"
 #include "VideoUtils.h"
 #include "VTSupportedPixelFormats.h"
 #include "Utils.h"
@@ -52,13 +51,13 @@ inline size_t hashCode(const webrtc::VideoCaptureCapability& cap) {
 
 @interface CapturerDelegate : NSObject<RTC_OBJC_TYPE(RTCVideoCapturerDelegate)>
 
-- (instancetype) init:(const std::shared_ptr<Bricks::Logger>&) logger;
+- (instancetype) init NS_DESIGNATED_INITIALIZER;
 - (void) reportAboutError:(NSError* _Nullable) error;
-- (void) logError:(NSString* _Nonnull) error;
-- (BOOL) changeState:(LiveKitCpp::CameraState) state;
+- (void) reportAboutErrorMessage:(NSString* _Nonnull) error;
+- (BOOL) changeState:(LiveKitCpp::CapturerState) state;
 @property (nullable, nonatomic) rtc::VideoSinkInterface<webrtc::VideoFrame>* sink;
-@property (nullable, nonatomic) LiveKitCpp::CameraObserver* observer;
-@property (nonatomic) LiveKitCpp::CameraState state;
+@property (nullable, nonatomic) LiveKitCpp::CapturerObserver* observer;
+@property (nonatomic) LiveKitCpp::CapturerState state;
 @property (weak) RTCCameraVideoCapturer* capturerRef;
 
 @end
@@ -69,17 +68,17 @@ namespace LiveKitCpp
 class MacOSCameraCapturer::Impl
 {
 public:
-    Impl(AVCaptureDevice* device, const std::shared_ptr<Bricks::Logger>& logger);
+    Impl(AVCaptureDevice* device);
     ~Impl();
     AVCaptureDevice* device() const noexcept { return _device; }
     void setContentHint(VideoContentHint hint);
     bool startCapture(AVCaptureDeviceFormat* format, NSInteger fps);
     void stopCapture();
     void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) { _delegate.sink = sink; }
-    void setObserver(CameraObserver* observer) { _delegate.observer = observer; }
-    CameraState state() const { return _delegate.state; }
-    bool changeState(CameraState state) { return [_delegate changeState:state]; }
-    void logError(const std::string& error);
+    void setObserver(CapturerObserver* observer) { _delegate.observer = observer; }
+    CapturerState state() const { return _delegate.state; }
+    bool changeState(CapturerState state) { return [_delegate changeState:state]; }
+    void reportAboutError(const std::string& error);
 private:
     AVCaptureDevice* const _device;
     CapturerDelegate* const _delegate;
@@ -99,21 +98,20 @@ MacOSCameraCapturer::~MacOSCameraCapturer()
     const auto ok = 0 == MacOSCameraCapturer::StopCapture();
     _impl->setSink(nullptr);
     if (ok) {
-        _impl->changeState(CameraState::Stopped);
+        _impl->changeState(CapturerState::Stopped);
     }
     _impl->setObserver(nullptr);
 }
 
 rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
-    create(const MediaDeviceInfo& deviceInfo,
-           const std::shared_ptr<Bricks::Logger>& logger)
+    create(const MediaDeviceInfo& deviceInfo)
 {
     if (!deviceInfo._guid.empty()) {
         @autoreleasepool {
             const auto guid = deviceInfo._guid.c_str();
             AVCaptureDevice* device = deviceWithUniqueIDUTF8(guid);
             if (device) {
-                auto impl = std::make_unique<Impl>(device, logger);
+                auto impl = std::make_unique<Impl>(device);
                 return rtc::make_ref_counted<MacOSCameraCapturer>(deviceInfo, std::move(impl));
             }
         }
@@ -206,7 +204,7 @@ void MacOSCameraCapturer::setContentHint(VideoContentHint hint)
     _impl->setContentHint(hint);
 }
 
-void MacOSCameraCapturer::setObserver(CameraObserver* observer)
+void MacOSCameraCapturer::setObserver(CapturerObserver* observer)
 {
     CameraCapturer::setObserver(observer);
     _impl->setObserver(observer);
@@ -216,8 +214,8 @@ int32_t MacOSCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& 
 {
     int result = -1;
     switch (_impl->state()) {
-        case CameraState::Stopped:
-        case CameraState::Stopping:
+        case CapturerState::Stopped:
+        case CapturerState::Stopping:
             @autoreleasepool {
                 auto format = findClosestFormat(capability);
                 if (format) {
@@ -226,7 +224,7 @@ int32_t MacOSCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& 
                     }
                 }
                 else {
-                    _impl->logError("unable to find closest format for [" + toString(capability) + "]");
+                    _impl->reportAboutError("unable to find closest format for [" + toString(capability) + "]");
                 }
             }
             break;
@@ -262,7 +260,7 @@ int32_t MacOSCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& set
 
 bool MacOSCameraCapturer::CaptureStarted()
 {
-    return CameraState::Started == _impl->state();
+    return CapturerState::Started == _impl->state();
 }
 
 webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(OSType type)
@@ -348,10 +346,9 @@ AVCaptureDeviceFormat* MacOSCameraCapturer::findClosestFormat(const webrtc::Vide
     return nil;
 }
 
-MacOSCameraCapturer::Impl::Impl(AVCaptureDevice* device,
-                                const std::shared_ptr<Bricks::Logger>& logger)
+MacOSCameraCapturer::Impl::Impl(AVCaptureDevice* device)
     : _device(device)
-    , _delegate([[CapturerDelegate alloc] init:logger])
+    , _delegate([CapturerDelegate new])
     , _capturer([[RTCCameraVideoCapturer alloc] initWithDelegate:_delegate])
 {
     @autoreleasepool {
@@ -397,7 +394,7 @@ bool MacOSCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format,
 {
     if (format && _device) {
         @autoreleasepool {
-            if ([_delegate changeState:CameraState::Starting]) {
+            if ([_delegate changeState:CapturerState::Starting]) {
                 CapturerDelegate* __weak weakDelegate = _delegate;
                 [_capturer startCaptureWithDevice:_device
                                            format:format
@@ -406,11 +403,11 @@ bool MacOSCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format,
                     CapturerDelegate* __strong delegate = weakDelegate;
                     if (delegate) {
                         if (error) {
-                            delegate.state = CameraState::Stopped;
+                            delegate.state = CapturerState::Stopped;
                             [delegate reportAboutError:error];
                         }
                         else {
-                            delegate.state = CameraState::Started;
+                            delegate.state = CapturerState::Started;
                         }
                     }
                 }];
@@ -424,88 +421,72 @@ bool MacOSCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format,
 void MacOSCameraCapturer::Impl::stopCapture()
 {
     @autoreleasepool {
-        if ([_delegate changeState:CameraState::Stopping]) {
+        if ([_delegate changeState:CapturerState::Stopping]) {
             CapturerDelegate* __weak weakDelegate = _delegate;
             [_capturer stopCaptureWithCompletionHandler:^{
                 CapturerDelegate* __strong delegate = weakDelegate;
                 if (delegate) {
-                    delegate.state = CameraState::Stopped;
+                    delegate.state = CapturerState::Stopped;
                 }
             }];
         }
     }
 }
 
-void MacOSCameraCapturer::Impl::logError(const std::string& error)
+void MacOSCameraCapturer::Impl::reportAboutError(const std::string& error)
 {
     if (!error.empty()) {
-        [_delegate logError:toNSString(error)];
+        [_delegate reportAboutErrorMessage:toNSString(error)];
     }
 }
 
 } // namespace LiveKitCpp
 
 @implementation CapturerDelegate {
-    std::shared_ptr<Bricks::Logger> _logger;
     Bricks::Listener<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink;
-    Bricks::Listener<LiveKitCpp::CameraObserver*> _observer;
-    Bricks::SafeObj<LiveKitCpp::CameraState> _state;
+    Bricks::Listener<LiveKitCpp::CapturerObserver*> _observer;
+    Bricks::SafeObj<LiveKitCpp::CapturerState> _state;
 }
 
 @synthesize capturerRef = _capturerRef;
 
-- (instancetype) init:(const std::shared_ptr<Bricks::Logger>&) logger
+- (instancetype) init
 {
     if (self = [super init]) {
-        _logger = logger;
-        _state(LiveKitCpp::CameraState::Stopped);
+        _state(LiveKitCpp::CapturerState::Stopped);
     }
     return self;
 }
 
 - (void) reportAboutError:(NSError*) error
 {
-    if (error && _logger && _logger->canLogError()) {
-        _logger->logError(LiveKitCpp::toString(error), LiveKitCpp::CameraManager::logCategory());
+    if (error) {
+        [self reportAboutErrorMessage: [error localizedDescription]];
     }
 }
 
-- (void) logError:(NSString*) error
+- (void) reportAboutErrorMessage:(NSString*) error
 {
-    if (error && _logger && _logger->canLogError()) {
-        _logger->logError(LiveKitCpp::fromNSString(error), LiveKitCpp::CameraManager::logCategory());
+    if (error) {
+        _observer.invoke(&LiveKitCpp::CapturerObserver::onCapturingFatalError, LiveKitCpp::fromNSString(error));
     }
 }
 
-- (BOOL) changeState:(LiveKitCpp::CameraState) state
+- (BOOL) changeState:(LiveKitCpp::CapturerState) state
 {
     using namespace LiveKitCpp;
     bool accepted = false;
     {
         LOCK_WRITE_SAFE_OBJ(_state);
         if (state != _state.constRef()) {
-            switch (_state.constRef()) {
-                case CameraState::Stopping:
-                    accepted = true;
-                    break;
-                case CameraState::Stopped:
-                    accepted = CameraState::Starting == state || CameraState::Started == state;
-                    break;
-                case CameraState::Starting:
-                    // any state is good
-                    accepted = true;
-                    break;
-                case CameraState::Started:
-                    accepted = CameraState::Stopping == state || CameraState::Stopped == state;
-                    break;
-            }
+            accepted = acceptState(_state.constRef(), state);
             if (accepted) {
                 _state = state;
             }
         }
     }
     if (accepted) {
-        _observer.invoke(&CameraObserver::onStateChanged, state);
+        _observer.invoke(&CapturerObserver::onStateChanged, state);
         return YES;
     }
     return NO;
@@ -521,22 +502,22 @@ void MacOSCameraCapturer::Impl::logError(const std::string& error)
     _sink = sink;
 }
 
-- (LiveKitCpp::CameraObserver*) observer
+- (LiveKitCpp::CapturerObserver*) observer
 {
     return _observer.listener();
 }
 
-- (void) setObserver:(LiveKitCpp::CameraObserver*) observer
+- (void) setObserver:(LiveKitCpp::CapturerObserver*) observer
 {
     _observer = observer;
 }
 
-- (LiveKitCpp::CameraState) state
+- (LiveKitCpp::CapturerState) state
 {
     return _state();
 }
 
-- (void) setState:(LiveKitCpp::CameraState) state
+- (void) setState:(LiveKitCpp::CapturerState) state
 {
     [self changeState:state];
 }
@@ -566,8 +547,7 @@ void MacOSCameraCapturer::Impl::logError(const std::string& error)
                                                 block:^{
         [self reportAboutError:error];
         [_capturerRef stopCapture];
-        self.state = LiveKitCpp::CameraState::Stopped;
-        _observer.invoke(&LiveKitCpp::CameraObserver::onCapturingFatalError);
+        self.state = LiveKitCpp::CapturerState::Stopped;
     }];
 }
 

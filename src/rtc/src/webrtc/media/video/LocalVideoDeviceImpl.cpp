@@ -20,13 +20,20 @@ namespace LiveKitCpp
 LocalVideoDeviceImpl::LocalVideoDeviceImpl(webrtc::scoped_refptr<LocalWebRtcTrack> track)
     : Base(std::move(track))
 {
+    if (const auto& t = this->track()) {
+        t->addListener(this);
+    }
 }
 
 LocalVideoDeviceImpl::~LocalVideoDeviceImpl()
 {
-    if (_sinks.clear()) {
-        if (const auto& t = track()) {
+    if (const auto& t = track()) {
+        if (_sinks.clear()) {
             t->RemoveSink(&_sinks);
+        }
+        t->removeListener(this);
+        if (webrtc::MediaStreamTrackInterface::kLive == t->state()) {
+            onMediaStopped();
         }
     }
 }

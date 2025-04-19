@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // AsyncCameraSourceImpl.h
-#include "CameraCapturerProxySink.h"
 #include "CameraCapturer.h"
 #include "SafeScopedRefPtr.h"
 #include "AsyncVideoSourceImpl.h"
@@ -20,7 +19,7 @@
 namespace LiveKitCpp
 {
 
-class AsyncCameraSourceImpl : public AsyncVideoSourceImpl, private CameraCapturerProxySink
+class AsyncCameraSourceImpl : public AsyncVideoSourceImpl
 {
 public:
     AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
@@ -33,6 +32,7 @@ protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
     // overrides of AsyncVideoSourceImpl
+    void onCapturingFatalError(const std::string& details) override;
     void onContentHintChanged(VideoContentHint hint) final;
     void onOptionsChanged(const VideoOptions& options) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
@@ -49,13 +49,6 @@ private:
     void logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
                   const std::string& message, int code = 0) const;
     void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
-    // impl. of CameraObserver
-    void onStateChanged(CameraState state) final;
-    void onCapturingFatalError() final;
-    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
-    void OnFrame(const webrtc::VideoFrame& frame) final { broadcast(frame, true); }
-    void OnDiscardedFrame() final { discard(); }
-    void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) final;
 private:
     SafeScopedRefPtr<CameraCapturer> _capturer;
 };

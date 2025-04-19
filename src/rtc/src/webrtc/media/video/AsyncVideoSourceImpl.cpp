@@ -160,6 +160,36 @@ void AsyncVideoSourceImpl::onMuted()
     resetStats();
 }
 
+void AsyncVideoSourceImpl::onStateChanged(CapturerState state)
+{
+    switch (state) {
+        case CapturerState::Stopped:
+            changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
+            break;
+        case CapturerState::Starting:
+            changeState(webrtc::MediaSourceInterface::SourceState::kInitializing);
+            break;
+        case CapturerState::Started:
+            changeState(webrtc::MediaSourceInterface::SourceState::kLive);
+            break;
+        default:
+            break;
+    }
+}
+
+void AsyncVideoSourceImpl::onCapturingFatalError(const std::string& details)
+{
+    changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
+    notify(&MediaDeviceListener::onMediaFatalError, details);
+}
+
+void AsyncVideoSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
+{
+    if (active()) {
+        processConstraints(c);
+    }
+}
+
 void AsyncVideoSourceImpl::resetStats()
 {
     _lastResolution = 0ULL;

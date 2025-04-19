@@ -14,6 +14,7 @@
 #pragma once // DesktopFrameVideoBuffer.h
 #include "VideoFrameBuffer.h"
 #include "NativeVideoFrameBuffer.h"
+#include <modules/desktop_capture/desktop_frame.h>
 #include <memory>
 
 namespace webrtc {

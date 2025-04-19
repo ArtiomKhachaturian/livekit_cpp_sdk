@@ -29,7 +29,8 @@ std::optional<webrtc::VideoFrame> createVideoFrame(int width, int height,
                                                    uint16_t id = 0U,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace = {});
 std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
-                                                   int64_t timeStampMicro = 0LL, uint16_t id = 0U,
+                                                   int64_t timeStampMicro = 0LL,
+                                                   uint16_t id = 0U,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace = {});
 std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
                                                         int64_t timeStampMicro = 0LL,

@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "CameraCapturerProxy.h"
 #include "CameraCapturer.h"
-#include "CameraCapturerProxySink.h"
+#include "CapturerProxySink.h"
 
 namespace LiveKitCpp
 {
@@ -56,7 +56,7 @@ bool CameraCapturerProxy::captureCapability(webrtc::VideoCaptureCapability& capa
 }
 
 int32_t CameraCapturerProxy::startCapture(const webrtc::VideoCaptureCapability& capability,
-                                          CameraCapturerProxySink* sink)
+                                          CapturerProxySink* sink)
 {
     int32_t result = -1;
     if (sink) {
@@ -70,13 +70,13 @@ int32_t CameraCapturerProxy::startCapture(const webrtc::VideoCaptureCapability& 
                 }
             }
             else {
-                sink->onStateChanged(CameraState::Starting);
+                sink->onStateChanged(CapturerState::Starting);
                 if (_impl->CaptureStarted()) {
-                    sink->onStateChanged(CameraState::Started);
+                    sink->onStateChanged(CapturerState::Started);
                     result = 0;
                 }
                 else {
-                    sink->onStateChanged(CameraState::Stopped);
+                    sink->onStateChanged(CapturerState::Stopped);
                 }
             }
             if (0 != result) {
@@ -87,17 +87,17 @@ int32_t CameraCapturerProxy::startCapture(const webrtc::VideoCaptureCapability& 
     return result;
 }
 
-int32_t CameraCapturerProxy::stopCapture(CameraCapturerProxySink* sink)
+int32_t CameraCapturerProxy::stopCapture(CapturerProxySink* sink)
 {
     int32_t result = -1;
     if (Bricks::ok(_sinks.remove(sink))) {
         result = 0;
-        sink->onStateChanged(CameraState::Stopping);
+        sink->onStateChanged(CapturerState::Stopping);
         if (_sinks.empty()) {
             result = _impl->StopCapture();
             _activeCapability(std::nullopt);
         }
-        sink->onStateChanged(CameraState::Stopped);
+        sink->onStateChanged(CapturerState::Stopped);
     }
     return result;
 }
@@ -107,24 +107,24 @@ const char* CameraCapturerProxy::currentDeviceName() const
     return _impl->CurrentDeviceName();
 }
 
-void CameraCapturerProxy::onStateChanged(CameraState state)
+void CameraCapturerProxy::onStateChanged(CapturerState state)
 {
-    _sinks.invoke(&CameraCapturerProxySink::onStateChanged, state);
+    _sinks.invoke(&CapturerProxySink::onStateChanged, state);
 }
 
 void CameraCapturerProxy::OnFrame(const webrtc::VideoFrame& frame)
 {
-    _sinks.invoke(&CameraCapturerProxySink::OnFrame, frame);
+    _sinks.invoke(&CapturerProxySink::OnFrame, frame);
 }
 
 void CameraCapturerProxy::OnDiscardedFrame()
 {
-    _sinks.invoke(&CameraCapturerProxySink::OnDiscardedFrame);
+    _sinks.invoke(&CapturerProxySink::OnDiscardedFrame);
 }
 
 void CameraCapturerProxy::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints)
 {
-    _sinks.invoke(&CameraCapturerProxySink::OnConstraintsChanged, constraints);
+    _sinks.invoke(&CapturerProxySink::OnConstraintsChanged, constraints);
 }
 
 } // LiveKitCpp

@@ -76,6 +76,12 @@ std::string_view AsyncCameraSourceImpl::logCategory() const
     return CameraManager::logCategory();
 }
 
+void AsyncCameraSourceImpl::onCapturingFatalError(const std::string& details)
+{
+    logError(_capturer(), details);
+    AsyncVideoSourceImpl::onCapturingFatalError(details);
+}
+
 void AsyncCameraSourceImpl::onContentHintChanged(VideoContentHint hint)
 {
     AsyncVideoSourceImpl::onContentHintChanged(hint);
@@ -231,37 +237,6 @@ void AsyncCameraSourceImpl::logVerbose(const rtc::scoped_refptr<CameraCapturer>&
     if (capturer && canLogVerbose()) {
         const auto error = CameraManager::formatLogMessage(capturer->CurrentDeviceName(), message);
         AsyncVideoSourceImpl::logVerbose(error);
-    }
-}
-
-void AsyncCameraSourceImpl::onStateChanged(CameraState state)
-{
-    switch (state) {
-        case CameraState::Stopped:
-            changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
-            break;
-        case CameraState::Starting:
-            changeState(webrtc::MediaSourceInterface::SourceState::kInitializing);
-            break;
-        case CameraState::Started:
-            changeState(webrtc::MediaSourceInterface::SourceState::kLive);
-            break;
-        default:
-            break;
-    }
-}
-
-void AsyncCameraSourceImpl::onCapturingFatalError()
-{
-    changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
-    // TODO: add error details
-    notify(&MediaDeviceListener::onMediaFatalError, std::string{});
-}
-
-void AsyncCameraSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
-{
-    if (active()) {
-        processConstraints(c);
     }
 }
 

@@ -20,10 +20,6 @@
 #include <optional>
 #include <string>
 
-namespace Bricks {
-class Logger;
-}
-
 namespace LiveKitCpp
 {
 
@@ -68,10 +64,8 @@ public:
     // to be displayed correctly on a normally rotated display.
     static bool orientation(std::string_view guid, webrtc::VideoRotation& orientation);
     static bool orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation);
-    static rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
-                                                             const std::shared_ptr<Bricks::Logger>& logger = {});
-    static rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev,
-                                                             const std::shared_ptr<Bricks::Logger>& logger = {});
+    static rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid);
+    static rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev);
 private:
     static webrtc::VideoCaptureModule::DeviceInfo* deviceInfo();
 };

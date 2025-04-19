@@ -66,10 +66,9 @@ webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
     return info.get();
 }
 
-rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev,
-                                                                 const std::shared_ptr<Bricks::Logger>& logger)
+rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev)
 {
-    return MacOSCameraCapturer::create(dev, logger);
+    return MacOSCameraCapturer::create(dev);
 }
 
 } // namespace LiveKitCpp

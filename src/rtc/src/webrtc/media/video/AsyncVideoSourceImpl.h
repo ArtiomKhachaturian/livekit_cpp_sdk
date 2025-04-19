@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // VideoSourceImpl.h
 #include "AsyncMediaSourceImpl.h"
+#include "CapturerProxySink.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include "livekit/rtc/media/VideoContentHint.h"
@@ -24,7 +25,7 @@ namespace LiveKitCpp
 
 class VideoSinkBroadcast;
 
-class AsyncVideoSourceImpl : public AsyncMediaSourceImpl
+class AsyncVideoSourceImpl : public AsyncMediaSourceImpl, protected CapturerProxySink
 {
     using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
     std::unique_ptr<VideoSinkBroadcast>>;
@@ -61,6 +62,13 @@ protected:
     // impl. of MediaSourceImpl
     void onClosed() override;
     void onMuted() override;
+    // impl. of CapturerObserver
+    void onStateChanged(CapturerState state) override;
+    void onCapturingFatalError(const std::string& details) override;
+    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
+    void OnFrame(const webrtc::VideoFrame& frame) override { broadcast(frame, true); }
+    void OnDiscardedFrame() override { discard(); }
+    void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) override;
 private:
     void resetStats();
 private:

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoUtils.h"
+#include "CapturerState.h"
 #include "Utils.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include <rtc_base/time_utils.h>
@@ -181,6 +182,24 @@ bool VideoOptions::interlaced() const noexcept
 bool VideoOptions::preview() const noexcept
 {
     return testFlag<g_previewMode>(_flags);
+}
+
+bool acceptState(CapturerState currentState, CapturerState newState)
+{
+    switch (currentState) {
+        case CapturerState::Stopping:
+            return true;
+        case CapturerState::Stopped:
+            return CapturerState::Starting == newState || CapturerState::Started == newState;
+        case CapturerState::Starting: // any state is good
+            return true;
+        case CapturerState::Started:
+            return CapturerState::Stopping == newState || CapturerState::Stopped == newState;
+        default:
+            assert(false);
+            break;
+    }
+    return false;
 }
 
 } // namespace LiveKitCpp
