@@ -32,7 +32,7 @@ public:
     void setTargetFramerate(int32_t fps) final;
     bool started() const final { return _timer.started(); }
     bool start() override;
-    void stop() override { _timer.stop(); }
+    void stop() override;
     ~DesktopSimpleCapturer() override;
 protected:
     template <typename... Args>
@@ -56,14 +56,12 @@ inline DesktopSimpleCapturer<TCapturer>::
     : TCapturer(window, std::forward<Args>(args)...)
     , _timer(timerQueue)
 {
-    _timer.setCallback(this);
 }
 
 template <class TCapturer>
 inline DesktopSimpleCapturer<TCapturer>::~DesktopSimpleCapturer()
 {
     DesktopSimpleCapturer::stop();
-    _timer.setCallback(nullptr);
 }
 
 template <class TCapturer>
@@ -81,10 +79,18 @@ template <class TCapturer>
 inline bool DesktopSimpleCapturer<TCapturer>::start()
 {
     if (!started() && canStart()) {
+        _timer.setCallback(this);
         _timer.start(float(_fps));
         return true;
     }
     return false;
+}
+
+template <class TCapturer>
+void DesktopSimpleCapturer<TCapturer>::stop()
+{
+    _timer.setCallback(nullptr);
+    _timer.stop();
 }
 	
 } // namespace LiveKitCpp

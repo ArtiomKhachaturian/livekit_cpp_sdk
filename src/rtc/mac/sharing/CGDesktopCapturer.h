@@ -41,6 +41,7 @@ protected:
     bool canStart() const final;
 private:
     static bool validSource(bool window, intptr_t source);
+    std::unique_ptr<webrtc::DesktopFrame> processFrame(std::unique_ptr<webrtc::DesktopFrame> frame) const;
     // impl. of webrtc::DesktopCapturer::Callback
     void OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
                          std::unique_ptr<webrtc::DesktopFrame> frame) final;

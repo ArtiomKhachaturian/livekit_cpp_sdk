@@ -15,6 +15,7 @@
 #include "DesktopCapturer.h"
 #include <MacTypes.h>
 #include <api/scoped_refptr.h>
+#include <CoreGraphics/CGDirectDisplay.h>
 #include <dispatch/dispatch.h>
 #include <optional>
 
@@ -49,8 +50,8 @@ public:
 protected:
     MacDesktopCapturer(bool window, const webrtc::scoped_refptr<webrtc::DesktopConfigurationMonitor>& monitor);
     const std::shared_ptr<webrtc::SharedMemoryFactory>& sharedMemoryFactory() const { return _smf; }
-    static std::unique_ptr<webrtc::DesktopFrame> captureDisplay(webrtc::ScreenId sId);
-    static std::unique_ptr<webrtc::DesktopFrame> captureWindow(webrtc::WindowId wId);
+    std::unique_ptr<webrtc::DesktopFrame> captureDisplay(webrtc::ScreenId sId) const;
+    std::unique_ptr<webrtc::DesktopFrame> captureWindow(webrtc::WindowId wId) const;
     // the same value as in WebKit, system default is 3, max should not exceed 8 frames
     static constexpr int screenQueueMaximumLength() { return 6; }
     static OSType recommendedVideoFormat();

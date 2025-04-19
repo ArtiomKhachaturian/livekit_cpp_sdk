@@ -135,7 +135,7 @@ webrtc::DesktopSize MacDesktopCapturer::screenResolution(const webrtc::scoped_re
             return resolution(desktopConfig);
         }
     }
-    return webrtc::DesktopSize();
+    return {};
 }
 
 std::unique_ptr<DesktopCapturer> MacDesktopCapturer::create(bool window,
@@ -208,13 +208,13 @@ void MacDesktopCapturer::setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMe
     _smf.reset(smf.release());
 }
 
-std::unique_ptr<webrtc::DesktopFrame> MacDesktopCapturer::captureDisplay(webrtc::ScreenId sId)
+std::unique_ptr<webrtc::DesktopFrame> MacDesktopCapturer::captureDisplay(webrtc::ScreenId sId) const
 {
     const auto id = static_cast<CGDirectDisplayID>(sId);
     return webrtc::DesktopFrameCGImage::CreateForDisplay(id);
 }
 
-std::unique_ptr<webrtc::DesktopFrame> MacDesktopCapturer::captureWindow(webrtc::WindowId wId)
+std::unique_ptr<webrtc::DesktopFrame> MacDesktopCapturer::captureWindow(webrtc::WindowId wId) const
 {
     const auto id = static_cast<CGWindowID>(wId);
     return webrtc::DesktopFrameCGImage::CreateForWindow(id);

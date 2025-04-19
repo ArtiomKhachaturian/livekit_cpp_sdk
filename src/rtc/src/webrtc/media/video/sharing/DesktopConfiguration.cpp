@@ -23,7 +23,7 @@ namespace LiveKitCpp
 DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
     : _timerQueue(timerQueue)
     , _screensEnumerator(createRawCapturer(false, false))
-    , _windowsEnumerator(createRawCapturer(true, true))
+    //, _windowsEnumerator(createRawCapturer(true, true))
 {
 }
 

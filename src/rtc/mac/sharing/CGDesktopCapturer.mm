@@ -35,6 +35,7 @@ CGDesktopCapturer::CGDesktopCapturer(const std::shared_ptr<webrtc::TaskQueueBase
 
 CGDesktopCapturer::~CGDesktopCapturer()
 {
+    _cursorComposer({});
     stop();
 }
 
@@ -76,15 +77,7 @@ void CGDesktopCapturer::captureNextFrame()
     else {
         frame = captureDisplay(static_cast<webrtc::ScreenId>(_source));
     }
-    if (frame) {
-        LOCK_READ_SAFE_OBJ(_cursorComposer);
-        if (const auto& composer = _cursorComposer.constRef()) {
-            composer->setFrame(std::move(frame));
-        }
-        else {
-            deliverCaptured(std::move(frame));
-        }
-    }
+    deliverCaptured(processFrame(std::move(frame)));
 }
 
 bool CGDesktopCapturer::canStart() const
@@ -98,6 +91,17 @@ bool CGDesktopCapturer::validSource(bool window, intptr_t source)
         return webrtc::kNullWindowId != source;
     }
     return webrtc::kInvalidScreenId != source && webrtc::kInvalidDisplayId != source;
+}
+
+std::unique_ptr<webrtc::DesktopFrame> CGDesktopCapturer::processFrame(std::unique_ptr<webrtc::DesktopFrame> frame) const
+{
+    if (frame) {
+        LOCK_READ_SAFE_OBJ(_cursorComposer);
+        if (const auto& composer = _cursorComposer.constRef()) {
+            composer->setFrame(std::move(frame));
+        }
+    }
+    return frame;
 }
 
 void CGDesktopCapturer::OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
