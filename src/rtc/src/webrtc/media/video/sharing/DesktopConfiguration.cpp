@@ -24,7 +24,7 @@ namespace LiveKitCpp
 DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
     : _timerQueue(timerQueue)
     , _screensEnumerator(createRawCapturer(false, false))
-    , _windowsEnumerator(createRawCapturer(true, true))
+    //, _windowsEnumerator(createRawCapturer(true, true))
 {
 }
 
@@ -32,10 +32,10 @@ DesktopConfiguration::~DesktopConfiguration()
 {
 }
 
-std::unique_ptr<DesktopConfiguration> DesktopConfiguration::create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf)
+std::shared_ptr<DesktopConfiguration> DesktopConfiguration::create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf)
 {
     if (pcf) {
-        return std::make_unique<DesktopConfiguration>(pcf->eventsQueue());
+        return std::make_shared<DesktopConfiguration>(pcf->eventsQueue());
     }
     return {};
 }
@@ -104,6 +104,16 @@ bool DesktopConfiguration::deviceIsValid(const std::string& guid) const
 bool DesktopConfiguration::deviceIsValid(const MediaDeviceInfo& info) const
 {
     return deviceIsScreen(info) || deviceIsWindow(info);
+}
+
+bool DesktopConfiguration::hasTheSameType(const std::string& lGuid, const std::string& rGuid) const
+{
+    return (deviceIsScreen(lGuid) == deviceIsScreen(rGuid)) || (deviceIsWindow(lGuid) == deviceIsWindow(rGuid));
+}
+
+bool DesktopConfiguration::hasTheSameType(const MediaDeviceInfo& l, const MediaDeviceInfo& r) const
+{
+    return hasTheSameType(l._guid, r._guid);
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std::string& guid,

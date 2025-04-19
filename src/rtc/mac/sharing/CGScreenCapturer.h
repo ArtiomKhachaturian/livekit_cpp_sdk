@@ -36,6 +36,7 @@ public:
     // overrides & impl. of DesktopCapturer
     void setPreviewMode(bool preview) final;
     bool selectSource(const std::string& source) final;
+    std::string selectedSource() const final { return screenIdToString(_source); }
 protected:
     void captureNextFrame() final;
     bool canStart() const final;

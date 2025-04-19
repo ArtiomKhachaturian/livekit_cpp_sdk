@@ -13,19 +13,21 @@
 // limitations under the License.
 #pragma once // AsyncSharingSourceImpl.h
 #include "AsyncVideoSourceImpl.h"
+#include "SafeObjAliases.h"
 
 namespace LiveKitCpp
 {
 
 class DesktopCapturer;
+class DesktopConfiguration;
 
 class AsyncSharingSourceImpl : public AsyncVideoSourceImpl
 {
 public:
-    AsyncSharingSourceImpl(std::unique_ptr<DesktopCapturer> capturer,
+    AsyncSharingSourceImpl(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                            std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                            const std::shared_ptr<Bricks::Logger>& logger);
-    ~AsyncSharingSourceImpl() final;
+    ~AsyncSharingSourceImpl() final { close(); }
     // override of AsyncVideoSourceImpl
     void requestCapturer() final;
     void resetCapturer() final;
@@ -33,12 +35,12 @@ protected:
     // overrides of AsyncVideoSourceImpl
     void onOptionsChanged(const VideoOptions& options) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
-    VideoOptions validate(VideoOptions options) const final;
 private:
     void startCapturer();
     void stopCapturer();
 private:
-    const std::unique_ptr<DesktopCapturer> _capturer;
+    const std::weak_ptr<DesktopConfiguration> _desktopConfiguration;
+    Bricks::SafeUniquePtr<DesktopCapturer> _capturer;
 };
 	
 } // namespace LiveKitCpp

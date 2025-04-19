@@ -46,11 +46,13 @@ public:
     bool deviceIsWindow(const MediaDeviceInfo& info) const;
     bool deviceIsValid(const std::string& guid) const;
     bool deviceIsValid(const MediaDeviceInfo& info) const;
+    bool hasTheSameType(const std::string& lGuid, const std::string& rGuid) const;
+    bool hasTheSameType(const MediaDeviceInfo& l, const MediaDeviceInfo& r) const;
     std::unique_ptr<DesktopCapturer> createCapturer(const std::string& guid,
                                                     bool selectSource = false,
                                                     bool lightweightOptions = false) const;
     static int32_t maxFramerate(bool /*windows*/) { return 30; }
-    static std::unique_ptr<DesktopConfiguration> create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
+    static std::shared_ptr<DesktopConfiguration> create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
 private:
     DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool lightweightMode = false);

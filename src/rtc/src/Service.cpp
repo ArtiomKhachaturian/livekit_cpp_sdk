@@ -63,7 +63,7 @@ public:
 class AsyncSharingSource : public AsyncVideoSource
 {
 public:
-    AsyncSharingSource(std::unique_ptr<DesktopCapturer> capturer,
+    AsyncSharingSource(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                        std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                        const std::shared_ptr<Bricks::Logger>& logger);
     // impl. of webrtc::VideoTrackSourceInterface
@@ -125,7 +125,7 @@ protected:
     std::string_view logCategory() const final { return g_logCategory; }
 private:
     webrtc::scoped_refptr<LocalWebRtcTrack> createCameraTrack() const;
-    webrtc::scoped_refptr<LocalWebRtcTrack> createSharingTrack(const MediaDeviceInfo& info) const;
+    webrtc::scoped_refptr<LocalWebRtcTrack> createSharingTrack() const;
     uint32_t recordingDevAudioVolume() const;
     uint32_t playoutDevAudioVolume() const noexcept;
     void updateAdmVolume(bool recording, uint32_t volume) const;
@@ -140,7 +140,7 @@ private:
     static inline const VolumeControl _defaultPlayout = {51U, 0U, 255U};
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    const std::unique_ptr<DesktopConfiguration> _desktopConfiguration;
+    const std::shared_ptr<DesktopConfiguration> _desktopConfiguration;
     Bricks::SafeObj<VolumeControl> _recordingVolume;
     Bricks::SafeObj<VolumeControl> _playoutVolume;
     std::atomic_bool _recordingMuted;
@@ -448,7 +448,7 @@ std::shared_ptr<LocalVideoDevice> Service::Impl::createCamera(MediaDeviceInfo in
 std::shared_ptr<LocalVideoDevice> Service::Impl::createSharing(MediaDeviceInfo info,
                                                                VideoOptions options) const
 {
-    if (auto track = createSharingTrack(info)) {
+    if (auto track = createSharingTrack()) {
         track->setOptions(std::move(options));
         track->setDeviceInfo(std::move(info));
         return std::make_shared<LocalVideoDeviceImpl>(std::move(track));
@@ -761,15 +761,13 @@ webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createCameraTrack() const
     return {};
 }
 
-webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createSharingTrack(const MediaDeviceInfo& info) const
+webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createSharingTrack() const
 {
     if (_pcf && _desktopConfiguration) {
-        if (auto capturer = _desktopConfiguration->createCapturer(info._guid, false)) {
-            auto source = webrtc::make_ref_counted<AsyncSharingSource>(std::move(capturer),
-                                                                       _pcf->signalingThread(),
-                                                                       logger());
-            return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
-        }
+        auto source = webrtc::make_ref_counted<AsyncSharingSource>(_desktopConfiguration,
+                                                                   _pcf->signalingThread(),
+                                                                   logger());
+        return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
     }
     return {};
 }
@@ -879,10 +877,10 @@ AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signal
 {
 }
 
-AsyncSharingSource::AsyncSharingSource(std::unique_ptr<DesktopCapturer> capturer,
+AsyncSharingSource::AsyncSharingSource(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                                        std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : AsyncVideoSource(std::make_shared<AsyncSharingSourceImpl>(std::move(capturer),
+    : AsyncVideoSource(std::make_shared<AsyncSharingSourceImpl>(std::move(desktopConfiguration),
                                                                 std::move(signalingQueue),
                                                                 logger))
 {

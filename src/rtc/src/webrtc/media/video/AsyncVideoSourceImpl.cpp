@@ -96,11 +96,16 @@ void AsyncVideoSourceImpl::setDeviceInfo(MediaDeviceInfo info)
 {
     if (active()) {
         info = validate(info);
-        if (info && exchangeVal(std::move(info), _deviceInfo)) {
-            notify(&MediaDeviceListener::onMediaChanged);
-            resetCapturer();
-            resetStats();
-            requestCapturer();
+        if (info) {
+            if (exchangeVal(std::move(info), _deviceInfo)) {
+                notify(&MediaDeviceListener::onMediaChanged);
+                resetCapturer();
+                resetStats();
+                requestCapturer();
+            }
+        }
+        else {
+            // TODO: report about error
         }
     }
 }

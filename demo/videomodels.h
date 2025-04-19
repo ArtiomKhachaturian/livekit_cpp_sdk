@@ -72,6 +72,7 @@ private:
     qsizetype _sharingIndex = -1;
     MediaDeviceInfo _cameraDeviceInfo;
     MediaDeviceInfo _sharingDeviceInfo;
+    VideoOptions _sharingOptions;
 };
 
 class SharingsVideoModel : public LocalVideoSourcesModel
@@ -99,8 +100,6 @@ private:
     void resetContent();
 private:
     Mode _mode = Mode::Inactive;
-    VideoOptions _screenOptions;
-    VideoOptions _windowsOptions;
 };
 
 #endif // VIDEOMODELS_H

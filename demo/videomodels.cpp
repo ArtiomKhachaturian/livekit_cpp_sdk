@@ -73,6 +73,8 @@ qsizetype LocalVideoSourcesModel::addDevice(std::shared_ptr<LiveKitCpp::LocalVid
 ConnectionFormVideoModel::ConnectionFormVideoModel(QObject* parent)
     : LocalVideoSourcesModel(parent)
 {
+    _sharingOptions.setPreview(true);
+    _sharingOptions.setMaxFPS(5);
 }
 
 void ConnectionFormVideoModel::setActiveCamera(bool active)
@@ -106,7 +108,7 @@ void ConnectionFormVideoModel::setActiveSharing(bool active)
             }
         }
         else {
-            setSharingIndex(addSharing(_sharingDeviceInfo));
+            setSharingIndex(addSharing(_sharingDeviceInfo, _sharingOptions));
         }
     }
 }
@@ -152,11 +154,6 @@ void ConnectionFormVideoModel::setSharingIndex(qsizetype index)
 SharingsVideoModel::SharingsVideoModel(QObject* parent)
     : LocalVideoSourcesModel(parent)
 {
-    _windowsOptions.setPreview(true);
-    _windowsOptions.setMaxFPS(1);
-    _windowsOptions.setResolution(640, 480);
-    _screenOptions = _windowsOptions;
-    _windowsOptions.setMaxFPS(5);
 }
 
 MediaDeviceInfo SharingsVideoModel::deviceInfo(qsizetype index) const
@@ -191,14 +188,16 @@ void SharingsVideoModel::resetContent()
     if (Mode::Inactive != _mode) {
         QList<MediaDeviceInfo> devices;
         VideoOptions options;
+        options.setPreview(true);
+        options.setResolution(640, 480);
         switch (_mode) {
             case Mode::Screens:
                 devices = screens();
-                options = _screenOptions;
+                options.setMaxFPS(5);
                 break;
             case Mode::Windows:
                 devices = windows();
-                options = _windowsOptions;
+                options.setMaxFPS(1);
                 break;
             default:
                 break;

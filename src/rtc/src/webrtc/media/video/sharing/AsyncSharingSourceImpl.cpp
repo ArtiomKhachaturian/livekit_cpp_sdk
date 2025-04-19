@@ -19,111 +19,110 @@
 namespace LiveKitCpp
 {
 
-AsyncSharingSourceImpl::AsyncSharingSourceImpl(std::unique_ptr<DesktopCapturer> capturer,
+AsyncSharingSourceImpl::AsyncSharingSourceImpl(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                                                std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                                const std::shared_ptr<Bricks::Logger>& logger)
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger)
-    , _capturer(std::move(capturer))
+    , _desktopConfiguration(std::move(desktopConfiguration))
 {
-    if (_capturer) {
+    /*if (_capturer) {
         setOptions(VideoOptions{._maxFPS = DesktopConfiguration::maxFramerate(_capturer->window())});
-    }
-}
-
-AsyncSharingSourceImpl::~AsyncSharingSourceImpl()
-{
-    close();
-    if (_capturer) {
-        _capturer->setOutputSink(nullptr);
-    }
+    }*/
 }
 
 void AsyncSharingSourceImpl::requestCapturer()
 {
-    if (_capturer && frameWanted()) {
-        const auto device = this->deviceInfo();
-        if (_capturer->selectSource(device._guid)) {
-            _capturer->setOutputSink(this);
-            if (enabled()) {
-                startCapturer();
+    if (frameWanted()) {
+        if (const auto conf = _desktopConfiguration.lock()) {
+            const auto devInfo = deviceInfo();
+            std::unique_ptr<DesktopCapturer> capturer;
+            LOCK_WRITE_SAFE_OBJ(_capturer);
+            if (!_capturer.constRef()) {
+                capturer = conf->createCapturer(devInfo._guid);
             }
-        }
-        else {
-            // TODO: add error details
-            notify(&MediaDeviceListener::onMediaCreationFailed, std::string{});
+            else if (!conf->hasTheSameType(_capturer.constRef()->selectedSource(), devInfo._guid)) {
+                stopCapturer();
+                capturer = conf->createCapturer(devInfo._guid);
+            }
+            if (capturer) {
+                const auto options = this->options();
+                capturer->setPreviewMode(options.preview());
+                capturer->setTargetResolutuon(options._width, options._height);
+                capturer->setTargetFramerate(options._maxFPS);
+                _capturer = std::move(capturer);
+                if (enabled()) {
+                    startCapturer();
+                }
+            }
+            else {
+                // TODO: add error details
+                notify(&MediaDeviceListener::onMediaCreationFailed, std::string{});
+            }
         }
     }
 }
 
 void AsyncSharingSourceImpl::resetCapturer()
 {
-    if (_capturer) {
+    LOCK_WRITE_SAFE_OBJ(_capturer);
+    if (_capturer.constRef()) {
         stopCapturer();
-        _capturer->setOutputSink(nullptr);
+        _capturer.take();
     }
 }
 
 void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
 {
     AsyncVideoSourceImpl::onOptionsChanged(options);
-    if (active() && _capturer) {
-        _capturer->setPreviewMode(options.preview());
-        _capturer->setTargetResolutuon(options._width, options._height);
-        _capturer->setTargetFramerate(options._maxFPS);
+    if (active()) {
+        LOCK_READ_SAFE_OBJ(_capturer);
+        if (const auto& capturer = _capturer.constRef()) {
+            stopCapturer();
+            capturer->setOutputSink(this);
+            capturer->setPreviewMode(options.preview());
+            capturer->setTargetResolutuon(options._width, options._height);
+            capturer->setTargetFramerate(options._maxFPS);
+            startCapturer();
+        }
     }
 }
 
 MediaDeviceInfo AsyncSharingSourceImpl::validate(MediaDeviceInfo info) const
 {
-    if (_capturer) {
-        if (_capturer->window()) {
-            if (_capturer->windowIdFromString(info._guid).has_value()) {
-                return info;
-            }
-        }
-        if (_capturer->screenIdFromString(info._guid).has_value()) {
-            return info;
-        }
-    }
-    return {};
-}
-
-VideoOptions AsyncSharingSourceImpl::validate(VideoOptions options) const
-{
-    if (_capturer) {
-        if (!_capturer->window()) {
-            const auto res = _capturer->screenResolution(deviceInfo()._guid);
-            if (!res.is_empty()) {
-                options._width = std::min(options._width, res.width());
-                options._height = std::min(options._height, res.height());
-            }
-        }
-        return options;
+    const auto conf = _desktopConfiguration.lock();
+    if (conf && conf->deviceIsValid(info)) {
+        return info;
     }
     return {};
 }
 
 void AsyncSharingSourceImpl::startCapturer()
 {
-    if (_capturer) {
-        const auto captureOptions = this->options();
-        _capturer->setPreviewMode(captureOptions.preview());
-        _capturer->setTargetResolutuon(captureOptions._width, captureOptions._height);
-        _capturer->setTargetFramerate(captureOptions._maxFPS);
-        if (_capturer->start()) {
-            notify(&MediaDeviceListener::onMediaStarted);
-        }
-        else {
-            // TODO: add error details
-            notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
+    if (enabled() && active() && frameWanted()) {
+        if (const auto& capturer = _capturer.constRef()) {
+            if (capturer->selectSource(deviceInfo()._guid)) {
+                if (capturer->start()) {
+                    notify(&MediaDeviceListener::onMediaStarted);
+                }
+                else {
+                    capturer->setOutputSink(nullptr);
+                    // TODO: add error details
+                    notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
+                }
+            }
+            else {
+                notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
+            }
         }
     }
 }
 
 void AsyncSharingSourceImpl::stopCapturer()
 {
-    if (_capturer && _capturer->started()) {
-        _capturer->stop();
+    const auto& capturer = _capturer.constRef();
+    if (capturer && capturer->started()) {
+        capturer->stop();
+        capturer->setOutputSink(nullptr);
         notify(&MediaDeviceListener::onMediaStopped);
     }
 }

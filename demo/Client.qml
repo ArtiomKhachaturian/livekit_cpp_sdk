@@ -49,7 +49,6 @@ Pane {
                         }
                         else {
                             sharingAddSwitch.checked = false
-                            connectionForm.activeSharing = false
                         }
                     }
                 }
@@ -134,6 +133,7 @@ Pane {
                 objectName: root.objectName + "_client_form"
                 enabled: !sessionForm.connecting
                 activeCamera: !sessionActive && cameraAddSwitch.checked
+                activeSharing: !sessionActive && sharingAddSwitch.checked
                 cameraDeviceInfo: cameraModelComboBox.deviceInfo
                 onConnectClicked: {
                     sessionForm.connect(urlText, tokenText,
@@ -172,7 +172,6 @@ Pane {
         z: 1
         onAccepted: {
             connectionForm.sharingDeviceInfo = deviceInfo
-            connectionForm.activeSharing = true
         }
         onRejected: {
             //sharingAddSwitch.checked = false

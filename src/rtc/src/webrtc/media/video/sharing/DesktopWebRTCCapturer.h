@@ -33,6 +33,7 @@ public:
     // overrides & impl. of DesktopCapturer
     void setPreviewMode(bool preview) final { _previewMode = preview; }
     bool selectSource(const std::string& source) final;
+    std::string selectedSource() const final;
     void stop() final;
     bool focusOnSelectedSource() final;
     void setExcludedWindow(webrtc::WindowId window) final;

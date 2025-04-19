@@ -57,6 +57,11 @@ bool DesktopWebRTCCapturer::selectSource(const std::string& source)
     return false;
 }
 
+std::string DesktopWebRTCCapturer::selectedSource() const
+{
+    return window() ? windowIdToString(_source) : screenIdToString(_source);
+}
+
 void DesktopWebRTCCapturer::stop()
 {
     execute([capturer = webRtcCapturer(true)]() mutable { capturer.reset(); });

@@ -53,6 +53,8 @@ public:
     // selects a source to be captured, returns false in case of a failure
     // (e.g. if there is no source with the specified type and id.)
     virtual bool selectSource(const std::string& source) = 0;
+    // selected source ID if any
+    virtual std::string selectedSource() const = 0;
     // tells that capturing is active
     virtual bool started() const = 0;
     // called at the beginning of a capturing session
