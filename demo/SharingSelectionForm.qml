@@ -34,6 +34,7 @@ Dialog {
                 implicitHeight: cellHeight
                 Layout.fillWidth: true
                 Layout.fillHeight: noWindows
+                visible: elementsCount > 0
                 model: SharingsVideoModel {
                     id: screensModel
                     mode: SharingsVideoModel.Screens
@@ -63,7 +64,7 @@ Dialog {
                 delegate: VideoRenderer {
                     anchors.fill: parent
                     showSourceName: true
-                    showDiagnostics: false
+                    showDiagnostics: windowsPreview.elementsCount < 2
                     source: windowsModel.sourceAt(index)
                 }
             }

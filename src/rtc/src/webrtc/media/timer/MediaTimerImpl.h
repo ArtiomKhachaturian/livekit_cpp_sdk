@@ -41,7 +41,7 @@ private:
     bool valid(bool queueOnly) const noexcept;
     void pushSingleShot(uint64_t id);
     bool popSingleShot(uint64_t id);
-    void post(uint64_t intervalMs);
+    void post(uint64_t intervalMs, bool first);
     void nextTick(uint64_t intervalMs);
 private:
     const uint64_t _timerId;

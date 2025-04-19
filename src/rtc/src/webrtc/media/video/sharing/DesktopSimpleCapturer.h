@@ -29,6 +29,7 @@ class DesktopSimpleCapturer : public TCapturer,
     static_assert(std::is_base_of_v<DesktopCapturer, TCapturer>);
 public:
     // overrides & impl. of DesktopCapturer
+    int32_t targetFramerate() const noexcept { return _fps; }
     void setTargetFramerate(int32_t fps) final;
     bool started() const final { return _timer.started(); }
     bool start() override;
@@ -37,7 +38,9 @@ public:
 protected:
     template <typename... Args>
     DesktopSimpleCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
-                          bool window, Args&&... args);
+                          bool window, const webrtc::DesktopCaptureOptions& options,
+                          Args&&... args);
+    void execute(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);
     virtual void captureNextFrame() = 0;
     virtual bool canStart() const { return _fps > 0; }
 private:
@@ -52,8 +55,9 @@ template <class TCapturer>
 template <typename... Args>
 inline DesktopSimpleCapturer<TCapturer>::
     DesktopSimpleCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
-                          bool window, Args&&... args)
-    : TCapturer(window, std::forward<Args>(args)...)
+                          bool window, const webrtc::DesktopCaptureOptions& options,
+                          Args&&... args)
+    : TCapturer(window, options, std::forward<Args>(args)...)
     , _timer(timerQueue)
 {
 }
@@ -87,10 +91,16 @@ inline bool DesktopSimpleCapturer<TCapturer>::start()
 }
 
 template <class TCapturer>
-void DesktopSimpleCapturer<TCapturer>::stop()
+inline void DesktopSimpleCapturer<TCapturer>::stop()
 {
     _timer.setCallback(nullptr);
     _timer.stop();
+}
+
+template <class TCapturer>
+inline void DesktopSimpleCapturer<TCapturer>::execute(absl::AnyInvocable<void()&&> task, uint64_t delayMs)
+{
+    _timer.singleShot(std::move(task), delayMs);
 }
 	
 } // namespace LiveKitCpp

@@ -13,42 +13,70 @@
 // limitations under the License.
 #include "DesktopCapturer.h"
 #include "DesktopFrameVideoBuffer.h"
+#include "DesktopCapturerUtils.h"
 #include "CapturerProxySink.h"
 #include "VideoUtils.h"
-#include "Utils.h"
 
 namespace LiveKitCpp
 {
 
-DesktopCapturer::DesktopCapturer(bool window)
+DesktopCapturer::DesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options)
     : _window(window)
+    , _options(options)
 {
 }
 
 std::string DesktopCapturer::windowIdToString(webrtc::WindowId id) const
 {
-    return _windowMarker + toHexValue(id);
+    return LiveKitCpp::windowIdToString(id);
 }
 
 std::string DesktopCapturer::screenIdToString(webrtc::ScreenId id) const
 {
-    return _screenMarker + toHexValue(id);
+    return LiveKitCpp::screenIdToString(id);
 }
 
 std::optional<webrtc::WindowId> DesktopCapturer::windowIdFromString(const std::string& str) const
 {
-    if (startWith(str, _windowMarker)) {
-        return fromHexValue<webrtc::WindowId>(str.substr(_windowMarker.size()));
-    }
-    return std::nullopt;
+    return LiveKitCpp::windowIdFromString(str);
 }
 
 std::optional<webrtc::ScreenId> DesktopCapturer::screenIdFromString(const std::string& str) const
 {
-    if (startWith(str, _screenMarker)) {
-        return fromHexValue<webrtc::ScreenId>(str.substr(_screenMarker.size()));
+    return LiveKitCpp::screenIdFromString(str);
+}
+
+std::optional<std::string> DesktopCapturer::title(const std::string& source) const
+{
+    if (!source.empty()) {
+        if (window()) {
+            if (const auto id = this->windowIdFromString(source)) {
+                return windowTitle(id.value());
+            }
+        }
+        if (const auto id = this->screenIdFromString(source)) {
+            return screenTitle(id.value());
+        }
     }
     return std::nullopt;
+}
+
+webrtc::DesktopSize DesktopCapturer::screenResolution(const std::string& source) const
+{
+    if (!window()) {
+        if (const auto id = this->screenIdFromString(source)) {
+            return LiveKitCpp::screenResolution(options(), id.value());
+        }
+    }
+    return {};
+}
+
+bool DesktopCapturer::enumerateSources(std::vector<std::string>& sources) const
+{
+    if (window()) {
+        return enumerateWindows(options(), sources);
+    }
+    return enumerateScreens(options(), sources);
 }
 
 void DesktopCapturer::setTargetResolutuon(const webrtc::DesktopSize& resolution)

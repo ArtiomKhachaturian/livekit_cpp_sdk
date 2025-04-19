@@ -25,14 +25,14 @@ class MouseCursorMonitor;
 namespace LiveKitCpp
 {
 
-class CGDesktopCapturer : public DesktopSimpleCapturer<MacDesktopCapturer>,
-                          private webrtc::DesktopCapturer::Callback
+class CGScreenCapturer : public DesktopSimpleCapturer<MacDesktopCapturer>,
+                         private webrtc::DesktopCapturer::Callback
 {
     using Base = DesktopSimpleCapturer<MacDesktopCapturer>;
 public:
-    CGDesktopCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
-                      bool window, const webrtc::DesktopCaptureOptions& options);
-    ~CGDesktopCapturer() override;
+    CGScreenCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                     const webrtc::DesktopCaptureOptions& options);
+    ~CGScreenCapturer() override;
     // overrides & impl. of DesktopCapturer
     void setPreviewMode(bool preview) final;
     bool selectSource(const std::string& source) final;
@@ -40,14 +40,13 @@ protected:
     void captureNextFrame() final;
     bool canStart() const final;
 private:
-    static bool validSource(bool window, intptr_t source);
+    webrtc::DesktopVector dpi() const;
     std::unique_ptr<webrtc::DesktopFrame> processFrame(std::unique_ptr<webrtc::DesktopFrame> frame) const;
     // impl. of webrtc::DesktopCapturer::Callback
     void OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
                          std::unique_ptr<webrtc::DesktopFrame> frame) final;
 private:
-    const webrtc::DesktopCaptureOptions _options;
-    std::atomic<intptr_t> _source;
+    std::atomic<webrtc::ScreenId> _source = webrtc::kInvalidScreenId;
     Bricks::SafeUniquePtr<DesktopCursorComposer> _cursorComposer;
 };
 	

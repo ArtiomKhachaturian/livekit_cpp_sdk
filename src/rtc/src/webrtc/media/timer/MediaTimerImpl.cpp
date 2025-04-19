@@ -44,7 +44,7 @@ void MediaTimerImpl::setInvalid()
 void MediaTimerImpl::start(uint64_t intervalMs)
 {
     if (!_queue.expired() && !_started.exchange(true)) {
-        post(intervalMs);
+        post(intervalMs, true);
     }
 }
 
@@ -84,7 +84,7 @@ bool MediaTimerImpl::popSingleShot(uint64_t id)
     return true;
 }
 
-void MediaTimerImpl::post(uint64_t intervalMs)
+void MediaTimerImpl::post(uint64_t intervalMs, bool first)
 {
     const auto q = _queue.lock();
     if (q && started()) {
@@ -92,7 +92,7 @@ void MediaTimerImpl::post(uint64_t intervalMs)
             if (const auto self = weak.lock()) {
                 self->nextTick(intervalMs);
             }
-        }, toTimeDelta(intervalMs));
+        }, toTimeDelta(first ? 0LL : intervalMs));
     }
 }
 
@@ -108,7 +108,7 @@ void MediaTimerImpl::nextTick(uint64_t intervalMs)
             }
         }
         if (next) {
-            post(intervalMs);
+            post(intervalMs, false);
         }
     }
 }

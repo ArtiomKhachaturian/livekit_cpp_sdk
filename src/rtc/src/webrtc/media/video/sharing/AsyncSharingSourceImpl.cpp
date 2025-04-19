@@ -43,10 +43,6 @@ void AsyncSharingSourceImpl::requestCapturer()
     if (_capturer && frameWanted()) {
         const auto device = this->deviceInfo();
         if (_capturer->selectSource(device._guid)) {
-            const auto captureOptions = this->options();
-            _capturer->setPreviewMode(captureOptions.preview());
-            _capturer->setTargetResolutuon(captureOptions._width, captureOptions._height);
-            _capturer->setTargetFramerate(captureOptions._maxFPS);
             _capturer->setOutputSink(this);
             if (enabled()) {
                 startCapturer();

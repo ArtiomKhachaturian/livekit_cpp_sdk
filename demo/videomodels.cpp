@@ -152,6 +152,11 @@ void ConnectionFormVideoModel::setSharingIndex(qsizetype index)
 SharingsVideoModel::SharingsVideoModel(QObject* parent)
     : LocalVideoSourcesModel(parent)
 {
+    _windowsOptions.setPreview(true);
+    _windowsOptions.setMaxFPS(1);
+    _windowsOptions.setResolution(640, 480);
+    _screenOptions = _windowsOptions;
+    _windowsOptions.setMaxFPS(5);
 }
 
 void SharingsVideoModel::setMode(Mode mode)
@@ -177,18 +182,21 @@ void SharingsVideoModel::resetContent()
 {
     if (Mode::Inactive != _mode) {
         QList<MediaDeviceInfo> devices;
+        VideoOptions options;
         switch (_mode) {
             case Mode::Screens:
                 devices = screens();
+                options = _screenOptions;
                 break;
             case Mode::Windows:
                 devices = windows();
+                options = _windowsOptions;
                 break;
             default:
                 break;
         }
         for (qsizetype i = 0; i < devices.size(); ++i) {
-            addSharing(devices[i]);
+            addSharing(devices[i], options);
         }
     }
 }

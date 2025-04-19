@@ -1,0 +1,123 @@
+// Copyright 2025 Artiom Khachaturian
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#include "CGScreenCapturer.h"
+#include "DesktopConfiguration.h"
+#include "DesktopCapturerUtils.h"
+#include "Utils.h"
+
+namespace {
+
+inline constexpr bool validScreenId(webrtc::ScreenId id) {
+    return id != webrtc::kInvalidScreenId;
+}
+
+}
+
+namespace LiveKitCpp
+{
+
+CGScreenCapturer::CGScreenCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                                   const webrtc::DesktopCaptureOptions& options)
+    : Base(timerQueue, false, options)
+{
+    setTargetFramerate(DesktopConfiguration::maxFramerate(false));
+}
+
+CGScreenCapturer::~CGScreenCapturer()
+{
+    stop();
+}
+
+void CGScreenCapturer::setPreviewMode(bool preview)
+{
+    LOCK_WRITE_SAFE_OBJ(_cursorComposer);
+    if (preview) {
+        _cursorComposer->reset();
+    }
+    else if (!_cursorComposer->get()) {
+        _cursorComposer->reset(new DesktopCursorComposer(this, options()));
+    }
+}
+
+bool CGScreenCapturer::selectSource(const std::string& source)
+{
+    if (!started()) {
+        const auto id = screenIdFromString(source);
+        if (id.has_value()) {
+            _source = id.value();
+            return validScreenId(id.value());
+        }
+    }
+    return false;
+}
+
+void CGScreenCapturer::captureNextFrame()
+{
+    std::unique_ptr<webrtc::DesktopFrame> frame;
+    if (window()) {
+        frame = captureWindow(static_cast<webrtc::WindowId>(_source));
+    }
+    else {
+        frame = captureDisplay(static_cast<webrtc::ScreenId>(_source));
+    }
+    deliverCaptured(processFrame(std::move(frame)));
+}
+
+bool CGScreenCapturer::canStart() const
+{
+    return Base::canStart() && validScreenId(_source);
+}
+
+webrtc::DesktopVector CGScreenCapturer::dpi() const
+{
+    auto dpiVal = webrtc::kStandardDPI;
+    if (const auto& monitor = options().configuration_monitor()) {
+        auto config = monitor->desktop_configuration();
+        float dipToPixelScale = 1.;
+        const auto displayId = static_cast<CGDirectDisplayID>(_source);
+        if (const auto screenConfig = config.FindDisplayConfigurationById(displayId)) {
+            dipToPixelScale = screenConfig->dip_to_pixel_scale;
+        }
+        else {
+            dipToPixelScale = config.dip_to_pixel_scale;
+        }
+        dpiVal *= std::max<float>(1., dipToPixelScale);
+    }
+    return webrtc::DesktopVector(dpiVal, dpiVal);
+}
+
+std::unique_ptr<webrtc::DesktopFrame> CGScreenCapturer::processFrame(std::unique_ptr<webrtc::DesktopFrame> frame) const
+{
+    if (frame) {
+        frame->set_dpi(dpi());
+        LOCK_READ_SAFE_OBJ(_cursorComposer);
+        if (const auto& composer = _cursorComposer.constRef()) {
+            composer->setFrame(std::move(frame));
+        }
+    }
+    return frame;
+}
+
+void CGScreenCapturer::OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
+                                        std::unique_ptr<webrtc::DesktopFrame> frame)
+{
+    if (frame) {
+        deliverCaptured(std::move(frame));
+    }
+    else if (webrtc::DesktopAndCursorComposer::Result::ERROR_PERMANENT == result) {
+        notifyAboutFatalError("capture has failed and will keep failing again");
+    }
+}
+
+} // namespace LiveKitCpp

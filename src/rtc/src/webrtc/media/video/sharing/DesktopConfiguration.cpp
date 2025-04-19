@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "DesktopConfiguration.h"
 #include "PeerConnectionFactory.h"
+#include "DesktopWebRTCCapturer.h"
 #ifdef WEBRTC_MAC
 #include "MacDesktopCapturer.h"
 #endif
@@ -23,7 +24,7 @@ namespace LiveKitCpp
 DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
     : _timerQueue(timerQueue)
     , _screensEnumerator(createRawCapturer(false, false))
-    //, _windowsEnumerator(createRawCapturer(true, true))
+    , _windowsEnumerator(createRawCapturer(true, true))
 {
 }
 
@@ -152,10 +153,17 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweight
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool window,
                                                                          bool lightweightOptions) const
 {
+    std::unique_ptr<DesktopCapturer> impl;
+    const auto options = makeOptions(lightweightOptions);
 #ifdef WEBRTC_MAC
-    return MacDesktopCapturer::create(window, makeOptions(lightweightOptions), _timerQueue.lock());
+    impl = MacDesktopCapturer::create(window, options, _timerQueue.lock());
 #endif
-    return {};
+    if (!impl) {
+        if (const auto eventsQueue = _timerQueue.lock()) {
+            impl = std::make_unique<DesktopWebRTCCapturer>(eventsQueue, window, options);
+        }
+    }
+    return impl;
 }
 
 } // namespace LiveKitCpp

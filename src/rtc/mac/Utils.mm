@@ -33,29 +33,6 @@ inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
 namespace LiveKitCpp
 {
 
-NSScreen* findScreen(CGDirectDisplayID guid)
-{
-    NSScreen* result = nil;
-    @autoreleasepool {
-        auto screens = [NSScreen screens];
-        const auto count = screens ? [screens count] : 0U;
-        if (count > 0U) {
-            if (1U == count) {
-                result = [screens firstObject];
-            }
-            else {
-                for (NSScreen* screen in screens) {
-                    auto description = [screen deviceDescription];
-                    if (guid == [description[@"NSScreenNumber"] unsignedIntValue]) {
-                        result = screen;
-                    }
-                }
-            }
-        }
-    }
-    return result;
-}
-
 std::string fromNSString(NSString* nsString)
 {
     if (nsString) {

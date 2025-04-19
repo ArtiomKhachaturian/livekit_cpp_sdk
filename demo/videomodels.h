@@ -98,6 +98,8 @@ private:
     void resetContent();
 private:
     Mode _mode = Mode::Inactive;
+    VideoOptions _screenOptions;
+    VideoOptions _windowsOptions;
 };
 
 #endif // VIDEOMODELS_H

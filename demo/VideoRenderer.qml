@@ -22,7 +22,8 @@ Item {
         TextPanel {
             id: sourceNameText
             width: parent.width
-            anchors.bottom: parent.bottom
+            y: renderer.contentRect.bottom - height
+            //anchors.bottom: parent.bottom
             visible: root.showSourceName && source !== null && text !== ""
             text: source ? source.name : ""
             showBorder: false

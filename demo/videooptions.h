@@ -29,6 +29,10 @@ public:
     qint32 width() const noexcept { return _impl._width; }
     qint32 height() const noexcept { return _impl._height; }
     qint32 maxFPS() const noexcept { return _impl._maxFPS; }
+    bool interlaced() const noexcept { return _impl.interlaced(); }
+    bool preview() const noexcept { return _impl.preview(); }
+    void setInterlaced(bool interlaced) { _impl.setInterlaced(interlaced); }
+    void setPreview(bool preview) { _impl.setPreview(preview); }
     void setWidth(qint32 width) noexcept { _impl._width = width; }
     void setHeight(qint32 height) noexcept { _impl._height = height; }
     void setMaxFPS(qint32 maxFps) noexcept { _impl._maxFPS = maxFps; }

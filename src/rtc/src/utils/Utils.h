@@ -38,11 +38,9 @@
 #ifdef __OBJC__
 @class NSString;
 @class NSError;
-@class NSScreen;
 #else
 typedef struct objc_object NSString;
 typedef struct objc_object NSError;
-typedef struct objc_object NSScreen;
 #endif
 #endif // WEBRTC_MAC
 
@@ -54,7 +52,6 @@ enum class LiveKitError;
 enum class TrackType;
 
 #ifdef WEBRTC_MAC
-NSScreen* findScreen(CGDirectDisplayID guid);
 std::string fromNSString(NSString* nsString);
 NSString* toNSString(std::string_view string);
 std::string toString(NSError* error);
