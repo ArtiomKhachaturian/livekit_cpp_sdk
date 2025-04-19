@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #ifdef WEBRTC_MAC
-#include "MacOSCameraCapturer.h"
+#include "MacCameraCapturer.h"
 #include "CapturerObserver.h"
 #include "CameraManager.h"
 #include "Listener.h"
@@ -65,7 +65,7 @@ inline size_t hashCode(const webrtc::VideoCaptureCapability& cap) {
 namespace LiveKitCpp
 {
 
-class MacOSCameraCapturer::Impl
+class MacCameraCapturer::Impl
 {
 public:
     Impl(AVCaptureDevice* device);
@@ -85,17 +85,16 @@ private:
     RTC_OBJC_TYPE(RTCCameraVideoCapturer)* const _capturer;
 };
 
-MacOSCameraCapturer::MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo,
-                                         std::unique_ptr<Impl> impl)
+MacCameraCapturer::MacCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl)
     : CameraCapturer(deviceInfo)
     , _impl(std::move(impl))
 {
     _impl->setSink(this);
 }
 
-MacOSCameraCapturer::~MacOSCameraCapturer()
+MacCameraCapturer::~MacCameraCapturer()
 {
-    const auto ok = 0 == MacOSCameraCapturer::StopCapture();
+    const auto ok = 0 == MacCameraCapturer::StopCapture();
     _impl->setSink(nullptr);
     if (ok) {
         _impl->changeState(CapturerState::Stopped);
@@ -103,8 +102,7 @@ MacOSCameraCapturer::~MacOSCameraCapturer()
     _impl->setObserver(nullptr);
 }
 
-rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
-    create(const MediaDeviceInfo& deviceInfo)
+rtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::create(const MediaDeviceInfo& deviceInfo)
 {
     if (!deviceInfo._guid.empty()) {
         @autoreleasepool {
@@ -112,19 +110,19 @@ rtc::scoped_refptr<MacOSCameraCapturer> MacOSCameraCapturer::
             AVCaptureDevice* device = deviceWithUniqueIDUTF8(guid);
             if (device) {
                 auto impl = std::make_unique<Impl>(device);
-                return rtc::make_ref_counted<MacOSCameraCapturer>(deviceInfo, std::move(impl));
+                return rtc::make_ref_counted<MacCameraCapturer>(deviceInfo, std::move(impl));
             }
         }
     }
     return {};
 }
 
-AVCaptureDevice* MacOSCameraCapturer::deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8)
+AVCaptureDevice* MacCameraCapturer::deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8)
 {
     return [AVCaptureDevice deviceWithUniqueID:toNSString(deviceUniqueIdUTF8)];
 }
 
-std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(AVCaptureDevice* device)
+std::vector<webrtc::VideoCaptureCapability> MacCameraCapturer::capabilities(AVCaptureDevice* device)
 {
     if (device) {
         @autoreleasepool {
@@ -174,7 +172,7 @@ std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(AV
     return {};
 }
 
-std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(const char* deviceUniqueIdUTF8)
+std::vector<webrtc::VideoCaptureCapability> MacCameraCapturer::capabilities(const char* deviceUniqueIdUTF8)
 {
     @autoreleasepool {
         const auto device = deviceWithUniqueIDUTF8(deviceUniqueIdUTF8);
@@ -182,7 +180,7 @@ std::vector<webrtc::VideoCaptureCapability> MacOSCameraCapturer::capabilities(co
     }
 }
 
-std::string MacOSCameraCapturer::localizedDeviceName(AVCaptureDevice* device)
+std::string MacCameraCapturer::localizedDeviceName(AVCaptureDevice* device)
 {
     if (device) {
         return fromNSString(device.localizedName);
@@ -190,7 +188,7 @@ std::string MacOSCameraCapturer::localizedDeviceName(AVCaptureDevice* device)
     return {};
 }
 
-std::string MacOSCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
+std::string MacCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
 {
     if (device) {
         return fromNSString(device.uniqueID);
@@ -198,19 +196,19 @@ std::string MacOSCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
     return {};
 }
 
-void MacOSCameraCapturer::setContentHint(VideoContentHint hint)
+void MacCameraCapturer::setContentHint(VideoContentHint hint)
 {
     CameraCapturer::setContentHint(hint);
     _impl->setContentHint(hint);
 }
 
-void MacOSCameraCapturer::setObserver(CapturerObserver* observer)
+void MacCameraCapturer::setObserver(CapturerObserver* observer)
 {
     CameraCapturer::setObserver(observer);
     _impl->setObserver(observer);
 }
 
-int32_t MacOSCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& capability)
+int32_t MacCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& capability)
 {
     int result = -1;
     switch (_impl->state()) {
@@ -234,13 +232,13 @@ int32_t MacOSCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& 
     return result;
 }
 
-int32_t MacOSCameraCapturer::StopCapture()
+int32_t MacCameraCapturer::StopCapture()
 {
     _impl->stopCapture();
     return 0;
 }
 
-int32_t MacOSCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& settings)
+int32_t MacCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& settings)
 {
     @autoreleasepool {
         if (_impl->device().activeFormat) {
@@ -258,12 +256,12 @@ int32_t MacOSCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& set
     return -1;
 }
 
-bool MacOSCameraCapturer::CaptureStarted()
+bool MacCameraCapturer::CaptureStarted()
 {
     return CapturerState::Started == _impl->state();
 }
 
-webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(OSType type)
+webrtc::VideoType MacCameraCapturer::fromMediaSubType(OSType type)
 {
     switch (type) {
         case pixelFormatNV12Full():
@@ -287,7 +285,7 @@ webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(OSType type)
     return webrtc::VideoType::kUnknown;
 }
 
-webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(CMFormatDescriptionRef format)
+webrtc::VideoType MacCameraCapturer::fromMediaSubType(CMFormatDescriptionRef format)
 {
     if (format) {
         return fromMediaSubType(CMFormatDescriptionGetMediaSubType(format));
@@ -295,7 +293,7 @@ webrtc::VideoType MacOSCameraCapturer::fromMediaSubType(CMFormatDescriptionRef f
     return webrtc::VideoType::kUnknown;
 }
 
-bool MacOSCameraCapturer::interlaced(CMFormatDescriptionRef format)
+bool MacCameraCapturer::interlaced(CMFormatDescriptionRef format)
 {
     if (format) {
         @autoreleasepool {
@@ -308,7 +306,7 @@ bool MacOSCameraCapturer::interlaced(CMFormatDescriptionRef format)
 }
 
 template <typename Callback>
-void MacOSCameraCapturer::enumerateFramerates(AVCaptureDeviceFormat* format, Callback callback)
+void MacCameraCapturer::enumerateFramerates(AVCaptureDeviceFormat* format, Callback callback)
 {
     if (format) {
         @autoreleasepool {
@@ -323,7 +321,7 @@ void MacOSCameraCapturer::enumerateFramerates(AVCaptureDeviceFormat* format, Cal
     }
 }
 
-AVCaptureDeviceFormat* MacOSCameraCapturer::findClosestFormat(const webrtc::VideoCaptureCapability& capability) const
+AVCaptureDeviceFormat* MacCameraCapturer::findClosestFormat(const webrtc::VideoCaptureCapability& capability) const
 {
     @autoreleasepool {
         auto eligibleFormats = eligibleDeviceFormats(_impl->device(), capability.maxFPS);
@@ -346,7 +344,7 @@ AVCaptureDeviceFormat* MacOSCameraCapturer::findClosestFormat(const webrtc::Vide
     return nil;
 }
 
-MacOSCameraCapturer::Impl::Impl(AVCaptureDevice* device)
+MacCameraCapturer::Impl::Impl(AVCaptureDevice* device)
     : _device(device)
     , _delegate([CapturerDelegate new])
     , _capturer([[RTCCameraVideoCapturer alloc] initWithDelegate:_delegate])
@@ -361,7 +359,7 @@ MacOSCameraCapturer::Impl::Impl(AVCaptureDevice* device)
     }
 }
 
-MacOSCameraCapturer::Impl::~Impl()
+MacCameraCapturer::Impl::~Impl()
 {
     stopCapture();
     @autoreleasepool {
@@ -369,7 +367,7 @@ MacOSCameraCapturer::Impl::~Impl()
     }
 }
 
-void MacOSCameraCapturer::Impl::setContentHint(VideoContentHint hint)
+void MacCameraCapturer::Impl::setContentHint(VideoContentHint hint)
 {
     @autoreleasepool {
         AVCaptureSession* session = _capturer.captureSession;
@@ -389,8 +387,7 @@ void MacOSCameraCapturer::Impl::setContentHint(VideoContentHint hint)
     }
 }
 
-bool MacOSCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format,
-                                             NSInteger fps)
+bool MacCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format, NSInteger fps)
 {
     if (format && _device) {
         @autoreleasepool {
@@ -418,7 +415,7 @@ bool MacOSCameraCapturer::Impl::startCapture(AVCaptureDeviceFormat* format,
     return false;
 }
 
-void MacOSCameraCapturer::Impl::stopCapture()
+void MacCameraCapturer::Impl::stopCapture()
 {
     @autoreleasepool {
         if ([_delegate changeState:CapturerState::Stopping]) {
@@ -433,7 +430,7 @@ void MacOSCameraCapturer::Impl::stopCapture()
     }
 }
 
-void MacOSCameraCapturer::Impl::reportAboutError(const std::string& error)
+void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
 {
     if (!error.empty()) {
         [_delegate reportAboutErrorMessage:toNSString(error)];

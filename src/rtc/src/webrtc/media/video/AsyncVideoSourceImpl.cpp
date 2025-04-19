@@ -150,6 +150,7 @@ void AsyncVideoSourceImpl::discard()
 void AsyncVideoSourceImpl::onClosed()
 {
     AsyncMediaSourceImpl::onClosed();
+    resetCapturer();
     resetStats();
     _broadcasters({});
 }
@@ -158,6 +159,17 @@ void AsyncVideoSourceImpl::onMuted()
 {
     AsyncMediaSourceImpl::onMuted();
     resetStats();
+}
+
+void AsyncVideoSourceImpl::onEnabled(bool enabled)
+{
+    AsyncMediaSourceImpl::onEnabled(enabled);
+    if (enabled) {
+        requestCapturer();
+    }
+    else {
+        resetCapturer();
+    }
 }
 
 void AsyncVideoSourceImpl::onStateChanged(CapturerState state)

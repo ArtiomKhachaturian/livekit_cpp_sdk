@@ -128,23 +128,6 @@ VideoOptions AsyncCameraSourceImpl::validate(VideoOptions options) const
     return map(bestMatched(std::move(capability)));
 }
 
-void AsyncCameraSourceImpl::onClosed()
-{
-    AsyncVideoSourceImpl::onClosed();
-    resetCapturer();
-}
-
-void AsyncCameraSourceImpl::onEnabled(bool enabled)
-{
-    AsyncVideoSourceImpl::onEnabled(enabled);
-    if (enabled) {
-        requestCapturer();
-    }
-    else {
-        resetCapturer();
-    }
-}
-
 webrtc::VideoCaptureCapability AsyncCameraSourceImpl::
     bestMatched(webrtc::VideoCaptureCapability capability,
                 const rtc::scoped_refptr<CameraCapturer>& capturer)

@@ -28,7 +28,12 @@ inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
     return std::nullopt;
 }
 
-inline NSScreen* findScreen(CGDirectDisplayID guid)
+}
+
+namespace LiveKitCpp
+{
+
+NSScreen* findScreen(CGDirectDisplayID guid)
 {
     NSScreen* result = nil;
     @autoreleasepool {
@@ -50,11 +55,6 @@ inline NSScreen* findScreen(CGDirectDisplayID guid)
     }
     return result;
 }
-
-}
-
-namespace LiveKitCpp
-{
 
 std::string fromNSString(NSString* nsString)
 {
@@ -107,26 +107,44 @@ int32_t cmTimeToMilli(const CMTime& time)
     return 0;
 }
 
-std::string screenTitle(webrtc::ScreenId screenId)
+CFStringRefAutoRelease stringToCFString(std::string_view str)
 {
-    if (webrtc::kInvalidScreenId != screenId) {
-        if (webrtc::kFullDesktopScreenId == screenId) {
-            return "Full desktop";
+    if (!str.empty()) {
+        return CFStringCreateWithCString(kCFAllocatorDefault, str.data(), kCFStringEncodingUTF8);
+    }
+    return nullptr;
+}
+
+bool compareCFStrings(CFStringRef s1, CFStringRef s2, bool caseInsensitive)
+{
+    if (s1 && s2) {
+        CFStringCompareFlags flags = kCFCompareLocalized;
+        if (caseInsensitive) {
+            flags |= kCFCompareCaseInsensitive;
         }
-        const auto guid = static_cast<CGDirectDisplayID>(screenId);
-        @autoreleasepool {
-            NSScreen* screen = findScreen(guid);
-            if (screen) {
-                return fromNSString(screen.localizedName);
+        return kCFCompareEqualTo == CFStringCompare(s1, s2, flags);
+    }
+    return s1 == s2;
+}
+
+std::string stringFromCFString(CFStringRef str)
+{
+    if (str) {
+        const auto size = CFStringGetLength(str);
+        if (size > 0) {
+            auto capacity = CFStringGetMaximumSizeForEncoding(size, kCFStringEncodingUTF8);
+            if (capacity++ > 0) {
+                static thread_local std::vector<char> raw;
+                if (raw.size() < capacity) {
+                    raw.resize(capacity);
+                }
+                if (CFStringGetCString(str, raw.data(), capacity, kCFStringEncodingUTF8)) {
+                    return std::string(raw.data(), size);
+                }
             }
         }
     }
-    return {};
-}
-
-std::string windowTitle(webrtc::WindowId wId)
-{
-    return {};
+    return std::string();
 }
 
 } // namespace LiveKitCpp

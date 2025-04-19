@@ -13,31 +13,38 @@
 // limitations under the License.
 #pragma once // Utils.h
 #include "SafeObj.h"
+#ifdef WEBRTC_MAC
+#include "CFAutoRelease.h"
+#endif
 #include <api/media_types.h>
 #include <api/peer_connection_interface.h>
 #include <api/task_queue/task_queue_base.h>
 #include <modules/desktop_capture/desktop_capture_types.h>
 #include <memory>
-#ifdef __APPLE__
+#ifdef WEBRTC_MAC
 #include <CoreMedia/CMTime.h>
+#include <CoreGraphics/CGDirectDisplay.h>
 #elif defined(_WIN32)
 #include <Windows.h>
-#endif // __APPLE__
+#endif // WEBRTC_MAC
 #include <algorithm>
 #include <atomic>
 #include <optional>
 #include <string>
+#include <sstream>
 #include <vector>
 
-#ifdef __APPLE__
+#ifdef WEBRTC_MAC
 #ifdef __OBJC__
 @class NSString;
 @class NSError;
+@class NSScreen;
 #else
 typedef struct objc_object NSString;
 typedef struct objc_object NSError;
+typedef struct objc_object NSScreen;
 #endif
-#endif // __APPLE__
+#endif // WEBRTC_MAC
 
 namespace LiveKitCpp
 {
@@ -46,16 +53,18 @@ enum class DisconnectReason;
 enum class LiveKitError;
 enum class TrackType;
 
-#ifdef __APPLE__
+#ifdef WEBRTC_MAC
+NSScreen* findScreen(CGDirectDisplayID guid);
 std::string fromNSString(NSString* nsString);
 NSString* toNSString(std::string_view string);
 std::string toString(NSError* error);
 // timestamps
 // return zero if failed
-#ifdef WEBRTC_MAC
 int64_t cmTimeToMicro(const CMTime& time);
 int32_t cmTimeToMilli(const CMTime& time);
-#endif
+CFStringRefAutoRelease stringToCFString(std::string_view str);
+bool compareCFStrings(CFStringRef s1, CFStringRef s2, bool caseInsensitive);
+std::string stringFromCFString(CFStringRef str);
 #elif defined(_WIN32)
 // https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types
 std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueName = NULL, LPDWORD lpType = NULL);
@@ -85,6 +94,28 @@ inline constexpr int32_t extractHiWord(uint64_t i64) { return int32_t(i64 >> 32)
 inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xffffffffUL); }
 
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
+
+template <typename T>
+inline std::string toHexValue(T value)
+{
+    std::ostringstream ss;
+    ss << std::hex << value;
+    return ss.str();
+}
+
+template <typename T>
+std::optional<T> fromHexValue(const std::string& str)
+{
+    if (!str.empty()) {
+        std::istringstream ss(str);
+        T value;
+        ss >> std::hex >> value;
+        if (!ss.fail()) {
+            return value;
+        }
+    }
+    return std::nullopt;
+}
 
 template <typename T>
 inline bool exchangeVal(T source, Bricks::SafeObj<T>& dst) {
@@ -162,9 +193,5 @@ std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
     createTaskQueueU(absl::string_view queueName = {},
                      webrtc::TaskQueueFactory::Priority priority = webrtc::TaskQueueFactory::Priority::LOW,
                      const webrtc::FieldTrialsView* fieldTrials = nullptr);
-
-// screencast
-std::string screenTitle(webrtc::ScreenId screenId);
-std::string windowTitle(webrtc::WindowId wId);
 
 } // namespace LiveKitCpp

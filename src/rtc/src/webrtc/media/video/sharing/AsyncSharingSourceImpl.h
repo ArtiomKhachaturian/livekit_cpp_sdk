@@ -13,37 +13,32 @@
 // limitations under the License.
 #pragma once // AsyncSharingSourceImpl.h
 #include "AsyncVideoSourceImpl.h"
-#include "MediaTimer.h"
-#include <modules/desktop_capture/desktop_capturer.h>
 
 namespace LiveKitCpp
 {
 
-class AsyncSharingSourceImpl : public AsyncVideoSourceImpl,
-                               private webrtc::DesktopCapturer::Callback,
-                               private MediaTimerCallback
+class DesktopCapturer;
+
+class AsyncSharingSourceImpl : public AsyncVideoSourceImpl
 {
 public:
-    AsyncSharingSourceImpl(bool windowCapturer,
-                           std::unique_ptr<webrtc::DesktopCapturer> capturer,
+    AsyncSharingSourceImpl(std::unique_ptr<DesktopCapturer> capturer,
                            std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                           const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
                            const std::shared_ptr<Bricks::Logger>& logger);
     ~AsyncSharingSourceImpl() final;
     // override of AsyncVideoSourceImpl
     void requestCapturer() final;
     void resetCapturer() final;
+protected:
+    // overrides of AsyncVideoSourceImpl
+    void onOptionsChanged(const VideoOptions& options) final;
+    MediaDeviceInfo validate(MediaDeviceInfo info) const final;
+    VideoOptions validate(VideoOptions options) const final;
 private:
-    // impl. of webrtc::DesktopCapturer::Callback
-    void OnFrameCaptureStart() final;
-    void OnCaptureResult(webrtc::DesktopCapturer::Result result,
-                         std::unique_ptr<webrtc::DesktopFrame> frame) final;
-    // impl. of MediaTimerCallback
-    void onTimeout(uint64_t) final;
+    void startCapturer();
+    void stopCapturer();
 private:
-    const bool _windowCapturer;
-    const std::unique_ptr<webrtc::DesktopCapturer> _capturer;
-    MediaTimer _eventsTimer;
+    const std::unique_ptr<DesktopCapturer> _capturer;
 };
 	
 } // namespace LiveKitCpp

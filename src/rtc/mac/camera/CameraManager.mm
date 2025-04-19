@@ -13,7 +13,7 @@
 // limitations under the License.
 #ifdef WEBRTC_MAC
 #include "CameraManager.h"
-#include "MacOSCameraCapturer.h"
+#include "MacCameraCapturer.h"
 #include "Utils.h"
 #include <modules/video_capture/device_info_impl.h>
 #import <components/capturer/RTCCameraVideoCapturer.h>
@@ -68,7 +68,7 @@ webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
 
 rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev)
 {
-    return MacOSCameraCapturer::create(dev);
+    return MacCameraCapturer::create(dev);
 }
 
 } // namespace LiveKitCpp
@@ -103,7 +103,7 @@ int32_t MacOSDeviceInfoImpl::GetDeviceName(uint32_t deviceNumber,
                 if (deviceNumber < [devs count]) {
                     auto dev = [devs objectAtIndex:deviceNumber];
                     if (dev) {
-                        const auto deviceName = MacOSCameraCapturer::localizedDeviceName(dev);
+                        const auto deviceName = MacCameraCapturer::localizedDeviceName(dev);
                         std::strncpy(deviceNameUTF8, deviceName.c_str(), deviceNameLength);
                         if (deviceUniqueIdUTF8 && deviceUniqueIdUTF8Length > 0U) {
                             const auto deviceGuid = fromNSString(dev.uniqueID);
@@ -124,7 +124,7 @@ int32_t MacOSDeviceInfoImpl::GetDeviceName(uint32_t deviceNumber,
 
 int32_t MacOSDeviceInfoImpl::CreateCapabilityMap(const char* deviceUniqueIdUTF8)
 {
-    _captureCapabilities = MacOSCameraCapturer::capabilities(deviceUniqueIdUTF8);
+    _captureCapabilities = MacCameraCapturer::capabilities(deviceUniqueIdUTF8);
     return static_cast<int32_t>(_captureCapabilities.size());
 }
 

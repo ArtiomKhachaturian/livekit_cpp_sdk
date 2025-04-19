@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "DesktopConfiguration.h"
-#include "Utils.h"
-#include <charconv>
+#include "PeerConnectionFactory.h"
+#ifdef WEBRTC_MAC
+#include "MacDesktopCapturer.h"
+#endif
 
 namespace LiveKitCpp
 {
 
-DesktopConfiguration::DesktopConfiguration()
-    : _screensEnumerator(webrtc::DesktopCapturer::CreateScreenCapturer(makeOptions(false)))
-    , _windowsEnumerator(webrtc::DesktopCapturer::CreateWindowCapturer(makeOptions(true)))
+DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
+    : _timerQueue(timerQueue)
+    , _screensEnumerator(createRawCapturer(false, false))
+    , _windowsEnumerator(createRawCapturer(true, true))
 {
 }
 
@@ -28,8 +31,19 @@ DesktopConfiguration::~DesktopConfiguration()
 {
 }
 
-webrtc::DesktopSize DesktopConfiguration::screenResolution(const MediaDeviceInfo& /*dev*/) const
+std::unique_ptr<DesktopConfiguration> DesktopConfiguration::create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf)
 {
+    if (pcf) {
+        return std::make_unique<DesktopConfiguration>(pcf->eventsQueue());
+    }
+    return {};
+}
+
+webrtc::DesktopSize DesktopConfiguration::screenResolution(const MediaDeviceInfo& dev) const
+{
+    if (_screensEnumerator) {
+        return _screensEnumerator->screenResolution(dev._guid);
+    }
     return {};
 }
 
@@ -37,20 +51,14 @@ std::vector<MediaDeviceInfo> DesktopConfiguration::enumerate(bool windows) const
 {
     std::vector<MediaDeviceInfo> devices;
     if (const auto e = enumerator(windows)) {
-        webrtc::DesktopCapturer::SourceList sources;
-        if (e->GetSourceList(&sources)) {
+        std::vector<std::string> sources;
+        if (e->enumerateSources(sources)) {
             devices.reserve(sources.size());
             for (auto& source : sources) {
                 MediaDeviceInfo info;
-                info._name = std::move(source.title);
-                if (info._name.empty()) {
-                    info._name = windows ? windowTitle(source.id) : screenTitle(source.id);
-                }
-                info._guid = (windows ? _windowMarker : _screenMarker) + std::to_string(source.id);
+                info._name = e->title(source).value_or(std::string{});
+                info._guid = std::move(source);
                 devices.push_back(std::move(info));
-                /*if (1 == devices.size()) {
-                    break;
-                }*/
             }
         }
     }
@@ -67,43 +75,54 @@ std::vector<MediaDeviceInfo> DesktopConfiguration::enumerateWindows() const
     return enumerate(true);
 }
 
-std::unique_ptr<webrtc::DesktopCapturer> DesktopConfiguration::createCapturer(std::string_view guid,
-                                                                              bool *windowCapturer)
+bool DesktopConfiguration::deviceIsScreen(const std::string& guid) const
 {
-    const auto screenId = extractScreenId(guid);
-    if (webrtc::kInvalidScreenId != screenId) {
-        auto capturer = webrtc::DesktopCapturer::CreateScreenCapturer(makeOptions(false));
-        if (capturer && capturer->SelectSource(screenId)) {
-            if (windowCapturer) {
-                *windowCapturer = false;
-            }
-            return capturer;
-        }
+    return _screensEnumerator && _screensEnumerator->screenIdFromString(guid).has_value();
+}
+
+bool DesktopConfiguration::deviceIsScreen(const MediaDeviceInfo& info) const
+{
+    return deviceIsScreen(info._guid);
+}
+
+bool DesktopConfiguration::deviceIsWindow(const std::string& guid) const
+{
+    return _windowsEnumerator && _windowsEnumerator->windowIdFromString(guid).has_value();
+}
+
+bool DesktopConfiguration::deviceIsWindow(const MediaDeviceInfo& info) const
+{
+    return deviceIsWindow(info._guid);
+}
+
+bool DesktopConfiguration::deviceIsValid(const std::string& guid) const
+{
+    return deviceIsScreen(guid) || deviceIsWindow(guid);
+}
+
+bool DesktopConfiguration::deviceIsValid(const MediaDeviceInfo& info) const
+{
+    return deviceIsScreen(info) || deviceIsWindow(info);
+}
+
+std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std::string& guid,
+                                                                      bool selectSource,
+                                                                      bool lightweightOptions) const
+{
+    std::unique_ptr<DesktopCapturer> capturer;
+    if (deviceIsScreen(guid)) {
+        capturer = createRawCapturer(false, lightweightOptions);
     }
-    const auto windowId = extractWindowId(guid);
-    if (webrtc::kNullWindowId != windowId) {
-        auto capturer = webrtc::DesktopCapturer::CreateWindowCapturer(makeOptions(false));
-        if (capturer && capturer->SelectSource(windowId)) {
-            if (windowCapturer) {
-                *windowCapturer = true;
-            }
-            return capturer;
-        }
+    else if (deviceIsWindow(guid)) {
+        capturer = createRawCapturer(true, lightweightOptions);
+    }
+    if (capturer && (!selectSource || capturer->selectSource(guid))) {
+        return capturer;
     }
     return {};
 }
 
-bool DesktopConfiguration::deviceIsValid(std::string_view guid)
-{
-    return hasScreenMarker(guid) || hasWindowMarker(guid);
-}
-
-bool DesktopConfiguration::deviceIsValid(const MediaDeviceInfo& info)
-{
-    return deviceIsValid(info._guid);
-}
-
-webrtc::DesktopCapturer* DesktopConfiguration::enumerator(bool windows) const
+DesktopCapturer* DesktopConfiguration::enumerator(bool windows) const
 {
     return windows ? _windowsEnumerator.get() : _screensEnumerator.get();
 }
@@ -130,53 +149,12 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweight
     return options;
 }
 
-webrtc::ScreenId DesktopConfiguration::extractScreenId(std::string_view guid)
+std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool window,
+                                                                         bool lightweightOptions) const
 {
-    guid = unmarkedScreenGuid(std::move(guid));
-    if (!guid.empty()) {
-        webrtc::ScreenId screenId = webrtc::kInvalidDisplayId;
-        if (std::errc() == std::from_chars(guid.data(), guid.data() + guid.size(), screenId).ec) {
-            return screenId;
-        }
-    }
-    return webrtc::kInvalidScreenId;
-}
-
-webrtc::WindowId DesktopConfiguration::extractWindowId(std::string_view guid)
-{
-    guid = unmarkedWindowGuid(guid);
-    if (!guid.empty()) {
-        webrtc::WindowId windowId = webrtc::kNullWindowId;
-        if (std::errc() == std::from_chars(guid.data(), guid.data() + guid.size(), windowId).ec) {
-            return windowId;
-        }
-    }
-    return webrtc::kNullWindowId;
-}
-
-bool DesktopConfiguration::hasScreenMarker(std::string_view guid)
-{
-    return startWith(guid, _screenMarker);
-}
-
-bool DesktopConfiguration::hasWindowMarker(std::string_view guid)
-{
-    return startWith(guid, _windowMarker);
-}
-
-std::string_view DesktopConfiguration::unmarkedScreenGuid(std::string_view guid)
-{
-    if (hasScreenMarker(guid)) {
-        return guid.substr(_screenMarker.size());;
-    }
-    return {};
-}
-
-std::string_view DesktopConfiguration::unmarkedWindowGuid(std::string_view guid)
-{
-    if (hasWindowMarker(guid)) {
-        return guid.substr(_windowMarker.size());;
-    }
+#ifdef WEBRTC_MAC
+    return MacDesktopCapturer::create(window, makeOptions(lightweightOptions), _timerQueue.lock());
+#endif
     return {};
 }
 

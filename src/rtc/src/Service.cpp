@@ -19,6 +19,7 @@
 #include "CameraManager.h"
 #include "DefaultKeyProvider.h"
 #include "DesktopConfiguration.h"
+#include "DesktopCapturer.h"
 #include "Listeners.h"
 #include "LocalVideoDeviceImpl.h"
 #include "LocalWebRtcTrack.h"
@@ -62,10 +63,8 @@ public:
 class AsyncSharingSource : public AsyncVideoSource
 {
 public:
-    AsyncSharingSource(bool windowCapturer,
-                       std::unique_ptr<webrtc::DesktopCapturer> capturer,
+    AsyncSharingSource(std::unique_ptr<DesktopCapturer> capturer,
                        std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                       const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
                        const std::shared_ptr<Bricks::Logger>& logger);
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return true;}
@@ -141,7 +140,7 @@ private:
     static inline const VolumeControl _defaultPlayout = {51U, 0U, 255U};
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
-    const std::shared_ptr<DesktopConfiguration> _desktopConfiguration;
+    const std::unique_ptr<DesktopConfiguration> _desktopConfiguration;
     Bricks::SafeObj<VolumeControl> _recordingVolume;
     Bricks::SafeObj<VolumeControl> _playoutVolume;
     std::atomic_bool _recordingMuted;
@@ -387,7 +386,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::create(true, logWebrtcEvents ? logger : nullptr))
-    , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>() : std::shared_ptr<DesktopConfiguration>())
+    , _desktopConfiguration(DesktopConfiguration::create(_pcf))
     , _recordingVolume(_defaultRecording)
     , _playoutVolume(_defaultPlayout)
 {
@@ -765,12 +764,9 @@ webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createCameraTrack() const
 webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createSharingTrack(const MediaDeviceInfo& info) const
 {
     if (_pcf && _desktopConfiguration) {
-        bool windowCapturer = false;
-        if (auto capturer = _desktopConfiguration->createCapturer(info._guid, &windowCapturer)) {
-            auto source = webrtc::make_ref_counted<AsyncSharingSource>(windowCapturer,
-                                                                       std::move(capturer),
+        if (auto capturer = _desktopConfiguration->createCapturer(info._guid, false)) {
+            auto source = webrtc::make_ref_counted<AsyncSharingSource>(std::move(capturer),
                                                                        _pcf->signalingThread(),
-                                                                       _pcf->eventsQueue(),
                                                                        logger());
             return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
         }
@@ -883,15 +879,11 @@ AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signal
 {
 }
 
-AsyncSharingSource::AsyncSharingSource(bool windowCapturer,
-                                       std::unique_ptr<webrtc::DesktopCapturer> capturer,
+AsyncSharingSource::AsyncSharingSource(std::unique_ptr<DesktopCapturer> capturer,
                                        std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                                       const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : AsyncVideoSource(std::make_shared<AsyncSharingSourceImpl>(windowCapturer,
-                                                                std::move(capturer),
+    : AsyncVideoSource(std::make_shared<AsyncSharingSourceImpl>(std::move(capturer),
                                                                 std::move(signalingQueue),
-                                                                timerQueue,
                                                                 logger))
 {
 }

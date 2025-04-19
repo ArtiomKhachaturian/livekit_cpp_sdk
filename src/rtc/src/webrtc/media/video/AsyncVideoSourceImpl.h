@@ -62,6 +62,7 @@ protected:
     // impl. of MediaSourceImpl
     void onClosed() override;
     void onMuted() override;
+    void onEnabled(bool enabled) override;
     // impl. of CapturerObserver
     void onStateChanged(CapturerState state) override;
     void onCapturingFatalError(const std::string& details) override;

@@ -37,9 +37,6 @@ protected:
     void onOptionsChanged(const VideoOptions& options) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
     VideoOptions validate(VideoOptions options) const final;
-    // impl. of MediaSourceImpl
-    void onClosed() final;
-    void onEnabled(bool enabled) final;
 private:
     static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
                                                       const rtc::scoped_refptr<CameraCapturer>& capturer);

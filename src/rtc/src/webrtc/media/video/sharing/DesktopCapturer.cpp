@@ -25,6 +25,37 @@ DesktopCapturer::DesktopCapturer(bool window)
 {
 }
 
+std::string DesktopCapturer::windowIdToString(webrtc::WindowId id) const
+{
+    return _windowMarker + toHexValue(id);
+}
+
+std::string DesktopCapturer::screenIdToString(webrtc::ScreenId id) const
+{
+    return _screenMarker + toHexValue(id);
+}
+
+std::optional<webrtc::WindowId> DesktopCapturer::windowIdFromString(const std::string& str) const
+{
+    if (startWith(str, _windowMarker)) {
+        return fromHexValue<webrtc::WindowId>(str.substr(_windowMarker.size()));
+    }
+    return std::nullopt;
+}
+
+std::optional<webrtc::ScreenId> DesktopCapturer::screenIdFromString(const std::string& str) const
+{
+    if (startWith(str, _screenMarker)) {
+        return fromHexValue<webrtc::ScreenId>(str.substr(_screenMarker.size()));
+    }
+    return std::nullopt;
+}
+
+void DesktopCapturer::setTargetResolutuon(const webrtc::DesktopSize& resolution)
+{
+    setTargetResolutuon(resolution.width(), resolution.height());
+}
+
 void DesktopCapturer::setOutputSink(CapturerProxySink* sink)
 {
     _sink = sink;

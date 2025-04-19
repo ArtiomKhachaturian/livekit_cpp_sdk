@@ -13,83 +13,122 @@
 // limitations under the License.
 #include "AsyncSharingSourceImpl.h"
 #include "DesktopConfiguration.h"
-#include "DesktopFrameVideoBuffer.h"
+#include "DesktopCapturer.h"
 #include "VideoUtils.h"
 
 namespace LiveKitCpp
 {
 
-AsyncSharingSourceImpl::AsyncSharingSourceImpl(bool windowCapturer,
-                                               std::unique_ptr<webrtc::DesktopCapturer> capturer,
+AsyncSharingSourceImpl::AsyncSharingSourceImpl(std::unique_ptr<DesktopCapturer> capturer,
                                                std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
-                                               const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
                                                const std::shared_ptr<Bricks::Logger>& logger)
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger)
-    , _windowCapturer(windowCapturer)
     , _capturer(std::move(capturer))
-    , _eventsTimer(timerQueue)
 {
     if (_capturer) {
-        _eventsTimer.setHighPrecision();
-        _eventsTimer.setCallback(this);
+        setOptions(VideoOptions{._maxFPS = DesktopConfiguration::maxFramerate(_capturer->window())});
     }
-    setOptions(VideoOptions{._maxFPS = DesktopConfiguration::maxFramerate(_windowCapturer)});
 }
 
 AsyncSharingSourceImpl::~AsyncSharingSourceImpl()
 {
-    if (_capturer) {
-        _eventsTimer.stop();
-        _eventsTimer.setCallback(nullptr);
-    }
     close();
+    if (_capturer) {
+        _capturer->setOutputSink(nullptr);
+    }
 }
 
 void AsyncSharingSourceImpl::requestCapturer()
 {
     if (_capturer && frameWanted()) {
-        const auto captureOptions = this->options();
-        _capturer->SetMaxFrameRate(captureOptions._maxFPS);
-        // TODO: more safe version of starting required
-        _eventsTimer.singleShot([this]() {
-            _capturer->Start(this);
-        });
-        _eventsTimer.start(float(captureOptions._maxFPS));
+        const auto device = this->deviceInfo();
+        if (_capturer->selectSource(device._guid)) {
+            const auto captureOptions = this->options();
+            _capturer->setPreviewMode(captureOptions.preview());
+            _capturer->setTargetResolutuon(captureOptions._width, captureOptions._height);
+            _capturer->setTargetFramerate(captureOptions._maxFPS);
+            _capturer->setOutputSink(this);
+            if (enabled()) {
+                startCapturer();
+            }
+        }
+        else {
+            // TODO: add error details
+            notify(&MediaDeviceListener::onMediaCreationFailed, std::string{});
+        }
     }
 }
 
 void AsyncSharingSourceImpl::resetCapturer()
 {
     if (_capturer) {
-        
+        stopCapturer();
+        _capturer->setOutputSink(nullptr);
     }
 }
 
-void AsyncSharingSourceImpl::OnFrameCaptureStart()
+void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
 {
-    notify(&MediaDeviceListener::onMediaStarted);
+    AsyncVideoSourceImpl::onOptionsChanged(options);
+    if (active() && _capturer) {
+        _capturer->setPreviewMode(options.preview());
+        _capturer->setTargetResolutuon(options._width, options._height);
+        _capturer->setTargetFramerate(options._maxFPS);
+    }
 }
 
-void AsyncSharingSourceImpl::OnCaptureResult(webrtc::DesktopCapturer::Result result,
-                                             std::unique_ptr<webrtc::DesktopFrame> frame)
+MediaDeviceInfo AsyncSharingSourceImpl::validate(MediaDeviceInfo info) const
 {
-    if (webrtc::DesktopCapturer::Result::ERROR_PERMANENT == result) {
-        changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
-        // TODO: add error details
-        notify(&MediaDeviceListener::onMediaFatalError, std::string{});
+    if (_capturer) {
+        if (_capturer->window()) {
+            if (_capturer->windowIdFromString(info._guid).has_value()) {
+                return info;
+            }
+        }
+        if (_capturer->screenIdFromString(info._guid).has_value()) {
+            return info;
+        }
     }
-    else if (frame) {
-        auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame));
-        if (const auto frame = createVideoFrame(buffer)) {
-            broadcast(frame.value());
+    return {};
+}
+
+VideoOptions AsyncSharingSourceImpl::validate(VideoOptions options) const
+{
+    if (_capturer) {
+        if (!_capturer->window()) {
+            const auto res = _capturer->screenResolution(deviceInfo()._guid);
+            if (!res.is_empty()) {
+                options._width = std::min(options._width, res.width());
+                options._height = std::min(options._height, res.height());
+            }
+        }
+        return options;
+    }
+    return {};
+}
+
+void AsyncSharingSourceImpl::startCapturer()
+{
+    if (_capturer) {
+        const auto captureOptions = this->options();
+        _capturer->setPreviewMode(captureOptions.preview());
+        _capturer->setTargetResolutuon(captureOptions._width, captureOptions._height);
+        _capturer->setTargetFramerate(captureOptions._maxFPS);
+        if (_capturer->start()) {
+            notify(&MediaDeviceListener::onMediaStarted);
+        }
+        else {
+            // TODO: add error details
+            notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
         }
     }
 }
 
-void AsyncSharingSourceImpl::onTimeout(uint64_t)
+void AsyncSharingSourceImpl::stopCapturer()
 {
-    if (_capturer) {
-        _capturer->CaptureFrame();
+    if (_capturer && _capturer->started()) {
+        _capturer->stop();
+        notify(&MediaDeviceListener::onMediaStopped);
     }
 }
 

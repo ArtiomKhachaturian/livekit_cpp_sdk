@@ -13,19 +13,26 @@
 // limitations under the License.
 #pragma once // DesktopConfiguration.h
 #include "livekit/rtc/media/MediaDeviceInfo.h"
+#include <api/scoped_refptr.h>
 #include <modules/desktop_capture/desktop_capture_options.h>
 #include <modules/desktop_capture/desktop_geometry.h>
-#include <modules/desktop_capture/desktop_capturer.h>
 #include <optional>
 #include <memory>
+
+namespace webrtc {
+class TaskQueueBase;
+}
 
 namespace LiveKitCpp
 {
 
+class PeerConnectionFactory;
+class DesktopCapturer;
+
 class DesktopConfiguration
 {
 public:
-    DesktopConfiguration();
+    DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue);
     ~DesktopConfiguration();
     bool screensEnumerationIsAvailable() const { return nullptr != _screensEnumerator; }
     bool windowsEnumerationIsAvailable() const { return nullptr != _windowsEnumerator; }
@@ -33,25 +40,26 @@ public:
     std::vector<MediaDeviceInfo> enumerate(bool windows) const;
     std::vector<MediaDeviceInfo> enumerateScreens() const;
     std::vector<MediaDeviceInfo> enumerateWindows() const;
-    static std::unique_ptr<webrtc::DesktopCapturer> createCapturer(std::string_view guid,
-                                                                   bool *windowCapturer = nullptr);
-    static bool deviceIsValid(std::string_view guid);
-    static bool deviceIsValid(const MediaDeviceInfo& info);
+    bool deviceIsScreen(const std::string& guid) const;
+    bool deviceIsScreen(const MediaDeviceInfo& info) const;
+    bool deviceIsWindow(const std::string& guid) const;
+    bool deviceIsWindow(const MediaDeviceInfo& info) const;
+    bool deviceIsValid(const std::string& guid) const;
+    bool deviceIsValid(const MediaDeviceInfo& info) const;
+    std::unique_ptr<DesktopCapturer> createCapturer(const std::string& guid,
+                                                    bool selectSource = false,
+                                                    bool lightweightOptions = false) const;
     static int32_t maxFramerate(bool /*windows*/) { return 30; }
+    static std::unique_ptr<DesktopConfiguration> create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
 private:
-    webrtc::DesktopCapturer* enumerator(bool windows) const;
+    DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool lightweightMode = false);
-    static webrtc::ScreenId extractScreenId(std::string_view guid);
-    static webrtc::WindowId extractWindowId(std::string_view guid);
-    static bool hasScreenMarker(std::string_view guid);
-    static bool hasWindowMarker(std::string_view guid);
-    static std::string_view unmarkedScreenGuid(std::string_view guid);
-    static std::string_view unmarkedWindowGuid(std::string_view guid);
+    std::unique_ptr<DesktopCapturer> createRawCapturer(bool window,
+                                                       bool lightweightOptions = false) const;
 private:
-    static inline const std::string _screenMarker = "!eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9<";
-    static inline const std::string _windowMarker = "!ikUaGOaxzKw0JlNj080oEkPG2S42GIck3O65<";
-    const std::unique_ptr<webrtc::DesktopCapturer> _screensEnumerator;
-    const std::unique_ptr<webrtc::DesktopCapturer> _windowsEnumerator;
+    const std::weak_ptr<webrtc::TaskQueueBase> _timerQueue;
+    const std::unique_ptr<DesktopCapturer> _screensEnumerator;
+    const std::unique_ptr<DesktopCapturer> _windowsEnumerator;
 };
 	
 } // namespace LiveKitCpp

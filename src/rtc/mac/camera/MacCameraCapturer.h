@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#pragma once // MacCameraCapturer.h
 #ifdef WEBRTC_MAC
 #include "CameraCapturer.h"
 #include <CoreMedia/CMSampleBuffer.h>
@@ -31,13 +31,13 @@ typedef struct objc_object AVCaptureDeviceFormat;
 namespace LiveKitCpp
 {
 
-class MacOSCameraCapturer : public CameraCapturer,
-                            private rtc::VideoSinkInterface<webrtc::VideoFrame>
+class MacCameraCapturer : public CameraCapturer,
+                          private rtc::VideoSinkInterface<webrtc::VideoFrame>
 {
     class Impl;
 public:
-    ~MacOSCameraCapturer() override;
-    static rtc::scoped_refptr<MacOSCameraCapturer> create(const MediaDeviceInfo& deviceInfo);
+    ~MacCameraCapturer() override;
+    static rtc::scoped_refptr<MacCameraCapturer> create(const MediaDeviceInfo& deviceInfo);
     static AVCaptureDevice* deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(const char* deviceUniqueIdUTF8);
@@ -52,7 +52,7 @@ public:
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
     bool CaptureStarted() final;
 protected:
-    MacOSCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl);
+    MacCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl);
 private:
     static webrtc::VideoType fromMediaSubType(OSType type);
     static webrtc::VideoType fromMediaSubType(CMFormatDescriptionRef format);

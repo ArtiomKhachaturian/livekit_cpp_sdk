@@ -15,8 +15,14 @@
 #include "CapturerState.h"
 #include "Listener.h"
 #include <api/video/video_frame.h>
-#include <modules/desktop_capture/desktop_frame.h>
+#include <modules/desktop_capture/desktop_capture_types.h>
+#include <modules/desktop_capture/desktop_geometry.h>
 #include <atomic>
+
+namespace webrtc {
+class DesktopFrame;
+class SharedMemoryFactory;
+}
 
 namespace LiveKitCpp
 {
@@ -26,7 +32,44 @@ class CapturerProxySink;
 class DesktopCapturer
 {
 public:
+    // helper routines fow working with common WebRTC sharing types
+    virtual std::string windowIdToString(webrtc::WindowId id) const;
+    virtual std::string screenIdToString(webrtc::ScreenId id) const;
+    virtual std::optional<webrtc::WindowId> windowIdFromString(const std::string& str) const;
+    virtual std::optional<webrtc::ScreenId> screenIdFromString(const std::string& str) const;
+    // tells that capturer will work in preview mode and client expects
+    // that system cursor and selection frame (if any) will not be captured in resulted frames
+    virtual void setPreviewMode(bool /*preview*/) {}
+    // return null opt in case of a failure, title maybe empty for some windows
+    virtual std::optional<std::string> title(const std::string& source) const = 0;
+    // max expected frame rate for this capturer
+    virtual void setTargetFramerate(int32_t /*fps*/) {}
+    // upped-bound target resolution, cropped frame should keep original (screen/window) aspect ratio
+    virtual void setTargetResolutuon(int32_t /*width*/, int32_t /*height*/) {}
+    // valid only for screen capturers
+    virtual webrtc::DesktopSize screenResolution(const std::string& source) const = 0;
+    // gets a list of sources current capturer supports, Returns false in case of a failure
+    virtual bool enumerateSources(std::vector<std::string>& sources) const = 0;
+    // selects a source to be captured, returns false in case of a failure
+    // (e.g. if there is no source with the specified type and id.)
+    virtual bool selectSource(const std::string& source) = 0;
+    // tells that capturing is active
+    virtual bool started() const = 0;
+    // called at the beginning of a capturing session
+    virtual bool start() = 0;
+    // called at the finish of a capturing session
+    virtual void stop() = 0;
+    // brings the selected source to the front and sets the input focus on it,
+    // returns false in case of a failure or no source has been selected
+    virtual bool focusOnSelectedSource() { return true; }
+    // sets the window to be excluded from the captured image in the future Capture calls,
+    // used to exclude the screenshare notification window (indicator) for screen capturing
+    virtual void setExcludedWindow(webrtc::WindowId /*window*/) {}
+    // sets SharedMemoryFactory that will be used to create buffers for the captured frames
+    virtual void setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> /*smf*/) {}
+    // window or screen capturer
     bool window() const noexcept { return _window; }
+    void setTargetResolutuon(const webrtc::DesktopSize& resolution);
     void setOutputSink(CapturerProxySink* sink);
     virtual ~DesktopCapturer() = default;
 protected:
@@ -42,6 +85,8 @@ protected:
     void deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> frame,
                          const std::optional<webrtc::ColorSpace>& colorSpace = {});
 private:
+    static inline const std::string _screenMarker = "!eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9<";
+    static inline const std::string _windowMarker = "!ikUaGOaxzKw0JlNj080oEkPG2S42GIck3O65<";
     const bool _window;
     Bricks::Listener<CapturerProxySink*> _sink;
     std::atomic<uint16_t> _lastFrameId = 0U;

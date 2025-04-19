@@ -249,7 +249,7 @@ if (WEBRTC_AVAILABLE)
     source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/rtc PREFIX "RtcApi" FILES ${RTC_PUBLIC_HEADERS})
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/src PREFIX "Rtc" FILES ${RTC_COMMON_HEADERS} 
                                                                          ${RTC_COMMON_SOURCES})
-    source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER} PREFIX "Rtc" FILES ${RTC_PLATFORM_HEADERS} ${RTC_PLATFORM_SOURCES})
+    source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER} PREFIX "Rtc/${PLATFORM_SRC_FOLDER}" FILES ${RTC_PLATFORM_HEADERS} ${RTC_PLATFORM_SOURCES})
 
     set(RTC_SRC_DIR ${CMAKE_SOURCE_DIR}/src/rtc)
     # Add include directories
@@ -278,6 +278,7 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/src/webrtc/media/video/camera
         ${RTC_SRC_DIR}/src/webrtc/media/video/sharing
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera
+        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/sharing
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}
         ${WEBRTC_INCLUDE_DIR}
         ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include
