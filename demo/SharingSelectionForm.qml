@@ -38,7 +38,7 @@ Dialog {
                 delegate: VideoRenderer {
                     anchors.fill: parent
                     showSourceName: true
-                    showDiagnostics: false
+                    showDiagnostics: noWindows
                     source: screensModel.sourceAt(index)
                 }
                 //focus: true

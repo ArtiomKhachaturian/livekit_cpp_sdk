@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "AsyncSharingSourceImpl.h"
 #include "DesktopConfiguration.h"
+#include "DesktopFrameVideoBuffer.h"
 #include "VideoFrameImpl.h"
 
 namespace LiveKitCpp
@@ -47,13 +48,13 @@ AsyncSharingSourceImpl::~AsyncSharingSourceImpl()
 void AsyncSharingSourceImpl::requestCapturer()
 {
     if (_capturer && frameWanted()) {
-        /*const auto captureOptions = this->options();
+        const auto captureOptions = this->options();
         _capturer->SetMaxFrameRate(captureOptions._maxFPS);
         // TODO: more safe version of starting required
         _eventsTimer.singleShot([this]() {
             _capturer->Start(this);
         });
-        _eventsTimer.start(float(captureOptions._maxFPS));*/
+        _eventsTimer.start(float(captureOptions._maxFPS));
     }
 }
 
@@ -78,7 +79,10 @@ void AsyncSharingSourceImpl::OnCaptureResult(webrtc::DesktopCapturer::Result res
         notify(&MediaDeviceListener::onMediaFatalError, std::string{});
     }
     else if (frame) {
-        
+        auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame));
+        if (const auto frame = createVideoFrame(buffer)) {
+            broadcast(frame.value());
+        }
     }
 }
 

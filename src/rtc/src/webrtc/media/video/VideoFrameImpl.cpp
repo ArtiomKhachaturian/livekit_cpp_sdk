@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoFrameImpl.h"
+#include "NativeVideoFrameBuffer.h"
 #include <cassert>
 
 namespace LiveKitCpp
@@ -26,11 +27,17 @@ VideoFrameImpl::VideoFrameImpl(VideoFrameType type, int rotation,
 
 std::shared_ptr<VideoFrame> VideoFrameImpl::create(const webrtc::VideoFrame& frame)
 {
+    return create(frame.video_frame_buffer(), frame.rotation());
+}
+
+std::shared_ptr<VideoFrame> VideoFrameImpl::create(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
+                                                   webrtc::VideoRotation rotation)
+{
     std::shared_ptr<VideoFrame> impl;
-    if (auto buffer = map(frame.video_frame_buffer())) {
+    buffer = map(std::move(buffer));
+    if (buffer) {
         if (const auto type = detectType(buffer)) {
-            const auto rotation = detectRotation(frame);
-            impl.reset(new VideoFrameImpl(type.value(), rotation, std::move(buffer)));
+            impl.reset(new VideoFrameImpl(type.value(), map(rotation), std::move(buffer)));
         }
     }
     return impl;
@@ -78,6 +85,10 @@ int VideoFrameImpl::stride(size_t planeIndex) const
                 return stride(planeIndex, _buffer->GetI410());
             case webrtc::VideoFrameBuffer::Type::kNV12:
                 return stride(planeIndex, _buffer->GetNV12());
+            case webrtc::VideoFrameBuffer::Type::kNative:
+                if (const auto native = dynamic_cast<const NativeVideoFrameBuffer*>(_buffer.get())) {
+                    return native->stride(planeIndex);
+                }
             default:
                 assert(false);
                 break;
@@ -104,6 +115,10 @@ const std::byte* VideoFrameImpl::data(size_t planeIndex) const
                 return data(planeIndex, _buffer->GetI410());
             case webrtc::VideoFrameBuffer::Type::kNV12:
                 return data(planeIndex, _buffer->GetNV12());
+            case webrtc::VideoFrameBuffer::Type::kNative:
+                if (const auto native = dynamic_cast<const NativeVideoFrameBuffer*>(_buffer.get())) {
+                    return native->data(planeIndex);
+                }
             default:
                 assert(false);
                 break;
@@ -131,6 +146,10 @@ int VideoFrameImpl::dataSize(size_t planeIndex) const
                 return dataSizeI410(planeIndex, _buffer->width(), _buffer->height());
             case webrtc::VideoFrameBuffer::Type::kNV12:
                 return dataSizeNV12(planeIndex, _buffer->width(), _buffer->height());
+            case webrtc::VideoFrameBuffer::Type::kNative:
+                if (const auto native = dynamic_cast<const NativeVideoFrameBuffer*>(_buffer.get())) {
+                    return native->dataSize(planeIndex);
+                }
             default:
                 assert(false);
                 break;
@@ -144,6 +163,9 @@ std::optional<VideoFrameType> VideoFrameImpl::detectType(const rtc::scoped_refpt
     if (buffer) {
         switch (buffer->type()) {
             case webrtc::VideoFrameBuffer::Type::kNative:
+                if (const auto native = dynamic_cast<const NativeVideoFrameBuffer*>(buffer.get())) {
+                    return native->nativeType();
+                }
                 break;
             case webrtc::VideoFrameBuffer::Type::kI420A:
                 assert(false);
@@ -169,9 +191,9 @@ std::optional<VideoFrameType> VideoFrameImpl::detectType(const rtc::scoped_refpt
     return std::nullopt;
 }
 
-int VideoFrameImpl::detectRotation(const webrtc::VideoFrame& frame)
+int VideoFrameImpl::map(webrtc::VideoRotation rotation)
 {
-    switch (frame.rotation()) {
+    switch (rotation) {
         case webrtc::kVideoRotation_0:
             break;
         case webrtc::kVideoRotation_90:
@@ -194,7 +216,11 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameImpl::
     if (buffer) {
         switch (buffer->type()) {
             case webrtc::VideoFrameBuffer::Type::kI420A:
+                return buffer->ToI420();
             case webrtc::VideoFrameBuffer::Type::kNative:
+                if (dynamic_cast<const NativeVideoFrameBuffer*>(buffer.get())) {
+                    return buffer;
+                }
                 return buffer->ToI420();
             default:
                 break;

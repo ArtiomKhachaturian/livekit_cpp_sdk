@@ -23,6 +23,8 @@ class VideoFrameImpl : public VideoFrame
 {
 public:
     static std::shared_ptr<VideoFrame> create(const webrtc::VideoFrame& frame);
+    static std::shared_ptr<VideoFrame> create(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
+                                              webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0);
     // impl. of VideoFrame
     std::shared_ptr<VideoFrame> convertToI420() const final;
     int width() const final;
@@ -34,7 +36,7 @@ private:
     VideoFrameImpl(VideoFrameType type, int rotation,
                    rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
     static std::optional<VideoFrameType> detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
-    static int detectRotation(const webrtc::VideoFrame& frame);
+    static int map(webrtc::VideoRotation rotation);
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> map(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
     static int stride(size_t planeIndex, const webrtc::PlanarYuvBuffer* buffer);
     static int stride(size_t planeIndex, const webrtc::BiplanarYuvBuffer* buffer);

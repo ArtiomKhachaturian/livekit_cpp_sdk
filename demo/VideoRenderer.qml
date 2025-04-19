@@ -25,6 +25,7 @@ Item {
             anchors.bottom: parent.bottom
             visible: root.showSourceName && source !== null && text !== ""
             text: source ? source.name : ""
+            showBorder: false
         }
     }
 

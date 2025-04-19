@@ -48,6 +48,9 @@ std::vector<MediaDeviceInfo> DesktopConfiguration::enumerate(bool windows) const
                 }
                 info._guid = (windows ? _windowMarker : _screenMarker) + std::to_string(source.id);
                 devices.push_back(std::move(info));
+                /*if (1 == devices.size()) {
+                    break;
+                }*/
             }
         }
     }
@@ -102,7 +105,6 @@ bool DesktopConfiguration::deviceIsValid(const MediaDeviceInfo& info)
 
 webrtc::DesktopCapturer* DesktopConfiguration::enumerator(bool windows) const
 {
-    //windows = false;
     return windows ? _windowsEnumerator.get() : _screensEnumerator.get();
 }
 
