@@ -12,37 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CGDesktopCapturer.h
+#include "DesktopCursorComposer.h"
+#include "DesktopSimpleCapturer.h"
 #include "MacDesktopCapturer.h"
-#include "MediaTimer.h"
+#include "SafeObj.h"
 #include <atomic>
+
+namespace webrtc {
+class MouseCursorMonitor;
+}
 
 namespace LiveKitCpp
 {
 
-class CGDesktopCapturer : public MacDesktopCapturer,
-                          private MediaTimerCallback
+class CGDesktopCapturer : public DesktopSimpleCapturer<MacDesktopCapturer>,
+                          private webrtc::DesktopCapturer::Callback
 {
+    using Base = DesktopSimpleCapturer<MacDesktopCapturer>;
 public:
-    CGDesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options,
-                      const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue);
-    ~CGDesktopCapturer() final;
+    CGDesktopCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                      bool window, const webrtc::DesktopCaptureOptions& options);
+    ~CGDesktopCapturer() override;
     // overrides & impl. of DesktopCapturer
     void setPreviewMode(bool preview) final;
-    void setTargetFramerate(int32_t fps) final;
     bool selectSource(const std::string& source) final;
-    bool started() const final { return _timer.started(); }
-    bool start() final;
-    void stop() { _timer.stop(); }
+protected:
+    void captureNextFrame() final;
+    bool canStart() const final;
 private:
     static bool validSource(bool window, intptr_t source);
-    bool hasValidSource() const { return validSource(window(), _source); }
-    // impl. of MediaTimerCallback
-    void onTimeout(uint64_t) final;
+    // impl. of webrtc::DesktopCapturer::Callback
+    void OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
+                         std::unique_ptr<webrtc::DesktopFrame> frame) final;
 private:
-    MediaTimer _timer;
-    std::atomic_bool _preview = false;
+    const webrtc::DesktopCaptureOptions _options;
     std::atomic<intptr_t> _source;
-    std::atomic<int32_t> _frameRate;
+    Bricks::SafeUniquePtr<DesktopCursorComposer> _cursorComposer;
 };
 	
 } // namespace LiveKitCpp

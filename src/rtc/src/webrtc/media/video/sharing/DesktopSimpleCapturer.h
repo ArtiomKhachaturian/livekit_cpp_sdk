@@ -1,0 +1,90 @@
+// Copyright 2025 Artiom Khachaturian
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#pragma once // DesktopTimedCapturer.h
+#include "DesktopCapturer.h"
+#include "MediaTimer.h"
+#include "SafeObj.h"
+#include "Utils.h"
+#include <atomic>
+#include <type_traits>
+
+namespace LiveKitCpp
+{
+
+template <class TCapturer>
+class DesktopSimpleCapturer : public TCapturer,
+                              private MediaTimerCallback
+{
+    static_assert(std::is_base_of_v<DesktopCapturer, TCapturer>);
+public:
+    // overrides & impl. of DesktopCapturer
+    void setTargetFramerate(int32_t fps) final;
+    bool started() const final { return _timer.started(); }
+    bool start() override;
+    void stop() override { _timer.stop(); }
+    ~DesktopSimpleCapturer() override;
+protected:
+    template <typename... Args>
+    DesktopSimpleCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                          bool window, Args&&... args);
+    virtual void captureNextFrame() = 0;
+    virtual bool canStart() const { return _fps > 0; }
+private:
+    // impl. of MediaTimerCallback
+    void onTimeout(uint64_t) final { captureNextFrame(); }
+private:
+    MediaTimer _timer;
+    std::atomic<int32_t> _fps = 30;
+};
+
+template <class TCapturer>
+template <typename... Args>
+inline DesktopSimpleCapturer<TCapturer>::
+    DesktopSimpleCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                          bool window, Args&&... args)
+    : TCapturer(window, std::forward<Args>(args)...)
+    , _timer(timerQueue)
+{
+    _timer.setCallback(this);
+}
+
+template <class TCapturer>
+inline DesktopSimpleCapturer<TCapturer>::~DesktopSimpleCapturer()
+{
+    DesktopSimpleCapturer::stop();
+    _timer.setCallback(nullptr);
+}
+
+template <class TCapturer>
+inline void DesktopSimpleCapturer<TCapturer>::setTargetFramerate(int32_t fps)
+{
+    if (exchangeVal(fps, _fps) && _timer.started()) {
+        _timer.stop();
+        if (canStart()) {
+            _timer.start(float(fps));
+        }
+    }
+}
+
+template <class TCapturer>
+inline bool DesktopSimpleCapturer<TCapturer>::start()
+{
+    if (!started() && canStart()) {
+        _timer.start(float(_fps));
+        return true;
+    }
+    return false;
+}
+	
+} // namespace LiveKitCpp

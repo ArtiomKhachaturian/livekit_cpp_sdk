@@ -145,7 +145,7 @@ std::unique_ptr<DesktopCapturer> MacDesktopCapturer::create(bool window,
     if (@available(macOS 12.3, *)) {
         // ScreenCaptureKitCapturer
     }
-    return std::make_unique<CGDesktopCapturer>(window, options, timerQueue);
+    return std::make_unique<CGDesktopCapturer>(timerQueue, window, options);
 }
 
 std::optional<std::string> MacDesktopCapturer::title(const std::string& source) const

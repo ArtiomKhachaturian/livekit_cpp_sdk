@@ -19,10 +19,10 @@
 namespace LiveKitCpp
 {
 
-CGDesktopCapturer::CGDesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options,
-                                     const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
-    : MacDesktopCapturer(window, options.configuration_monitor())
-    , _timer(timerQueue, this)
+CGDesktopCapturer::CGDesktopCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
+                                     bool window, const webrtc::DesktopCaptureOptions& options)
+    : Base(timerQueue, window, options.configuration_monitor())
+    , _options(options)
 {
     if (window) {
         _source = webrtc::kNullWindowId;
@@ -30,27 +30,22 @@ CGDesktopCapturer::CGDesktopCapturer(bool window, const webrtc::DesktopCaptureOp
     else {
         _source = webrtc::kInvalidScreenId;
     }
-    _frameRate = DesktopConfiguration::maxFramerate(window);
+    setTargetFramerate(DesktopConfiguration::maxFramerate(window));
 }
 
 CGDesktopCapturer::~CGDesktopCapturer()
 {
-    _timer.stop();
-    _timer.setCallback(nullptr);
+    stop();
 }
 
 void CGDesktopCapturer::setPreviewMode(bool preview)
 {
-    if (exchangeVal(preview, _preview)) {
-        
+    LOCK_WRITE_SAFE_OBJ(_cursorComposer);
+    if (preview) {
+        _cursorComposer->reset();
     }
-}
-
-void CGDesktopCapturer::setTargetFramerate(int32_t fps)
-{
-    if (exchangeVal(fps, _frameRate) && _timer.started()) {
-        _timer.stop();
-        _timer.start(float(fps));
+    else if (!_cursorComposer->get()) {
+        _cursorComposer->reset(new DesktopCursorComposer(this, _options));
     }
 }
 
@@ -67,18 +62,34 @@ bool CGDesktopCapturer::selectSource(const std::string& source)
         if (id.has_value()) {
             _source = id.value();
         }
-        return hasValidSource();
+        return validSource(window(), _source);
     }
     return false;
 }
 
-bool CGDesktopCapturer::start()
+void CGDesktopCapturer::captureNextFrame()
 {
-    if (!started() && hasValidSource() && _frameRate > 0) {
-        _timer.start(float(_frameRate));
-        return true;
+    std::unique_ptr<webrtc::DesktopFrame> frame;
+    if (window()) {
+        frame = captureWindow(static_cast<webrtc::WindowId>(_source));
     }
-    return false;
+    else {
+        frame = captureDisplay(static_cast<webrtc::ScreenId>(_source));
+    }
+    if (frame) {
+        LOCK_READ_SAFE_OBJ(_cursorComposer);
+        if (const auto& composer = _cursorComposer.constRef()) {
+            composer->setFrame(std::move(frame));
+        }
+        else {
+            deliverCaptured(std::move(frame));
+        }
+    }
+}
+
+bool CGDesktopCapturer::canStart() const
+{
+    return Base::canStart() && validSource(window(), _source);
 }
 
 bool CGDesktopCapturer::validSource(bool window, intptr_t source)
@@ -89,19 +100,15 @@ bool CGDesktopCapturer::validSource(bool window, intptr_t source)
     return webrtc::kInvalidScreenId != source && webrtc::kInvalidDisplayId != source;
 }
 
-void CGDesktopCapturer::onTimeout(uint64_t)
+void CGDesktopCapturer::OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
+                                        std::unique_ptr<webrtc::DesktopFrame> frame)
 {
-    std::unique_ptr<webrtc::DesktopFrame> frame;
-    if (window()) {
-        frame = captureWindow(static_cast<webrtc::WindowId>(_source));
+    if (frame) {
+        deliverCaptured(std::move(frame));
     }
-    else {
-        frame = captureDisplay(static_cast<webrtc::ScreenId>(_source));
+    else if (webrtc::DesktopAndCursorComposer::Result::ERROR_PERMANENT == result) {
+        notifyAboutFatalError();
     }
-    if (frame && !_preview) {
-        // TODO: apply cursor
-    }
-    deliverCaptured(std::move(frame));
 }
 
 } // namespace LiveKitCpp
