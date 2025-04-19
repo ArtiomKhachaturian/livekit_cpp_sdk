@@ -13,12 +13,8 @@
 // limitations under the License.
 #pragma once // VideoFrameBuffer.h
 #include "SafeScopedRefPtr.h"
-#include "livekit/rtc/media/VideoContentHint.h"
-#include <api/media_stream_interface.h>
 #include <api/video/i420_buffer.h>
 #include <api/video/nv12_buffer.h>
-#include <api/video/video_frame.h>
-#include <optional>
 #include <type_traits>
 
 namespace LiveKitCpp 
@@ -79,23 +75,5 @@ inline rtc::scoped_refptr<webrtc::NV12Buffer> createNV12(int width, int height)
 {
     return webrtc::NV12Buffer::Create(width, height);
 }
-
-// new frames factory
-// webrtc::VideoFrameBuffer::Type::kNative & webrtc::VideoFrameBuffer::Type::kI420A types
-// are ignored - output frame will be with webrtc::VideoFrameBuffer::Type::kI420 buffer
-std::optional<webrtc::VideoFrame> createVideoFrame(int width, int height,
-                                                   webrtc::VideoFrameBuffer::Type type = webrtc::VideoFrameBuffer::Type::kI420,
-                                                   int64_t timeStampMicro = 0LL,
-                                                   uint16_t id = 0U,
-                                                   const std::optional<webrtc::ColorSpace>& colorSpace = {});
-std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
-                                                   int64_t timeStampMicro = 0LL, uint16_t id = 0U,
-                                                   const std::optional<webrtc::ColorSpace>& colorSpace = {});
-std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
-                                                        int64_t timeStampMicro = 0LL,
-                                                        uint16_t id = 0U,
-                                                        const std::optional<webrtc::ColorSpace>& colorSpace = {});
-webrtc::VideoTrackInterface::ContentHint map(VideoContentHint hint);
-VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint);
 
 } // namespace LiveKitCpp

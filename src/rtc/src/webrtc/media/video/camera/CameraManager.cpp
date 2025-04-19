@@ -237,7 +237,7 @@ VideoOptions map(const webrtc::VideoCaptureCapability& capability)
     options._width = capability.width;
     options._height = capability.height;
     options._maxFPS = capability.maxFPS;
-    options._interlaced = capability.interlaced;
+    options.setInterlaced(capability.interlaced);
     options._type = map(capability.videoType);
     return options;
 }
@@ -248,9 +248,7 @@ webrtc::VideoCaptureCapability map(const VideoOptions& options)
     capability.width = options._width;
     capability.height = options._height;
     capability.maxFPS = options._maxFPS;
-    if (options._interlaced.has_value()) {
-        capability.interlaced = options._interlaced.value();
-    }
+    capability.interlaced = options.interlaced();
     if (options._type.has_value()) {
         capability.videoType = map(options._type.value());
     }

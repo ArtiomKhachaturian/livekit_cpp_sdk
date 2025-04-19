@@ -21,13 +21,17 @@
 namespace LiveKitCpp
 {
 
-struct VideoOptions
+struct LIVEKIT_RTC_API VideoOptions
 {
     int32_t _width = 0;
     int32_t _height = 0;
     int32_t _maxFPS = 0;
     std::optional<VideoFrameType> _type;
-    std::optional<bool> _interlaced;
+    unsigned _flags = 0U;
+    void setInterlaced(bool interlaced);
+    void setPreview(bool interlaced);
+    bool interlaced() const noexcept;
+    bool preview() const noexcept;
     bool null() const noexcept { return 0 == _width && 0 == _height && 0 == _maxFPS; }
     explicit operator bool() const noexcept { return !null(); }
 };
@@ -35,12 +39,12 @@ struct VideoOptions
 } // namespace LiveKitCpp
 
 inline bool operator == (const LiveKitCpp::VideoOptions& l, const LiveKitCpp::VideoOptions& r) {
-    return &l == &r || (std::tie(l._width, l._height, l._maxFPS, l._type, l._interlaced) ==
-           std::tie(r._width, r._height, r._maxFPS, r._type, r._interlaced));
+    return &l == &r || (std::tie(l._width, l._height, l._maxFPS, l._type) ==
+           std::tie(r._width, r._height, r._maxFPS, r._type));
 }
 
 inline bool operator != (const LiveKitCpp::VideoOptions& l, const LiveKitCpp::VideoOptions& r) {
-    return std::tie(l._width, l._height, l._maxFPS, l._type, l._interlaced) !=
-           std::tie(r._width, r._height, r._maxFPS, r._type, r._interlaced);
+    return std::tie(l._width, l._height, l._maxFPS, l._type) !=
+           std::tie(r._width, r._height, r._maxFPS, r._type);
 }
 

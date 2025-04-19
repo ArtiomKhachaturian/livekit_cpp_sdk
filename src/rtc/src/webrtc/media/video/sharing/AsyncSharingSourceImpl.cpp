@@ -14,7 +14,7 @@
 #include "AsyncSharingSourceImpl.h"
 #include "DesktopConfiguration.h"
 #include "DesktopFrameVideoBuffer.h"
-#include "VideoFrameImpl.h"
+#include "VideoUtils.h"
 
 namespace LiveKitCpp
 {

@@ -24,10 +24,13 @@ Dialog {
             Label {
                 text: qsTr("Screens:")
                 Layout.alignment: Qt.AlignLeft
+                visible: !noWindows && screensPreview.elementsCount > 1
             }
             ElementsGrid {
                 id: screensPreview
                 autoLayout: noWindows
+                cellWidth: 300
+                cellHeight: 200
                 implicitHeight: cellHeight
                 Layout.fillWidth: true
                 Layout.fillHeight: noWindows
@@ -62,12 +65,6 @@ Dialog {
                     showSourceName: true
                     showDiagnostics: false
                     source: windowsModel.sourceAt(index)
-                }
-                onCellHeightChanged: {
-                    screensPreview.cellHeight = cellHeight
-                }
-                onCellWidthChanged: {
-                    screensPreview.cellWidth = cellWidth
                 }
             }
         }

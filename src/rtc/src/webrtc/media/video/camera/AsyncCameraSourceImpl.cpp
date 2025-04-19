@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "AsyncCameraSourceImpl.h"
 #include "CameraManager.h"
-#include "VideoFrameBuffer.h"
+#include "VideoUtils.h"
 
 namespace {
 

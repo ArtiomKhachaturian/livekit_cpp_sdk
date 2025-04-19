@@ -11,14 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "VideoFrameBuffer.h"
+#include "VideoUtils.h"
+#include "Utils.h"
+#include "livekit/rtc/media/VideoOptions.h"
 #include <rtc_base/time_utils.h>
+#include <api/video/i420_buffer.h>
+#include <api/video/nv12_buffer.h>
 #include <api/video/i010_buffer.h>
 #include <api/video/i210_buffer.h>
 #include <api/video/i410_buffer.h>
 #include <api/video/i422_buffer.h>
 #include <api/video/i444_buffer.h>
 #include <cassert>
+
+namespace
+{
+
+inline constexpr unsigned g_interlaced  = 0x0001;
+inline constexpr unsigned g_previewMode = 0x0002;
+
+}
 
 namespace LiveKitCpp
 {
@@ -139,6 +151,36 @@ VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint)
             break;
     }
     return VideoContentHint::None;
+}
+
+void VideoOptions::setInterlaced(bool interlaced)
+{
+    if (interlaced) {
+        _flags |= g_interlaced;
+    }
+    else {
+        _flags &= ~g_interlaced;
+    }
+}
+
+void VideoOptions::setPreview(bool interlaced)
+{
+    if (interlaced) {
+        _flags |= g_previewMode;
+    }
+    else {
+        _flags &= ~g_previewMode;
+    }
+}
+
+bool VideoOptions::interlaced() const noexcept
+{
+    return testFlag<g_interlaced>(_flags);
+}
+
+bool VideoOptions::preview() const noexcept
+{
+    return testFlag<g_previewMode>(_flags);
 }
 
 } // namespace LiveKitCpp

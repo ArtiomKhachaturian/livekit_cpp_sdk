@@ -17,7 +17,7 @@
 #include "CameraManager.h"
 #include "Listener.h"
 #include "Logger.h"
-#include "VideoFrameBuffer.h"
+#include "VideoUtils.h"
 #include "VTSupportedPixelFormats.h"
 #include "Utils.h"
 #include "livekit/rtc/media/VideoContentHint.h"
