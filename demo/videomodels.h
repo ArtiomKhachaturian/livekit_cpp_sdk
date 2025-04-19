@@ -72,7 +72,6 @@ private:
     qsizetype _sharingIndex = -1;
     MediaDeviceInfo _cameraDeviceInfo;
     MediaDeviceInfo _sharingDeviceInfo;
-    VideoOptions _sharingOptions;
 };
 
 class SharingsVideoModel : public LocalVideoSourcesModel

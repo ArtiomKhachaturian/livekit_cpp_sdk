@@ -73,8 +73,6 @@ qsizetype LocalVideoSourcesModel::addDevice(std::shared_ptr<LiveKitCpp::LocalVid
 ConnectionFormVideoModel::ConnectionFormVideoModel(QObject* parent)
     : LocalVideoSourcesModel(parent)
 {
-    _sharingOptions.setPreview(true);
-    _sharingOptions.setMaxFPS(5);
 }
 
 void ConnectionFormVideoModel::setActiveCamera(bool active)
@@ -108,7 +106,10 @@ void ConnectionFormVideoModel::setActiveSharing(bool active)
             }
         }
         else {
-            setSharingIndex(addSharing(_sharingDeviceInfo, _sharingOptions));
+            VideoOptions options;
+            options.setPreview(true);
+            options.setMaxFPS(5);
+            setSharingIndex(addSharing(_sharingDeviceInfo, options));
         }
     }
 }

@@ -49,6 +49,7 @@ void AsyncSharingSourceImpl::requestCapturer()
                 capturer->setPreviewMode(options.preview());
                 capturer->setTargetResolutuon(options._width, options._height);
                 capturer->setTargetFramerate(options._maxFPS);
+                capturer->setOutputSink(this);
                 _capturer = std::move(capturer);
                 if (enabled()) {
                     startCapturer();
@@ -67,7 +68,7 @@ void AsyncSharingSourceImpl::resetCapturer()
     LOCK_WRITE_SAFE_OBJ(_capturer);
     if (_capturer.constRef()) {
         stopCapturer();
-        _capturer.take();
+        _capturer.take()->setOutputSink(nullptr);
     }
 }
 
@@ -78,7 +79,6 @@ void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
         LOCK_READ_SAFE_OBJ(_capturer);
         if (const auto& capturer = _capturer.constRef()) {
             stopCapturer();
-            capturer->setOutputSink(this);
             capturer->setPreviewMode(options.preview());
             capturer->setTargetResolutuon(options._width, options._height);
             capturer->setTargetFramerate(options._maxFPS);
@@ -122,7 +122,6 @@ void AsyncSharingSourceImpl::stopCapturer()
     const auto& capturer = _capturer.constRef();
     if (capturer && capturer->started()) {
         capturer->stop();
-        capturer->setOutputSink(nullptr);
         notify(&MediaDeviceListener::onMediaStopped);
     }
 }
