@@ -47,7 +47,7 @@ ApplicationWindow {
             Client {
                 objectName: model.id
                 urlText: lastUrl
-                tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDUwNjgxMDYsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NDk4MTcwNiwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.ikUaGOaxzKw0JlNj080oEkPG2S42GIck3O65scbrKyc"
+                tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDUyMjUyODgsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NTEzODg4OCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.871SmKfLxcd2n7k4Zb67VhwmQ6jXjwFg06728OgBFls"
                 enabled: app.valid
                 Component.onCompleted: {
                     closable = clients.usersCount > 1

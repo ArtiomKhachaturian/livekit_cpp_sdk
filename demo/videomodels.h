@@ -44,17 +44,27 @@ class ConnectionFormVideoModel : public LocalVideoSourcesModel
 {
     Q_OBJECT
     QML_ELEMENT
+    Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged FINAL)
     Q_PROPERTY(bool activeCamera READ activeCamera WRITE setActiveCamera NOTIFY activeCameraChanged FINAL)
     Q_PROPERTY(bool activeSharing READ activeSharing WRITE setActiveSharing NOTIFY activeSharingChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo cameraDeviceInfo READ cameraDeviceInfo WRITE setCameraDeviceInfo NOTIFY cameraDeviceInfoChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo sharingDeviceInfo READ sharingDeviceInfo WRITE setSharingDeviceInfo NOTIFY sharingDeviceInfoChanged FINAL)
+private:
+    struct DeviceData
+    {
+        bool _active = false;
+        QPointer<LocalVideoDevice> _source;
+        MediaDeviceInfo _info;
+    };
 public:
     explicit ConnectionFormVideoModel(QObject* parent = nullptr);
-    bool activeCamera() const { return -1 != _cameraIndex; }
-    bool activeSharing() const { return -1 != _sharingIndex; }
-    const MediaDeviceInfo& cameraDeviceInfo() const noexcept { return _cameraDeviceInfo; }
-    const MediaDeviceInfo& sharingDeviceInfo() const noexcept { return _sharingDeviceInfo; }
+    bool active() const { return _active; }
+    bool activeCamera() const { return _camera._active; }
+    bool activeSharing() const { return _sharing._active; }
+    const MediaDeviceInfo& cameraDeviceInfo() const noexcept { return _camera._info; }
+    const MediaDeviceInfo& sharingDeviceInfo() const noexcept { return _sharing._info; }
 public slots:
+    void setActive(bool active);
     void setActiveCamera(bool active);
     void setActiveSharing(bool active);
     void setCameraDeviceInfo(const MediaDeviceInfo& info);
@@ -64,14 +74,18 @@ signals:
     void activeSharingChanged();
     void cameraDeviceInfoChanged();
     void sharingDeviceInfoChanged();
+    void activeChanged();
 private:
-    void setCameraIndex(qsizetype index);
-    void setSharingIndex(qsizetype index);
+    template <typename TSignal>
+    void setDeviceActive(DeviceData* data, bool active, TSignal signal);
+    template <typename TSignal>
+    void setDeviceInfo(DeviceData* data, const MediaDeviceInfo& info, TSignal signal);
+    void addSource(DeviceData* data);
+    void removeSource(DeviceData* data);
 private:
-    qsizetype _cameraIndex = -1;
-    qsizetype _sharingIndex = -1;
-    MediaDeviceInfo _cameraDeviceInfo;
-    MediaDeviceInfo _sharingDeviceInfo;
+    bool _active = false;
+    DeviceData _camera;
+    DeviceData _sharing;
 };
 
 class SharingsVideoModel : public LocalVideoSourcesModel

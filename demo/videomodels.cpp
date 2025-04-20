@@ -75,80 +75,98 @@ ConnectionFormVideoModel::ConnectionFormVideoModel(QObject* parent)
 {
 }
 
-void ConnectionFormVideoModel::setActiveCamera(bool active)
+void ConnectionFormVideoModel::setActive(bool active)
 {
-    if (active != activeCamera()) {
-        if (!active) {
-            const auto sharingDev = itemAt(_sharingIndex);
-            if (removeAt(_cameraIndex)) {
-                setCameraIndex(-1);
-                if (sharingDev) { // update index
-                    setSharingIndex(indexOf(sharingDev));
-                }
-            }
+    if (active != _active) {
+        _active = active;
+        if (active) {
+            addSource(&_camera);
+            addSource(&_sharing);
         }
         else {
-            setCameraIndex(addCamera(_cameraDeviceInfo));
+            removeSource(&_camera);
+            removeSource(&_sharing);
         }
+        emit activeChanged();
     }
+}
+
+void ConnectionFormVideoModel::setActiveCamera(bool active)
+{
+    setDeviceActive(&_camera, active, &ConnectionFormVideoModel::activeCameraChanged);
 }
 
 void ConnectionFormVideoModel::setActiveSharing(bool active)
 {
-    if (active != activeSharing()) {
-        if (!active) {
-            const auto cameraDev = itemAt(_cameraIndex);
-            if (removeAt(_sharingIndex)) {
-                setSharingIndex(-1);
-                if (cameraDev) { // update index
-                    setCameraIndex(indexOf(cameraDev));
-                }
-            }
-        }
-        else {
-            VideoOptions options;
-            options.setPreview(true);
-            options.setMaxFPS(5);
-            setSharingIndex(addSharing(_sharingDeviceInfo, options));
-        }
-    }
+    setDeviceActive(&_sharing, active, &ConnectionFormVideoModel::activeSharingChanged);
 }
 
 void ConnectionFormVideoModel::setCameraDeviceInfo(const MediaDeviceInfo& info)
 {
-    if (info != _cameraDeviceInfo) {
-        _cameraDeviceInfo = info;
-        if (const auto device = qobject_cast<LocalVideoDevice*>(itemAt(_cameraIndex))) {
-            device->setDeviceInfo(info);
-        }
-        emit cameraDeviceInfoChanged();
-    }
+    setDeviceInfo(&_camera, info, &ConnectionFormVideoModel::cameraDeviceInfoChanged);
 }
 
 void ConnectionFormVideoModel::setSharingDeviceInfo(const MediaDeviceInfo& info)
 {
-    if (info != _sharingDeviceInfo) {
-        _sharingDeviceInfo = info;
-        if (const auto device = qobject_cast<LocalVideoDevice*>(itemAt(_sharingIndex))) {
-            device->setDeviceInfo(info);
+    setDeviceInfo(&_sharing, info, &ConnectionFormVideoModel::sharingDeviceInfoChanged);
+}
+
+template <typename TSignal>
+void ConnectionFormVideoModel::setDeviceActive(DeviceData* data, bool active, TSignal signal)
+{
+    if (data && data->_active != active) {
+        data->_active = active;
+        if (_active) {
+            if (active) {
+                addSource(data);
+            }
+            else {
+                removeSource(data);
+            }
         }
-        emit sharingDeviceInfoChanged();
+        emit ((*this).*signal)();
     }
 }
 
-void ConnectionFormVideoModel::setCameraIndex(qsizetype index)
+template <typename TSignal>
+void ConnectionFormVideoModel::setDeviceInfo(DeviceData* data, const MediaDeviceInfo& info, TSignal signal)
 {
-    if (_cameraIndex != index) {
-        _cameraIndex = index;
-        emit activeCameraChanged();
+    if (data && data->_info != info) {
+        data->_info = info;
+        if (data->_source) {
+            data->_source->setDeviceInfo(info);
+        }
+        emit ((*this).*signal)();
     }
 }
 
-void ConnectionFormVideoModel::setSharingIndex(qsizetype index)
+void ConnectionFormVideoModel::addSource(DeviceData* data)
 {
-    if (_sharingIndex != index) {
-        _sharingIndex = index;
-        emit activeSharingChanged();
+    if (data && data->_active && !data->_source) {
+        qsizetype index = -1;
+        if (&_sharing == data) {
+            VideoOptions options;
+            options.setPreview(true);
+            options.setMaxFPS(5);
+            index = addSharing(data->_info, options);
+        }
+        else if (&_camera == data) {
+            index = addCamera(data->_info);
+        }
+        else {
+            Q_ASSERT(false);
+        }
+        if (-1 != index) {
+            data->_source = dynamic_cast<LocalVideoDevice*>(itemAt(index));
+        }
+    }
+}
+
+void ConnectionFormVideoModel::removeSource(DeviceData* data)
+{
+    if (data && data->_source) {
+        remove(data->_source);
+        data->_source = nullptr;
     }
 }
 

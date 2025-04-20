@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "DesktopWebRTCCapturer.h"
-#include "DesktopConfiguration.h"
 #include "DesktopCapturerUtils.h"
 #include "Utils.h"
 #include <modules/desktop_capture/desktop_capture_options.h>
@@ -31,7 +30,6 @@ DesktopWebRTCCapturer::DesktopWebRTCCapturer(const std::shared_ptr<webrtc::TaskQ
     else {
         _source = webrtc::kInvalidScreenId;
     }
-    setTargetFramerate(DesktopConfiguration::maxFramerate(window));
 }
 
 DesktopWebRTCCapturer::~DesktopWebRTCCapturer()

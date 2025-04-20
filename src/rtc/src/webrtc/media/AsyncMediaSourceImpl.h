@@ -31,7 +31,6 @@ public:
     void setEnabled(bool enabled);
     bool enabled() const { return _enabled; }
     bool active() const noexcept { return _active; }
-    bool deactivate();
     void close();
     void registerObserver(webrtc::ObserverInterface* observer);
     void unregisterObserver(webrtc::ObserverInterface* observer);

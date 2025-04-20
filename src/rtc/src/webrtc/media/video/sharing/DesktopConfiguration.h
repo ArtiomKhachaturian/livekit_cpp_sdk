@@ -51,7 +51,7 @@ public:
     std::unique_ptr<DesktopCapturer> createCapturer(const std::string& guid,
                                                     bool selectSource = false,
                                                     bool lightweightOptions = false) const;
-    static int32_t maxFramerate(bool /*windows*/) { return 30; }
+    static int32_t maxFramerate() { return 30; }
     static std::shared_ptr<DesktopConfiguration> create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
 private:
     DesktopCapturer* enumerator(bool windows) const;

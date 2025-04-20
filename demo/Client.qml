@@ -45,7 +45,6 @@ Pane {
                     onClicked: {
                         if (!checked) {
                             sharingSelection.visible = true
-                            sharingAddSwitch.checked = true
 
                         }
                         else {
@@ -62,7 +61,7 @@ Pane {
                 CheckBox {
                     id: sharingMuteCheckbox
                     text: qsTr("Muted")
-                    //enabled: sessionActive && sessionForm.activeCamera
+                    enabled: sessionActive && sessionForm.activeSharing
                     checked: false
                 }
 
@@ -138,8 +137,9 @@ Pane {
                 Layout.fillWidth: true
                 objectName: root.objectName + "_client_form"
                 enabled: !sessionForm.connecting
-                activeCamera: !sessionActive && cameraAddSwitch.checked
-                activeSharing: !sessionActive && sharingAddSwitch.checked
+                activePreview: !sessionActive
+                activeCamera: cameraAddSwitch.checked
+                activeSharing: sharingAddSwitch.checked
                 cameraDeviceInfo: cameraModelComboBox.deviceInfo
                 onConnectClicked: {
                     sessionForm.connect(urlText, tokenText,
@@ -152,10 +152,12 @@ Pane {
                 objectName: root.objectName
                 activeCamera: cameraAddSwitch.checked
                 activeMicrophone: micAddSwitch.checked
+                activeSharing: sharingAddSwitch.checked
                 camerDeviceInfo: cameraModelComboBox.deviceInfo
                 cameraOptions: cameraOptionsComboBox.options
                 microphoneMuted: micMuteCheckbox.checked
                 cameraMuted: cameraMuteCheckbox.checked
+                sharingMuted: sharingMuteCheckbox.checked
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 onError: (desc, details) => {
@@ -178,6 +180,8 @@ Pane {
         z: 1
         onAccepted: {
             connectionForm.sharingDeviceInfo = deviceInfo
+            sessionForm.sharingDeviceInfo = deviceInfo
+            sharingAddSwitch.checked = true
         }
         onRejected: {
             //sharingAddSwitch.checked = false

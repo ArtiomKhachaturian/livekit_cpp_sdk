@@ -8,10 +8,13 @@ Frame {
 
     property alias activeCamera: session.activeCamera
     property alias activeMicrophone: session.activeMicrophone
+    property alias activeSharing: session.activeSharing
     property alias camerDeviceInfo: session.cameraDeviceInfo
     property alias cameraOptions: session.cameraOptions
     property alias cameraMuted: session.cameraMuted
     property alias microphoneMuted: session.microphoneMuted
+    property alias sharingDeviceInfo: session.sharingDeviceInfo
+    property alias sharingMuted: session.sharingMuted
     readonly property bool connected: session.connected
     readonly property bool connecting: session.connecting
     readonly property string identity : connected ? session.identity : objectName

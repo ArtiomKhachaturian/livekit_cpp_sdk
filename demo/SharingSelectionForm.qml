@@ -88,7 +88,7 @@ Pane {
             showSourceName: grid.showSourceName
             source: sourcesModel.sourceAt(index)
             property int index
-            property var deviceInfo: source.deviceInfo
+            property var deviceInfo: source ? source.deviceInfo : app.emptyDeviceInfo()
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
@@ -126,11 +126,11 @@ Pane {
         }
     }
 
-    onVisibleChanged: {
-        contentComponentLoader.active = visible
+    Component.onCompleted: {
+        deviceInfo = app.emptyDeviceInfo()
     }
 
-    onDeviceInfoChanged: {
-        console.log("deviceInfo: ", deviceInfo)
+    onVisibleChanged: {
+        contentComponentLoader.active = visible
     }
 }

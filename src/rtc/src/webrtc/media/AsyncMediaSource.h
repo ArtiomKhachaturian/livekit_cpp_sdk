@@ -85,7 +85,7 @@ inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
 template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::close()
 {
-    if (_impl && _impl->deactivate()) {
+    if (_impl && _impl->active()) {
         postToImpl(&TAsyncImpl::close);
     }
 }
@@ -93,7 +93,7 @@ inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::close()
 template <class TMediaSource, class TAsyncImpl>
 inline void AsyncMediaSource<TMediaSource, TAsyncImpl>::RegisterObserver(webrtc::ObserverInterface* observer)
 {
-    if (_impl) {
+    if (_impl && _impl->active()) {
         _impl->registerObserver(observer);
     }
 }

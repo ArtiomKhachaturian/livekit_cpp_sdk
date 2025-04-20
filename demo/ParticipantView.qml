@@ -56,7 +56,7 @@ Item {
             if (track.screencast) {
                 videoViews.currentIndex = videoTracks.count - 1
             }
-            //console.log("video track added, ID: " + track.id)
+            console.log("video track added, ID: " + track.id)
         }
     }
 

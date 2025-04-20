@@ -38,6 +38,7 @@ public:
     Q_PROPERTY(bool connected READ connected NOTIFY stateChanged)
     Q_PROPERTY(bool activeCamera READ activeCamera WRITE setActiveCamera NOTIFY activeCameraChanged FINAL)
     Q_PROPERTY(bool activeMicrophone READ activeMicrophone WRITE setActiveMicrophone NOTIFY activeMicrophoneChanged FINAL)
+    Q_PROPERTY(bool activeSharing READ activeSharing WRITE setActiveSharing NOTIFY activeSharingChanged FINAL)
     Q_PROPERTY(QString cameraTrackId READ cameraTrackId NOTIFY activeCameraChanged FINAL)
     Q_PROPERTY(QString microphoneTrackId READ microphoneTrackId NOTIFY activeMicrophoneChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo cameraDeviceInfo READ cameraDeviceInfo WRITE setCameraDeviceInfo NOTIFY cameraDeviceInfoChanged FINAL)
@@ -45,6 +46,8 @@ public:
     Q_PROPERTY(LocalParticipant* localParticipant MEMBER _localParticipant CONSTANT)
     Q_PROPERTY(bool cameraMuted READ cameraMuted WRITE setCameraMuted NOTIFY cameraMutedChanged FINAL)
     Q_PROPERTY(bool microphoneMuted READ microphoneMuted WRITE setMicrophoneMuted NOTIFY microphoneMutedChanged FINAL)
+    Q_PROPERTY(MediaDeviceInfo sharingDeviceInfo READ sharingDeviceInfo WRITE setSharingDeviceInfo NOTIFY sharingDeviceInfoChanged FINAL)
+    Q_PROPERTY(bool sharingMuted READ sharingMuted WRITE setSharingMuted NOTIFY sharingMutedChanged FINAL)
     Q_PROPERTY(QString identity READ identity NOTIFY identityChanged)
 public:
     explicit Session(QObject *parent = nullptr);
@@ -56,23 +59,30 @@ public:
                                   const QString& e2ePassPhrase = {});
     bool activeCamera() const { return _activeCamera; }
     bool activeMicrophone() const { return _activeMicrophone; }
+    bool activeSharing() const { return _activeSharing; }
     QString cameraTrackId() const;
     QString microphoneTrackId() const;
+    QString sharingTrackId() const;
     bool connecting() const;
     bool connected() const;
     State state() const;
     MediaDeviceInfo cameraDeviceInfo() const;
     VideoOptions cameraOptions() const;
+    MediaDeviceInfo sharingDeviceInfo() const;
     bool cameraMuted() const { return _localParticipant->cameraMuted(); }
     bool microphoneMuted() const { return _localParticipant->microphoneMuted(); }
+    bool sharingMuted() const { return _localParticipant->sharingMuted(); }
     QString identity() const { return _localParticipant->identity(); }
 public slots:
     void setActiveCamera(bool active);
     void setActiveMicrophone(bool active);
+    void setActiveSharing(bool active);
     void setCameraDeviceInfo(const MediaDeviceInfo& info = {});
     void setCameraOptions(const VideoOptions& options);
     void setCameraMuted(bool muted) { _localParticipant->setCameraMuted(muted); }
     void setMicrophoneMuted(bool muted) { _localParticipant->setMicrophoneMuted(muted); }
+    void setSharingDeviceInfo(const MediaDeviceInfo& info);
+    void setSharingMuted(bool muted);
     Q_INVOKABLE void disconnectFromSfu();
     Q_INVOKABLE bool sendChatMessage(const QString& message);
 signals:
@@ -82,10 +92,13 @@ signals:
     void stateChanged();
     void activeCameraChanged();
     void activeMicrophoneChanged();
+    void activeSharingChanged();
     void cameraDeviceInfoChanged();
     void cameraOptionsChanged();
     void cameraMutedChanged();
     void microphoneMutedChanged();
+    void sharingMutedChanged();
+    void sharingDeviceInfoChanged();
     void identityChanged();
     void remoteParticipantAdded(RemoteParticipant* participant);
     void remoteParticipantRemoved(RemoteParticipant* participant);
@@ -98,8 +111,10 @@ private:
     void resetSessionImpl() { setSessionImpl(nullptr); }
     void addCameraTrack();
     void addMicrophoneTrack();
+    void addSharingTrack();
     void removeCameraTrack();
     void removeMicrophoneTrack();
+    void removeSharingTrack();
     // impl. of SessionListener
     void onError(LiveKitCpp::LiveKitError error, const std::string& what) final;
     void onSidChanged(const LiveKitCpp::Participant* participant) final;
@@ -120,6 +135,7 @@ private:
     LiveKitCpp::EncryptionType _encryption = LiveKitCpp::EncryptionType::None;
     bool _activeCamera = false;
     bool _activeMicrophone = false;
+    bool _activeSharing = false;
 };
 
 #endif // Session_H

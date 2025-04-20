@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "CGScreenCapturer.h"
-#include "DesktopConfiguration.h"
 #include "DesktopCapturerUtils.h"
 #include "Utils.h"
 
@@ -31,7 +30,6 @@ CGScreenCapturer::CGScreenCapturer(const std::shared_ptr<webrtc::TaskQueueBase>&
                                    const webrtc::DesktopCaptureOptions& options)
     : Base(timerQueue, false, options)
 {
-    setTargetFramerate(DesktopConfiguration::maxFramerate(false));
 }
 
 CGScreenCapturer::~CGScreenCapturer()

@@ -25,9 +25,7 @@ AsyncSharingSourceImpl::AsyncSharingSourceImpl(std::weak_ptr<DesktopConfiguratio
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger)
     , _desktopConfiguration(std::move(desktopConfiguration))
 {
-    /*if (_capturer) {
-        setOptions(VideoOptions{._maxFPS = DesktopConfiguration::maxFramerate(_capturer->window())});
-    }*/
+    setOptions(VideoOptions{._maxFPS = DesktopConfiguration::maxFramerate()});
 }
 
 void AsyncSharingSourceImpl::requestCapturer()
@@ -124,7 +122,6 @@ void AsyncSharingSourceImpl::startCapturer()
                     notify(&MediaDeviceListener::onMediaStarted);
                 }
                 else {
-                    capturer->setOutputSink(nullptr);
                     // TODO: add error details
                     notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
                 }

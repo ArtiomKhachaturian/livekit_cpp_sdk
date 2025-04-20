@@ -56,6 +56,7 @@ public slots:
                                                const VideoOptions& options = {});
     Q_INVOKABLE void destroyMicrophone(AudioDevice* microphone);
     Q_INVOKABLE void destroyLocalVideoDevice(LocalVideoDevice* device) { delete device; }
+    Q_INVOKABLE MediaDeviceInfo emptyDeviceInfo() const { return {}; }
 public:
     bool isValid() const;
     bool audioRecordingEnabled() const;

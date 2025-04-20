@@ -9,6 +9,7 @@ Item {
     readonly property alias passPhrase: passPhrase.text
     property alias urlText: url.text
     property alias tokenText: token.text
+    property alias activePreview: previewTracksModel.active
     property alias activeCamera: previewTracksModel.activeCamera
     property alias activeSharing: previewTracksModel.activeSharing
     property alias cameraDeviceInfo: previewTracksModel.cameraDeviceInfo
