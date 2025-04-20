@@ -50,6 +50,7 @@ ScreenCaptureProcessorImpl::ScreenCaptureProcessorImpl(int queueDepth, OSType pi
     _configuration.pixelFormat = pixelFormat;
     _configuration.colorSpaceName = kCGColorSpaceSRGB;
     _configuration.colorMatrix = kCGDisplayStreamYCbCrMatrix_SMPTE_240M_1995;
+    //_configuration.captureResolution = SCCaptureResolutionNominal;
 }
 
 ScreenCaptureProcessorImpl::~ScreenCaptureProcessorImpl()
@@ -118,7 +119,7 @@ bool ScreenCaptureProcessorImpl::selectDisplay(SCDisplay* display)
         stop();
         @autoreleasepool {
             SCContentFilter* filter = createScreenFilter(display);
-            if (filter && setSize(display) && reconfigureStream(filter)) {
+            if (filter && setSize(filter) && reconfigureStream(filter)) {
                 @synchronized (_configuration) {
                     _selectedObject = display;
                 }
@@ -135,7 +136,7 @@ bool ScreenCaptureProcessorImpl::selectWindow(SCWindow* window)
         stop();
         @autoreleasepool {
             SCContentFilter* filter = createWindowFilter(window);
-            if (filter && setSize(window) && reconfigureStream(filter)) {
+            if (filter && setSize(filter) && reconfigureStream(filter)) {
                 @synchronized (_configuration) {
                     _selectedObject = window;
                 }
@@ -183,6 +184,28 @@ void ScreenCaptureProcessorImpl::setTargetFramerate(int32_t fps)
         if (0 != CMTimeCompare(interval, _configuration.minimumFrameInterval)) {
             _configuration.minimumFrameInterval = interval;
             updateConfiguration();
+        }
+    }
+}
+
+void ScreenCaptureProcessorImpl::setTargetResolution(int32_t width, int32_t height)
+{
+    if (width > 1 && height > 1) {
+        width = roundCGFloat<int32_t>(width / _lastPointPixelScale);
+        height = roundCGFloat<int32_t>(height / _lastPointPixelScale);
+        if (setSize(width, height, _lastPointPixelScale)) {
+            _targetResolution = clueToUint64(width, height);
+        }
+    }
+    else {
+        _targetResolution = 0ULL;
+        @autoreleasepool {
+            if (SCDisplay* display = selectedScreen()) {
+                setSize(display, _lastPointPixelScale);
+            }
+            else if (SCWindow* window = selectedWindow()) {
+                setSize(window, _lastPointPixelScale);
+            }
         }
     }
 }
@@ -244,9 +267,12 @@ void ScreenCaptureProcessorImpl::notifyAboutError(NSError* error, bool fatal)
     }
 }
 
-bool ScreenCaptureProcessorImpl::setSize(size_t width, size_t height)
+bool ScreenCaptureProcessorImpl::setSize(size_t width, size_t height, float pointPixelScale)
 {
     if (width > 0 && height > 0) {
+        width = roundCGFloat<size_t>(width * pointPixelScale);
+        height = roundCGFloat<size_t>(height * pointPixelScale);
+        _lastPointPixelScale = pointPixelScale;
         if (width != _configuration.width || height != _configuration.height) {
             _configuration.width = width;
             _configuration.height = height;
@@ -257,27 +283,30 @@ bool ScreenCaptureProcessorImpl::setSize(size_t width, size_t height)
     return false;
 }
 
-bool ScreenCaptureProcessorImpl::setSize(const CGSize& size)
+bool ScreenCaptureProcessorImpl::setSize(const CGSize& size, float pointPixelScale)
 {
-    return setSize(roundCGFloat<size_t>(size.width),  roundCGFloat<size_t>(size.height));
+    return setSize(roundCGFloat<size_t>(size.width), roundCGFloat<size_t>(size.height), pointPixelScale);
 }
 
-bool ScreenCaptureProcessorImpl::setSize(SCWindow* window)
+bool ScreenCaptureProcessorImpl::setSize(SCWindow* window, float pointPixelScale)
 {
-    return window && setSize(window.frame.size);
+    return window && setSize(window.frame.size, pointPixelScale);
 }
 
-bool ScreenCaptureProcessorImpl::setSize(SCDisplay* display)
+bool ScreenCaptureProcessorImpl::setSize(SCDisplay* display, float pointPixelScale)
 {
-    if (display) {
-        CGFloat backingScaleFactor = 1.;
-        if ([display respondsToSelector:@selector(backingScaleFactor)]) {
-            @autoreleasepool {
-                NSNumber* value = [display performSelector:@selector(backingScaleFactor)];
-                backingScaleFactor = value.doubleValue;
-            }
+    return display && setSize(display.frame.size, pointPixelScale);
+}
+
+bool ScreenCaptureProcessorImpl::setSize(SCContentFilter* filter)
+{
+    if (filter) {
+        if (const auto targetResolution = _targetResolution.load()) {
+            return setSize(extractHiWord(targetResolution),
+                           extractLoWord(targetResolution),
+                           filter.pointPixelScale);
         }
-        return setSize(CGSizeMake(backingScaleFactor * display.width, backingScaleFactor * display.height));
+        return setSize(filter.contentRect.size, filter.pointPixelScale);
     }
     return false;
 }

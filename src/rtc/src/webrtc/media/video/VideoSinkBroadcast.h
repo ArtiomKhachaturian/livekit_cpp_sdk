@@ -25,7 +25,6 @@ public:
     VideoSinkBroadcast(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                        const rtc::VideoSinkWants& wants = {});
     void updateSinkWants(const rtc::VideoSinkWants& wants);
-    void applyBlackFrames(bool apply);
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final;
     void OnDiscardedFrame() final;

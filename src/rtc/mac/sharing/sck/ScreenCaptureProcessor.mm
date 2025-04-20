@@ -95,6 +95,13 @@ void ScreenCaptureProcessor::setTargetFramerate(int32_t fps)
     }
 }
 
+void ScreenCaptureProcessor::setTargetResolution(int32_t width, int32_t height)
+{
+    if (const auto impl = loadImpl()) {
+        impl->setTargetResolution(width, height);
+    }
+}
+
 SCDisplay* ScreenCaptureProcessor::selectedScreen() const
 {
     if (const auto impl = loadImpl()) {

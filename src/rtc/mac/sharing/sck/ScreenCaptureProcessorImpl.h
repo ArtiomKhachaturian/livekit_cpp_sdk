@@ -57,16 +57,18 @@ public:
     void setExcludedWindow(SCWindow* window);
     void setShowCursor(bool show);
     void setTargetFramerate(int32_t fps);
+    void setTargetResolution(int32_t width, int32_t height);
     SCDisplay* selectedScreen() const;
     SCWindow* selectedWindow() const;
 private:
     bool changeState(CapturerState state);
     bool changeExcludedWindow(SCWindow* window);
     void notifyAboutError(NSError* error, bool fatal = true);
-    bool setSize(size_t width, size_t height);
-    bool setSize(const CGSize& size);
-    bool setSize(SCWindow* window);
-    bool setSize(SCDisplay* display);
+    bool setSize(size_t width, size_t height, float pointPixelScale);
+    bool setSize(const CGSize& size, float pointPixelScale);
+    bool setSize(SCWindow* window, float pointPixelScale);
+    bool setSize(SCDisplay* display, float pointPixelScale);
+    bool setSize(SCContentFilter* filter);
     bool reconfigureStream(SCContentFilter* filter);
     void updateConfiguration();
     SCContentFilter* createScreenFilter(SCDisplay* display) const;
@@ -80,6 +82,8 @@ private:
     SCStreamConfiguration* const _configuration;
     Bricks::SafeObj<CapturerState> _state = CapturerState::Stopped;
     Bricks::Listener<CapturerProxySink*> _sink;
+    std::atomic<uint64_t> _targetResolution = 0ULL;
+    std::atomic<float> _lastPointPixelScale = 2.;
     ScreenCaptureOutput* _output = nil;
     SCStream* _stream = nil;
     NSObject* _selectedObject = nil;

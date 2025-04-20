@@ -114,6 +114,11 @@ void ScreenCaptureKitCapturer::setTargetFramerate(int32_t fps)
     _processor->setTargetFramerate(fps);
 }
 
+void ScreenCaptureKitCapturer::setTargetResolution(int32_t width, int32_t height)
+{
+    _processor->setTargetResolution(width, height);
+}
+
 void ScreenCaptureKitCapturer::setExcludedWindow(webrtc::WindowId wId)
 {
     if (!this->window() && enumerate()) {

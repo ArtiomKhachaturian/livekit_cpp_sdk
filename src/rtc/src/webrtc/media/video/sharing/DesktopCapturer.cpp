@@ -79,9 +79,9 @@ bool DesktopCapturer::enumerateSources(std::vector<std::string>& sources) const
     return enumerateScreens(options(), sources);
 }
 
-void DesktopCapturer::setTargetResolutuon(const webrtc::DesktopSize& resolution)
+void DesktopCapturer::setTargetResolution(const webrtc::DesktopSize& resolution)
 {
-    setTargetResolutuon(resolution.width(), resolution.height());
+    setTargetResolution(resolution.width(), resolution.height());
 }
 
 void DesktopCapturer::setOutputSink(CapturerProxySink* sink)

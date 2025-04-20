@@ -43,6 +43,7 @@ public:
     void setExcludedWindow(SCWindow* window);
     void setShowCursor(bool show);
     void setTargetFramerate(int32_t fps);
+    void setTargetResolution(int32_t width, int32_t height);
     SCDisplay* selectedScreen() const;
     SCWindow* selectedWindow() const;
 };

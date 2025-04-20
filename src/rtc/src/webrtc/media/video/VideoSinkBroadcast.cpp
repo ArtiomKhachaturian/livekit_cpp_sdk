@@ -48,13 +48,6 @@ void VideoSinkBroadcast::updateSinkWants(const rtc::VideoSinkWants& wants)
     _rotationApplied = wants.rotation_applied;
 }
 
-void VideoSinkBroadcast::applyBlackFrames(bool apply)
-{
-    auto wants = _broadcaster.wants();
-    wants.black_frames = apply;
-    updateSinkWants(wants);
-}
-
 void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
 {
     if (const auto buffer = frame.video_frame_buffer()) {

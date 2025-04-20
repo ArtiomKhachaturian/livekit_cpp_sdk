@@ -50,6 +50,7 @@ protected:
     virtual void captureNextFrame() = 0;
     virtual bool canStart() const { return _fps > 0; }
 private:
+    static std::string formatQueueName(const DesktopSimpleCapturer* capturer);
     // impl. of MediaTimerCallback
     void onTimeout(uint64_t) final { captureNextFrame(); }
 private:
@@ -77,7 +78,7 @@ inline DesktopSimpleCapturer<TCapturer>::
                           webrtc::DesktopCaptureOptions options,
                           Args&&... args)
     : DesktopSimpleCapturer(window, std::move(options),
-                            createTaskQueueS("sharing_queue"),
+                            createTaskQueueS(formatQueueName(this), webrtc::TaskQueueFactory::Priority::HIGH),
                             std::forward<Args>(args)...)
 {
 }
@@ -121,6 +122,12 @@ template <class TCapturer>
 inline void DesktopSimpleCapturer<TCapturer>::execute(absl::AnyInvocable<void()&&> task, uint64_t delayMs)
 {
     _timer.singleShot(std::move(task), delayMs);
+}
+
+template <class TCapturer>
+inline std::string DesktopSimpleCapturer<TCapturer>::formatQueueName(const DesktopSimpleCapturer* capturer)
+{
+    return "sharing_queue#" + toHexValue(reinterpret_cast<uint64_t>(capturer));
 }
 	
 } // namespace LiveKitCpp

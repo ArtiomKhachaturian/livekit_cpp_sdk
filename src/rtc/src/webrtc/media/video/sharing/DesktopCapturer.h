@@ -48,7 +48,7 @@ public:
     // max expected frame rate for this capturer
     virtual void setTargetFramerate(int32_t /*fps*/) {}
     // upped-bound target resolution, cropped frame should keep original (screen/window) aspect ratio
-    virtual void setTargetResolutuon(int32_t /*width*/, int32_t /*height*/) {}
+    virtual void setTargetResolution(int32_t /*width*/, int32_t /*height*/) {}
     // valid only for screen capturers
     virtual webrtc::DesktopSize screenResolution(const std::string& source) const;
     // gets a list of sources current capturer supports, Returns false in case of a failure
@@ -74,7 +74,7 @@ public:
     void setOutputSink(CapturerProxySink* sink);
     // window or screen capturer
     bool window() const noexcept { return _window; }
-    void setTargetResolutuon(const webrtc::DesktopSize& resolution);
+    void setTargetResolution(const webrtc::DesktopSize& resolution);
     virtual ~DesktopCapturer() = default;
 protected:
     DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options);

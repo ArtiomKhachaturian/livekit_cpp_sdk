@@ -157,7 +157,7 @@ void AsyncSharingSourceImpl::applyOptions(DesktopCapturer* capturer,
 {
     if (capturer) {
         capturer->setPreviewMode(options.preview());
-        capturer->setTargetResolutuon(options._width, options._height);
+        capturer->setTargetResolution(options._width, options._height);
         capturer->setTargetFramerate(options._maxFPS);
     }
 }

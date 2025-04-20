@@ -175,7 +175,7 @@ std::shared_ptr<webrtc::TaskQueueBase> DesktopConfiguration::commonSharedQueue()
 {
     LOCK_WRITE_SAFE_OBJ(_timerQueue);
     if (!_timerQueue.constRef()) {
-        _timerQueue = createTaskQueueS("common_sharing_queue");
+        _timerQueue = createTaskQueueS("common_sharing_queue", webrtc::TaskQueueFactory::Priority::HIGH);
     }
     return _timerQueue.constRef();
 }

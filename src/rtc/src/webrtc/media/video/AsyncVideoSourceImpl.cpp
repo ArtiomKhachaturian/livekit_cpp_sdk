@@ -15,6 +15,33 @@
 #include "VideoSinkBroadcast.h"
 #include "Utils.h"
 
+namespace  {
+
+inline bool operator == (const std::optional<rtc::VideoSinkWants::Aggregates>& a,
+                         const std::optional<rtc::VideoSinkWants::Aggregates>& b) {
+    return (!a && !b) || a.value() == b.value();
+}
+
+inline bool operator != (const rtc::VideoSinkWants::Aggregates& a,
+                         const rtc::VideoSinkWants::Aggregates& b) {
+    return a.any_active_without_requested_resolution != b.any_active_without_requested_resolution;
+}
+
+inline bool isDefaultWants(const rtc::VideoSinkWants& wants) {
+    static const rtc::VideoSinkWants defaultWants;
+    return defaultWants.rotation_applied == wants.rotation_applied &&
+           defaultWants.black_frames == wants.black_frames &&
+           defaultWants.max_pixel_count == wants.max_pixel_count &&
+           defaultWants.target_pixel_count == wants.target_pixel_count &&
+           defaultWants.max_framerate_fps == wants.max_framerate_fps &&
+           defaultWants.resolution_alignment == wants.resolution_alignment &&
+           defaultWants.requested_resolution == wants.requested_resolution &&
+           defaultWants.is_active == wants.is_active &&
+           defaultWants.aggregates == wants.aggregates;
+}
+
+}
+
 namespace LiveKitCpp
 {
 
@@ -23,6 +50,7 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
                                            bool liveImmediately)
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
 {
+    static_assert(64U == sizeof(rtc::VideoSinkWants), "check changes in rtc::VideoSinkWants structure");
 }
 
 AsyncVideoSourceImpl::~AsyncVideoSourceImpl()
@@ -34,7 +62,12 @@ void AsyncVideoSourceImpl::processConstraints(const webrtc::VideoTrackSourceCons
     if (active()) {
         LOCK_READ_SAFE_OBJ(_broadcasters);
         for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-            it->second->OnConstraintsChanged(c);
+            if (it->second) {
+                it->second->OnConstraintsChanged(c);
+            }
+            else {
+                it->first->OnConstraintsChanged(c);
+            }
         }
     }
 }
@@ -70,10 +103,23 @@ bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::Video
         LOCK_WRITE_SAFE_OBJ(_broadcasters);
         const auto it = _broadcasters->find(sink);
         if (it != _broadcasters->end()) {
-            it->second->updateSinkWants(wants);
+            if (isDefaultWants(wants)) {
+                it->second.reset();
+            }
+            else {
+                if (!it->second) {
+                    it->second = std::make_unique<VideoSinkBroadcast>(sink, wants);
+                }
+                else {
+                    it->second->updateSinkWants(wants);
+                }
+            }
         }
         else {
-            auto adapter = std::make_unique<VideoSinkBroadcast>(sink, wants);
+            std::unique_ptr<VideoSinkBroadcast> adapter;
+            if (!isDefaultWants(wants)) {
+                adapter = std::make_unique<VideoSinkBroadcast>(sink, wants);
+            }
             _broadcasters->insert(std::make_pair(sink, std::move(adapter)));
             return 1U == _broadcasters->size();
         }
@@ -137,7 +183,12 @@ void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updat
         }
         LOCK_READ_SAFE_OBJ(_broadcasters);
         for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-            it->second->OnFrame(frame);
+            if (it->second) {
+                it->second->OnFrame(frame);
+            }
+            else {
+                it->first->OnFrame(frame);
+            }
         }
     }
 }
@@ -146,7 +197,12 @@ void AsyncVideoSourceImpl::discard()
 {
     LOCK_READ_SAFE_OBJ(_broadcasters);
     for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-        it->second->OnDiscardedFrame();
+        if (it->second) {
+            it->second->OnDiscardedFrame();
+        }
+        else {
+            it->first->OnDiscardedFrame();
+        }
     }
 }
 
