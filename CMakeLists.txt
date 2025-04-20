@@ -51,6 +51,11 @@ find_package(Protobuf 5.29.3 REQUIRED)
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
 file(GLOB_RECURSE BRICKS_API_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/*.${HEADER_FILE_EXT})
 
+if(APPLE)
+    set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
+endif(APPLE)
+
+
 function(recreateDir DIR)
     if (EXISTS ${DIR})
         file(REMOVE_RECURSE ${DIR})
@@ -74,6 +79,16 @@ function(copyProtoFiles INPUT_DIR OUTPUT_DIR)
         set(DEST_FILE ${OUTPUT_DIR}/${FILENAME})
         configure_file(${PROTO_FILE} ${DEST_FILE} COPYONLY)
     endforeach()
+endfunction()
+
+function(signDylib target)
+    if(NOT "${CODE_SIGNING_CERT}" STREQUAL "")
+        message(STATUS "Code signing added, for ${target}, with cert '${CODE_SIGNING_CERT}'")
+        add_custom_command(TARGET ${target} POST_BUILD
+            COMMAND codesign --force --sign ${CODE_SIGNING_CERT} $<TARGET_FILE:${target}>
+            COMMENT "Signing ${target}" VERBATIM
+        )
+    endif()
 endfunction()
 
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
@@ -162,6 +177,7 @@ if (WIN32)
 elseif (APPLE)
     set_target_properties(${SIGNALING_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
     target_link_libraries(${SIGNALING_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework CoreWLAN -framework SystemConfiguration")
+    signDylib(${SIGNALING_LIB})
 endif()
 target_compile_definitions(${SIGNALING_LIB} PRIVATE -DLIVEKIT_SIGNALING_EXPORTS -DLIVEKIT_PROTOCOL_VERSION=${LIVEKIT_PROTOCOL_VERSION} 
                                                     -DPROJECT_VERSION="${PROJECT_VERSION}")
@@ -245,6 +261,10 @@ if (WEBRTC_AVAILABLE)
         ${RTC_PLATFORM_SOURCES}
         ${WEBSOCKETS_API_HEADERS}
         ${BRICKS_API_HEADERS})
+
+    if (APPLE)
+        signDylib(${RTC_LIB})
+    endif(APPLE)
 
     source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/rtc PREFIX "RtcApi" FILES ${RTC_PUBLIC_HEADERS})
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/src PREFIX "Rtc" FILES ${RTC_COMMON_HEADERS} 
