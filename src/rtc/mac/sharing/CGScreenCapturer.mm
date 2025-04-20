@@ -30,21 +30,22 @@ CGScreenCapturer::CGScreenCapturer(const std::shared_ptr<webrtc::TaskQueueBase>&
                                    const webrtc::DesktopCaptureOptions& options)
     : Base(timerQueue, false, options)
 {
+    allocateCursorComposer();
 }
 
 CGScreenCapturer::~CGScreenCapturer()
 {
     stop();
+    destroyCursorComposer();
 }
 
 void CGScreenCapturer::setPreviewMode(bool preview)
 {
-    LOCK_WRITE_SAFE_OBJ(_cursorComposer);
     if (preview) {
-        _cursorComposer->reset();
+        destroyCursorComposer();
     }
-    else if (!_cursorComposer->get()) {
-        _cursorComposer->reset(new DesktopCursorComposer(this, options()));
+    else {
+        allocateCursorComposer();
     }
 }
 
@@ -62,19 +63,25 @@ bool CGScreenCapturer::selectSource(const std::string& source)
 
 void CGScreenCapturer::captureNextFrame()
 {
-    std::unique_ptr<webrtc::DesktopFrame> frame;
-    if (window()) {
-        frame = captureWindow(static_cast<webrtc::WindowId>(_source));
-    }
-    else {
-        frame = captureDisplay(static_cast<webrtc::ScreenId>(_source));
-    }
-    deliverCaptured(processFrame(std::move(frame)));
+    deliverCaptured(processFrame(captureDisplay(static_cast<webrtc::ScreenId>(_source))));
 }
 
 bool CGScreenCapturer::canStart() const
 {
     return Base::canStart() && validScreenId(_source);
+}
+
+void CGScreenCapturer::allocateCursorComposer()
+{
+    webrtc::DesktopCapturer::Callback* callback = this;
+    std::atomic_store(&_cursorComposer, std::make_shared<DesktopWebRTCCursorComposer>(options(), callback));
+}
+
+void CGScreenCapturer::destroyCursorComposer()
+{
+    if (auto composer = std::atomic_exchange(&_cursorComposer, std::shared_ptr<DesktopWebRTCCursorComposer>{})) {
+        composer->setCallback(nullptr);
+    }
 }
 
 webrtc::DesktopVector CGScreenCapturer::dpi() const
@@ -99,9 +106,10 @@ std::unique_ptr<webrtc::DesktopFrame> CGScreenCapturer::processFrame(std::unique
 {
     if (frame) {
         frame->set_dpi(dpi());
-        LOCK_READ_SAFE_OBJ(_cursorComposer);
-        if (const auto& composer = _cursorComposer.constRef()) {
-            composer->setFrame(std::move(frame));
+        if (!frame->may_contain_cursor()) {
+            if (const auto composer = std::atomic_load(&_cursorComposer)) {
+                composer->setFrame(std::move(frame));
+            }
         }
     }
     return frame;

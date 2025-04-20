@@ -43,10 +43,8 @@ void AsyncSharingSourceImpl::requestCapturer()
                 capturer = conf->createCapturer(devInfo._guid);
             }
             if (capturer) {
-                const auto options = this->options();
-                capturer->setPreviewMode(options.preview());
-                capturer->setTargetResolutuon(options._width, options._height);
-                capturer->setTargetFramerate(options._maxFPS);
+                applyOptions(capturer.get(), options());
+                capturer->setContentHint(contentHint());
                 capturer->setOutputSink(this);
                 _capturer = std::move(capturer);
                 if (enabled()) {
@@ -70,6 +68,17 @@ void AsyncSharingSourceImpl::resetCapturer()
     }
 }
 
+void AsyncSharingSourceImpl::onContentHintChanged(VideoContentHint hint)
+{
+    AsyncVideoSourceImpl::onContentHintChanged(hint);
+    if (active()) {
+        LOCK_READ_SAFE_OBJ(_capturer);
+        if (const auto& capturer = _capturer.constRef()) {
+            capturer->setContentHint(hint);
+        }
+    }
+}
+
 void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
 {
     AsyncVideoSourceImpl::onOptionsChanged(options);
@@ -77,9 +86,7 @@ void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
         LOCK_READ_SAFE_OBJ(_capturer);
         if (const auto& capturer = _capturer.constRef()) {
             stopCapturer();
-            capturer->setPreviewMode(options.preview());
-            capturer->setTargetResolutuon(options._width, options._height);
-            capturer->setTargetFramerate(options._maxFPS);
+            applyOptions(capturer.get(), options);
             startCapturer();
         }
     }
@@ -139,6 +146,16 @@ void AsyncSharingSourceImpl::stopCapturer()
     if (capturer && capturer->started()) {
         capturer->stop();
         notify(&MediaDeviceListener::onMediaStopped);
+    }
+}
+
+void AsyncSharingSourceImpl::applyOptions(DesktopCapturer* capturer,
+                                          const VideoOptions& options)
+{
+    if (capturer) {
+        capturer->setPreviewMode(options.preview());
+        capturer->setTargetResolutuon(options._width, options._height);
+        capturer->setTargetFramerate(options._maxFPS);
     }
 }
 

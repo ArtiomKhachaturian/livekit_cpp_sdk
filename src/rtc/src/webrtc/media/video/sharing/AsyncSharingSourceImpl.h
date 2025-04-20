@@ -33,12 +33,14 @@ public:
     void resetCapturer() final;
 protected:
     // overrides of AsyncVideoSourceImpl
+    void onContentHintChanged(VideoContentHint hint) final;
     void onOptionsChanged(const VideoOptions& options) final;
     void onDeviceInfoChanged(const MediaDeviceInfo& info) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
 private:
     void startCapturer();
     void stopCapturer();
+    static void applyOptions(DesktopCapturer* capturer, const VideoOptions& options);
 private:
     const std::weak_ptr<DesktopConfiguration> _desktopConfiguration;
     Bricks::SafeUniquePtr<DesktopCapturer> _capturer;

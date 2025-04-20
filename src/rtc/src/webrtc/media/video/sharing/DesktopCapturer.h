@@ -29,6 +29,7 @@ namespace LiveKitCpp
 {
 
 class CapturerProxySink;
+enum class VideoContentHint;
 
 class DesktopCapturer
 {
@@ -37,6 +38,7 @@ public:
     virtual std::string screenIdToString(webrtc::ScreenId id) const;
     virtual std::optional<webrtc::WindowId> windowIdFromString(const std::string& str) const;
     virtual std::optional<webrtc::ScreenId> screenIdFromString(const std::string& str) const;
+    virtual void setContentHint(VideoContentHint /*hint*/) {}
     // tells that capturer will work in preview mode and client expects
     // that system cursor and selection frame (if any) will not be captured in resulted frames
     virtual void setPreviewMode(bool /*preview*/) {}

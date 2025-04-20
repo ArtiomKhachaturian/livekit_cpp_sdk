@@ -11,12 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "DesktopCursorComposer.h"
+#include "DesktopWebRTCCursorComposer.h"
 
 namespace LiveKitCpp
 {
 
-class DesktopCursorComposer::Proxy : public webrtc::DesktopCapturer
+class DesktopWebRTCCursorComposer::Proxy : public webrtc::DesktopCapturer
 {
 public:
     Proxy() = default;
@@ -29,8 +29,8 @@ private:
     std::unique_ptr<webrtc::DesktopFrame> _frame;
 };
 
-DesktopCursorComposer::DesktopCursorComposer(webrtc::DesktopCapturer::Callback* callback,
-                                             const webrtc::DesktopCaptureOptions& options)
+DesktopWebRTCCursorComposer::DesktopWebRTCCursorComposer(const webrtc::DesktopCaptureOptions& options,
+                                                         webrtc::DesktopCapturer::Callback* callback)
     : _callback(callback)
     , _proxy(new Proxy)
     , _composer(std::unique_ptr<webrtc::DesktopCapturer>(_proxy), options)
@@ -38,7 +38,7 @@ DesktopCursorComposer::DesktopCursorComposer(webrtc::DesktopCapturer::Callback* 
     _composer.Start(this);
 }
 
-void DesktopCursorComposer::setFrame(std::unique_ptr<webrtc::DesktopFrame> frame)
+void DesktopWebRTCCursorComposer::setFrame(std::unique_ptr<webrtc::DesktopFrame> frame)
 {
     if (frame) {
         _proxy->setFrame(std::move(frame));
@@ -46,27 +46,28 @@ void DesktopCursorComposer::setFrame(std::unique_ptr<webrtc::DesktopFrame> frame
     }
 }
 
-void DesktopCursorComposer::OnFrameCaptureStart()
+void DesktopWebRTCCursorComposer::setCallback(webrtc::DesktopCapturer::Callback* callback)
 {
-    if (_callback) {
-        _callback->OnFrameCaptureStart();
-    }
+    _callback = callback;
 }
 
-void DesktopCursorComposer::OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
-                                            std::unique_ptr<webrtc::DesktopFrame> frame)
+void DesktopWebRTCCursorComposer::OnFrameCaptureStart()
 {
-    if (_callback) {
-        _callback->OnCaptureResult(result, std::move(frame));
-    }
+    _callback.invoke(&webrtc::DesktopCapturer::Callback::OnFrameCaptureStart);
 }
 
-void DesktopCursorComposer::Proxy::setFrame(std::unique_ptr<webrtc::DesktopFrame> frame)
+void DesktopWebRTCCursorComposer::OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
+                                                  std::unique_ptr<webrtc::DesktopFrame> frame)
+{
+    _callback.invoke(&webrtc::DesktopCapturer::Callback::OnCaptureResult, result, std::move(frame));
+}
+
+void DesktopWebRTCCursorComposer::Proxy::setFrame(std::unique_ptr<webrtc::DesktopFrame> frame)
 {
     _frame = std::move(frame);
 }
 
-void DesktopCursorComposer::Proxy::CaptureFrame()
+void DesktopWebRTCCursorComposer::Proxy::CaptureFrame()
 {
     if (_frame && _callback) {
         _callback->OnCaptureResult(webrtc::DesktopAndCursorComposer::Result::SUCCESS,

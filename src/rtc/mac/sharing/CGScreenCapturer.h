@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CGDesktopCapturer.h
-#include "DesktopCursorComposer.h"
+#include "DesktopWebRTCCursorComposer.h"
 #include "DesktopSimpleCapturer.h"
 #include "MacDesktopCapturer.h"
 #include "SafeObj.h"
@@ -41,6 +41,8 @@ protected:
     void captureNextFrame() final;
     bool canStart() const final;
 private:
+    void allocateCursorComposer();
+    void destroyCursorComposer();
     webrtc::DesktopVector dpi() const;
     std::unique_ptr<webrtc::DesktopFrame> processFrame(std::unique_ptr<webrtc::DesktopFrame> frame) const;
     // impl. of webrtc::DesktopCapturer::Callback
@@ -48,7 +50,7 @@ private:
                          std::unique_ptr<webrtc::DesktopFrame> frame) final;
 private:
     std::atomic<webrtc::ScreenId> _source = webrtc::kInvalidScreenId;
-    Bricks::SafeUniquePtr<DesktopCursorComposer> _cursorComposer;
+    std::shared_ptr<DesktopWebRTCCursorComposer> _cursorComposer;
 };
 	
 } // namespace LiveKitCpp

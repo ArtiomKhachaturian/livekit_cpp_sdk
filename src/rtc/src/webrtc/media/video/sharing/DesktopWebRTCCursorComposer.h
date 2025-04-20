@@ -12,26 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DesktopCursorComposer.h
+#include "Listener.h"
 #include <modules/desktop_capture/desktop_and_cursor_composer.h>
 
 namespace LiveKitCpp
 {
 
-class DesktopCursorComposer : private webrtc::DesktopCapturer::Callback
+class DesktopWebRTCCursorComposer : private webrtc::DesktopCapturer::Callback
 {
     class Proxy;
 public:
-    DesktopCursorComposer(webrtc::DesktopCapturer::Callback* callback,
-                          const webrtc::DesktopCaptureOptions& options);
+    DesktopWebRTCCursorComposer(const webrtc::DesktopCaptureOptions& options,
+                                webrtc::DesktopCapturer::Callback* callback = nullptr);
     void setFrame(std::unique_ptr<webrtc::DesktopFrame> frame);
+    void setCallback(webrtc::DesktopCapturer::Callback* callback);
 private:
     // impl. of webrtc::DesktopCapturer::Callback
     void OnFrameCaptureStart() final;
     void OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
                          std::unique_ptr<webrtc::DesktopFrame> frame) final;
 private:
-    webrtc::DesktopCapturer::Callback* const _callback;
     Proxy* const _proxy;
+    Bricks::Listener<webrtc::DesktopCapturer::Callback*> _callback;
     webrtc::DesktopAndCursorComposer _composer;
 };
 	

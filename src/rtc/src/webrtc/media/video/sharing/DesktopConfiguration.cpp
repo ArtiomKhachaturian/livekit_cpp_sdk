@@ -24,7 +24,7 @@ namespace LiveKitCpp
 DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
     : _timerQueue(timerQueue)
     , _screensEnumerator(createRawCapturer(false, false))
-    //, _windowsEnumerator(createRawCapturer(true, true))
+    , _windowsEnumerator(createRawCapturer(true, true))
 {
 }
 
@@ -152,6 +152,7 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweight
     options.set_allow_use_magnification_api(false);
 #elif defined(WEBRTC_MAC)
     options.set_allow_iosurface(true);
+    options.set_allow_sck_capturer(true);
     if (lightweightMode) {
         options.set_full_screen_window_detector(nullptr);
         options.set_configuration_monitor(nullptr);
