@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "DesktopCapturerUtils.h"
+#include "DesktopCapturerUtilsMac.h"
 #include "DesktopCapturer.h"
 #include "CGWDescription.h"
 #include "Utils.h"
@@ -48,9 +49,14 @@ inline std::optional<T> number(CFNumberRef ref, CFNumberType type) {
     return std::nullopt;
 }
 
-inline bool isHiddenWindow(webrtc::WindowId wId)
+}
+
+namespace LiveKitCpp
 {
-    if (const auto desc = CGWDescription::create(static_cast<CGWindowID>(wId))) {
+
+bool isHiddenWindow(CGWindowID wId)
+{
+    if (const auto desc = CGWDescription::create(wId)) {
         if (!desc->isWindowServerWindow() && !startWith(stringFromCFString(desc->ownerName()), "ControlUp")) {
             if (const auto sharingState = number<int>(desc->sharingState(), kCFNumberIntType)) {
                 switch (sharingState.value()) {
@@ -66,11 +72,6 @@ inline bool isHiddenWindow(webrtc::WindowId wId)
     return true;
 }
 
-}
-
-namespace LiveKitCpp
-{
-
 bool enumerateWindows(const webrtc::DesktopCaptureOptions&, std::vector<std::string>& out)
 {
     webrtc::DesktopCapturer::SourceList list;
@@ -78,9 +79,8 @@ bool enumerateWindows(const webrtc::DesktopCaptureOptions&, std::vector<std::str
         out.clear();
         out.reserve(list.size());
         for (const auto& source : list) {
-            const auto wId = static_cast<webrtc::WindowId>(source.id);
-            if (!isHiddenWindow(wId)) {
-                out.push_back(windowIdToString(wId));
+            if (!isHiddenWindow(static_cast<CGWindowID>(source.id))) {
+                out.push_back(windowIdToString(static_cast<webrtc::WindowId>(source.id)));
             }
         }
         return true;

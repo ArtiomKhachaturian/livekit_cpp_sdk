@@ -11,20 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CapturerObserver.h
-#include "CapturerState.h"
-#include <string>
+#pragma once // ScreenCaptureOutput.h
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
+#include <memory>
 
-namespace LiveKitCpp
-{
+namespace LiveKitCpp {
+class ScreenCaptureFramesReceiver;
+}
 
-class CapturerObserver
-{
-public:
-    virtual void onStateChanged(CapturerState state) = 0;
-    virtual void onCapturingError(std::string /*details*/ = {}, bool /*fatal*/ = true) {} // during the streaming
-protected:
-    ~CapturerObserver() = default;
-};
-
-} // namespace LiveKitCpp
+@interface ScreenCaptureOutput : NSObject<SCStreamOutput>
+- (instancetype) init NS_UNAVAILABLE;
+- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::ScreenCaptureFramesReceiver>&) frameReceiver NS_DESIGNATED_INITIALIZER;
+@end

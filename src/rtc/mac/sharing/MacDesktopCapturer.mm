@@ -14,6 +14,7 @@
 #include "MacDesktopCapturer.h"
 #include "CGScreenCapturer.h"
 #include "VTSupportedPixelFormats.h"
+#include "./ScreenCaptureKit/ScreenCaptureKitCapturer.h"
 #include <modules/desktop_capture/mac/desktop_frame_cgimage.h>
 
 namespace LiveKitCpp
@@ -33,8 +34,8 @@ std::unique_ptr<DesktopCapturer> MacDesktopCapturer::create(bool window,
                                                             const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
 {
     if (!window) {
-        if (@available(macOS 12.3, *)) {
-            // ScreenCaptureKitCapturer
+        if (ScreenCaptureKitCapturer::available()) {
+            return std::make_unique<ScreenCaptureKitCapturer>(window, options);
         }
         return std::make_unique<CGScreenCapturer>(timerQueue, options);
     }

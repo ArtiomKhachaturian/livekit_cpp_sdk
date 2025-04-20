@@ -23,6 +23,7 @@
 namespace webrtc {
 class DesktopFrame;
 class SharedMemoryFactory;
+struct VideoTrackSourceConstraints;
 }
 
 namespace LiveKitCpp
@@ -70,17 +71,18 @@ public:
     virtual void setExcludedWindow(webrtc::WindowId /*window*/) {}
     // sets SharedMemoryFactory that will be used to create buffers for the captured frames
     virtual void setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> /*smf*/) {}
+    void setOutputSink(CapturerProxySink* sink);
     // window or screen capturer
     bool window() const noexcept { return _window; }
     void setTargetResolutuon(const webrtc::DesktopSize& resolution);
-    void setOutputSink(CapturerProxySink* sink);
     virtual ~DesktopCapturer() = default;
 protected:
     DesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options);
     const auto& options() const noexcept { return _options; }
     bool hasOutputSink() const { return !_sink.empty(); }
     bool changeState(CapturerState state);
-    void notifyAboutFatalError(const std::string& details = {}) const;
+    void notifyAboutError(std::string details = {}, bool fatal = true) const;
+    void discardFrame();
     void deliverCaptured(const webrtc::VideoFrame& frame);
     void deliverCaptured(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                          int64_t timeStampMicro = 0LL,
@@ -88,6 +90,7 @@ protected:
                          const std::optional<webrtc::ColorSpace>& colorSpace = {});
     void deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> frame,
                          const std::optional<webrtc::ColorSpace>& colorSpace = {});
+    void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
 private:
     const bool _window;
     const webrtc::DesktopCaptureOptions _options;

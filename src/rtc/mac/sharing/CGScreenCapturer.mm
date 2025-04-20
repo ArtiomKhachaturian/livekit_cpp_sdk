@@ -121,8 +121,8 @@ void CGScreenCapturer::OnCaptureResult(webrtc::DesktopAndCursorComposer::Result 
     if (frame) {
         deliverCaptured(std::move(frame));
     }
-    else if (webrtc::DesktopAndCursorComposer::Result::ERROR_PERMANENT == result) {
-        notifyAboutFatalError("capture has failed and will keep failing again");
+    else {
+        notifyAboutError("capture has failed",webrtc::DesktopAndCursorComposer::Result::ERROR_PERMANENT == result);
     }
 }
 

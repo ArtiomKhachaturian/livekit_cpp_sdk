@@ -11,8 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#ifdef WEBRTC_MAC
+#pragma once // VTSupportedPixelFormats.h
 #include <CoreVideo/CoreVideo.h>
 
 namespace LiveKitCpp
@@ -45,5 +44,3 @@ inline constexpr bool isSupportedFormat(OSType format) { return isNV12Format(for
 
 
 } // namespace LiveKitCpp
-
-#endif

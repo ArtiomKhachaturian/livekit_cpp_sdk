@@ -199,10 +199,12 @@ void AsyncVideoSourceImpl::onStateChanged(CapturerState state)
     }
 }
 
-void AsyncVideoSourceImpl::onCapturingFatalError(const std::string& details)
+void AsyncVideoSourceImpl::onCapturingError(std::string details, bool fatal)
 {
     changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
-    notify(&MediaDeviceListener::onMediaFatalError, details);
+    if (fatal) {
+        notify(&MediaDeviceListener::onMediaFatalError, details);
+    }
 }
 
 void AsyncVideoSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)

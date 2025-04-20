@@ -147,11 +147,11 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(b
                     _capturer->reset(capturer.release());
                 }
                 else {
-                    notifyAboutFatalError("failed to select capturer source");
+                    notifyAboutError("failed to select capturer source");
                 }
             }
             else {
-                notifyAboutFatalError("failed to create platform capturer");
+                notifyAboutError("failed to create platform capturer");
             }
         }
         return _capturer.constRef();
@@ -182,8 +182,8 @@ void DesktopWebRTCCapturer::OnCaptureResult(webrtc::DesktopCapturer::Result resu
     if (frame) {
         deliverCaptured(std::move(frame));
     }
-    else if (webrtc::DesktopCapturer::Result::ERROR_PERMANENT == result) {
-        notifyAboutFatalError("capture has failed and will keep failing again");
+    else {
+        notifyAboutError("capture has failed", webrtc::DesktopCapturer::Result::ERROR_PERMANENT == result);
     }
 }
 

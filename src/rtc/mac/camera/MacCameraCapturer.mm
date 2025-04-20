@@ -465,7 +465,8 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
 - (void) reportAboutErrorMessage:(NSString*) error
 {
     if (error) {
-        _observer.invoke(&LiveKitCpp::CapturerObserver::onCapturingFatalError, LiveKitCpp::fromNSString(error));
+        _observer.invoke(&LiveKitCpp::CapturerObserver::onCapturingError,
+                         LiveKitCpp::fromNSString(error), true);
     }
 }
 

@@ -18,14 +18,6 @@
 #include <optional>
 #include <vector>
 
-#ifdef WEBRTC_MAC
-#ifdef __OBJC__
-@class NSScreen;
-#else
-typedef struct objc_object NSScreen;
-#endif
-#endif // WEBRTC_MAC
-
 namespace LiveKitCpp
 {
 
@@ -41,8 +33,5 @@ std::string windowIdToString(webrtc::WindowId id);
 std::string screenIdToString(webrtc::ScreenId id);
 std::optional<webrtc::WindowId> windowIdFromString(const std::string& str);
 std::optional<webrtc::ScreenId> screenIdFromString(const std::string& str);
-#ifdef WEBRTC_MAC
-NSScreen* findScreen(CGDirectDisplayID guid);
-#endif
 	
 } // namespace LiveKitCpp

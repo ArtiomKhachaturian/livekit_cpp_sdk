@@ -11,20 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CapturerObserver.h
-#include "CapturerState.h"
-#include <string>
+#pragma once // DesktopCapturerUtilsMac.h
+#include <CoreGraphics/CGWindow.h>
+#include <CoreGraphics/CGDirectDisplay.h>
+
+#ifdef WEBRTC_MAC
+#ifdef __OBJC__
+@class NSScreen;
+#else
+typedef struct objc_object NSScreen;
+#endif
+#endif // WEBRTC_MAC
 
 namespace LiveKitCpp
 {
 
-class CapturerObserver
-{
-public:
-    virtual void onStateChanged(CapturerState state) = 0;
-    virtual void onCapturingError(std::string /*details*/ = {}, bool /*fatal*/ = true) {} // during the streaming
-protected:
-    ~CapturerObserver() = default;
-};
-
+NSScreen* findScreen(CGDirectDisplayID guid);
+bool isHiddenWindow(CGWindowID wId);
+	
 } // namespace LiveKitCpp

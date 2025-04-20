@@ -76,10 +76,10 @@ std::string_view AsyncCameraSourceImpl::logCategory() const
     return CameraManager::logCategory();
 }
 
-void AsyncCameraSourceImpl::onCapturingFatalError(const std::string& details)
+void AsyncCameraSourceImpl::onCapturingError(std::string details, bool fatal)
 {
     logError(_capturer(), details);
-    AsyncVideoSourceImpl::onCapturingFatalError(details);
+    AsyncVideoSourceImpl::onCapturingError(std::move(details), fatal);
 }
 
 void AsyncCameraSourceImpl::onContentHintChanged(VideoContentHint hint)

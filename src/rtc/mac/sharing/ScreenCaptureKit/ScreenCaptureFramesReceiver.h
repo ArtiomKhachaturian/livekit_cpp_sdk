@@ -11,20 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CapturerObserver.h
-#include "CapturerState.h"
-#include <string>
+#pragma once // ScreenCaptureFramesReceiver.h
+#include <CoreMedia/CMSampleBuffer.h> // for CMSampleBufferRef
+
+#ifdef __OBJC__
+@class SCStream;
+#else
+typedef struct objc_object SCStream;
+#endif
 
 namespace LiveKitCpp
 {
 
-class CapturerObserver
+class ScreenCaptureFramesReceiver
 {
 public:
-    virtual void onStateChanged(CapturerState state) = 0;
-    virtual void onCapturingError(std::string /*details*/ = {}, bool /*fatal*/ = true) {} // during the streaming
-protected:
-    ~CapturerObserver() = default;
+    virtual ~ScreenCaptureFramesReceiver() = default;
+    virtual void deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer) = 0;
 };
 
 } // namespace LiveKitCpp

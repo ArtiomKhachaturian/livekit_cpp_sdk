@@ -66,7 +66,7 @@ protected:
     void onEnabled(bool enabled) override;
     // impl. of CapturerObserver
     void onStateChanged(CapturerState state) override;
-    void onCapturingFatalError(const std::string& details) override;
+    void onCapturingError(std::string details, bool fatal) override;
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) override { broadcast(frame, true); }
     void OnDiscardedFrame() override { discard(); }

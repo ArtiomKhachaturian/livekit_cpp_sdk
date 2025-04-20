@@ -11,20 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CapturerObserver.h
-#include "CapturerState.h"
-#include <string>
+#pragma once // ScreenCaptureErrorHandler.h
+
+#ifdef __OBJC__
+@class NSError;
+@class SCStream;
+#else
+typedef struct objc_object NSError;
+typedef struct objc_object SCStream;
+#endif
 
 namespace LiveKitCpp
 {
 
-class CapturerObserver
+class ScreenCaptureErrorHandler
 {
 public:
-    virtual void onStateChanged(CapturerState state) = 0;
-    virtual void onCapturingError(std::string /*details*/ = {}, bool /*fatal*/ = true) {} // during the streaming
-protected:
-    ~CapturerObserver() = default;
+    virtual ~ScreenCaptureErrorHandler() = default;
+    virtual void processPermanentError(SCStream* stream, NSError* error) = 0;
 };
 
 } // namespace LiveKitCpp

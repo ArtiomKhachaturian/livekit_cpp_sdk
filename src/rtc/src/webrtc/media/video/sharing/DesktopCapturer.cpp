@@ -107,9 +107,14 @@ bool DesktopCapturer::changeState(CapturerState state)
     return changed;
 }
 
-void DesktopCapturer::notifyAboutFatalError(const std::string& details) const
+void DesktopCapturer::notifyAboutError(std::string details, bool fatal) const
 {
-    _sink.invoke(&CapturerProxySink::onCapturingFatalError, details);
+    _sink.invoke(&CapturerProxySink::onCapturingError, std::move(details), fatal);
+}
+
+void DesktopCapturer::discardFrame()
+{
+    _sink.invoke(&CapturerProxySink::OnDiscardedFrame);
 }
 
 void DesktopCapturer::deliverCaptured(const webrtc::VideoFrame& frame)
@@ -139,6 +144,11 @@ void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> fram
         const auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame));
         deliverCaptured(buffer, timestamp * 1000);
     }
+}
+
+void DesktopCapturer::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
+{
+    _sink.invoke(&CapturerProxySink::OnConstraintsChanged, c);
 }
 
 } // namespace LiveKitCpp
