@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DesktopConfiguration.h
+#include "SafeObjAliases.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <api/scoped_refptr.h>
 #include <modules/desktop_capture/desktop_capture_options.h>
@@ -32,7 +33,6 @@ class DesktopConfiguration
 {
 public:
     DesktopConfiguration();
-    DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue);
     ~DesktopConfiguration();
     bool screensEnumerationIsAvailable() const { return nullptr != _screensEnumerator; }
     bool windowsEnumerationIsAvailable() const { return nullptr != _windowsEnumerator; }
@@ -50,17 +50,18 @@ public:
     bool hasTheSameType(const MediaDeviceInfo& l, const MediaDeviceInfo& r) const;
     std::unique_ptr<DesktopCapturer> createCapturer(const std::string& guid,
                                                     bool selectSource = false,
-                                                    bool lightweightOptions = false) const;
+                                                    bool lightweightOptions = false);
     static int32_t maxFramerate() { return 30; }
 private:
     DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool lightweightMode = false);
     std::unique_ptr<DesktopCapturer> createRawCapturer(bool window,
-                                                       bool lightweightOptions = false) const;
+                                                       bool lightweightOptions = false);
+    std::shared_ptr<webrtc::TaskQueueBase> commonSharedQueue();
 private:
-    const std::shared_ptr<webrtc::TaskQueueBase> _timerQueue;
-    const std::unique_ptr<DesktopCapturer> _screensEnumerator;
-    const std::unique_ptr<DesktopCapturer> _windowsEnumerator;
+    Bricks::SafeSharedPtr<webrtc::TaskQueueBase> _timerQueue;
+    std::unique_ptr<DesktopCapturer> _screensEnumerator;
+    std::unique_ptr<DesktopCapturer> _windowsEnumerator;
 };
 	
 } // namespace LiveKitCpp

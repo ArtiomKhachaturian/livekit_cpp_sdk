@@ -30,9 +30,10 @@ class CGScreenCapturer : public DesktopSimpleCapturer<MacDesktopCapturer>,
 {
     using Base = DesktopSimpleCapturer<MacDesktopCapturer>;
 public:
-    CGScreenCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
-                     const webrtc::DesktopCaptureOptions& options);
-    ~CGScreenCapturer() override;
+    CGScreenCapturer(webrtc::DesktopCaptureOptions options);
+    CGScreenCapturer(webrtc::DesktopCaptureOptions options,
+                     std::shared_ptr<webrtc::TaskQueueBase> timerQueue);
+    ~CGScreenCapturer() final;
     // overrides & impl. of DesktopCapturer
     void setPreviewMode(bool preview) final;
     bool selectSource(const std::string& source) final;

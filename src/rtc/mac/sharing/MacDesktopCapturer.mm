@@ -12,34 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MacDesktopCapturer.h"
-#include "CGScreenCapturer.h"
-#include "VTSupportedPixelFormats.h"
-#include "./ScreenCaptureKit/ScreenCaptureKitCapturer.h"
 #include <modules/desktop_capture/mac/desktop_frame_cgimage.h>
 
 namespace LiveKitCpp
 {
 
-MacDesktopCapturer::MacDesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options)
-    : DesktopCapturer(window, options)
+MacDesktopCapturer::MacDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options)
+    : DesktopCapturer(window, std::move(options))
 {
 }
 
 MacDesktopCapturer::~MacDesktopCapturer()
 {
-}
-
-std::unique_ptr<DesktopCapturer> MacDesktopCapturer::create(bool window,
-                                                            const webrtc::DesktopCaptureOptions& options,
-                                                            const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
-{
-    if (!window) {
-        if (ScreenCaptureKitCapturer::available()) {
-            return std::make_unique<ScreenCaptureKitCapturer>(window, options);
-        }
-        return std::make_unique<CGScreenCapturer>(timerQueue, options);
-    }
-    return {};
 }
 
 std::unique_ptr<webrtc::DesktopFrame> MacDesktopCapturer::captureDisplay(webrtc::ScreenId sId) const
@@ -52,19 +36,6 @@ std::unique_ptr<webrtc::DesktopFrame> MacDesktopCapturer::captureWindow(webrtc::
 {
     const auto id = static_cast<CGWindowID>(wId);
     return webrtc::DesktopFrameCGImage::CreateForWindow(id);
-}
-
-OSType MacDesktopCapturer::recommendedVideoFormat()
-{
-    return pixelFormatNV12Video();
-}
-
-dispatch_queue_t MacDesktopCapturer::currentQueue()
-{
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return dispatch_get_current_queue();
-#pragma GCC diagnostic pop
 }
 
 } // namespace LiveKitCpp

@@ -14,19 +14,27 @@
 #include "ScreenCaptureKitCapturer.h"
 #include "ScreenCaptureEnumerator.h"
 #include "ScreenCaptureProcessor.h"
+#include "CoreVideoPixelBuffer.h"
 #include "DesktopCapturerUtils.h"
 #include "Utils.h"
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 
+namespace  {
+
+using namespace LiveKitCpp;
+
+inline OSType videoFormat(bool window) {
+    return window ? CoreVideoPixelBuffer::formatBGRA32() : CoreVideoPixelBuffer::formatNV12Video();
+}
+
+}
+
 namespace LiveKitCpp
 {
 
-ScreenCaptureKitCapturer::ScreenCaptureKitCapturer(bool window,
-                                                   const webrtc::DesktopCaptureOptions& options)
-    : MacDesktopCapturer(window, options)
-    , _processor(std::make_unique<ScreenCaptureProcessor>(screenQueueMaximumLength(),
-                                                          recommendedVideoFormat(),
-                                                          currentQueue()))
+ScreenCaptureKitCapturer::ScreenCaptureKitCapturer(bool window, webrtc::DesktopCaptureOptions options)
+    : MacDesktopCapturer(window, std::move(options))
+    , _processor(std::make_unique<ScreenCaptureProcessor>(screenQueueMaxLen(), videoFormat(window)))
 {
     _processor->setOutputSink(this);
 }
@@ -51,10 +59,10 @@ std::string ScreenCaptureKitCapturer::selectedSource() const
 {
     @autoreleasepool {
         if (auto screen = _processor->selectedScreen()) {
-            return ScreenCaptureEnumerator::toString(screen);
+            return ScreenCaptureEnumerator::displayToString(screen);
         }
         if (auto window = _processor->selectedWindow()) {
-            return ScreenCaptureEnumerator::toString(window);
+            return ScreenCaptureEnumerator::windowToString(window);
         }
     }
     return {};

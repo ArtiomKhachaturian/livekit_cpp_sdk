@@ -25,7 +25,7 @@ class ScreenCaptureKitCapturer : public MacDesktopCapturer,
                                  private CapturerProxySink
 {
 public:
-    ScreenCaptureKitCapturer(bool window, const webrtc::DesktopCaptureOptions& options);
+    ScreenCaptureKitCapturer(bool window, webrtc::DesktopCaptureOptions options);
     ~ScreenCaptureKitCapturer() override;
     static bool available();
     // overrides of DesktopCapturer

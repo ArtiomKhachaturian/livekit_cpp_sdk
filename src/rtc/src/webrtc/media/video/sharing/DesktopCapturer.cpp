@@ -20,9 +20,9 @@
 namespace LiveKitCpp
 {
 
-DesktopCapturer::DesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options)
+DesktopCapturer::DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options)
     : _window(window)
-    , _options(options)
+    , _options(std::move(options))
 {
 }
 

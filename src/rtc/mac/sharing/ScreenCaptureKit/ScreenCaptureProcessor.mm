@@ -17,9 +17,8 @@
 namespace LiveKitCpp
 {
 
-ScreenCaptureProcessor::ScreenCaptureProcessor(int queueDepth, OSType pixelFormat,
-                                               dispatch_queue_t sampleHandlerQueue)
-    : RtcObject<ScreenCaptureProcessorImpl>(queueDepth, pixelFormat, sampleHandlerQueue)
+ScreenCaptureProcessor::ScreenCaptureProcessor(int queueDepth, OSType pixelFormat)
+    : RtcObject<ScreenCaptureProcessorImpl>(queueDepth, pixelFormat)
 {
 }
 

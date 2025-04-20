@@ -93,16 +93,14 @@ inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xff
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
 
 template <typename T>
-inline std::string toHexValue(T value)
-{
+inline std::string toHexValue(T value) {
     std::ostringstream ss;
     ss << std::hex << value;
     return ss.str();
 }
 
 template <typename T>
-std::optional<T> fromHexValue(const std::string& str)
-{
+std::optional<T> fromHexValue(const std::string& str) {
     if (!str.empty()) {
         std::istringstream ss(str);
         T value;
@@ -130,33 +128,28 @@ inline bool exchangeVal(const T& source, std::atomic<T>& dst) {
 }
 
 template <typename T> // this function is better than [std::clamp] (constexpr, no dangling references on output)
-inline constexpr T bound(const T& min, const T& val, const T& max)
-{
+inline constexpr T bound(const T& min, const T& val, const T& max) {
     return std::max(min, std::min(max, val));
 }
 
-inline std::vector<uint8_t> binaryFromString(std::string_view s) {
-    return {s.begin(), s.end()};
-}
+template <typename T>
+inline T even2(T num) { return (num + 1) & ~1; }
+
+inline std::vector<uint8_t> binaryFromString(std::string_view s) { return {s.begin(), s.end()}; }
 
 // hash support
 template <typename T>
-inline size_t hashCombine(const T& v)
-{
-    return std::hash<T>()(v);
-}
+inline size_t hashCombine(const T& v) { return std::hash<T>()(v); }
 
 template <typename T, typename... Rest>
-inline size_t hashCombine(const T& v, Rest... rest)
-{
+inline size_t hashCombine(const T& v, Rest... rest) {
     size_t seed = hashCombine(rest...);
     seed ^= hashCombine<T>(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
 }
 
 template <class InputIt>
-inline size_t hashCombineRange(InputIt first, InputIt last)
-{
+inline size_t hashCombineRange(InputIt first, InputIt last) {
     size_t seed = 0UL;
     for (; first != last; ++first) {
         seed = hashCombine(*first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);

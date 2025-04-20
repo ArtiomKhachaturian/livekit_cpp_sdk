@@ -77,7 +77,7 @@ public:
     void setTargetResolutuon(const webrtc::DesktopSize& resolution);
     virtual ~DesktopCapturer() = default;
 protected:
-    DesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options);
+    DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options);
     const auto& options() const noexcept { return _options; }
     bool hasOutputSink() const { return !_sink.empty(); }
     bool changeState(CapturerState state);

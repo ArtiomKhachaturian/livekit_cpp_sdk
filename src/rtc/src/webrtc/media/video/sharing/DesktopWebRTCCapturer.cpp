@@ -20,16 +20,17 @@
 namespace LiveKitCpp
 {
 
-DesktopWebRTCCapturer::DesktopWebRTCCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
-                                             bool window, const webrtc::DesktopCaptureOptions& options)
-    : Base(timerQueue, window, options)
+DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                                             std::shared_ptr<webrtc::TaskQueueBase> timerQueue)
+    : Base(window, std::move(options), std::move(timerQueue))
+    , _source(defaultSource(window))
 {
-    if (window) {
-        _source = webrtc::kNullWindowId;
-    }
-    else {
-        _source = webrtc::kInvalidScreenId;
-    }
+}
+
+DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options)
+    : Base(window, std::move(options))
+    , _source(defaultSource(window))
+{
 }
 
 DesktopWebRTCCapturer::~DesktopWebRTCCapturer()
@@ -113,6 +114,14 @@ void DesktopWebRTCCapturer::captureNextFrame()
 bool DesktopWebRTCCapturer::canStart() const
 {
     return Base::canStart() && hasValidSource();
+}
+
+intptr_t DesktopWebRTCCapturer::defaultSource(bool window)
+{
+    if (window) {
+        return webrtc::kNullWindowId;
+    }
+    return webrtc::kInvalidScreenId;
 }
 
 std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(bool take)

@@ -43,10 +43,8 @@ inline T roundCGFloat(CGFloat f) {
 namespace LiveKitCpp
 {
 
-ScreenCaptureProcessorImpl::ScreenCaptureProcessorImpl(int queueDepth, OSType pixelFormat,
-                                                       dispatch_queue_t sampleHandlerQueue)
-    : _sampleHandlerQueue(/*sampleHandlerQueue*/nil)
-    , _configuration([SCStreamConfiguration new])
+ScreenCaptureProcessorImpl::ScreenCaptureProcessorImpl(int queueDepth, OSType pixelFormat)
+    : _configuration([SCStreamConfiguration new])
 {
     _configuration.queueDepth = queueDepth;
     _configuration.pixelFormat = pixelFormat;
@@ -298,7 +296,7 @@ bool ScreenCaptureProcessorImpl::reconfigureStream(SCContentFilter* filter)
                 ScreenCaptureOutput* output = [[ScreenCaptureOutput alloc] initWith:weak_from_this()];
                 if ([stream addStreamOutput:output
                                        type:SCStreamOutputTypeScreen
-                         sampleHandlerQueue:_sampleHandlerQueue
+                         sampleHandlerQueue:nil
                                       error:&error]) {
                     @synchronized (_configuration) {
                         _output = output;

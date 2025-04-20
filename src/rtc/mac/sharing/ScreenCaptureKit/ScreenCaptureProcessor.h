@@ -14,7 +14,6 @@
 #pragma once // ScreenCaptureProcessor.h
 #include "RtcObject.h"
 #include <CoreVideo/CoreVideo.h>
-#include <dispatch/dispatch.h>
 
 #ifdef __OBJC__
 @class SCWindow;
@@ -33,8 +32,7 @@ class CapturerProxySink;
 class ScreenCaptureProcessor : public RtcObject<ScreenCaptureProcessorImpl>
 {
 public:
-    ScreenCaptureProcessor(int queueDepth, OSType pixelFormat,
-                           dispatch_queue_t sampleHandlerQueue = nil);
+    ScreenCaptureProcessor(int queueDepth, OSType pixelFormat);
     ~ScreenCaptureProcessor();
     void setOutputSink(CapturerProxySink* sink);
     bool start();

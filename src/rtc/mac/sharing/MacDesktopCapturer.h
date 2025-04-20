@@ -13,17 +13,8 @@
 // limitations under the License.
 #pragma once // MacDesktopCapturer.h
 #include "DesktopCapturer.h"
-#include <MacTypes.h>
 #include <api/scoped_refptr.h>
-#include <CoreGraphics/CGDirectDisplay.h>
-#include <dispatch/dispatch.h>
 #include <optional>
-
-namespace webrtc {
-class DesktopCaptureOptions;
-class DesktopConfigurationMonitor;
-class TaskQueueBase;
-} // namespace webrtc
 
 namespace LiveKitCpp
 {
@@ -31,17 +22,13 @@ namespace LiveKitCpp
 class MacDesktopCapturer : public DesktopCapturer
 {
 public:
-    static std::unique_ptr<DesktopCapturer> create(bool window, const webrtc::DesktopCaptureOptions& options,
-                                                   const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue);
     ~MacDesktopCapturer() override;
 protected:
-    MacDesktopCapturer(bool window, const webrtc::DesktopCaptureOptions& options);
+    MacDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options);
     std::unique_ptr<webrtc::DesktopFrame> captureDisplay(webrtc::ScreenId sId) const;
     std::unique_ptr<webrtc::DesktopFrame> captureWindow(webrtc::WindowId wId) const;
     // the same value as in WebKit, system default is 3, max should not exceed 8 frames
-    static constexpr int screenQueueMaximumLength() { return 6; }
-    static OSType recommendedVideoFormat();
-    static dispatch_queue_t currentQueue();
+    static constexpr int screenQueueMaxLen() { return 6; }
 };
 
 

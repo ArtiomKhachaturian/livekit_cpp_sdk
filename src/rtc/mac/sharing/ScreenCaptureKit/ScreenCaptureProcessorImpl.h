@@ -46,8 +46,7 @@ class ScreenCaptureProcessorImpl : public std::enable_shared_from_this<ScreenCap
                                    public ScreenCaptureErrorHandler
 {
 public:
-    ScreenCaptureProcessorImpl(int queueDepth, OSType pixelFormat,
-                               dispatch_queue_t sampleHandlerQueue = nil);
+    ScreenCaptureProcessorImpl(int queueDepth, OSType pixelFormat);
     ~ScreenCaptureProcessorImpl() final;
     void setOutputSink(CapturerProxySink* sink) { _sink = sink; }
     bool start();
@@ -78,7 +77,6 @@ private:
     // impl. of ScreenCaptureErrorHandler
     void processPermanentError(SCStream* stream, NSError* error) final;
 private:
-    const dispatch_queue_t _sampleHandlerQueue;
     SCStreamConfiguration* const _configuration;
     Bricks::SafeObj<CapturerState> _state = CapturerState::Stopped;
     Bricks::Listener<CapturerProxySink*> _sink;

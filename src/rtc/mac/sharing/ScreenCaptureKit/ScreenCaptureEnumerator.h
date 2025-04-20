@@ -41,8 +41,8 @@ public:
     SCWindow* toWindow(webrtc::WindowId wId) const;
     SCDisplay* toScreen(const std::string& source) const;
     SCDisplay* toScreen(webrtc::ScreenId sId) const;
-    static std::string toString(SCWindow* window);
-    static std::string toString(SCDisplay* display);
+    static std::string windowToString(SCWindow* window);
+    static std::string displayToString(SCDisplay* display);
 private:
     SCShareableContent* _content = nullptr;
 };

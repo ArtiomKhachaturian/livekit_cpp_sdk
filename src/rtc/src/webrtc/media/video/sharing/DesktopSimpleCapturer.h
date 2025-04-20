@@ -22,6 +22,7 @@
 namespace LiveKitCpp
 {
 
+// timer-based capturer
 template <class TCapturer>
 class DesktopSimpleCapturer : public TCapturer,
                               private MediaTimerCallback
@@ -36,9 +37,14 @@ public:
     void stop() override;
     ~DesktopSimpleCapturer() override;
 protected:
+    // capturer with shared queue
     template <typename... Args>
-    DesktopSimpleCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
-                          bool window, const webrtc::DesktopCaptureOptions& options,
+    DesktopSimpleCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                          std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
+                          Args&&... args);
+    // capturer with own queue
+    template <typename... Args>
+    DesktopSimpleCapturer(bool window, webrtc::DesktopCaptureOptions options,
                           Args&&... args);
     void execute(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);
     virtual void captureNextFrame() = 0;
@@ -47,6 +53,7 @@ private:
     // impl. of MediaTimerCallback
     void onTimeout(uint64_t) final { captureNextFrame(); }
 private:
+    const std::shared_ptr<webrtc::TaskQueueBase> _timerQueue;
     MediaTimer _timer;
     std::atomic<int32_t> _fps = 30;
 };
@@ -54,11 +61,24 @@ private:
 template <class TCapturer>
 template <typename... Args>
 inline DesktopSimpleCapturer<TCapturer>::
-    DesktopSimpleCapturer(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue,
-                          bool window, const webrtc::DesktopCaptureOptions& options,
+    DesktopSimpleCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                          std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                           Args&&... args)
-    : TCapturer(window, options, std::forward<Args>(args)...)
-    , _timer(timerQueue)
+    : TCapturer(window, std::move(options), std::forward<Args>(args)...)
+    , _timerQueue(std::move(timerQueue))
+    , _timer(_timerQueue)
+{
+}
+
+template <class TCapturer>
+template <typename... Args>
+inline DesktopSimpleCapturer<TCapturer>::
+    DesktopSimpleCapturer(bool window,
+                          webrtc::DesktopCaptureOptions options,
+                          Args&&... args)
+    : DesktopSimpleCapturer(window, std::move(options),
+                            createTaskQueueS("sharing_queue"),
+                            std::forward<Args>(args)...)
 {
 }
 

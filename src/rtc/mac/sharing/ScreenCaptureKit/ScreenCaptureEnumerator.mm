@@ -93,7 +93,7 @@ SCDisplay* ScreenCaptureEnumerator::toScreen(webrtc::ScreenId sId) const
     return nil;
 }
 
-std::string ScreenCaptureEnumerator::toString(SCWindow* window)
+std::string ScreenCaptureEnumerator::windowToString(SCWindow* window)
 {
     if (window) {
         return windowIdToString(window.windowID);
@@ -101,7 +101,7 @@ std::string ScreenCaptureEnumerator::toString(SCWindow* window)
     return {};
 }
 
-std::string ScreenCaptureEnumerator::toString(SCDisplay* display)
+std::string ScreenCaptureEnumerator::displayToString(SCDisplay* display)
 {
     if (display) {
         return screenIdToString(display.displayID);

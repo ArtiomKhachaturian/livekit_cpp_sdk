@@ -15,20 +15,15 @@
 #include "DesktopWebRTCCapturer.h"
 #include "Utils.h"
 #ifdef WEBRTC_MAC
-#include "MacDesktopCapturer.h"
+#include "CGScreenCapturer.h"
+#include "ScreenCaptureKitCapturer.h"
 #endif
 
 namespace LiveKitCpp
 {
 
 DesktopConfiguration::DesktopConfiguration()
-    : DesktopConfiguration(createTaskQueueS("sharing_queue"))
-{
-}
-
-DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
-    : _timerQueue(timerQueue)
-    , _screensEnumerator(createRawCapturer(false, false))
+    : _screensEnumerator(createRawCapturer(false, false))
     , _windowsEnumerator(createRawCapturer(true, true))
 {
 }
@@ -115,7 +110,7 @@ bool DesktopConfiguration::hasTheSameType(const MediaDeviceInfo& l, const MediaD
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std::string& guid,
                                                                       bool selectSource,
-                                                                      bool lightweightOptions) const
+                                                                      bool lightweightOptions)
 {
     std::unique_ptr<DesktopCapturer> capturer;
     if (deviceIsScreen(guid)) {
@@ -159,17 +154,30 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweight
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool window,
-                                                                         bool lightweightOptions) const
+                                                                         bool lightweightOptions)
 {
     std::unique_ptr<DesktopCapturer> impl;
-    const auto options = makeOptions(lightweightOptions);
 #ifdef WEBRTC_MAC
-    impl = MacDesktopCapturer::create(window, options, _timerQueue);
+    if (ScreenCaptureKitCapturer::available()) {
+        return std::make_unique<ScreenCaptureKitCapturer>(window, makeOptions(lightweightOptions));
+    }
+    if (!window) {
+        return std::make_unique<CGScreenCapturer>(makeOptions(lightweightOptions), commonSharedQueue());
+    }
 #endif
     if (!impl) {
-        impl = std::make_unique<DesktopWebRTCCapturer>(_timerQueue, window, options);
+        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(lightweightOptions), commonSharedQueue());
     }
     return impl;
+}
+
+std::shared_ptr<webrtc::TaskQueueBase> DesktopConfiguration::commonSharedQueue()
+{
+    LOCK_WRITE_SAFE_OBJ(_timerQueue);
+    if (!_timerQueue.constRef()) {
+        _timerQueue = createTaskQueueS("common_sharing_queue");
+    }
+    return _timerQueue.constRef();
 }
 
 } // namespace LiveKitCpp
