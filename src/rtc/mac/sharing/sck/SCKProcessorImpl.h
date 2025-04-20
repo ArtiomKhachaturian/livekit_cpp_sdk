@@ -11,12 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScreenCaptureProcessorImpl.h
+#pragma once // SCKProcessorImpl.h
 #include "CapturerState.h"
 #include "CFAutoRelease.h"
 #include "Listener.h"
-#include "ScreenCaptureFramesReceiver.h"
-#include "ScreenCaptureErrorHandler.h"
+#include "SCKFramesReceiver.h"
+#include "SCKErrorHandler.h"
 #include <atomic>
 #include <memory>
 
@@ -26,7 +26,7 @@
 @class SCDisplay;
 @class SCStream;
 @class SCStreamConfiguration;
-@class ScreenCaptureOutput;
+@class SCKStreamOutput;
 #else
 typedef struct objc_object SCContentFilter;
 typedef struct objc_object SCWindow;
@@ -41,13 +41,13 @@ namespace LiveKitCpp
 
 class CapturerProxySink;
 
-class ScreenCaptureProcessorImpl : public std::enable_shared_from_this<ScreenCaptureProcessorImpl>,
-                                   public ScreenCaptureFramesReceiver,
-                                   public ScreenCaptureErrorHandler
+class SCKProcessorImpl : public std::enable_shared_from_this<SCKProcessorImpl>,
+                         public SCKFramesReceiver,
+                         public SCKErrorHandler
 {
 public:
-    ScreenCaptureProcessorImpl(int queueDepth, OSType pixelFormat);
-    ~ScreenCaptureProcessorImpl() final;
+    SCKProcessorImpl(int queueDepth, OSType pixelFormat);
+    ~SCKProcessorImpl() final;
     void setOutputSink(CapturerProxySink* sink) { _sink = sink; }
     bool start();
     bool started() const;
@@ -84,7 +84,7 @@ private:
     Bricks::Listener<CapturerProxySink*> _sink;
     std::atomic<uint64_t> _targetResolution = 0ULL;
     std::atomic<float> _lastPointPixelScale = 2.;
-    ScreenCaptureOutput* _output = nil;
+    SCKStreamOutput* _output = nil;
     SCStream* _stream = nil;
     NSObject* _selectedObject = nil;
     SCWindow* _excludedWindow = nil;

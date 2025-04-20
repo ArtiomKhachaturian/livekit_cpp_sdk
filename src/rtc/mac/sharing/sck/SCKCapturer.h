@@ -11,22 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScreenCaptureKitCapturer.h
+#pragma once // SCKCapturer.h
 #include "MacDesktopCapturer.h"
-#include "ScreenCaptureEnumerator.h"
+#include "SCKEnumerator.h"
 #include "CapturerProxySink.h"
 
 namespace LiveKitCpp
 {
 
-class ScreenCaptureProcessor;
+class SCKProcessor;
 
-class ScreenCaptureKitCapturer : public MacDesktopCapturer,
-                                 private CapturerProxySink
+class SCKCapturer : public MacDesktopCapturer, private CapturerProxySink
 {
 public:
-    ScreenCaptureKitCapturer(bool window, webrtc::DesktopCaptureOptions options);
-    ~ScreenCaptureKitCapturer() override;
+    SCKCapturer(bool window, webrtc::DesktopCaptureOptions options);
+    ~SCKCapturer() final;
     static bool available();
     // overrides of DesktopCapturer
     bool selectSource(const std::string& source) final;
@@ -47,8 +46,8 @@ private:
     void OnDiscardedFrame() final { discardFrame(); }
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) final;
 private:
-    const std::unique_ptr<ScreenCaptureProcessor> _processor;
-    ScreenCaptureEnumerator _enumerator;
+    const std::unique_ptr<SCKProcessor> _processor;
+    SCKEnumerator _enumerator;
 };
 
 } // namespace LiveKitCpp

@@ -11,15 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScreenCaptureDelegate.h
-#import <ScreenCaptureKit/ScreenCaptureKit.h>
-#include <memory>
+#pragma once // SCKFramesReceiver.h
+#include <CoreMedia/CMSampleBuffer.h> // for CMSampleBufferRef
 
-namespace LiveKitCpp {
-class ScreenCaptureErrorHandler;
-}
+#ifdef __OBJC__
+@class SCStream;
+#else
+typedef struct objc_object SCStream;
+#endif
 
-@interface ScreenCaptureDelegate : NSObject<SCStreamDelegate>
-- (instancetype) init NS_UNAVAILABLE;
-- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::ScreenCaptureErrorHandler>&) errorHandlerRef NS_DESIGNATED_INITIALIZER;
-@end
+namespace LiveKitCpp
+{
+
+class SCKFramesReceiver
+{
+public:
+    virtual ~SCKFramesReceiver() = default;
+    virtual void deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer) = 0;
+};
+
+} // namespace LiveKitCpp

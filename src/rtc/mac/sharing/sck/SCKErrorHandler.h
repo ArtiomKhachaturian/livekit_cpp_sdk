@@ -11,23 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScreenCaptureFramesReceiver.h
-#include <CoreMedia/CMSampleBuffer.h> // for CMSampleBufferRef
+#pragma once // SCKErrorHandler.h
 
 #ifdef __OBJC__
+@class NSError;
 @class SCStream;
 #else
+typedef struct objc_object NSError;
 typedef struct objc_object SCStream;
 #endif
 
 namespace LiveKitCpp
 {
 
-class ScreenCaptureFramesReceiver
+class SCKErrorHandler
 {
 public:
-    virtual ~ScreenCaptureFramesReceiver() = default;
-    virtual void deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer) = 0;
+    virtual ~SCKErrorHandler() = default;
+    virtual void processPermanentError(SCStream* stream, NSError* error) = 0;
 };
 
 } // namespace LiveKitCpp

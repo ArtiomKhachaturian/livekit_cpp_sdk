@@ -11,9 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "ScreenCaptureProcessorImpl.h"
-#include "ScreenCaptureDelegate.h"
-#include "ScreenCaptureOutput.h"
+#include "SCKProcessorImpl.h"
+#include "SCKDelegate.h"
+#include "SCKStreamOutput.h"
 #include "CapturerProxySink.h"
 #include "CoreVideoPixelBuffer.h"
 #include "Utils.h"
@@ -43,7 +43,7 @@ inline T roundCGFloat(CGFloat f) {
 namespace LiveKitCpp
 {
 
-ScreenCaptureProcessorImpl::ScreenCaptureProcessorImpl(int queueDepth, OSType pixelFormat)
+SCKProcessorImpl::SCKProcessorImpl(int queueDepth, OSType pixelFormat)
     : _configuration([SCStreamConfiguration new])
 {
     _configuration.queueDepth = queueDepth;
@@ -53,7 +53,7 @@ ScreenCaptureProcessorImpl::ScreenCaptureProcessorImpl(int queueDepth, OSType pi
     //_configuration.captureResolution = SCCaptureResolutionNominal;
 }
 
-ScreenCaptureProcessorImpl::~ScreenCaptureProcessorImpl()
+SCKProcessorImpl::~SCKProcessorImpl()
 {
     _output = nil;
     _stream = nil;
@@ -61,7 +61,7 @@ ScreenCaptureProcessorImpl::~ScreenCaptureProcessorImpl()
     _excludedWindow = nil;
 }
 
-bool ScreenCaptureProcessorImpl::start()
+bool SCKProcessorImpl::start()
 {
     @synchronized (_configuration) {
         if (_stream && changeState(CapturerState::Starting)) {
@@ -82,7 +82,7 @@ bool ScreenCaptureProcessorImpl::start()
     return false;
 }
 
-bool ScreenCaptureProcessorImpl::started() const
+bool SCKProcessorImpl::started() const
 {
     switch (_state()) {
         case CapturerState::Starting:
@@ -94,7 +94,7 @@ bool ScreenCaptureProcessorImpl::started() const
     return false;
 }
 
-void ScreenCaptureProcessorImpl::stop()
+void SCKProcessorImpl::stop()
 {
     @synchronized (_configuration) {
         if (_stream && changeState(CapturerState::Stopping)) {
@@ -113,7 +113,7 @@ void ScreenCaptureProcessorImpl::stop()
     }
 }
 
-bool ScreenCaptureProcessorImpl::selectDisplay(SCDisplay* display)
+bool SCKProcessorImpl::selectDisplay(SCDisplay* display)
 {
     if (display) {
         stop();
@@ -130,7 +130,7 @@ bool ScreenCaptureProcessorImpl::selectDisplay(SCDisplay* display)
     return false;
 }
 
-bool ScreenCaptureProcessorImpl::selectWindow(SCWindow* window)
+bool SCKProcessorImpl::selectWindow(SCWindow* window)
 {
     if (window) {
         stop();
@@ -147,7 +147,7 @@ bool ScreenCaptureProcessorImpl::selectWindow(SCWindow* window)
     return false;
 }
 
-void ScreenCaptureProcessorImpl::setExcludedWindow(SCWindow* window)
+void SCKProcessorImpl::setExcludedWindow(SCWindow* window)
 {
     if (changeExcludedWindow(window)) {
         @autoreleasepool {
@@ -168,7 +168,7 @@ void ScreenCaptureProcessorImpl::setExcludedWindow(SCWindow* window)
     }
 }
 
-void ScreenCaptureProcessorImpl::setShowCursor(bool show)
+void SCKProcessorImpl::setShowCursor(bool show)
 {
     const BOOL val = show ? YES : NO;
     if (val != _configuration.showsCursor) {
@@ -177,7 +177,7 @@ void ScreenCaptureProcessorImpl::setShowCursor(bool show)
     }
 }
 
-void ScreenCaptureProcessorImpl::setTargetFramerate(int32_t fps)
+void SCKProcessorImpl::setTargetFramerate(int32_t fps)
 {
     if (fps > 0) {
         const auto interval = CMTimeMake(uint64_t(std::round(1000ULL / fps)), rtc::kNumMillisecsPerSec);
@@ -188,7 +188,7 @@ void ScreenCaptureProcessorImpl::setTargetFramerate(int32_t fps)
     }
 }
 
-void ScreenCaptureProcessorImpl::setTargetResolution(int32_t width, int32_t height)
+void SCKProcessorImpl::setTargetResolution(int32_t width, int32_t height)
 {
     if (width > 1 && height > 1) {
         width = roundCGFloat<int32_t>(width / _lastPointPixelScale);
@@ -210,7 +210,7 @@ void ScreenCaptureProcessorImpl::setTargetResolution(int32_t width, int32_t heig
     }
 }
 
-SCDisplay* ScreenCaptureProcessorImpl::selectedScreen() const
+SCDisplay* SCKProcessorImpl::selectedScreen() const
 {
     @synchronized (_configuration) {
         if (_selectedObject && [_selectedObject isKindOfClass:[SCDisplay class]]) {
@@ -220,7 +220,7 @@ SCDisplay* ScreenCaptureProcessorImpl::selectedScreen() const
     return nil;
 }
 
-SCWindow* ScreenCaptureProcessorImpl::selectedWindow() const
+SCWindow* SCKProcessorImpl::selectedWindow() const
 {
     @synchronized (_configuration) {
         if (_selectedObject && [_selectedObject isKindOfClass:[SCWindow class]]) {
@@ -230,7 +230,7 @@ SCWindow* ScreenCaptureProcessorImpl::selectedWindow() const
     return nil;
 }
 
-bool ScreenCaptureProcessorImpl::changeState(CapturerState state)
+bool SCKProcessorImpl::changeState(CapturerState state)
 {
     bool changed = false;
     {
@@ -246,7 +246,7 @@ bool ScreenCaptureProcessorImpl::changeState(CapturerState state)
     return changed;
 }
 
-bool ScreenCaptureProcessorImpl::changeExcludedWindow(SCWindow* window)
+bool SCKProcessorImpl::changeExcludedWindow(SCWindow* window)
 {
     @synchronized (_configuration) {
         if (window != _excludedWindow) {
@@ -257,7 +257,7 @@ bool ScreenCaptureProcessorImpl::changeExcludedWindow(SCWindow* window)
     return false;
 }
 
-void ScreenCaptureProcessorImpl::notifyAboutError(NSError* error, bool fatal)
+void SCKProcessorImpl::notifyAboutError(NSError* error, bool fatal)
 {
     if (error) {
         if (fatal) {
@@ -267,7 +267,7 @@ void ScreenCaptureProcessorImpl::notifyAboutError(NSError* error, bool fatal)
     }
 }
 
-bool ScreenCaptureProcessorImpl::setSize(size_t width, size_t height, float pointPixelScale)
+bool SCKProcessorImpl::setSize(size_t width, size_t height, float pointPixelScale)
 {
     if (width > 0 && height > 0) {
         width = roundCGFloat<size_t>(width * pointPixelScale);
@@ -283,22 +283,22 @@ bool ScreenCaptureProcessorImpl::setSize(size_t width, size_t height, float poin
     return false;
 }
 
-bool ScreenCaptureProcessorImpl::setSize(const CGSize& size, float pointPixelScale)
+bool SCKProcessorImpl::setSize(const CGSize& size, float pointPixelScale)
 {
     return setSize(roundCGFloat<size_t>(size.width), roundCGFloat<size_t>(size.height), pointPixelScale);
 }
 
-bool ScreenCaptureProcessorImpl::setSize(SCWindow* window, float pointPixelScale)
+bool SCKProcessorImpl::setSize(SCWindow* window, float pointPixelScale)
 {
     return window && setSize(window.frame.size, pointPixelScale);
 }
 
-bool ScreenCaptureProcessorImpl::setSize(SCDisplay* display, float pointPixelScale)
+bool SCKProcessorImpl::setSize(SCDisplay* display, float pointPixelScale)
 {
     return display && setSize(display.frame.size, pointPixelScale);
 }
 
-bool ScreenCaptureProcessorImpl::setSize(SCContentFilter* filter)
+bool SCKProcessorImpl::setSize(SCContentFilter* filter)
 {
     if (filter) {
         if (const auto targetResolution = _targetResolution.load()) {
@@ -311,18 +311,18 @@ bool ScreenCaptureProcessorImpl::setSize(SCContentFilter* filter)
     return false;
 }
 
-bool ScreenCaptureProcessorImpl::reconfigureStream(SCContentFilter* filter)
+bool SCKProcessorImpl::reconfigureStream(SCContentFilter* filter)
 {
     bool reconfigured = false;
     if (filter) {
         @autoreleasepool {
-            auto delegate = [[ScreenCaptureDelegate alloc] initWith:weak_from_this()];
+            auto delegate = [[SCKDelegate alloc] initWith:weak_from_this()];
             SCStream* stream = [[SCStream alloc] initWithFilter:filter
                                                   configuration:_configuration
                                                        delegate:delegate];
             if (stream) {
                 NSError* error = nil;
-                ScreenCaptureOutput* output = [[ScreenCaptureOutput alloc] initWith:weak_from_this()];
+                SCKStreamOutput* output = [[SCKStreamOutput alloc] initWith:weak_from_this()];
                 if ([stream addStreamOutput:output
                                        type:SCStreamOutputTypeScreen
                          sampleHandlerQueue:nil
@@ -342,7 +342,7 @@ bool ScreenCaptureProcessorImpl::reconfigureStream(SCContentFilter* filter)
     return reconfigured;
 }
 
-void ScreenCaptureProcessorImpl::updateConfiguration()
+void SCKProcessorImpl::updateConfiguration()
 {
     @synchronized (_configuration) {
         if (_stream) {
@@ -357,7 +357,7 @@ void ScreenCaptureProcessorImpl::updateConfiguration()
     }
 }
 
-SCContentFilter* ScreenCaptureProcessorImpl::createScreenFilter(SCDisplay* display) const
+SCContentFilter* SCKProcessorImpl::createScreenFilter(SCDisplay* display) const
 {
     if (display) {
         @synchronized (_configuration) {
@@ -368,7 +368,7 @@ SCContentFilter* ScreenCaptureProcessorImpl::createScreenFilter(SCDisplay* displ
     return nil;
 }
 
-SCContentFilter* ScreenCaptureProcessorImpl::createWindowFilter(SCWindow* window) const
+SCContentFilter* SCKProcessorImpl::createWindowFilter(SCWindow* window) const
 {
     if (window) {
         return [[SCContentFilter alloc] initWithDesktopIndependentWindow:window];
@@ -376,14 +376,14 @@ SCContentFilter* ScreenCaptureProcessorImpl::createWindowFilter(SCWindow* window
     return nil;
 }
 
-bool ScreenCaptureProcessorImpl::isMyStream(SCStream* stream) const
+bool SCKProcessorImpl::isMyStream(SCStream* stream) const
 {
     @synchronized (_configuration) {
         return _stream == stream;
     }
 }
 
-void ScreenCaptureProcessorImpl::deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer)
+void SCKProcessorImpl::deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer)
 {
     if (isMyStream(stream)) {
         if (const auto frame = createVideoFrame(CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer))) {
@@ -395,7 +395,7 @@ void ScreenCaptureProcessorImpl::deliverFrame(SCStream* stream, CMSampleBufferRe
     }
 }
 
-void ScreenCaptureProcessorImpl::processPermanentError(SCStream* stream, NSError* error)
+void SCKProcessorImpl::processPermanentError(SCStream* stream, NSError* error)
 {
     if (isMyStream(stream)) {
         notifyAboutError(error);

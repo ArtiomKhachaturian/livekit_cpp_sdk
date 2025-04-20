@@ -11,40 +11,41 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScreenCaptureEnumerator.h
-#include <modules/desktop_capture/desktop_capture_types.h>
-#include <string>
-#include <vector>
+#pragma once // SCKProcessor.h
+#include "RtcObject.h"
+#include <CoreVideo/CoreVideo.h>
 
 #ifdef __OBJC__
-@class NSError;
 @class SCWindow;
 @class SCDisplay;
-@class SCShareableContent;
 #else
-typedef struct objc_object NSError;
 typedef struct objc_object SCWindow;
 typedef struct objc_object SCDisplay;
-typedef struct objc_object SCShareableContent;
 #endif
 
 namespace LiveKitCpp
 {
 
-class ScreenCaptureEnumerator
+class SCKProcessorImpl;
+class CapturerProxySink;
+
+class SCKProcessor : public RtcObject<SCKProcessorImpl>
 {
 public:
-    ScreenCaptureEnumerator();
-    ~ScreenCaptureEnumerator();
-    NSError* updateContent(); // sync operation
-    SCWindow* toWindow(const std::string& source) const;
-    SCWindow* toWindow(webrtc::WindowId wId) const;
-    SCDisplay* toScreen(const std::string& source) const;
-    SCDisplay* toScreen(webrtc::ScreenId sId) const;
-    static std::string windowToString(SCWindow* window);
-    static std::string displayToString(SCDisplay* display);
-private:
-    SCShareableContent* _content = nullptr;
+    SCKProcessor(int queueDepth, OSType pixelFormat);
+    ~SCKProcessor();
+    void setOutputSink(CapturerProxySink* sink);
+    bool start();
+    bool started() const;
+    void stop();
+    bool selectDisplay(SCDisplay* display);
+    bool selectWindow(SCWindow* window);
+    void setExcludedWindow(SCWindow* window);
+    void setShowCursor(bool show);
+    void setTargetFramerate(int32_t fps);
+    void setTargetResolution(int32_t width, int32_t height);
+    SCDisplay* selectedScreen() const;
+    SCWindow* selectedWindow() const;
 };
 
 } // namespace LiveKitCpp

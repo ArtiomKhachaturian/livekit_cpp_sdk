@@ -11,9 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "ScreenCaptureKitCapturer.h"
-#include "ScreenCaptureEnumerator.h"
-#include "ScreenCaptureProcessor.h"
+#include "SCKCapturer.h"
+#include "SCKEnumerator.h"
+#include "SCKProcessor.h"
 #include "CoreVideoPixelBuffer.h"
 #include "DesktopCapturerUtils.h"
 #include "Utils.h"
@@ -32,20 +32,20 @@ inline OSType videoFormat(bool window) {
 namespace LiveKitCpp
 {
 
-ScreenCaptureKitCapturer::ScreenCaptureKitCapturer(bool window, webrtc::DesktopCaptureOptions options)
+SCKCapturer::SCKCapturer(bool window, webrtc::DesktopCaptureOptions options)
     : MacDesktopCapturer(window, std::move(options))
-    , _processor(std::make_unique<ScreenCaptureProcessor>(screenQueueMaxLen(), videoFormat(window)))
+    , _processor(std::make_unique<SCKProcessor>(screenQueueMaxLen(), videoFormat(window)))
 {
     _processor->setOutputSink(this);
 }
 
-ScreenCaptureKitCapturer::~ScreenCaptureKitCapturer()
+SCKCapturer::~SCKCapturer()
 {
     _processor->stop();
     _processor->setOutputSink(nullptr);
 }
 
-bool ScreenCaptureKitCapturer::available()
+bool SCKCapturer::available()
 {
     if (@available(macOS 14.0, *)) {
         @autoreleasepool {
@@ -55,20 +55,20 @@ bool ScreenCaptureKitCapturer::available()
     return false;
 }
 
-std::string ScreenCaptureKitCapturer::selectedSource() const
+std::string SCKCapturer::selectedSource() const
 {
     @autoreleasepool {
         if (auto screen = _processor->selectedScreen()) {
-            return ScreenCaptureEnumerator::displayToString(screen);
+            return SCKEnumerator::displayToString(screen);
         }
         if (auto window = _processor->selectedWindow()) {
-            return ScreenCaptureEnumerator::windowToString(window);
+            return SCKEnumerator::windowToString(window);
         }
     }
     return {};
 }
 
-bool ScreenCaptureKitCapturer::selectSource(const std::string& source)
+bool SCKCapturer::selectSource(const std::string& source)
 {
     if (!source.empty() && enumerate()) {
         @autoreleasepool {
@@ -89,37 +89,37 @@ bool ScreenCaptureKitCapturer::selectSource(const std::string& source)
     return false;
 }
 
-bool ScreenCaptureKitCapturer::start()
+bool SCKCapturer::start()
 {
     return _processor->start();
 }
 
-bool ScreenCaptureKitCapturer::started() const
+bool SCKCapturer::started() const
 {
     return _processor->started();
 }
 
-void ScreenCaptureKitCapturer::stop()
+void SCKCapturer::stop()
 {
     _processor->stop();
 }
 
-void ScreenCaptureKitCapturer::setPreviewMode(bool preview)
+void SCKCapturer::setPreviewMode(bool preview)
 {
     _processor->setShowCursor(!preview);
 }
 
-void ScreenCaptureKitCapturer::setTargetFramerate(int32_t fps)
+void SCKCapturer::setTargetFramerate(int32_t fps)
 {
     _processor->setTargetFramerate(fps);
 }
 
-void ScreenCaptureKitCapturer::setTargetResolution(int32_t width, int32_t height)
+void SCKCapturer::setTargetResolution(int32_t width, int32_t height)
 {
     _processor->setTargetResolution(width, height);
 }
 
-void ScreenCaptureKitCapturer::setExcludedWindow(webrtc::WindowId wId)
+void SCKCapturer::setExcludedWindow(webrtc::WindowId wId)
 {
     if (!this->window() && enumerate()) {
         @autoreleasepool {
@@ -131,7 +131,7 @@ void ScreenCaptureKitCapturer::setExcludedWindow(webrtc::WindowId wId)
     }
 }
 
-bool ScreenCaptureKitCapturer::enumerate()
+bool SCKCapturer::enumerate()
 {
     @autoreleasepool {
         NSError* error = _enumerator.updateContent();
@@ -144,17 +144,17 @@ bool ScreenCaptureKitCapturer::enumerate()
     return true;
 }
 
-void ScreenCaptureKitCapturer::onCapturingError(std::string details, bool fatal)
+void SCKCapturer::onCapturingError(std::string details, bool fatal)
 {
     notifyAboutError(std::move(details), fatal);
 }
 
-void ScreenCaptureKitCapturer::OnFrame(const webrtc::VideoFrame& frame)
+void SCKCapturer::OnFrame(const webrtc::VideoFrame& frame)
 {
     deliverCaptured(frame);
 }
 
-void ScreenCaptureKitCapturer::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
+void SCKCapturer::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
 {
     processConstraints(c);
 }

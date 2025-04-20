@@ -11,18 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "ScreenCaptureProcessor.h"
-#include "ScreenCaptureProcessorImpl.h"
+#include "SCKProcessor.h"
+#include "SCKProcessorImpl.h"
 
 namespace LiveKitCpp
 {
 
-ScreenCaptureProcessor::ScreenCaptureProcessor(int queueDepth, OSType pixelFormat)
-    : RtcObject<ScreenCaptureProcessorImpl>(queueDepth, pixelFormat)
+SCKProcessor::SCKProcessor(int queueDepth, OSType pixelFormat)
+    : RtcObject<SCKProcessorImpl>(queueDepth, pixelFormat)
 {
 }
 
-ScreenCaptureProcessor::~ScreenCaptureProcessor()
+SCKProcessor::~SCKProcessor()
 {
     if (auto impl = dispose()) {
         impl->stop();
@@ -30,33 +30,33 @@ ScreenCaptureProcessor::~ScreenCaptureProcessor()
     }
 }
 
-void ScreenCaptureProcessor::setOutputSink(CapturerProxySink* sink)
+void SCKProcessor::setOutputSink(CapturerProxySink* sink)
 {
     if (const auto impl = loadImpl()) {
         impl->setOutputSink(sink);
     }
 }
 
-bool ScreenCaptureProcessor::start()
+bool SCKProcessor::start()
 {
     const auto impl = loadImpl();
     return impl && impl->start();
 }
 
-bool ScreenCaptureProcessor::started() const
+bool SCKProcessor::started() const
 {
     const auto impl = loadImpl();
     return impl && impl->started();
 }
 
-void ScreenCaptureProcessor::stop()
+void SCKProcessor::stop()
 {
     if (const auto impl = loadImpl()) {
         impl->stop();
     }
 }
 
-bool ScreenCaptureProcessor::selectDisplay(SCDisplay* display)
+bool SCKProcessor::selectDisplay(SCDisplay* display)
 {
     if (display) {
         const auto impl = loadImpl();
@@ -65,7 +65,7 @@ bool ScreenCaptureProcessor::selectDisplay(SCDisplay* display)
     return false;
 }
 
-bool ScreenCaptureProcessor::selectWindow(SCWindow* window)
+bool SCKProcessor::selectWindow(SCWindow* window)
 {
     if (window) {
         const auto impl = loadImpl();
@@ -74,35 +74,35 @@ bool ScreenCaptureProcessor::selectWindow(SCWindow* window)
     return false;
 }
 
-void ScreenCaptureProcessor::setExcludedWindow(SCWindow* window)
+void SCKProcessor::setExcludedWindow(SCWindow* window)
 {
     if (const auto impl = loadImpl()) {
         impl->setExcludedWindow(window);
     }
 }
 
-void ScreenCaptureProcessor::setShowCursor(bool show)
+void SCKProcessor::setShowCursor(bool show)
 {
     if (const auto impl = loadImpl()) {
         impl->setShowCursor(show);
     }
 }
 
-void ScreenCaptureProcessor::setTargetFramerate(int32_t fps)
+void SCKProcessor::setTargetFramerate(int32_t fps)
 {
     if (const auto impl = loadImpl()) {
         impl->setTargetFramerate(fps);
     }
 }
 
-void ScreenCaptureProcessor::setTargetResolution(int32_t width, int32_t height)
+void SCKProcessor::setTargetResolution(int32_t width, int32_t height)
 {
     if (const auto impl = loadImpl()) {
         impl->setTargetResolution(width, height);
     }
 }
 
-SCDisplay* ScreenCaptureProcessor::selectedScreen() const
+SCDisplay* SCKProcessor::selectedScreen() const
 {
     if (const auto impl = loadImpl()) {
         return impl->selectedScreen();
@@ -110,7 +110,7 @@ SCDisplay* ScreenCaptureProcessor::selectedScreen() const
     return nil;
 }
 
-SCWindow* ScreenCaptureProcessor::selectedWindow() const
+SCWindow* SCKProcessor::selectedWindow() const
 {
     if (const auto impl = loadImpl()) {
         return impl->selectedWindow();

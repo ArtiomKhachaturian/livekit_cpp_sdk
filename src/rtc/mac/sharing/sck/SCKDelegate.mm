@@ -11,18 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "ScreenCaptureDelegate.h"
-#include "ScreenCaptureErrorHandler.h"
+#include "SCKDelegate.h"
+#include "SCKErrorHandler.h"
 
-@implementation ScreenCaptureDelegate {
-    std::weak_ptr<LiveKitCpp::ScreenCaptureErrorHandler> _errorHandlerRef;
+@implementation SCKDelegate {
+    std::weak_ptr<LiveKitCpp::SCKErrorHandler> _errorHandler;
 }
 
-- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::ScreenCaptureErrorHandler>&) errorHandlerRef
+- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::SCKErrorHandler>&) errorHandler
 {
-    if (!errorHandlerRef.expired()) {
+    if (!errorHandler.expired()) {
         if (self = [super init]) {
-            _errorHandlerRef = errorHandlerRef;
+            _errorHandler = errorHandler;
         }
         return self;
     }
@@ -31,7 +31,7 @@
 
 - (void) stream:(SCStream*)stream didStopWithError:(NSError*) error
 {
-    if (const auto errorHandler = _errorHandlerRef.lock()) {
+    if (const auto errorHandler = _errorHandler.lock()) {
         errorHandler->processPermanentError(stream, error);
     }
 }

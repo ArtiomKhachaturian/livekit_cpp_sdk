@@ -11,15 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScreenCaptureOutput.h
+#pragma once // SCKStreamOutput.h
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 #include <memory>
 
 namespace LiveKitCpp {
-class ScreenCaptureFramesReceiver;
+class SCKFramesReceiver;
 }
 
-@interface ScreenCaptureOutput : NSObject<SCStreamOutput>
+@interface SCKStreamOutput : NSObject<SCStreamOutput>
 - (instancetype) init NS_UNAVAILABLE;
-- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::ScreenCaptureFramesReceiver>&) frameReceiver NS_DESIGNATED_INITIALIZER;
+- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::SCKFramesReceiver>&) frameReceiver NS_DESIGNATED_INITIALIZER;
 @end

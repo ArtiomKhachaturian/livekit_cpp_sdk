@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "ScreenCaptureEnumerator.h"
+#include "SCKEnumerator.h"
 #include "ConditionWaiter.h"
 #include "DesktopCapturerUtils.h"
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
@@ -19,16 +19,16 @@
 namespace LiveKitCpp
 {
 
-ScreenCaptureEnumerator::ScreenCaptureEnumerator()
+SCKEnumerator::SCKEnumerator()
 {
 }
 
-ScreenCaptureEnumerator::~ScreenCaptureEnumerator()
+SCKEnumerator::~SCKEnumerator()
 {
     _content = nil;
 }
 
-NSError* ScreenCaptureEnumerator::updateContent()
+NSError* SCKEnumerator::updateContent()
 {
     using Waiter = ConditionWaiter<SCShareableContent*, NSError*>;
     const auto waiter = std::make_shared<Waiter>();
@@ -46,7 +46,7 @@ NSError* ScreenCaptureEnumerator::updateContent()
     return waiter->getRef<NSError*>();
 }
 
-SCWindow* ScreenCaptureEnumerator::toWindow(const std::string& source) const
+SCWindow* SCKEnumerator::toWindow(const std::string& source) const
 {
     if (const auto wId = windowIdFromString(source)) {
         return toWindow(wId.value());
@@ -54,7 +54,7 @@ SCWindow* ScreenCaptureEnumerator::toWindow(const std::string& source) const
     return nil;
 }
 
-SCWindow* ScreenCaptureEnumerator::toWindow(webrtc::WindowId wId) const
+SCWindow* SCKEnumerator::toWindow(webrtc::WindowId wId) const
 {
     if (webrtc::kNullWindowId != wId && _content) {
         @autoreleasepool {
@@ -69,7 +69,7 @@ SCWindow* ScreenCaptureEnumerator::toWindow(webrtc::WindowId wId) const
     return nil;
 }
 
-SCDisplay* ScreenCaptureEnumerator::toScreen(const std::string& source) const
+SCDisplay* SCKEnumerator::toScreen(const std::string& source) const
 {
     if (const auto sId = screenIdFromString(source)) {
         return toScreen(sId.value());
@@ -77,7 +77,7 @@ SCDisplay* ScreenCaptureEnumerator::toScreen(const std::string& source) const
     return nil;
 }
 
-SCDisplay* ScreenCaptureEnumerator::toScreen(webrtc::ScreenId sId) const
+SCDisplay* SCKEnumerator::toScreen(webrtc::ScreenId sId) const
 {
     if (webrtc::kInvalidScreenId != sId && webrtc::kInvalidDisplayId != sId
         && _content) {
@@ -93,7 +93,7 @@ SCDisplay* ScreenCaptureEnumerator::toScreen(webrtc::ScreenId sId) const
     return nil;
 }
 
-std::string ScreenCaptureEnumerator::windowToString(SCWindow* window)
+std::string SCKEnumerator::windowToString(SCWindow* window)
 {
     if (window) {
         return windowIdToString(window.windowID);
@@ -101,7 +101,7 @@ std::string ScreenCaptureEnumerator::windowToString(SCWindow* window)
     return {};
 }
 
-std::string ScreenCaptureEnumerator::displayToString(SCDisplay* display)
+std::string SCKEnumerator::displayToString(SCDisplay* display)
 {
     if (display) {
         return screenIdToString(display.displayID);

@@ -11,24 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScreenCaptureErrorHandler.h
+#pragma once // SCKDelegate.h
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
+#include <memory>
 
-#ifdef __OBJC__
-@class NSError;
-@class SCStream;
-#else
-typedef struct objc_object NSError;
-typedef struct objc_object SCStream;
-#endif
+namespace LiveKitCpp {
+class SCKErrorHandler;
+}
 
-namespace LiveKitCpp
-{
-
-class ScreenCaptureErrorHandler
-{
-public:
-    virtual ~ScreenCaptureErrorHandler() = default;
-    virtual void processPermanentError(SCStream* stream, NSError* error) = 0;
-};
-
-} // namespace LiveKitCpp
+@interface SCKDelegate : NSObject<SCStreamDelegate>
+- (instancetype) init NS_UNAVAILABLE;
+- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::SCKErrorHandler>&) errorHandler NS_DESIGNATED_INITIALIZER;
+@end

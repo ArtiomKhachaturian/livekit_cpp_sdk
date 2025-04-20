@@ -16,7 +16,7 @@
 #include "Utils.h"
 #ifdef WEBRTC_MAC
 #include "CGScreenCapturer.h"
-#include "ScreenCaptureKitCapturer.h"
+#include "SCKCapturer.h"
 #endif
 
 namespace LiveKitCpp
@@ -158,8 +158,8 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
 {
     std::unique_ptr<DesktopCapturer> impl;
 #ifdef WEBRTC_MAC
-    if (ScreenCaptureKitCapturer::available()) {
-        return std::make_unique<ScreenCaptureKitCapturer>(window, makeOptions(lightweightOptions));
+    if (SCKCapturer::available()) {
+        return std::make_unique<SCKCapturer>(window, makeOptions(lightweightOptions));
     }
     if (!window) {
         return std::make_unique<CGScreenCapturer>(makeOptions(lightweightOptions), commonSharedQueue());

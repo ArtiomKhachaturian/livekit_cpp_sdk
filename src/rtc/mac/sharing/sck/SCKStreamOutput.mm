@@ -11,14 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "ScreenCaptureOutput.h"
-#include "ScreenCaptureFramesReceiver.h"
+#include "SCKStreamOutput.h"
+#include "SCKFramesReceiver.h"
 
-@implementation ScreenCaptureOutput {
-    std::weak_ptr<LiveKitCpp::ScreenCaptureFramesReceiver> _frameReceiver;
+@implementation SCKStreamOutput {
+    std::weak_ptr<LiveKitCpp::SCKFramesReceiver> _frameReceiver;
 }
 
-- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::ScreenCaptureFramesReceiver>&) frameReceiver
+- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::SCKFramesReceiver>&) frameReceiver
 {
     if (!frameReceiver.expired()) {
         if (self = [super init]) {
