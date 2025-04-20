@@ -35,7 +35,7 @@ public:
     bool selectSource(const std::string& source) final;
     std::string selectedSource() const final;
     void stop() final;
-    bool focusOnSelectedSource() final;
+    void focusOnSelectedSource() final;
     void setExcludedWindow(webrtc::WindowId window) final;
     void setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> smf) final;
 protected:
@@ -43,15 +43,18 @@ protected:
     bool canStart() const final;
 private:
     std::shared_ptr<webrtc::DesktopCapturer> webRtcCapturer(bool take = false);
-    bool validSource() const { return validSource(window(), _source); }
-    static bool validSource(bool window, intptr_t source);
+    std::optional<intptr_t> parse(const std::string& source) const;
+    bool hasValidSource() const;
     // impl. of webrtc::DesktopCapturer::Callback
     void OnCaptureResult(webrtc::DesktopCapturer::Result result,
                          std::unique_ptr<webrtc::DesktopFrame> frame) final;
 private:
     Bricks::SafeSharedPtr<webrtc::DesktopCapturer> _capturer;
+    Bricks::SafeUniquePtr<webrtc::SharedMemoryFactory> _smf;
     std::atomic<intptr_t> _source;
     std::atomic_bool _previewMode = false;
+    std::atomic_bool _focusOnSelectedSource = false;
+    std::atomic<webrtc::WindowId> _excludeWindowId = webrtc::kNullWindowId;
 };
 	
 } // namespace LiveKitCpp

@@ -12,14 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "DesktopConfiguration.h"
-#include "PeerConnectionFactory.h"
 #include "DesktopWebRTCCapturer.h"
+#include "Utils.h"
 #ifdef WEBRTC_MAC
 #include "MacDesktopCapturer.h"
 #endif
 
 namespace LiveKitCpp
 {
+
+DesktopConfiguration::DesktopConfiguration()
+    : DesktopConfiguration(createTaskQueueS("sharing_queue"))
+{
+}
 
 DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue)
     : _timerQueue(timerQueue)
@@ -30,14 +35,6 @@ DesktopConfiguration::DesktopConfiguration(const std::shared_ptr<webrtc::TaskQue
 
 DesktopConfiguration::~DesktopConfiguration()
 {
-}
-
-std::shared_ptr<DesktopConfiguration> DesktopConfiguration::create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf)
-{
-    if (pcf) {
-        return std::make_shared<DesktopConfiguration>(pcf->eventsQueue());
-    }
-    return {};
 }
 
 webrtc::DesktopSize DesktopConfiguration::screenResolution(const MediaDeviceInfo& dev) const
@@ -167,12 +164,10 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
     std::unique_ptr<DesktopCapturer> impl;
     const auto options = makeOptions(lightweightOptions);
 #ifdef WEBRTC_MAC
-    impl = MacDesktopCapturer::create(window, options, _timerQueue.lock());
+    impl = MacDesktopCapturer::create(window, options, _timerQueue);
 #endif
     if (!impl) {
-        if (const auto eventsQueue = _timerQueue.lock()) {
-            impl = std::make_unique<DesktopWebRTCCapturer>(eventsQueue, window, options);
-        }
+        impl = std::make_unique<DesktopWebRTCCapturer>(_timerQueue, window, options);
     }
     return impl;
 }

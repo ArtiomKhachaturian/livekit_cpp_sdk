@@ -13,7 +13,6 @@
 // limitations under the License.
 #include "DesktopCapturerUtils.h"
 #include "Utils.h"
-#include <modules/desktop_capture/mac/window_list_utils.h>
 
 namespace
 {
@@ -24,23 +23,6 @@ const std::string g_windowMarker = "!ikUaGOaxzKw0JlNj080oEkPG2S42GIck3O65<";
 
 namespace LiveKitCpp
 {
-
-bool enumerateWindows(const webrtc::DesktopCaptureOptions&, std::vector<std::string>& out)
-{
-    webrtc::DesktopCapturer::SourceList list;
-    if (webrtc::GetWindowList(&list, true, true)) {
-        out.clear();
-        out.reserve(list.size());
-        for (const auto& source : list) {
-            const auto wId = static_cast<webrtc::WindowId>(source.id);
-            if (!isHiddenWindow(wId)) {
-                out.push_back(windowIdToString(wId));
-            }
-        }
-        return true;
-    }
-    return false;
-}
 
 std::string windowIdToString(webrtc::WindowId id)
 {

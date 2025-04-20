@@ -32,7 +32,6 @@ namespace LiveKitCpp
 // helper routines fow working with common WebRTC sharing types
 bool screenExists(webrtc::ScreenId sId);
 bool windowExists(webrtc::WindowId wId);
-bool isHiddenWindow(webrtc::WindowId wId);
 std::string screenTitle(webrtc::ScreenId sId);
 std::optional<std::string> windowTitle(webrtc::WindowId wId);
 webrtc::DesktopSize screenResolution(const webrtc::DesktopCaptureOptions& options, webrtc::ScreenId sId);

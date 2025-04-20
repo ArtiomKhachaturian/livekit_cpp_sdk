@@ -63,9 +63,8 @@ public:
     virtual bool start() = 0;
     // called at the finish of a capturing session
     virtual void stop() = 0;
-    // brings the selected source to the front and sets the input focus on it,
-    // returns false in case of a failure or no source has been selected
-    virtual bool focusOnSelectedSource() { return true; }
+    // brings the selected source to the front and sets the input focus on it
+    virtual void focusOnSelectedSource() {}
     // sets the window to be excluded from the captured image in the future Capture calls,
     // used to exclude the screenshare notification window (indicator) for screen capturing
     virtual void setExcludedWindow(webrtc::WindowId /*window*/) {}

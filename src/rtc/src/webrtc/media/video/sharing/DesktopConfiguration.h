@@ -26,12 +26,12 @@ class TaskQueueBase;
 namespace LiveKitCpp
 {
 
-class PeerConnectionFactory;
 class DesktopCapturer;
 
 class DesktopConfiguration
 {
 public:
+    DesktopConfiguration();
     DesktopConfiguration(const std::shared_ptr<webrtc::TaskQueueBase>& timerQueue);
     ~DesktopConfiguration();
     bool screensEnumerationIsAvailable() const { return nullptr != _screensEnumerator; }
@@ -52,14 +52,13 @@ public:
                                                     bool selectSource = false,
                                                     bool lightweightOptions = false) const;
     static int32_t maxFramerate() { return 30; }
-    static std::shared_ptr<DesktopConfiguration> create(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
 private:
     DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool lightweightMode = false);
     std::unique_ptr<DesktopCapturer> createRawCapturer(bool window,
                                                        bool lightweightOptions = false) const;
 private:
-    const std::weak_ptr<webrtc::TaskQueueBase> _timerQueue;
+    const std::shared_ptr<webrtc::TaskQueueBase> _timerQueue;
     const std::unique_ptr<DesktopCapturer> _screensEnumerator;
     const std::unique_ptr<DesktopCapturer> _windowsEnumerator;
 };

@@ -26,6 +26,11 @@ CGWDescription::CGWDescription(CGWindowID windowId, CFArrayRefAutoRelease descri
 {
 }
 
+bool CGWDescription::isWindowServerWindow() const
+{
+    return isWindowServerWindow(ownerName());
+}
+
 std::unique_ptr<CGWDescription> CGWDescription::create(CGWindowID windowId)
 {
     std::unique_ptr<CGWDescription> desc;
@@ -57,10 +62,8 @@ CGRect CGWDescription::boundsRect() const
 
 bool CGWDescription::isWindowServerWindow(CGWindowID window)
 {
-    if (const auto desc = CGWDescription::create(window)) {
-        return isWindowServerWindow(desc->ownerName());
-    }
-    return false;
+    const auto desc = CGWDescription::create(window);
+    return desc && desc->isWindowServerWindow();
 }
 
 bool CGWDescription::isWindowServerWindow(CFStringRef ownerName)
@@ -69,12 +72,6 @@ bool CGWDescription::isWindowServerWindow(CFStringRef ownerName)
         return compareCFStrings(ownerName, _windowServerName, true);
     }
     return false;
-}
-
-template<typename TValue>
-TValue CGWDescription::value(const void* key) const
-{
-    return reinterpret_cast<TValue>(CFDictionaryGetValue(dictionary(), key));
 }
 
 } // namespace LiveKitCpp

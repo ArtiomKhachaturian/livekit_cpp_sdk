@@ -127,6 +127,9 @@ void AsyncSharingSourceImpl::startCapturer()
             if (capturer->selectSource(deviceInfo()._guid)) {
                 if (capturer->start()) {
                     notify(&MediaDeviceListener::onMediaStarted);
+                    if (!options().preview()) {
+                        capturer->focusOnSelectedSource();
+                    }
                 }
                 else {
                     // TODO: add error details

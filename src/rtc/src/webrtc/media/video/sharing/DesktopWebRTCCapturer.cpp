@@ -40,17 +40,11 @@ DesktopWebRTCCapturer::~DesktopWebRTCCapturer()
 bool DesktopWebRTCCapturer::selectSource(const std::string& source)
 {
     if (!started()) {
-        if (window()) {
-            const auto id = windowIdFromString(source);
-            if (id.has_value()) {
-                _source = id.value();
-            }
+        auto sourceId = parse(source);
+        if (sourceId && exchangeVal(sourceId.value(), _source)) {
+            _focusOnSelectedSource = false;
         }
-        const auto id = screenIdFromString(source);
-        if (id.has_value()) {
-            _source = id.value();
-        }
-        return validSource();
+        return hasValidSource();
     }
     return false;
 }
@@ -66,29 +60,31 @@ void DesktopWebRTCCapturer::stop()
     Base::stop();
 }
 
-bool DesktopWebRTCCapturer::focusOnSelectedSource()
+void DesktopWebRTCCapturer::focusOnSelectedSource()
 {
-    LOCK_READ_SAFE_OBJ(_capturer);
-    if (const auto& capturer = _capturer.constRef()) {
-        execute([capturerRef = CapturerWeak(capturer)]() {
-            if (const auto capturer = capturerRef.lock()) {
-                capturer->FocusOnSelectedSource();
-            }
-        });
-        return true;
+    if (!_focusOnSelectedSource.exchange(true)) {
+        LOCK_READ_SAFE_OBJ(_capturer);
+        if (const auto& capturer = _capturer.constRef()) {
+            execute([capturerRef = CapturerWeak(capturer)]() {
+                if (const auto capturer = capturerRef.lock()) {
+                    capturer->FocusOnSelectedSource();
+                }
+            });
+        }
     }
-    return false;
 }
 
 void DesktopWebRTCCapturer::setExcludedWindow(webrtc::WindowId window)
 {
-    LOCK_READ_SAFE_OBJ(_capturer);
-    if (const auto& capturer = _capturer.constRef()) {
-        execute([window, capturerRef = CapturerWeak(capturer)]() {
-            if (const auto capturer = capturerRef.lock()) {
-                capturer->SetExcludedWindow(window);
-            }
-        });
+    if (exchangeVal(window, _excludeWindowId)) {
+        LOCK_READ_SAFE_OBJ(_capturer);
+        if (const auto& capturer = _capturer.constRef()) {
+            execute([window, capturerRef = CapturerWeak(capturer)]() {
+                if (const auto capturer = capturerRef.lock()) {
+                    capturer->SetExcludedWindow(window);
+                }
+            });
+        }
     }
 }
 
@@ -102,6 +98,9 @@ void DesktopWebRTCCapturer::setSharedMemoryFactory(std::unique_ptr<webrtc::Share
             }
         });
     }
+    else {
+        _smf(std::move(smf));
+    }
 }
 
 void DesktopWebRTCCapturer::captureNextFrame()
@@ -113,7 +112,7 @@ void DesktopWebRTCCapturer::captureNextFrame()
 
 bool DesktopWebRTCCapturer::canStart() const
 {
-    return Base::canStart() && validSource(window(), _source);
+    return Base::canStart() && hasValidSource();
 }
 
 std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(bool take)
@@ -122,7 +121,7 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(b
         LOCK_WRITE_SAFE_OBJ(_capturer);
         return _capturer.take();
     }
-    if (validSource()) {
+    if (hasValidSource()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer->get()) {
             std::unique_ptr<webrtc::DesktopCapturer> capturer;
@@ -137,8 +136,14 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(b
                     capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(std::move(capturer), options());
                 }
                 if (capturer->SelectSource(_source)) {
+                    capturer->SetExcludedWindow(_excludeWindowId);
                     capturer->SetMaxFrameRate(targetFramerate());
+                    LOCK_WRITE_SAFE_OBJ(_smf);
+                    capturer->SetSharedMemoryFactory(_smf.take());
                     capturer->Start(this);
+                    if (_focusOnSelectedSource) {
+                        capturer->FocusOnSelectedSource();
+                    }
                     _capturer->reset(capturer.release());
                 }
                 else {
@@ -154,9 +159,18 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(b
     return nullptr;
 }
 
-bool DesktopWebRTCCapturer::validSource(bool window, intptr_t source)
+std::optional<intptr_t> DesktopWebRTCCapturer::parse(const std::string& source) const
 {
-    if (window) {
+    if (window()) {
+        return windowIdFromString(source);
+    }
+    return screenIdFromString(source);
+}
+
+bool DesktopWebRTCCapturer::hasValidSource() const
+{
+    const auto source = _source.load();
+    if (window()) {
         return webrtc::kNullWindowId != source;
     }
     return webrtc::kInvalidScreenId != source && webrtc::kInvalidDisplayId != source;

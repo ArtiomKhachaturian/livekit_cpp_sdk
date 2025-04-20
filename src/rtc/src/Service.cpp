@@ -386,7 +386,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
     , _pcf(PeerConnectionFactory::create(true, logWebrtcEvents ? logger : nullptr))
-    , _desktopConfiguration(DesktopConfiguration::create(_pcf))
+    , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>() : std::shared_ptr<DesktopConfiguration>{})
     , _recordingVolume(_defaultRecording)
     , _playoutVolume(_defaultPlayout)
 {

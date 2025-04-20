@@ -39,6 +39,7 @@ public:
     CFNumberRef ownerPID() const { return value<CFNumberRef>(kCGWindowOwnerPID); }
     CFNumberRef sharingState() const { return value<CFNumberRef>(kCGWindowSharingState); }
     CFNumberRef storeType() const { return value<CFNumberRef>(kCGWindowStoreType); }
+    bool isWindowServerWindow() const;
     static std::unique_ptr<CGWDescription> create(CGWindowID windowId);
     static bool isWindowServerWindow(CGWindowID window);
     static bool isWindowServerWindow(CFStringRef ownerName);
@@ -46,7 +47,7 @@ protected:
     CGWDescription(CGWindowID windowId, CFArrayRefAutoRelease description, CFDictionaryRef dictionary);
 private:
     template<typename TValue>
-    TValue value(const void* key) const;
+    TValue value(const void* key) const { return reinterpret_cast<TValue>(CFDictionaryGetValue(dictionary(), key)); }
 private:
     static const CFStringRefAutoRelease _windowServerName;
     const CGWindowID _windowId;

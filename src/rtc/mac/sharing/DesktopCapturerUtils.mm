@@ -16,6 +16,8 @@
 #include "CGWDescription.h"
 #include "Utils.h"
 #include <modules/desktop_capture/mac/desktop_configuration_monitor.h>
+#include <modules/desktop_capture/mac/window_list_utils.h>
+#include <optional>
 #import <AppKit/NSScreen.h>
 #import <IOKit/graphics/IOGraphicsLib.h>
 
@@ -34,14 +36,56 @@ std::string ioGraphicLibScreenName(CGDirectDisplayID guid);
 
 io_service_t displayIOServicePort(CGDirectDisplayID guid);
 
+
+template <typename T>
+inline std::optional<T> number(CFNumberRef ref, CFNumberType type) {
+    if (ref) {
+        T value = {};
+        if (CFNumberGetValue(ref, type, &value)) {
+            return value;
+        }
+    }
+    return std::nullopt;
+}
+
+inline bool isHiddenWindow(webrtc::WindowId wId)
+{
+    if (const auto desc = CGWDescription::create(static_cast<CGWindowID>(wId))) {
+        if (!desc->isWindowServerWindow() && !startWith(stringFromCFString(desc->ownerName()), "ControlUp")) {
+            if (const auto sharingState = number<int>(desc->sharingState(), kCFNumberIntType)) {
+                switch (sharingState.value()) {
+                    case kCGWindowSharingReadOnly:
+                    case kCGWindowSharingReadWrite:
+                        return false;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 }
 
 namespace LiveKitCpp
 {
 
-bool isHiddenWindow(webrtc::WindowId wId)
+bool enumerateWindows(const webrtc::DesktopCaptureOptions&, std::vector<std::string>& out)
 {
-    return CGWDescription::isWindowServerWindow(static_cast<CGWindowID>(wId));
+    webrtc::DesktopCapturer::SourceList list;
+    if (webrtc::GetWindowList(&list, true, true)) {
+        out.clear();
+        out.reserve(list.size());
+        for (const auto& source : list) {
+            const auto wId = static_cast<webrtc::WindowId>(source.id);
+            if (!isHiddenWindow(wId)) {
+                out.push_back(windowIdToString(wId));
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 bool screenExists(webrtc::ScreenId sId)
