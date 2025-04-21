@@ -125,6 +125,17 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std:
     return {};
 }
 
+int32_t DesktopConfiguration::boundFramerate(int32_t fps)
+{
+    if (fps <= 0) {
+        fps = defaultFramerate();
+    }
+    else {
+        fps = bound(1, fps, 120); // max 120 Hz
+    }
+    return fps;
+}
+
 std::string_view DesktopConfiguration::logCategory()
 {
     static const std::string_view category("desktop_sharing");

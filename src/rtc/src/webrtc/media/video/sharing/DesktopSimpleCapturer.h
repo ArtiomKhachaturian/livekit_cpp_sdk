@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // DesktopTimedCapturer.h
 #include "DesktopCapturer.h"
+#include "DesktopConfiguration.h"
 #include "MediaTimer.h"
 #include "SafeObj.h"
 #include "VideoFrameBufferPoolSource.h"
@@ -59,7 +60,7 @@ private:
     const std::shared_ptr<webrtc::TaskQueueBase> _timerQueue;
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
     MediaTimer _timer;
-    std::atomic<int32_t> _fps = 30;
+    std::atomic<int32_t> _fps = DesktopConfiguration::defaultFramerate();
 };
 
 template <class TCapturer>
@@ -97,6 +98,7 @@ inline DesktopSimpleCapturer<TCapturer>::~DesktopSimpleCapturer()
 template <class TCapturer>
 inline void DesktopSimpleCapturer<TCapturer>::setTargetFramerate(int32_t fps)
 {
+    fps = DesktopConfiguration::boundFramerate(fps);
     if (exchangeVal(fps, _fps)) {
         _framesPool->resize(static_cast<size_t>(fps));
         if (_timer.started()) {

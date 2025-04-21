@@ -41,12 +41,12 @@ LIVEKIT_RTC_API std::string toString(const VideoOptions& options);
 } // namespace LiveKitCpp
 
 inline bool operator == (const LiveKitCpp::VideoOptions& l, const LiveKitCpp::VideoOptions& r) {
-    return &l == &r || (std::tie(l._width, l._height, l._maxFPS, l._type) ==
-           std::tie(r._width, r._height, r._maxFPS, r._type));
+    return &l == &r || (std::tie(l._width, l._height, l._maxFPS, l._type, l._flags) ==
+                        std::tie(r._width, r._height, r._maxFPS, r._type, r._flags));
 }
 
 inline bool operator != (const LiveKitCpp::VideoOptions& l, const LiveKitCpp::VideoOptions& r) {
-    return std::tie(l._width, l._height, l._maxFPS, l._type) !=
-           std::tie(r._width, r._height, r._maxFPS, r._type);
+    return std::tie(l._width, l._height, l._maxFPS, l._type, l._flags) !=
+           std::tie(r._width, r._height, r._maxFPS, r._type, r._flags);
 }
 

@@ -158,7 +158,7 @@ void AsyncVideoSourceImpl::setOptions(VideoOptions options)
 {
     if (active()) {
         options = validate(options);
-        if (options && exchangeVal(options, _options)) {
+        if (exchangeVal(options, _options)) {
             notify(&MediaDeviceListener::onMediaOptionsChanged);
             onOptionsChanged(options);
         }

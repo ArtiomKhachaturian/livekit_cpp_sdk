@@ -25,7 +25,6 @@ AsyncSharingSourceImpl::AsyncSharingSourceImpl(std::weak_ptr<DesktopConfiguratio
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger)
     , _desktopConfiguration(std::move(desktopConfiguration))
 {
-    setOptions(VideoOptions{._maxFPS = DesktopConfiguration::maxFramerate()});
 }
 
 void AsyncSharingSourceImpl::requestCapturer()
@@ -217,7 +216,7 @@ void AsyncSharingSourceImpl::applyOptions(DesktopCapturer* capturer,
     if (capturer) {
         capturer->setPreviewMode(options.preview());
         capturer->setTargetResolution(options._width, options._height);
-        capturer->setTargetFramerate(options._maxFPS);
+        capturer->setTargetFramerate(DesktopConfiguration::boundFramerate(options._maxFPS));
     }
 }
 

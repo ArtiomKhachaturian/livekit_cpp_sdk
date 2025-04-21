@@ -51,7 +51,8 @@ public:
     std::unique_ptr<DesktopCapturer> createCapturer(const std::string& guid,
                                                     bool selectSource = false,
                                                     bool lightweightOptions = false);
-    static int32_t maxFramerate() { return 30; }
+    static constexpr int32_t defaultFramerate() { return 30; }
+    static int32_t boundFramerate(int32_t fps);
     static std::string_view logCategory();
 private:
     DesktopCapturer* enumerator(bool windows) const;

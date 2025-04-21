@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // AudioRecordingOptions.h
 #include <optional>
+#include <tuple>
 
 namespace LiveKitCpp
 {
@@ -33,3 +34,14 @@ struct AudioRecordingOptions
 };
 
 } // namespace LiveKitCpp
+
+
+inline bool operator == (const LiveKitCpp::AudioRecordingOptions& l, const LiveKitCpp::AudioRecordingOptions& r) {
+    return &l == &r || (std::tie(l._autoGainControl, l._echoCancellation, l._highpassFilter, l._noiseSuppression, l._stereoSwapping) ==
+                        std::tie(r._autoGainControl, r._echoCancellation, r._highpassFilter, r._noiseSuppression, r._stereoSwapping));
+}
+
+inline bool operator != (const LiveKitCpp::AudioRecordingOptions& l, const LiveKitCpp::AudioRecordingOptions& r) {
+    return std::tie(l._autoGainControl, l._echoCancellation, l._highpassFilter, l._noiseSuppression, l._stereoSwapping) !=
+           std::tie(r._autoGainControl, r._echoCancellation, r._highpassFilter, r._noiseSuppression, r._stereoSwapping);
+}

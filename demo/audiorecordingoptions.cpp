@@ -1,21 +1,4 @@
 #include "audiorecordingoptions.h"
-#include <tuple>
-
-namespace  {
-
-inline bool equal(const LiveKitCpp::AudioRecordingOptions& l,
-                  const LiveKitCpp::AudioRecordingOptions& r) {
-    return std::tie(l._autoGainControl, l._echoCancellation, l._highpassFilter, l._noiseSuppression, l._stereoSwapping) ==
-           std::tie(r._autoGainControl, r._echoCancellation, r._highpassFilter, r._noiseSuppression, r._stereoSwapping);
-}
-
-inline bool notEqual(const LiveKitCpp::AudioRecordingOptions& l,
-                    const LiveKitCpp::AudioRecordingOptions& r) {
-    return std::tie(l._autoGainControl, l._echoCancellation, l._highpassFilter, l._noiseSuppression, l._stereoSwapping) !=
-           std::tie(r._autoGainControl, r._echoCancellation, r._highpassFilter, r._noiseSuppression, r._stereoSwapping);
-}
-
-}
 
 AudioRecordingOptions::AudioRecordingOptions(const LiveKitCpp::AudioRecordingOptions& src)
     : _impl(src)
@@ -32,22 +15,22 @@ AudioRecordingOptions& AudioRecordingOptions::operator = (const LiveKitCpp::Audi
 
 bool AudioRecordingOptions::operator == (const AudioRecordingOptions& other) const noexcept
 {
-    return this == &other || &_impl == &other._impl || equal(_impl, other._impl);
+    return this == &other ||  _impl == other._impl;
 }
 
 bool AudioRecordingOptions::operator == (const LiveKitCpp::AudioRecordingOptions& other) const noexcept
 {
-    return &_impl == &other || equal(_impl, _impl);
+    return _impl == other;
 }
 
 bool AudioRecordingOptions::operator != (const AudioRecordingOptions& other) const noexcept
 {
-    return notEqual(_impl, other._impl);
+    return _impl != other._impl;
 }
 
 bool AudioRecordingOptions::operator != (const LiveKitCpp::AudioRecordingOptions& other) const noexcept
 {
-    return notEqual(_impl, other);
+    return _impl != other;
 }
 
 QString AudioRecordingOptions::toString() const

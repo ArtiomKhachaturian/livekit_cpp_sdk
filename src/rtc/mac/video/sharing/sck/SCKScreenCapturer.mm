@@ -15,6 +15,7 @@
 #include "SCKEnumerator.h"
 #include "SCKProcessor.h"
 #include "DesktopCapturerUtils.h"
+#include "DesktopConfiguration.h"
 #include "Utils.h"
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 
@@ -91,7 +92,7 @@ void SCKScreenCapturer::setPreviewMode(bool preview)
 
 void SCKScreenCapturer::setTargetFramerate(int32_t fps)
 {
-    _processor->setTargetFramerate(fps);
+    _processor->setTargetFramerate(DesktopConfiguration::boundFramerate(fps));
 }
 
 void SCKScreenCapturer::setTargetResolution(int32_t width, int32_t height)
