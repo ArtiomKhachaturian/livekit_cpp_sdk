@@ -56,7 +56,8 @@ protected:
     bool frameWanted() const;
     void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
     void discard();
-    virtual VideoFrameBufferPool framesPool() const { return {}; }
+    // video frames pool
+    VideoFrameBufferPool framesPool() const;
     virtual void onContentHintChanged(VideoContentHint /*hint*/) {}
     virtual void onOptionsChanged(const VideoOptions& /*options*/ ) {}
     virtual void onDeviceInfoChanged(const MediaDeviceInfo& info);
@@ -76,6 +77,7 @@ protected:
 private:
     void resetStats();
 private:
+    const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
     Bricks::SafeObj<Broadcasters> _broadcasters;
     Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
     Bricks::SafeObj<VideoOptions> _options;

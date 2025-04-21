@@ -13,6 +13,8 @@
 // limitations under the License.
 #include "AsyncVideoSourceImpl.h"
 #include "VideoSinkBroadcast.h"
+#include "VideoFrameBufferPoolSource.h"
+#include "VideoUtils.h"
 #include "Utils.h"
 
 namespace  {
@@ -49,8 +51,10 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
                                            const std::shared_ptr<Bricks::Logger>& logger,
                                            bool liveImmediately)
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
+    , _framesPool(std::make_shared<VideoFrameBufferPoolSource>())
 {
     static_assert(64U == sizeof(rtc::VideoSinkWants), "check changes in rtc::VideoSinkWants structure");
+    _framesPool->resize(webrtc::videocapturemodule::kDefaultFrameRate);
 }
 
 AsyncVideoSourceImpl::~AsyncVideoSourceImpl()
@@ -183,10 +187,9 @@ void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updat
         }
         LOCK_READ_SAFE_OBJ(_broadcasters);
         if (!_broadcasters->empty()) {
-            const auto frp = framesPool();
             for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
                 if (it->second) {
-                    it->second->deliverFrame(frame, frp);
+                    it->second->deliverFrame(frame, framesPool());
                 }
                 else {
                     it->first->OnFrame(frame);
@@ -194,6 +197,11 @@ void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updat
             }
         }
     }
+}
+
+VideoFrameBufferPool AsyncVideoSourceImpl::framesPool() const
+{
+    return {_framesPool};
 }
 
 void AsyncVideoSourceImpl::discard()
@@ -222,12 +230,14 @@ void AsyncVideoSourceImpl::onClosed()
     resetCapturer();
     resetStats();
     _broadcasters({});
+    _framesPool->release();
 }
 
 void AsyncVideoSourceImpl::onMuted()
 {
     AsyncMediaSourceImpl::onMuted();
     resetStats();
+    _framesPool->release();
 }
 
 void AsyncVideoSourceImpl::onEnabled(bool enabled)
@@ -238,6 +248,7 @@ void AsyncVideoSourceImpl::onEnabled(bool enabled)
     }
     else {
         resetCapturer();
+        _framesPool->release();
     }
 }
 
@@ -246,6 +257,7 @@ void AsyncVideoSourceImpl::onStateChanged(CapturerState state)
     switch (state) {
         case CapturerState::Stopped:
             changeState(webrtc::MediaSourceInterface::SourceState::kMuted);
+            _framesPool->release();
             break;
         case CapturerState::Starting:
             changeState(webrtc::MediaSourceInterface::SourceState::kInitializing);

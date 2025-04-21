@@ -20,9 +20,11 @@
 namespace LiveKitCpp
 {
 
-DesktopCapturer::DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options)
+DesktopCapturer::DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                                 VideoFrameBufferPool framesPool)
     : _window(window)
     , _options(std::move(options))
+    , _framesPool(std::move(framesPool))
 {
 }
 
@@ -141,7 +143,7 @@ void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> fram
 {
     if (frame) {
         const auto timestamp = frame->capture_time_ms();
-        const auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame), framesPool());
+        const auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame), _framesPool);
         deliverCaptured(buffer, timestamp * 1000);
     }
 }

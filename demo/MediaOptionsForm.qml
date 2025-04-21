@@ -130,7 +130,7 @@ Pane {
                 ValueControl {
                     id: sharingFps
                     from: 1
-                    to: 100
+                    to: 60
                     stepSize: 5
                     value: 30
                     enabled: !defaultFpsChx.checked

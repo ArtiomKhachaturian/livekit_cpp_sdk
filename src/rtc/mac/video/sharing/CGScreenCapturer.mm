@@ -26,15 +26,17 @@ inline constexpr bool validScreenId(webrtc::ScreenId id) {
 namespace LiveKitCpp
 {
 
-CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options)
-    : Base(false, std::move(options))
+CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options,
+                                   VideoFrameBufferPool framesPool)
+    : Base(false, std::move(options), std::move(framesPool))
 {
     allocateCursorComposer();
 }
 
 CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options,
-                                   std::shared_ptr<webrtc::TaskQueueBase> timerQueue)
-    : Base(false, std::move(options), std::move(timerQueue))
+                                   std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
+                                   VideoFrameBufferPool framesPool)
+    : Base(false, std::move(options), std::move(timerQueue), std::move(framesPool))
 {
     allocateCursorComposer();
 }

@@ -35,11 +35,11 @@ void AsyncSharingSourceImpl::requestCapturer()
             std::unique_ptr<DesktopCapturer> capturer;
             LOCK_WRITE_SAFE_OBJ(_capturer);
             if (!_capturer.constRef()) {
-                capturer = conf->createCapturer(devInfo._guid);
+                capturer = conf->createCapturer(devInfo._guid, framesPool());
             }
             else if (!conf->hasTheSameType(_capturer.constRef()->selectedSource(), devInfo._guid)) {
                 stopCapturer();
-                capturer = conf->createCapturer(devInfo._guid);
+                capturer = conf->createCapturer(devInfo._guid, framesPool());
             }
             if (capturer) {
                 applyOptions(capturer.get(), options());
@@ -70,17 +70,6 @@ void AsyncSharingSourceImpl::resetCapturer()
 std::string_view AsyncSharingSourceImpl::logCategory() const
 {
     return DesktopConfiguration::logCategory();
-}
-
-VideoFrameBufferPool AsyncSharingSourceImpl::framesPool() const
-{
-    if (active()) {
-        LOCK_READ_SAFE_OBJ(_capturer);
-        if (const auto& capturer = _capturer.constRef()) {
-            return capturer->framesPool();
-        }
-    }
-    return AsyncVideoSourceImpl::framesPool();
 }
 
 void AsyncSharingSourceImpl::onContentHintChanged(VideoContentHint hint)

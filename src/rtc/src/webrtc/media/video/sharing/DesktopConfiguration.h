@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // DesktopConfiguration.h
 #include "SafeObjAliases.h"
+#include "VideoFrameBufferPool.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <api/scoped_refptr.h>
 #include <modules/desktop_capture/desktop_capture_options.h>
@@ -49,15 +50,16 @@ public:
     bool hasTheSameType(const std::string& lGuid, const std::string& rGuid) const;
     bool hasTheSameType(const MediaDeviceInfo& l, const MediaDeviceInfo& r) const;
     std::unique_ptr<DesktopCapturer> createCapturer(const std::string& guid,
+                                                    VideoFrameBufferPool framesPool = {},
                                                     bool selectSource = false,
                                                     bool lightweightOptions = false);
-    static constexpr int32_t defaultFramerate() { return 30; }
     static int32_t boundFramerate(int32_t fps);
     static std::string_view logCategory();
 private:
     DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool lightweightMode = false);
     std::unique_ptr<DesktopCapturer> createRawCapturer(bool window,
+                                                       VideoFrameBufferPool framesPool = {},
                                                        bool lightweightOptions = false);
     std::shared_ptr<webrtc::TaskQueueBase> commonSharedQueue();
 private:

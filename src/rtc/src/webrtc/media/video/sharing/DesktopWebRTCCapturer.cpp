@@ -21,14 +21,16 @@ namespace LiveKitCpp
 {
 
 DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options,
-                                             std::shared_ptr<webrtc::TaskQueueBase> timerQueue)
-    : Base(window, std::move(options), std::move(timerQueue))
+                                             std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
+                                             VideoFrameBufferPool framesPool)
+    : Base(window, std::move(options), std::move(timerQueue), std::move(framesPool))
     , _source(defaultSource(window))
 {
 }
 
-DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options)
-    : Base(window, std::move(options))
+DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                                             VideoFrameBufferPool framesPool)
+    : Base(window, std::move(options), std::move(framesPool))
     , _source(defaultSource(window))
 {
 }

@@ -25,7 +25,8 @@ class SCKProcessor;
 class SCKScreenCapturer : public MacDesktopCapturer, private CapturerProxySink
 {
 public:
-    SCKScreenCapturer(webrtc::DesktopCaptureOptions options);
+    SCKScreenCapturer(webrtc::DesktopCaptureOptions options,
+                      VideoFrameBufferPool framesPool = {});
     ~SCKScreenCapturer() final;
     static bool available();
     // overrides of DesktopCapturer
@@ -38,7 +39,6 @@ public:
     void setTargetFramerate(int32_t fps) final;
     void setTargetResolution(int32_t width, int32_t height) final;
     void setExcludedWindow(webrtc::WindowId window) final;
-    VideoFrameBufferPool framesPool() const final;
 private:
     bool enumerate();
     // impl. of CapturerProxySink

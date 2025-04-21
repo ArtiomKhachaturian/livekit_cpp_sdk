@@ -24,7 +24,8 @@ class MacDesktopCapturer : public DesktopCapturer
 public:
     ~MacDesktopCapturer() override;
 protected:
-    MacDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options);
+    MacDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                       VideoFrameBufferPool framesPool = {});
     std::unique_ptr<webrtc::DesktopFrame> captureDisplay(webrtc::ScreenId sId) const;
     std::unique_ptr<webrtc::DesktopFrame> captureWindow(webrtc::WindowId wId) const;
     // the same value as in WebKit, system default is 3, max should not exceed 8 frames

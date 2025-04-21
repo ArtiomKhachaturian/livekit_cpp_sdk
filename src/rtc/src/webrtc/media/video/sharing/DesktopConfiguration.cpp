@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "DesktopConfiguration.h"
 #include "DesktopWebRTCCapturer.h"
+#include "VideoUtils.h"
 #include "Utils.h"
 #ifdef WEBRTC_MAC
 #include "CGScreenCapturer.h"
@@ -23,8 +24,8 @@ namespace LiveKitCpp
 {
 
 DesktopConfiguration::DesktopConfiguration()
-    : _screensEnumerator(createRawCapturer(false, false))
-    , _windowsEnumerator(createRawCapturer(true, true))
+    : _screensEnumerator(createRawCapturer(false, {}, false))
+    , _windowsEnumerator(createRawCapturer(true, {}, true))
 {
 }
 
@@ -109,15 +110,16 @@ bool DesktopConfiguration::hasTheSameType(const MediaDeviceInfo& l, const MediaD
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std::string& guid,
+                                                                      VideoFrameBufferPool framesPool,
                                                                       bool selectSource,
                                                                       bool lightweightOptions)
 {
     std::unique_ptr<DesktopCapturer> capturer;
     if (deviceIsScreen(guid)) {
-        capturer = createRawCapturer(false, lightweightOptions);
+        capturer = createRawCapturer(false, std::move(framesPool), lightweightOptions);
     }
     else if (deviceIsWindow(guid)) {
-        capturer = createRawCapturer(true, lightweightOptions);
+        capturer = createRawCapturer(true, std::move(framesPool), lightweightOptions);
     }
     if (capturer && (!selectSource || capturer->selectSource(guid))) {
         return capturer;
@@ -128,10 +130,10 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std:
 int32_t DesktopConfiguration::boundFramerate(int32_t fps)
 {
     if (fps <= 0) {
-        fps = defaultFramerate();
+        fps = webrtc::videocapturemodule::kDefaultFrameRate;
     }
     else {
-        fps = bound(1, fps, 120); // max 120 Hz
+        fps = bound<int32_t>(1, fps, webrtc::videocapturemodule::kMaxFrameRate); // max 60 Hz
     }
     return fps;
 }
@@ -171,19 +173,24 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweight
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool window,
+                                                                         VideoFrameBufferPool framesPool,
                                                                          bool lightweightOptions)
 {
     std::unique_ptr<DesktopCapturer> impl;
 #ifdef WEBRTC_MAC
     if (!window) {
         if (SCKScreenCapturer::available()) {
-            return std::make_unique<SCKScreenCapturer>(makeOptions(lightweightOptions));
+            return std::make_unique<SCKScreenCapturer>(makeOptions(lightweightOptions),
+                                                       std::move(framesPool));
         }
-        return std::make_unique<CGScreenCapturer>(makeOptions(lightweightOptions), commonSharedQueue());
+        return std::make_unique<CGScreenCapturer>(makeOptions(lightweightOptions),
+                                                  commonSharedQueue(),
+                                                  std::move(framesPool));
     }
 #endif
     if (!impl) {
-        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(lightweightOptions), commonSharedQueue());
+        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(lightweightOptions),
+                                                       commonSharedQueue(), std::move(framesPool));
     }
     return impl;
 }

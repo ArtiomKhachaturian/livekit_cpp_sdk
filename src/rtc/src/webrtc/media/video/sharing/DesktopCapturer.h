@@ -72,17 +72,17 @@ public:
     virtual void setExcludedWindow(webrtc::WindowId /*window*/) {}
     // sets SharedMemoryFactory that will be used to create buffers for the captured frames
     virtual void setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> /*smf*/) {}
-    // frames pool
-    virtual VideoFrameBufferPool framesPool() const { return {}; }
     void setOutputSink(CapturerProxySink* sink);
     // window or screen capturer
     bool window() const noexcept { return _window; }
     void setTargetResolution(const webrtc::DesktopSize& resolution);
     virtual ~DesktopCapturer() = default;
 protected:
-    DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options);
+    DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                    VideoFrameBufferPool framesPool = {});
     const auto& options() const noexcept { return _options; }
     bool hasOutputSink() const { return !_sink.empty(); }
+    VideoFrameBufferPool framesPool() const noexcept { return _framesPool; }
     bool changeState(CapturerState state);
     void notifyAboutError(std::string details = {}, bool fatal = true) const;
     void discardFrame();
@@ -97,6 +97,7 @@ protected:
 private:
     const bool _window;
     const webrtc::DesktopCaptureOptions _options;
+    const VideoFrameBufferPool _framesPool;
     Bricks::Listener<CapturerProxySink*> _sink;
     std::atomic<uint16_t> _lastFrameId = 0U;
     Bricks::SafeObj<CapturerState> _state = CapturerState::Stopped;

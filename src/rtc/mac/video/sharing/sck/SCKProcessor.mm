@@ -17,8 +17,8 @@
 namespace LiveKitCpp
 {
 
-SCKProcessor::SCKProcessor(int queueDepth)
-    : RtcObject<SCKProcessorImpl>(queueDepth)
+SCKProcessor::SCKProcessor(int queueDepth, VideoFrameBufferPool framesPool)
+    : RtcObject<SCKProcessorImpl>(queueDepth, std::move(framesPool))
 {
 }
 
@@ -116,14 +116,6 @@ SCWindow* SCKProcessor::selectedWindow() const
         return impl->selectedWindow();
     }
     return nil;
-}
-
-VideoFrameBufferPool SCKProcessor::framesPool() const
-{
-    if (const auto impl = loadImpl()) {
-        return impl->framesPool();
-    }
-    return {};
 }
 
 } // namespace LiveKitCpp

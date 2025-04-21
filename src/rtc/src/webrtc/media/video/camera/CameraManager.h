@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraManager.h
+#include "VideoFrameBufferPool.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include <api/scoped_refptr.h>
 #include <api/video/video_rotation.h>
@@ -64,8 +65,10 @@ public:
     // to be displayed correctly on a normally rotated display.
     static bool orientation(std::string_view guid, webrtc::VideoRotation& orientation);
     static bool orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation);
-    static rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid);
-    static rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev);
+    static rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
+                                                             VideoFrameBufferPool framesPool = {});
+    static rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev,
+                                                             VideoFrameBufferPool framesPool = {});
 private:
     static webrtc::VideoCaptureModule::DeviceInfo* deviceInfo();
 };

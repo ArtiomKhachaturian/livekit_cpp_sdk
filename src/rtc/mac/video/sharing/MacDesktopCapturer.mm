@@ -17,8 +17,9 @@
 namespace LiveKitCpp
 {
 
-MacDesktopCapturer::MacDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options)
-    : DesktopCapturer(window, std::move(options))
+MacDesktopCapturer::MacDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                                       VideoFrameBufferPool framesPool)
+    : DesktopCapturer(window, std::move(options), std::move(framesPool))
 {
 }
 

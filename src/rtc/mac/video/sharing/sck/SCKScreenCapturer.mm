@@ -23,9 +23,10 @@
 namespace LiveKitCpp
 {
 
-SCKScreenCapturer::SCKScreenCapturer(webrtc::DesktopCaptureOptions options)
-    : MacDesktopCapturer(false, std::move(options))
-    , _processor(std::make_unique<SCKProcessor>(screenQueueMaxLen()))
+SCKScreenCapturer::SCKScreenCapturer(webrtc::DesktopCaptureOptions options,
+                                     VideoFrameBufferPool framesPool)
+    : MacDesktopCapturer(false, std::move(options), framesPool)
+    , _processor(std::make_unique<SCKProcessor>(screenQueueMaxLen(), std::move(framesPool)))
 {
     _processor->setOutputSink(this);
 }
@@ -110,11 +111,6 @@ void SCKScreenCapturer::setExcludedWindow(webrtc::WindowId wId)
             }
         }
     }
-}
-
-VideoFrameBufferPool SCKScreenCapturer::framesPool() const
-{
-    return _processor->framesPool();
 }
 
 bool SCKScreenCapturer::enumerate()

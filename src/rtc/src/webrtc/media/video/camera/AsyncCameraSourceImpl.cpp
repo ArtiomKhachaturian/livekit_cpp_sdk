@@ -42,7 +42,7 @@ void AsyncCameraSourceImpl::requestCapturer()
     if (frameWanted()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer.constRef()) {
-            if (auto capturer = CameraManager::createCapturer(deviceInfo())) {
+            if (auto capturer = CameraManager::createCapturer(deviceInfo(), framesPool())) {
                 const auto capability = bestMatched(map(options()), capturer);
                 capturer->setContentHint(contentHint());
                 capturer->RegisterCaptureDataCallback(this);
@@ -74,15 +74,6 @@ void AsyncCameraSourceImpl::resetCapturer()
 std::string_view AsyncCameraSourceImpl::logCategory() const
 {
     return CameraManager::logCategory();
-}
-
-VideoFrameBufferPool AsyncCameraSourceImpl::framesPool() const
-{
-    LOCK_WRITE_SAFE_OBJ(_capturer);
-    if (const auto& capturer = _capturer.constRef()) {
-        return capturer->framesPool();
-    }
-    return AsyncCameraSourceImpl::framesPool();
 }
 
 void AsyncCameraSourceImpl::onCapturingError(std::string details, bool fatal)

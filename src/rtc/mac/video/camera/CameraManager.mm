@@ -66,7 +66,8 @@ webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
     return info.get();
 }
 
-rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev)
+rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev,
+                                                                 VideoFrameBufferPool /*framesPool*/)
 {
     return MacCameraCapturer::create(dev);
 }

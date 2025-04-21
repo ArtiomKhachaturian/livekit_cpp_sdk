@@ -33,7 +33,7 @@ class CapturerProxySink;
 class SCKProcessor : public RtcObject<SCKProcessorImpl>
 {
 public:
-    SCKProcessor(int queueDepth);
+    SCKProcessor(int queueDepth, VideoFrameBufferPool framesPool = {});
     ~SCKProcessor();
     void setOutputSink(CapturerProxySink* sink);
     bool start();
@@ -47,7 +47,6 @@ public:
     void setTargetResolution(int32_t width, int32_t height);
     SCDisplay* selectedScreen() const;
     SCWindow* selectedWindow() const;
-    VideoFrameBufferPool framesPool() const;
 };
 
 } // namespace LiveKitCpp

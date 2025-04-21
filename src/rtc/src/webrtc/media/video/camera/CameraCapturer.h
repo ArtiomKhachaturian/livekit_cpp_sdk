@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once
 #include "SafeObj.h"
-#include "VideoFrameBufferPool.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <modules/video_capture/video_capture.h>
 #include <modules/video_capture/video_capture_config.h>
@@ -34,7 +33,6 @@ public:
     virtual void setContentHint(VideoContentHint /*hint*/) {}
     virtual void setObserver(CapturerObserver* /*observer*/ = nullptr) {}
     const auto& guid() const noexcept { return _deviceInfo._guid; }
-    virtual VideoFrameBufferPool framesPool() const { return {}; }
     // impl. of webrtc::VideoCaptureModule
     void RegisterCaptureDataCallback(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
     void RegisterCaptureDataCallback(webrtc::RawVideoSinkInterface* rawSink) final;

@@ -15,6 +15,7 @@
 #include "livekit/rtc/media/VideoContentHint.h"
 #include <api/media_stream_interface.h>
 #include <api/video/video_frame.h>
+#include <modules/video_capture/video_capture_config.h> // for values in webrtc::videocapturemodule
 #ifdef WEBRTC_MAC
 #include <CoreVideo/CVPixelBuffer.h>
 #endif
