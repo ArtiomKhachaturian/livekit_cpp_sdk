@@ -11,22 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // DesktopCapturerUtilsMac.h
-#include <CoreGraphics/CGWindow.h>
-#include <CoreGraphics/CGDirectDisplay.h>
-
-#ifdef WEBRTC_MAC
-#ifdef __OBJC__
-@class NSScreen;
-#else
-typedef struct objc_object NSScreen;
-#endif
-#endif // WEBRTC_MAC
+#pragma once
+#include <IOSurface/IOSurfaceRef.h>
+#include <api/video/i420_buffer.h>
+#include <memory>
+#include <optional>
 
 namespace LiveKitCpp
 {
 
-NSScreen* findScreen(CGDirectDisplayID guid);
-bool isHiddenWindow(CGWindowID wId);
-	
+class IOSurfaceBuffer
+{
+public:
+    static bool supported(IOSurfaceRef buffer);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(IOSurfaceRef buffer,
+                                                                 bool retain = true);
+    static IOSurfaceRef pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
+                                    bool retain = true);
+};
+
 } // namespace LiveKitCpp

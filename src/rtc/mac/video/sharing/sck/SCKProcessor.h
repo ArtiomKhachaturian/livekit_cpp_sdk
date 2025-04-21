@@ -32,7 +32,7 @@ class CapturerProxySink;
 class SCKProcessor : public RtcObject<SCKProcessorImpl>
 {
 public:
-    SCKProcessor(int queueDepth, OSType pixelFormat);
+    SCKProcessor(int queueDepth);
     ~SCKProcessor();
     void setOutputSink(CapturerProxySink* sink);
     bool start();

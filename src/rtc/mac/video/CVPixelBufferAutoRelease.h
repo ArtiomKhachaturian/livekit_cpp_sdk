@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#ifdef WEBRTC_MAC
 #include "CFAutoRelease.h"
 #include <CoreMedia/CMSampleBuffer.h> // for CMSampleBufferRef
 #include <CoreVideo/CVPixelBuffer.h>
@@ -66,4 +65,3 @@ inline void CFAutoReleaseTraits<CVPixelBufferRef>::release(CVPixelBufferRef ref)
 }
 
 } // namespace LiveKitCpp
-#endif

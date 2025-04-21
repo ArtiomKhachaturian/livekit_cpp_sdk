@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifdef WEBRTC_MAC
 #include "CoreVideoPixelBuffer.h"
 #include "CVPixelBufferAutoRelease.h"
 #include "VideoFrameBuffer.h"
@@ -321,4 +320,3 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> RGBPixelBuffer::convertToI420() 
 }
 
 }
-#endif

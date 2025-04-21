@@ -17,8 +17,8 @@
 namespace LiveKitCpp
 {
 
-SCKProcessor::SCKProcessor(int queueDepth, OSType pixelFormat)
-    : RtcObject<SCKProcessorImpl>(queueDepth, pixelFormat)
+SCKProcessor::SCKProcessor(int queueDepth)
+    : RtcObject<SCKProcessorImpl>(queueDepth)
 {
 }
 

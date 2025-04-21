@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MacCameraCapturer.h
-#ifdef WEBRTC_MAC
 #include "CameraCapturer.h"
 #include <CoreMedia/CMSampleBuffer.h>
 #include <list>
@@ -69,4 +68,3 @@ private:
 };
 
 } // namespace LiveKitCpp
-#endif

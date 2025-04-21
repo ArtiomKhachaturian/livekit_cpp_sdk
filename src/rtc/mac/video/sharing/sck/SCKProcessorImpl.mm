@@ -21,8 +21,6 @@
 #include <rtc_base/time_utils.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 
-#include <iostream>
-
 namespace {
 
 inline NSArray<SCWindow*>* excludingWindow(SCWindow* window = nil) {
@@ -38,19 +36,26 @@ inline T roundCGFloat(CGFloat f) {
     return static_cast<int32_t>(std::round(f));
 }
 
+inline CGSize scaleWithAspectRatio(const CGSize& originalSize,
+                                   const CGSize& targetSize) {
+    const auto sfw = targetSize.width / originalSize.width;
+    const auto sfh = targetSize.height / originalSize.height;
+    const auto sf  = fminf(sfw, sfh);
+    return CGSizeMake(originalSize.width * sf, originalSize.height * sf);
+}
+
 }
 
 namespace LiveKitCpp
 {
 
-SCKProcessorImpl::SCKProcessorImpl(int queueDepth, OSType pixelFormat)
+SCKProcessorImpl::SCKProcessorImpl(int queueDepth)
     : _configuration([SCStreamConfiguration new])
 {
     _configuration.queueDepth = queueDepth;
-    _configuration.pixelFormat = pixelFormat;
     _configuration.colorSpaceName = kCGColorSpaceSRGB;
     _configuration.colorMatrix = kCGDisplayStreamYCbCrMatrix_SMPTE_240M_1995;
-    //_configuration.captureResolution = SCCaptureResolutionNominal;
+    _configuration.pixelFormat = CoreVideoPixelBuffer::formatBGRA32();
 }
 
 SCKProcessorImpl::~SCKProcessorImpl()
@@ -197,8 +202,7 @@ void SCKProcessorImpl::setTargetResolution(int32_t width, int32_t height)
             _targetResolution = clueToUint64(width, height);
         }
     }
-    else {
-        _targetResolution = 0ULL;
+    else if (_targetResolution.exchange(0ULL)) {
         @autoreleasepool {
             if (SCDisplay* display = selectedScreen()) {
                 setSize(display, _lastPointPixelScale);
@@ -301,12 +305,13 @@ bool SCKProcessorImpl::setSize(SCDisplay* display, float pointPixelScale)
 bool SCKProcessorImpl::setSize(SCContentFilter* filter)
 {
     if (filter) {
+        auto contentSize = filter.contentRect.size;
         if (const auto targetResolution = _targetResolution.load()) {
-            return setSize(extractHiWord(targetResolution),
-                           extractLoWord(targetResolution),
-                           filter.pointPixelScale);
+            const auto w = extractHiWord(targetResolution);
+            const auto h = extractLoWord(targetResolution);
+            contentSize = scaleWithAspectRatio(contentSize, CGSizeMake(w, h));
         }
-        return setSize(filter.contentRect.size, filter.pointPixelScale);
+        return setSize(contentSize, filter.pointPixelScale);
     }
     return false;
 }

@@ -46,7 +46,7 @@ class SCKProcessorImpl : public std::enable_shared_from_this<SCKProcessorImpl>,
                          public SCKErrorHandler
 {
 public:
-    SCKProcessorImpl(int queueDepth, OSType pixelFormat);
+    SCKProcessorImpl(int queueDepth);
     ~SCKProcessorImpl() final;
     void setOutputSink(CapturerProxySink* sink) { _sink = sink; }
     bool start();

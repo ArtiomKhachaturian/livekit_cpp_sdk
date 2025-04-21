@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifdef WEBRTC_MAC
 #include "CVPixelBufferAutoRelease.h"
 #include <utility>
 
@@ -55,8 +54,7 @@ OSType CVPixelBufferAutoRelease::pixelFormat(CVPixelBufferRef buffer)
 
 CVImageBufferRef CVPixelBufferAutoRelease::imageBuffer(CMSampleBufferRef buffer)
 {
-    if (buffer && CMSampleBufferDataIsReady(buffer) &&
-        CMSampleBufferIsValid(buffer) &&
+    if (buffer && CMSampleBufferDataIsReady(buffer) && CMSampleBufferIsValid(buffer) &&
         1L == CMSampleBufferGetNumSamples(buffer)) {
             return CMSampleBufferGetImageBuffer(buffer);
     }
@@ -124,4 +122,3 @@ uint8_t* CVPixelBufferAutoRelease::baseAddress() const
 }
 
 } // namespace LiveKitCpp
-#endif
