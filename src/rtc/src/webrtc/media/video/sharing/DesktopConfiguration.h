@@ -52,6 +52,7 @@ public:
                                                     bool selectSource = false,
                                                     bool lightweightOptions = false);
     static int32_t maxFramerate() { return 30; }
+    static std::string_view logCategory();
 private:
     DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool lightweightMode = false);

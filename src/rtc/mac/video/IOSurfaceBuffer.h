@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "VideoFrameBufferPool.h"
 #include <CoreMedia/CMSampleBuffer.h>
 #include <IOSurface/IOSurfaceRef.h>
 #include <api/video/i420_buffer.h>
@@ -25,8 +26,11 @@ class IOSurfaceBuffer
 {
 public:
     static bool supported(IOSurfaceRef buffer);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(IOSurfaceRef buffer, bool retain = true);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> createFromSampleBuffer(CMSampleBufferRef buffer);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(IOSurfaceRef buffer,
+                                                               VideoFrameBufferPool framesPool = {},
+                                                               bool retain = true);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> createFromSampleBuffer(CMSampleBufferRef buffer,
+                                                                               VideoFrameBufferPool framesPool = {});
     static IOSurfaceRef pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer, bool retain = true);
 };
 

@@ -27,7 +27,8 @@ namespace LiveKitCpp
 class DesktopFrameVideoBuffer : public RgbVideoFrameBuffer
 {
 public:
-    DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame);
+    DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame,
+                            VideoFrameBufferPool framesPool = {});
     ~DesktopFrameVideoBuffer() override;
     // impl. of NativeVideoFrameBuffer
     int stride(size_t planeIndex) const final;

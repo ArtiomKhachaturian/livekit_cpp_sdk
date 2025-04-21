@@ -78,9 +78,9 @@ public:
     bool changeState(CapturerState state) { return [_delegate changeState:state]; }
     void reportAboutError(const std::string& error);
 private:
-    AVCaptureDevice* const _device;
-    CapturerDelegate* const _delegate;
-    RTC_OBJC_TYPE(RTCCameraVideoCapturer)* const _capturer;
+    AVCaptureDevice* _device;
+    CapturerDelegate* _delegate;
+    RTC_OBJC_TYPE(RTCCameraVideoCapturer)* _capturer;
 };
 
 MacCameraCapturer::MacCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl)
@@ -362,6 +362,9 @@ MacCameraCapturer::Impl::~Impl()
     stopCapture();
     @autoreleasepool {
         [[NSNotificationCenter defaultCenter] removeObserver:_delegate];
+        _device = nil;
+        _delegate = nil;
+        _capturer = nil;
     }
 }
 

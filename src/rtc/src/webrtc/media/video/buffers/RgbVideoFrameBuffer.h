@@ -24,7 +24,7 @@ public:
     // impl. of NativeVideoFrameBuffer
     VideoFrameType nativeType() const final { return _rgbFormat; }
 protected:
-    RgbVideoFrameBuffer(VideoFrameType rgbFormat);
+    RgbVideoFrameBuffer(VideoFrameBufferPool framesPool, VideoFrameType rgbFormat);
     // impl. of VideoFrameBuffer<>
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 private:

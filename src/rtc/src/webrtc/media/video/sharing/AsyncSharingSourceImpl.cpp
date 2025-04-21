@@ -68,6 +68,22 @@ void AsyncSharingSourceImpl::resetCapturer()
     }
 }
 
+std::string_view AsyncSharingSourceImpl::logCategory() const
+{
+    return DesktopConfiguration::logCategory();
+}
+
+VideoFrameBufferPool AsyncSharingSourceImpl::framesPool() const
+{
+    if (active()) {
+        LOCK_READ_SAFE_OBJ(_capturer);
+        if (const auto& capturer = _capturer.constRef()) {
+            return capturer->framesPool();
+        }
+    }
+    return AsyncVideoSourceImpl::framesPool();
+}
+
 void AsyncSharingSourceImpl::onContentHintChanged(VideoContentHint hint)
 {
     AsyncVideoSourceImpl::onContentHintChanged(hint);
@@ -124,19 +140,23 @@ void AsyncSharingSourceImpl::startCapturer()
 {
     if (enabled() && active() && frameWanted()) {
         if (const auto& capturer = _capturer.constRef()) {
+            const auto name = deviceInfo()._name;
             if (capturer->selectSource(deviceInfo()._guid)) {
+                auto optionsText = toString(options());
                 if (capturer->start()) {
+                    logVerbose(capturer, "has been started with caps [" + optionsText + "]");
                     notify(&MediaDeviceListener::onMediaStarted);
                     if (!options().preview()) {
                         capturer->focusOnSelectedSource();
                     }
                 }
                 else {
-                    // TODO: add error details
+                    logError(capturer, "failed to start with caps [" + optionsText + "]");
                     notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
                 }
             }
             else {
+                logError(capturer, "failed to select source '" + name + "'");
                 notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
             }
         }
@@ -148,8 +168,47 @@ void AsyncSharingSourceImpl::stopCapturer()
     const auto& capturer = _capturer.constRef();
     if (capturer && capturer->started()) {
         capturer->stop();
+        logVerbose(capturer, "has been started stopped");
         notify(&MediaDeviceListener::onMediaStopped);
     }
+}
+
+void AsyncSharingSourceImpl::logError(const std::unique_ptr<DesktopCapturer>& capturer,
+                                      const std::string& message) const
+{
+    if (capturer && canLogError()) {
+        AsyncVideoSourceImpl::logError(formatLogMessage(capturer, message));
+    }
+}
+
+void AsyncSharingSourceImpl::logVerbose(const std::unique_ptr<DesktopCapturer>& capturer,
+                                        const std::string& message) const
+{
+    if (capturer && canLogVerbose()) {
+        AsyncVideoSourceImpl::logVerbose(formatLogMessage(capturer, message));
+    }
+}
+
+std::string AsyncSharingSourceImpl::formatLogMessage(const std::unique_ptr<DesktopCapturer>& capturer,
+                                                     const std::string& message)
+{
+    if (!message.empty()) {
+        return capturerTitle(capturer) + " - " + message;
+    }
+    return message;
+}
+
+std::string AsyncSharingSourceImpl::capturerTitle(const std::unique_ptr<DesktopCapturer>& capturer)
+{
+    std::string title, type;
+    if (capturer) {
+        title = capturer->title(capturer->selectedSource()).value_or(std::string{});
+        type = capturer->window() ? "window " : "screen ";
+    }
+    if (title.empty()) {
+        title = "unknown";
+    }
+    return "'" + title + "' " + type + "capturer";
 }
 
 void AsyncSharingSourceImpl::applyOptions(DesktopCapturer* capturer,

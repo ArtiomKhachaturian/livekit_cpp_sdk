@@ -14,6 +14,7 @@
 #pragma once // VideoSourceImpl.h
 #include "AsyncMediaSourceImpl.h"
 #include "CapturerProxySink.h"
+#include "VideoFrameBufferPool.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include "livekit/rtc/media/VideoContentHint.h"
@@ -55,6 +56,7 @@ protected:
     bool frameWanted() const;
     void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
     void discard();
+    virtual VideoFrameBufferPool framesPool() const { return {}; }
     virtual void onContentHintChanged(VideoContentHint /*hint*/) {}
     virtual void onOptionsChanged(const VideoOptions& /*options*/ ) {}
     virtual void onDeviceInfoChanged(const MediaDeviceInfo& info);

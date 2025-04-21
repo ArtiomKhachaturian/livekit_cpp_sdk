@@ -15,6 +15,7 @@
 #include "DesktopCapturer.h"
 #include "MediaTimer.h"
 #include "SafeObj.h"
+#include "VideoFrameBufferPoolSource.h"
 #include "Utils.h"
 #include <atomic>
 #include <type_traits>
@@ -35,6 +36,7 @@ public:
     bool started() const final { return _timer.started(); }
     bool start() override;
     void stop() override;
+    VideoFrameBufferPool framesPool() const final { return VideoFrameBufferPool{_framesPool}; }
     ~DesktopSimpleCapturer() override;
 protected:
     // capturer with shared queue
@@ -55,6 +57,7 @@ private:
     void onTimeout(uint64_t) final { captureNextFrame(); }
 private:
     const std::shared_ptr<webrtc::TaskQueueBase> _timerQueue;
+    const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
     MediaTimer _timer;
     std::atomic<int32_t> _fps = 30;
 };
@@ -68,7 +71,9 @@ inline DesktopSimpleCapturer<TCapturer>::
     : TCapturer(window, std::move(options), std::forward<Args>(args)...)
     , _timerQueue(std::move(timerQueue))
     , _timer(_timerQueue)
+    , _framesPool(std::make_shared<VideoFrameBufferPoolSource>())
 {
+    _framesPool->resize(static_cast<size_t>(_fps));
 }
 
 template <class TCapturer>
@@ -92,10 +97,13 @@ inline DesktopSimpleCapturer<TCapturer>::~DesktopSimpleCapturer()
 template <class TCapturer>
 inline void DesktopSimpleCapturer<TCapturer>::setTargetFramerate(int32_t fps)
 {
-    if (exchangeVal(fps, _fps) && _timer.started()) {
-        _timer.stop();
-        if (canStart()) {
-            _timer.startWithFramerate(fps);
+    if (exchangeVal(fps, _fps)) {
+        _framesPool->resize(static_cast<size_t>(fps));
+        if (_timer.started()) {
+            _timer.stop();
+            if (canStart()) {
+                _timer.startWithFramerate(fps);
+            }
         }
     }
 }
@@ -116,6 +124,7 @@ inline void DesktopSimpleCapturer<TCapturer>::stop()
 {
     _timer.setCallback(nullptr);
     _timer.stop();
+    _framesPool->release();
 }
 
 template <class TCapturer>

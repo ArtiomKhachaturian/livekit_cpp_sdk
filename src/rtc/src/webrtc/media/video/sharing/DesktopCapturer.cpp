@@ -141,7 +141,7 @@ void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> fram
 {
     if (frame) {
         const auto timestamp = frame->capture_time_ms();
-        const auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame));
+        const auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame), framesPool());
         deliverCaptured(buffer, timestamp * 1000);
     }
 }

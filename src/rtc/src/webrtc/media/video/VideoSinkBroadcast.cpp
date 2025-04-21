@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoSinkBroadcast.h"
-#include <api/video/i420_buffer.h>
+#include "VideoFrameBufferPool.h"
 
 namespace {
 
@@ -48,7 +48,8 @@ void VideoSinkBroadcast::updateSinkWants(const rtc::VideoSinkWants& wants)
     _rotationApplied = wants.rotation_applied;
 }
 
-void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
+void VideoSinkBroadcast::deliverFrame(const webrtc::VideoFrame& frame,
+                                      const VideoFrameBufferPool& framesPool)
 {
     if (const auto buffer = frame.video_frame_buffer()) {
         int adaptedWidth, adaptedHeight, cropWidth, cropHeight, cropX, cropY;
@@ -57,28 +58,28 @@ void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
                        cropWidth, cropHeight, cropX, cropY)) {
             if (adaptedWidth == frame.width() && adaptedHeight == frame.height()) {
                 // No adaption - optimized path.
-                broadcast(frame);
+                broadcast(frame, framesPool);
             }
             else if (const auto srcI420 = toI420(frame)) {
-                auto dstI420 = webrtc::I420Buffer::Create(adaptedWidth, adaptedHeight);
+                auto dstI420 = framesPool.createI420(adaptedWidth, adaptedHeight);
                 dstI420->CropAndScaleFrom(*srcI420, cropX, cropY, cropWidth, cropHeight);
                 webrtc::VideoFrame adapted(frame);
                 adapted.set_video_frame_buffer(dstI420);
-                broadcast(adapted);
+                broadcast(adapted, framesPool);
             }
         }
     }
 }
 
-void VideoSinkBroadcast::OnDiscardedFrame()
+void VideoSinkBroadcast::discardFrame()
 {
     _broadcaster.OnDiscardedFrame();
 }
 
-void VideoSinkBroadcast::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints)
+void VideoSinkBroadcast::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
-    _broadcaster.ProcessConstraints(constraints);
-    _sink->OnConstraintsChanged(constraints);
+    _broadcaster.ProcessConstraints(c);
+    _sink->OnConstraintsChanged(c);
 }
 
 bool VideoSinkBroadcast::adaptFrame(int width, int height, int64_t timeUs,
@@ -100,11 +101,13 @@ bool VideoSinkBroadcast::adaptFrame(int width, int height, int64_t timeUs,
     return true;
 }
 
-void VideoSinkBroadcast::broadcast(const webrtc::VideoFrame& frame)
+void VideoSinkBroadcast::broadcast(const webrtc::VideoFrame& frame,
+                                   const VideoFrameBufferPool& /*framesPool*/)
 {
     if (_rotationApplied && frame.rotation() != webrtc::kVideoRotation_0) {
         if (const auto srcI420 = toI420(frame)) {
             webrtc::VideoFrame rotatedFrame(frame);
+            // TODO: change rotation code to usage of [framesPool]
             auto rotatedBuffer = webrtc::I420Buffer::Rotate(*srcI420, frame.rotation());
             rotatedFrame.set_video_frame_buffer(rotatedBuffer);
             rotatedFrame.set_rotation(webrtc::kVideoRotation_0);

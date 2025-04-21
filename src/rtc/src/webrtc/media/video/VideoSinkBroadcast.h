@@ -19,16 +19,17 @@
 namespace LiveKitCpp
 {
 
-class VideoSinkBroadcast : public rtc::VideoSinkInterface<webrtc::VideoFrame>
+class VideoFrameBufferPool;
+
+class VideoSinkBroadcast
 {
 public:
     VideoSinkBroadcast(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                        const rtc::VideoSinkWants& wants = {});
     void updateSinkWants(const rtc::VideoSinkWants& wants);
-    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
-    void OnFrame(const webrtc::VideoFrame& frame) final;
-    void OnDiscardedFrame() final;
-    void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints) final;
+    void deliverFrame(const webrtc::VideoFrame& frame, const VideoFrameBufferPool& framesPool);
+    void discardFrame();
+    void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
 private:
     // Reports the appropriate frame size after adaptation. Returns true
     // if a frame is wanted. Returns false if there are no interested
@@ -37,7 +38,7 @@ private:
                     int& outWidth, int& outHeight,
                     int& cropWidth, int& cropHeight,
                     int& cropX, int& cropY);
-    void broadcast(const webrtc::VideoFrame& frame);
+    void broadcast(const webrtc::VideoFrame& frame, const VideoFrameBufferPool& framesPool);
 private:
     rtc::VideoSinkInterface<webrtc::VideoFrame>* const _sink;
     cricket::VideoAdapter _adapter;

@@ -32,7 +32,7 @@ public:
     int StrideY() const override;
     int StrideUV() const override;
 protected:
-    NV12VideoFrameBuffer() = default;
+    NV12VideoFrameBuffer(VideoFrameBufferPool framesPool);
     // impl. of VideoFrameBuffer
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };

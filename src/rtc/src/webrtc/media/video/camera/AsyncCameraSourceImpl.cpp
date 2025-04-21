@@ -76,6 +76,15 @@ std::string_view AsyncCameraSourceImpl::logCategory() const
     return CameraManager::logCategory();
 }
 
+VideoFrameBufferPool AsyncCameraSourceImpl::framesPool() const
+{
+    LOCK_WRITE_SAFE_OBJ(_capturer);
+    if (const auto& capturer = _capturer.constRef()) {
+        return capturer->framesPool();
+    }
+    return AsyncCameraSourceImpl::framesPool();
+}
+
 void AsyncCameraSourceImpl::onCapturingError(std::string details, bool fatal)
 {
     logError(_capturer(), details);
@@ -218,8 +227,8 @@ void AsyncCameraSourceImpl::logVerbose(const rtc::scoped_refptr<CameraCapturer>&
                                        const std::string& message) const
 {
     if (capturer && canLogVerbose()) {
-        const auto error = CameraManager::formatLogMessage(capturer->CurrentDeviceName(), message);
-        AsyncVideoSourceImpl::logVerbose(error);
+        const auto verbose = CameraManager::formatLogMessage(capturer->CurrentDeviceName(), message);
+        AsyncVideoSourceImpl::logVerbose(verbose);
     }
 }
 

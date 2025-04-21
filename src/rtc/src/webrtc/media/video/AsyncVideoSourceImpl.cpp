@@ -63,7 +63,7 @@ void AsyncVideoSourceImpl::processConstraints(const webrtc::VideoTrackSourceCons
         LOCK_READ_SAFE_OBJ(_broadcasters);
         for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
             if (it->second) {
-                it->second->OnConstraintsChanged(c);
+                it->second->processConstraints(c);
             }
             else {
                 it->first->OnConstraintsChanged(c);
@@ -182,12 +182,15 @@ void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updat
             _lastFrameId = frame.id();
         }
         LOCK_READ_SAFE_OBJ(_broadcasters);
-        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-            if (it->second) {
-                it->second->OnFrame(frame);
-            }
-            else {
-                it->first->OnFrame(frame);
+        if (!_broadcasters->empty()) {
+            const auto frp = framesPool();
+            for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+                if (it->second) {
+                    it->second->deliverFrame(frame, frp);
+                }
+                else {
+                    it->first->OnFrame(frame);
+                }
             }
         }
     }
@@ -198,7 +201,7 @@ void AsyncVideoSourceImpl::discard()
     LOCK_READ_SAFE_OBJ(_broadcasters);
     for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
         if (it->second) {
-            it->second->OnDiscardedFrame();
+            it->second->discardFrame();
         }
         else {
             it->first->OnDiscardedFrame();

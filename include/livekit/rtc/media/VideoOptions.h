@@ -36,6 +36,8 @@ struct LIVEKIT_RTC_API VideoOptions
     explicit operator bool() const noexcept { return !null(); }
 };
 
+LIVEKIT_RTC_API std::string toString(const VideoOptions& options);
+
 } // namespace LiveKitCpp
 
 inline bool operator == (const LiveKitCpp::VideoOptions& l, const LiveKitCpp::VideoOptions& r) {

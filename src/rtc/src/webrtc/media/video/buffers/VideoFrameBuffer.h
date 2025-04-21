@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // VideoFrameBuffer.h
 #include "SafeScopedRefPtr.h"
+#include "VideoFrameBufferPool.h"
 #include <api/video/i420_buffer.h>
 #include <api/video/nv12_buffer.h>
 #include <type_traits>
@@ -31,16 +32,21 @@ public:
     rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
 protected:
     template <class... Args>
-    VideoFrameBuffer(Args... args);
+    VideoFrameBuffer(VideoFrameBufferPool framesPool, Args... args);
+    const auto& framesPool() const noexcept { return _framesPool; }
+    webrtc::scoped_refptr<webrtc::I420Buffer> createI420(int width, int height) const;
     virtual rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const = 0;
 private:
+    const VideoFrameBufferPool _framesPool;
     SafeScopedRefPtr<webrtc::I420BufferInterface> _i420;
 };
 
 template <class TBaseBuffer>
 template <class... Args>
-inline VideoFrameBuffer<TBaseBuffer>::VideoFrameBuffer(Args... args)
+inline VideoFrameBuffer<TBaseBuffer>::VideoFrameBuffer(VideoFrameBufferPool framesPool,
+                                                       Args... args)
     : TBaseBuffer(std::forward<Args>(args)...)
+    , _framesPool(std::move(framesPool))
 {
 }
 
@@ -72,6 +78,12 @@ inline rtc::scoped_refptr<webrtc::I420BufferInterface> VideoFrameBuffer<TBaseBuf
         _i420 = convertToI420();
     }
     return _i420.constRef();
+}
+
+template <class TBaseBuffer>
+webrtc::scoped_refptr<webrtc::I420Buffer> VideoFrameBuffer<TBaseBuffer>::createI420(int width, int height) const
+{
+    return _framesPool.createI420(width, height);
 }
 
 } // namespace LiveKitCpp

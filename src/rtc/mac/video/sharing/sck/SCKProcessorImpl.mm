@@ -16,6 +16,7 @@
 #include "SCKStreamOutput.h"
 #include "CapturerProxySink.h"
 #include "CoreVideoPixelBuffer.h"
+#include "VideoFrameBufferPoolSource.h"
 #include "IOSurfaceBuffer.h"
 #include "Utils.h"
 #include "VideoUtils.h"
@@ -52,6 +53,7 @@ namespace LiveKitCpp
 
 SCKProcessorImpl::SCKProcessorImpl(int queueDepth)
     : _configuration([SCStreamConfiguration new])
+    , _framesPool(std::make_shared<VideoFrameBufferPoolSource>())
 {
     _configuration.queueDepth = queueDepth;
     _configuration.colorSpaceName = kCGColorSpaceSRGB;
@@ -189,6 +191,7 @@ void SCKProcessorImpl::setTargetFramerate(int32_t fps)
         const auto interval = CMTimeMake(uint64_t(std::round(1000ULL / fps)), rtc::kNumMillisecsPerSec);
         if (0 != CMTimeCompare(interval, _configuration.minimumFrameInterval)) {
             _configuration.minimumFrameInterval = interval;
+            _framesPool->resize(static_cast<size_t>(fps));
             updateConfiguration();
         }
     }
@@ -233,6 +236,11 @@ SCWindow* SCKProcessorImpl::selectedWindow() const
         }
     }
     return nil;
+}
+
+VideoFrameBufferPool SCKProcessorImpl::framesPool() const
+{
+    return VideoFrameBufferPool{_framesPool};
 }
 
 bool SCKProcessorImpl::changeState(CapturerState state)
@@ -392,9 +400,9 @@ bool SCKProcessorImpl::isMyStream(SCStream* stream) const
 void SCKProcessorImpl::deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer)
 {
     if (isMyStream(stream)) {
-        auto buffer = CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer);
+        auto buffer = CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer, framesPool());
         if (!buffer) {
-            buffer = IOSurfaceBuffer::createFromSampleBuffer(sampleBuffer);
+            buffer = IOSurfaceBuffer::createFromSampleBuffer(sampleBuffer, framesPool());
         }
         if (const auto frame = createVideoFrame(buffer)) {
             _sink.invoke(&CapturerProxySink::OnFrame, frame.value());

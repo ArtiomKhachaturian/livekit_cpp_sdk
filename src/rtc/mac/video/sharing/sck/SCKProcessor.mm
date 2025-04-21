@@ -118,4 +118,12 @@ SCWindow* SCKProcessor::selectedWindow() const
     return nil;
 }
 
+VideoFrameBufferPool SCKProcessor::framesPool() const
+{
+    if (const auto impl = loadImpl()) {
+        return impl->framesPool();
+    }
+    return {};
+}
+
 } // namespace LiveKitCpp

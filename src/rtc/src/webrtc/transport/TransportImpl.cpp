@@ -55,10 +55,7 @@ webrtc::scoped_refptr<webrtc::PeerConnectionInterface> TransportImpl::peerConnec
 
 std::shared_ptr<rtc::Thread> TransportImpl::signalingThread() const
 {
-    if (!closed()) {
-        return _signalingThread.lock();
-    }
-    return {};
+    return _signalingThread.lock();
 }
 
 void TransportImpl::close()

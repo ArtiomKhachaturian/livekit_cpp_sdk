@@ -17,6 +17,7 @@
 #include "Listener.h"
 #include "SCKFramesReceiver.h"
 #include "SCKErrorHandler.h"
+#include "VideoFrameBufferPool.h"
 #include <atomic>
 #include <memory>
 
@@ -40,6 +41,7 @@ namespace LiveKitCpp
 {
 
 class CapturerProxySink;
+class VideoFrameBufferPoolSource;
 
 class SCKProcessorImpl : public std::enable_shared_from_this<SCKProcessorImpl>,
                          public SCKFramesReceiver,
@@ -60,6 +62,7 @@ public:
     void setTargetResolution(int32_t width, int32_t height);
     SCDisplay* selectedScreen() const;
     SCWindow* selectedWindow() const;
+    VideoFrameBufferPool framesPool() const;
 private:
     bool changeState(CapturerState state);
     bool changeExcludedWindow(SCWindow* window);
@@ -80,6 +83,7 @@ private:
     void processPermanentError(SCStream* stream, NSError* error) final;
 private:
     SCStreamConfiguration* const _configuration;
+    const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
     Bricks::SafeObj<CapturerState> _state = CapturerState::Stopped;
     Bricks::Listener<CapturerProxySink*> _sink;
     std::atomic<uint64_t> _targetResolution = 0ULL;

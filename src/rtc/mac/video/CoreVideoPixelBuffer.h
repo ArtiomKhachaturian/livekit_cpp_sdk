@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CoreVideoPixelBuffer.h
+#include "VideoFrameBufferPool.h"
 #include <CoreMedia/CMSampleBuffer.h>
 #include <CoreVideo/CoreVideo.h>
 #include <api/video/i420_buffer.h>
@@ -25,10 +26,11 @@ class CoreVideoPixelBuffer
 {
 public:
     static bool supported(CVPixelBufferRef buffer);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
-        create(CVPixelBufferRef buffer, bool retain = true);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
-        createFromSampleBuffer(CMSampleBufferRef buffer);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(CVPixelBufferRef buffer,
+                                                               VideoFrameBufferPool framesPool = {},
+                                                               bool retain = true);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> createFromSampleBuffer(CMSampleBufferRef buffer,
+                                                                               VideoFrameBufferPool framesPool = {});
     static CVPixelBufferRef pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
                                         bool retain = true);
 };

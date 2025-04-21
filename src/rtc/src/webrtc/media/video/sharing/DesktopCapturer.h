@@ -14,6 +14,7 @@
 #pragma once // DesktopCapturer.h
 #include "CapturerState.h"
 #include "Listener.h"
+#include "VideoFrameBufferPool.h"
 #include <api/video/video_frame.h>
 #include <modules/desktop_capture/desktop_capture_types.h>
 #include <modules/desktop_capture/desktop_geometry.h>
@@ -71,6 +72,8 @@ public:
     virtual void setExcludedWindow(webrtc::WindowId /*window*/) {}
     // sets SharedMemoryFactory that will be used to create buffers for the captured frames
     virtual void setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> /*smf*/) {}
+    // frames pool
+    virtual VideoFrameBufferPool framesPool() const { return {}; }
     void setOutputSink(CapturerProxySink* sink);
     // window or screen capturer
     bool window() const noexcept { return _window; }

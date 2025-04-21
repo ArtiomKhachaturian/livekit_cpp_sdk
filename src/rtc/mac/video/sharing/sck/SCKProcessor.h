@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // SCKProcessor.h
 #include "RtcObject.h"
+#include "VideoFrameBufferPool.h"
 #include <CoreVideo/CoreVideo.h>
 
 #ifdef __OBJC__
@@ -46,6 +47,7 @@ public:
     void setTargetResolution(int32_t width, int32_t height);
     SCDisplay* selectedScreen() const;
     SCWindow* selectedWindow() const;
+    VideoFrameBufferPool framesPool() const;
 };
 
 } // namespace LiveKitCpp

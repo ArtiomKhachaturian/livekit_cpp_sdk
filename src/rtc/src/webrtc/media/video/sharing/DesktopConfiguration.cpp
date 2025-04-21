@@ -125,6 +125,12 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std:
     return {};
 }
 
+std::string_view DesktopConfiguration::logCategory()
+{
+    static const std::string_view category("desktop_sharing");
+    return category;
+}
+
 DesktopCapturer* DesktopConfiguration::enumerator(bool windows) const
 {
     return windows ? _windowsEnumerator.get() : _screensEnumerator.get();

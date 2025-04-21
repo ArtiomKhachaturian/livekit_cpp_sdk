@@ -18,6 +18,11 @@
 namespace LiveKitCpp 
 {
 
+NV12VideoFrameBuffer::NV12VideoFrameBuffer(VideoFrameBufferPool framesPool)
+    : VideoFrameBuffer<webrtc::NV12BufferInterface>(std::move(framesPool))
+{
+}
+
 int NV12VideoFrameBuffer::StrideY() const
 {
     return width();
@@ -36,7 +41,7 @@ const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int width
 
 rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI420() const
 {
-    if (const auto i420 = webrtc::I420Buffer::Create(width(), height())) {
+    if (auto i420 = createI420(width(), height())) {
         static thread_local webrtc::NV12ToI420Scaler scaler;
         scaler.NV12ToI420Scale(DataY(),
                                StrideY(),

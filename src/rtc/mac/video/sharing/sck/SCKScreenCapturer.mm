@@ -111,6 +111,11 @@ void SCKScreenCapturer::setExcludedWindow(webrtc::WindowId wId)
     }
 }
 
+VideoFrameBufferPool SCKScreenCapturer::framesPool() const
+{
+    return _processor->framesPool();
+}
+
 bool SCKScreenCapturer::enumerate()
 {
     @autoreleasepool {

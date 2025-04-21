@@ -59,7 +59,8 @@ class NV12Buffer : public CVBuffer<NV12VideoFrameBuffer>
 {
     using BaseClass = CVBuffer<NV12VideoFrameBuffer>;
 public:
-    NV12Buffer(CVPixelBufferAutoRelease lockedBuffer);
+    NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
+               VideoFrameBufferPool framesPool);
     // impl. of webrtc::NV12BufferInterface
     const uint8_t* DataY() const final { return cvData(0U); }
     const uint8_t* DataUV() const final { return cvData(1U); }
@@ -73,7 +74,9 @@ class RGBBuffer : public CVBuffer<RgbVideoFrameBuffer>
 {
     using BaseClass = CVBuffer<RgbVideoFrameBuffer>;
 public:
-    RGBBuffer(CVPixelBufferAutoRelease lockedBuffer, VideoFrameType rgbFormat);
+    RGBBuffer(CVPixelBufferAutoRelease lockedBuffer,
+              VideoFrameBufferPool framesPool,
+              VideoFrameType rgbFormat);
     // impl. of NativeVideoFrameBuffer
     int width() const final { return static_cast<int>(cvWidth()); }
     int height() const final { return static_cast<int>(cvHeight()); }
@@ -92,7 +95,7 @@ bool CoreVideoPixelBuffer::supported(CVPixelBufferRef buffer)
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
-    create(CVPixelBufferRef buffer, bool retain)
+    create(CVPixelBufferRef buffer, VideoFrameBufferPool framesPool, bool retain)
 {
     if (buffer) {
         const auto format = CVPixelBufferAutoRelease::pixelFormat(buffer);
@@ -100,7 +103,8 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
             CVPixelBufferAutoRelease lockedBuffer(buffer, retain);
             if (lockedBuffer.lock()) {
                 if (isNV12Format(format)) {
-                    return rtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer));
+                    return rtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer),
+                                                             std::move(framesPool));
                 }
                 if (isRGBFormat(format)) {
                     std::optional<VideoFrameType> rgbFormat;
@@ -124,7 +128,9 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
                             break;
                     }
                     if (rgbFormat.has_value()) {
-                        return rtc::make_ref_counted<RGBBuffer>(std::move(lockedBuffer), rgbFormat.value());
+                        return rtc::make_ref_counted<RGBBuffer>(std::move(lockedBuffer),
+                                                                std::move(framesPool),
+                                                                rgbFormat.value());
                     }
                 }
                 lockedBuffer.unlock();
@@ -135,9 +141,9 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
-    createFromSampleBuffer(CMSampleBufferRef buffer)
+    createFromSampleBuffer(CMSampleBufferRef buffer, VideoFrameBufferPool framesPool)
 {
-    return create(CVPixelBufferAutoRelease::imageBuffer(buffer), true);
+    return create(CVPixelBufferAutoRelease::imageBuffer(buffer), std::move(framesPool), true);
 }
 
 CVPixelBufferRef CoreVideoPixelBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
@@ -168,13 +174,16 @@ CVBuffer<TBaseVideoBuffer>::~CVBuffer()
     _lockedBuffer.unlock();
 }
 
-NV12Buffer::NV12Buffer(CVPixelBufferAutoRelease lockedBuffer)
-    : BaseClass(std::move(lockedBuffer))
+NV12Buffer::NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
+                       VideoFrameBufferPool framesPool)
+    : BaseClass(std::move(lockedBuffer), std::move(framesPool))
 {
 }
 
-RGBBuffer::RGBBuffer(CVPixelBufferAutoRelease lockedBuffer, VideoFrameType rgbFormat)
-    : BaseClass(std::move(lockedBuffer), rgbFormat)
+RGBBuffer::RGBBuffer(CVPixelBufferAutoRelease lockedBuffer,
+                     VideoFrameBufferPool framesPool,
+                     VideoFrameType rgbFormat)
+    : BaseClass(std::move(lockedBuffer), std::move(framesPool), rgbFormat)
 {
 }
 

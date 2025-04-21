@@ -185,6 +185,28 @@ bool VideoOptions::preview() const noexcept
     return testFlag<g_previewMode>(_flags);
 }
 
+std::string toString(const VideoOptions& options)
+{
+    std::string desc;
+    if (options) {
+        desc = std::to_string(options._width) + "x" + std::to_string(options._height) +
+               ": " + std::to_string(options._maxFPS) + "fps";
+    }
+    else {
+        desc = "<null>";
+    }
+    if (options._type.has_value()) {
+        desc += ", " + toString(options._type.value());
+    }
+    if (options.preview()) {
+        desc += ", preview ON";
+    }
+    if (options.interlaced()) {
+        desc += ", interlaced ON";
+    }
+    return desc;
+}
+
 bool acceptState(CapturerState currentState, CapturerState newState)
 {
     switch (currentState) {

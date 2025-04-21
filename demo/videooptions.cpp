@@ -50,10 +50,6 @@ void VideoOptions::setResolution(const QSize& resolution) noexcept
 
 QString VideoOptions::toString() const
 {
-    auto desc = tr("%1x%2 %3 fps").arg(width()).arg(height()).arg(maxFPS());
-    if (_impl._type.has_value()) {
-        desc += QStringLiteral(", ") + QString::fromStdString(LiveKitCpp::toString(_impl._type.value()));
-    }
-    return desc;
+    return QString::fromStdString(LiveKitCpp::toString(_impl));
 }
 

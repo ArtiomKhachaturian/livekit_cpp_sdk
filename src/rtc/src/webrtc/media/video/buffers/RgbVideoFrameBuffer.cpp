@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "RgbVideoFrameBuffer.h"
-#include <api/video/i420_buffer.h>
 #include <third_party/libyuv/include/libyuv/convert.h>
 
 namespace LiveKitCpp
 {
 
-RgbVideoFrameBuffer::RgbVideoFrameBuffer(VideoFrameType rgbFormat)
-    : _rgbFormat(rgbFormat)
+RgbVideoFrameBuffer::RgbVideoFrameBuffer(VideoFrameBufferPool framesPool,
+                                         VideoFrameType rgbFormat)
+    : VideoFrameBuffer<NativeVideoFrameBuffer>(std::move(framesPool))
+    , _rgbFormat(rgbFormat)
 {
 }
 
@@ -54,7 +55,7 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> RgbVideoFrameBuffer::convertToI4
                 break;
         }
         if (func) {
-            auto i420 = webrtc::I420Buffer::Create(w, h);
+            auto i420 = createI420(w, h);
             if (i420 && 0 == func(reinterpret_cast<const uint8_t*>(rgb),
                                   stride,
                                   i420->MutableDataY(),

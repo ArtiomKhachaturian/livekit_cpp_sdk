@@ -32,7 +32,10 @@ public:
     void requestCapturer() final;
     void resetCapturer() final;
 protected:
+    // impl. of Bricks::LoggableS<>
+    std::string_view logCategory() const final;
     // overrides of AsyncVideoSourceImpl
+    VideoFrameBufferPool framesPool() const final;
     void onContentHintChanged(VideoContentHint hint) final;
     void onOptionsChanged(const VideoOptions& options) final;
     void onDeviceInfoChanged(const MediaDeviceInfo& info) final;
@@ -40,6 +43,10 @@ protected:
 private:
     void startCapturer();
     void stopCapturer();
+    void logError(const std::unique_ptr<DesktopCapturer>& capturer, const std::string& message) const;
+    void logVerbose(const std::unique_ptr<DesktopCapturer>& capturer, const std::string& message) const;
+    static std::string formatLogMessage(const std::unique_ptr<DesktopCapturer>& capturer, const std::string& message);
+    static std::string capturerTitle(const std::unique_ptr<DesktopCapturer>& capturer);
     static void applyOptions(DesktopCapturer* capturer, const VideoOptions& options);
 private:
     const std::weak_ptr<DesktopConfiguration> _desktopConfiguration;
