@@ -95,7 +95,7 @@ inline void DesktopSimpleCapturer<TCapturer>::setTargetFramerate(int32_t fps)
     if (exchangeVal(fps, _fps) && _timer.started()) {
         _timer.stop();
         if (canStart()) {
-            _timer.start(float(fps));
+            _timer.startWithFramerate(fps);
         }
     }
 }
@@ -105,7 +105,7 @@ inline bool DesktopSimpleCapturer<TCapturer>::start()
 {
     if (!started() && canStart()) {
         _timer.setCallback(this);
-        _timer.start(float(_fps));
+        _timer.startWithFramerate(_fps);
         return true;
     }
     return false;

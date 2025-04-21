@@ -15,7 +15,6 @@
 #include "CVPixelBufferAutoRelease.h"
 #include "NV12VideoFrameBuffer.h"
 #include "RgbVideoFrameBuffer.h"
-#include "VideoMemoryFactory.h"
 #include "VideoUtils.h"
 #include <api/make_ref_counted.h>
 #include <cassert>

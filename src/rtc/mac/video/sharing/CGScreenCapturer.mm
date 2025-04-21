@@ -115,6 +115,7 @@ std::unique_ptr<webrtc::DesktopFrame> CGScreenCapturer::processFrame(std::unique
         if (!frame->may_contain_cursor()) {
             if (const auto composer = std::atomic_load(&_cursorComposer)) {
                 composer->setFrame(std::move(frame));
+                return {};
             }
         }
     }

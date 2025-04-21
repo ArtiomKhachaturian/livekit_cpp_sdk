@@ -240,7 +240,7 @@ bool SCKProcessorImpl::changeState(CapturerState state)
     bool changed = false;
     {
         LOCK_WRITE_SAFE_OBJ(_state);
-        if (acceptState(_state, state)) {
+        if (_state != state && acceptState(_state, state)) {
             _state = state;
             changed = true;
         }

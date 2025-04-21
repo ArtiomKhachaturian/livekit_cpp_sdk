@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "VideoUtils.h"
 #include "CapturerState.h"
-#include "VideoMemoryFactory.h"
+#include <api/video/i420_buffer.h>
 #include "Utils.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include <rtc_base/time_utils.h>
@@ -51,7 +51,7 @@ std::optional<webrtc::VideoFrame> createVideoFrame(int width, int height,
         rtc::scoped_refptr<webrtc::VideoFrameBuffer> buff;
         switch (type) {
             case webrtc::VideoFrameBuffer::Type::kI420:
-                buff = VideoMemoryFactory::allocateI420(width, height);
+                buff = webrtc::I420Buffer::Create(width, height);
                 break;
             case webrtc::VideoFrameBuffer::Type::kI422:
                 buff = webrtc::I422Buffer::Create(width, height);
@@ -69,7 +69,7 @@ std::optional<webrtc::VideoFrame> createVideoFrame(int width, int height,
                 buff = webrtc::I410Buffer::Create(width, height);
                 break;
             case webrtc::VideoFrameBuffer::Type::kNV12:
-                buff = VideoMemoryFactory::allocateNV12(width, height);
+                buff = webrtc::NV12Buffer::Create(width, height);
                 break;
             default:
                 break;
@@ -111,7 +111,7 @@ std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
                                                         const std::optional<webrtc::ColorSpace>& colorSpace)
 {
     if (width > 0 && height > 0) {
-        if (const auto buff = VideoMemoryFactory::allocateI420(width, height)) {
+        if (const auto buff = webrtc::I420Buffer::Create(width, height)) {
             webrtc::I420Buffer::SetBlack(buff.get());
             return createVideoFrame(buff, timeStampMicro, id, colorSpace);
         }

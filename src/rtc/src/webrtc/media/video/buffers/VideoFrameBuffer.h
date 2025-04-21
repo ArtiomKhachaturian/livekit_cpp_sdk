@@ -51,13 +51,13 @@ inline rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBuffer<TBaseBuffer
     if (!mappedTypes.empty()) {
         for (const auto mappedType : mappedTypes) {
             switch (mappedType) {
-            case webrtc::VideoFrameBuffer::Type::kI420:
-                return ToI420();
-            default:
-                if (mappedType == this->type()) {
-                    return rtc::scoped_refptr<webrtc::VideoFrameBuffer>(this);
-                }
-                break;
+                case webrtc::VideoFrameBuffer::Type::kI420:
+                    return ToI420();
+                default:
+                    if (mappedType == this->type()) {
+                        return rtc::scoped_refptr<webrtc::VideoFrameBuffer>(this);
+                    }
+                    break;
             }
         }
     }

@@ -103,7 +103,7 @@ void AsyncMicSourceImpl::onStopped(bool)
 
 void AsyncMicSourceImpl::onMuteChanged(bool, bool mute)
 {
-    webrtc::MediaSourceInterface::SourceState newState = state();
+    webrtc::MediaSourceInterface::SourceState newState;
     if (mute) {
         newState = webrtc::MediaSourceInterface::SourceState::kMuted;
     }

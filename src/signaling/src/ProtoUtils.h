@@ -116,7 +116,7 @@ inline void toProtoRepeated(std::vector<TIn> in, TProtoBufRepeated* out, Conv co
 template <typename TIn, typename TProtoBufRepeated>
 inline void toProtoRepeated(std::vector<TIn> in, TProtoBufRepeated* out) {
     if (out) {
-        toProtoRepeated<TIn, TProtoBufRepeated>(std::move(in), out, [](TIn&& val) ->
+        toProtoRepeated<TIn, TProtoBufRepeated>(std::move(in), out, [](TIn val) ->
                                                 TIn { return std::move(val); });
     }
 }
@@ -135,7 +135,7 @@ inline std::vector<TOut> fromProtoRepeated(TProtoBufRepeated in, Conv conv) {
 
 template <typename TOut, typename TProtoBufRepeated>
 inline std::vector<TOut> fromProtoRepeated(TProtoBufRepeated in) {
-    return fromProtoRepeated<TOut, TProtoBufRepeated>(std::move(in), [](auto&& val) { return std::move(val); });
+    return fromProtoRepeated<TOut, TProtoBufRepeated>(std::move(in), [](auto val) { return std::move(val); });
 }
 
 

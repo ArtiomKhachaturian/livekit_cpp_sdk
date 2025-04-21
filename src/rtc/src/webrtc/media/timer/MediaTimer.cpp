@@ -80,7 +80,7 @@ void MediaTimer::start(uint64_t intervalMs)
     }
 }
 
-void MediaTimer::start(float fps)
+void MediaTimer::startWithFramerate(float fps)
 {
     if (FP_ZERO != std::fpclassify(fps)) {
         start(uint64_t(std::round(1000ULL / fps)));
