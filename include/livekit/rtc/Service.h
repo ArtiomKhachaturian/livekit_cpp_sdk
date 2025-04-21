@@ -51,7 +51,8 @@ public:
     // local media
     std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options = {}) const;
     std::shared_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info = {}, VideoOptions options = {}) const;
-    std::shared_ptr<LocalVideoDevice> createSharing(MediaDeviceInfo info = {}, VideoOptions options = {}) const;
+    std::shared_ptr<LocalVideoDevice> createSharing(bool previewMode,
+                                                    MediaDeviceInfo info = {}, VideoOptions options = {}) const;
     // global media
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;

@@ -36,10 +36,10 @@ qsizetype LocalVideoSourcesModel::addCamera(const MediaDeviceInfo& info, const V
     return -1;
 }
 
-qsizetype LocalVideoSourcesModel::addSharing(const MediaDeviceInfo& info, const VideoOptions& options)
+qsizetype LocalVideoSourcesModel::addSharing(bool previewMode, const MediaDeviceInfo& info, const VideoOptions& options)
 {
     if (const auto service = _service.lock()) {
-        return addDevice(service->createSharing(info, options));
+        return addDevice(service->createSharing(previewMode, info, options));
     }
     return -1;
 }
@@ -73,8 +73,6 @@ qsizetype LocalVideoSourcesModel::addDevice(std::shared_ptr<LiveKitCpp::LocalVid
 ConnectionFormVideoModel::ConnectionFormVideoModel(QObject* parent)
     : LocalVideoSourcesModel(parent)
 {
-    _camera._options.setPreview(true);
-    _sharing._options.setPreview(true);
 }
 
 void ConnectionFormVideoModel::setActive(bool active)
@@ -157,7 +155,6 @@ void ConnectionFormVideoModel::setOptions(DeviceData* data, const VideoOptions& 
 {
     if (data && data->_options != options) {
         data->_options = options;
-        data->_options.setPreview(true);
         if (data->_source) {
             data->_source->setOptions(options);
         }
@@ -170,7 +167,7 @@ void ConnectionFormVideoModel::addSource(DeviceData* data)
     if (data && data->_active && !data->_source) {
         qsizetype index = -1;
         if (&_sharing == data) {
-            index = addSharing(data->_info, data->_options);
+            index = addSharing(true, data->_info, data->_options);
         }
         else if (&_camera == data) {
             index = addCamera(data->_info, data->_options);
@@ -195,7 +192,6 @@ void ConnectionFormVideoModel::removeSource(DeviceData* data)
 SharingsVideoModel::SharingsVideoModel(QObject* parent)
     : LocalVideoSourcesModel(parent)
 {
-    _options.setPreview(true);
 }
 
 MediaDeviceInfo SharingsVideoModel::deviceInfo(qsizetype index) const
@@ -229,7 +225,6 @@ void SharingsVideoModel::setOptions(const VideoOptions& options)
 {
     if (_options != options) {
         _options = options;
-        _options.setPreview(true);
         for (int i = 0; i < rowCount(); ++i) {
             if (const auto device = qobject_cast<LocalVideoDevice*>(itemAt(i))) {
                 device->setOptions(_options);
@@ -253,9 +248,8 @@ void SharingsVideoModel::resetContent()
             default:
                 break;
         }
-        Q_ASSERT(_options.preview());
         for (qsizetype i = 0; i < devices.size(); ++i) {
-            addSharing(devices[i], _options);
+            addSharing(true, devices[i], _options);
         }
     }
 }

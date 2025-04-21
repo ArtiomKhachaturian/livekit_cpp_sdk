@@ -28,6 +28,7 @@ SCKScreenCapturer::SCKScreenCapturer(webrtc::DesktopCaptureOptions options,
     : MacDesktopCapturer(false, std::move(options), framesPool)
     , _processor(std::make_unique<SCKProcessor>(screenQueueMaxLen(), std::move(framesPool)))
 {
+    _processor->setShowCursor(this->options().prefer_cursor_embedded());
     _processor->setOutputSink(this);
 }
 
@@ -84,11 +85,6 @@ bool SCKScreenCapturer::started() const
 void SCKScreenCapturer::stop()
 {
     _processor->stop();
-}
-
-void SCKScreenCapturer::setPreviewMode(bool preview)
-{
-    _processor->setShowCursor(!preview);
 }
 
 void SCKScreenCapturer::setTargetFramerate(int32_t fps)

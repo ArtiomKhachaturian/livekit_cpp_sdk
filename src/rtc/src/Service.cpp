@@ -63,7 +63,8 @@ public:
 class AsyncSharingSource : public AsyncVideoSource
 {
 public:
-    AsyncSharingSource(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
+    AsyncSharingSource(bool previewMode,
+                       std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                        std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                        const std::shared_ptr<Bricks::Logger>& logger);
     // impl. of webrtc::VideoTrackSourceInterface
@@ -86,7 +87,8 @@ public:
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
     std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options) const;
     std::shared_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info, VideoOptions options) const;
-    std::shared_ptr<LocalVideoDevice> createSharing(MediaDeviceInfo info, VideoOptions options) const;
+    std::shared_ptr<LocalVideoDevice> createSharing(bool previewMode, MediaDeviceInfo info,
+                                                    VideoOptions options) const;
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
     bool setAudioRecordingDevice(const MediaDeviceInfo& info);
@@ -125,7 +127,7 @@ protected:
     std::string_view logCategory() const final { return g_logCategory; }
 private:
     webrtc::scoped_refptr<LocalWebRtcTrack> createCameraTrack() const;
-    webrtc::scoped_refptr<LocalWebRtcTrack> createSharingTrack() const;
+    webrtc::scoped_refptr<LocalWebRtcTrack> createSharingTrack(bool previewMode) const;
     uint32_t recordingDevAudioVolume() const;
     uint32_t playoutDevAudioVolume() const noexcept;
     void updateAdmVolume(bool recording, uint32_t volume) const;
@@ -200,10 +202,12 @@ std::shared_ptr<LocalVideoDevice> Service::createCamera(MediaDeviceInfo info, Vi
     return {};
 }
 
-std::shared_ptr<LocalVideoDevice> Service::createSharing(MediaDeviceInfo info, VideoOptions options) const
+std::shared_ptr<LocalVideoDevice> Service::createSharing(bool previewMode,
+                                                         MediaDeviceInfo info,
+                                                         VideoOptions options) const
 {
     if (_impl) {
-        return _impl->createSharing(std::move(info), std::move(options));
+        return _impl->createSharing(previewMode, std::move(info), std::move(options));
     }
     return {};
 }
@@ -445,10 +449,11 @@ std::shared_ptr<LocalVideoDevice> Service::Impl::createCamera(MediaDeviceInfo in
     return {};
 }
 
-std::shared_ptr<LocalVideoDevice> Service::Impl::createSharing(MediaDeviceInfo info,
+std::shared_ptr<LocalVideoDevice> Service::Impl::createSharing(bool previewMode,
+                                                               MediaDeviceInfo info,
                                                                VideoOptions options) const
 {
-    if (auto track = createSharingTrack()) {
+    if (auto track = createSharingTrack(previewMode)) {
         track->setOptions(std::move(options));
         track->setDeviceInfo(std::move(info));
         return std::make_shared<LocalVideoDeviceImpl>(std::move(track));
@@ -761,10 +766,11 @@ webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createCameraTrack() const
     return {};
 }
 
-webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createSharingTrack() const
+webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createSharingTrack(bool previewMode) const
 {
     if (_pcf && _desktopConfiguration) {
-        auto source = webrtc::make_ref_counted<AsyncSharingSource>(_desktopConfiguration,
+        auto source = webrtc::make_ref_counted<AsyncSharingSource>(previewMode,
+                                                                   _desktopConfiguration,
                                                                    _pcf->signalingThread(),
                                                                    logger());
         return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
@@ -877,10 +883,12 @@ AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signal
 {
 }
 
-AsyncSharingSource::AsyncSharingSource(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
+AsyncSharingSource::AsyncSharingSource(bool previewMode,
+                                       std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                                        std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : AsyncVideoSource(std::make_shared<AsyncSharingSourceImpl>(std::move(desktopConfiguration),
+    : AsyncVideoSource(std::make_shared<AsyncSharingSourceImpl>(previewMode,
+                                                                std::move(desktopConfiguration),
                                                                 std::move(signalingQueue),
                                                                 logger))
 {

@@ -13,7 +13,6 @@ public:
     Q_PROPERTY(qint32 height READ height WRITE setHeight)
     Q_PROPERTY(qint32 maxFPS READ maxFPS WRITE setMaxFPS)
     Q_PROPERTY(bool interlaced READ interlaced WRITE setInterlaced)
-    Q_PROPERTY(bool preview READ preview WRITE setPreview)
     Q_PROPERTY(QSize resolution READ resolution WRITE setResolution)
 public:
     VideoOptions() = default;
@@ -34,10 +33,8 @@ public:
     Q_INVOKABLE qint32 width() const noexcept { return _impl._width; }
     Q_INVOKABLE qint32 height() const noexcept { return _impl._height; }
     Q_INVOKABLE qint32 maxFPS() const noexcept { return _impl._maxFPS; }
-    Q_INVOKABLE bool interlaced() const noexcept { return _impl.interlaced(); }
-    Q_INVOKABLE bool preview() const noexcept { return _impl.preview(); }
-    Q_INVOKABLE void setInterlaced(bool interlaced) { _impl.setInterlaced(interlaced); }
-    Q_INVOKABLE void setPreview(bool preview) { _impl.setPreview(preview); }
+    Q_INVOKABLE bool interlaced() const noexcept { return _impl._interlaced; }
+    Q_INVOKABLE void setInterlaced(bool interlaced) { _impl._interlaced = interlaced; }
     Q_INVOKABLE void setWidth(qint32 width) noexcept { _impl._width = width; }
     Q_INVOKABLE void setHeight(qint32 height) noexcept { _impl._height = height; }
     Q_INVOKABLE void setMaxFPS(qint32 maxFps) noexcept { _impl._maxFPS = maxFps; }

@@ -35,7 +35,6 @@ public:
     bool start() final;
     bool started() const final;
     void stop() final;
-    void setPreviewMode(bool preview) final;
     void setTargetFramerate(int32_t fps) final;
     void setTargetResolution(int32_t width, int32_t height) final;
     void setExcludedWindow(webrtc::WindowId window) final;

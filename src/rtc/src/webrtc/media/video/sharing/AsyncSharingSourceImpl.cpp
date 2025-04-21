@@ -19,10 +19,12 @@
 namespace LiveKitCpp
 {
 
-AsyncSharingSourceImpl::AsyncSharingSourceImpl(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
+AsyncSharingSourceImpl::AsyncSharingSourceImpl(bool previewMode,
+                                               std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                                                std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                                const std::shared_ptr<Bricks::Logger>& logger)
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger)
+    , _previewMode(previewMode)
     , _desktopConfiguration(std::move(desktopConfiguration))
 {
 }
@@ -35,11 +37,11 @@ void AsyncSharingSourceImpl::requestCapturer()
             std::unique_ptr<DesktopCapturer> capturer;
             LOCK_WRITE_SAFE_OBJ(_capturer);
             if (!_capturer.constRef()) {
-                capturer = conf->createCapturer(devInfo._guid, framesPool());
+                capturer = conf->createCapturer(devInfo._guid, !_previewMode, framesPool());
             }
             else if (!conf->hasTheSameType(_capturer.constRef()->selectedSource(), devInfo._guid)) {
                 stopCapturer();
-                capturer = conf->createCapturer(devInfo._guid, framesPool());
+                capturer = conf->createCapturer(devInfo._guid, !_previewMode, framesPool());
             }
             if (capturer) {
                 applyOptions(capturer.get(), options());
@@ -134,7 +136,7 @@ void AsyncSharingSourceImpl::startCapturer()
                 if (capturer->start()) {
                     logVerbose(capturer, "has been started with caps [" + optionsText + "]");
                     notify(&MediaDeviceListener::onMediaStarted);
-                    if (!options().preview()) {
+                    if (!_previewMode) {
                         capturer->focusOnSelectedSource();
                     }
                 }
@@ -203,7 +205,6 @@ void AsyncSharingSourceImpl::applyOptions(DesktopCapturer* capturer,
                                           const VideoOptions& options)
 {
     if (capturer) {
-        capturer->setPreviewMode(options.preview());
         capturer->setTargetResolution(options._width, options._height);
         capturer->setTargetFramerate(DesktopConfiguration::boundFramerate(options._maxFPS));
     }

@@ -36,23 +36,20 @@ public:
                      VideoFrameBufferPool framesPool = {});
     ~CGScreenCapturer() final;
     // overrides & impl. of DesktopCapturer
-    void setPreviewMode(bool preview) final;
     bool selectSource(const std::string& source) final;
     std::string selectedSource() const final { return screenIdToString(_source); }
 protected:
     void captureNextFrame() final;
     bool canStart() const final;
 private:
-    void allocateCursorComposer();
-    void destroyCursorComposer();
     webrtc::DesktopVector dpi() const;
     std::unique_ptr<webrtc::DesktopFrame> processFrame(std::unique_ptr<webrtc::DesktopFrame> frame) const;
     // impl. of webrtc::DesktopCapturer::Callback
     void OnCaptureResult(webrtc::DesktopAndCursorComposer::Result result,
                          std::unique_ptr<webrtc::DesktopFrame> frame) final;
 private:
+    const std::unique_ptr<DesktopWebRTCCursorComposer> _cursorComposer;
     std::atomic<webrtc::ScreenId> _source = webrtc::kInvalidScreenId;
-    std::shared_ptr<DesktopWebRTCCursorComposer> _cursorComposer;
 };
 	
 } // namespace LiveKitCpp

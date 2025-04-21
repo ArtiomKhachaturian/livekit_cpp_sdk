@@ -248,7 +248,7 @@ void Session::addSharingTrack()
 {
     if (_impl) {
         if (const auto service = getService()) {
-            auto device = service->createSharing(sharingDeviceInfo(), sharingOptions());
+            auto device = service->createSharing(false, sharingDeviceInfo(), sharingOptions());
             const auto track = _impl->addVideoTrack(std::move(device), _encryption);
             _localParticipant->activateSharing(track);
         }

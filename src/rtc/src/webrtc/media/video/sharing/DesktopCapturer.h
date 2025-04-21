@@ -41,9 +41,6 @@ public:
     virtual std::optional<webrtc::WindowId> windowIdFromString(const std::string& str) const;
     virtual std::optional<webrtc::ScreenId> screenIdFromString(const std::string& str) const;
     virtual void setContentHint(VideoContentHint /*hint*/) {}
-    // tells that capturer will work in preview mode and client expects
-    // that system cursor and selection frame (if any) will not be captured in resulted frames
-    virtual void setPreviewMode(bool /*preview*/) {}
     // return null opt in case of a failure, title maybe empty for some windows
     virtual std::optional<std::string> title(const std::string& source) const;
     // max expected frame rate for this capturer

@@ -34,7 +34,6 @@ public:
                           VideoFrameBufferPool framesPool = {});
     ~DesktopWebRTCCapturer() override;
     // overrides & impl. of DesktopCapturer
-    void setPreviewMode(bool preview) final { _previewMode = preview; }
     bool selectSource(const std::string& source) final;
     std::string selectedSource() const final;
     void stop() final;
@@ -56,7 +55,6 @@ private:
     Bricks::SafeSharedPtr<webrtc::DesktopCapturer> _capturer;
     Bricks::SafeUniquePtr<webrtc::SharedMemoryFactory> _smf;
     std::atomic<intptr_t> _source;
-    std::atomic_bool _previewMode = false;
     std::atomic_bool _focusOnSelectedSource = false;
     std::atomic<webrtc::WindowId> _excludeWindowId = webrtc::kNullWindowId;
 };

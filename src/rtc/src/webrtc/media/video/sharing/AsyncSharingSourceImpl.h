@@ -24,7 +24,8 @@ class DesktopConfiguration;
 class AsyncSharingSourceImpl : public AsyncVideoSourceImpl
 {
 public:
-    AsyncSharingSourceImpl(std::weak_ptr<DesktopConfiguration> desktopConfiguration,
+    AsyncSharingSourceImpl(bool previewMode,
+                           std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                            std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                            const std::shared_ptr<Bricks::Logger>& logger);
     ~AsyncSharingSourceImpl() final { close(); }
@@ -48,6 +49,7 @@ private:
     static std::string capturerTitle(const std::unique_ptr<DesktopCapturer>& capturer);
     static void applyOptions(DesktopCapturer* capturer, const VideoOptions& options);
 private:
+    const bool _previewMode;
     const std::weak_ptr<DesktopConfiguration> _desktopConfiguration;
     Bricks::SafeUniquePtr<DesktopCapturer> _capturer;
 };

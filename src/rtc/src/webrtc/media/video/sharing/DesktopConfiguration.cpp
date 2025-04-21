@@ -24,8 +24,8 @@ namespace LiveKitCpp
 {
 
 DesktopConfiguration::DesktopConfiguration()
-    : _screensEnumerator(createRawCapturer(false, {}, false))
-    , _windowsEnumerator(createRawCapturer(true, {}, true))
+    : _screensEnumerator(createRawCapturer(false, false))
+    , _windowsEnumerator(createRawCapturer(true, false))
 {
 }
 
@@ -110,16 +110,16 @@ bool DesktopConfiguration::hasTheSameType(const MediaDeviceInfo& l, const MediaD
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std::string& guid,
+                                                                      bool embeddedCursor,
                                                                       VideoFrameBufferPool framesPool,
-                                                                      bool selectSource,
-                                                                      bool lightweightOptions)
+                                                                      bool selectSource)
 {
     std::unique_ptr<DesktopCapturer> capturer;
     if (deviceIsScreen(guid)) {
-        capturer = createRawCapturer(false, std::move(framesPool), lightweightOptions);
+        capturer = createRawCapturer(false, embeddedCursor, std::move(framesPool));
     }
     else if (deviceIsWindow(guid)) {
-        capturer = createRawCapturer(true, std::move(framesPool), lightweightOptions);
+        capturer = createRawCapturer(true, embeddedCursor, std::move(framesPool));
     }
     if (capturer && (!selectSource || capturer->selectSource(guid))) {
         return capturer;
@@ -149,12 +149,13 @@ DesktopCapturer* DesktopConfiguration::enumerator(bool windows) const
     return windows ? _windowsEnumerator.get() : _screensEnumerator.get();
 }
 
-webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweightMode)
+webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool embeddedCursor)
 {
     auto options = webrtc::DesktopCaptureOptions::CreateDefault();
     // Leave desktop effects enabled during WebRTC captures.
     options.set_disable_effects(false);
     options.set_detect_updated_region(false);
+    options.set_prefer_cursor_embedded(embeddedCursor);
     // only pure GDI capturers works stable on all devices (enumeration based on device indices)
 #ifdef WEBRTC_WIN
     options.set_allow_wgc_capturer(false);
@@ -164,32 +165,28 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool lightweight
 #elif defined(WEBRTC_MAC)
     options.set_allow_iosurface(true);
     options.set_allow_sck_capturer(true);
-    if (lightweightMode) {
-        options.set_full_screen_window_detector(nullptr);
-        options.set_configuration_monitor(nullptr);
-    }
 #endif
     return options;
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool window,
-                                                                         VideoFrameBufferPool framesPool,
-                                                                         bool lightweightOptions)
+                                                                         bool embeddedCursor,
+                                                                         VideoFrameBufferPool framesPool)
 {
     std::unique_ptr<DesktopCapturer> impl;
 #ifdef WEBRTC_MAC
     if (!window) {
         if (SCKScreenCapturer::available()) {
-            return std::make_unique<SCKScreenCapturer>(makeOptions(lightweightOptions),
+            return std::make_unique<SCKScreenCapturer>(makeOptions(embeddedCursor),
                                                        std::move(framesPool));
         }
-        return std::make_unique<CGScreenCapturer>(makeOptions(lightweightOptions),
+        return std::make_unique<CGScreenCapturer>(makeOptions(embeddedCursor),
                                                   commonSharedQueue(),
                                                   std::move(framesPool));
     }
 #endif
     if (!impl) {
-        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(lightweightOptions),
+        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(embeddedCursor),
                                                        commonSharedQueue(), std::move(framesPool));
     }
     return impl;

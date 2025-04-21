@@ -131,7 +131,6 @@ Pane {
     Component.onCompleted: {
         deviceInfo = app.emptyDeviceInfo()
         options = app.emptyVideoOptions()
-        options.preview = true
     }
 
     onVisibleChanged: {

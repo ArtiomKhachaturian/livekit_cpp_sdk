@@ -29,7 +29,8 @@ public:
     explicit LocalVideoSourcesModel(QObject* parent = nullptr);
     Q_INVOKABLE qsizetype addCamera(const MediaDeviceInfo& info = {},
                                     const VideoOptions& options = {});
-    Q_INVOKABLE qsizetype addSharing(const MediaDeviceInfo& info,
+    Q_INVOKABLE qsizetype addSharing(bool previewMode,
+                                     const MediaDeviceInfo& info,
                                      const VideoOptions& options = {});
     Q_INVOKABLE bool removeDevice(qsizetype index) { return removeAt(index); }
     Q_INVOKABLE QList<MediaDeviceInfo> screens() const;

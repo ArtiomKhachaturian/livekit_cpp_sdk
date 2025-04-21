@@ -26,14 +26,6 @@
 #include <api/video/i444_buffer.h>
 #include <cassert>
 
-namespace
-{
-
-inline constexpr unsigned g_interlaced  = 0x0001;
-inline constexpr unsigned g_previewMode = 0x0002;
-
-}
-
 namespace LiveKitCpp
 {
 
@@ -155,36 +147,6 @@ VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint)
     return VideoContentHint::None;
 }
 
-void VideoOptions::setInterlaced(bool interlaced)
-{
-    if (interlaced) {
-        _flags |= g_interlaced;
-    }
-    else {
-        _flags &= ~g_interlaced;
-    }
-}
-
-void VideoOptions::setPreview(bool interlaced)
-{
-    if (interlaced) {
-        _flags |= g_previewMode;
-    }
-    else {
-        _flags &= ~g_previewMode;
-    }
-}
-
-bool VideoOptions::interlaced() const noexcept
-{
-    return testFlag<g_interlaced>(_flags);
-}
-
-bool VideoOptions::preview() const noexcept
-{
-    return testFlag<g_previewMode>(_flags);
-}
-
 std::string toString(const VideoOptions& options)
 {
     std::string desc;
@@ -198,10 +160,7 @@ std::string toString(const VideoOptions& options)
     if (options._type.has_value()) {
         desc += ", " + toString(options._type.value());
     }
-    if (options.preview()) {
-        desc += ", preview ON";
-    }
-    if (options.interlaced()) {
+    if (options._interlaced) {
         desc += ", interlaced ON";
     }
     return desc;

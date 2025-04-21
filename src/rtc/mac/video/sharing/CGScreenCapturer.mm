@@ -28,32 +28,30 @@ namespace LiveKitCpp
 
 CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options,
                                    VideoFrameBufferPool framesPool)
-    : Base(false, std::move(options), std::move(framesPool))
+    : Base(false, options, std::move(framesPool))
+    , _cursorComposer(options.prefer_cursor_embedded() ? new DesktopWebRTCCursorComposer(options) : nullptr)
 {
-    allocateCursorComposer();
+    if (_cursorComposer) {
+        _cursorComposer->setCallback(this);
+    }
 }
 
 CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options,
                                    std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                                    VideoFrameBufferPool framesPool)
-    : Base(false, std::move(options), std::move(timerQueue), std::move(framesPool))
+    : Base(false, options, std::move(timerQueue), std::move(framesPool))
+    , _cursorComposer(options.prefer_cursor_embedded() ? new DesktopWebRTCCursorComposer(options) : nullptr)
 {
-    allocateCursorComposer();
+    if (_cursorComposer) {
+        _cursorComposer->setCallback(this);
+    }
 }
 
 CGScreenCapturer::~CGScreenCapturer()
 {
     stop();
-    destroyCursorComposer();
-}
-
-void CGScreenCapturer::setPreviewMode(bool preview)
-{
-    if (preview) {
-        destroyCursorComposer();
-    }
-    else {
-        allocateCursorComposer();
+    if (_cursorComposer) {
+        _cursorComposer->setCallback(nullptr);
     }
 }
 
@@ -79,19 +77,6 @@ bool CGScreenCapturer::canStart() const
     return Base::canStart() && validScreenId(_source);
 }
 
-void CGScreenCapturer::allocateCursorComposer()
-{
-    webrtc::DesktopCapturer::Callback* callback = this;
-    std::atomic_store(&_cursorComposer, std::make_shared<DesktopWebRTCCursorComposer>(options(), callback));
-}
-
-void CGScreenCapturer::destroyCursorComposer()
-{
-    if (auto composer = std::atomic_exchange(&_cursorComposer, std::shared_ptr<DesktopWebRTCCursorComposer>{})) {
-        composer->setCallback(nullptr);
-    }
-}
-
 webrtc::DesktopVector CGScreenCapturer::dpi() const
 {
     auto dpiVal = webrtc::kStandardDPI;
@@ -114,11 +99,9 @@ std::unique_ptr<webrtc::DesktopFrame> CGScreenCapturer::processFrame(std::unique
 {
     if (frame) {
         frame->set_dpi(dpi());
-        if (!frame->may_contain_cursor()) {
-            if (const auto composer = std::atomic_load(&_cursorComposer)) {
-                composer->setFrame(std::move(frame));
-                return {};
-            }
+        if (!frame->may_contain_cursor() && _cursorComposer) {
+            _cursorComposer->setFrame(std::move(frame));
+            return {};
         }
     }
     return frame;

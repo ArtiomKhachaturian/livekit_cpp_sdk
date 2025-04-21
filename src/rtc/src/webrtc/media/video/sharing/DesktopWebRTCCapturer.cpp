@@ -143,7 +143,7 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(b
                 capturer = webrtc::DesktopCapturer::CreateScreenCapturer(options());
             }
             if (capturer) {
-                if (!_previewMode) {
+                if (options().prefer_cursor_embedded()) {
                     capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(std::move(capturer), options());
                 }
                 if (capturer->SelectSource(_source)) {
