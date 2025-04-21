@@ -36,6 +36,13 @@ Pane {
     contentItem: ColumnLayout {
         anchors.fill: parent
 
+        CheckBox {
+            id: liveChangesChx
+            Layout.fillWidth: true
+            text: qsTr("Live changes")
+            checked: true
+        }
+
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Camera")
@@ -44,12 +51,22 @@ Pane {
                 CameraModelComboBox {
                     id: cameraModelComboBox
                     Layout.fillWidth: true
+                    onCurrentIndexChanged: {
+                        if (liveChangesChx.checked) {
+                            root.accepted()
+                        }
+                    }
                 }
 
                 CameraOptionsComboBox {
                     id: cameraOptionsComboBox
                     deviceInfo: cameraModelComboBox.deviceInfo
                     Layout.fillWidth: true
+                    onCurrentIndexChanged: {
+                        if (liveChangesChx.checked) {
+                            root.accepted()
+                        }
+                    }
                 }
 
                 CheckBox {
@@ -68,6 +85,11 @@ Pane {
                     id: sharingOrigResChx
                     text: qsTr("Original resolution (width x height)")
                     checked: true
+                    onCheckedChanged: {
+                        if (liveChangesChx.checked && checked) {
+                            root.accepted()
+                        }
+                    }
                 }
                 ValueControl {
                     id: sharingResWidth
@@ -76,6 +98,11 @@ Pane {
                     stepSize: 64
                     value: 1920
                     enabled: !sharingOrigResChx.checked
+                    onValueChanged: {
+                        if (liveChangesChx.checked && enabled) {
+                            root.accepted()
+                        }
+                    }
                 }
                 ValueControl {
                     id: sharingResHeight
@@ -84,11 +111,21 @@ Pane {
                     stepSize: sharingResWidth.stepSize
                     value: 1080
                     enabled: sharingResWidth.enabled
+                    onValueChanged: {
+                        if (liveChangesChx.checked && enabled) {
+                            root.accepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: defaultFpsChx
                     text: qsTr("Framerate by default")
                     checked: true
+                    onCheckedChanged: {
+                        if (liveChangesChx.checked && checked) {
+                            root.accepted()
+                        }
+                    }
                 }
                 ValueControl {
                     id: sharingFps
@@ -97,6 +134,11 @@ Pane {
                     stepSize: 5
                     value: 30
                     enabled: !defaultFpsChx.checked
+                    onValueChanged: {
+                        if (liveChangesChx.checked && enabled) {
+                            root.accepted()
+                        }
+                    }
                 }
             }
         }
@@ -111,26 +153,51 @@ Pane {
                     id: echoCancellationChx
                     text: qsTr("Echo cancellation")
                     tristate: true
+                    onCheckStateChanged: {
+                        if (liveChangesChx.checked) {
+                            root.accepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: autoGainControlChx
                     text: qsTr("Auto gain control")
                     tristate: true
+                    onCheckStateChanged: {
+                        if (liveChangesChx.checked) {
+                            root.accepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: noiseSuppressionChx
                     text: qsTr("Noise suppression")
                     tristate: true
+                    onCheckStateChanged: {
+                        if (liveChangesChx.checked) {
+                            root.accepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: highpassFilterChx
                     text: qsTr("Highpass filter")
                     tristate: true
+                    onCheckStateChanged: {
+                        if (liveChangesChx.checked) {
+                            root.accepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: stereoSwappingChx
                     text: qsTr("Stereo swapping")
                     tristate: true
+                    onCheckStateChanged: {
+                        if (liveChangesChx.checked) {
+                            root.accepted()
+                        }
+                    }
                 }
             }
         }
