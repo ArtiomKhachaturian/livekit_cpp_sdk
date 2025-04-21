@@ -187,7 +187,7 @@ void SCKProcessorImpl::setShowCursor(bool show)
 void SCKProcessorImpl::setTargetFramerate(int32_t fps)
 {
     if (fps > 0) {
-        const auto interval = CMTimeMake(uint64_t(std::round(1000ULL / fps)), rtc::kNumMillisecsPerSec);
+        const auto interval = CMTimeMake(1, fps);
         if (0 != CMTimeCompare(interval, _configuration.minimumFrameInterval)) {
             _configuration.minimumFrameInterval = interval;
             updateConfiguration();
