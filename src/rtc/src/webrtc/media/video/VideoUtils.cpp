@@ -202,4 +202,48 @@ bool acceptState(CapturerState currentState, CapturerState newState)
     return false;
 }
 
+#ifdef WEBRTC_MAC
+bool isNV12Format(OSType format)
+{
+    switch (format) {
+        case formatNV12Full():
+        case formatNV12Video():
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+bool isRGB24Format(OSType format)
+{
+    switch (format) {
+        case formatRGB24():
+        case formatBGR24():
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+bool isRGB32Format(OSType format)
+{
+    switch (format) {
+        case formatBGRA32():
+        case formatARGB32():
+        case formatRGBA32():
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+bool isSupportedFormat(OSType format)
+{
+    return isNV12Format(format) || isRGBFormat(format);
+}
+#endif
+
 } // namespace LiveKitCpp

@@ -14,7 +14,7 @@
 #include "IOSurfaceBuffer.h"
 #include "CFAutoRelease.h"
 #include "NV12VideoFrameBuffer.h"
-#include "CoreVideoPixelBuffer.h"
+#include "VideoUtils.h"
 #include <api/make_ref_counted.h>
 
 namespace {
@@ -37,20 +37,14 @@ public:
     size_t surfaceWidth() const { return IOSurfaceGetWidth(_buffer.ref()); }
     size_t surfaceHeight() const { return IOSurfaceGetHeight(_buffer.ref()); }
     size_t surfaceStride() const { return IOSurfaceGetBytesPerRow(_buffer.ref()); }
-    size_t surfaceStride(size_t planeIndex) const { return IOSurfaceGetBytesPerRowOfPlane(_buffer.ref(), planeIndex); }
-    const uint8_t* surfaceData() const {
-        return reinterpret_cast<const uint8_t*>(IOSurfaceGetBaseAddress(_buffer.ref()));
-    }
-    const uint8_t* surfaceData(size_t planeIndex) const {
-        return reinterpret_cast<const uint8_t*>(IOSurfaceGetBaseAddressOfPlane(_buffer.ref(), planeIndex));
-    }
+    size_t surfaceStride(size_t planeIndex) const;
+    const uint8_t* surfaceData() const;
+    const uint8_t* surfaceData(size_t planeIndex) const;
     // impl. of IOSurfaceBufferAccessor
     IOSurfaceRef buffer(bool retain) const final { return _buffer.ref(retain); }
-    
 protected:
     template <class... AdditionalArgs>
     IOSurfaceBufferHolder(IOSurfaceRef buffer, bool retain, AdditionalArgs&&... additionalArgs);
-    
 private:
     const CFAutoRelease<IOSurfaceRef> _buffer;
 };
@@ -92,7 +86,7 @@ namespace LiveKitCpp
 
 bool IOSurfaceBuffer::supported(IOSurfaceRef buffer)
 {
-    return buffer && CoreVideoPixelBuffer::isSupportedFormat(IOSurfaceGetPixelFormat(buffer));
+    return buffer && isSupportedFormat(IOSurfaceGetPixelFormat(buffer));
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::create(IOSurfaceRef buffer,
@@ -144,6 +138,24 @@ IOSurfaceBufferHolder<TBaseVideoBuffer>::~IOSurfaceBufferHolder()
 {
     IOSurfaceUnlock(_buffer.ref(), kIOSurfaceLockReadOnly, nullptr);
     IOSurfaceDecrementUseCount(_buffer.ref());
+}
+
+template<class TBaseVideoBuffer>
+size_t IOSurfaceBufferHolder<TBaseVideoBuffer>::surfaceStride(size_t planeIndex) const
+{
+    return IOSurfaceGetBytesPerRowOfPlane(_buffer.ref(), planeIndex);
+}
+
+template<class TBaseVideoBuffer>
+const uint8_t* IOSurfaceBufferHolder<TBaseVideoBuffer>::surfaceData() const
+{
+    return reinterpret_cast<const uint8_t*>(IOSurfaceGetBaseAddress(_buffer.ref()));
+}
+
+template<class TBaseVideoBuffer>
+const uint8_t* IOSurfaceBufferHolder<TBaseVideoBuffer>::surfaceData(size_t planeIndex) const
+{
+    return reinterpret_cast<const uint8_t*>(IOSurfaceGetBaseAddressOfPlane(_buffer.ref(), planeIndex));
 }
 
 NV12IOSurfaceBuffer::NV12IOSurfaceBuffer(IOSurfaceRef buffer, bool retain)

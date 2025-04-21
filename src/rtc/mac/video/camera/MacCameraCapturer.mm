@@ -16,7 +16,6 @@
 #include "CameraManager.h"
 #include "Listener.h"
 #include "VideoUtils.h"
-#include "CoreVideoPixelBuffer.h"
 #include "Utils.h"
 #include "livekit/rtc/media/VideoContentHint.h"
 #include <modules/video_capture/video_capture_config.h>
@@ -263,20 +262,20 @@ bool MacCameraCapturer::CaptureStarted()
 webrtc::VideoType MacCameraCapturer::fromMediaSubType(OSType type)
 {
     switch (type) {
-        case CoreVideoPixelBuffer::formatNV12Video():
-        case CoreVideoPixelBuffer::formatNV12Full():
+        case formatNV12Video():
+        case formatNV12Full():
             return webrtc::VideoType::kNV12;
-        case CoreVideoPixelBuffer::formatYUY2():
+        case formatYUY2():
             return webrtc::VideoType::kYUY2;
-        case CoreVideoPixelBuffer::formatI420():
+        case formatI420():
             return webrtc::VideoType::kI420;
-        case CoreVideoPixelBuffer::formatUYVY():
+        case formatUYVY():
             return webrtc::VideoType::kUYVY;
-        case CoreVideoPixelBuffer::formatRGB24(): // kCVPixelFormatType_24RGB
+        case formatRGB24(): // kCVPixelFormatType_24RGB
             return webrtc::VideoType::kRGB24;
-        case CoreVideoPixelBuffer::formatBGRA32(): // kCVPixelFormatType_32BGRA
+        case formatBGRA32(): // kCVPixelFormatType_32BGRA
             return webrtc::VideoType::kBGRA;
-        case CoreVideoPixelBuffer::formatARGB32():
+        case formatARGB32():
             return webrtc::VideoType::kARGB;
         default:
             break;

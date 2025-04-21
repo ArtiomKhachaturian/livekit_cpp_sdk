@@ -55,7 +55,7 @@ SCKProcessorImpl::SCKProcessorImpl(int queueDepth)
     _configuration.queueDepth = queueDepth;
     _configuration.colorSpaceName = kCGColorSpaceSRGB;
     _configuration.colorMatrix = kCGDisplayStreamYCbCrMatrix_SMPTE_240M_1995;
-    _configuration.pixelFormat = CoreVideoPixelBuffer::formatBGRA32();
+    _configuration.pixelFormat = formatBGRA32();
 }
 
 SCKProcessorImpl::~SCKProcessorImpl()

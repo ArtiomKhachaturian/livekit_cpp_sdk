@@ -14,6 +14,7 @@
 #include "CoreVideoPixelBuffer.h"
 #include "CVPixelBufferAutoRelease.h"
 #include "VideoFrameBuffer.h"
+#include "VideoUtils.h"
 #include "NativeVideoFrameBuffer.h"
 #include <api/video/nv12_buffer.h>
 #include <api/video/i420_buffer.h>
@@ -161,48 +162,6 @@ CVPixelBufferRef CoreVideoPixelBuffer::pixelBuffer(const rtc::scoped_refptr<webr
         return accessor->buffer(retain);
     }
     return nullptr;
-}
-
-bool CoreVideoPixelBuffer::isNV12Format(OSType format)
-{
-    switch (format) {
-        case formatNV12Full():
-        case formatNV12Video():
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
-bool CoreVideoPixelBuffer::isRGB24Format(OSType format)
-{
-    switch (format) {
-        case formatRGB24():
-        case formatBGR24():
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
-bool CoreVideoPixelBuffer::isRGB32Format(OSType format)
-{
-    switch (format) {
-        case formatBGRA32():
-        case formatARGB32():
-        case formatRGBA32():
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
-bool CoreVideoPixelBuffer::isSupportedFormat(OSType format)
-{
-    return isNV12Format(format) || isRGBFormat(format);
 }
 
 } // namespace LiveKitCpp
