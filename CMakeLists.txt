@@ -295,6 +295,7 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/src/webrtc/media/audio/adm
         ${RTC_SRC_DIR}/src/webrtc/media/data
         ${RTC_SRC_DIR}/src/webrtc/media/video
+        ${RTC_SRC_DIR}/src/webrtc/media/video/buffers
         ${RTC_SRC_DIR}/src/webrtc/media/video/camera
         ${RTC_SRC_DIR}/src/webrtc/media/video/sharing
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera

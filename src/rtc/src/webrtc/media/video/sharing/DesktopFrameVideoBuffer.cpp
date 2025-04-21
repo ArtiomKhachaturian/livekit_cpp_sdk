@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "DesktopFrameVideoBuffer.h"
-#include <api/video/i420_buffer.h>
-#include <libyuv/convert.h>
 #include <modules/desktop_capture/desktop_frame.h>
 
 namespace LiveKitCpp
 {
 
+// DesktopFrame objects always hold BGRA data (according to WebRTC docs)
 DesktopFrameVideoBuffer::DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame)
-    : _frame(std::move(frame))
+    : RgbVideoFrameBuffer(VideoFrameType::BGRA32)
+    , _frame(std::move(frame))
 {
 }
 
@@ -42,31 +42,6 @@ const std::byte* DesktopFrameVideoBuffer::data(size_t planeIndex) const
         return reinterpret_cast<const std::byte*>(_frame->data());
     }
     return nullptr;
-}
-
-int DesktopFrameVideoBuffer::dataSize(size_t planeIndex) const
-{
-    if (0U == planeIndex && _frame) {
-        return _frame->stride() * _frame->size().height();
-    }
-    return 0;
-}
-
-rtc::scoped_refptr<webrtc::I420BufferInterface> DesktopFrameVideoBuffer::convertToI420() const
-{
-    if (_frame) {
-        const auto& size = _frame->size();
-        if (auto target = webrtc::I420Buffer::Create(size.width(), size.height())) {
-            if (0 == libyuv::ARGBToI420(_frame->data(), _frame->stride(),
-                                        target->MutableDataY(), target->StrideY(),
-                                        target->MutableDataU(), target->StrideU(),
-                                        target->MutableDataV(), target->StrideV(),
-                                        size.width(), size.height())) {
-                return target;
-            }
-        }
-    }
-    return {};
 }
 
 int DesktopFrameVideoBuffer::width() const

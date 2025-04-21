@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // DesktopFrameVideoBuffer.h
 #include "VideoFrameBuffer.h"
-#include "NativeVideoFrameBuffer.h"
+#include "RgbVideoFrameBuffer.h"
 #include <modules/desktop_capture/desktop_frame.h>
 #include <memory>
 
@@ -24,19 +24,14 @@ class DesktopFrame;
 namespace LiveKitCpp
 {
 
-class DesktopFrameVideoBuffer : public VideoFrameBuffer<NativeVideoFrameBuffer>
+class DesktopFrameVideoBuffer : public RgbVideoFrameBuffer
 {
 public:
     DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame);
     ~DesktopFrameVideoBuffer() override;
     // impl. of NativeVideoFrameBuffer
-    // DesktopFrame objects always hold BGRA data (according to WebRTC docs)
-    VideoFrameType nativeType() const final { return VideoFrameType::BGRA32; }
     int stride(size_t planeIndex) const final;
     const std::byte* data(size_t planeIndex) const final;
-    int dataSize(size_t planeIndex) const final;
-    // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
     // impl. of webrtc::VideoFrameBuffer
     int width() const final;
     int height() const final;

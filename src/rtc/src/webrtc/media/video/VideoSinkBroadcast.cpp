@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoSinkBroadcast.h"
-#include <api/video/i420_buffer.h>
+#include "VideoMemoryFactory.h"
 
 namespace {
 
@@ -60,7 +60,7 @@ void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
                 broadcast(frame);
             }
             else if (const auto srcI420 = toI420(frame)) {
-                auto dstI420 = webrtc::I420Buffer::Create(adaptedWidth, adaptedHeight);
+                auto dstI420 = VideoMemoryFactory::allocateI420(adaptedWidth, adaptedHeight);
                 dstI420->CropAndScaleFrom(*srcI420, cropX, cropY, cropWidth, cropHeight);
                 webrtc::VideoFrame adapted(frame);
                 adapted.set_video_frame_buffer(dstI420);

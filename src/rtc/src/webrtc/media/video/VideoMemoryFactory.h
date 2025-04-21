@@ -11,23 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include <CoreMedia/CMSampleBuffer.h>
-#include <IOSurface/IOSurfaceRef.h>
+#pragma once // VideoMemoryFactory.h
 #include <api/video/i420_buffer.h>
-#include <memory>
-#include <optional>
+#include <api/video/nv12_buffer.h>
+#include <api/scoped_refptr.h>
+
+namespace webrtc {
+class SharedMemory;
+}
 
 namespace LiveKitCpp
 {
 
-class IOSurfaceBuffer
+class VideoMemoryFactory
 {
 public:
-    static bool supported(IOSurfaceRef buffer);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(IOSurfaceRef buffer, bool retain = true);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> createFromSampleBuffer(CMSampleBufferRef buffer);
-    static IOSurfaceRef pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer, bool retain = true);
+    static webrtc::scoped_refptr<webrtc::I420Buffer> allocateI420(int width, int height);
+    static webrtc::scoped_refptr<webrtc::NV12Buffer> allocateNV12(int width, int height);
+    static std::unique_ptr<webrtc::SharedMemory> createSharedMemory(size_t size);
 };
-
+	
 } // namespace LiveKitCpp

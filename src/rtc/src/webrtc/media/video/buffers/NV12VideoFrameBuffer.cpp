@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "NV12VideoFrameBuffer.h"
+#include "VideoMemoryFactory.h"
 #include <common_video/libyuv/include/webrtc_libyuv.h>
 
 namespace LiveKitCpp 
@@ -35,7 +36,7 @@ const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int width
 
 rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI420() const
 {
-    if (const auto i420 = createI420(width(), height())) {
+    if (const auto i420 = VideoMemoryFactory::allocateI420(width(), height())) {
         static thread_local webrtc::NV12ToI420Scaler scaler;
         scaler.NV12ToI420Scale(DataY(),
                                StrideY(),

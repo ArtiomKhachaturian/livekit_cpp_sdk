@@ -30,11 +30,19 @@ public:
         GetMappedFrameBuffer(rtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes) override;
     rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
 protected:
-    VideoFrameBuffer() = default;
+    template <class... Args>
+    VideoFrameBuffer(Args... args);
     virtual rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const = 0;
 private:
     SafeScopedRefPtr<webrtc::I420BufferInterface> _i420;
 };
+
+template <class TBaseBuffer>
+template <class... Args>
+inline VideoFrameBuffer<TBaseBuffer>::VideoFrameBuffer(Args... args)
+    : TBaseBuffer(std::forward<Args>(args)...)
+{
+}
 
 template <class TBaseBuffer>
 inline rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBuffer<TBaseBuffer>::
@@ -64,16 +72,6 @@ inline rtc::scoped_refptr<webrtc::I420BufferInterface> VideoFrameBuffer<TBaseBuf
         _i420 = convertToI420();
     }
     return _i420.constRef();
-}
-
-inline rtc::scoped_refptr<webrtc::I420Buffer> createI420(int width, int height)
-{
-    return webrtc::I420Buffer::Create(width, height);
-}
-
-inline rtc::scoped_refptr<webrtc::NV12Buffer> createNV12(int width, int height)
-{
-    return webrtc::NV12Buffer::Create(width, height);
 }
 
 } // namespace LiveKitCpp

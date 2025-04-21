@@ -16,6 +16,7 @@
 #include "SCKStreamOutput.h"
 #include "CapturerProxySink.h"
 #include "CoreVideoPixelBuffer.h"
+#include "IOSurfaceBuffer.h"
 #include "Utils.h"
 #include "VideoUtils.h"
 #include <rtc_base/time_utils.h>
@@ -391,7 +392,11 @@ bool SCKProcessorImpl::isMyStream(SCStream* stream) const
 void SCKProcessorImpl::deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer)
 {
     if (isMyStream(stream)) {
-        if (const auto frame = createVideoFrame(CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer))) {
+        auto buffer = CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer);
+        if (!buffer) {
+            buffer = IOSurfaceBuffer::createFromSampleBuffer(sampleBuffer);
+        }
+        if (const auto frame = createVideoFrame(buffer)) {
             _sink.invoke(&CapturerProxySink::OnFrame, frame.value());
         }
         else {

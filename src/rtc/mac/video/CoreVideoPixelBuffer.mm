@@ -13,14 +13,11 @@
 // limitations under the License.
 #include "CoreVideoPixelBuffer.h"
 #include "CVPixelBufferAutoRelease.h"
-#include "VideoFrameBuffer.h"
+#include "NV12VideoFrameBuffer.h"
+#include "RgbVideoFrameBuffer.h"
+#include "VideoMemoryFactory.h"
 #include "VideoUtils.h"
-#include "NativeVideoFrameBuffer.h"
-#include <api/video/nv12_buffer.h>
-#include <api/video/i420_buffer.h>
 #include <api/make_ref_counted.h>
-#include <third_party/libyuv/include/libyuv/convert.h>
-#include <third_party/libyuv/include/libyuv/scale.h>
 #include <cassert>
 
 namespace
@@ -28,20 +25,19 @@ namespace
 
 using namespace LiveKitCpp;
 
-class CoreVideoPixelBufferAccessor
+class CVBufferAccessor
 {
 public:
     virtual CVPixelBufferRef buffer(bool retain) const = 0;
 protected:
-    virtual ~CoreVideoPixelBufferAccessor() = default;
+    virtual ~CVBufferAccessor() = default;
 };
 
 template <class TBaseVideoBuffer>
-class CoreVideoPixelBufferHolder : public VideoFrameBuffer<TBaseVideoBuffer>,
-                                   public CoreVideoPixelBufferAccessor
+class CVBuffer : public TBaseVideoBuffer, public CVBufferAccessor
 {
 public:
-    ~CoreVideoPixelBufferHolder();
+    ~CVBuffer();
     size_t cvDataSize() const { return _lockedBuffer.dataSize(); }
     size_t cvWidth() const { return _lockedBuffer.width(); }
     size_t cvWidth(size_t planeIndex) const { return _lockedBuffer.width(planeIndex); }
@@ -51,22 +47,20 @@ public:
     size_t cvStride() const { return _lockedBuffer.stride(); }
     uint8_t* cvData(size_t planeIndex) const { return _lockedBuffer.planeAddress(planeIndex); }
     uint8_t* cvData() const { return _lockedBuffer.baseAddress(); }
-    // impl. of CoreVideoPixelBufferAccessor
+    // impl. of CVBufferAccessor
     CVPixelBufferRef buffer(bool retain) const final { return _lockedBuffer.ref(retain); }
 protected:
-    template <class... AdditionalArgs>
-    CoreVideoPixelBufferHolder(CVPixelBufferAutoRelease lockedBuffer, AdditionalArgs&&... additionalArgs);
-    virtual rtc::scoped_refptr<webrtc::VideoFrameBuffer>
-        allocateBuffer(int /*width*/, int /*height*/) const { return nullptr; }
+    template <class... Args>
+    CVBuffer(CVPixelBufferAutoRelease lockedBuffer, Args&&... args);
 private:
     CVPixelBufferAutoRelease _lockedBuffer;
 };
 
-class NV12PixelBuffer : public CoreVideoPixelBufferHolder<webrtc::NV12BufferInterface>
+class NV12Buffer : public CVBuffer<NV12VideoFrameBuffer>
 {
-    using BaseClass = CoreVideoPixelBufferHolder<webrtc::NV12BufferInterface>;
+    using BaseClass = CVBuffer<NV12VideoFrameBuffer>;
 public:
-    NV12PixelBuffer(CVPixelBufferAutoRelease lockedBuffer);
+    NV12Buffer(CVPixelBufferAutoRelease lockedBuffer);
     // impl. of webrtc::NV12BufferInterface
     const uint8_t* DataY() const final { return cvData(0U); }
     const uint8_t* DataUV() const final { return cvData(1U); }
@@ -74,26 +68,18 @@ public:
     int StrideUV() const final { return static_cast<int>(cvStride(1U)); }
     int width() const final { return static_cast<int>(cvWidth()); }
     int height() const final { return static_cast<int>(cvHeight()); }
-protected:
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
-class RGBPixelBuffer : public CoreVideoPixelBufferHolder<NativeVideoFrameBuffer>
+class RGBBuffer : public CVBuffer<RgbVideoFrameBuffer>
 {
-    using BaseClass = CoreVideoPixelBufferHolder<NativeVideoFrameBuffer>;
+    using BaseClass = CVBuffer<RgbVideoFrameBuffer>;
 public:
-    RGBPixelBuffer(CVPixelBufferAutoRelease lockedBuffer, VideoFrameType rgbFormat);
+    RGBBuffer(CVPixelBufferAutoRelease lockedBuffer, VideoFrameType rgbFormat);
     // impl. of NativeVideoFrameBuffer
-    VideoFrameType nativeType() const final { return _rgbFormat; }
     int width() const final { return static_cast<int>(cvWidth()); }
     int height() const final { return static_cast<int>(cvHeight()); }
     int stride(size_t planeIndex) const final;
     const std::byte* data(size_t planeIndex) const final;
-    int dataSize(size_t planeIndex) const final;
-protected:
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
-private:
-    const VideoFrameType _rgbFormat;
 };
 
 }
@@ -115,7 +101,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
             CVPixelBufferAutoRelease lockedBuffer(buffer, retain);
             if (lockedBuffer.lock()) {
                 if (isNV12Format(format)) {
-                    return rtc::make_ref_counted<NV12PixelBuffer>(std::move(lockedBuffer));
+                    return rtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer));
                 }
                 if (isRGBFormat(format)) {
                     std::optional<VideoFrameType> rgbFormat;
@@ -139,7 +125,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
                             break;
                     }
                     if (rgbFormat.has_value()) {
-                        return rtc::make_ref_counted<RGBPixelBuffer>(std::move(lockedBuffer), rgbFormat.value());
+                        return rtc::make_ref_counted<RGBBuffer>(std::move(lockedBuffer), rgbFormat.value());
                     }
                 }
                 lockedBuffer.unlock();
@@ -158,7 +144,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
 CVPixelBufferRef CoreVideoPixelBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
                                                    bool retain)
 {
-    if (const auto accessor = dynamic_cast<const CoreVideoPixelBufferAccessor*>(videoPixelBuffer.get())) {
+    if (const auto accessor = dynamic_cast<const CVBufferAccessor*>(videoPixelBuffer.get())) {
         return accessor->buffer(retain);
     }
     return nullptr;
@@ -169,46 +155,31 @@ CVPixelBufferRef CoreVideoPixelBuffer::pixelBuffer(const rtc::scoped_refptr<webr
 namespace
 {
 
-template <class TBaseVideoBuffer> template <class... AdditionalArgs>
-CoreVideoPixelBufferHolder<TBaseVideoBuffer>::CoreVideoPixelBufferHolder(CVPixelBufferAutoRelease lockedBuffer,
-                                                                         AdditionalArgs&&... additionalArgs)
-    : VideoFrameBuffer<TBaseVideoBuffer>(std::forward<AdditionalArgs>(additionalArgs)...)
+template <class TBaseVideoBuffer>
+template <class... Args>
+CVBuffer<TBaseVideoBuffer>::CVBuffer(CVPixelBufferAutoRelease lockedBuffer, Args&&... args)
+    : TBaseVideoBuffer(std::forward<Args>(args)...)
     , _lockedBuffer(std::move(lockedBuffer))
 {
 }
 
 template <class TBaseVideoBuffer>
-CoreVideoPixelBufferHolder<TBaseVideoBuffer>::~CoreVideoPixelBufferHolder()
+CVBuffer<TBaseVideoBuffer>::~CVBuffer()
 {
     _lockedBuffer.unlock();
 }
 
-NV12PixelBuffer::NV12PixelBuffer(CVPixelBufferAutoRelease lockedBuffer)
+NV12Buffer::NV12Buffer(CVPixelBufferAutoRelease lockedBuffer)
     : BaseClass(std::move(lockedBuffer))
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> NV12PixelBuffer::convertToI420() const
-{
-    if (auto i420 = createI420(width(), height())) {
-        if (0 == libyuv::NV12ToI420(DataY(), StrideY(), DataUV(), StrideUV(),
-                                    i420->MutableDataY(), i420->StrideY(),
-                                    i420->MutableDataU(), i420->StrideU(),
-                                    i420->MutableDataV(), i420->StrideV(),
-                                    width(), height())) {
-            return i420;
-        }
-    }
-    return {};
-}
-
-RGBPixelBuffer::RGBPixelBuffer(CVPixelBufferAutoRelease lockedBuffer, VideoFrameType rgbFormat)
-    : BaseClass(std::move(lockedBuffer))
-    , _rgbFormat(rgbFormat)
+RGBBuffer::RGBBuffer(CVPixelBufferAutoRelease lockedBuffer, VideoFrameType rgbFormat)
+    : BaseClass(std::move(lockedBuffer), rgbFormat)
 {
 }
 
-int RGBPixelBuffer::stride(size_t planeIndex) const
+int RGBBuffer::stride(size_t planeIndex) const
 {
     if (0U == planeIndex) {
         return static_cast<int>(cvStride(0U));
@@ -216,66 +187,12 @@ int RGBPixelBuffer::stride(size_t planeIndex) const
     return 0;
 }
 
-const std::byte* RGBPixelBuffer::data(size_t planeIndex) const
+const std::byte* RGBBuffer::data(size_t planeIndex) const
 {
     if (0U == planeIndex) {
         return reinterpret_cast<const std::byte*>(cvData(0U));
     }
     return nullptr;
-}
-
-int RGBPixelBuffer::dataSize(size_t planeIndex) const
-{
-    if (0U == planeIndex) {
-        return static_cast<int>(cvStride(0U) * cvHeight());;
-    }
-    return 0;
-}
-
-rtc::scoped_refptr<webrtc::I420BufferInterface> RGBPixelBuffer::convertToI420() const
-{
-    const auto w = width(), h = height();
-    const auto stride = cvStride(0U);
-    const auto rgb = cvData(0U);
-    if (w > 0 && h > 0 && stride && rgb) {
-        decltype(&libyuv::ARGBToI420) func = nullptr;
-        switch (_rgbFormat) {
-            case VideoFrameType::RGB24:
-                func = &libyuv::RAWToI420;
-                break;
-            case VideoFrameType::BGR24:
-                func = &libyuv::RGB24ToI420;
-                break;
-            case VideoFrameType::BGRA32:
-                func = &libyuv::ARGBToI420;
-                break;
-            case VideoFrameType::ARGB32:
-                func = &libyuv::BGRAToI420;
-                break;
-            case VideoFrameType::RGBA32:
-                func = &libyuv::ABGRToI420;
-                break;
-            case VideoFrameType::ABGR32:
-                func = &libyuv::RGBAToI420;
-                break;
-            default:
-                assert(false);
-                break;
-        }
-        if (func) {
-            auto i420 = createI420(w, h);
-            if (i420 && 0 == func(rgb, static_cast<int>(stride),
-                                  i420->MutableDataY(),
-                                  i420->StrideY(),
-                                  i420->MutableDataU(),
-                                  i420->StrideU(),
-                                  i420->MutableDataV(),
-                                  i420->StrideV(), w, h)) {
-                return i420;
-            }
-        }
-    }
-    return {};
 }
 
 }

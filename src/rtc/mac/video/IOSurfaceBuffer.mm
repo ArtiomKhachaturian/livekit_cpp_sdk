@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "IOSurfaceBuffer.h"
 #include "CFAutoRelease.h"
+#include "RgbVideoFrameBuffer.h"
 #include "NV12VideoFrameBuffer.h"
 #include "VideoUtils.h"
 #include <api/make_ref_counted.h>
@@ -21,19 +22,19 @@ namespace {
 
 using namespace LiveKitCpp;
 
-class IOSurfaceBufferAccessor
+class IOSBufferAccessor
 {
 public:
     virtual IOSurfaceRef buffer(bool retain) const = 0;
 protected:
-    virtual ~IOSurfaceBufferAccessor() = default;
+    virtual ~IOSBufferAccessor() = default;
 };
 
 template<class TBaseVideoBuffer>
-class IOSurfaceBufferHolder : public TBaseVideoBuffer, public IOSurfaceBufferAccessor
+class IOSBuffer : public TBaseVideoBuffer, public IOSBufferAccessor
 {
 public:
-    ~IOSurfaceBufferHolder();
+    ~IOSBuffer();
     size_t surfaceWidth() const { return IOSurfaceGetWidth(_buffer.ref()); }
     size_t surfaceHeight() const { return IOSurfaceGetHeight(_buffer.ref()); }
     size_t surfaceStride() const { return IOSurfaceGetBytesPerRow(_buffer.ref()); }
@@ -43,41 +44,37 @@ public:
     // impl. of IOSurfaceBufferAccessor
     IOSurfaceRef buffer(bool retain) const final { return _buffer.ref(retain); }
 protected:
-    template <class... AdditionalArgs>
-    IOSurfaceBufferHolder(IOSurfaceRef buffer, bool retain, AdditionalArgs&&... additionalArgs);
+    template <class... Args>
+    IOSBuffer(IOSurfaceRef buffer, bool retain, Args&&... args);
 private:
     const CFAutoRelease<IOSurfaceRef> _buffer;
 };
 
-class NV12IOSurfaceBuffer : public IOSurfaceBufferHolder<NV12VideoFrameBuffer>
+class NV12Buffer : public IOSBuffer<NV12VideoFrameBuffer>
 {
-    using BaseClass = IOSurfaceBufferHolder<NV12VideoFrameBuffer>;
+    using BaseClass = IOSBuffer<NV12VideoFrameBuffer>;
 public:
-    NV12IOSurfaceBuffer(IOSurfaceRef buffer, bool retain);
+    NV12Buffer(IOSurfaceRef buffer, bool retain);
     // impl. of webrtc::NV12BufferInterface
     const uint8_t* DataY() const final { return surfaceData(0U); }
     const uint8_t* DataUV() const final { return surfaceData(1U); }
-    int StrideY() const final { return surfaceStride(0U); }
-    int StrideUV() const final { return surfaceStride(1U); }
-    int width() const final { return surfaceWidth(); }
-    int height() const final { return surfaceHeight(); }
+    int StrideY() const final { return static_cast<int>(surfaceStride(0U)); }
+    int StrideUV() const final { return static_cast<int>(surfaceStride(1U)); }
+    int width() const final { return static_cast<int>(surfaceWidth()); }
+    int height() const final { return static_cast<int>(surfaceHeight()); }
 };
 
-/*class RGBIOSurfaceBuffer : public IOSurfaceBufferHolder<VideoFrameRgbBuffer>
+class RGBBuffer : public IOSBuffer<RgbVideoFrameBuffer>
 {
-    using BaseClass = IOSurfaceBufferHolder<VideoFrameRgbBuffer>;
-    
+    using BaseClass = IOSBuffer<RgbVideoFrameBuffer>;
 public:
-    RGBIOSurfaceBuffer(IOSurfaceRef buffer, bool retain,
-                       RgbFormat format,
-                       const std::optional<ScaleMode>& scaleMode,
-                       const std::weak_ptr<I420BuffersPool>& i420BuffersPoolRef);
-    // impl. of VideoFrameRgbBuffer
-    int width() const final { return surfaceWidth(); }
-    int height() const final { return surfaceHeight(); }
-    const uint8_t* data() const final { return surfaceData(); }
-    int stride() const final { return surfaceStride(); }
-};*/
+    RGBBuffer(IOSurfaceRef buffer, bool retain, VideoFrameType rgbFormat);
+    // impl. of RgbVideoFrameBuffer
+    int width() const final { return static_cast<int>(surfaceWidth()); }
+    int height() const final { return static_cast<int>(surfaceHeight()); }
+    int stride(size_t planeIndex) const final;
+    const std::byte* data(size_t planeIndex) const final;
+};
 
 }
 
@@ -89,31 +86,63 @@ bool IOSurfaceBuffer::supported(IOSurfaceRef buffer)
     return buffer && isSupportedFormat(IOSurfaceGetPixelFormat(buffer));
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::create(IOSurfaceRef buffer,
-                                                                       bool retain)
+rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::create(IOSurfaceRef buffer, bool retain)
 {
-    /*if (buffer) {
+    if (buffer) {
         const auto format = IOSurfaceGetPixelFormat(buffer);
-        if (CoreVideoPixelBuffer::isSupportedFormat(format)) {
+        if (isSupportedFormat(format)) {
             if (kIOReturnSuccess == IOSurfaceLock(buffer, kIOSurfaceLockReadOnly, nullptr)) {
-                if (CoreVideoPixelBuffer::isNV12Format(format)) {
-                    return rtc::make_ref_counted<NV12IOSurfaceBuffer>(buffer, retain);
+                if (isNV12Format(format)) {
+                    return rtc::make_ref_counted<NV12Buffer>(buffer, retain);
                 }
-                if (CoreVideoPixelBuffer::isRGB24Format(format)) {
-                    return rtc::make_ref_counted<RGBIOSurfaceBuffer>(buffer, retain, RgbFormat::RGB24, scaleMode, i420BuffersPoolRef);
+                if (isRGB24Format(format)) {
+                    std::optional<VideoFrameType> rgbFormat;
+                    switch (format) {
+                        case formatRGB24(): // 24bpp
+                            rgbFormat = VideoFrameType::RGB24;
+                            break;
+                        case formatBGR24(): // 24bpp
+                            rgbFormat = VideoFrameType::BGR24;
+                            break;
+                        default:
+                            break;
+                    }
+                    if (rgbFormat.has_value()) {
+                        return rtc::make_ref_counted<RGBBuffer>(buffer, retain, rgbFormat.value());
+                    }
                 }
-                if (format == CoreVideoPixelBuffer::formatBGRA32()) {
-                    return rtc::make_ref_counted<RGBIOSurfaceBuffer>(buffer, retain, RgbFormat::BGRA32, scaleMode, i420BuffersPoolRef);
+                if (format == formatBGRA32()) {
+                    return rtc::make_ref_counted<RGBBuffer>(buffer, retain, VideoFrameType::BGRA32);
                 }
+                IOSurfaceUnlock(buffer, kIOSurfaceLockReadOnly, nullptr);
             }
         }
-    }*/
+    }
     return nullptr;
+}
+
+rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::createFromSampleBuffer(CMSampleBufferRef buffer)
+{
+    CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(buffer);
+    if (!pixelBuffer) {
+        return {};
+    }
+
+    IOSurfaceRef ioSurface = CVPixelBufferGetIOSurface(pixelBuffer);
+    if (!ioSurface) {
+        return {};
+    }
+
+    CFArrayRef attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(buffer, /*createIfNecessary=*/false);
+    if (!attachmentsArray || CFArrayGetCount(attachmentsArray) <= 0) {
+        return {};
+    }
+    return create(ioSurface);
 }
 
 IOSurfaceRef IOSurfaceBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer, bool retain)
 {
-    if (const auto accessor = dynamic_cast<const IOSurfaceBufferAccessor*>(videoPixelBuffer.get())) {
+    if (const auto accessor = dynamic_cast<const IOSBufferAccessor*>(videoPixelBuffer.get())) {
         return accessor->buffer(retain);
     }
     return nullptr;
@@ -124,51 +153,64 @@ IOSurfaceRef IOSurfaceBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::Video
 
 namespace {
 
-template<class TBaseVideoBuffer> template <class... AdditionalArgs>
-IOSurfaceBufferHolder<TBaseVideoBuffer>::IOSurfaceBufferHolder(IOSurfaceRef buffer, bool retain,
-                                                               AdditionalArgs&&... additionalArgs)
-    : TBaseVideoBuffer(std::forward<AdditionalArgs>(additionalArgs)...)
+template<class TBaseVideoBuffer>
+template <class... Args>
+IOSBuffer<TBaseVideoBuffer>::IOSBuffer(IOSurfaceRef buffer, bool retain, Args&&... args)
+    : TBaseVideoBuffer(std::forward<Args>(args)...)
     , _buffer(buffer, retain)
 {
     IOSurfaceIncrementUseCount(_buffer.ref());
 }
 
 template<class TBaseVideoBuffer>
-IOSurfaceBufferHolder<TBaseVideoBuffer>::~IOSurfaceBufferHolder()
+IOSBuffer<TBaseVideoBuffer>::~IOSBuffer()
 {
     IOSurfaceUnlock(_buffer.ref(), kIOSurfaceLockReadOnly, nullptr);
     IOSurfaceDecrementUseCount(_buffer.ref());
 }
 
 template<class TBaseVideoBuffer>
-size_t IOSurfaceBufferHolder<TBaseVideoBuffer>::surfaceStride(size_t planeIndex) const
+size_t IOSBuffer<TBaseVideoBuffer>::surfaceStride(size_t planeIndex) const
 {
     return IOSurfaceGetBytesPerRowOfPlane(_buffer.ref(), planeIndex);
 }
 
 template<class TBaseVideoBuffer>
-const uint8_t* IOSurfaceBufferHolder<TBaseVideoBuffer>::surfaceData() const
+const uint8_t* IOSBuffer<TBaseVideoBuffer>::surfaceData() const
 {
     return reinterpret_cast<const uint8_t*>(IOSurfaceGetBaseAddress(_buffer.ref()));
 }
 
 template<class TBaseVideoBuffer>
-const uint8_t* IOSurfaceBufferHolder<TBaseVideoBuffer>::surfaceData(size_t planeIndex) const
+const uint8_t* IOSBuffer<TBaseVideoBuffer>::surfaceData(size_t planeIndex) const
 {
     return reinterpret_cast<const uint8_t*>(IOSurfaceGetBaseAddressOfPlane(_buffer.ref(), planeIndex));
 }
 
-NV12IOSurfaceBuffer::NV12IOSurfaceBuffer(IOSurfaceRef buffer, bool retain)
+NV12Buffer::NV12Buffer(IOSurfaceRef buffer, bool retain)
     : BaseClass(buffer, retain)
 {
 }
 
-/*RGBIOSurfaceBuffer::RGBIOSurfaceBuffer(IOSurfaceRef buffer, bool retain,
-                                       RgbFormat format,
-                                       const std::optional<ScaleMode>& scaleMode,
-                                       const std::weak_ptr<I420BuffersPool>& i420BuffersPoolRef)
-    : BaseClass(buffer, retain, format, scaleMode, i420BuffersPoolRef)
+RGBBuffer::RGBBuffer(IOSurfaceRef buffer, bool retain, VideoFrameType rgbFormat)
+    : BaseClass(buffer, retain, rgbFormat)
 {
-}*/
+}
+
+int RGBBuffer::stride(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return static_cast<int>(surfaceStride(0U));
+    }
+    return 0;
+}
+
+const std::byte* RGBBuffer::data(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return reinterpret_cast<const std::byte*>(surfaceData());
+    }
+    return nullptr;
+}
 
 } // namespace LiveKitCpp
