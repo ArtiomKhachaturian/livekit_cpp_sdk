@@ -1,5 +1,8 @@
 #include "demoapp.h"
 #include "remoteparticipant.h"
+#include "mediadeviceinfo.h"
+#include "audiorecordingoptions.h"
+#include "videooptions.h"
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQmlContext>
@@ -7,6 +10,9 @@
 int main(int argc, char *argv[])
 {
     qRegisterMetaType<RemoteParticipant*>();
+    qRegisterMetaType<MediaDeviceInfo>();
+    qRegisterMetaType<VideoOptions>();
+    qRegisterMetaType<AudioRecordingOptions>();
 
     DemoApp app(argc, argv);
     QQmlApplicationEngine engine;

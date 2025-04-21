@@ -49,12 +49,15 @@ class ConnectionFormVideoModel : public LocalVideoSourcesModel
     Q_PROPERTY(bool activeSharing READ activeSharing WRITE setActiveSharing NOTIFY activeSharingChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo cameraDeviceInfo READ cameraDeviceInfo WRITE setCameraDeviceInfo NOTIFY cameraDeviceInfoChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo sharingDeviceInfo READ sharingDeviceInfo WRITE setSharingDeviceInfo NOTIFY sharingDeviceInfoChanged FINAL)
+    Q_PROPERTY(VideoOptions cameraOptions READ cameraOptions WRITE setCameraOptions NOTIFY cameraOptionsChanged FINAL)
+    Q_PROPERTY(VideoOptions sharingOptions READ sharingOptions WRITE setSharingOptions NOTIFY sharingOptionsChanged FINAL)
 private:
     struct DeviceData
     {
         bool _active = false;
         QPointer<LocalVideoDevice> _source;
         MediaDeviceInfo _info;
+        VideoOptions _options;
     };
 public:
     explicit ConnectionFormVideoModel(QObject* parent = nullptr);
@@ -63,23 +66,31 @@ public:
     bool activeSharing() const { return _sharing._active; }
     const MediaDeviceInfo& cameraDeviceInfo() const noexcept { return _camera._info; }
     const MediaDeviceInfo& sharingDeviceInfo() const noexcept { return _sharing._info; }
+    const VideoOptions& cameraOptions() const noexcept { return _camera._options; }
+    const VideoOptions& sharingOptions() const noexcept { return _sharing._options; }
 public slots:
     void setActive(bool active);
     void setActiveCamera(bool active);
     void setActiveSharing(bool active);
     void setCameraDeviceInfo(const MediaDeviceInfo& info);
     void setSharingDeviceInfo(const MediaDeviceInfo& info);
+    void setCameraOptions(const VideoOptions& options);
+    void setSharingOptions(const VideoOptions& options);
 signals:
     void activeCameraChanged();
     void activeSharingChanged();
     void cameraDeviceInfoChanged();
+    void cameraOptionsChanged();
     void sharingDeviceInfoChanged();
+    void sharingOptionsChanged();
     void activeChanged();
 private:
     template <typename TSignal>
     void setDeviceActive(DeviceData* data, bool active, TSignal signal);
     template <typename TSignal>
     void setDeviceInfo(DeviceData* data, const MediaDeviceInfo& info, TSignal signal);
+    template <typename TSignal>
+    void setOptions(DeviceData* data, const VideoOptions& options, TSignal signal);
     void addSource(DeviceData* data);
     void removeSource(DeviceData* data);
 private:
@@ -93,6 +104,7 @@ class SharingsVideoModel : public LocalVideoSourcesModel
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(Mode mode READ mode WRITE setMode NOTIFY modeChanged FINAL)
+    Q_PROPERTY(VideoOptions options READ options WRITE setOptions NOTIFY optionsChanged FINAL)
 public:
     enum Mode
     {
@@ -104,15 +116,19 @@ public:
 public:
     explicit SharingsVideoModel(QObject* parent = nullptr);
     Mode mode() const noexcept { return _mode; }
+    const VideoOptions& options() const noexcept { return _options; }
     Q_INVOKABLE MediaDeviceInfo deviceInfo(qsizetype index) const;
 public slots:
     void setMode(Mode mode);
+    void setOptions(const VideoOptions& options);
 signals:
     void modeChanged();
+    void optionsChanged();
 private:
     void resetContent();
 private:
     Mode _mode = Mode::Inactive;
+    VideoOptions _options;
 };
 
 #endif // VIDEOMODELS_H

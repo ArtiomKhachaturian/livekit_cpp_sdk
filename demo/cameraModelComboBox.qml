@@ -4,9 +4,7 @@ import QtQuick.Controls
 ComboBox {
     model: app.camerasModel
     textRole: "display"
-    indicator.visible: count > 1
-    flat: count <= 1
-    enabled: indicator.visible
+    enabled: count > 1
     readonly property var deviceInfo: {
         return deviceInfoAt(currentIndex)
     }

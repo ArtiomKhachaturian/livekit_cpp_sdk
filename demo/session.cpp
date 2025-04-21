@@ -46,14 +46,23 @@ Session::Session(QObject *parent)
                      this, &Session::cameraOptionsChanged);
     QObject::connect(_localParticipant, &LocalParticipant::cameraMutedChanged,
                      this, &Session::cameraMutedChanged);
+
+    QObject::connect(_localParticipant, &LocalParticipant::microphoneOptionsChanged,
+                     this, &Session::microphoneOptionsChanged);
     QObject::connect(_localParticipant, &LocalParticipant::microphoneMutedChanged,
                      this, &Session::microphoneMutedChanged);
-    QObject::connect(_localParticipant, &LocalParticipant::identityChanged,
-                     this, &Session::identityChanged);
+
     QObject::connect(_localParticipant, &LocalParticipant::sharingDeviceInfoChanged,
                      this, &Session::sharingDeviceInfoChanged);
+    QObject::connect(_localParticipant, &LocalParticipant::sharingOptionsChanged,
+                     this, &Session::sharingOptionsChanged);
     QObject::connect(_localParticipant, &LocalParticipant::sharingMutedChanged,
                      this, &Session::sharingMutedChanged);
+
+
+    QObject::connect(_localParticipant, &LocalParticipant::identityChanged,
+                     this, &Session::identityChanged);
+
 }
 
 Session::~Session()
@@ -151,21 +160,6 @@ Session::State Session::state() const
     return State::TransportDisconnected;
 }
 
-MediaDeviceInfo Session::cameraDeviceInfo() const
-{
-    return _localParticipant->cameraDeviceInfo();
-}
-
-VideoOptions Session::cameraOptions() const
-{
-    return _localParticipant->cameraOptions();
-}
-
-MediaDeviceInfo Session::sharingDeviceInfo() const
-{
-    return _localParticipant->sharingDeviceInfo();
-}
-
 void Session::setActiveCamera(bool active)
 {
     if (active != _activeCamera) {
@@ -208,26 +202,6 @@ void Session::setActiveSharing(bool active)
     }
 }
 
-void Session::setCameraDeviceInfo(const MediaDeviceInfo& info)
-{
-    _localParticipant->setCameraDeviceInfo(info);
-}
-
-void Session::setCameraOptions(const VideoOptions& options)
-{
-    _localParticipant->setCameraOptions(options);
-}
-
-void Session::setSharingDeviceInfo(const MediaDeviceInfo& info)
-{
-    _localParticipant->setSharingDeviceInfo(info);
-}
-
-void Session::setSharingMuted(bool muted)
-{
-    _localParticipant->setSharingMuted(muted);
-}
-
 void Session::disconnectFromSfu()
 {
     if (_impl) {
@@ -263,7 +237,7 @@ void Session::addMicrophoneTrack()
 {
     if (_impl) {
         if (const auto service = getService()) {
-            auto device = service->createMicrophone();
+            auto device = service->createMicrophone(microphoneOptions());
             const auto track = _impl->addAudioTrack(std::move(device), _encryption);
             _localParticipant->activateMicrophone(track);
         }
@@ -274,7 +248,7 @@ void Session::addSharingTrack()
 {
     if (_impl) {
         if (const auto service = getService()) {
-            auto device = service->createSharing();
+            auto device = service->createSharing(sharingDeviceInfo(), sharingOptions());
             const auto track = _impl->addVideoTrack(std::move(device), _encryption);
             _localParticipant->activateSharing(track);
         }

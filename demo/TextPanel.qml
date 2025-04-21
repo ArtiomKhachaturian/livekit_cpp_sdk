@@ -11,7 +11,7 @@ Rectangle {
     color: parent.palette.base
     border.color: parent.activeFocus ? parent.palette.highlight : parent.palette.mid
     radius: 2
-    opacity: 0.5
+    opacity: 0.7
     Text {
         id: textArea
         anchors.centerIn: parent

@@ -15,31 +15,6 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(${PROJECT_NAME})
 
-target_sources(${PROJECT_NAME} PRIVATE
-        main.cpp
-        demoapp.cpp
-        logger.h
-        logger.cpp
-        safeobj.h
-        mediadeviceinfo.cpp
-        mediadevicesmodel.cpp
-        session.cpp
-        audiotrack.cpp
-        localvideotrack.cpp
-        cameraoptionsmodel.cpp
-        videooptions.cpp
-        itemmodel.h
-        audiodevice.cpp
-        localvideodevice.cpp
-        videosource.cpp
-        videomodels.cpp
-        videotrack.cpp
-        participant.cpp
-        lockable.h
-        localparticipant.cpp
-        remoteparticipant.cpp
-)
-
 qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
     QML_FILES
             Main.qml
@@ -57,7 +32,30 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             TextMultiLine.qml
             ElementsGrid.qml
             SharingSelectionForm.qml
+            MediaOptionsForm.qml
     SOURCES
+            main.cpp
+            demoapp.cpp
+            logger.h
+            logger.cpp
+            safeobj.h
+            mediadeviceinfo.cpp
+            mediadevicesmodel.cpp
+            session.cpp
+            audiotrack.cpp
+            localvideotrack.cpp
+            cameraoptionsmodel.cpp
+            videooptions.cpp
+            itemmodel.h
+            audiodevice.cpp
+            localvideodevice.cpp
+            videosource.cpp
+            videomodels.cpp
+            videotrack.cpp
+            participant.cpp
+            lockable.h
+            localparticipant.cpp
+            remoteparticipant.cpp
             demoapp.h
             mediadeviceinfo.h
             mediadevicesmodel.h
@@ -74,6 +72,8 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             participant.h
             localparticipant.h
             remoteparticipant.h
+            audiorecordingoptions.h
+            audiorecordingoptions.cpp
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

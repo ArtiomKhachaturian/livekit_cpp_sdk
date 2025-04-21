@@ -1,12 +1,13 @@
 #include "localparticipant.h"
-#include "localvideotrack.h"
+#include "demoapp.h"
 #include <livekit/rtc/Service.h>
 #include <livekit/rtc/media/LocalVideoTrack.h>
+#include <optional>
 
 LocalParticipant::LocalParticipant(QObject *parent)
     : Participant(parent)
-    , _cameraOptions(LiveKitCpp::Service::defaultCameraOptions())
 {
+    _camera._options = LiveKitCpp::Service::defaultCameraOptions();
 }
 
 LocalParticipant::~LocalParticipant()
@@ -38,16 +39,16 @@ void LocalParticipant::setName(const QString& name)
 
 void LocalParticipant::activateCamera(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack)
 {
-    if (sdkTrack && !_camera) {
-        _camera = addVideo<LocalVideoTrack>(sdkTrack);
-        if (_camera) {
-            _camera->setDeviceInfo(_cameraDeviceinfo);
-            _camera->setMuted(_cameraMuted);
-            QObject::connect(_camera, &LocalVideoTrack::deviceInfoChanged,
+    if (sdkTrack && !_camera._track) {
+        _camera._track = addVideo<LocalVideoTrack>(sdkTrack);
+        if (_camera._track) {
+            _camera._track->setDeviceInfo(_camera._deviceinfo);
+            _camera._track->setMuted(_camera._muted);
+            QObject::connect(_camera._track, &LocalVideoTrack::deviceInfoChanged,
                              this, &LocalParticipant::onCameraDeviceInfoChanged);
-            QObject::connect(_camera, &LocalVideoTrack::optionsChanged,
+            QObject::connect(_camera._track, &LocalVideoTrack::optionsChanged,
                              this, &LocalParticipant::onCameraOptionsChanged);
-            QObject::connect(_camera, &VideoTrack::muteChanged,
+            QObject::connect(_camera._track, &VideoTrack::muteChanged,
                              this, &LocalParticipant::onCameraMuted);
             emit activeCameraChanged();
         }
@@ -57,11 +58,11 @@ void LocalParticipant::activateCamera(const std::shared_ptr<LiveKitCpp::LocalVid
 std::shared_ptr<LiveKitCpp::LocalVideoTrack> LocalParticipant::deactivateCamera()
 {
     std::shared_ptr<LiveKitCpp::VideoTrack> track;
-    if (_camera) {
-        _camera->disconnect(this);
-        track = removeVideoTrack(_camera->id());
+    if (_camera._track) {
+        _camera._track->disconnect(this);
+        track = removeVideoTrack(_camera._track->id());
         if (track) {
-            _camera = nullptr;
+            _camera._track = nullptr;
             emit activeCameraChanged();
         }
     }
@@ -70,14 +71,14 @@ std::shared_ptr<LiveKitCpp::LocalVideoTrack> LocalParticipant::deactivateCamera(
 
 void LocalParticipant::activateSharing(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack)
 {
-    if (sdkTrack && !_sharing) {
-        _sharing = addVideo<LocalVideoTrack>(sdkTrack);
-        if (_sharing) {
-            _sharing->setDeviceInfo(_sharingDeviceinfo);
-            _sharing->setMuted(_sharingMuted);
-            QObject::connect(_sharing, &LocalVideoTrack::deviceInfoChanged,
+    if (sdkTrack && !_sharing._track) {
+        _sharing._track = addVideo<LocalVideoTrack>(sdkTrack);
+        if (_sharing._track) {
+            _sharing._track->setDeviceInfo(_sharing._deviceinfo);
+            _sharing._track->setMuted(_sharing._muted);
+            QObject::connect(_sharing._track, &LocalVideoTrack::deviceInfoChanged,
                              this, &LocalParticipant::onSharingDeviceInfoChanged);
-            QObject::connect(_sharing, &VideoTrack::muteChanged,
+            QObject::connect(_sharing._track, &VideoTrack::muteChanged,
                              this, &LocalParticipant::onSharingMuted);
             emit activeSharingChanged();
         }
@@ -87,11 +88,11 @@ void LocalParticipant::activateSharing(const std::shared_ptr<LiveKitCpp::LocalVi
 std::shared_ptr<LiveKitCpp::LocalVideoTrack> LocalParticipant::deactivateSharing()
 {
     std::shared_ptr<LiveKitCpp::VideoTrack> track;
-    if (_sharing) {
-        _sharing->disconnect(this);
-        track = removeVideoTrack(_sharing->id());
+    if (_sharing._track) {
+        _sharing._track->disconnect(this);
+        track = removeVideoTrack(_sharing._track->id());
         if (track) {
-            _sharing = nullptr;
+            _sharing._track = nullptr;
             emit activeSharingChanged();
         }
     }
@@ -100,11 +101,11 @@ std::shared_ptr<LiveKitCpp::LocalVideoTrack> LocalParticipant::deactivateSharing
 
 void LocalParticipant::activateMicrophone(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack)
 {
-    if (sdkTrack && !_microphone) {
-        _microphone = addAudio<>(sdkTrack);
-        if (_microphone) {
-            _microphone->setMuted(_microphoneMuted);
-            QObject::connect(_microphone, &AudioTrack::muteChanged,
+    if (sdkTrack && !_microphone._track) {
+        _microphone._track = addAudio<>(sdkTrack);
+        if (_microphone._track) {
+            _microphone._track->setMuted(_microphone._muted);
+            QObject::connect(_microphone._track, &AudioTrack::muteChanged,
                              this, &LocalParticipant::onMicrophoneMuted);
             emit activeMicrophoneChanged();
         }
@@ -114,238 +115,140 @@ void LocalParticipant::activateMicrophone(const std::shared_ptr<LiveKitCpp::Audi
 std::shared_ptr<LiveKitCpp::AudioTrack> LocalParticipant::deactivateMicrophone()
 {
     std::shared_ptr<LiveKitCpp::AudioTrack> track;
-    if (_microphone) {
-        _microphone->disconnect(this);
-        track = removeAudioTrack(_microphone->id());
+    if (_microphone._track) {
+        _microphone._track->disconnect(this);
+        track = removeAudioTrack(_microphone._track->id());
         if (track) {
-            _microphone = nullptr;
+            _microphone._track = nullptr;
             emit activeMicrophoneChanged();
         }
     }
     return track;
 }
 
-bool LocalParticipant::activeCamera() const
-{
-    return nullptr != _camera;
-}
-
-bool LocalParticipant::activeSharing() const
-{
-    return nullptr != _sharing;
-}
-
-bool LocalParticipant::activeMicrophone() const
-{
-    return nullptr != _microphone;
-}
-
-QString LocalParticipant::cameraTrackId() const
-{
-    if (_camera) {
-        return _camera->id();
-    }
-    return {};
-}
-
-QString LocalParticipant::sharingTrackId() const
-{
-    if (_sharing) {
-        return _sharing->id();
-    }
-    return {};
-}
-
-QString LocalParticipant::microphoneTrackId() const
-{
-    if (_microphone) {
-        return _microphone->id();
-    }
-    return {};
-}
-
-MediaDeviceInfo LocalParticipant::cameraDeviceInfo() const
-{
-    return _camera ? _camera->deviceInfo() : _cameraDeviceinfo;
-}
-
-VideoOptions LocalParticipant::cameraOptions() const
-{
-    return _camera ? _camera->options() : _cameraOptions;
-}
-
-MediaDeviceInfo LocalParticipant::sharingDeviceInfo() const
-{
-    return _sharing ? _sharing->deviceInfo() : _sharingDeviceinfo;
-}
-
-bool LocalParticipant::cameraMuted() const
-{
-    return _camera ? _camera->muted() : _cameraMuted;
-}
-
-bool LocalParticipant::sharingMuted() const
-{
-    return _sharing ? _sharing->muted() : _sharingMuted;
-}
-
-bool LocalParticipant::microphoneMuted() const
-{
-    return _microphone ? _microphone->muted() : _microphoneMuted;
-}
-
 void LocalParticipant::setCameraDeviceInfo(const MediaDeviceInfo& info)
 {
-    if (_camera) {
-        _cameraDeviceinfo = info;
-        _camera->setDeviceInfo(info);
-    }
-    else {
-        changeCameraDeviceInfo(info);
-    }
-}
-
-void LocalParticipant::setCameraOptions(const VideoOptions& options)
-{
-    if (_camera) {
-        _cameraOptions = options;
-        _camera->setOptions(options);
-    }
-    else  {
-        changeCameraOptions(options);
-    }
-}
-
-void LocalParticipant::setCameraMuted(bool muted)
-{
-    if (_camera) {
-        _cameraMuted = muted;
-        _camera->setMuted(muted);
-    }
-    else {
-        changeCameraMuted(muted);
-    }
+    setDeviceInfo(&_camera, info, &LocalParticipant::cameraDeviceInfoChanged);
 }
 
 void LocalParticipant::setSharingDeviceInfo(const MediaDeviceInfo& info)
 {
-    if (_sharing) {
-        _sharingDeviceinfo = info;
-        _sharing->setDeviceInfo(info);
-    }
-    else {
-        changeSharingDeviceInfo(info);
-    }
+    setDeviceInfo(&_sharing, info, &LocalParticipant::sharingDeviceInfoChanged);
+}
+
+void LocalParticipant::setCameraOptions(const VideoOptions& options)
+{
+    setOptions(&_camera, options, &LocalParticipant::cameraOptionsChanged);
+}
+
+void LocalParticipant::setSharingOptions(const VideoOptions& options)
+{
+    setOptions(&_sharing, options, &LocalParticipant::sharingOptionsChanged);
+}
+
+void LocalParticipant::setMicrophoneOptions(const AudioRecordingOptions& options)
+{
+    setOptions(&_microphone, options, &LocalParticipant::microphoneMutedChanged);
+}
+
+void LocalParticipant::setCameraMuted(bool muted)
+{
+    setMuted(&_camera, muted, &LocalParticipant::cameraMutedChanged);
 }
 
 void LocalParticipant::setSharingMuted(bool muted)
 {
-    if (_sharing) {
-        _sharingMuted = muted;
-        _sharing->setMuted(muted);
-    }
-    else {
-        changeSharingMuted(muted);
-    }
+    setMuted(&_sharing, muted, &LocalParticipant::sharingMutedChanged);
 }
 
 void LocalParticipant::setMicrophoneMuted(bool muted)
 {
-    if (_microphone) {
-        _microphoneMuted = muted;
-        _microphone->setMuted(muted);
-    }
-    else {
-        changeMicrophoneMuted(muted);
-    }
+    setMuted(&_microphone, muted, &LocalParticipant::microphoneMutedChanged);
 }
 
 void LocalParticipant::onCameraDeviceInfoChanged()
 {
-    if (_camera) {
-        changeCameraDeviceInfo(_camera->deviceInfo());
-    }
+    setDeviceInfo(&_camera, _camera.trackDeviceInfo(), &LocalParticipant::cameraDeviceInfoChanged);
 }
 
 void LocalParticipant::onCameraOptionsChanged()
 {
-    if (_camera) {
-        changeCameraOptions(_camera->options());
-    }
+    setOptions(&_camera, _camera.trackOptions(), &LocalParticipant::cameraOptionsChanged);
 }
 
 void LocalParticipant::onCameraMuted()
 {
-    if (_camera) {
-        changeCameraMuted(_camera->muted());
-    }
+    setMuted(&_camera, _camera.trackIsMuted(), &LocalParticipant::cameraMutedChanged);
 }
 
 void LocalParticipant::onSharingDeviceInfoChanged()
 {
-    if (_sharing) {
-        changeSharingDeviceInfo(_sharing->deviceInfo());
-    }
+    setDeviceInfo(&_sharing, _sharing.trackDeviceInfo(), &LocalParticipant::sharingDeviceInfoChanged);
 }
 
 void LocalParticipant::onSharingMuted()
 {
-    if (_sharing) {
-        changeSharingMuted(_sharing->muted());
-    }
+    setMuted(&_sharing, _sharing.trackIsMuted(), &LocalParticipant::sharingMutedChanged);
 }
 
 void LocalParticipant::onMicrophoneMuted()
 {
-    if (_microphone) {
-        changeMicrophoneMuted(_microphone->muted());
+    setMuted(&_microphone, _microphone.trackIsMuted(), &LocalParticipant::microphoneMutedChanged);
+}
+
+template <class TElement, typename TSignal>
+void LocalParticipant::setMuted(TElement* element, bool muted, TSignal signal)
+{
+    if (element && element->_muted != muted) {
+        element->_muted = muted;
+        if (element->_track) {
+            element->_track->setMuted(muted);
+        }
+        else {
+            emit ((*this).*signal)();
+        }
     }
 }
 
-void LocalParticipant::changeCameraDeviceInfo(const MediaDeviceInfo& info)
+template <class TElement, typename TSignal>
+void LocalParticipant::setDeviceInfo(TElement* element, const MediaDeviceInfo& info, TSignal signal)
 {
-    if (_cameraDeviceinfo != info) {
-        _cameraDeviceinfo = info;
-        emit cameraDeviceInfoChanged();
+    if (element && element->_deviceinfo != info) {
+        element->_deviceinfo = info;
+        if (element->_track) {
+            element->_track->setDeviceInfo(info);
+        }
+        else {
+            emit ((*this).*signal)();
+        }
     }
 }
 
-void LocalParticipant::changeCameraOptions(const VideoOptions& options)
+template <class TElement, class TOptions, typename TSignal>
+void LocalParticipant::setOptions(TElement* element, const TOptions& options, TSignal signal)
 {
-    if (_cameraOptions != options) {
-        _cameraOptions = options;
-        emit cameraOptionsChanged();
+    if (element && element->_options != options) {
+        if (element->_track) {
+            setLocalTrackOptions(element->_track, options);
+        }
+        else {
+            emit ((*this).*signal)();
+        }
     }
 }
 
-void LocalParticipant::changeCameraMuted(bool muted)
+void LocalParticipant::setLocalTrackOptions(const QPointer<LocalVideoTrack>& track,
+                                            const VideoOptions& options)
 {
-    if (_cameraMuted != muted) {
-        _cameraMuted = muted;
-        emit cameraMutedChanged();
+    if (track) {
+        track->setOptions(options);
     }
 }
 
-void LocalParticipant::changeMicrophoneMuted(bool muted)
+std::optional<VideoOptions> LocalParticipant::getLocalTrackOptions(const QPointer<LocalVideoTrack>& track)
 {
-    if (_microphoneMuted != muted) {
-        _microphoneMuted = muted;
-        emit microphoneMutedChanged();
+    if (track) {
+        return track->options();
     }
-}
-
-void LocalParticipant::changeSharingDeviceInfo(const MediaDeviceInfo& info)
-{
-    if (_sharingDeviceinfo != info) {
-        _sharingDeviceinfo = info;
-        emit sharingDeviceInfoChanged();
-    }
-}
-
-void LocalParticipant::changeSharingMuted(bool muted)
-{
-    if (_sharingMuted != muted) {
-        _sharingMuted = muted;
-        emit sharingMutedChanged();
-    }
+    return std::nullopt;
 }

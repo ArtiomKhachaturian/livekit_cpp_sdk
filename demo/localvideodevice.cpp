@@ -31,10 +31,25 @@ void LocalVideoDevice::setDeviceInfo(const MediaDeviceInfo& info)
     }
 }
 
+void LocalVideoDevice::setOptions(const VideoOptions& options)
+{
+    if (_device) {
+        _device->setOptions(options);
+    }
+}
+
 MediaDeviceInfo LocalVideoDevice::deviceInfo() const
 {
     if (_device) {
         return _device->deviceInfo();
+    }
+    return {};
+}
+
+VideoOptions LocalVideoDevice::options() const
+{
+    if (_device) {
+        return _device->options();
     }
     return {};
 }

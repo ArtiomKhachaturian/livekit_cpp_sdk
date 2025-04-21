@@ -5,6 +5,7 @@ import LiveKitClient 1.0
 
 Pane {
     id: root
+    property var options: undefined
     property var deviceInfo: undefined
     property var focusedCell: null
     signal accepted
@@ -81,6 +82,7 @@ Pane {
         model: SharingsVideoModel {
             id: sourcesModel
             mode: grid.enumerationMode
+            options: root.options
         }
         delegate: VideoRenderer {
             anchors.fill: parent
@@ -128,6 +130,8 @@ Pane {
 
     Component.onCompleted: {
         deviceInfo = app.emptyDeviceInfo()
+        options = app.emptyVideoOptions()
+        options.preview = true
     }
 
     onVisibleChanged: {

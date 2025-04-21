@@ -48,8 +48,8 @@ public:
     bool remove(const U& item);
     bool removeAt(qsizetype index);
     // override of QAbstractListModel
-    int columnCount(const QModelIndex&) const final { return 1; }
-    int rowCount(const QModelIndex&) const final { return _items.size(); }
+    int columnCount(const QModelIndex& = {}) const final { return 1; }
+    int rowCount(const QModelIndex& = {}) const final { return _items.size(); }
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
     ~ItemModel() override { destroyItems(); }

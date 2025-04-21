@@ -80,21 +80,15 @@ Pane {
                     checked: false
                 }
 
-                CameraModelComboBox {
-                    id: cameraModelComboBox
-                    Layout.horizontalStretchFactor: 2
-                    Layout.fillWidth: true
-                }
-
-                CameraOptionsComboBox {
-                    id: cameraOptionsComboBox
-                    visible: sessionActive
-                    deviceInfo: cameraModelComboBox.deviceInfo
-                    Layout.horizontalStretchFactor: 1
-                    Layout.fillWidth: true
-                }
-
                 ToolSeparator {}
+
+                ToolButton {
+                    Layout.alignment: Qt.AlignRight
+                    text: qsTr("Options")
+                    onClicked: {
+                        mediaOptionsForm.visible = !mediaOptionsForm.visible
+                    }
+                }
 
                 ToolButton {
                     Layout.alignment: Qt.AlignRight
@@ -126,42 +120,65 @@ Pane {
             }
         }
 
-        StackLayout {
-            id: stackView
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: sessionActive ? 1 : 0
-            ConnectForm {
-                id: connectionForm
+
+            StackLayout {
+                id: stackView
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                objectName: root.objectName + "_client_form"
-                enabled: !sessionForm.connecting
-                activePreview: !sessionActive
-                activeCamera: cameraAddSwitch.checked
-                activeSharing: sharingAddSwitch.checked
-                cameraDeviceInfo: cameraModelComboBox.deviceInfo
-                onConnectClicked: {
-                    sessionForm.connect(urlText, tokenText,
-                                        autoSubscribe, adaptiveStream,
-                                        e2e, iceTransportPolicy, passPhrase)
+                //Layout.horizontalStretchFactor: 6
+                currentIndex: sessionActive ? 1 : 0
+                ConnectForm {
+                    id: connectionForm
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    objectName: root.objectName + "_client_form"
+                    enabled: !sessionForm.connecting
+                    activePreview: !sessionActive
+                    activeCamera: cameraAddSwitch.checked
+                    activeSharing: sharingAddSwitch.checked
+                    onConnectClicked: {
+                        sessionForm.connect(urlText, tokenText,
+                                            autoSubscribe, adaptiveStream,
+                                            e2e, iceTransportPolicy, passPhrase)
+                    }
+                }
+                SessionForm {
+                    id: sessionForm
+                    objectName: root.objectName
+                    activeCamera: cameraAddSwitch.checked
+                    activeMicrophone: micAddSwitch.checked
+                    activeSharing: sharingAddSwitch.checked
+                    microphoneMuted: micMuteCheckbox.checked
+                    cameraMuted: cameraMuteCheckbox.checked
+                    sharingMuted: sharingMuteCheckbox.checked
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    onError: (desc, details) => {
+                        root.error(desc, details)
+                    }
                 }
             }
-            SessionForm {
-                id: sessionForm
-                objectName: root.objectName
-                activeCamera: cameraAddSwitch.checked
-                activeMicrophone: micAddSwitch.checked
-                activeSharing: sharingAddSwitch.checked
-                camerDeviceInfo: cameraModelComboBox.deviceInfo
-                cameraOptions: cameraOptionsComboBox.options
-                microphoneMuted: micMuteCheckbox.checked
-                cameraMuted: cameraMuteCheckbox.checked
-                sharingMuted: sharingMuteCheckbox.checked
+
+            MediaOptionsForm {
+                id: mediaOptionsForm
                 Layout.fillHeight: true
-                Layout.fillWidth: true
-                onError: (desc, details) => {
-                    root.error(desc, details)
+                visible: false
+                micGroupEnabled: !sessionActive || !micAddSwitch.checked
+                onAccepted: {
+                    // connection preview
+                    connectionForm.cameraDeviceInfo = mediaOptionsForm.cameraDeviceInfo
+                    connectionForm.cameraOptions = mediaOptionsForm.cameraOptions
+                    connectionForm.sharingOptions = mediaOptionsForm.sharingOptions
+                    // session
+                    sessionForm.cameraDeviceInfo = mediaOptionsForm.cameraDeviceInfo
+                    sessionForm.cameraOptions = mediaOptionsForm.cameraOptions
+                    sessionForm.sharingOptions = mediaOptionsForm.sharingOptions
+                    sessionForm.microphoneOptions = mediaOptionsForm.microphoneOptions
+                    // sharing form
+                    sharingSelection.options = mediaOptionsForm.sharingOptions
                 }
             }
         }

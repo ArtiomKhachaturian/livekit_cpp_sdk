@@ -13,7 +13,9 @@ Item {
     property alias activeCamera: previewTracksModel.activeCamera
     property alias activeSharing: previewTracksModel.activeSharing
     property alias cameraDeviceInfo: previewTracksModel.cameraDeviceInfo
+    property alias cameraOptions: previewTracksModel.cameraOptions
     property alias sharingDeviceInfo: previewTracksModel.sharingDeviceInfo
+    property alias sharingOptions: previewTracksModel.sharingOptions
     property alias autoSubscribe: autoSubscribeChx.checked
     property alias adaptiveStream: adaptiveStreamChx.checked
     property alias e2e: e2eChx.checked
@@ -22,12 +24,14 @@ Item {
     signal connectClicked
 
     ColumnLayout {
-        width: parent.width - 200
-        anchors.centerIn: parent
+        //width: parent.width - 10
+        //anchors.centerIn: parent
+        anchors.fill: parent
+        anchors.margins: 10
         spacing: -1
 
         Frame {
-            Layout.preferredHeight: 300
+            //Layout.preferredHeight: 300
             Layout.fillHeight: true
             Layout.fillWidth: true
             RowLayout {
