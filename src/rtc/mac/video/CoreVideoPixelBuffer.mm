@@ -14,7 +14,7 @@
 #include "CoreVideoPixelBuffer.h"
 #include "CVPixelBufferAutoRelease.h"
 #include "NV12VideoFrameBuffer.h"
-#include "RgbVideoFrameBuffer.h"
+#include "RgbGenericVideoFrameBuffer.h"
 #include "VideoUtils.h"
 #include <api/make_ref_counted.h>
 #include <cassert>
@@ -60,7 +60,7 @@ class NV12Buffer : public CVBuffer<NV12VideoFrameBuffer>
     using BaseClass = CVBuffer<NV12VideoFrameBuffer>;
 public:
     NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
-               VideoFrameBufferPool framesPool);
+               VideoFrameBufferPool framesPool = {});
     // impl. of webrtc::NV12BufferInterface
     const uint8_t* DataY() const final { return cvData(0U); }
     const uint8_t* DataUV() const final { return cvData(1U); }
@@ -70,13 +70,13 @@ public:
     int height() const final { return static_cast<int>(cvHeight()); }
 };
 
-class RGBBuffer : public CVBuffer<RgbVideoFrameBuffer>
+class RGBBuffer : public CVBuffer<RgbGenericVideoFrameBuffer>
 {
-    using BaseClass = CVBuffer<RgbVideoFrameBuffer>;
+    using BaseClass = CVBuffer<RgbGenericVideoFrameBuffer>;
 public:
     RGBBuffer(CVPixelBufferAutoRelease lockedBuffer,
-              VideoFrameBufferPool framesPool,
-              VideoFrameType rgbFormat);
+              VideoFrameType rgbFormat,
+              VideoFrameBufferPool framesPool = {});
     // impl. of NativeVideoFrameBuffer
     int width() const final { return static_cast<int>(cvWidth()); }
     int height() const final { return static_cast<int>(cvHeight()); }
@@ -129,8 +129,8 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
                     }
                     if (rgbFormat.has_value()) {
                         return rtc::make_ref_counted<RGBBuffer>(std::move(lockedBuffer),
-                                                                std::move(framesPool),
-                                                                rgbFormat.value());
+                                                                rgbFormat.value(),
+                                                                std::move(framesPool));
                     }
                 }
                 lockedBuffer.unlock();
@@ -181,9 +181,9 @@ NV12Buffer::NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
 }
 
 RGBBuffer::RGBBuffer(CVPixelBufferAutoRelease lockedBuffer,
-                     VideoFrameBufferPool framesPool,
-                     VideoFrameType rgbFormat)
-    : BaseClass(std::move(lockedBuffer), std::move(framesPool), rgbFormat)
+                     VideoFrameType rgbFormat,
+                     VideoFrameBufferPool framesPool)
+    : BaseClass(std::move(lockedBuffer), rgbFormat, std::move(framesPool))
 {
 }
 

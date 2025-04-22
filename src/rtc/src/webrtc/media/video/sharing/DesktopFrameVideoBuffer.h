@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DesktopFrameVideoBuffer.h
-#include "VideoFrameBuffer.h"
-#include "RgbVideoFrameBuffer.h"
-#include <modules/desktop_capture/desktop_frame.h>
+#include "RgbGenericVideoFrameBuffer.h"
 #include <memory>
 
 namespace webrtc {
@@ -24,7 +22,7 @@ class DesktopFrame;
 namespace LiveKitCpp
 {
 
-class DesktopFrameVideoBuffer : public RgbVideoFrameBuffer
+class DesktopFrameVideoBuffer : public RgbGenericVideoFrameBuffer
 {
 public:
     DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame,

@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "IOSurfaceBuffer.h"
 #include "CFAutoRelease.h"
-#include "RgbVideoFrameBuffer.h"
+#include "RgbGenericVideoFrameBuffer.h"
 #include "NV12VideoFrameBuffer.h"
 #include "VideoUtils.h"
 #include <api/make_ref_counted.h>
@@ -55,7 +55,7 @@ class NV12Buffer : public IOSBuffer<NV12VideoFrameBuffer>
     using BaseClass = IOSBuffer<NV12VideoFrameBuffer>;
 public:
     NV12Buffer(IOSurfaceRef buffer, bool retain,
-               VideoFrameBufferPool framesPool);
+               VideoFrameBufferPool framesPool = {});
     // impl. of webrtc::NV12BufferInterface
     const uint8_t* DataY() const final { return surfaceData(0U); }
     const uint8_t* DataUV() const final { return surfaceData(1U); }
@@ -65,13 +65,13 @@ public:
     int height() const final { return static_cast<int>(surfaceHeight()); }
 };
 
-class RGBBuffer : public IOSBuffer<RgbVideoFrameBuffer>
+class RGBBuffer : public IOSBuffer<RgbGenericVideoFrameBuffer>
 {
-    using BaseClass = IOSBuffer<RgbVideoFrameBuffer>;
+    using BaseClass = IOSBuffer<RgbGenericVideoFrameBuffer>;
 public:
     RGBBuffer(IOSurfaceRef buffer, bool retain,
-              VideoFrameBufferPool framesPool,
-              VideoFrameType rgbFormat);
+              VideoFrameType rgbFormat,
+              VideoFrameBufferPool framesPool = {});
     // impl. of RgbVideoFrameBuffer
     int width() const final { return static_cast<int>(surfaceWidth()); }
     int height() const final { return static_cast<int>(surfaceHeight()); }
@@ -113,14 +113,14 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
                     }
                     if (rgbFormat.has_value()) {
                         return rtc::make_ref_counted<RGBBuffer>(buffer, retain,
-                                                                std::move(framesPool),
-                                                                rgbFormat.value());
+                                                                rgbFormat.value(),
+                                                                std::move(framesPool));
                     }
                 }
                 if (format == formatBGRA32()) {
                     return rtc::make_ref_counted<RGBBuffer>(buffer, retain,
-                                                            std::move(framesPool),
-                                                            VideoFrameType::BGRA32);
+                                                            VideoFrameType::BGRA32,
+                                                            std::move(framesPool));
                 }
                 IOSurfaceUnlock(buffer, kIOSurfaceLockReadOnly, nullptr);
             }
@@ -203,9 +203,9 @@ NV12Buffer::NV12Buffer(IOSurfaceRef buffer, bool retain,
 }
 
 RGBBuffer::RGBBuffer(IOSurfaceRef buffer, bool retain,
-                     VideoFrameBufferPool framesPool,
-                     VideoFrameType rgbFormat)
-    : BaseClass(buffer, retain, std::move(framesPool), rgbFormat)
+                     VideoFrameType rgbFormat,
+                     VideoFrameBufferPool framesPool)
+    : BaseClass(buffer, retain, rgbFormat, std::move(framesPool))
 {
 }
 

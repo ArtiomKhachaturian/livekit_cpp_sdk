@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#pragma once // NV12VideoFrameBuffer.h
 #include "VideoFrameBuffer.h"
 
 namespace webrtc {
@@ -23,16 +23,31 @@ namespace LiveKitCpp
 
 class NV12VideoFrameBuffer : public VideoFrameBuffer<webrtc::NV12BufferInterface>
 {
-    using BaseClass = VideoFrameBuffer<webrtc::NV12BufferInterface>;
+    using Base = VideoFrameBuffer<webrtc::NV12BufferInterface>;
 public:
     static const uint8_t* nv12DataY(const uint8_t* buffer) { return buffer; }
     static const uint8_t* nv12DataUV(const uint8_t* buffer, int width, int height);
+    // overrides of webrtc::VideoFrameBuffer
+    rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
+                                                              int offsetY,
+                                                              int cropWidth,
+                                                              int cropHeight,
+                                                              int scaledWidth,
+                                                              int scaledHeight) override;
     // impl. of webrtc::NV12BufferInterface
     Type type() const final { return Type::kNV12; }
     int StrideY() const override;
     int StrideUV() const override;
 protected:
     NV12VideoFrameBuffer(VideoFrameBufferPool framesPool);
+private:
+    static bool scale(const uint8_t* srcY, int srcStrideY,
+                      const uint8_t* srcUV, int srcStrideUV,
+                      int srcWidth, int srcHeight,
+                      uint8_t* dstY, int dstStrideY,
+                      uint8_t* dstUV, int dstStrideUV,
+                      int dstWidth, int dstHeight);
+private:
     // impl. of VideoFrameBuffer
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };

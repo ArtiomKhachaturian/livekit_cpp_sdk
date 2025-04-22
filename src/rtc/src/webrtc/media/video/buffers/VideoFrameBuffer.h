@@ -26,6 +26,7 @@ class VideoFrameBuffer : public TBaseBuffer
 {
     static_assert(std::is_base_of<webrtc::VideoFrameBuffer, TBaseBuffer>::value);
 public:
+    const auto& framesPool() const noexcept { return _framesPool; }
     // impl. of webrtc::VideoFrameBuffer
     rtc::scoped_refptr<webrtc::VideoFrameBuffer>
         GetMappedFrameBuffer(rtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes) override;
@@ -33,8 +34,9 @@ public:
 protected:
     template <class... Args>
     VideoFrameBuffer(VideoFrameBufferPool framesPool, Args... args);
-    const auto& framesPool() const noexcept { return _framesPool; }
     webrtc::scoped_refptr<webrtc::I420Buffer> createI420(int width, int height) const;
+    webrtc::scoped_refptr<webrtc::NV12Buffer> createNV12(int width, int height) const;
+private:
     virtual rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const = 0;
 private:
     const VideoFrameBufferPool _framesPool;
@@ -84,6 +86,12 @@ template <class TBaseBuffer>
 webrtc::scoped_refptr<webrtc::I420Buffer> VideoFrameBuffer<TBaseBuffer>::createI420(int width, int height) const
 {
     return _framesPool.createI420(width, height);
+}
+
+template <class TBaseBuffer>
+webrtc::scoped_refptr<webrtc::NV12Buffer> VideoFrameBuffer<TBaseBuffer>::createNV12(int width, int height) const
+{
+    return _framesPool.createNV12(width, height);
 }
 
 } // namespace LiveKitCpp

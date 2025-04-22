@@ -19,7 +19,7 @@ namespace LiveKitCpp
 {
 
 NV12VideoFrameBuffer::NV12VideoFrameBuffer(VideoFrameBufferPool framesPool)
-    : VideoFrameBuffer<webrtc::NV12BufferInterface>(std::move(framesPool))
+    : Base(std::move(framesPool))
 {
 }
 
@@ -39,6 +39,39 @@ const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int width
     return buffer + (width * height);
 }
 
+rtc::scoped_refptr<webrtc::VideoFrameBuffer> NV12VideoFrameBuffer::
+    CropAndScale(int offsetX, int offsetY, int cropWidth,
+                 int cropHeight, int scaledWidth, int scaledHeight)
+{
+    if (scaledWidth > 0 && scaledHeight > 0) {
+        const auto width = this->width(), height = this->height();
+        if (width > 0 && height > 0) {
+            auto const strideY = StrideY(), strideUV = StrideUV();
+            if (strideY > 0 && strideUV > 0) {
+                const auto dataY = DataY();
+                const auto dataUV = DataUV();
+                if (dataY && dataUV) {
+                    offsetX = std::max(0, offsetX);
+                    offsetY = std::max(0, offsetY);
+                    if (width - offsetX > 0 && height - offsetY > 0) {
+                        if (const auto scaled = createNV12(scaledWidth, scaledHeight)) {
+                            if (!scale(dataY, strideY, dataUV, strideUV,
+                                      cropWidth, cropHeight,
+                                      scaled->MutableDataY(), scaled->StrideY(),
+                                      scaled->MutableDataUV(), scaled->StrideUV(),
+                                      scaled->width(), scaled->height())) {
+                                scaled->CropAndScaleFrom(*this, offsetX, offsetY, cropWidth, cropHeight);
+                            }
+                            return scaled;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return Base::CropAndScale(offsetX, offsetY, cropWidth, cropHeight, scaledWidth, scaledHeight);
+}
+
 rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI420() const
 {
     if (auto i420 = createI420(width(), height())) {
@@ -55,6 +88,16 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI
         return i420;
     }
     return nullptr;
+}
+
+bool NV12VideoFrameBuffer::scale(const uint8_t* srcY, int srcStrideY,
+                                 const uint8_t* srcUV, int srcStrideUV,
+                                 int srcWidth, int srcHeight,
+                                 uint8_t* dstY, int dstStrideY,
+                                 uint8_t* dstUV, int dstStrideUV,
+                                 int dstWidth, int dstHeight)
+{
+    
 }
 
 } // namespace LiveKitCpp

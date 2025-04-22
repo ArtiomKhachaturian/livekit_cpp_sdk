@@ -12,50 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // RgbVideoFrameBuffer.h
-#include "VideoFrameBuffer.h"
-#include "NativeVideoFrameBuffer.h"
+#include "RgbGenericVideoFrameBuffer.h"
+#include <memory>
 
 namespace LiveKitCpp
 {
 
-class RgbVideoFrameBuffer : public VideoFrameBuffer<NativeVideoFrameBuffer>
+class RgbVideoFrameBuffer : public RgbGenericVideoFrameBuffer
 {
-    using Base = VideoFrameBuffer<NativeVideoFrameBuffer>;
 public:
-    static int bytesPerPixel(VideoFrameType rgbFormat);
-    int bytesPerPixel() const { return bytesPerPixel(nativeType()); }
+    // method name started from capital letter for compatibility with WebRTC API
+    static rtc::scoped_refptr<RgbVideoFrameBuffer> Create(int width, int height,
+                                                          VideoFrameType rgbFormat,
+                                                          int stride = 0,
+                                                          VideoFrameBufferPool framesPool = {});
     // impl. of NativeVideoFrameBuffer
-    VideoFrameType nativeType() const final { return _rgbFormat; }
+    int stride(size_t planeIndex) const final;
+    const std::byte* data(size_t planeIndex) const final;
+    // impl. of webrtc::VideoFrameBuffer
+    int width() const final { return _width; }
+    int height() const final { return _height; }
 protected:
-    RgbVideoFrameBuffer(VideoFrameBufferPool framesPool, VideoFrameType rgbFormat);
-    virtual rtc::scoped_refptr<RgbVideoFrameBuffer> create(int width, int height);
-    // overrides of webrtc::VideoFrameBuffer
-    rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
-                                                              int offsetY,
-                                                              int cropWidth,
-                                                              int cropHeight,
-                                                              int scaledWidth,
-                                                              int scaledHeight) override;
-    // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    RgbVideoFrameBuffer(VideoFrameType rgbFormat,
+                        int width, int height, int stride = 0,
+                        VideoFrameBufferPool framesPool = {});
 private:
-    // common
-    static bool scale(VideoFrameType type, const std::byte* srcRGB,
-                      int srcStrideRGB, int srcWidth, int srcHeight,
-                      std::byte* dstRGB, int dstStrideRGB,
-                      int dstWidth, int dstHeight);
-    // 24bpp
-    static bool scale24bpp(const std::byte* srcRGB, int srcStrideRGB,
-                           int srcWidth, int srcHeight,
-                           std::byte* dstRGB, int dstStrideRGB,
-                           int dstWidth, int dstHeight);
-    // 32bpp
-    static bool scale32bpp(const std::byte* srcARGB, int srcStrideARGB,
-                           int srcWidth, int srcHeight,
-                           std::byte* dstARGB, int dstStrideARGB,
-                           int dstWidth, int dstHeight);
+    static std::unique_ptr<std::byte[]> allocate(int stride, int height);
 private:
-    const VideoFrameType _rgbFormat;
+    const int _width;
+    const int _height;
+    const int _stride;
+    const std::unique_ptr<std::byte[]> _data;
 };
-	
+
 } // namespace LiveKitCpp

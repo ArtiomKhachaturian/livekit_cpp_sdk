@@ -19,7 +19,7 @@ namespace LiveKitCpp
 
 DesktopFrameVideoBuffer::DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame,
                                                  VideoFrameBufferPool framesPool)
-    : RgbVideoFrameBuffer(std::move(framesPool), rgbType())
+    : RgbGenericVideoFrameBuffer(rgbType(), std::move(framesPool))
     , _frame(std::move(frame))
 {
 }
