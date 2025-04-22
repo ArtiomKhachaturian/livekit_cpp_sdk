@@ -26,6 +26,7 @@ RgbGenericVideoFrameBuffer::RgbGenericVideoFrameBuffer(VideoFrameType rgbFormat,
     : Base(std::move(framesPool))
     , _rgbFormat(rgbFormat)
 {
+    assert(isRGB(_rgbFormat));
     assert(bytesPerPixel() > 0);
 }
 

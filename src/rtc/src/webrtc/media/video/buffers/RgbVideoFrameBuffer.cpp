@@ -44,7 +44,7 @@ rtc::scoped_refptr<RgbVideoFrameBuffer> RgbVideoFrameBuffer::Create(int width,
                                                                     int stride,
                                                                     VideoFrameBufferPool framesPool)
 {
-    if (width > 0 && height > 0) {
+    if (width > 0 && height > 0 && isRGB(rgbFormat)) {
         return webrtc::make_ref_counted<RgbVideoFrameBuffer>(rgbFormat, width, height,
                                                              stride, std::move(framesPool));
     }

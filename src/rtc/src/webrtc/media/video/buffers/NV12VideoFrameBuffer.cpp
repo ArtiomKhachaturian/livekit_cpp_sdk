@@ -14,6 +14,7 @@
 #include "NV12VideoFrameBuffer.h"
 #include <api/video/i420_buffer.h>
 #include <common_video/libyuv/include/webrtc_libyuv.h>
+#include <third_party/libyuv/include/libyuv/scale_uv.h>
 
 namespace LiveKitCpp 
 {
@@ -97,7 +98,13 @@ bool NV12VideoFrameBuffer::scale(const uint8_t* srcY, int srcStrideY,
                                  uint8_t* dstUV, int dstStrideUV,
                                  int dstWidth, int dstHeight)
 {
-    
+    return 0 == libyuv::NV12Scale(srcY, srcStrideY,
+                                  srcUV, srcStrideUV,
+                                  srcWidth, srcHeight,
+                                  dstY, dstStrideY,
+                                  dstUV, dstStrideUV,
+                                  dstWidth, dstHeight,
+                                  libyuv::FilterMode::kFilterNone);
 }
 
 } // namespace LiveKitCpp

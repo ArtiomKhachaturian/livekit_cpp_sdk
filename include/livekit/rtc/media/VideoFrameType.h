@@ -44,5 +44,6 @@ enum class VideoFrameType
 };
 
 LIVEKIT_RTC_API std::string toString(VideoFrameType type);
+LIVEKIT_RTC_API bool isRGB(VideoFrameType type);
 
 } // namespace LiveKitCpp

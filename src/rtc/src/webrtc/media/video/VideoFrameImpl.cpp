@@ -488,4 +488,20 @@ std::string toString(VideoFrameType type)
     }
 }
 
+bool isRGB(VideoFrameType type)
+{
+    switch (type) {
+        case VideoFrameType::RGB24:
+        case VideoFrameType::BGR24:
+        case VideoFrameType::BGRA32:
+        case VideoFrameType::ARGB32:
+        case VideoFrameType::RGBA32:
+        case VideoFrameType::ABGR32:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
 } // namespace LiveKitCpp
