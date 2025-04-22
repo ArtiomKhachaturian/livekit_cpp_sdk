@@ -38,6 +38,7 @@ public:
     void setTargetFramerate(int32_t fps) final;
     void setTargetResolution(int32_t width, int32_t height) final;
     void setExcludedWindow(webrtc::WindowId window) final;
+    void focusOnSelectedSource() final;
 private:
     bool enumerate();
     // impl. of CapturerProxySink

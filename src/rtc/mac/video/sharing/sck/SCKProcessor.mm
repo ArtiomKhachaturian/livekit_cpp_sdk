@@ -81,6 +81,13 @@ void SCKProcessor::setExcludedWindow(SCWindow* window)
     }
 }
 
+void SCKProcessor::focusOnSelectedWindow()
+{
+    if (const auto impl = loadImpl()) {
+        impl->focusOnSelectedWindow();
+    }
+}
+
 void SCKProcessor::setShowCursor(bool show)
 {
     if (const auto impl = loadImpl()) {

@@ -19,10 +19,10 @@
 #include "IOSurfaceBuffer.h"
 #include "Utils.h"
 #include "VideoUtils.h"
-//#include <rtc_base/time_utils.h>
 #include <modules/desktop_capture/mac/window_list_utils.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
-#include <iostream>
+
+extern "C" AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out) __attribute__((weak_import));
 
 namespace {
 
@@ -167,6 +167,16 @@ void SCKProcessorImpl::setExcludedWindow(SCWindow* window)
                     }
                 }
             }
+        }
+    }
+}
+
+void SCKProcessorImpl::focusOnSelectedWindow()
+{
+    @autoreleasepool {
+        SCWindow* window = selectedWindow();
+        if (window) {
+            
         }
     }
 }

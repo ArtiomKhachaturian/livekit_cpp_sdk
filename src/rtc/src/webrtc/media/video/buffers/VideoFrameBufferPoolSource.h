@@ -27,13 +27,16 @@
 namespace LiveKitCpp
 {
 
+class RgbVideoFrameBuffer;
+enum class VideoFrameType;
+
 // concurrent & thread-safe version of webrtc::VideoFrameBufferPool
-class VideoFrameBufferPoolSource
+class VideoFrameBufferPoolSource : public std::enable_shared_from_this<VideoFrameBufferPoolSource>
 {
     using BuffersList = std::list<webrtc::scoped_refptr<webrtc::VideoFrameBuffer>>;
 public:
-    VideoFrameBufferPoolSource();
-    VideoFrameBufferPoolSource(size_t maxNumberOfBuffers);
+    static std::shared_ptr<VideoFrameBufferPoolSource> create();
+    static std::shared_ptr<VideoFrameBufferPoolSource> create(size_t maxNumberOfBuffers);
     ~VideoFrameBufferPoolSource() { release(); }
     // Changes the max amount of buffers in the pool to the new value.
     // Returns true if change was successful and false if the amount of already
@@ -48,11 +51,24 @@ public:
     webrtc::scoped_refptr<webrtc::I210Buffer> createI210(int width, int height);
     webrtc::scoped_refptr<webrtc::I410Buffer> createI410(int width, int height);
     webrtc::scoped_refptr<webrtc::NV12Buffer> createNV12(int width, int height);
+    webrtc::scoped_refptr<RgbVideoFrameBuffer> createRgb(int width, int height,
+                                                         VideoFrameType rgbFormat,
+                                                         int stride = 0);
+protected:
+    VideoFrameBufferPoolSource();
+    VideoFrameBufferPoolSource(size_t maxNumberOfBuffers);
 private:
+    template <typename... Args>
     webrtc::scoped_refptr<webrtc::VideoFrameBuffer> getExisting(int width, int height,
-                                                                webrtc::VideoFrameBuffer::Type type);
-    template <class TBuffer>
-    webrtc::scoped_refptr<TBuffer> create(int width, int height);
+                                                                webrtc::VideoFrameBuffer::Type type,
+                                                                Args&&... args);
+    template <class TBuffer, bool attachFramePool, typename... Args>
+    webrtc::scoped_refptr<TBuffer> create(int width, int height, Args&&... args);
+    template <typename... Args>
+    static bool matched(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+                        int width, int height,
+                        webrtc::VideoFrameBuffer::Type type,
+                        Args&&... args);
     static bool hasOneRef(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
 private:
     Bricks::SafeObj<BuffersList> _buffers;

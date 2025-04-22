@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoFrameBufferPoolSource.h"
+#include "VideoFrameBufferPool.h"
+#include "RgbVideoFrameBuffer.h"
 #include <api/make_ref_counted.h>
 #include <limits>
 
@@ -47,6 +49,9 @@ inline webrtc::VideoFrameBuffer::Type type<webrtc::I410Buffer>() { return webrtc
 template <>
 inline webrtc::VideoFrameBuffer::Type type<webrtc::NV12Buffer>() { return webrtc::VideoFrameBuffer::Type::kNV12; }
 
+template <>
+inline webrtc::VideoFrameBuffer::Type type<LiveKitCpp::RgbVideoFrameBuffer>() { return webrtc::VideoFrameBuffer::Type::kNative; }
+
 }
 
 namespace LiveKitCpp
@@ -60,6 +65,16 @@ VideoFrameBufferPoolSource::VideoFrameBufferPoolSource()
 VideoFrameBufferPoolSource::VideoFrameBufferPoolSource(size_t maxNumberOfBuffers)
     : _maxNumberOfBuffers(maxNumberOfBuffers)
 {
+}
+
+std::shared_ptr<VideoFrameBufferPoolSource> VideoFrameBufferPoolSource::create()
+{
+    return std::shared_ptr<VideoFrameBufferPoolSource>(new VideoFrameBufferPoolSource);
+}
+
+std::shared_ptr<VideoFrameBufferPoolSource> VideoFrameBufferPoolSource::create(size_t maxNumberOfBuffers)
+{
+    return std::shared_ptr<VideoFrameBufferPoolSource>(new VideoFrameBufferPoolSource(maxNumberOfBuffers));
 }
 
 bool VideoFrameBufferPoolSource::resize(size_t maxNumberOfBuffers)
@@ -96,46 +111,54 @@ bool VideoFrameBufferPoolSource::resize(size_t maxNumberOfBuffers)
 
 webrtc::scoped_refptr<webrtc::I420Buffer> VideoFrameBufferPoolSource::createI420(int width, int height)
 {
-    return create<webrtc::I420Buffer>(width, height);
+    return create<webrtc::I420Buffer, false>(width, height);
 }
 
 webrtc::scoped_refptr<webrtc::I422Buffer> VideoFrameBufferPoolSource::createI422(int width, int height)
 {
-    return create<webrtc::I422Buffer>(width, height);
+    return create<webrtc::I422Buffer, false>(width, height);
 }
 
 webrtc::scoped_refptr<webrtc::I444Buffer> VideoFrameBufferPoolSource::createI444(int width, int height)
 {
-    return create<webrtc::I444Buffer>(width, height);
+    return create<webrtc::I444Buffer, false>(width, height);
 }
 
 webrtc::scoped_refptr<webrtc::I010Buffer> VideoFrameBufferPoolSource::createI010(int width, int height)
 {
-    return create<webrtc::I010Buffer>(width, height);
+    return create<webrtc::I010Buffer, false>(width, height);
 }
 
 webrtc::scoped_refptr<webrtc::I210Buffer> VideoFrameBufferPoolSource::createI210(int width, int height)
 {
-    return create<webrtc::I210Buffer>(width, height);
+    return create<webrtc::I210Buffer, false>(width, height);
 }
 
 webrtc::scoped_refptr<webrtc::I410Buffer> VideoFrameBufferPoolSource::createI410(int width, int height)
 {
-    return create<webrtc::I410Buffer>(width, height);
+    return create<webrtc::I410Buffer, false>(width, height);
 }
 
 webrtc::scoped_refptr<webrtc::NV12Buffer> VideoFrameBufferPoolSource::createNV12(int width, int height)
 {
-    return create<webrtc::NV12Buffer>(width, height);
+    return create<webrtc::NV12Buffer, false>(width, height);
 }
 
+webrtc::scoped_refptr<RgbVideoFrameBuffer> VideoFrameBufferPoolSource::createRgb(int width, int height,
+                                                                                 VideoFrameType rgbFormat,
+                                                                                 int stride)
+{
+    return create<RgbVideoFrameBuffer, true>(width, height, rgbFormat, stride);
+}
+
+template <typename... Args>
 webrtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBufferPoolSource::
-    getExisting(int width, int height, webrtc::VideoFrameBuffer::Type type)
+    getExisting(int width, int height, webrtc::VideoFrameBuffer::Type type, Args&&... args)
 {
     // Release buffers with wrong resolution or different type.
     for (auto it = _buffers->begin(); it != _buffers->end();) {
         const auto& buffer = *it;
-        if (buffer->width() != width || buffer->height() != height || buffer->type() != type) {
+        if (!matched(buffer, width, height, type, std::forward<Args>(args)...)) {
             it = _buffers->erase(it);
         } else {
             ++it;
@@ -155,12 +178,13 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBufferPoolSource::
     return {};
 }
 
-template <class TBuffer>
-webrtc::scoped_refptr<TBuffer> VideoFrameBufferPoolSource::create(int width, int height)
+template <class TBuffer, bool attachFramePool, typename... Args>
+webrtc::scoped_refptr<TBuffer> VideoFrameBufferPoolSource::create(int width, int height,
+                                                                  Args&&... args)
 {
     if (width > 0 && height > 0) {
         LOCK_WRITE_SAFE_OBJ(_buffers);
-        if (auto buffer = getExisting(width, height, type<TBuffer>())) {
+        if (auto buffer = getExisting(width, height, type<TBuffer>(), std::forward<Args>(args)...)) {
             // Cast is safe because the only way kI420 buffer is created is
             // in the same function below, where `RefCountedObject<I420Buffer>` is
             // created.
@@ -173,11 +197,35 @@ webrtc::scoped_refptr<TBuffer> VideoFrameBufferPoolSource::create(int width, int
             return nullptr;
         }
         // Allocate new buffer.
-        auto buffer = TBuffer::Create(width, height);
+        webrtc::scoped_refptr<TBuffer> buffer;
+        if constexpr (attachFramePool) {
+            buffer = TBuffer::Create(width, height, std::forward<Args>(args)..., weak_from_this());
+        }
+        else {
+            buffer = TBuffer::Create(width, height, std::forward<Args>(args)...);
+        }
         _buffers->push_back(buffer);
         return buffer;
     }
     return {};
+}
+
+template <typename... Args>
+bool VideoFrameBufferPoolSource::matched(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+                                         int width, int height,
+                                         webrtc::VideoFrameBuffer::Type type,
+                                         Args&&... args)
+{
+    if (buffer && buffer->width() == width && buffer->height() == height && buffer->type() == type) {
+        if (webrtc::VideoFrameBuffer::Type::kNative == type) {
+            if constexpr (sizeof...(Args)) {
+                const auto rgb = static_cast<webrtc::RefCountedObject<NativeVideoFrameBuffer>*>(buffer.get());
+                return rgb->nativeType() == std::get<0U>(std::tie(args...));
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 bool VideoFrameBufferPoolSource::hasOneRef(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer)
@@ -202,6 +250,8 @@ bool VideoFrameBufferPoolSource::hasOneRef(const webrtc::scoped_refptr<webrtc::V
                 return testOneRef<webrtc::I410Buffer>(buffer);
             case webrtc::VideoFrameBuffer::Type::kNV12:
                 return testOneRef<webrtc::NV12Buffer>(buffer);
+            case webrtc::VideoFrameBuffer::Type::kNative:
+                return testOneRef<RgbVideoFrameBuffer>(buffer);
             default:
                 RTC_DCHECK_NOTREACHED();
         }

@@ -51,10 +51,12 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
                                            const std::shared_ptr<Bricks::Logger>& logger,
                                            bool liveImmediately)
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
-    , _framesPool(std::make_shared<VideoFrameBufferPoolSource>())
+    , _framesPool(VideoFrameBufferPoolSource::create())
 {
     static_assert(64U == sizeof(rtc::VideoSinkWants), "check changes in rtc::VideoSinkWants structure");
-    _framesPool->resize(webrtc::videocapturemodule::kDefaultFrameRate);
+    if (_framesPool) {
+        _framesPool->resize(webrtc::videocapturemodule::kDefaultFrameRate);
+    }
 }
 
 AsyncVideoSourceImpl::~AsyncVideoSourceImpl()
@@ -67,7 +69,7 @@ void AsyncVideoSourceImpl::processConstraints(const webrtc::VideoTrackSourceCons
         LOCK_READ_SAFE_OBJ(_broadcasters);
         for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
             if (it->second) {
-                it->second->processConstraints(c);
+                it->second->OnConstraintsChanged(c);
             }
             else {
                 it->first->OnConstraintsChanged(c);
@@ -189,7 +191,7 @@ void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updat
         if (!_broadcasters->empty()) {
             for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
                 if (it->second) {
-                    it->second->deliverFrame(frame, framesPool());
+                    it->second->OnFrame(frame);
                 }
                 else {
                     it->first->OnFrame(frame);
@@ -209,7 +211,7 @@ void AsyncVideoSourceImpl::discard()
     LOCK_READ_SAFE_OBJ(_broadcasters);
     for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
         if (it->second) {
-            it->second->discardFrame();
+            it->second->OnDiscardedFrame();
         }
         else {
             it->first->OnDiscardedFrame();
@@ -230,14 +232,15 @@ void AsyncVideoSourceImpl::onClosed()
     resetCapturer();
     resetStats();
     _broadcasters({});
-    _framesPool->release();
 }
 
 void AsyncVideoSourceImpl::onMuted()
 {
     AsyncMediaSourceImpl::onMuted();
     resetStats();
-    _framesPool->release();
+    if (_framesPool) {
+        _framesPool->release();
+    }
 }
 
 void AsyncVideoSourceImpl::onEnabled(bool enabled)
@@ -248,7 +251,9 @@ void AsyncVideoSourceImpl::onEnabled(bool enabled)
     }
     else {
         resetCapturer();
-        _framesPool->release();
+        if (_framesPool) {
+            _framesPool->release();
+        }
     }
 }
 

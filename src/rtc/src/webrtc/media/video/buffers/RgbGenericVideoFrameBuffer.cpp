@@ -79,7 +79,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> RgbGenericVideoFrameBuffer::
 
 rtc::scoped_refptr<RgbGenericVideoFrameBuffer> RgbGenericVideoFrameBuffer::createRGB(int width, int height)
 {
-    return RgbVideoFrameBuffer::Create(width, height, nativeType(), 0, framesPool());
+    return framesPool().createRgb(width, height, nativeType());
 }
 
 rtc::scoped_refptr<webrtc::I420BufferInterface> RgbGenericVideoFrameBuffer::convertToI420() const

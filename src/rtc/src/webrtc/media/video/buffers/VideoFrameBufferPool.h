@@ -26,6 +26,8 @@ namespace LiveKitCpp
 {
 
 class VideoFrameBufferPoolSource;
+class RgbVideoFrameBuffer;
+enum class VideoFrameType;
 
 class VideoFrameBufferPool
 {
@@ -42,9 +44,13 @@ public:
     webrtc::scoped_refptr<webrtc::I210Buffer> createI210(int width, int height) const;
     webrtc::scoped_refptr<webrtc::I410Buffer> createI410(int width, int height) const;
     webrtc::scoped_refptr<webrtc::NV12Buffer> createNV12(int width, int height) const;
+    webrtc::scoped_refptr<RgbVideoFrameBuffer> createRgb(int width, int height,
+                                                         VideoFrameType rgbFormat,
+                                                         int stride = 0) const;
 private:
-    template <class TBuffer, class TMethod>
-    webrtc::scoped_refptr<TBuffer> create(TMethod method, int width, int height) const;
+    template <class TBuffer, class TMethod, typename... Args>
+    webrtc::scoped_refptr<TBuffer> create(TMethod method, int width,
+                                          int height, Args&&... args) const;
 private:
     std::weak_ptr<VideoFrameBufferPoolSource> _source;
 };

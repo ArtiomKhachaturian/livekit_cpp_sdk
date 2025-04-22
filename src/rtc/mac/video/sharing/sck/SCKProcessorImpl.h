@@ -56,6 +56,7 @@ public:
     bool selectDisplay(SCDisplay* display);
     bool selectWindow(SCWindow* window);
     void setExcludedWindow(SCWindow* window);
+    void focusOnSelectedWindow();
     void setShowCursor(bool show);
     void setTargetFramerate(int32_t fps);
     void setTargetResolution(int32_t width, int32_t height);

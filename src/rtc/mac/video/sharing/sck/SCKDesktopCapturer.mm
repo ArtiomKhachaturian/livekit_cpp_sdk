@@ -126,6 +126,13 @@ void SCKDesktopCapturer::setExcludedWindow(webrtc::WindowId wId)
     }
 }
 
+void SCKDesktopCapturer::focusOnSelectedSource()
+{
+    if (window()) {
+        _processor->focusOnSelectedWindow();
+    }
+}
+
 bool SCKDesktopCapturer::enumerate()
 {
     @autoreleasepool {

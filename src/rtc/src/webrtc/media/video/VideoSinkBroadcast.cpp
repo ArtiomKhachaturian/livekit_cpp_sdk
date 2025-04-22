@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoSinkBroadcast.h"
-#include "VideoFrameBufferPool.h"
+#include "VideoFrameBufferPoolSource.h"
 
 namespace {
 
@@ -34,6 +34,7 @@ namespace LiveKitCpp
 VideoSinkBroadcast::VideoSinkBroadcast(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
                                        const rtc::VideoSinkWants& wants)
     : _sink(sink)
+    , _framesPool(VideoFrameBufferPoolSource::create())
     , _adapter(2)
 {
     assert(_sink);
@@ -48,35 +49,35 @@ void VideoSinkBroadcast::updateSinkWants(const rtc::VideoSinkWants& wants)
     _rotationApplied = wants.rotation_applied;
 }
 
-void VideoSinkBroadcast::deliverFrame(const webrtc::VideoFrame& frame,
-                                      const VideoFrameBufferPool& framesPool)
+void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
 {
     if (const auto buffer = frame.video_frame_buffer()) {
         int adaptedWidth, adaptedHeight, cropWidth, cropHeight, cropX, cropY;
+        VideoFrameBufferPool pool{_framesPool};
         if (adaptFrame(frame.width(), frame.height(), frame.timestamp_us(),
                        adaptedWidth, adaptedHeight,
                        cropWidth, cropHeight, cropX, cropY)) {
             if (adaptedWidth == frame.width() && adaptedHeight == frame.height()) {
                 // No adaption - optimized path.
-                broadcast(frame, framesPool);
+                broadcast(frame, std::move(pool));
             }
             else if (const auto srcI420 = toI420(frame)) {
-                auto dstI420 = framesPool.createI420(adaptedWidth, adaptedHeight);
+                auto dstI420 = pool.createI420(adaptedWidth, adaptedHeight);
                 dstI420->CropAndScaleFrom(*srcI420, cropX, cropY, cropWidth, cropHeight);
                 webrtc::VideoFrame adapted(frame);
                 adapted.set_video_frame_buffer(dstI420);
-                broadcast(adapted, framesPool);
+                broadcast(adapted, std::move(pool));
             }
         }
     }
 }
 
-void VideoSinkBroadcast::discardFrame()
+void VideoSinkBroadcast::OnDiscardedFrame()
 {
     _broadcaster.OnDiscardedFrame();
 }
 
-void VideoSinkBroadcast::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
+void VideoSinkBroadcast::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
 {
     _broadcaster.ProcessConstraints(c);
     _sink->OnConstraintsChanged(c);
@@ -102,7 +103,7 @@ bool VideoSinkBroadcast::adaptFrame(int width, int height, int64_t timeUs,
 }
 
 void VideoSinkBroadcast::broadcast(const webrtc::VideoFrame& frame,
-                                   const VideoFrameBufferPool& /*framesPool*/)
+                                   VideoFrameBufferPool /*framesPool*/)
 {
     if (_rotationApplied && frame.rotation() != webrtc::kVideoRotation_0) {
         if (const auto srcI420 = toI420(frame)) {

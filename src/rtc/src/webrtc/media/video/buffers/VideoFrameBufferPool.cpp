@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "VideoFrameBufferPool.h"
 #include "VideoFrameBufferPoolSource.h"
+#include "RgbVideoFrameBuffer.h"
 
 namespace LiveKitCpp
 {
@@ -57,16 +58,26 @@ webrtc::scoped_refptr<webrtc::NV12Buffer> VideoFrameBufferPool::createNV12(int w
     return create<webrtc::NV12Buffer>(&VideoFrameBufferPoolSource::createNV12, width, height);
 }
 
-template <class TBuffer, class TMethod>
-webrtc::scoped_refptr<TBuffer> VideoFrameBufferPool::create(TMethod method, int width, int height) const
+webrtc::scoped_refptr<RgbVideoFrameBuffer> VideoFrameBufferPool::createRgb(int width, int height,
+                                                                           VideoFrameType rgbFormat,
+                                                                           int stride) const
+{
+    return create<RgbVideoFrameBuffer>(&VideoFrameBufferPoolSource::createRgb,
+                                       width, height, rgbFormat, stride);
+}
+
+template <class TBuffer, class TMethod, typename... Args>
+webrtc::scoped_refptr<TBuffer> VideoFrameBufferPool::create(TMethod method,
+                                                            int width, int height,
+                                                            Args&&... args) const
 {
     webrtc::scoped_refptr<TBuffer> buffer;
     if (width > 0 && height > 0) {
         if (const auto source = _source.lock()) {
-            buffer = ((*source).*method)(width, height);
+            buffer = ((*source).*method)(width, height, std::forward<Args>(args)...);
         }
         if (!buffer) {
-            buffer = TBuffer::Create(width, height);
+            buffer = TBuffer::Create(width, height, std::forward<Args>(args)...);
         }
     }
     return buffer;
