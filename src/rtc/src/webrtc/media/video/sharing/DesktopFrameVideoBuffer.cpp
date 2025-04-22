@@ -17,11 +17,16 @@
 namespace LiveKitCpp
 {
 
-// DesktopFrame objects always hold BGRA data (according to WebRTC docs)
 DesktopFrameVideoBuffer::DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame,
                                                  VideoFrameBufferPool framesPool)
-    : RgbVideoFrameBuffer(std::move(framesPool), VideoFrameType::BGRA32)
+    : RgbVideoFrameBuffer(std::move(framesPool), rgbType())
     , _frame(std::move(frame))
+{
+}
+
+DesktopFrameVideoBuffer::DesktopFrameVideoBuffer(int width, int height,
+                                                 VideoFrameBufferPool framesPool)
+    : DesktopFrameVideoBuffer(make(width, height), std::move(framesPool))
 {
 }
 
@@ -53,6 +58,14 @@ int DesktopFrameVideoBuffer::width() const
 int DesktopFrameVideoBuffer::height() const
 {
     return _frame ? _frame->size().height() : 0;
+}
+
+std::unique_ptr<webrtc::DesktopFrame> DesktopFrameVideoBuffer::make(int width, int height)
+{
+    if (width > 0 && height > 0) {
+        return std::make_unique<webrtc::BasicDesktopFrame>(webrtc::DesktopSize{width, height});
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp

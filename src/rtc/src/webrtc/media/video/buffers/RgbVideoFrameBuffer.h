@@ -20,13 +20,40 @@ namespace LiveKitCpp
 
 class RgbVideoFrameBuffer : public VideoFrameBuffer<NativeVideoFrameBuffer>
 {
+    using Base = VideoFrameBuffer<NativeVideoFrameBuffer>;
 public:
+    static int bytesPerPixel(VideoFrameType rgbFormat);
+    int bytesPerPixel() const { return bytesPerPixel(nativeType()); }
     // impl. of NativeVideoFrameBuffer
     VideoFrameType nativeType() const final { return _rgbFormat; }
 protected:
     RgbVideoFrameBuffer(VideoFrameBufferPool framesPool, VideoFrameType rgbFormat);
+    virtual rtc::scoped_refptr<RgbVideoFrameBuffer> create(int width, int height);
+    // overrides of webrtc::VideoFrameBuffer
+    rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
+                                                              int offsetY,
+                                                              int cropWidth,
+                                                              int cropHeight,
+                                                              int scaledWidth,
+                                                              int scaledHeight) override;
     // impl. of VideoFrameBuffer<>
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+private:
+    // common
+    static bool scale(VideoFrameType type, const std::byte* srcRGB,
+                      int srcStrideRGB, int srcWidth, int srcHeight,
+                      std::byte* dstRGB, int dstStrideRGB,
+                      int dstWidth, int dstHeight);
+    // 24bpp
+    static bool scale24bpp(const std::byte* srcRGB, int srcStrideRGB,
+                           int srcWidth, int srcHeight,
+                           std::byte* dstRGB, int dstStrideRGB,
+                           int dstWidth, int dstHeight);
+    // 32bpp
+    static bool scale32bpp(const std::byte* srcARGB, int srcStrideARGB,
+                           int srcWidth, int srcHeight,
+                           std::byte* dstARGB, int dstStrideARGB,
+                           int dstWidth, int dstHeight);
 private:
     const VideoFrameType _rgbFormat;
 };

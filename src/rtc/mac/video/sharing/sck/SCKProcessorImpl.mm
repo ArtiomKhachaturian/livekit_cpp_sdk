@@ -445,7 +445,8 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> SCKProcessorImpl::
                     const auto windowBounds = webrtc::GetWindowBounds(window.windowID);
                     const auto windowWidth = roundCGFloat<int32_t>(windowBounds.width() * scaleFactor);
                     const auto windowHeight = roundCGFloat<int32_t>(windowBounds.height() * scaleFactor);
-                    if (windowWidth != buffer->width() || windowHeight != buffer->height()) {
+                    if (windowWidth > 0 && windowHeight > 0 &&
+                        (windowWidth != buffer->width() || windowHeight != buffer->height())) {
                         if (windowWidth <= buffer->width() && windowHeight <= buffer->height()) {
                             buffer = buffer->CropAndScale(0, 0,
                                                           windowWidth, windowHeight,
@@ -455,17 +456,19 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> SCKProcessorImpl::
                             const CGSize source = CGSizeMake(windowWidth, windowHeight);
                             const CGSize target = CGSizeMake(buffer->width(), buffer->height());
                             const CGSize bounds = scaleKeepAspectRatio(source, target);
-                            auto cropWidth = even2(roundCGFloat<int32_t>(bounds.width));
-                            if (cropWidth > buffer->width()) {
-                                cropWidth = buffer->width();
+                            if (!CGSizeEqualToSize(bounds, CGSizeZero)) {
+                                auto cropWidth = even2(roundCGFloat<int32_t>(bounds.width));
+                                if (cropWidth > buffer->width()) {
+                                    cropWidth = buffer->width();
+                                }
+                                auto cropHeight = even2(roundCGFloat<int32_t>(bounds.height));
+                                if (cropHeight > buffer->height()) {
+                                    cropHeight = buffer->height();
+                                }
+                                buffer = buffer->CropAndScale(0, 0,
+                                                              cropWidth, cropHeight,
+                                                              cropWidth, cropHeight);
                             }
-                            auto cropHeight = even2(roundCGFloat<int32_t>(bounds.height));
-                            if (cropHeight > buffer->height()) {
-                                cropHeight = buffer->height();
-                            }
-                            buffer = buffer->CropAndScale(0, 0,
-                                                          cropWidth, cropHeight,
-                                                          cropWidth, cropHeight);
                         }
                     }
                 }

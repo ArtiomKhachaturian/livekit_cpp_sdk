@@ -29,13 +29,19 @@ class DesktopFrameVideoBuffer : public RgbVideoFrameBuffer
 public:
     DesktopFrameVideoBuffer(std::unique_ptr<webrtc::DesktopFrame> frame,
                             VideoFrameBufferPool framesPool = {});
+    DesktopFrameVideoBuffer(int width, int height,
+                            VideoFrameBufferPool framesPool = {});
     ~DesktopFrameVideoBuffer() override;
+    // DesktopFrame objects always hold BGRA data (according to WebRTC docs)
+    static constexpr VideoFrameType rgbType() { return VideoFrameType::BGRA32; }
     // impl. of NativeVideoFrameBuffer
     int stride(size_t planeIndex) const final;
     const std::byte* data(size_t planeIndex) const final;
     // impl. of webrtc::VideoFrameBuffer
     int width() const final;
     int height() const final;
+private:
+    static std::unique_ptr<webrtc::DesktopFrame> make(int width, int height);
 private:
     const std::unique_ptr<webrtc::DesktopFrame> _frame;
 };
