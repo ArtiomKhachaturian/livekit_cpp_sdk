@@ -37,22 +37,6 @@ inline T roundCGFloat(CGFloat f) {
     return static_cast<int32_t>(std::round(f));
 }
 
-inline CGRect scaleRect(CGRect input, float scale) {
-    input.origin.x *= scale;
-    input.origin.y *= scale;
-    input.size.width *= scale;
-    input.size.height *= scale;
-    return input;
-}
-
-inline CGSize scaleWithAspectRatio(const CGSize& originalSize,
-                                   const CGSize& targetSize) {
-    const auto sfw = targetSize.width / originalSize.width;
-    const auto sfh = targetSize.height / originalSize.height;
-    const auto sf  = fminf(sfw, sfh);
-    return CGSizeMake(originalSize.width * sf, originalSize.height * sf);
-}
-
 }
 
 namespace LiveKitCpp
@@ -153,6 +137,10 @@ bool SCKProcessorImpl::selectWindow(SCWindow* window)
             SCContentFilter* filter = createWindowFilter(window);
             if (filter) {
                 setSize(filter);
+                if (@available(macOS 14.2, *)) {
+                    [_configuration setIncludeChildWindows:YES];
+                    updateConfiguration();
+                }
                 return reconfigureStream(filter);
             }
         }
@@ -164,7 +152,7 @@ void SCKProcessorImpl::setExcludedWindow(SCWindow* window)
 {
     if (changeExcludedWindow(window)) {
         @autoreleasepool {
-            SCContentFilter* filter = createScreenFilter(selectedScreen());
+            SCContentFilter* filter = createScreenFilter(selectedDisplay());
             if (filter) {
                 @synchronized (_configuration) {
                     if (_stream) {
@@ -210,7 +198,7 @@ void SCKProcessorImpl::setTargetResolution(int32_t width, int32_t height)
         @synchronized (_configuration) {
             if (_filter) {
                 if (width > 0 && height > 0) {
-                    setSize(_filter, scaledRect(_filter, width, height));
+                    setSize(_filter, scaleKeepAspectRatio(_filter, width, height));
                 }
                 else {
                     setSize(_filter);
@@ -220,7 +208,7 @@ void SCKProcessorImpl::setTargetResolution(int32_t width, int32_t height)
     }
 }
 
-SCDisplay* SCKProcessorImpl::selectedScreen() const
+SCDisplay* SCKProcessorImpl::selectedDisplay() const
 {
     @synchronized (_configuration) {
         if (_filter) {
@@ -246,15 +234,44 @@ SCWindow* SCKProcessorImpl::selectedWindow() const
     return nil;
 }
 
-CGRect SCKProcessorImpl::scaledRect(SCContentFilter* filter,
-                                    int32_t width, int32_t height)
+CGSize SCKProcessorImpl::scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
+                                              int32_t width, int32_t height)
 {
-    if (filter) {
-        auto size = filter.contentRect.size;
-        size = scaleWithAspectRatio(size, CGSizeMake(width, height));
-        return CGRectMake(0.f, 0.f, size.width, size.height);
+    if (sourceSizeContent && width > 0 && height > 0) {
+        return scaleKeepAspectRatio(sourceSizeContent, CGSizeMake(width, height));
     }
-    return CGRectZero;
+    return CGSizeZero;
+}
+
+CGSize SCKProcessorImpl::scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
+                                              CGSize target)
+{
+    if (sourceSizeContent && !CGSizeEqualToSize(target, CGSizeZero)) {
+        const auto source = sourceSizeContent.contentRect.size;
+        const auto sfw = target.width / source.width;
+        const auto sfh = target.height / source.height;
+        const auto sf  = fminf(sfw, sfh);
+        return CGSizeMake(source.width * sf, source.height * sf);
+    }
+    return CGSizeZero;
+}
+
+CGSize SCKProcessorImpl::pixelsSize(SCContentFilter* scale, CGSize size)
+{
+    if (scale) {
+        const auto pointPixelScale = std::max<float>(1.f, scale.pointPixelScale);
+        size.width *= pointPixelScale;
+        size.height *= pointPixelScale;
+    }
+    return size;
+}
+
+CGSize SCKProcessorImpl::pixelsSize(SCContentFilter* scale)
+{
+    if (scale) {
+        return pixelsSize(scale, scale.contentRect.size);
+    }
+    return CGSizeZero;
 }
 
 bool SCKProcessorImpl::changeState(CapturerState state)
@@ -300,26 +317,20 @@ void SCKProcessorImpl::setSize(SCContentFilter* filter)
         if (const auto targetResolution = _targetResolution.load()) {
             const int32_t w = extractHiWord(targetResolution);
             const int32_t h = extractLoWord(targetResolution);
-            setSize(filter, scaledRect(filter, w, h));
+            setSize(filter, scaleKeepAspectRatio(filter, w, h));
         }
         else {
-            setSize(filter, scaleRect(filter.contentRect, filter.pointPixelScale));
+            setSize(filter, pixelsSize(filter));
         }
     }
 }
 
-void SCKProcessorImpl::setSize(SCContentFilter* filter, CGRect destination)
+void SCKProcessorImpl::setSize(SCContentFilter* filter, CGSize dst)
 {
-    if (filter && !CGRectIsEmpty(destination)) {
-        const float pointPixelScale = filter.pointPixelScale;
-        const CGRect source = filter.contentRect;
-        const auto width = roundCGFloat<size_t>(destination.size.width);
-        const auto height = roundCGFloat<size_t>(destination.size.height);
-        if (_configuration.width != width || _configuration.height != height ||
-            !CGRectEqualToRect(source, _configuration.sourceRect) ||
-            !CGRectEqualToRect(destination, _configuration.destinationRect)) {
-            _configuration.sourceRect = source;
-            _configuration.destinationRect = destination;
+    if (filter && !CGSizeEqualToSize(dst, CGSizeZero)) {
+        const auto width = roundCGFloat<size_t>(dst.width);
+        const auto height = roundCGFloat<size_t>(dst.height);
+        if (_configuration.width != width || _configuration.height != height) {
             _configuration.width = width;
             _configuration.height = height;
             updateConfiguration();
@@ -400,18 +411,24 @@ bool SCKProcessorImpl::isMyStream(SCStream* stream) const
     }
 }
 
-void SCKProcessorImpl::deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer)
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> SCKProcessorImpl::
+    fromSampleBuffer(CMSampleBufferRef sampleBuffer) const
 {
-    if (isMyStream(stream)) {
+    if (sampleBuffer) {
         auto buffer = CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer, _framesPool);
         if (!buffer) {
             buffer = IOSurfaceBuffer::createFromSampleBuffer(sampleBuffer, _framesPool);
         }
-        if (const auto frame = createVideoFrame(buffer)) {
+        return buffer;
+    }
+    return {};
+}
+
+void SCKProcessorImpl::deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer)
+{
+    if (isMyStream(stream)) {
+        if (const auto frame = createVideoFrame(fromSampleBuffer(sampleBuffer))) {
             _sink.invoke(&CapturerProxySink::OnFrame, frame.value());
-        }
-        else {
-            _sink.invoke(&CapturerProxySink::OnDiscardedFrame);
         }
     }
 }

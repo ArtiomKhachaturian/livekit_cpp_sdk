@@ -39,8 +39,8 @@ public:
     NSError* updateContent(); // sync operation
     SCWindow* toWindow(const std::string& source) const;
     SCWindow* toWindow(webrtc::WindowId wId) const;
-    SCDisplay* toScreen(const std::string& source) const;
-    SCDisplay* toScreen(webrtc::ScreenId sId) const;
+    SCDisplay* toDisplay(const std::string& source) const;
+    SCDisplay* toDisplay(webrtc::ScreenId sId) const;
     static std::string windowToString(SCWindow* window);
     static std::string displayToString(SCDisplay* display);
 private:

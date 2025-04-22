@@ -59,20 +59,26 @@ public:
     void setShowCursor(bool show);
     void setTargetFramerate(int32_t fps);
     void setTargetResolution(int32_t width, int32_t height);
-    SCDisplay* selectedScreen() const;
+    SCDisplay* selectedDisplay() const;
     SCWindow* selectedWindow() const;
 private:
-    static CGRect scaledRect(SCContentFilter* filter, int32_t width, int32_t height);
+    static CGSize scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
+                                       int32_t width, int32_t height);
+    static CGSize scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
+                                       CGSize size);
+    static CGSize pixelsSize(SCContentFilter* scale, CGSize size);
+    static CGSize pixelsSize(SCContentFilter* scale);
     bool changeState(CapturerState state);
     bool changeExcludedWindow(SCWindow* window);
     void notifyAboutError(NSError* error, bool fatal = true);
     void setSize(SCContentFilter* filter);
     // destination in pixels
-    void setSize(SCContentFilter* filter, CGRect destination);
+    void setSize(SCContentFilter* filter, CGSize destination);
     bool reconfigureStream(SCContentFilter* filter);
     void updateConfiguration();
     SCContentFilter* createScreenFilter(SCDisplay* display) const;
     SCContentFilter* createWindowFilter(SCWindow* window) const;
+    webrtc::scoped_refptr<webrtc::VideoFrameBuffer> fromSampleBuffer(CMSampleBufferRef sampleBuffer) const;
     bool isMyStream(SCStream* stream) const;
     // impl. of ScreenCaptureFramesReceiver
     void deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer) final;

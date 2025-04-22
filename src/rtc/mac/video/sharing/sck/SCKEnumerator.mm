@@ -69,15 +69,15 @@ SCWindow* SCKEnumerator::toWindow(webrtc::WindowId wId) const
     return nil;
 }
 
-SCDisplay* SCKEnumerator::toScreen(const std::string& source) const
+SCDisplay* SCKEnumerator::toDisplay(const std::string& source) const
 {
     if (const auto sId = screenIdFromString(source)) {
-        return toScreen(sId.value());
+        return toDisplay(sId.value());
     }
     return nil;
 }
 
-SCDisplay* SCKEnumerator::toScreen(webrtc::ScreenId sId) const
+SCDisplay* SCKEnumerator::toDisplay(webrtc::ScreenId sId) const
 {
     if (webrtc::kInvalidScreenId != sId && webrtc::kInvalidDisplayId != sId
         && _content) {

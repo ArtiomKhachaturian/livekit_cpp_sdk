@@ -22,12 +22,12 @@ namespace LiveKitCpp
 class SCKProcessor;
 
 // note: ScreenCaptureKit streams doesn't handling of window size changes
-class SCKScreenCapturer : public MacDesktopCapturer, private CapturerProxySink
+class SCKDesktopCapturer : public MacDesktopCapturer, private CapturerProxySink
 {
 public:
-    SCKScreenCapturer(webrtc::DesktopCaptureOptions options,
-                      VideoFrameBufferPool framesPool = {});
-    ~SCKScreenCapturer() final;
+    SCKDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+                       VideoFrameBufferPool framesPool = {});
+    ~SCKDesktopCapturer() final;
     static bool available();
     // overrides of DesktopCapturer
     bool selectSource(const std::string& source) final;

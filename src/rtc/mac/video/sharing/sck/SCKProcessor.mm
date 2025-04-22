@@ -102,10 +102,10 @@ void SCKProcessor::setTargetResolution(int32_t width, int32_t height)
     }
 }
 
-SCDisplay* SCKProcessor::selectedScreen() const
+SCDisplay* SCKProcessor::selectedDisplay() const
 {
     if (const auto impl = loadImpl()) {
-        return impl->selectedScreen();
+        return impl->selectedDisplay();
     }
     return nil;
 }

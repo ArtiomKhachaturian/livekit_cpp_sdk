@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "SCKScreenCapturer.h"
+#include "SCKDesktopCapturer.h"
 #include "SCKEnumerator.h"
 #include "SCKProcessor.h"
 #include "DesktopCapturerUtils.h"
@@ -23,22 +23,23 @@
 namespace LiveKitCpp
 {
 
-SCKScreenCapturer::SCKScreenCapturer(webrtc::DesktopCaptureOptions options,
-                                     VideoFrameBufferPool framesPool)
-    : MacDesktopCapturer(false, std::move(options), framesPool)
+SCKDesktopCapturer::SCKDesktopCapturer(bool window,
+                                       webrtc::DesktopCaptureOptions options,
+                                       VideoFrameBufferPool framesPool)
+    : MacDesktopCapturer(window, std::move(options), framesPool)
     , _processor(std::make_unique<SCKProcessor>(std::move(framesPool)))
 {
     _processor->setShowCursor(this->options().prefer_cursor_embedded());
     _processor->setOutputSink(this);
 }
 
-SCKScreenCapturer::~SCKScreenCapturer()
+SCKDesktopCapturer::~SCKDesktopCapturer()
 {
     _processor->stop();
     _processor->setOutputSink(nullptr);
 }
 
-bool SCKScreenCapturer::available()
+bool SCKDesktopCapturer::available()
 {
     if (@available(macOS 14.0, *)) {
         @autoreleasepool {
@@ -48,58 +49,74 @@ bool SCKScreenCapturer::available()
     return false;
 }
 
-std::string SCKScreenCapturer::selectedSource() const
+std::string SCKDesktopCapturer::selectedSource() const
 {
     @autoreleasepool {
-        SCDisplay* display = _processor->selectedScreen();
-        if (display) {
-             return SCKEnumerator::displayToString(display);
+        if (window()) {
+            SCWindow* window = _processor->selectedWindow();
+            if (window) {
+                 return SCKEnumerator::windowToString(window);
+            }
+        }
+        else {
+            SCDisplay* display = _processor->selectedDisplay();
+            if (display) {
+                 return SCKEnumerator::displayToString(display);
+            }
         }
     }
     return {};
 }
 
-bool SCKScreenCapturer::selectSource(const std::string& source)
+bool SCKDesktopCapturer::selectSource(const std::string& source)
 {
     if (!source.empty() && enumerate()) {
         @autoreleasepool {
-            SCDisplay* display = _enumerator.toScreen(source);
-            if (display) {
-                return _processor->selectDisplay(display);
+            if (window()) {
+                SCWindow* window = _enumerator.toWindow(source);
+                if (window) {
+                    return _processor->selectWindow(window);
+                }
+            }
+            else {
+                SCDisplay* display = _enumerator.toDisplay(source);
+                if (display) {
+                    return _processor->selectDisplay(display);
+                }
             }
         }
     }
     return false;
 }
 
-bool SCKScreenCapturer::start()
+bool SCKDesktopCapturer::start()
 {
     return _processor->start();
 }
 
-bool SCKScreenCapturer::started() const
+bool SCKDesktopCapturer::started() const
 {
     return _processor->started();
 }
 
-void SCKScreenCapturer::stop()
+void SCKDesktopCapturer::stop()
 {
     _processor->stop();
 }
 
-void SCKScreenCapturer::setTargetFramerate(int32_t fps)
+void SCKDesktopCapturer::setTargetFramerate(int32_t fps)
 {
     _processor->setTargetFramerate(DesktopConfiguration::boundFramerate(fps));
 }
 
-void SCKScreenCapturer::setTargetResolution(int32_t width, int32_t height)
+void SCKDesktopCapturer::setTargetResolution(int32_t width, int32_t height)
 {
     _processor->setTargetResolution(width, height);
 }
 
-void SCKScreenCapturer::setExcludedWindow(webrtc::WindowId wId)
+void SCKDesktopCapturer::setExcludedWindow(webrtc::WindowId wId)
 {
-    if (enumerate()) {
+    if (!window() && enumerate()) {
         @autoreleasepool {
             SCWindow* window = _enumerator.toWindow(wId);
             if (window) {
@@ -109,7 +126,7 @@ void SCKScreenCapturer::setExcludedWindow(webrtc::WindowId wId)
     }
 }
 
-bool SCKScreenCapturer::enumerate()
+bool SCKDesktopCapturer::enumerate()
 {
     @autoreleasepool {
         NSError* error = _enumerator.updateContent();
@@ -122,17 +139,17 @@ bool SCKScreenCapturer::enumerate()
     return true;
 }
 
-void SCKScreenCapturer::onCapturingError(std::string details, bool fatal)
+void SCKDesktopCapturer::onCapturingError(std::string details, bool fatal)
 {
     notifyAboutError(std::move(details), fatal);
 }
 
-void SCKScreenCapturer::OnFrame(const webrtc::VideoFrame& frame)
+void SCKDesktopCapturer::OnFrame(const webrtc::VideoFrame& frame)
 {
     deliverCaptured(frame);
 }
 
-void SCKScreenCapturer::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
+void SCKDesktopCapturer::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
 {
     processConstraints(c);
 }
