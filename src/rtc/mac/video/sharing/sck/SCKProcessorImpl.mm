@@ -37,6 +37,14 @@ inline T roundCGFloat(CGFloat f) {
     return static_cast<int32_t>(std::round(f));
 }
 
+inline CGRect scaleRect(CGRect input, float scale) {
+    input.origin.x *= scale;
+    input.origin.y *= scale;
+    input.size.width *= scale;
+    input.size.height *= scale;
+    return input;
+}
+
 inline CGSize scaleWithAspectRatio(const CGSize& originalSize,
                                    const CGSize& targetSize) {
     const auto sfw = targetSize.width / originalSize.width;
@@ -50,21 +58,23 @@ inline CGSize scaleWithAspectRatio(const CGSize& originalSize,
 namespace LiveKitCpp
 {
 
-SCKProcessorImpl::SCKProcessorImpl(int queueDepth, VideoFrameBufferPool framesPool)
+SCKProcessorImpl::SCKProcessorImpl(VideoFrameBufferPool framesPool)
     : _framesPool(std::move(framesPool))
     , _configuration([SCStreamConfiguration new])
 {
-    _configuration.queueDepth = queueDepth;
+    // the same value as in WebKit, system default is 3, max should not exceed 8 frames
+    _configuration.queueDepth = 6;
     _configuration.colorSpaceName = kCGColorSpaceSRGB;
     _configuration.colorMatrix = kCGDisplayStreamYCbCrMatrix_SMPTE_240M_1995;
     _configuration.pixelFormat = formatBGRA32();
+    _configuration.captureResolution = SCCaptureResolutionAutomatic;
 }
 
 SCKProcessorImpl::~SCKProcessorImpl()
 {
     _output = nil;
     _stream = nil;
-    _selectedObject = nil;
+    _filter = nil;
     _excludedWindow = nil;
 }
 
@@ -126,11 +136,9 @@ bool SCKProcessorImpl::selectDisplay(SCDisplay* display)
         stop();
         @autoreleasepool {
             SCContentFilter* filter = createScreenFilter(display);
-            if (filter && setSize(filter) && reconfigureStream(filter)) {
-                @synchronized (_configuration) {
-                    _selectedObject = display;
-                }
-                return true;
+            if (filter) {
+                setSize(filter);
+                return reconfigureStream(filter);
             }
         }
     }
@@ -143,11 +151,9 @@ bool SCKProcessorImpl::selectWindow(SCWindow* window)
         stop();
         @autoreleasepool {
             SCContentFilter* filter = createWindowFilter(window);
-            if (filter && setSize(filter) && reconfigureStream(filter)) {
-                @synchronized (_configuration) {
-                    _selectedObject = window;
-                }
-                return true;
+            if (filter) {
+                setSize(filter);
+                return reconfigureStream(filter);
             }
         }
     }
@@ -197,20 +203,18 @@ void SCKProcessorImpl::setTargetFramerate(int32_t fps)
 
 void SCKProcessorImpl::setTargetResolution(int32_t width, int32_t height)
 {
-    if (width > 1 && height > 1) {
-        width = roundCGFloat<int32_t>(width / _lastPointPixelScale);
-        height = roundCGFloat<int32_t>(height / _lastPointPixelScale);
-        if (setSize(width, height, _lastPointPixelScale)) {
-            _targetResolution = clueToUint64(width, height);
-        }
-    }
-    else if (_targetResolution.exchange(0ULL)) {
-        @autoreleasepool {
-            if (SCDisplay* display = selectedScreen()) {
-                setSize(display, _lastPointPixelScale);
-            }
-            else if (SCWindow* window = selectedWindow()) {
-                setSize(window, _lastPointPixelScale);
+    width = std::max<int32_t>(0, width);
+    height = std::max<int32_t>(0, height);
+    const auto resolution = clueToUint64(width, height);
+    if (exchangeVal(resolution, _targetResolution)) {
+        @synchronized (_configuration) {
+            if (_filter) {
+                if (width > 0 && height > 0) {
+                    setSize(_filter, scaledRect(_filter, width, height));
+                }
+                else {
+                    setSize(_filter);
+                }
             }
         }
     }
@@ -219,8 +223,11 @@ void SCKProcessorImpl::setTargetResolution(int32_t width, int32_t height)
 SCDisplay* SCKProcessorImpl::selectedScreen() const
 {
     @synchronized (_configuration) {
-        if (_selectedObject && [_selectedObject isKindOfClass:[SCDisplay class]]) {
-            return (SCDisplay*)_selectedObject;
+        if (_filter) {
+            NSArray<SCDisplay*>* displays = _filter.includedDisplays;
+            if (displays && displays.count) {
+                return displays.firstObject;
+            }
         }
     }
     return nil;
@@ -229,11 +236,25 @@ SCDisplay* SCKProcessorImpl::selectedScreen() const
 SCWindow* SCKProcessorImpl::selectedWindow() const
 {
     @synchronized (_configuration) {
-        if (_selectedObject && [_selectedObject isKindOfClass:[SCWindow class]]) {
-            return (SCWindow*)_selectedObject;
+        if (_filter) {
+            NSArray<SCWindow*>* windows = _filter.includedWindows;
+            if (windows && windows.count) {
+                return windows.firstObject;
+            }
         }
     }
     return nil;
+}
+
+CGRect SCKProcessorImpl::scaledRect(SCContentFilter* filter,
+                                    int32_t width, int32_t height)
+{
+    if (filter) {
+        auto size = filter.contentRect.size;
+        size = scaleWithAspectRatio(size, CGSizeMake(width, height));
+        return CGRectMake(0.f, 0.f, size.width, size.height);
+    }
+    return CGRectZero;
 }
 
 bool SCKProcessorImpl::changeState(CapturerState state)
@@ -273,49 +294,37 @@ void SCKProcessorImpl::notifyAboutError(NSError* error, bool fatal)
     }
 }
 
-bool SCKProcessorImpl::setSize(size_t width, size_t height, float pointPixelScale)
+void SCKProcessorImpl::setSize(SCContentFilter* filter)
 {
-    if (width > 0 && height > 0) {
-        width = roundCGFloat<size_t>(width * pointPixelScale);
-        height = roundCGFloat<size_t>(height * pointPixelScale);
-        _lastPointPixelScale = pointPixelScale;
-        if (width != _configuration.width || height != _configuration.height) {
+    if (filter) {
+        if (const auto targetResolution = _targetResolution.load()) {
+            const int32_t w = extractHiWord(targetResolution);
+            const int32_t h = extractLoWord(targetResolution);
+            setSize(filter, scaledRect(filter, w, h));
+        }
+        else {
+            setSize(filter, scaleRect(filter.contentRect, filter.pointPixelScale));
+        }
+    }
+}
+
+void SCKProcessorImpl::setSize(SCContentFilter* filter, CGRect destination)
+{
+    if (filter && !CGRectIsEmpty(destination)) {
+        const float pointPixelScale = filter.pointPixelScale;
+        const CGRect source = filter.contentRect;
+        const auto width = roundCGFloat<size_t>(destination.size.width);
+        const auto height = roundCGFloat<size_t>(destination.size.height);
+        if (_configuration.width != width || _configuration.height != height ||
+            !CGRectEqualToRect(source, _configuration.sourceRect) ||
+            !CGRectEqualToRect(destination, _configuration.destinationRect)) {
+            _configuration.sourceRect = source;
+            _configuration.destinationRect = destination;
             _configuration.width = width;
             _configuration.height = height;
             updateConfiguration();
         }
-        return true;
     }
-    return false;
-}
-
-bool SCKProcessorImpl::setSize(const CGSize& size, float pointPixelScale)
-{
-    return setSize(roundCGFloat<size_t>(size.width), roundCGFloat<size_t>(size.height), pointPixelScale);
-}
-
-bool SCKProcessorImpl::setSize(SCWindow* window, float pointPixelScale)
-{
-    return window && setSize(window.frame.size, pointPixelScale);
-}
-
-bool SCKProcessorImpl::setSize(SCDisplay* display, float pointPixelScale)
-{
-    return display && setSize(display.frame.size, pointPixelScale);
-}
-
-bool SCKProcessorImpl::setSize(SCContentFilter* filter)
-{
-    if (filter) {
-        auto contentSize = filter.contentRect.size;
-        if (const auto targetResolution = _targetResolution.load()) {
-            const auto w = extractHiWord(targetResolution);
-            const auto h = extractLoWord(targetResolution);
-            contentSize = scaleWithAspectRatio(contentSize, CGSizeMake(w, h));
-        }
-        return setSize(contentSize, filter.pointPixelScale);
-    }
-    return false;
 }
 
 bool SCKProcessorImpl::reconfigureStream(SCContentFilter* filter)
@@ -337,6 +346,7 @@ bool SCKProcessorImpl::reconfigureStream(SCContentFilter* filter)
                     @synchronized (_configuration) {
                         _output = output;
                         _stream = stream;
+                        _filter = filter;
                     }
                     reconfigured = true;
                 }

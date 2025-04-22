@@ -28,8 +28,6 @@ protected:
                        VideoFrameBufferPool framesPool = {});
     std::unique_ptr<webrtc::DesktopFrame> captureDisplay(webrtc::ScreenId sId) const;
     std::unique_ptr<webrtc::DesktopFrame> captureWindow(webrtc::WindowId wId) const;
-    // the same value as in WebKit, system default is 3, max should not exceed 8 frames
-    static constexpr int screenQueueMaxLen() { return 6; }
 };
 
 

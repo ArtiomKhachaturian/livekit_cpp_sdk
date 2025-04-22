@@ -24,8 +24,8 @@ namespace LiveKitCpp
 {
 
 DesktopConfiguration::DesktopConfiguration()
-    : _screensEnumerator(createRawCapturer(false, false))
-    , _windowsEnumerator(createRawCapturer(true, false))
+    : _screensEnumerator(createRawCapturer(false, true))
+    , _windowsEnumerator(createRawCapturer(true, true))
 {
 }
 
@@ -110,16 +110,16 @@ bool DesktopConfiguration::hasTheSameType(const MediaDeviceInfo& l, const MediaD
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std::string& guid,
-                                                                      bool embeddedCursor,
+                                                                      bool previewMode,
                                                                       VideoFrameBufferPool framesPool,
                                                                       bool selectSource)
 {
     std::unique_ptr<DesktopCapturer> capturer;
     if (deviceIsScreen(guid)) {
-        capturer = createRawCapturer(false, embeddedCursor, std::move(framesPool));
+        capturer = createRawCapturer(false, previewMode, std::move(framesPool));
     }
     else if (deviceIsWindow(guid)) {
-        capturer = createRawCapturer(true, embeddedCursor, std::move(framesPool));
+        capturer = createRawCapturer(true, previewMode, std::move(framesPool));
     }
     if (capturer && (!selectSource || capturer->selectSource(guid))) {
         return capturer;
@@ -170,23 +170,23 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool embeddedCur
 }
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool window,
-                                                                         bool embeddedCursor,
+                                                                         bool previewMode,
                                                                          VideoFrameBufferPool framesPool)
 {
     std::unique_ptr<DesktopCapturer> impl;
 #ifdef WEBRTC_MAC
     if (!window) {
         if (SCKScreenCapturer::available()) {
-            return std::make_unique<SCKScreenCapturer>(makeOptions(embeddedCursor),
+            return std::make_unique<SCKScreenCapturer>(makeOptions(!previewMode),
                                                        std::move(framesPool));
         }
-        return std::make_unique<CGScreenCapturer>(makeOptions(embeddedCursor),
+        return std::make_unique<CGScreenCapturer>(makeOptions(!previewMode),
                                                   commonSharedQueue(),
                                                   std::move(framesPool));
     }
 #endif
     if (!impl) {
-        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(embeddedCursor),
+        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(!previewMode),
                                                        commonSharedQueue(), std::move(framesPool));
     }
     return impl;

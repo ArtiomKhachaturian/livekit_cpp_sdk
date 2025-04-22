@@ -47,7 +47,7 @@ class SCKProcessorImpl : public std::enable_shared_from_this<SCKProcessorImpl>,
                          public SCKErrorHandler
 {
 public:
-    SCKProcessorImpl(int queueDepth, VideoFrameBufferPool framesPool = {});
+    SCKProcessorImpl(VideoFrameBufferPool framesPool = {});
     ~SCKProcessorImpl() final;
     void setOutputSink(CapturerProxySink* sink) { _sink = sink; }
     bool start();
@@ -62,14 +62,13 @@ public:
     SCDisplay* selectedScreen() const;
     SCWindow* selectedWindow() const;
 private:
+    static CGRect scaledRect(SCContentFilter* filter, int32_t width, int32_t height);
     bool changeState(CapturerState state);
     bool changeExcludedWindow(SCWindow* window);
     void notifyAboutError(NSError* error, bool fatal = true);
-    bool setSize(size_t width, size_t height, float pointPixelScale);
-    bool setSize(const CGSize& size, float pointPixelScale);
-    bool setSize(SCWindow* window, float pointPixelScale);
-    bool setSize(SCDisplay* display, float pointPixelScale);
-    bool setSize(SCContentFilter* filter);
+    void setSize(SCContentFilter* filter);
+    // destination in pixels
+    void setSize(SCContentFilter* filter, CGRect destination);
     bool reconfigureStream(SCContentFilter* filter);
     void updateConfiguration();
     SCContentFilter* createScreenFilter(SCDisplay* display) const;
@@ -85,10 +84,9 @@ private:
     Bricks::SafeObj<CapturerState> _state = CapturerState::Stopped;
     Bricks::Listener<CapturerProxySink*> _sink;
     std::atomic<uint64_t> _targetResolution = 0ULL;
-    std::atomic<float> _lastPointPixelScale = 2.;
     SCKStreamOutput* _output = nil;
     SCStream* _stream = nil;
-    NSObject* _selectedObject = nil;
+    SCContentFilter* _filter = nil;
     SCWindow* _excludedWindow = nil;
 };
 	

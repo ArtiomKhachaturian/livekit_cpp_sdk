@@ -17,8 +17,8 @@
 namespace LiveKitCpp
 {
 
-SCKProcessor::SCKProcessor(int queueDepth, VideoFrameBufferPool framesPool)
-    : RtcObject<SCKProcessorImpl>(queueDepth, std::move(framesPool))
+SCKProcessor::SCKProcessor(VideoFrameBufferPool framesPool)
+    : RtcObject<SCKProcessorImpl>(std::move(framesPool))
 {
 }
 

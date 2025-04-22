@@ -50,7 +50,7 @@ public:
     bool hasTheSameType(const std::string& lGuid, const std::string& rGuid) const;
     bool hasTheSameType(const MediaDeviceInfo& l, const MediaDeviceInfo& r) const;
     std::unique_ptr<DesktopCapturer> createCapturer(const std::string& guid,
-                                                    bool embeddedCursor = false,
+                                                    bool previewMode,
                                                     VideoFrameBufferPool framesPool = {},
                                                     bool selectSource = false);
     static int32_t boundFramerate(int32_t fps);
@@ -59,7 +59,7 @@ private:
     DesktopCapturer* enumerator(bool windows) const;
     static webrtc::DesktopCaptureOptions makeOptions(bool embeddedCursor);
     std::unique_ptr<DesktopCapturer> createRawCapturer(bool window,
-                                                       bool embeddedCursor = false,
+                                                       bool previewMode,
                                                        VideoFrameBufferPool framesPool = {});
     std::shared_ptr<webrtc::TaskQueueBase> commonSharedQueue();
 private:
