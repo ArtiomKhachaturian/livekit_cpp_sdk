@@ -62,10 +62,10 @@ public:
     SCDisplay* selectedDisplay() const;
     SCWindow* selectedWindow() const;
 private:
-    static CGSize scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
+    static CGSize scaleKeepAspectRatio(SCContentFilter* source,
                                        int32_t width, int32_t height);
-    static CGSize scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
-                                       CGSize size);
+    static CGSize scaleKeepAspectRatio(SCContentFilter* source, CGSize target);
+    static CGSize scaleKeepAspectRatio(const CGSize& source, CGSize target);
     static CGSize pixelsSize(SCContentFilter* scale, CGSize size);
     static CGSize pixelsSize(SCContentFilter* scale);
     bool changeState(CapturerState state);
@@ -80,6 +80,7 @@ private:
     SCContentFilter* createWindowFilter(SCWindow* window) const;
     webrtc::scoped_refptr<webrtc::VideoFrameBuffer> fromSampleBuffer(CMSampleBufferRef sampleBuffer) const;
     bool isMyStream(SCStream* stream) const;
+    float pointPixelScale() const;
     // impl. of ScreenCaptureFramesReceiver
     void deliverFrame(SCStream* stream, CMSampleBufferRef sampleBuffer) final;
     // impl. of ScreenCaptureErrorHandler

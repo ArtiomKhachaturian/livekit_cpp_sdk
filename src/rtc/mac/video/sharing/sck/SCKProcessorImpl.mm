@@ -19,8 +19,10 @@
 #include "IOSurfaceBuffer.h"
 #include "Utils.h"
 #include "VideoUtils.h"
-#include <rtc_base/time_utils.h>
+//#include <rtc_base/time_utils.h>
+#include <modules/desktop_capture/mac/window_list_utils.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
+#include <iostream>
 
 namespace {
 
@@ -191,8 +193,8 @@ void SCKProcessorImpl::setTargetFramerate(int32_t fps)
 
 void SCKProcessorImpl::setTargetResolution(int32_t width, int32_t height)
 {
-    width = std::max<int32_t>(0, width);
-    height = std::max<int32_t>(0, height);
+    width = even2(std::max<int32_t>(0, width));
+    height = even2(std::max<int32_t>(0, height));
     const auto resolution = clueToUint64(width, height);
     if (exchangeVal(resolution, _targetResolution)) {
         @synchronized (_configuration) {
@@ -234,24 +236,30 @@ SCWindow* SCKProcessorImpl::selectedWindow() const
     return nil;
 }
 
-CGSize SCKProcessorImpl::scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
+CGSize SCKProcessorImpl::scaleKeepAspectRatio(SCContentFilter* source,
                                               int32_t width, int32_t height)
 {
-    if (sourceSizeContent && width > 0 && height > 0) {
-        return scaleKeepAspectRatio(sourceSizeContent, CGSizeMake(width, height));
+    if (source && width > 0 && height > 0) {
+        return scaleKeepAspectRatio(source, CGSizeMake(width, height));
     }
     return CGSizeZero;
 }
 
-CGSize SCKProcessorImpl::scaleKeepAspectRatio(SCContentFilter* sourceSizeContent,
-                                              CGSize target)
+CGSize SCKProcessorImpl::scaleKeepAspectRatio(SCContentFilter* source, CGSize target)
 {
-    if (sourceSizeContent && !CGSizeEqualToSize(target, CGSizeZero)) {
-        const auto source = sourceSizeContent.contentRect.size;
-        const auto sfw = target.width / source.width;
-        const auto sfh = target.height / source.height;
-        const auto sf  = fminf(sfw, sfh);
-        return CGSizeMake(source.width * sf, source.height * sf);
+    if (source) {
+        return scaleKeepAspectRatio(source.contentRect.size, std::move(target));
+    }
+    return CGSizeZero;
+}
+
+CGSize SCKProcessorImpl::scaleKeepAspectRatio(const CGSize& source, CGSize target)
+{
+    if (!CGSizeEqualToSize(source, CGSizeZero) && !CGSizeEqualToSize(target, CGSizeZero)) {
+        auto sfw = target.width / source.width;
+        auto sfh = target.height / source.height;
+        sfw = sfh = fminf(sfw, sfh);
+        return CGSizeMake(source.width * sfw, source.height * sfh);
     }
     return CGSizeZero;
 }
@@ -411,6 +419,16 @@ bool SCKProcessorImpl::isMyStream(SCStream* stream) const
     }
 }
 
+float SCKProcessorImpl::pointPixelScale() const
+{
+    @synchronized (_configuration) {
+        if (_filter) {
+            return _filter.pointPixelScale;
+        }
+    }
+    return 1.;
+}
+
 webrtc::scoped_refptr<webrtc::VideoFrameBuffer> SCKProcessorImpl::
     fromSampleBuffer(CMSampleBufferRef sampleBuffer) const
 {
@@ -418,6 +436,40 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> SCKProcessorImpl::
         auto buffer = CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer, _framesPool);
         if (!buffer) {
             buffer = IOSurfaceBuffer::createFromSampleBuffer(sampleBuffer, _framesPool);
+        }
+        if (buffer) {
+            @autoreleasepool {
+                SCWindow* window = selectedWindow();
+                if (window) {
+                    const auto scaleFactor = pointPixelScale();
+                    const auto windowBounds = webrtc::GetWindowBounds(window.windowID);
+                    const auto windowWidth = roundCGFloat<int32_t>(windowBounds.width() * scaleFactor);
+                    const auto windowHeight = roundCGFloat<int32_t>(windowBounds.height() * scaleFactor);
+                    if (windowWidth != buffer->width() || windowHeight != buffer->height()) {
+                        if (windowWidth <= buffer->width() && windowHeight <= buffer->height()) {
+                            buffer = buffer->CropAndScale(0, 0,
+                                                          windowWidth, windowHeight,
+                                                          windowWidth, windowHeight);
+                        }
+                        else {
+                            const CGSize source = CGSizeMake(windowWidth, windowHeight);
+                            const CGSize target = CGSizeMake(buffer->width(), buffer->height());
+                            const CGSize bounds = scaleKeepAspectRatio(source, target);
+                            auto cropWidth = even2(roundCGFloat<int32_t>(bounds.width));
+                            if (cropWidth > buffer->width()) {
+                                cropWidth = buffer->width();
+                            }
+                            auto cropHeight = even2(roundCGFloat<int32_t>(bounds.height));
+                            if (cropHeight > buffer->height()) {
+                                cropHeight = buffer->height();
+                            }
+                            buffer = buffer->CropAndScale(0, 0,
+                                                          cropWidth, cropHeight,
+                                                          cropWidth, cropHeight);
+                        }
+                    }
+                }
+            }
         }
         return buffer;
     }
