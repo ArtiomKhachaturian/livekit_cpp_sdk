@@ -1,5 +1,6 @@
 #include "localvideodevice.h"
 #include <livekit/rtc/media/LocalVideoDevice.h>
+//#include <QDebug>
 
 LocalVideoDevice::LocalVideoDevice(QObject *parent)
     : VideoSource(parent)
@@ -69,10 +70,14 @@ bool LocalVideoDevice::isMuted() const
 
 void LocalVideoDevice::subsribe(bool subscribe)
 {
-    if (subscribe) {
-        _device->addSink(this);
-    }
-    else {
-        _device->removeSink(this);
+    if (_device) {
+        if (subscribe) {
+            _device->addSink(this);
+            //qDebug() << name() << ": add sink to system device";
+        }
+        else {
+            //qDebug() << name() << ": remove sink from system device";
+            _device->removeSink(this);
+        }
     }
 }

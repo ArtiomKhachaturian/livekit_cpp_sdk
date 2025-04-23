@@ -49,7 +49,7 @@ void AsyncCameraSourceImpl::requestCapturer()
                 capturer->setObserver(this);
                 _capturer = std::move(capturer);
                 if (enabled()) {
-                    startCapturer(capability);
+                    startCapturer(_capturer.constRef(), capability);
                 }
             }
             else {
@@ -63,9 +63,8 @@ void AsyncCameraSourceImpl::requestCapturer()
 void AsyncCameraSourceImpl::resetCapturer()
 {
     LOCK_WRITE_SAFE_OBJ(_capturer);
-    if (_capturer.constRef()) {
-        stopCapturer(true);
-        auto capturer = _capturer.take();
+    if (auto capturer = _capturer.take()) {
+        stopCapturer(capturer, true);
         capturer->DeRegisterCaptureDataCallback();
         capturer->setObserver(nullptr);
     }
@@ -98,8 +97,8 @@ void AsyncCameraSourceImpl::onOptionsChanged(const VideoOptions& options)
         LOCK_READ_SAFE_OBJ(_capturer);
         const auto& capturer = _capturer.constRef();
         if (capturer && capturer->CaptureStarted()) {
-            stopCapturer(false);
-            startCapturer(bestMatched(map(options), capturer));
+            stopCapturer(capturer, false);
+            startCapturer(capturer, bestMatched(map(options), capturer));
         }
     }
 }
@@ -146,30 +145,29 @@ webrtc::VideoCaptureCapability AsyncCameraSourceImpl::bestMatched(webrtc::VideoC
     return bestMatched(std::move(capability), _capturer());
 }
 
-bool AsyncCameraSourceImpl::startCapturer(const webrtc::VideoCaptureCapability& capability)
+bool AsyncCameraSourceImpl::startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                                          const webrtc::VideoCaptureCapability& capability)
 {
     int32_t code = 0;
-    if (enabled() && active() && frameWanted()) {
-        if (const auto& capturer = _capturer.constRef()) {
-            code = capturer->StartCapture(capability);
-            if (0 != code) {
-                logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
-                // TODO: add error details
-                notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
-            }
-            else {
-                logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
-                notify(&MediaDeviceListener::onMediaStarted);
-            }
+    if (capturer && enabled() && active() && frameWanted()) {
+        code = capturer->StartCapture(capability);
+        if (0 != code) {
+            logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
+            // TODO: add error details
+            notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
+        }
+        else {
+            logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
+            notify(&MediaDeviceListener::onMediaStarted);
         }
     }
     return 0 == code;
 }
 
-bool AsyncCameraSourceImpl::stopCapturer(bool sendByeFrame)
+bool AsyncCameraSourceImpl::stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
+                                         bool sendByeFrame)
 {
     int32_t code = 0;
-    const auto& capturer = _capturer.constRef();
     if (capturer && capturer->CaptureStarted()) {
         uint16_t frameId = 0U;
         int w = 0, h = 0;

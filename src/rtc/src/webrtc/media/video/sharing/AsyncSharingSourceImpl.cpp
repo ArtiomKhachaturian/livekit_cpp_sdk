@@ -40,7 +40,7 @@ void AsyncSharingSourceImpl::requestCapturer()
                 capturer = conf->createCapturer(devInfo._guid, _previewMode, framesPool());
             }
             else if (!conf->hasTheSameType(_capturer.constRef()->selectedSource(), devInfo._guid)) {
-                stopCapturer();
+                stopCapturer(_capturer.constRef());
                 capturer = conf->createCapturer(devInfo._guid, _previewMode, framesPool());
             }
             if (capturer) {
@@ -49,7 +49,7 @@ void AsyncSharingSourceImpl::requestCapturer()
                 capturer->setOutputSink(this);
                 _capturer = std::move(capturer);
                 if (enabled()) {
-                    startCapturer();
+                    startCapturer(_capturer.constRef());
                 }
             }
             else {
@@ -63,9 +63,9 @@ void AsyncSharingSourceImpl::requestCapturer()
 void AsyncSharingSourceImpl::resetCapturer()
 {
     LOCK_WRITE_SAFE_OBJ(_capturer);
-    if (_capturer.constRef()) {
-        stopCapturer();
-        _capturer.take()->setOutputSink(nullptr);
+    if (auto capturer = _capturer.take()) {
+        stopCapturer(capturer);
+        capturer->setOutputSink(nullptr);
     }
 }
 
@@ -101,12 +101,12 @@ void AsyncSharingSourceImpl::onDeviceInfoChanged(const MediaDeviceInfo& info)
     bool defaultBehavior = true;
     if (const auto conf = _desktopConfiguration.lock()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
-        const auto& prev = _capturer.constRef();
-        if (prev && conf->hasTheSameType(info._guid, prev->selectedSource())) {
-            stopCapturer();
-            if (prev->selectSource(info._guid)) {
+        const auto& capturer = _capturer.constRef();
+        if (capturer && conf->hasTheSameType(info._guid, capturer->selectedSource())) {
+            stopCapturer(capturer);
+            if (capturer->selectSource(info._guid)) {
                 defaultBehavior = false;
-                startCapturer();
+                startCapturer(capturer);
             }
         }
     }
@@ -124,36 +124,33 @@ MediaDeviceInfo AsyncSharingSourceImpl::validate(MediaDeviceInfo info) const
     return {};
 }
 
-void AsyncSharingSourceImpl::startCapturer()
+void AsyncSharingSourceImpl::startCapturer(const std::unique_ptr<DesktopCapturer>& capturer) const
 {
-    if (enabled() && active() && frameWanted()) {
-        if (const auto& capturer = _capturer.constRef()) {
-            const auto name = deviceInfo()._name;
-            if (capturer->selectSource(deviceInfo()._guid)) {
-                auto optionsText = toString(options());
-                if (capturer->start()) {
-                    logVerbose(capturer, "has been started with caps [" + optionsText + "]");
-                    notify(&MediaDeviceListener::onMediaStarted);
-                    if (!_previewMode) {
-                        capturer->focusOnSelectedSource();
-                    }
-                }
-                else {
-                    logError(capturer, "failed to start with caps [" + optionsText + "]");
-                    notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
+    if (capturer && enabled() && active() && frameWanted()) {
+        const auto name = deviceInfo()._name;
+        if (capturer->selectSource(deviceInfo()._guid)) {
+            auto optionsText = toString(options());
+            if (capturer->start()) {
+                logVerbose(capturer, "has been started with caps [" + optionsText + "]");
+                notify(&MediaDeviceListener::onMediaStarted);
+                if (!_previewMode) {
+                    capturer->focusOnSelectedSource();
                 }
             }
             else {
-                logError(capturer, "failed to select source '" + name + "'");
+                logError(capturer, "failed to start with caps [" + optionsText + "]");
                 notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
             }
+        }
+        else {
+            logError(capturer, "failed to select source '" + name + "'");
+            notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
         }
     }
 }
 
-void AsyncSharingSourceImpl::stopCapturer()
+void AsyncSharingSourceImpl::stopCapturer(const std::unique_ptr<DesktopCapturer>& capturer) const
 {
-    const auto& capturer = _capturer.constRef();
     if (capturer && capturer->started()) {
         capturer->stop();
         logVerbose(capturer, "has been started stopped");

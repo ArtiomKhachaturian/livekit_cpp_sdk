@@ -15,18 +15,20 @@ Item {
         clip: true
         VideoDiagnosticsView {
             id: fpsArea
-            x: parent.contentRect.right - 4 - width
-            y: parent.contentRect.top + 4
+            anchors.top: parent.top
+            anchors.right: parent.right
             z: 1
             visible: false
         }
         TextPanel {
             id: sourceNameText
-            width: parent.width
-            y: renderer.contentRect.bottom - height
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
             visible: root.showSourceName && source !== null && text !== ""
             text: source ? source.name : ""
             showBorder: false
+            elide: Text.ElideMiddle
         }
     }
 

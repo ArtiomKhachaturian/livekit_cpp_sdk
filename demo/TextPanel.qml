@@ -4,6 +4,7 @@ Rectangle {
     property alias font: textArea.font
     property alias style : textArea.style
     property alias text: textArea.text
+    property alias elide: textArea.elide
     property bool showBorder: true
     width: textArea.implicitWidth + 12
     height: textArea.implicitHeight + 6

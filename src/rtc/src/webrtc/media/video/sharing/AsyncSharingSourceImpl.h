@@ -41,8 +41,8 @@ protected:
     void onDeviceInfoChanged(const MediaDeviceInfo& info) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
 private:
-    void startCapturer();
-    void stopCapturer();
+    void startCapturer(const std::unique_ptr<DesktopCapturer>& capturer) const;
+    void stopCapturer(const std::unique_ptr<DesktopCapturer>& capturer) const;
     void logError(const std::unique_ptr<DesktopCapturer>& capturer, const std::string& message) const;
     void logVerbose(const std::unique_ptr<DesktopCapturer>& capturer, const std::string& message) const;
     static std::string formatLogMessage(const std::unique_ptr<DesktopCapturer>& capturer, const std::string& message);

@@ -53,6 +53,8 @@ protected:
     virtual bool isMuted() const { return false; }
     virtual void subsribe(bool /*subscribe*/) {}
     void timerEvent(QTimerEvent* e) override;
+private slots:
+    void removeSink(QObject* sink);
 private:
     void setFrameType(LiveKitCpp::VideoFrameType type);
     void setActive(bool active = true);
@@ -70,7 +72,7 @@ private:
 private:
     static constexpr QSize _nullSize = {0, 0};
     quint16 _fps = 0U;
-    Lockable<QList<QPointer<QVideoSink>>> _outputs;
+    Lockable<QList<QVideoSink*>> _outputs;
     SafeObj<QSize> _frameSize;
     FpsMeter _fpsMeter;
     std::atomic_bool _active = false;
