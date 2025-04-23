@@ -1,12 +1,12 @@
 #ifndef VIDEOSOURCE_H
 #define VIDEOSOURCE_H
+#include "fpsmeter.h"
 #include "safeobj.h"
 #include <livekit/rtc/media/MediaEventsListener.h>
 #include <livekit/rtc/media/VideoSink.h>
 #include <QObject>
 #include <QPointer>
 #include <QQmlEngine>
-#include <QBasicTimer>
 #include <QSize>
 #include <QVideoSink>
 #include <atomic>
@@ -47,7 +47,7 @@ signals:
 protected:
     void startMetricsCollection();
     void stopMetricsCollection();
-    bool isMetricsCollectionStarted() const { return _fpsTimer.isActive(); }
+    bool isMetricsCollectionStarted() const { return _fpsMeter.isActive(); }
     bool hasOutputs() const;
     virtual bool hasVideoInput() const { return true; }
     virtual bool isMuted() const { return false; }
@@ -69,11 +69,10 @@ private:
     void onMediaFatalError(const std::string&, const std::string&) override { setInactive(); }
 private:
     static constexpr QSize _nullSize = {0, 0};
-    QBasicTimer _fpsTimer;
     quint16 _fps = 0U;
     Lockable<QList<QPointer<QVideoSink>>> _outputs;
     SafeObj<QSize> _frameSize;
-    std::atomic<quint16> _framesCounter = 0U;
+    FpsMeter _fpsMeter;
     std::atomic_bool _active = false;
     std::atomic<LiveKitCpp::VideoFrameType> _frameType;
 };

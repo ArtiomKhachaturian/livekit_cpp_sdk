@@ -12,6 +12,7 @@ Item {
         id: renderer
         anchors.fill: parent
         property VideoSource source: null
+        clip: true
         VideoDiagnosticsView {
             id: fpsArea
             x: parent.contentRect.right - 4 - width

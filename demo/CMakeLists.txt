@@ -11,6 +11,10 @@ find_package(LiveKitClient REQUIRED HINTS ${PACKAGES_PATHS_HINT})
 find_package(ZaphoydTppWebsockets REQUIRED HINTS ${PACKAGES_PATHS_HINT})
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia)
 
+if(APPLE)
+    set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
+endif(APPLE)
+
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(${PROJECT_NAME})
@@ -74,6 +78,8 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             remoteparticipant.h
             audiorecordingoptions.h
             audiorecordingoptions.cpp
+            fpsmeter.h
+            fpsmeter.cpp
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -131,6 +137,14 @@ foreach(CONFIGURATION ${CMAKE_CONFIGURATION_TYPES})
     copyFrameworksToBundle(${CMAKE_CURRENT_BINARY_DIR}/${CONFIGURATION}/${PROJECT_NAME}.app)
 endforeach()
 set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
+endif()
+
+if(NOT "${CODE_SIGNING_CERT}" STREQUAL "")
+   message(STATUS "Code signing added, for ${PROJECT_NAME}, with cert '${CODE_SIGNING_CERT}'")
+   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+       COMMAND codesign --force --sign ${CODE_SIGNING_CERT} $<TARGET_FILE:${PROJECT_NAME}>
+       COMMENT "Signing ${PROJECT_NAME}" VERBATIM
+   )
 endif()
 
 include(GNUInstallDirs)

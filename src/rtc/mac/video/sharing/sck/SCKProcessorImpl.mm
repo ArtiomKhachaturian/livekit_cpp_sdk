@@ -15,11 +15,16 @@
 #include "SCKDelegate.h"
 #include "SCKStreamOutput.h"
 #include "CapturerProxySink.h"
+#include "CFAutoRelease.h"
 #include "CoreVideoPixelBuffer.h"
 #include "IOSurfaceBuffer.h"
 #include "Utils.h"
 #include "VideoUtils.h"
 #include <modules/desktop_capture/mac/window_list_utils.h>
+#include <optional>
+#import <ApplicationServices/ApplicationServices.h>
+#import <Cocoa/Cocoa.h>
+#import <CoreFoundation/CoreFoundation.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 
 extern "C" AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out) __attribute__((weak_import));
@@ -38,6 +43,12 @@ template <typename T>
 inline T roundCGFloat(CGFloat f) {
     return static_cast<int32_t>(std::round(f));
 }
+
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> cropDown(webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
+                                                         int width, int height);
+
+std::optional<bool> isSingleWindowApp(pid_t pid);
+void raiseMultiWindowApp(pid_t pid, CGWindowID wId);
 
 }
 
@@ -176,7 +187,13 @@ void SCKProcessorImpl::focusOnSelectedWindow()
     @autoreleasepool {
         SCWindow* window = selectedWindow();
         if (window) {
-            
+            const auto pid = webrtc::GetWindowOwnerPid(window.windowID);
+            if (const auto oneWindowApp = isSingleWindowApp(pid)) {
+                BOOL appActivated = [[NSRunningApplication runningApplicationWithProcessIdentifier:pid] activateWithOptions:0];
+                if (appActivated && !oneWindowApp.value()) {
+                    raiseMultiWindowApp(pid, window.windowID);
+                }
+            }
         }
     }
 }
@@ -458,26 +475,16 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> SCKProcessorImpl::
                     if (windowWidth > 0 && windowHeight > 0 && (windowWidth != buffer->width() ||
                                                                 windowHeight != buffer->height())) {
                         if (windowWidth <= buffer->width() && windowHeight <= buffer->height()) {
-                            buffer = buffer->CropAndScale(0, 0,
-                                                          windowWidth, windowHeight,
-                                                          windowWidth, windowHeight);
+                            buffer = cropDown(std::move(buffer), windowWidth, windowHeight);
                         }
                         else {
                             const CGSize source = CGSizeMake(windowWidth, windowHeight);
                             const CGSize target = CGSizeMake(buffer->width(), buffer->height());
                             const CGSize bounds = scaleKeepAspectRatio(source, target);
                             if (!CGSizeEqualToSize(bounds, CGSizeZero)) {
-                                auto cropWidth = even2(roundCGFloat<int32_t>(bounds.width - 1));
-                                if (cropWidth > buffer->width()) {
-                                    cropWidth = buffer->width();
-                                }
-                                auto cropHeight = even2(roundCGFloat<int32_t>(bounds.height - 1));
-                                if (cropHeight > buffer->height()) {
-                                    cropHeight = buffer->height();
-                                }
-                                buffer = buffer->CropAndScale(0, 0,
-                                                              cropWidth, cropHeight,
-                                                              cropWidth, cropHeight);
+                                const auto cropWidth = even2(roundCGFloat<int32_t>(bounds.width - 1));
+                                const auto cropHeight = even2(roundCGFloat<int32_t>(bounds.height - 1));
+                                buffer = cropDown(std::move(buffer), cropWidth, cropHeight);
                             }
                         }
                     }
@@ -506,3 +513,76 @@ void SCKProcessorImpl::processPermanentError(SCStream* stream, NSError* error)
 }
 
 } // namespace LiveKitCpp
+
+namespace
+{
+
+using namespace LiveKitCpp;
+
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> cropDown(webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
+                                                         int width, int height)
+{
+    if (buffer && width > 0 && height > 0) {
+        const auto bufferWidth = buffer->width();
+        if (width > bufferWidth) {
+            width = bufferWidth;
+        }
+        const auto bufferHeight = buffer->height();
+        if (height > bufferHeight) {
+            height = bufferHeight;
+        }
+        if (width != bufferWidth || height != bufferHeight) {
+            return buffer->CropAndScale(0, 0, width, height, width, height);
+        }
+    }
+    return buffer;
+}
+
+std::optional<bool> isSingleWindowApp(pid_t pid)
+{
+    if (0 != pid) {
+        size_t windowsCount = 0U;
+        if (webrtc::GetWindowList([pid, &windowsCount](CFDictionaryRef window) {
+            if (pid == webrtc::GetWindowOwnerPid(window)) {
+                ++windowsCount;
+            }
+            return windowsCount <= 1;
+        }, true, false) && windowsCount) {
+            return 1U == windowsCount;
+        }
+    }
+    return std::nullopt;
+}
+
+void raiseMultiWindowApp(pid_t pid, CGWindowID wId)
+{
+    @try {
+        if (CFAutoRelease<AXUIElementRef> element = AXUIElementCreateApplication(pid)) {
+            CFArrayRef array;
+            AXUIElementCopyAttributeValues(element, kAXWindowsAttribute, 0, 99999, &array);
+            if (array) {
+                @autoreleasepool {
+                    NSArray* appWindows = (NSArray*)CFBridgingRelease(array);
+                    // enumeration is not required for applications with single main window
+                    if (appWindows.count > 1U) {
+                        for (id appWindow in appWindows) {
+                            const auto appWindowAX = (__bridge AXUIElementRef)appWindow;
+                            CGWindowID appWindowId = 0;
+                            if (kAXErrorSuccess == _AXUIElementGetWindow(appWindowAX, &appWindowId)) {
+                                if (appWindowId == wId) {
+                                    AXUIElementPerformAction(appWindowAX, kAXRaiseAction);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    @catch (NSException* /*e*/) {
+    }
+}
+
+
+}

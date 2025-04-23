@@ -51,7 +51,7 @@ void VideoSource::startMetricsCollection()
 {
     if (isActive() && hasVideoInput()) {
         if (QThread::currentThread() == thread()) {
-            _fpsTimer.start(1000ms, this);
+            _fpsMeter.start(this);
         }
         else {
             QMetaObject::invokeMethod(this, &VideoSource::startMetricsCollection);
@@ -61,11 +61,11 @@ void VideoSource::startMetricsCollection()
 
 void VideoSource::stopMetricsCollection()
 {
-    _framesCounter = 0U;
+    _fpsMeter.stop();
     setFps(0U);
     setFrameSize(_nullSize, false);
     if (QThread::currentThread() == thread()) {
-        _fpsTimer.stop();
+        _fpsMeter.stop();
     }
     else {
         QMetaObject::invokeMethod(this, &VideoSource::stopMetricsCollection);
@@ -80,8 +80,8 @@ bool VideoSource::hasOutputs() const
 
 void VideoSource::timerEvent(QTimerEvent* e)
 {
-    if (e && e->timerId() == _fpsTimer.timerId()) {
-        setFps(_framesCounter.exchange(0U));
+    if (e && e->timerId() == _fpsMeter.timerId()) {
+        setFps(_fpsMeter.restart());
     }
     QObject::timerEvent(e);
 }
@@ -117,7 +117,7 @@ void VideoSource::setFps(quint16 fps)
 void VideoSource::setFrameSize(QSize frameSize, bool updateFps)
 {
     if (updateFps) {
-        _framesCounter.fetch_add(1U);
+        _fpsMeter.addFrame();
     }
     if (_frameSize.exchange(std::move(frameSize))) {
         emit frameSizeChanged();
