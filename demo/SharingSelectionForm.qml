@@ -22,7 +22,7 @@ Pane {
     Component {
         id: contentComponent
         ColumnLayout {
-
+            anchors.fill: parent
             Label {
                 text: screensPreview.count > 1 ? qsTr("Screens:") : qsTr("Primary screen:")
                 Layout.alignment: Qt.AlignLeft
@@ -33,6 +33,7 @@ Pane {
                 id: screensPreview
                 implicitHeight: cellHeight
                 Layout.fillWidth: true
+                //Layout.alignment: Qt.AlignHCenter
                 Layout.fillHeight: 0 === windowsPreview.count
                 visible: count > 0
                 objectName: "screens"
@@ -41,6 +42,12 @@ Pane {
                 onCurrentIndexChanged: {
                     if (currentIndex !== -1) {
                         windowsPreview.currentIndex = -1
+                    }
+                }
+                Component.onCompleted: {
+                    if (isEmptyDeviceInfo() && count > 0) {
+                        root.deviceInfo = model.deviceInfo(0)
+                        currentIndex = 0
                     }
                 }
             }
@@ -92,6 +99,7 @@ Pane {
         property int enumerationMode: SharingsVideoModel.Inactive
         property bool showDiagnostics: true
         property bool showSourceName: true
+
         model: SharingsVideoModel {
             id: sourcesModel
             mode: grid.enumerationMode
@@ -104,10 +112,11 @@ Pane {
             showSourceName: grid.showSourceName
             source: sourcesModel.sourceAt(index)
             property var deviceInfo: source ? source.deviceInfo : app.emptyDeviceInfo()
+            readonly property bool isCurrentItem: grid.currentIndex === index
             Rectangle {
                 anchors.fill: parent
                 border.width: 2
-                border.color: grid.currentIndex === index ? parent.palette.highlight : parent.palette.mid
+                border.color: parent.isCurrentItem ? parent.palette.highlight : parent.palette.mid
                 color: "transparent"
                 z: 1
             }
@@ -115,10 +124,6 @@ Pane {
                 anchors.fill: parent
                 onClicked:  grid.currentIndex = index
             }
-            //Keys.onRightPressed: grid.selectedIndex = Math.min(grid.selectedIndex + 1, thumbnailGrid.elementsCount - 1)
-            //Keys.onLeftPressed: grid.selectedIndex = Math.max(grid.selectedIndex - 1, 0)
-            //Keys.onDownPressed: thumbnailGrid.selectedIndex = Math.min(thumbnailGrid.selectedIndex + 3, thumbnailGrid.count - 1)
-            //Keys.onUpPressed: thumbnailGrid.selectedIndex = Math.max(thumbnailGrid.selectedIndex - 3, 0)
         }
         // handle clicks on empty area within the grid.
         // this adds an element below the grid items but on the grid's flickable surface
@@ -128,8 +133,8 @@ Pane {
             onClicked: grid.currentIndex = -1
         }
         Component.onCompleted: {
-            if (root.deviceInfo !== undefined) {
-                for (var i = 0; i < model.rowCount(); ++i) {
+            if (!isEmptyDeviceInfo()) {
+                for (var i = 0; i < count; ++i) {
                     if (root.deviceInfo === model.deviceInfo(i)) {
                         currentIndex = i
                         return
@@ -148,6 +153,11 @@ Pane {
                 }
             }
         }
+
+        //Keys.onRightPressed: grid.selectedIndex = Math.min(grid.selectedIndex + 1, thumbnailGrid.elementsCount - 1)
+        //Keys.onLeftPressed: grid.selectedIndex = Math.max(grid.selectedIndex - 1, 0)
+        //Keys.onDownPressed: thumbnailGrid.selectedIndex = Math.min(thumbnailGrid.selectedIndex + 3, thumbnailGrid.count - 1)
+        //Keys.onUpPressed: thumbnailGrid.selectedIndex = Math.max(thumbnailGrid.selectedIndex - 3, 0)
     }
 
     Component.onCompleted: {
@@ -157,5 +167,9 @@ Pane {
 
     onVisibleChanged: {
         contentComponentLoader.active = visible
+    }
+
+    function isEmptyDeviceInfo() {
+        return root.deviceInfo === app.emptyDeviceInfo()
     }
 }
