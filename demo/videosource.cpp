@@ -1,13 +1,13 @@
 #include "videosource.h"
+#include <QtCore/qthread.h>
 #include <livekit/rtc/media/VideoFrame.h>
 #include <livekit/rtc/media/VideoFrameQtHelper.h>
-#include <QThread>
 
 VideoSource::VideoSource(QObject *parent)
     : QObject{parent}
     , _frameType(LiveKitCpp::VideoFrameType::I420)
 {
-    QObject::connect(&_fpsMeter, &FpsMeter::fpsChanged, this, &VideoSource::setFps);
+    QObject::connect(&_fpsMeter, &FpsMeter::fpsChanged, this, &VideoSource::fpsChanged);
 }
 
 VideoSource::~VideoSource()
@@ -39,6 +39,7 @@ void VideoSource::addOutput(QVideoSink* output)
             }
         }
         if (activate) {
+            subsribe(true);
             setActive(true);
         }
     }
@@ -52,26 +53,14 @@ void VideoSource::removeOutput(QVideoSink* output)
 void VideoSource::startMetricsCollection()
 {
     if (isActive() && hasVideoInput()) {
-        if (QThread::currentThread() == thread()) {
-            _fpsMeter.start();
-        }
-        else {
-            QMetaObject::invokeMethod(this, &VideoSource::startMetricsCollection);
-        }
+         _fpsMeter.start();
     }
 }
 
 void VideoSource::stopMetricsCollection()
 {
     _fpsMeter.stop();
-    setFps(0U);
     setFrameSize(_nullSize, false);
-    if (QThread::currentThread() == thread()) {
-        _fpsMeter.stop();
-    }
-    else {
-        QMetaObject::invokeMethod(this, &VideoSource::stopMetricsCollection);
-    }
 }
 
 bool VideoSource::hasOutputs() const
@@ -101,6 +90,7 @@ void VideoSource::removeSink(QObject* sink)
         }
         if (deactivate) {
             setActive(false);
+            subsribe(false);
         }
     }
 }
@@ -115,7 +105,6 @@ void VideoSource::setFrameType(LiveKitCpp::VideoFrameType type)
 void VideoSource::setActive(bool active)
 {
     if (active != _active.exchange(active)) {
-        subsribe(active);
         if (active) {
             startMetricsCollection();
         }
@@ -123,14 +112,6 @@ void VideoSource::setActive(bool active)
             stopMetricsCollection();
         }
         emit activeChanged();
-    }
-}
-
-void VideoSource::setFps(quint16 fps)
-{
-    if (fps != _fps) {
-        _fps = fps;
-        emit fpsChanged();
     }
 }
 

@@ -14,13 +14,15 @@ public:
     void stop();
     void addFrame();
     bool isActive() const { return _timer.isActive(); }
+    quint16 fps() const { return _fps; }
 signals:
-    void fpsChanged(quint16 fps);
+    void fpsChanged();
 private:
     void calculate();
-    // return fps
-    quint16 restart();
+    void setFps(quint16 fps);
+    static constexpr float num();
 private:
+    quint16 _fps = 0U;
     std::atomic_bool _started = false;
     std::atomic<quint16> _framesCounter = 0U;
     QElapsedTimer _elapsedTimer;

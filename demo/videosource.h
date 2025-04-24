@@ -30,7 +30,7 @@ class VideoSource : public QObject,
 public:
     explicit VideoSource(QObject *parent = nullptr);
     ~VideoSource() override;
-    quint16 fps() const noexcept { return _fps; }
+    quint16 fps() const noexcept { return _fpsMeter.fps(); }
     QSize frameSize() const { return _frameSize; }
     bool isActive() const { return _active; }
     QString frameType() const;
@@ -58,7 +58,6 @@ private:
     void setFrameType(LiveKitCpp::VideoFrameType type);
     void setActive(bool active = true);
     void setInactive() { setActive(false); }
-    void setFps(quint16 fps);
     void setFrameSize(QSize frameSize, bool updateFps = true);
     void setFrameSize(int width, int height, bool updateFps = true);
     // impl. of LiveKitCpp::VideoSource
@@ -70,7 +69,6 @@ private:
     void onMediaFatalError(const std::string&, const std::string&) override { setInactive(); }
 private:
     static constexpr QSize _nullSize = {0, 0};
-    quint16 _fps = 0U;
     Lockable<QList<QVideoSink*>> _outputs;
     SafeObj<QSize> _frameSize;
     FpsMeter _fpsMeter;

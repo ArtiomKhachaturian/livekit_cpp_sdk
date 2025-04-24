@@ -1,5 +1,7 @@
 #include "fpsmeter.h"
 #include <QTimerEvent>
+#include <QThread>
+#include <cmath>
 
 
 FpsMeter::FpsMeter()
@@ -15,19 +17,30 @@ FpsMeter::~FpsMeter()
 
 void FpsMeter::start()
 {
-    if (!_started.exchange(true)) {
-        _framesCounter = 0U;
-        _elapsedTimer.start();
-        _timer.start(1000);
+    if (QThread::currentThread() == thread()) {
+        if (!_started.exchange(true)) {
+            _framesCounter = _fps = 0U;
+            _elapsedTimer.start();
+            _timer.start(1000);
+        }
+    }
+    else {
+        QMetaObject::invokeMethod(this, &FpsMeter::start);
     }
 }
 
 void FpsMeter::stop()
 {
-    if (_started.exchange(false)) {
-        _timer.stop();
-        calculate();
-        _elapsedTimer.invalidate();
+    if (QThread::currentThread() == thread()) {
+        if (_started.exchange(false)) {
+            _timer.stop();
+            calculate();
+            _elapsedTimer.invalidate();
+            setFps(0U);
+        }
+    }
+    else {
+        QMetaObject::invokeMethod(this, &FpsMeter::stop);
     }
 }
 
@@ -40,11 +53,16 @@ void FpsMeter::addFrame()
 
 void FpsMeter::calculate()
 {
-    emit fpsChanged(restart());
+    const auto frames = _framesCounter.exchange(0U);
+    const auto fps = std::roundf((1000U * frames) / float(_elapsedTimer.restart()));
+    setFps(static_cast<quint16>(fps));
+
 }
 
-quint16 FpsMeter::restart()
+void FpsMeter::setFps(quint16 fps)
 {
-    const auto frames = _framesCounter.exchange(0U);
-    return (1000U * frames) / float(_elapsedTimer.restart());
+    if (fps != _fps) {
+        _fps = fps;
+        emit fpsChanged();
+    }
 }
