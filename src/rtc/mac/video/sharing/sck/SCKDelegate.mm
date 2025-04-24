@@ -23,8 +23,8 @@
     if (!errorHandler.expired()) {
         if (self = [super init]) {
             _errorHandler = errorHandler;
+            return self;
         }
-        return self;
     }
     return nil;
 }

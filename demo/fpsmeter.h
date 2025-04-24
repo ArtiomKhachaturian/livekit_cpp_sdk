@@ -1,24 +1,30 @@
 #ifndef FPSMETER_H
 #define FPSMETER_H
-#include <QBasicTimer>
+#include <QTimer>
 #include <QElapsedTimer>
 #include <atomic>
 
-class FpsMeter
+class FpsMeter final : public QObject
 {
+    Q_OBJECT
 public:
-    FpsMeter() = default;
-    void start(QObject* target);
+    FpsMeter();
+    ~FpsMeter();
+    void start();
     void stop();
+    void addFrame();
+    bool isActive() const { return _timer.isActive(); }
+signals:
+    void fpsChanged(quint16 fps);
+private:
+    void calculate();
     // return fps
     quint16 restart();
-    void addFrame();
-    int timerId() const { return _timer.timerId(); }
-    bool isActive() const { return _timer.isActive(); }
 private:
+    std::atomic_bool _started = false;
     std::atomic<quint16> _framesCounter = 0U;
     QElapsedTimer _elapsedTimer;
-    QBasicTimer _timer;
+    QTimer _timer;
 };
 
 #endif // FPSMETER_H

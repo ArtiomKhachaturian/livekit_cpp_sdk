@@ -69,10 +69,16 @@ SCKProcessorImpl::SCKProcessorImpl(VideoFrameBufferPool framesPool)
 
 SCKProcessorImpl::~SCKProcessorImpl()
 {
-    _output = nil;
-    _stream = nil;
-    _filter = nil;
-    _excludedWindow = nil;
+    stop(false);
+    @synchronized (_configuration) {
+        if (_stream && _output) {
+            [_stream removeStreamOutput:_output type:SCStreamOutputTypeScreen error:nil];
+        }
+        _output = nil;
+        _stream = nil;
+        _filter = nil;
+        _excludedWindow = nil;
+    }
 }
 
 bool SCKProcessorImpl::start()
@@ -108,21 +114,27 @@ bool SCKProcessorImpl::started() const
     return false;
 }
 
-void SCKProcessorImpl::stop()
+void SCKProcessorImpl::stop(bool withHandler)
 {
     @synchronized (_configuration) {
         if (_stream && changeState(CapturerState::Stopping)) {
-            auto weakSelf = weak_from_this();
-            [_stream stopCaptureWithCompletionHandler:^(NSError * _Nullable error) {
-                if (const auto strongSelf = weakSelf.lock()) {
-                    if (error && error.code != SCStreamErrorAttemptToStopStreamState) {
-                        strongSelf->notifyAboutError(error, false);
+            if (withHandler) {
+                auto weakSelf = weak_from_this();
+                [_stream stopCaptureWithCompletionHandler:^(NSError * _Nullable error) {
+                    if (const auto strongSelf = weakSelf.lock()) {
+                        if (error && error.code != SCStreamErrorAttemptToStopStreamState) {
+                            strongSelf->notifyAboutError(error, false);
+                        }
+                        else {
+                            strongSelf->changeState(CapturerState::Stopped);
+                        }
                     }
-                    else {
-                        strongSelf->changeState(CapturerState::Stopped);
-                    }
-                }
-            }];
+                }];
+            }
+            else {
+                [_stream stopCaptureWithCompletionHandler:nil];
+                changeState(CapturerState::Stopped);
+            }
         }
     }
 }

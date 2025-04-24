@@ -1,27 +1,50 @@
 #include "fpsmeter.h"
+#include <QTimerEvent>
 
-void FpsMeter::start(QObject* target)
+
+FpsMeter::FpsMeter()
 {
-    _framesCounter = 0U;
-    _elapsedTimer.start();
-    _timer.start(1000, target);
+    QObject::connect(&_timer, &QTimer::timeout, this, &FpsMeter::calculate);
+}
+
+FpsMeter::~FpsMeter()
+{
+    stop();
+    _timer.disconnect(this);
+}
+
+void FpsMeter::start()
+{
+    if (!_started.exchange(true)) {
+        _framesCounter = 0U;
+        _elapsedTimer.start();
+        _timer.start(1000);
+    }
 }
 
 void FpsMeter::stop()
 {
-    _elapsedTimer.invalidate();
-    _framesCounter = 0U;
-    _timer.stop();
+    if (_started.exchange(false)) {
+        _timer.stop();
+        calculate();
+        _elapsedTimer.invalidate();
+    }
 }
 
 void FpsMeter::addFrame()
 {
-    _framesCounter.fetch_add(1U);
+    if (_started) {
+        _framesCounter.fetch_add(1U);
+    }
+}
+
+void FpsMeter::calculate()
+{
+    emit fpsChanged(restart());
 }
 
 quint16 FpsMeter::restart()
 {
     const auto frames = _framesCounter.exchange(0U);
-    const auto elapsed = float(_elapsedTimer.restart()); // in ms
-    return (1000U * frames) / elapsed;
+    return (1000U * frames) / float(_elapsedTimer.restart());
 }

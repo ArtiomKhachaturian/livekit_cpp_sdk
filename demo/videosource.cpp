@@ -1,13 +1,13 @@
 #include "videosource.h"
 #include <livekit/rtc/media/VideoFrame.h>
 #include <livekit/rtc/media/VideoFrameQtHelper.h>
-#include <QTimerEvent>
 #include <QThread>
 
 VideoSource::VideoSource(QObject *parent)
     : QObject{parent}
     , _frameType(LiveKitCpp::VideoFrameType::I420)
 {
+    QObject::connect(&_fpsMeter, &FpsMeter::fpsChanged, this, &VideoSource::setFps);
 }
 
 VideoSource::~VideoSource()
@@ -53,7 +53,7 @@ void VideoSource::startMetricsCollection()
 {
     if (isActive() && hasVideoInput()) {
         if (QThread::currentThread() == thread()) {
-            _fpsMeter.start(this);
+            _fpsMeter.start();
         }
         else {
             QMetaObject::invokeMethod(this, &VideoSource::startMetricsCollection);
@@ -78,14 +78,6 @@ bool VideoSource::hasOutputs() const
 {
     const QReadLocker locker(&_outputs._lock);
     return !_outputs->isEmpty();
-}
-
-void VideoSource::timerEvent(QTimerEvent* e)
-{
-    if (e && e->timerId() == _fpsMeter.timerId()) {
-        setFps(_fpsMeter.restart());
-    }
-    QObject::timerEvent(e);
 }
 
 void VideoSource::removeSink(QObject* sink)

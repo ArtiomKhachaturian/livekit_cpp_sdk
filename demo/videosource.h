@@ -52,7 +52,6 @@ protected:
     virtual bool hasVideoInput() const { return true; }
     virtual bool isMuted() const { return false; }
     virtual void subsribe(bool /*subscribe*/) {}
-    void timerEvent(QTimerEvent* e) override;
 private slots:
     void removeSink(QObject* sink);
 private:

@@ -52,7 +52,7 @@ public:
     void setOutputSink(CapturerProxySink* sink) { _sink = sink; }
     bool start();
     bool started() const;
-    void stop();
+    void stop(bool withHandler = true);
     bool selectDisplay(SCDisplay* display);
     bool selectWindow(SCWindow* window);
     void setExcludedWindow(SCWindow* window);

@@ -20,6 +20,6 @@ class SCKErrorHandler;
 }
 
 @interface SCKDelegate : NSObject<SCStreamDelegate>
-- (instancetype) init NS_UNAVAILABLE;
-- (instancetype) initWith:(const std::weak_ptr<LiveKitCpp::SCKErrorHandler>&) errorHandler NS_DESIGNATED_INITIALIZER;
+- (nullable instancetype) init NS_UNAVAILABLE;
+- (nullable instancetype) initWith:(const std::weak_ptr<LiveKitCpp::SCKErrorHandler>&) errorHandler NS_DESIGNATED_INITIALIZER;
 @end
