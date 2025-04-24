@@ -9,7 +9,7 @@ Rectangle {
     width: textArea.implicitWidth + 12
     height: textArea.implicitHeight + 6
     border.width: showBorder ? (parent.activeFocus ? 2 : 1) : 0
-    color: "black"//parent.palette.base
+    color: "black"
     border.color: parent.activeFocus ? parent.palette.highlight : parent.palette.mid
     radius: 2
     opacity: 0.5

@@ -3,11 +3,10 @@ import QtQuick.Controls
 
 Item {
     id: root
-    property bool autoLayout: true
     property alias model: repeater.model
     property Component delegate
-    property alias cellWidth: grid.cellWidth
-    property alias cellHeight: grid.cellHeight
+    readonly property int cellWidth: width / (columns > 0 ? columns : 1)
+    readonly property int cellHeight: height / (rows > 0 ? rows : 1)
     readonly property alias columns: grid.columns
     readonly property alias rows: grid.rows
     readonly property alias elementsCount: grid.elementsCount
@@ -28,8 +27,8 @@ Item {
             }
             return 0
         }
-        property int cellWidth: 0
-        property int cellHeight: 0
+        property alias cellWidth: root.cellWidth
+        property alias cellHeight: root.cellHeight
         Repeater {
             id: repeater
             delegate: Rectangle {
@@ -85,34 +84,11 @@ Item {
         }
     }
 
-    Component.onCompleted: {
-        bindAutoLayout()
-    }
-
-    onAutoLayoutChanged: {
-        bindAutoLayout()
-    }
-
     function itemAt(index) {
         var item = repeater.itemAt(index)
         if (item) {
             return item.item
         }
         return null
-    }
-
-    function bindAutoLayout() {
-        if (autoLayout) {
-            cellWidth = Qt.binding(function() {
-                return width / columns
-            })
-            cellHeight = Qt.binding(function() {
-                return height / rows
-            })
-        }
-        else {
-            cellWidth = cellWidth
-            cellHeight = cellHeight
-        }
     }
 }

@@ -7,7 +7,8 @@ Pane {
     id: root
     property var options: undefined
     property var deviceInfo: undefined
-    property var focusedCell: null
+    property int cellWidth: 300
+    property int cellHeight: 200
     signal accepted
     signal rejected
 
@@ -16,30 +17,32 @@ Pane {
         anchors.fill: parent
         sourceComponent: contentComponent
         active: false
-        focus: true
     }
 
     Component {
         id: contentComponent
         ColumnLayout {
-            readonly property bool noWindows: 0 == windowsPreview.elementsCount
+
             Label {
-                text: qsTr("Screens:")
+                text: screensPreview.count > 1 ? qsTr("Screens:") : qsTr("Primary screen:")
                 Layout.alignment: Qt.AlignLeft
-                visible: !noWindows && screensPreview.elementsCount > 1
+                visible: screensPreview.count > 0
             }
 
             PreviewGrid {
                 id: screensPreview
-                autoLayout: noWindows
-                cellWidth: 300
-                cellHeight: 200
                 implicitHeight: cellHeight
                 Layout.fillWidth: true
-                Layout.fillHeight: noWindows
-                visible: elementsCount > 0
+                Layout.fillHeight: 0 === windowsPreview.count
+                visible: count > 0
+                objectName: "screens"
                 enumerationMode: SharingsVideoModel.Screens
-                //showDiagnostics: noWindows
+                focus: true
+                onCurrentIndexChanged: {
+                    if (currentIndex !== -1) {
+                        windowsPreview.currentIndex = -1
+                    }
+                }
             }
 
             Label {
@@ -52,9 +55,18 @@ Pane {
                 id: windowsPreview
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                visible: !noWindows
+                clip: true
+                //cellWidth: 300
+                //cellHeight: 200
+                visible: count > 0
+                showDiagnostics: count < 3
                 enumerationMode: SharingsVideoModel.Windows
-                showDiagnostics: elementsCount < 3
+                objectName: "windows"
+                onCurrentIndexChanged: {
+                    if (currentIndex !== -1) {
+                        screensPreview.currentIndex = -1
+                    }
+                }
             }
 
             DialogButtonBox {
@@ -69,61 +81,71 @@ Pane {
                     root.rejected()
                 }
             }
-
         }
     }
 
-    component PreviewGrid : ElementsGrid {
+    component PreviewGrid : GridView {
         id: grid
+        keyNavigationWraps: true
+        cellWidth: root.cellWidth
+        cellHeight: root.cellHeight
         property int enumerationMode: SharingsVideoModel.Inactive
         property bool showDiagnostics: true
         property bool showSourceName: true
-        property int selectedIndex: -1
         model: SharingsVideoModel {
             id: sourcesModel
             mode: grid.enumerationMode
             options: root.options
         }
         delegate: VideoRenderer {
-            anchors.fill: parent
+            width: grid.cellWidth - 10
+            height: grid.cellHeight - 10
             showDiagnostics: grid.showDiagnostics
             showSourceName: grid.showSourceName
             source: sourcesModel.sourceAt(index)
-            property int index
             property var deviceInfo: source ? source.deviceInfo : app.emptyDeviceInfo()
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    grid.selectedIndex = index
-                }
-            }
             Rectangle {
                 anchors.fill: parent
-                visible: parent.focus
                 border.width: 2
-                border.color: parent.palette.highlight
+                border.color: grid.currentIndex === index ? parent.palette.highlight : parent.palette.mid
                 color: "transparent"
                 z: 1
+            }
+            MouseArea {
+                anchors.fill: parent
+                onClicked:  grid.currentIndex = index
             }
             //Keys.onRightPressed: grid.selectedIndex = Math.min(grid.selectedIndex + 1, thumbnailGrid.elementsCount - 1)
             //Keys.onLeftPressed: grid.selectedIndex = Math.max(grid.selectedIndex - 1, 0)
             //Keys.onDownPressed: thumbnailGrid.selectedIndex = Math.min(thumbnailGrid.selectedIndex + 3, thumbnailGrid.count - 1)
             //Keys.onUpPressed: thumbnailGrid.selectedIndex = Math.max(thumbnailGrid.selectedIndex - 3, 0)
         }
-        onSelectedIndexChanged: {
-            setFocusedCell(itemAt(selectedIndex))
+        // handle clicks on empty area within the grid.
+        // this adds an element below the grid items but on the grid's flickable surface
+        // (so it won't have mouse events stolen by the grid)
+        flickableChildren: MouseArea {
+            anchors.fill: parent
+            onClicked: grid.currentIndex = -1
         }
-    }
-
-    function setFocusedCell(cell) {
-        if (focusedCell !== cell) {
-            if (focusedCell) {
-                focusedCell.focus = false
+        Component.onCompleted: {
+            if (root.deviceInfo !== undefined) {
+                for (var i = 0; i < model.rowCount(); ++i) {
+                    if (root.deviceInfo === model.deviceInfo(i)) {
+                        currentIndex = i
+                        return
+                    }
+                }
             }
-            focusedCell = cell
-            if (focusedCell) {
-                focusedCell.focus = true
-                deviceInfo = focusedCell.deviceInfo
+            currentIndex = -1
+        }
+
+        onCurrentIndexChanged: {
+            focus = -1 !== currentIndex
+            if (focus) {
+                var item = grid.itemAtIndex(currentIndex)
+                if (item !== null) {
+                    deviceInfo = item.deviceInfo
+                }
             }
         }
     }

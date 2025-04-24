@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import QtMultimedia
 import LiveKitClient 1.0
 
@@ -7,24 +8,28 @@ Item {
     property VideoSource source: null
     property bool showSourceName: false
     property bool showDiagnostics: true
+    property bool clearOutputWhenInactive: true
 
-    VideoOutput {
-        id: renderer
+    ColumnLayout {
         anchors.fill: parent
-        property VideoSource source: null
-        clip: true
-        VideoDiagnosticsView {
-            id: fpsArea
-            anchors.top: parent.top
-            anchors.right: parent.right
-            z: 1
-            visible: false
+        spacing: 0
+        VideoOutput {
+            id: renderer
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            property VideoSource source: null
+            VideoDiagnosticsView {
+                id: fpsArea
+                anchors.top: parent.top
+                anchors.right: parent.right
+                z: 1
+                visible: false
+            }
         }
         TextPanel {
             id: sourceNameText
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
+            Layout.fillWidth: true
+            clip: true
             visible: root.showSourceName && source !== null && text !== ""
             text: source ? source.name : ""
             showBorder: false
@@ -75,7 +80,7 @@ Item {
     Connections {
         target: renderer.source
         function onActiveChanged() {
-            if (!renderer.source.active) {
+            if (clearOutputWhenInactive && !renderer.source.active) {
                 renderer.clearOutput()
             }
         }
