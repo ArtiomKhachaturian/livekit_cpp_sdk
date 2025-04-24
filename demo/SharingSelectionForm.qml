@@ -17,12 +17,30 @@ Pane {
         anchors.fill: parent
         sourceComponent: contentComponent
         active: false
+        property var storedDeviceInfo: undefined
+        onItemChanged: {
+            if (item) {
+                if (storedDeviceInfo.isEmpty()) {
+                    if (item.screensPreviewItem.count > 0) {
+                        item.screensPreviewItem.currentIndex = 0
+                    }
+                    else if (item.windowsPreviewItem.count > 0) {
+                        item.windowsPreviewItem.currentIndex = 0
+                    }
+                }
+                else {
+                    root.deviceInfo = storedDeviceInfo
+                }
+            }
+        }
     }
 
     Component {
         id: contentComponent
         ColumnLayout {
             anchors.fill: parent
+            readonly property Item screensPreviewItem: screensPreview
+            readonly property Item windowsPreviewItem: windowsPreview
             Label {
                 text: screensPreview.count > 1 ? qsTr("Screens:") : qsTr("Primary screen:")
                 Layout.alignment: Qt.AlignLeft
@@ -37,17 +55,7 @@ Pane {
                 objectName: "screens"
                 enumerationMode: SharingsVideoModel.Screens
                 interactive: false
-                onCurrentIndexChanged: {
-                    if (currentIndex !== -1) {
-                        windowsPreview.currentIndex = -1
-                    }
-                }
-                Component.onCompleted: {
-                    if (isEmptyDeviceInfo() && count > 0) {
-                        root.deviceInfo = model.deviceInfo(0)
-                        currentIndex = 0
-                    }
-                }
+                pairedView: windowsPreview
             }
 
             Label {
@@ -66,17 +74,14 @@ Pane {
                 enumerationMode: SharingsVideoModel.Windows
                 objectName: "windows"
                 cellMargin: 5
-                onCurrentIndexChanged: {
-                    if (currentIndex !== -1) {
-                        screensPreview.currentIndex = -1
-                    }
-                }
+                pairedView: screensPreview
             }
 
             DialogButtonBox {
                 Layout.fillWidth: true
                 standardButtons: DialogButtonBox.Ok | DialogButtonBox.Cancel
                 onAccepted: {
+                    contentComponentLoader.storedDeviceInfo = root.deviceInfo
                     root.visible = false
                     root.accepted()
                 }
@@ -85,6 +90,12 @@ Pane {
                     root.rejected()
                 }
             }
+
+            /*Component.onCompleted: {
+                if (root.deviceInfo.isEmpty() && screensPreview.count > 0) {
+                    currentIndex = 0
+                }
+            }*/
         }
     }
 
@@ -95,6 +106,7 @@ Pane {
         property alias interactive: grid.interactive
         property alias count: grid.count
         property alias cellMargin: grid.cellMargin
+        property alias pairedView: grid.pairedView
         GridView {
             id: grid
             keyNavigationWraps: true
@@ -107,6 +119,7 @@ Pane {
             property bool showDiagnostics: true
             property bool showSourceName: true
             property int cellMargin: 0
+            property Item pairedView: null
             model: SharingsVideoModel {
                 id: sourcesModel
                 mode: grid.enumerationMode
@@ -118,18 +131,17 @@ Pane {
                 showDiagnostics: grid.showDiagnostics
                 showSourceName: grid.showSourceName
                 source: sourcesModel.sourceAt(index)
-                property var deviceInfo: source ? source.deviceInfo : app.emptyDeviceInfo()
                 readonly property bool isCurrentItem: grid.currentIndex === index
                 Rectangle {
                     anchors.fill: parent
                     border.width: 2
-                    border.color: parent.isCurrentItem ? parent.palette.highlight : parent.palette.mid
+                    border.color: isCurrentItem ? parent.palette.highlight : parent.palette.mid
                     color: "transparent"
                     z: 1
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onClicked:  grid.currentIndex = index
+                    onClicked: grid.currentIndex = index
                 }
             }
             // handle clicks on empty area within the grid.
@@ -139,25 +151,31 @@ Pane {
                 anchors.fill: parent
                 onClicked: grid.currentIndex = -1
             }
-            Component.onCompleted: {
-                if (!isEmptyDeviceInfo()) {
-                    for (var i = 0; i < count; ++i) {
-                        if (root.deviceInfo === model.deviceInfo(i)) {
-                            currentIndex = i
-                            return
+
+            Component.onCompleted:currentIndex = -1
+
+            onVisibleChanged: {
+                if (visible) {
+                    Qt.callLater(function() {
+                        var index = lookupDeviceInfo(model, root.deviceInfo)
+                        if (-1 !== index) {
+                            currentIndex = index
                         }
-                    }
+                    });
                 }
-                currentIndex = -1
             }
 
             onCurrentIndexChanged: {
                 focus = -1 !== currentIndex
+                if (focus && pairedView && pairedView !== this) {
+                    pairedView.currentIndex = -1
+                    pairedView.focus = false
+                }
                 if (focus) {
-                    var item = grid.itemAtIndex(currentIndex)
-                    if (item !== null) {
-                        deviceInfo = item.deviceInfo
-                    }
+                    root.deviceInfo = model.deviceInfo(currentIndex)
+                }
+                else if (-1 !== lookupDeviceInfo(model, root.deviceInfo)) {
+                    root.deviceInfo = app.emptyDeviceInfo()
                 }
             }
 
@@ -168,16 +186,23 @@ Pane {
         }
     }
 
+    function lookupDeviceInfo(model, info) {
+        if (model && !info.isEmpty()) {
+            for (var i = 0; i < model.rowCount(); ++i) {
+                if (info === model.deviceInfo(i)) {
+                    return i;
+                }
+            }
+        }
+        return -1
+    }
+
     Component.onCompleted: {
-        deviceInfo = app.emptyDeviceInfo()
+        contentComponentLoader.storedDeviceInfo = deviceInfo = app.emptyDeviceInfo()
         options = app.emptyVideoOptions()
     }
 
     onVisibleChanged: {
         contentComponentLoader.active = visible
-    }
-
-    function isEmptyDeviceInfo() {
-        return root.deviceInfo === app.emptyDeviceInfo()
     }
 }
