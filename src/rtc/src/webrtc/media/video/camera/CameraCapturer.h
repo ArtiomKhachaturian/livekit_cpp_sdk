@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include "SafeObj.h"
+#include "VideoFrameBufferPool.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <modules/video_capture/video_capture.h>
 #include <modules/video_capture/video_capture_config.h>
@@ -24,13 +25,12 @@ namespace LiveKitCpp
 {
 
 class CapturerObserver;
-enum class VideoContentHint;
 
 class CameraCapturer : public webrtc::VideoCaptureModule
 {
 public:
     ~CameraCapturer() override;
-    virtual void setContentHint(VideoContentHint /*hint*/) {}
+    virtual void updateQualityToContentHint() {}
     virtual void setObserver(CapturerObserver* /*observer*/ = nullptr) {}
     const auto& guid() const noexcept { return _deviceInfo._guid; }
     // impl. of webrtc::VideoCaptureModule
@@ -42,7 +42,8 @@ public:
     bool GetApplyRotation() final { return _applyRotation; }
     const char* CurrentDeviceName() const final { return _deviceInfo._name.c_str(); }
 protected:
-    CameraCapturer(const MediaDeviceInfo& deviceInfo);
+    CameraCapturer(const MediaDeviceInfo& deviceInfo, VideoFrameBufferPool framesPool = {});
+    VideoFrameBufferPool framesPool() const noexcept { return _framesPool; }
     bool hasSink() const { return nullptr != _sink(); }
     bool hasRawSink() const { return nullptr != _rawSink(); }
     virtual bool doApplyRotation(bool enable);
@@ -55,6 +56,7 @@ protected:
     webrtc::VideoRotation captureRotation() const;
 private:
     const MediaDeviceInfo _deviceInfo;
+    const VideoFrameBufferPool _framesPool;
     Bricks::SafeObj<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink = nullptr;
     Bricks::SafeObj<webrtc::RawVideoSinkInterface*> _rawSink = nullptr;
     // set if the frame should be rotated by the capture module

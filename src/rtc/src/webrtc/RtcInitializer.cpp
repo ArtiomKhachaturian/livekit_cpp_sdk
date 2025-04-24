@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "RtcInitializer.h"
+#include "LibyuvImport.h"
 #include <rtc_base/logging.h>
 #include <rtc_base/ssl_adapter.h>
 #include <rtc_base/crypto_random.h>
 #include <rtc_base/time_utils.h>
 #include <system_wrappers/include/field_trial.h>
-#include <libyuv/cpu_id.h>
 
 namespace LiveKitCpp
 {

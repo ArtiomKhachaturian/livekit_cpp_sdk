@@ -31,7 +31,6 @@ namespace LiveKitCpp
 {
 
 class CapturerProxySink;
-enum class VideoContentHint;
 
 class DesktopCapturer
 {
@@ -40,7 +39,7 @@ public:
     virtual std::string screenIdToString(webrtc::ScreenId id) const;
     virtual std::optional<webrtc::WindowId> windowIdFromString(const std::string& str) const;
     virtual std::optional<webrtc::ScreenId> screenIdFromString(const std::string& str) const;
-    virtual void setContentHint(VideoContentHint /*hint*/) {}
+    virtual void updateQualityToContentHint() {}
     // return null opt in case of a failure, title maybe empty for some windows
     virtual std::optional<std::string> title(const std::string& source) const;
     // max expected frame rate for this capturer

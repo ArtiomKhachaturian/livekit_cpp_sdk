@@ -38,6 +38,7 @@ public:
     // impl. of webrtc::VideoFrameBuffer
     int width() const final;
     int height() const final;
+    std::string storage_representation() const final;
 private:
     static std::unique_ptr<webrtc::DesktopFrame> make(int width, int height);
 private:

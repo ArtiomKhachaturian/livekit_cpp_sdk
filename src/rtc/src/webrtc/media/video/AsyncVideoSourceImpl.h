@@ -58,7 +58,7 @@ protected:
     void discard();
     // video frames pool
     VideoFrameBufferPool framesPool() const;
-    virtual void onContentHintChanged(VideoContentHint /*hint*/) {}
+    virtual void onContentHintChanged(VideoContentHint hint);
     virtual void onOptionsChanged(const VideoOptions& /*options*/ ) {}
     virtual void onDeviceInfoChanged(const MediaDeviceInfo& info);
     virtual MediaDeviceInfo validate(MediaDeviceInfo info) const { return info; }

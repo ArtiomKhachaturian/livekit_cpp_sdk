@@ -26,7 +26,6 @@ class LocalVideoDeviceImpl : public MediaDeviceImpl<LocalWebRtcTrack, LocalVideo
 public:
     LocalVideoDeviceImpl(webrtc::scoped_refptr<LocalWebRtcTrack> track);
     ~LocalVideoDeviceImpl() override;
-    bool screencast() const;
     // impl. of VideoDevice
     void addSink(VideoSink* sink) final;
     void removeSink(VideoSink* sink) final;
@@ -37,6 +36,7 @@ public:
     MediaDeviceInfo deviceInfo() const final;
     void setOptions(VideoOptions options) final;
     VideoOptions options() const final;
+    bool screencast() const final;
 private:
     VideoSinks _sinks;
 };

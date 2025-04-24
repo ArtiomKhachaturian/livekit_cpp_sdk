@@ -881,6 +881,7 @@ AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signal
                                      const std::shared_ptr<Bricks::Logger>& logger)
     : AsyncVideoSource(std::make_shared<AsyncCameraSourceImpl>(std::move(signalingQueue), logger))
 {
+    setContentHint(VideoContentHint::Fluid);
 }
 
 AsyncSharingSource::AsyncSharingSource(bool previewMode,
@@ -892,6 +893,7 @@ AsyncSharingSource::AsyncSharingSource(bool previewMode,
                                                                 std::move(signalingQueue),
                                                                 logger))
 {
+    setContentHint(VideoContentHint::Detailed);
 }
 
 }

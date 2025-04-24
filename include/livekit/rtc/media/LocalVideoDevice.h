@@ -26,6 +26,7 @@ public:
     virtual MediaDeviceInfo deviceInfo() const = 0;
     virtual void setOptions(VideoOptions options = {}) = 0;
     virtual VideoOptions options() const = 0;
+    virtual bool screencast() const = 0;
 };
 
 } // namespace LiveKitCpp

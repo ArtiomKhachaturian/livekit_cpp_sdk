@@ -252,6 +252,10 @@ if (WEBRTC_AVAILABLE)
     file(GLOB_RECURSE RTC_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
     file(GLOB_RECURSE RTC_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 
+    set(OPENSSL_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include CACHE PATH "Path to folder with OpenSSL C++ headers")
+    set(LIBYUV_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include CACHE PATH "Path to folder with LibYUV C++ headers")
+    set(ABSEIL_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp CACHE PATH "Path to folder with Abseil C++ headers")
+
     # Create a shared library
     add_library(${RTC_LIB} SHARED
         ${RTC_PUBLIC_HEADERS}
@@ -301,10 +305,10 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/sharing
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}
+        ${ABSEIL_INCLUDE_DIR}
+        ${LIBYUV_INCLUDE_DIR}
+        ${OPENSSL_INCLUDE_DIR}
         ${WEBRTC_INCLUDE_DIR}
-        ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include
-        ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp
-        ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include
     )
 
     set_target_properties(${RTC_LIB} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})

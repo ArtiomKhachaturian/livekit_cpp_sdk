@@ -16,8 +16,10 @@
 namespace LiveKitCpp
 {
 
-CameraCapturer::CameraCapturer(const MediaDeviceInfo& deviceInfo)
+CameraCapturer::CameraCapturer(const MediaDeviceInfo& deviceInfo,
+                               VideoFrameBufferPool framesPool)
     : _deviceInfo(deviceInfo)
+    , _framesPool(std::move(framesPool))
 {
 }
 

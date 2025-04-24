@@ -68,4 +68,9 @@ std::unique_ptr<webrtc::DesktopFrame> DesktopFrameVideoBuffer::make(int width, i
     return {};
 }
 
+std::string DesktopFrameVideoBuffer::storage_representation() const
+{
+    return "LiveKitCpp::DesktopFrameVideoBuffer";
+}
+
 } // namespace LiveKitCpp

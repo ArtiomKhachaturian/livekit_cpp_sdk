@@ -36,8 +36,8 @@ protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
     // overrides of AsyncVideoSourceImpl
-    void onContentHintChanged(VideoContentHint hint) final;
     void onOptionsChanged(const VideoOptions& options) final;
+    void onContentHintChanged(VideoContentHint hint) final;
     void onDeviceInfoChanged(const MediaDeviceInfo& info) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
 private:

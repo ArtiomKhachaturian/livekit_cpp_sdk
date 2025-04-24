@@ -45,7 +45,6 @@ void AsyncSharingSourceImpl::requestCapturer()
             }
             if (capturer) {
                 applyOptions(capturer.get(), options());
-                capturer->setContentHint(contentHint());
                 capturer->setOutputSink(this);
                 _capturer = std::move(capturer);
                 if (enabled()) {
@@ -74,17 +73,6 @@ std::string_view AsyncSharingSourceImpl::logCategory() const
     return DesktopConfiguration::logCategory();
 }
 
-void AsyncSharingSourceImpl::onContentHintChanged(VideoContentHint hint)
-{
-    AsyncVideoSourceImpl::onContentHintChanged(hint);
-    if (active()) {
-        LOCK_READ_SAFE_OBJ(_capturer);
-        if (const auto& capturer = _capturer.constRef()) {
-            capturer->setContentHint(hint);
-        }
-    }
-}
-
 void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
 {
     AsyncVideoSourceImpl::onOptionsChanged(options);
@@ -93,6 +81,15 @@ void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
         if (const auto& capturer = _capturer.constRef()) {
             applyOptions(capturer.get(), options);
         }
+    }
+}
+
+void AsyncSharingSourceImpl::onContentHintChanged(VideoContentHint hint)
+{
+    AsyncVideoSourceImpl::onContentHintChanged(hint);
+    LOCK_READ_SAFE_OBJ(_capturer);
+    if (const auto& capturer = _capturer.constRef()) {
+        capturer->updateQualityToContentHint();
     }
 }
 

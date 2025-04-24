@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // VideoFrameBufferPoolSource.h
 #include "SafeObj.h"
+#include "livekit/rtc/media/VideoContentHint.h"
 #include <api/scoped_refptr.h>
 #include <api/video/i010_buffer.h>
 #include <api/video/i210_buffer.h>
@@ -21,6 +22,7 @@
 #include <api/video/i422_buffer.h>
 #include <api/video/i444_buffer.h>
 #include <api/video/nv12_buffer.h>
+#include <atomic>
 #include <list>
 #include <stddef.h>
 
@@ -38,6 +40,8 @@ public:
     static std::shared_ptr<VideoFrameBufferPoolSource> create();
     static std::shared_ptr<VideoFrameBufferPoolSource> create(size_t maxNumberOfBuffers);
     ~VideoFrameBufferPoolSource() { release(); }
+    VideoContentHint contentHint() const { return _contentHint; }
+    void setContentHint(VideoContentHint hint) { _contentHint = hint; }
     // Changes the max amount of buffers in the pool to the new value.
     // Returns true if change was successful and false if the amount of already
     // allocated buffers is bigger than new value.
@@ -74,6 +78,7 @@ private:
     Bricks::SafeObj<BuffersList> _buffers;
      // Max number of buffers this pool can have pending.
     size_t _maxNumberOfBuffers;
+    std::atomic<VideoContentHint> _contentHint = VideoContentHint::None;
 };
 	
 } // namespace LiveKitCpp

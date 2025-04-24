@@ -98,6 +98,9 @@ bool AsyncVideoSourceImpl::stats(int& inputWidth, int& inputHeight) const
 void AsyncVideoSourceImpl::setContentHint(VideoContentHint hint)
 {
     if (active() && exchangeVal(hint, _contentHint)) {
+        if (_framesPool) {
+            _framesPool->setContentHint(hint);
+        }
         onContentHintChanged(hint);
     }
 }
@@ -115,6 +118,7 @@ bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::Video
             else {
                 if (!it->second) {
                     it->second = std::make_unique<VideoSinkBroadcast>(sink, wants);
+                    it->second->setContentHint(contentHint());
                 }
                 else {
                     it->second->updateSinkWants(wants);
@@ -125,6 +129,7 @@ bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::Video
             std::unique_ptr<VideoSinkBroadcast> adapter;
             if (!isDefaultWants(wants)) {
                 adapter = std::make_unique<VideoSinkBroadcast>(sink, wants);
+                adapter->setContentHint(contentHint());
             }
             _broadcasters->insert(std::make_pair(sink, std::move(adapter)));
             return 1U == _broadcasters->size();
@@ -204,6 +209,16 @@ void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updat
 VideoFrameBufferPool AsyncVideoSourceImpl::framesPool() const
 {
     return {_framesPool};
+}
+
+void AsyncVideoSourceImpl::onContentHintChanged(VideoContentHint hint)
+{
+    LOCK_READ_SAFE_OBJ(_broadcasters);
+    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+        if (it->second) {
+            it->second->setContentHint(hint);
+        }
+    }
 }
 
 void AsyncVideoSourceImpl::discard()

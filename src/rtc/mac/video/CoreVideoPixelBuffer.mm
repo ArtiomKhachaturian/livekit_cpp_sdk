@@ -68,6 +68,7 @@ public:
     int StrideUV() const final { return static_cast<int>(cvStride(1U)); }
     int width() const final { return static_cast<int>(cvWidth()); }
     int height() const final { return static_cast<int>(cvHeight()); }
+    std::string storage_representation() const final;
 };
 
 class RGBBuffer : public CVBuffer<RgbGenericVideoFrameBuffer>
@@ -82,6 +83,7 @@ public:
     int height() const final { return static_cast<int>(cvHeight()); }
     int stride(size_t planeIndex) const final;
     const std::byte* data(size_t planeIndex) const final;
+    std::string storage_representation() const final;
 };
 
 }
@@ -180,6 +182,11 @@ NV12Buffer::NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
 {
 }
 
+std::string NV12Buffer::storage_representation() const
+{
+    return "LiveKitCpp::CoreVideoPixelNV12Buffer";
+}
+
 RGBBuffer::RGBBuffer(CVPixelBufferAutoRelease lockedBuffer,
                      VideoFrameType rgbFormat,
                      VideoFrameBufferPool framesPool)
@@ -201,6 +208,11 @@ const std::byte* RGBBuffer::data(size_t planeIndex) const
         return reinterpret_cast<const std::byte*>(cvData(0U));
     }
     return nullptr;
+}
+
+std::string RGBBuffer::storage_representation() const
+{
+    return "LiveKitCpp::CoreVideoPixelRGBBuffer";
 }
 
 }

@@ -32,6 +32,7 @@ public:
     // impl. of webrtc::VideoFrameBuffer
     int width() const final { return _width; }
     int height() const final { return _height; }
+    std::string storage_representation() const final;
 protected:
     RgbVideoFrameBuffer(VideoFrameType rgbFormat,
                         int width, int height, int stride = 0,

@@ -36,22 +36,25 @@ class MacCameraCapturer : public CameraCapturer,
     class Impl;
 public:
     ~MacCameraCapturer() override;
-    static rtc::scoped_refptr<MacCameraCapturer> create(const MediaDeviceInfo& deviceInfo);
+    static rtc::scoped_refptr<MacCameraCapturer> create(const MediaDeviceInfo& deviceInfo,
+                                                        VideoFrameBufferPool framesPool = {});
     static AVCaptureDevice* deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(const char* deviceUniqueIdUTF8);
     static std::string localizedDeviceName(AVCaptureDevice* device);
     static std::string deviceUniqueIdUTF8(AVCaptureDevice* device);
     // impl. of CameraCapturer
-    void setContentHint(VideoContentHint hint) final;
     void setObserver(CapturerObserver* observer) final;
+    void updateQualityToContentHint() final;
     // impl. of webrtc::VideoCaptureModule
     int32_t StartCapture(const webrtc::VideoCaptureCapability& capability) final;
     int32_t StopCapture() final;
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
     bool CaptureStarted() final;
 protected:
-    MacCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl);
+    MacCameraCapturer(const MediaDeviceInfo& deviceInfo,
+                      VideoFrameBufferPool framesPool,
+                      std::unique_ptr<Impl> impl);
 private:
     static webrtc::VideoType fromMediaSubType(OSType type);
     static webrtc::VideoType fromMediaSubType(CMFormatDescriptionRef format);

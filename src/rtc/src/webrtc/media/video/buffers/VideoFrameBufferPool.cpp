@@ -23,6 +23,14 @@ VideoFrameBufferPool::VideoFrameBufferPool(std::weak_ptr<VideoFrameBufferPoolSou
 {
 }
 
+VideoContentHint VideoFrameBufferPool::contentHint() const
+{
+    if (const auto source = _source.lock()) {
+        return source->contentHint();
+    }
+    return VideoContentHint::None;
+}
+
 webrtc::scoped_refptr<webrtc::I420Buffer> VideoFrameBufferPool::createI420(int width, int height) const
 {
     return create<webrtc::I420Buffer>(&VideoFrameBufferPoolSource::createI420, width, height);

@@ -67,9 +67,9 @@ webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
 }
 
 rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev,
-                                                                 VideoFrameBufferPool /*framesPool*/)
+                                                                 VideoFrameBufferPool framesPool)
 {
-    return MacCameraCapturer::create(dev);
+    return MacCameraCapturer::create(dev, std::move(framesPool));
 }
 
 } // namespace LiveKitCpp

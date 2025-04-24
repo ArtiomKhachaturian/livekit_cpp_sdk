@@ -49,6 +49,13 @@ void VideoSinkBroadcast::updateSinkWants(const rtc::VideoSinkWants& wants)
     _rotationApplied = wants.rotation_applied;
 }
 
+void VideoSinkBroadcast::setContentHint(VideoContentHint hint)
+{
+    if (_framesPool) {
+        _framesPool->setContentHint(hint);
+    }
+}
+
 void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
 {
     if (const auto buffer = frame.video_frame_buffer()) {

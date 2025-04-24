@@ -40,20 +40,20 @@ private:
     // impl. of VideoFrameBuffer<>
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
     // common
-    static bool scale(VideoFrameType type, const std::byte* srcRGB,
-                      int srcStrideRGB, int srcWidth, int srcHeight,
-                      std::byte* dstRGB, int dstStrideRGB,
-                      int dstWidth, int dstHeight);
+    bool scale(VideoFrameType type, const std::byte* srcRGB,
+               int srcStrideRGB, int srcWidth, int srcHeight,
+               std::byte* dstRGB, int dstStrideRGB,
+               int dstWidth, int dstHeight) const;
     // 24bpp
-    static bool scale24bpp(const std::byte* srcRGB, int srcStrideRGB,
-                           int srcWidth, int srcHeight,
-                           std::byte* dstRGB, int dstStrideRGB,
-                           int dstWidth, int dstHeight);
+    bool scale24bpp(const std::byte* srcRGB, int srcStrideRGB,
+                    int srcWidth, int srcHeight,
+                    std::byte* dstRGB, int dstStrideRGB,
+                    int dstWidth, int dstHeight) const;
     // 32bpp
-    static bool scale32bpp(const std::byte* srcARGB, int srcStrideARGB,
-                           int srcWidth, int srcHeight,
-                           std::byte* dstARGB, int dstStrideARGB,
-                           int dstWidth, int dstHeight);
+    bool scale32bpp(const std::byte* srcARGB, int srcStrideARGB,
+                    int srcWidth, int srcHeight,
+                    std::byte* dstARGB, int dstStrideARGB,
+                    int dstWidth, int dstHeight) const;
 private:
     const VideoFrameType _rgbFormat;
 };

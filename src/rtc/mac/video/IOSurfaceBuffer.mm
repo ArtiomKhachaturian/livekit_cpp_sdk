@@ -63,6 +63,7 @@ public:
     int StrideUV() const final { return static_cast<int>(surfaceStride(1U)); }
     int width() const final { return static_cast<int>(surfaceWidth()); }
     int height() const final { return static_cast<int>(surfaceHeight()); }
+    std::string storage_representation() const final;
 };
 
 class RGBBuffer : public IOSBuffer<RgbGenericVideoFrameBuffer>
@@ -77,6 +78,7 @@ public:
     int height() const final { return static_cast<int>(surfaceHeight()); }
     int stride(size_t planeIndex) const final;
     const std::byte* data(size_t planeIndex) const final;
+    std::string storage_representation() const final;
 };
 
 }
@@ -202,11 +204,21 @@ NV12Buffer::NV12Buffer(IOSurfaceRef buffer, bool retain,
 {
 }
 
+std::string NV12Buffer::storage_representation() const
+{
+    return "LiveKitCpp::IOSurfaceNV12Buffer";
+}
+
 RGBBuffer::RGBBuffer(IOSurfaceRef buffer, bool retain,
                      VideoFrameType rgbFormat,
                      VideoFrameBufferPool framesPool)
     : BaseClass(buffer, retain, rgbFormat, std::move(framesPool))
 {
+}
+
+std::string RGBBuffer::storage_representation() const
+{
+    return "LiveKitCpp::IOSurfaceRGBBuffer";
 }
 
 int RGBBuffer::stride(size_t planeIndex) const

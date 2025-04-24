@@ -28,6 +28,11 @@ RgbVideoFrameBuffer::RgbVideoFrameBuffer(VideoFrameType rgbFormat,
 {
 }
 
+std::string RgbVideoFrameBuffer::storage_representation() const
+{
+    return "LiveKitCpp::RgbVideoFrameBuffer";
+}
+
 int RgbVideoFrameBuffer::stride(size_t planeIndex) const
 {
     return 0U == planeIndex ? _stride : 0;

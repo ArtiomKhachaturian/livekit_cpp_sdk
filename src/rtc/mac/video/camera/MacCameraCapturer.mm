@@ -83,8 +83,10 @@ private:
     RTC_OBJC_TYPE(RTCCameraVideoCapturer)* _capturer;
 };
 
-MacCameraCapturer::MacCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl)
-    : CameraCapturer(deviceInfo)
+MacCameraCapturer::MacCameraCapturer(const MediaDeviceInfo& deviceInfo,
+                                     VideoFrameBufferPool framesPool,
+                                     std::unique_ptr<Impl> impl)
+    : CameraCapturer(deviceInfo, std::move(framesPool))
     , _impl(std::move(impl))
 {
     _impl->setSink(this);
@@ -100,7 +102,8 @@ MacCameraCapturer::~MacCameraCapturer()
     _impl->setObserver(nullptr);
 }
 
-rtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::create(const MediaDeviceInfo& deviceInfo)
+rtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::
+    create(const MediaDeviceInfo& deviceInfo, VideoFrameBufferPool framesPool)
 {
     if (!deviceInfo._guid.empty()) {
         @autoreleasepool {
@@ -108,7 +111,9 @@ rtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::create(const MediaDevic
             AVCaptureDevice* device = deviceWithUniqueIDUTF8(guid);
             if (device) {
                 auto impl = std::make_unique<Impl>(device);
-                return rtc::make_ref_counted<MacCameraCapturer>(deviceInfo, std::move(impl));
+                return rtc::make_ref_counted<MacCameraCapturer>(deviceInfo,
+                                                                std::move(framesPool),
+                                                                std::move(impl));
             }
         }
     }
@@ -194,10 +199,10 @@ std::string MacCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
     return {};
 }
 
-void MacCameraCapturer::setContentHint(VideoContentHint hint)
+void MacCameraCapturer::updateQualityToContentHint()
 {
-    CameraCapturer::setContentHint(hint);
-    _impl->setContentHint(hint);
+    CameraCapturer::updateQualityToContentHint();
+    _impl->setContentHint(framesPool().contentHint());
 }
 
 void MacCameraCapturer::setObserver(CapturerObserver* observer)

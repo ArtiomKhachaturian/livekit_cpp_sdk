@@ -13,9 +13,7 @@
 // limitations under the License.
 #include "RgbGenericVideoFrameBuffer.h"
 #include "RgbVideoFrameBuffer.h"
-#include <third_party/libyuv/include/libyuv/convert.h>
-#include <third_party/libyuv/include/libyuv/scale_argb.h>
-#include <third_party/libyuv/include/libyuv/scale_rgb.h>
+#include "LibyuvImport.h"
 #include <cassert>
 
 namespace LiveKitCpp
@@ -133,7 +131,7 @@ bool RgbGenericVideoFrameBuffer::scale(VideoFrameType type,
                                        const std::byte* srcRGB, int srcStrideRGB,
                                        int srcWidth, int srcHeight,
                                        std::byte* dstRGB, int dstStrideRGB,
-                                       int dstWidth, int dstHeight)
+                                       int dstWidth, int dstHeight) const
 {
     switch (type) {
         case VideoFrameType::RGB24:
@@ -156,25 +154,25 @@ bool RgbGenericVideoFrameBuffer::scale(VideoFrameType type,
 bool RgbGenericVideoFrameBuffer::scale24bpp(const std::byte* srcRGB,
                                             int srcStrideRGB, int srcWidth, int srcHeight,
                                             std::byte* dstRGB, int dstStrideRGB,
-                                            int dstWidth, int dstHeight)
+                                            int dstWidth, int dstHeight) const
 {
     return 0 == libyuv::RGBScale(reinterpret_cast<const uint8_t*>(srcRGB),
                                  srcStrideRGB, srcWidth, srcHeight,
                                  reinterpret_cast<uint8_t*>(dstRGB),
                                  dstStrideRGB, dstWidth, dstHeight,
-                                 libyuv::FilterMode::kFilterNone);
+                                 map(contentHint()));
 }
 
 bool RgbGenericVideoFrameBuffer::scale32bpp(const std::byte* srcARGB,
                                             int srcStrideARGB, int srcWidth, int srcHeight,
                                             std::byte* dstARGB, int dstStrideARGB,
-                                            int dstWidth, int dstHeight)
+                                            int dstWidth, int dstHeight) const
 {
     return 0 == libyuv::ARGBScale(reinterpret_cast<const uint8_t*>(srcARGB),
                                   srcStrideARGB, srcWidth, srcHeight,
                                   reinterpret_cast<uint8_t*>(dstARGB),
                                   dstStrideARGB, dstWidth, dstHeight,
-                                  libyuv::FilterMode::kFilterNone);
+                                  map(contentHint()));
 }
 
 } // namespace LiveKitCpp

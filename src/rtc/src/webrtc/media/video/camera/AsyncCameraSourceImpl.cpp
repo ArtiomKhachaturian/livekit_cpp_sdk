@@ -44,7 +44,6 @@ void AsyncCameraSourceImpl::requestCapturer()
         if (!_capturer.constRef()) {
             if (auto capturer = CameraManager::createCapturer(deviceInfo(), framesPool())) {
                 const auto capability = bestMatched(map(options()), capturer);
-                capturer->setContentHint(contentHint());
                 capturer->RegisterCaptureDataCallback(this);
                 capturer->setObserver(this);
                 _capturer = std::move(capturer);
@@ -86,7 +85,7 @@ void AsyncCameraSourceImpl::onContentHintChanged(VideoContentHint hint)
     AsyncVideoSourceImpl::onContentHintChanged(hint);
     LOCK_READ_SAFE_OBJ(_capturer);
     if (const auto& capturer = _capturer.constRef()) {
-        capturer->setContentHint(hint);
+        capturer->updateQualityToContentHint();
     }
 }
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoFrameBufferPool.h
+#include "livekit/rtc/media/VideoContentHint.h"
 #include <api/scoped_refptr.h>
 #include <api/video/i010_buffer.h>
 #include <api/video/i210_buffer.h>
@@ -37,6 +38,7 @@ public:
     VideoFrameBufferPool(VideoFrameBufferPool&&) = default;
     VideoFrameBufferPool& operator = (const VideoFrameBufferPool&) = default;
     VideoFrameBufferPool& operator = (VideoFrameBufferPool&&) = default;
+    VideoContentHint contentHint() const;
     webrtc::scoped_refptr<webrtc::I420Buffer> createI420(int width, int height) const;
     webrtc::scoped_refptr<webrtc::I422Buffer> createI422(int width, int height) const;
     webrtc::scoped_refptr<webrtc::I444Buffer> createI444(int width, int height) const;
