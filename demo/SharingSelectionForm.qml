@@ -21,15 +21,20 @@ Pane {
         onItemChanged: {
             if (item) {
                 if (storedDeviceInfo.isEmpty()) {
-                    if (item.screensPreviewItem.count > 0) {
-                        item.screensPreviewItem.currentIndex = 0
-                    }
-                    else if (item.windowsPreviewItem.count > 0) {
-                        item.windowsPreviewItem.currentIndex = 0
-                    }
+                    selectDefault()
                 }
                 else {
                     root.deviceInfo = storedDeviceInfo
+                }
+            }
+        }
+        function selectDefault() {
+            if (item) {
+                if (item.screensPreviewItem.count > 0) {
+                    item.screensPreviewItem.currentIndex = 0
+                }
+                else if (item.windowsPreviewItem.count > 0) {
+                    item.windowsPreviewItem.currentIndex = 0
                 }
             }
         }
@@ -91,11 +96,29 @@ Pane {
                 }
             }
 
-            /*Component.onCompleted: {
-                if (root.deviceInfo.isEmpty() && screensPreview.count > 0) {
-                    currentIndex = 0
+            Timer {
+                id: activator
+                interval: 10
+                repeat: false
+                onTriggered: {
+                    var index = lookupDeviceInfo(screensPreview.model, storedDeviceInfo)
+                    if (-1 !== index) {
+                        screensPreview.currentIndex = index
+                        console.log("found screen: " + index)
+                    }
+                    else {
+                        index = lookupDeviceInfo(windowsPreview.model, storedDeviceInfo)
+                        if (-1 !== index) {
+                            windowsPreview.currentIndex = index
+                        }
+                        else {
+                            contentComponentLoader.selectDefault()
+                        }
+                    }
                 }
-            }*/
+            }
+
+            Component.onCompleted: activator.start()
         }
     }
 
@@ -107,6 +130,7 @@ Pane {
         property alias count: grid.count
         property alias cellMargin: grid.cellMargin
         property alias pairedView: grid.pairedView
+        readonly property alias model: grid.model
         GridView {
             id: grid
             keyNavigationWraps: true
@@ -150,19 +174,6 @@ Pane {
             flickableChildren: MouseArea {
                 anchors.fill: parent
                 onClicked: grid.currentIndex = -1
-            }
-
-            Component.onCompleted:currentIndex = -1
-
-            onVisibleChanged: {
-                if (visible) {
-                    Qt.callLater(function() {
-                        var index = lookupDeviceInfo(model, root.deviceInfo)
-                        if (-1 !== index) {
-                            currentIndex = index
-                        }
-                    });
-                }
             }
 
             onCurrentIndexChanged: {
