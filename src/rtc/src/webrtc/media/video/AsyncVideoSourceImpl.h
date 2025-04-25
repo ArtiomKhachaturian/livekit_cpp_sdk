@@ -54,8 +54,6 @@ protected:
                          const std::shared_ptr<Bricks::Logger>& logger = {},
                          bool liveImmediately = false);
     bool frameWanted() const;
-    void broadcast(const webrtc::VideoFrame& frame, bool updateStats = true);
-    void discard();
     // video frames pool
     VideoFrameBufferPool framesPool() const;
     virtual void onContentHintChanged(VideoContentHint hint);
@@ -71,11 +69,12 @@ protected:
     void onStateChanged(CapturerState state) override;
     void onCapturingError(std::string details, bool fatal) override;
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
-    void OnFrame(const webrtc::VideoFrame& frame) override { broadcast(frame, true); }
-    void OnDiscardedFrame() override { discard(); }
+    void OnFrame(const webrtc::VideoFrame& frame) override;
+    void OnDiscardedFrame() override;
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) override;
 private:
     void resetStats();
+    void broadcast(const webrtc::VideoFrame& frame);
 private:
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
     Bricks::SafeObj<Broadcasters> _broadcasters;

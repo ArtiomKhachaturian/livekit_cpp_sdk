@@ -14,19 +14,11 @@
 #include "VideoUtils.h"
 #include "CapturerState.h"
 #include "LibyuvImport.h"
+/*#ifdef WEBRTC_MAC
 #include "MetalRGBScaler.h"
-//#ifdef WEBRTC_MAC
-//#include "Utils.h"
-//#endif
+#endif*/
 #include "livekit/rtc/media/VideoOptions.h"
 #include <rtc_base/time_utils.h>
-#include <api/video/i420_buffer.h>
-#include <api/video/nv12_buffer.h>
-#include <api/video/i010_buffer.h>
-#include <api/video/i210_buffer.h>
-#include <api/video/i410_buffer.h>
-#include <api/video/i422_buffer.h>
-#include <api/video/i444_buffer.h>
 #include <cassert>
 
 namespace
@@ -65,48 +57,6 @@ bool gpuScaleRGB(const std::byte* src, int srcStride,
 namespace LiveKitCpp
 {
 
-std::optional<webrtc::VideoFrame> createVideoFrame(int width, int height,
-                                                   webrtc::VideoFrameBuffer::Type type,
-                                                   int64_t timeStampMicro,
-                                                   uint16_t id,
-                                                   const std::optional<webrtc::ColorSpace>& colorSpace)
-{
-    if (width > 0 && height > 0) {
-        if (webrtc::VideoFrameBuffer::Type::kNative == type ||
-            webrtc::VideoFrameBuffer::Type::kI420A == type) {
-            type = webrtc::VideoFrameBuffer::Type::kI420;
-        }
-        rtc::scoped_refptr<webrtc::VideoFrameBuffer> buff;
-        switch (type) {
-            case webrtc::VideoFrameBuffer::Type::kI420:
-                buff = webrtc::I420Buffer::Create(width, height);
-                break;
-            case webrtc::VideoFrameBuffer::Type::kI422:
-                buff = webrtc::I422Buffer::Create(width, height);
-                break;
-            case webrtc::VideoFrameBuffer::Type::kI444:
-                buff = webrtc::I444Buffer::Create(width, height);
-                break;
-            case webrtc::VideoFrameBuffer::Type::kI010:
-                buff = webrtc::I010Buffer::Create(width, height);
-                break;
-            case webrtc::VideoFrameBuffer::Type::kI210:
-                buff = webrtc::I210Buffer::Create(width, height);
-                break;
-            case webrtc::VideoFrameBuffer::Type::kI410:
-                buff = webrtc::I410Buffer::Create(width, height);
-                break;
-            case webrtc::VideoFrameBuffer::Type::kNV12:
-                buff = webrtc::NV12Buffer::Create(width, height);
-                break;
-            default:
-                break;
-        }
-        return createVideoFrame(buff, timeStampMicro, id, colorSpace);
-    }
-    return std::nullopt;
-}
-
 std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                                                    int64_t timeStampMicro, uint16_t id,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace)
@@ -129,20 +79,6 @@ std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webr
         auto frame = builder.build();
         frame.set_color_space(colorSpace);
         return frame;
-    }
-    return std::nullopt;
-}
-
-std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
-                                                        int64_t timeStampMicro,
-                                                        uint16_t id,
-                                                        const std::optional<webrtc::ColorSpace>& colorSpace)
-{
-    if (width > 0 && height > 0) {
-        if (const auto buff = webrtc::I420Buffer::Create(width, height)) {
-            webrtc::I420Buffer::SetBlack(buff.get());
-            return createVideoFrame(buff, timeStampMicro, id, colorSpace);
-        }
     }
     return std::nullopt;
 }

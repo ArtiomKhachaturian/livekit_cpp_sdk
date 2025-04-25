@@ -29,19 +29,11 @@ enum class VideoFrameType;
 // new frames factory
 // webrtc::VideoFrameBuffer::Type::kNative & webrtc::VideoFrameBuffer::Type::kI420A types
 // are ignored - output frame will be with webrtc::VideoFrameBuffer::Type::kI420 buffer
-std::optional<webrtc::VideoFrame> createVideoFrame(int width, int height,
-                                                   webrtc::VideoFrameBuffer::Type type = webrtc::VideoFrameBuffer::Type::kI420,
-                                                   int64_t timeStampMicro = 0LL,
-                                                   uint16_t id = 0U,
-                                                   const std::optional<webrtc::ColorSpace>& colorSpace = {});
 std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                                                    int64_t timeStampMicro = 0LL,
                                                    uint16_t id = 0U,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace = {});
-std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
-                                                        int64_t timeStampMicro = 0LL,
-                                                        uint16_t id = 0U,
-                                                        const std::optional<webrtc::ColorSpace>& colorSpace = {});
+
 webrtc::VideoTrackInterface::ContentHint map(VideoContentHint hint);
 VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint);
 

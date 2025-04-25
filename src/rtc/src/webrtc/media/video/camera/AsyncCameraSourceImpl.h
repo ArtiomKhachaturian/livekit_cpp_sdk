@@ -42,9 +42,8 @@ private:
                                                       const rtc::scoped_refptr<CameraCapturer>& capturer);
     webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability) const;
     bool startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
-                       const webrtc::VideoCaptureCapability& capability);
-    bool stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
-                      bool sendByeFrame);
+                       const webrtc::VideoCaptureCapability& capability) const;
+    bool stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
     void logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
                   const std::string& message, int code = 0) const;
     void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;

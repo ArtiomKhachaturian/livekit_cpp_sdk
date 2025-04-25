@@ -185,27 +185,6 @@ bool AsyncVideoSourceImpl::frameWanted() const
     return false;
 }
 
-void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame, bool updateStats)
-{
-    if (active() && frame.video_frame_buffer()) {
-        if (updateStats) {
-            _lastResolution = clueToUint64(frame.width(), frame.height());
-            _lastFrameId = frame.id();
-        }
-        LOCK_READ_SAFE_OBJ(_broadcasters);
-        if (!_broadcasters->empty()) {
-            for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-                if (it->second) {
-                    it->second->OnFrame(frame);
-                }
-                else {
-                    it->first->OnFrame(frame);
-                }
-            }
-        }
-    }
-}
-
 VideoFrameBufferPool AsyncVideoSourceImpl::framesPool() const
 {
     return {_framesPool};
@@ -217,19 +196,6 @@ void AsyncVideoSourceImpl::onContentHintChanged(VideoContentHint hint)
     for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
         if (it->second) {
             it->second->setContentHint(hint);
-        }
-    }
-}
-
-void AsyncVideoSourceImpl::discard()
-{
-    LOCK_READ_SAFE_OBJ(_broadcasters);
-    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-        if (it->second) {
-            it->second->OnDiscardedFrame();
-        }
-        else {
-            it->first->OnDiscardedFrame();
         }
     }
 }
@@ -298,6 +264,26 @@ void AsyncVideoSourceImpl::onCapturingError(std::string details, bool fatal)
     }
 }
 
+void AsyncVideoSourceImpl::OnFrame(const webrtc::VideoFrame& frame)
+{
+    if (active() && frame.video_frame_buffer()) {
+        broadcast(frame);
+    }
+}
+
+void AsyncVideoSourceImpl::OnDiscardedFrame()
+{
+    LOCK_READ_SAFE_OBJ(_broadcasters);
+    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+        if (it->second) {
+            it->second->OnDiscardedFrame();
+        }
+        else {
+            it->first->OnDiscardedFrame();
+        }
+    }
+}
+
 void AsyncVideoSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c)
 {
     if (active()) {
@@ -309,6 +295,23 @@ void AsyncVideoSourceImpl::resetStats()
 {
     _lastResolution = 0ULL;
     _lastFrameId = 0U;
+}
+
+void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame)
+{
+    _lastResolution = clueToUint64(frame.width(), frame.height());
+    _lastFrameId = frame.id();
+    LOCK_READ_SAFE_OBJ(_broadcasters);
+    if (!_broadcasters->empty()) {
+        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+            if (it->second) {
+                it->second->OnFrame(frame);
+            }
+            else {
+                it->first->OnFrame(frame);
+            }
+        }
+    }
 }
 
 } // namespace LiveKitCpp

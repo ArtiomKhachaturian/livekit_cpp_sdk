@@ -63,7 +63,7 @@ void AsyncCameraSourceImpl::resetCapturer()
 {
     LOCK_WRITE_SAFE_OBJ(_capturer);
     if (auto capturer = _capturer.take()) {
-        stopCapturer(capturer, true);
+        stopCapturer(capturer);
         capturer->DeRegisterCaptureDataCallback();
         capturer->setObserver(nullptr);
     }
@@ -96,7 +96,7 @@ void AsyncCameraSourceImpl::onOptionsChanged(const VideoOptions& options)
         LOCK_READ_SAFE_OBJ(_capturer);
         const auto& capturer = _capturer.constRef();
         if (capturer && capturer->CaptureStarted()) {
-            stopCapturer(capturer, false);
+            stopCapturer(capturer);
             startCapturer(capturer, bestMatched(map(options), capturer));
         }
     }
@@ -145,7 +145,7 @@ webrtc::VideoCaptureCapability AsyncCameraSourceImpl::bestMatched(webrtc::VideoC
 }
 
 bool AsyncCameraSourceImpl::startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
-                                          const webrtc::VideoCaptureCapability& capability)
+                                          const webrtc::VideoCaptureCapability& capability) const
 {
     int32_t code = 0;
     if (capturer && enabled() && active() && frameWanted()) {
@@ -163,26 +163,11 @@ bool AsyncCameraSourceImpl::startCapturer(const rtc::scoped_refptr<CameraCapture
     return 0 == code;
 }
 
-bool AsyncCameraSourceImpl::stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
-                                         bool sendByeFrame)
+bool AsyncCameraSourceImpl::stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const
 {
     int32_t code = 0;
     if (capturer && capturer->CaptureStarted()) {
-        uint16_t frameId = 0U;
-        int w = 0, h = 0;
-        if (sendByeFrame) {
-            sendByeFrame = stats(w, h);
-            if (sendByeFrame) {
-                frameId = lastFrameId();
-            }
-        }
         code = capturer->StopCapture();
-        if (sendByeFrame) {
-            const auto frame = createBlackVideoFrame(w, h, 0, frameId + 1U);
-            if (frame.has_value()) {
-                broadcast(frame.value(), false);
-            }
-        }
         if (0 != code) {
             logError(capturer, "failed to stop capturer",  code);
             // TODO: add error details
