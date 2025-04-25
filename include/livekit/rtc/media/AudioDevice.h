@@ -23,6 +23,7 @@ class AudioSink;
 class AudioDevice : public MediaDevice
 {
 public:
+    bool audio() const final { return true; }
     virtual void addSink(AudioSink* sink) = 0;
     virtual void removeSink(AudioSink* sink) = 0;
     // Sets the volume of the track. `volume` is in  the range of [0, 10].

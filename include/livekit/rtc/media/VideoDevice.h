@@ -23,6 +23,7 @@ class VideoSink;
 class VideoDevice : public MediaDevice
 {
 public:
+    bool audio() const final { return false; }
     virtual void addSink(VideoSink* sink) = 0;
     virtual void removeSink(VideoSink* sink) = 0;
     virtual void setContentHint(VideoContentHint /*hint*/) {}
