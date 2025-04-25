@@ -30,6 +30,7 @@ enum class VideoFrameType;
 // webrtc::VideoFrameBuffer::Type::kNative & webrtc::VideoFrameBuffer::Type::kI420A types
 // are ignored - output frame will be with webrtc::VideoFrameBuffer::Type::kI420 buffer
 std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
+                                                   webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                                                    int64_t timeStampMicro = 0LL,
                                                    uint16_t id = 0U,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace = {});

@@ -37,6 +37,7 @@ public:
     void setOptions(VideoOptions options) final;
     VideoOptions options() const final;
     bool screencast() const final;
+    void setFilter(LocalVideoFilterPin* inputPin) final;
 private:
     VideoSinks _sinks;
 };

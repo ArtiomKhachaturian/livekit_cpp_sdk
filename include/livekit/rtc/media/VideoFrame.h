@@ -32,7 +32,7 @@ public:
     virtual int stride() const { return stride(0U); }
     virtual const std::byte* data() const { return data(0U); }
     virtual int dataSize() const { return dataSize(0U); }
-    virtual std::shared_ptr<VideoFrame> convertToI420() const = 0;
+    virtual std::shared_ptr<VideoFrame> convertToI420() const { return {}; }
     virtual int width() const = 0;
     virtual int height() const = 0;
     virtual int stride(size_t planeIndex) const = 0;

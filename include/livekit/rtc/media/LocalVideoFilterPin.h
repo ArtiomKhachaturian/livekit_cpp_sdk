@@ -11,24 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraTrack.h
-#include "livekit/rtc/media/VideoTrack.h"
-#include "livekit/rtc/media/VideoOptions.h"
-#include "livekit/rtc/media/MediaDeviceInfo.h"
+#pragma once // LocalVideoFilterPin.h
+#include "livekit/rtc/media/VideoSink.h"
 
 namespace LiveKitCpp
 {
 
-class LocalVideoFilterPin;
-
-class LocalVideoTrack : public VideoTrack
+class LocalVideoFilterPin : public VideoSink
 {
 public:
-    virtual void setDeviceInfo(MediaDeviceInfo info = {}) = 0;
-    virtual MediaDeviceInfo deviceInfo() const = 0;
-    virtual void setOptions(VideoOptions options = {}) = 0;
-    virtual VideoOptions options() const = 0;
-    virtual void setFilter(LocalVideoFilterPin* inputPin) = 0;
+    virtual bool paused() const { return false; }
+    // output pin for sending processed video frames
+    virtual void setReceiver(VideoSink* sink) = 0;
 };
 
 } // namespace LiveKitCpp

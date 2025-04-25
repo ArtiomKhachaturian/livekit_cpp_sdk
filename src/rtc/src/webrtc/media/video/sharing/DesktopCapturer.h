@@ -91,8 +91,7 @@ protected:
                          int64_t timeStampMicro = 0LL,
                          webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                          const std::optional<webrtc::ColorSpace>& colorSpace = {});
-    void deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> frame,
-                         const std::optional<webrtc::ColorSpace>& colorSpace = {});
+    void deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> frame);
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
 private:
     const bool _window;
@@ -100,7 +99,6 @@ private:
     const webrtc::DesktopCaptureOptions _options;
     const VideoFrameBufferPool _framesPool;
     Bricks::Listener<CapturerProxySink*> _sink;
-    std::atomic<uint16_t> _lastFrameId = 0U;
     Bricks::SafeObj<CapturerState> _state = CapturerState::Stopped;
 };
 	

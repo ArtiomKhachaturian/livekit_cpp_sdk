@@ -15,6 +15,10 @@
 #include "livekit/rtc/media/VideoContentHint.h"
 #include <common_video/libyuv/include/webrtc_libyuv.h>
 #include <libyuv/convert.h>
+#include <libyuv/convert_from.h>
+#include <libyuv/planar_functions.h>
+#include <libyuv/rotate.h>
+#include <libyuv/scale.h>
 #include <libyuv/scale_argb.h>
 #include <libyuv/scale_rgb.h>
 #include <libyuv/scale_uv.h>

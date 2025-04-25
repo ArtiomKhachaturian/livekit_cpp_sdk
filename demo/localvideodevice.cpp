@@ -1,6 +1,5 @@
 #include "localvideodevice.h"
 #include <livekit/rtc/media/LocalVideoDevice.h>
-//#include <QDebug>
 
 LocalVideoDevice::LocalVideoDevice(QObject *parent)
     : VideoSource(parent)
@@ -14,6 +13,7 @@ LocalVideoDevice::LocalVideoDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice>
 {
     if (_device) {
         _device->addListener(this);
+        _device->setFilter(&_videoFilter);
     }
 }
 
@@ -21,6 +21,7 @@ LocalVideoDevice::~LocalVideoDevice()
 {
     LocalVideoDevice::subsribe(false);
     if (_device) {
+        _device->resetFilter();
         _device->removeListener(this);
     }
 }
@@ -73,10 +74,8 @@ void LocalVideoDevice::subsribe(bool subscribe)
     if (_device) {
         if (subscribe) {
             _device->addSink(this);
-            //qDebug() << name() << ": add sink to system device";
         }
         else {
-            //qDebug() << name() << ": remove sink from system device";
             _device->removeSink(this);
         }
     }

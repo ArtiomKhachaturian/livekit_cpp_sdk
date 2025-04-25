@@ -35,6 +35,7 @@ public:
     MediaDeviceInfo deviceInfo() const final;
     void setOptions(VideoOptions options) final;
     VideoOptions options() const final;
+    void setFilter(LocalVideoFilterPin* inputPin) final;
 };
 	
 } // namespace LiveKitCpp

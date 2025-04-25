@@ -124,7 +124,6 @@ void DesktopCapturer::discardFrame()
 void DesktopCapturer::deliverCaptured(const webrtc::VideoFrame& frame)
 {
     if (frame.width() && frame.height()) {
-        _lastFrameId = frame.id();
         _sink.invoke(&CapturerProxySink::OnFrame, frame);
     }
 }
@@ -134,14 +133,12 @@ void DesktopCapturer::deliverCaptured(const rtc::scoped_refptr<webrtc::VideoFram
                                       webrtc::VideoRotation rotation,
                                       const std::optional<webrtc::ColorSpace>& colorSpace)
 {
-    if (auto frame = createVideoFrame(buff, timeStampMicro, _lastFrameId + 1U, colorSpace)) {
-        frame->set_rotation(rotation);
+    if (auto frame = createVideoFrame(buff, rotation, timeStampMicro, 0U, colorSpace)) {
         deliverCaptured(frame.value());
     }
 }
 
-void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> frame,
-                                      const std::optional<webrtc::ColorSpace>& colorSpace)
+void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> frame)
 {
     if (frame) {
         const auto timestamp = frame->capture_time_ms();

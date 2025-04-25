@@ -47,7 +47,9 @@ inline QtVideoBuffer::QtVideoBuffer(std::shared_ptr<VideoFrame> frame)
         _format = qtVideoPixelFormat(frame->type());
         if (QVideoFrameFormat::Format_Invalid == _format) {
             frame = frame->convertToI420();
-            _format = qtVideoPixelFormat(frame->type());
+            if (frame) {
+                _format = qtVideoPixelFormat(frame->type());
+            }
         }
         _frame = std::move(frame);
     }

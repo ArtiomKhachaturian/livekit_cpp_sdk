@@ -15,9 +15,12 @@
 #include "livekit/rtc/media/VideoDevice.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
+#include <memory>
 
 namespace LiveKitCpp
 {
+
+class LocalVideoFilterPin;
 
 class LocalVideoDevice : public VideoDevice
 {
@@ -27,6 +30,9 @@ public:
     virtual void setOptions(VideoOptions options = {}) = 0;
     virtual VideoOptions options() const = 0;
     virtual bool screencast() const = 0;
+    // return output pin
+    virtual void setFilter(LocalVideoFilterPin* inputPin) = 0;
+    void resetFilter() { setFilter(nullptr); }
 };
 
 } // namespace LiveKitCpp

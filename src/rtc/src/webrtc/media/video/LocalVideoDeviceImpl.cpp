@@ -44,6 +44,13 @@ bool LocalVideoDeviceImpl::screencast() const
     return t && t->GetSource() && t->GetSource()->is_screencast();
 }
 
+void LocalVideoDeviceImpl::setFilter(LocalVideoFilterPin* inputPin)
+{
+    if (const auto& t = track()) {
+        t->setFilter(inputPin);
+    }
+}
+
 void LocalVideoDeviceImpl::addSink(VideoSink* sink)
 {
     const auto& t = track();

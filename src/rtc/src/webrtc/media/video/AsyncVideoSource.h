@@ -19,6 +19,8 @@
 namespace LiveKitCpp
 {
 
+class LocalVideoFilterPin;
+
 class AsyncVideoSource : public AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncVideoSourceImpl>
 {
     using Base = AsyncMediaSource<webrtc::VideoTrackSourceInterface, AsyncVideoSourceImpl>;
@@ -30,6 +32,7 @@ public:
     VideoOptions options() const;
     void addListener(MediaDeviceListener* listener);
     void removeListener(MediaDeviceListener* listener);
+    void setFilter(LocalVideoFilterPin* inputPin);
     VideoContentHint contentHint() const;
     void setContentHint(VideoContentHint hint);
     // impl. of webrtc::VideoTrackSourceInterface

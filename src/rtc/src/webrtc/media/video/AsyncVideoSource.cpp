@@ -65,6 +65,13 @@ void AsyncVideoSource::removeListener(MediaDeviceListener* listener)
     }
 }
 
+void AsyncVideoSource::setFilter(LocalVideoFilterPin* inputPin)
+{
+    if (_impl) {
+        _impl->setFilter(inputPin);
+    }
+}
+
 VideoContentHint AsyncVideoSource::contentHint() const
 {
     if (_impl) {

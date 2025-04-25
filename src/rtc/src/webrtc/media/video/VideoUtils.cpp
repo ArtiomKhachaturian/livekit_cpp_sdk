@@ -58,23 +58,18 @@ namespace LiveKitCpp
 {
 
 std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
+                                                   webrtc::VideoRotation rotation,
                                                    int64_t timeStampMicro, uint16_t id,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace)
 {
     if (buff) {
         webrtc::VideoFrame::Builder builder;
         builder.set_video_frame_buffer(buff);
+        builder.set_rotation(rotation);
         if (timeStampMicro > 0LL) {
             builder.set_timestamp_us(timeStampMicro);
         } else {
             builder.set_timestamp_us(rtc::TimeMicros());
-        }
-        static thread_local uint16_t nextId = 1U;
-        if (id > 0) {
-            builder.set_id(id);
-            nextId = id;
-        } else {
-            builder.set_id(nextId++);
         }
         auto frame = builder.build();
         frame.set_color_space(colorSpace);

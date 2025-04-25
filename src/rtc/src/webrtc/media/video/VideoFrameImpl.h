@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoFrameImpl.h
+#include "VideoFrameBufferPool.h"
 #include "livekit/rtc/media/VideoFrame.h"
 #include <api/video/video_frame.h>
 #include <optional>
@@ -26,6 +27,8 @@ public:
     static std::shared_ptr<VideoFrame> create(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
                                               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                                               int64_t timestampUs = 0);
+    static std::optional<webrtc::VideoFrame> create(const std::shared_ptr<VideoFrame>& frame,
+                                                    VideoFrameBufferPool framesPool = {});
     // impl. of VideoFrame
     std::shared_ptr<VideoFrame> convertToI420() const final;
     int width() const final;
@@ -37,7 +40,8 @@ private:
     VideoFrameImpl(VideoFrameType type, int rotation, int64_t timestampUs,
                    rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
     static std::optional<VideoFrameType> detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
-    static int map(webrtc::VideoRotation rotation);
+    static int mapFromRtc(webrtc::VideoRotation rotation);
+    static webrtc::VideoRotation mapToRtc(int rotation);
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> map(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
     static int stride(size_t planeIndex, const webrtc::PlanarYuvBuffer* buffer);
     static int stride(size_t planeIndex, const webrtc::BiplanarYuvBuffer* buffer);

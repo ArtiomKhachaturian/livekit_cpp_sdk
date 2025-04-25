@@ -15,7 +15,9 @@
 #include "VideoSinkBroadcast.h"
 #include "VideoFrameBufferPoolSource.h"
 #include "VideoUtils.h"
+#include "VideoFrameImpl.h"
 #include "Utils.h"
+#include "livekit/rtc/media/LocalVideoFilterPin.h"
 
 namespace  {
 
@@ -61,6 +63,21 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
 
 AsyncVideoSourceImpl::~AsyncVideoSourceImpl()
 {
+    setFilter(nullptr);
+}
+
+void AsyncVideoSourceImpl::setFilter(LocalVideoFilterPin* inputPin)
+{
+    LOCK_WRITE_SAFE_OBJ(_externalFilter);
+    if (_externalFilter != inputPin) {
+        if (const auto filter = _externalFilter.constRef()) {
+            filter->setReceiver(nullptr);
+        }
+        _externalFilter = inputPin;
+        if (inputPin) {
+            inputPin->setReceiver(this);
+        }
+    }
 }
 
 void AsyncVideoSourceImpl::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
@@ -267,7 +284,9 @@ void AsyncVideoSourceImpl::onCapturingError(std::string details, bool fatal)
 void AsyncVideoSourceImpl::OnFrame(const webrtc::VideoFrame& frame)
 {
     if (active() && frame.video_frame_buffer()) {
-        broadcast(frame);
+        if (!broadcastToFilter(frame)) {
+            broadcast(frame);
+        }
     }
 }
 
@@ -310,6 +329,28 @@ void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame)
             else {
                 it->first->OnFrame(frame);
             }
+        }
+    }
+}
+
+bool AsyncVideoSourceImpl::broadcastToFilter(const webrtc::VideoFrame& frame) const
+{
+    LOCK_READ_SAFE_OBJ(_externalFilter);
+    const auto filter = _externalFilter.constRef();
+    if (filter && !filter->paused()) {
+        if (const auto frameImpl = VideoFrameImpl::create(frame)) {
+            filter->onFrame(frameImpl);
+            return true;
+        }
+    }
+    return false;
+}
+
+void AsyncVideoSourceImpl::onFrame(const std::shared_ptr<VideoFrame>& frame)
+{
+    if (active() && enabled()) {
+        if (const auto rtcFrame = VideoFrameImpl::create(frame, framesPool())) {
+            broadcast(rtcFrame.value());
         }
     }
 }

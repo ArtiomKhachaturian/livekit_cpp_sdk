@@ -23,6 +23,7 @@ namespace LiveKitCpp
 {
 
 class MediaDeviceListener;
+class LocalVideoFilterPin;
 
 class LocalWebRtcTrack : public webrtc::VideoTrackInterface
 {
@@ -36,6 +37,7 @@ public:
     VideoOptions options() const;
     void addListener(MediaDeviceListener* listener);
     void removeListener(MediaDeviceListener* listener);
+    void setFilter(LocalVideoFilterPin* inputPin);
     // impl. of webrtc::VideoTrackInterface
     webrtc::VideoTrackInterface::ContentHint content_hint() const final;
     void set_content_hint(webrtc::VideoTrackInterface::ContentHint hint) final;

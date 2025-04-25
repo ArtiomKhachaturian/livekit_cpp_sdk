@@ -18,6 +18,7 @@
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include "livekit/rtc/media/VideoContentHint.h"
+#include "livekit/rtc/media/VideoSink.h"
 #include <memory>
 #include <unordered_map>
 
@@ -25,13 +26,16 @@ namespace LiveKitCpp
 {
 
 class VideoSinkBroadcast;
+class LocalVideoFilterPin;
 
-class AsyncVideoSourceImpl : public AsyncMediaSourceImpl, protected CapturerProxySink
+class AsyncVideoSourceImpl : public AsyncMediaSourceImpl,
+                             protected CapturerProxySink,
+                             private VideoSink
 {
-    using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*,
-    std::unique_ptr<VideoSinkBroadcast>>;
+    using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*, std::unique_ptr<VideoSinkBroadcast>>;
 public:
     ~AsyncVideoSourceImpl() override;
+    void setFilter(LocalVideoFilterPin* inputPin);
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     bool stats(int& inputWidth, int& inputHeight) const;
@@ -75,8 +79,12 @@ protected:
 private:
     void resetStats();
     void broadcast(const webrtc::VideoFrame& frame);
+    bool broadcastToFilter(const webrtc::VideoFrame& frame) const;
+    // impl. of VideoSink
+    void onFrame(const std::shared_ptr<VideoFrame>& frame) final;
 private:
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
+    Bricks::SafeObj<LocalVideoFilterPin*> _externalFilter = nullptr;
     Bricks::SafeObj<Broadcasters> _broadcasters;
     Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
     Bricks::SafeObj<VideoOptions> _options;

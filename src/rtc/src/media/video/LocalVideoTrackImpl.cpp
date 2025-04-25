@@ -80,4 +80,11 @@ VideoOptions LocalVideoTrackImpl::options() const
     return {};
 }
 
+void LocalVideoTrackImpl::setFilter(LocalVideoFilterPin* inputPin)
+{
+    if (const auto& dev = mediaDevice()) {
+        dev->setFilter(inputPin);
+    }
+}
+
 } // namespace LiveKitCpp

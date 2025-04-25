@@ -531,10 +531,10 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
     if (_sink) {
         if (frame) {
             if (const auto buffer = webrtc::ObjCToNativeVideoFrameBuffer(frame.buffer)) {
-                if (auto rtcFrame = LiveKitCpp::createVideoFrame(buffer)) {
-                    rtcFrame->set_rotation(webrtc::VideoRotation(frame.rotation));
+                const auto rotation = webrtc::VideoRotation(frame.rotation);
+                const auto timeStampMicro = frame.timeStampNs / rtc::kNumNanosecsPerMicrosec;
+                if (auto rtcFrame = LiveKitCpp::createVideoFrame(buffer, rotation, timeStampMicro)) {
                     rtcFrame->set_rtp_timestamp(frame.timeStamp);
-                    rtcFrame->set_timestamp_us(frame.timeStampNs / rtc::kNumNanosecsPerMicrosec);
                     _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnFrame, rtcFrame.value());
                     return;
                 }

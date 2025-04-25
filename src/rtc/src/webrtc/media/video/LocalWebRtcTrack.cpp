@@ -80,6 +80,13 @@ void LocalWebRtcTrack::removeListener(MediaDeviceListener* listener)
     }
 }
 
+void LocalWebRtcTrack::setFilter(LocalVideoFilterPin* inputPin)
+{
+    if (_source) {
+        _source->setFilter(inputPin);
+    }
+}
+
 webrtc::VideoTrackInterface::ContentHint LocalWebRtcTrack::content_hint() const
 {
     if (_source) {
