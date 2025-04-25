@@ -14,7 +14,10 @@
 #include "VideoUtils.h"
 #include "CapturerState.h"
 #include "LibyuvImport.h"
-#include "Utils.h"
+#include "MetalRGBScaler.h"
+//#ifdef WEBRTC_MAC
+//#include "Utils.h"
+//#endif
 #include "livekit/rtc/media/VideoOptions.h"
 #include <rtc_base/time_utils.h>
 #include <api/video/i420_buffer.h>
@@ -50,6 +53,12 @@ bool cpuScaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                    std::byte* dstARGB, int dstStrideARGB,
                    int dstWidth, int dstHeight,
                    VideoContentHint hint);
+
+bool gpuScaleRGB(const std::byte* src, int srcStride,
+                 int srcWidth, int srcHeight,
+                 std::byte* dst, int dstStride,
+                 int dstWidth, int dstHeight,
+                 bool argb, VideoContentHint hint);
 
 }
 
@@ -224,6 +233,11 @@ bool scaleRGB24(const std::byte* srcRGB, int srcStrideRGB,
                 int dstWidth, int dstHeight,
                 VideoContentHint hint)
 {
+    if (gpuScaleRGB(srcRGB, srcStrideRGB, srcWidth, srcHeight,
+                    dstRGB, dstStrideRGB, dstWidth, dstHeight,
+                    false, hint)) {
+        return true;
+    }
     return cpuScaleRGB24(srcRGB, srcStrideRGB, srcWidth, srcHeight,
                          dstRGB, dstStrideRGB, dstWidth, dstHeight,
                          hint);
@@ -235,6 +249,11 @@ bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                 int dstWidth, int dstHeight,
                 VideoContentHint hint)
 {
+    if (gpuScaleRGB(srcARGB, srcStrideARGB, srcWidth, srcHeight,
+                    dstARGB, dstStrideARGB, dstWidth, dstHeight,
+                    true, hint)) {
+        return true;
+    }
     return cpuScaleRGB32(srcARGB, srcStrideARGB, srcWidth, srcHeight,
                          dstARGB, dstStrideARGB, dstWidth, dstHeight,
                          hint);
@@ -367,6 +386,23 @@ bool cpuScaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                                   reinterpret_cast<uint8_t*>(dstARGB),
                                   dstStrideARGB, dstWidth, dstHeight,
                                   mapLibYUV(hint));
+}
+
+bool gpuScaleRGB(const std::byte* /*src*/, int /*srcStride*/,
+                 int /*srcWidth*/, int /*srcHeight*/,
+                 std::byte* /*dst*/, int /*dstStride*/,
+                 int /*dstWidth*/, int /*dstHeight*/,
+                 bool /*argb*/, VideoContentHint /*hint*/)
+{
+/*#ifdef WEBRTC_MAC
+    static thread_local MetalRGBScaler rgbScaler;
+    if (rgbScaler.valid()) {
+        if (rgbScaler.scale(src, srcStride, srcWidth, srcHeight, dst, dstStride, dstWidth, dstHeight)) {
+            return true;
+        }
+    }
+#endif*/
+    return false;
 }
 
 }

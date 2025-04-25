@@ -324,7 +324,7 @@ if (WEBRTC_AVAILABLE)
             ${WEBRTC_INCLUDE_DIR}/sdk/objc/base
         )
         target_compile_definitions(${RTC_LIB} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
-        target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit")
+        target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit -framework Metal")
     elseif(WIN32)
         target_compile_options(${RTC_LIB} PRIVATE /wd4068 /wd4141)
         target_compile_definitions(${RTC_LIB} PRIVATE -DWINRT_DIAGNOSTICS -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -DRTC_ENABLE_WIN_WGC -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
