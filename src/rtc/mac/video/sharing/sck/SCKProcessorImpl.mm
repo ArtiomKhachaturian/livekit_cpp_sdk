@@ -544,6 +544,14 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> cropDown(webrtc::scoped_refptr<w
             height = bufferHeight;
         }
         if (width != bufferWidth || height != bufferHeight) {
+            static thread_local std::once_flag flag;
+            // bump current thread priority to max
+            std::call_once(flag, []() {
+                pthread_attr_t qosAttribute;
+                if (0 == pthread_attr_init(&qosAttribute)) {
+                    pthread_attr_set_qos_class_np(&qosAttribute, QOS_CLASS_USER_INTERACTIVE, 0);
+                }
+            });
             return buffer->CropAndScale(0, 0, width, height, width, height);
         }
     }

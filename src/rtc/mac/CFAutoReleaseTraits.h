@@ -22,19 +22,25 @@ class CFAutoReleaseTraits
 {
 public:
     static constexpr TCFRef invalidValue() { return nullptr; }
-    static TCFRef retain(TCFRef ref)
-    {
-        if (ref) {
-            CFRetain(ref);
-        }
-        return ref;
-    }
-    static void release(TCFRef ref)
-    {
-        if (ref) {
-            CFRelease(ref);
-        }
-    }
+    static TCFRef retain(TCFRef ref);
+    static void release(TCFRef ref);
 };
+
+template <class TCFRef>
+inline TCFRef CFAutoReleaseTraits<TCFRef>::retain(TCFRef ref)
+{
+    if (ref) {
+        CFRetain(ref);
+    }
+    return ref;
+}
+
+template <class TCFRef>
+inline void CFAutoReleaseTraits<TCFRef>::release(TCFRef ref)
+{
+    if (ref) {
+        CFRelease(ref);
+    }
+}
 
 } // namespace LiveKitCpp
