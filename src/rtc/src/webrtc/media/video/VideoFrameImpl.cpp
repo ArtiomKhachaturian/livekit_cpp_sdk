@@ -13,31 +13,33 @@
 // limitations under the License.
 #include "VideoFrameImpl.h"
 #include "NativeVideoFrameBuffer.h"
+#include <rtc_base/time_utils.h>
 #include <cassert>
 
 namespace LiveKitCpp
 {
 
-VideoFrameImpl::VideoFrameImpl(VideoFrameType type, int rotation,
+VideoFrameImpl::VideoFrameImpl(VideoFrameType type, int rotation, int64_t timestampUs,
                                rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer)
-    : VideoFrame(type, rotation)
+    : VideoFrame(type, rotation, timestampUs)
     , _buffer(std::move(buffer))
 {
 }
 
 std::shared_ptr<VideoFrame> VideoFrameImpl::create(const webrtc::VideoFrame& frame)
 {
-    return create(frame.video_frame_buffer(), frame.rotation());
+    return create(frame.video_frame_buffer(), frame.rotation(), frame.timestamp_us());
 }
 
 std::shared_ptr<VideoFrame> VideoFrameImpl::create(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
-                                                   webrtc::VideoRotation rotation)
+                                                   webrtc::VideoRotation rotation,
+                                                   int64_t timestampUs)
 {
     std::shared_ptr<VideoFrame> impl;
     buffer = map(std::move(buffer));
     if (buffer) {
         if (const auto type = detectType(buffer)) {
-            impl.reset(new VideoFrameImpl(type.value(), map(rotation), std::move(buffer)));
+            impl.reset(new VideoFrameImpl(type.value(), map(rotation), timestampUs, std::move(buffer)));
         }
     }
     return impl;
@@ -51,6 +53,7 @@ std::shared_ptr<VideoFrame> VideoFrameImpl::convertToI420() const
             assert(webrtc::VideoFrameBuffer::Type::kI420 == i420->type());
             converted.reset(new VideoFrameImpl(VideoFrameType::I420,
                                                rotation(),
+                                               timestampUs(),
                                                std::move(i420)));
         }
     }
@@ -403,9 +406,10 @@ int VideoFrameImpl::dataSizeNV12(size_t planeIndex, int width, int height)
     return 0;
 }
 
-VideoFrame::VideoFrame(VideoFrameType type, int rotation)
+VideoFrame::VideoFrame(VideoFrameType type, int rotation, int64_t timestampUs)
     : _type(type)
     , _rotation(rotation)
+    , _timestampUs(timestampUs ? timestampUs : rtc::TimeMicros())
 {
 }
 

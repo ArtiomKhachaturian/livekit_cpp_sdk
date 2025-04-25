@@ -105,6 +105,7 @@ inline QVideoFrame convert(const std::shared_ptr<VideoFrame>& frame)
                 default:
                     break;
             }
+            rtcFrame.setStartTime(frame->timestampUs());
             return rtcFrame;
         }
     }

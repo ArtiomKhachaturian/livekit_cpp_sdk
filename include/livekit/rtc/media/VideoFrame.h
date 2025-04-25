@@ -26,6 +26,8 @@ public:
     VideoFrameType type() const noexcept { return _type; }
     // 0, 90, 180, 270 (clockwise rotation)
     int rotation() const noexcept { return _rotation; }
+    // returns the current time in microseconds, system monotonic clock, 
+    int64_t timestampUs() const noexcept { return _timestampUs; }
     virtual size_t planesCount() const;
     virtual int stride() const { return stride(0U); }
     virtual const std::byte* data() const { return data(0U); }
@@ -37,10 +39,12 @@ public:
     virtual const std::byte* data(size_t planeIndex) const = 0;
     virtual int dataSize(size_t planeIndex) const = 0;
 protected:
-    VideoFrame(VideoFrameType type, int rotation);
+    // pass zero timestampUs for automatic timestamp
+    VideoFrame(VideoFrameType type, int rotation, int64_t timestampUs = 0LL);
 private:
     const VideoFrameType _type;
     const int _rotation;
+    const int64_t _timestampUs;
 };
 
 } // namespace LiveKitCpp
