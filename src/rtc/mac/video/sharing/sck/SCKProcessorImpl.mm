@@ -26,6 +26,7 @@
 #import <Cocoa/Cocoa.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
+#import <objc/runtime.h>
 
 extern "C" AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out) __attribute__((weak_import));
 
@@ -44,6 +45,11 @@ inline T roundCGFloat(CGFloat f) {
     return static_cast<int32_t>(std::round(f));
 }
 
+inline NSSize windowSize(CGWindowID windowId, float scaleFactor) {
+    const auto bounds = webrtc::GetWindowBounds(windowId);
+    return NSMakeSize(bounds.width() * scaleFactor, bounds.height() * scaleFactor);
+}
+
 webrtc::scoped_refptr<webrtc::VideoFrameBuffer> cropDown(webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
                                                          int width, int height);
 
@@ -52,15 +58,23 @@ void raiseMultiWindowApp(pid_t pid, CGWindowID wId);
 
 }
 
+@interface WindowResizeActor : NSObject
+@property (nonatomic, readonly) BOOL outdated;
+@property (nonatomic) NSSize size;
+@end
+
+@interface SCWindow (SCKProcessorImpl)
+@property (nullable, nonatomic) WindowResizeActor* resizeActor;
+@end
+
 namespace LiveKitCpp
 {
 
-SCKProcessorImpl::SCKProcessorImpl(VideoFrameBufferPool framesPool)
+SCKProcessorImpl::SCKProcessorImpl(bool previewMode, VideoFrameBufferPool framesPool)
     : _framesPool(std::move(framesPool))
     , _configuration([SCStreamConfiguration new])
 {
-    // the same value as in WebKit, system default is 3, max should not exceed 8 frames
-    _configuration.queueDepth = 6;
+    _configuration.queueDepth = previewMode ? 2 : 8;
     _configuration.colorSpaceName = kCGColorSpaceSRGB;
     _configuration.colorMatrix = kCGDisplayStreamYCbCrMatrix_SMPTE_240M_1995;
     _configuration.pixelFormat = formatBGRA32();
@@ -215,6 +229,7 @@ void SCKProcessorImpl::setShowCursor(bool show)
     const BOOL val = show ? YES : NO;
     if (val != _configuration.showsCursor) {
         _configuration.showsCursor = val;
+        _configuration.showMouseClicks = val;
         updateConfiguration();
     }
 }
@@ -472,38 +487,50 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> SCKProcessorImpl::
     fromSampleBuffer(CMSampleBufferRef sampleBuffer) const
 {
     if (sampleBuffer) {
-        auto buffer = CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer, _framesPool);
-        if (!buffer) {
-            buffer = IOSurfaceBuffer::createFromSampleBuffer(sampleBuffer, _framesPool);
-        }
-        if (buffer) {
-            @autoreleasepool {
-                SCWindow* window = selectedWindow();
-                if (window) {
-                    const auto scaleFactor = pointPixelScale();
-                    const auto windowBounds = webrtc::GetWindowBounds(window.windowID);
-                    const auto windowWidth = roundCGFloat<int32_t>(windowBounds.width() * scaleFactor);
-                    const auto windowHeight = roundCGFloat<int32_t>(windowBounds.height() * scaleFactor);
-                    if (windowWidth > 0 && windowHeight > 0 && (windowWidth != buffer->width() ||
-                                                                windowHeight != buffer->height())) {
-                        if (windowWidth <= buffer->width() && windowHeight <= buffer->height()) {
-                            buffer = cropDown(std::move(buffer), windowWidth, windowHeight);
-                        }
-                        else {
-                            const CGSize source = CGSizeMake(windowWidth, windowHeight);
-                            const CGSize target = CGSizeMake(buffer->width(), buffer->height());
-                            const CGSize bounds = scaleKeepAspectRatio(source, target);
-                            if (!CGSizeEqualToSize(bounds, CGSizeZero)) {
-                                const auto cropWidth = even2(roundCGFloat<int32_t>(bounds.width - 1));
-                                const auto cropHeight = even2(roundCGFloat<int32_t>(bounds.height - 1));
-                                buffer = cropDown(std::move(buffer), cropWidth, cropHeight);
-                            }
+        @autoreleasepool {
+            SCWindow* window = selectedWindow();
+            std::optional<VideoContentHint> hint;
+            if (window && window.resizeActor && !window.resizeActor.outdated) {
+                hint = VideoContentHint::None;
+            }
+            auto buffer = CoreVideoPixelBuffer::createFromSampleBuffer(sampleBuffer,
+                                                                       _framesPool,
+                                                                       std::move(hint));
+            if (!buffer) {
+                buffer = IOSurfaceBuffer::createFromSampleBuffer(sampleBuffer,
+                                                                 _framesPool,
+                                                                 std::move(hint));
+            }
+            if (buffer && window) {
+                const auto size = windowSize(window.windowID, pointPixelScale());
+                const auto windowWidth = roundCGFloat<int32_t>(size.width);
+                const auto windowHeight = roundCGFloat<int32_t>(size.height);
+                if (windowWidth > 0 && windowHeight > 0 && (windowWidth != buffer->width() ||
+                                                            windowHeight != buffer->height())) {
+                    if (windowWidth <= buffer->width() && windowHeight <= buffer->height()) {
+                        buffer = cropDown(std::move(buffer), windowWidth, windowHeight);
+                    }
+                    else {
+                        const CGSize source = CGSizeMake(windowWidth, windowHeight);
+                        const CGSize target = CGSizeMake(buffer->width(), buffer->height());
+                        const CGSize bounds = scaleKeepAspectRatio(source, target);
+                        if (!CGSizeEqualToSize(bounds, CGSizeZero)) {
+                            const auto cropWidth = even2(roundCGFloat<int32_t>(bounds.width - 1));
+                            const auto cropHeight = even2(roundCGFloat<int32_t>(bounds.height - 1));
+                            buffer = cropDown(std::move(buffer), cropWidth, cropHeight);
                         }
                     }
+                    if (!window.resizeActor) {
+                        window.resizeActor = [WindowResizeActor new];
+                    }
+                    window.resizeActor.size = size;
+                }
+                else {
+                    window.resizeActor = nil;
                 }
             }
+            return buffer;
         }
-        return buffer;
     }
     return {};
 }
@@ -525,6 +552,42 @@ void SCKProcessorImpl::processPermanentError(SCStream* stream, NSError* error)
 }
 
 } // namespace LiveKitCpp
+
+@implementation SCWindow (SCKProcessorImpl)
+- (void) setResizeActor:(WindowResizeActor*) actor
+{
+    objc_setAssociatedObject(self,  @selector(resizeActor), actor,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (WindowResizeActor*) resizeActor
+{
+    return objc_getAssociatedObject(self, @selector(resizeActor));
+}
+@end
+
+@implementation WindowResizeActor {
+    NSDate* _lastDateTime;
+}
+
+@synthesize size = _size;
+
+- (void) setSize:(NSSize) size {
+    if (!NSEqualSizes(size, _size)) {
+        _size = size;
+        _lastDateTime = [NSDate date];
+    }
+}
+
+- (BOOL) outdated {
+    if (_lastDateTime) {
+        NSDate* currentTime = [NSDate date];
+        NSTimeInterval timeDifference = [currentTime timeIntervalSinceDate:_lastDateTime];
+        return timeDifference >= 1.0;
+    }
+    return NO;
+}
+@end
 
 namespace
 {

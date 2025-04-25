@@ -42,6 +42,7 @@ public:
     // the caller does not own the returned CVImageBufferRef, and must retain it explicitly
     // if the caller needs to maintain a reference to it
     static CVImageBufferRef imageBuffer(CMSampleBufferRef buffer);
+    static bool hasImageBuffer(CMSampleBufferRef buffer);
     bool lock() const; // for read-only
     bool unlock() const;
     OSType pixelFormat() const { return pixelFormat(ref()); }

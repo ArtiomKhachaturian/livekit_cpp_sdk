@@ -23,7 +23,7 @@
 namespace LiveKitCpp
 {
 
-inline libyuv::FilterMode map(VideoContentHint hint) {
+inline libyuv::FilterMode mapLibYUV(VideoContentHint hint) {
     switch (hint) {
         case VideoContentHint::None:
             break;

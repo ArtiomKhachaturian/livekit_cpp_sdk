@@ -48,11 +48,16 @@ public:
     uint8_t* cvData() const { return _lockedBuffer.baseAddress(); }
     // impl. of CVBufferAccessor
     CVPixelBufferRef buffer(bool retain) const final { return _lockedBuffer.ref(retain); }
+    // override of VideoFrameBuffer<>
+    VideoContentHint contentHint() const final;
 protected:
     template <class... Args>
-    CVBuffer(CVPixelBufferAutoRelease lockedBuffer, Args&&... args);
+    CVBuffer(CVPixelBufferAutoRelease lockedBuffer,
+             std::optional<VideoContentHint> contentHint,
+             Args&&... args);
 private:
-    CVPixelBufferAutoRelease _lockedBuffer;
+    const CVPixelBufferAutoRelease _lockedBuffer;
+    const std::optional<VideoContentHint> _contentHint;
 };
 
 class NV12Buffer : public CVBuffer<NV12VideoFrameBuffer>
@@ -60,7 +65,8 @@ class NV12Buffer : public CVBuffer<NV12VideoFrameBuffer>
     using BaseClass = CVBuffer<NV12VideoFrameBuffer>;
 public:
     NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
-               VideoFrameBufferPool framesPool = {});
+               VideoFrameBufferPool framesPool = {},
+               std::optional<VideoContentHint> contentHint = {});
     // impl. of webrtc::NV12BufferInterface
     const uint8_t* DataY() const final { return cvData(0U); }
     const uint8_t* DataUV() const final { return cvData(1U); }
@@ -77,7 +83,8 @@ class RGBBuffer : public CVBuffer<RgbGenericVideoFrameBuffer>
 public:
     RGBBuffer(CVPixelBufferAutoRelease lockedBuffer,
               VideoFrameType rgbFormat,
-              VideoFrameBufferPool framesPool = {});
+              VideoFrameBufferPool framesPool = {},
+              std::optional<VideoContentHint> contentHint = {});
     // impl. of NativeVideoFrameBuffer
     int width() const final { return static_cast<int>(cvWidth()); }
     int height() const final { return static_cast<int>(cvHeight()); }
@@ -97,7 +104,9 @@ bool CoreVideoPixelBuffer::supported(CVPixelBufferRef buffer)
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
-    create(CVPixelBufferRef buffer, VideoFrameBufferPool framesPool, bool retain)
+    create(CVPixelBufferRef buffer, VideoFrameBufferPool framesPool,
+           std::optional<VideoContentHint> contentHint,
+           bool retain)
 {
     if (buffer) {
         const auto format = CVPixelBufferAutoRelease::pixelFormat(buffer);
@@ -106,7 +115,8 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
             if (lockedBuffer.lock()) {
                 if (isNV12Format(format)) {
                     return rtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer),
-                                                             std::move(framesPool));
+                                                             std::move(framesPool),
+                                                             std::move(contentHint));
                 }
                 if (isRGBFormat(format)) {
                     std::optional<VideoFrameType> rgbFormat;
@@ -132,7 +142,8 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
                     if (rgbFormat.has_value()) {
                         return rtc::make_ref_counted<RGBBuffer>(std::move(lockedBuffer),
                                                                 rgbFormat.value(),
-                                                                std::move(framesPool));
+                                                                std::move(framesPool),
+                                                                std::move(contentHint));
                     }
                 }
                 lockedBuffer.unlock();
@@ -142,10 +153,18 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
     return nullptr;
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
-    createFromSampleBuffer(CMSampleBufferRef buffer, VideoFrameBufferPool framesPool)
+bool CoreVideoPixelBuffer::canCreateFromSampleBuffer(CMSampleBufferRef buffer)
 {
-    return create(CVPixelBufferAutoRelease::imageBuffer(buffer), std::move(framesPool), true);
+    return CVPixelBufferAutoRelease::hasImageBuffer(buffer);
+}
+
+rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
+    createFromSampleBuffer(CMSampleBufferRef buffer,
+                           VideoFrameBufferPool framesPool,
+                           std::optional<VideoContentHint> contentHint)
+{
+    return create(CVPixelBufferAutoRelease::imageBuffer(buffer),
+                  std::move(framesPool), std::move(contentHint), true);
 }
 
 CVPixelBufferRef CoreVideoPixelBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
@@ -164,9 +183,12 @@ namespace
 
 template <class TBaseVideoBuffer>
 template <class... Args>
-CVBuffer<TBaseVideoBuffer>::CVBuffer(CVPixelBufferAutoRelease lockedBuffer, Args&&... args)
+CVBuffer<TBaseVideoBuffer>::CVBuffer(CVPixelBufferAutoRelease lockedBuffer,
+                                     std::optional<VideoContentHint> contentHint,
+                                     Args&&... args)
     : TBaseVideoBuffer(std::forward<Args>(args)...)
     , _lockedBuffer(std::move(lockedBuffer))
+    , _contentHint(std::move(contentHint))
 {
 }
 
@@ -176,9 +198,19 @@ CVBuffer<TBaseVideoBuffer>::~CVBuffer()
     _lockedBuffer.unlock();
 }
 
+template <class TBaseVideoBuffer>
+VideoContentHint CVBuffer<TBaseVideoBuffer>::contentHint() const
+{
+    if (_contentHint.has_value()) {
+        return _contentHint.value();
+    }
+    return TBaseVideoBuffer::contentHint();
+}
+
 NV12Buffer::NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
-                       VideoFrameBufferPool framesPool)
-    : BaseClass(std::move(lockedBuffer), std::move(framesPool))
+                       VideoFrameBufferPool framesPool,
+                       std::optional<VideoContentHint> contentHint)
+    : BaseClass(std::move(lockedBuffer), std::move(contentHint), std::move(framesPool))
 {
 }
 
@@ -189,8 +221,10 @@ std::string NV12Buffer::storage_representation() const
 
 RGBBuffer::RGBBuffer(CVPixelBufferAutoRelease lockedBuffer,
                      VideoFrameType rgbFormat,
-                     VideoFrameBufferPool framesPool)
-    : BaseClass(std::move(lockedBuffer), rgbFormat, std::move(framesPool))
+                     VideoFrameBufferPool framesPool,
+                     std::optional<VideoContentHint> contentHint)
+    : BaseClass(std::move(lockedBuffer), std::move(contentHint),
+                rgbFormat, std::move(framesPool))
 {
 }
 

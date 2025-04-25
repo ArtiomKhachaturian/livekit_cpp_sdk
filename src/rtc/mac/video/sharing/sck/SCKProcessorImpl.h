@@ -47,7 +47,7 @@ class SCKProcessorImpl : public std::enable_shared_from_this<SCKProcessorImpl>,
                          public SCKErrorHandler
 {
 public:
-    SCKProcessorImpl(VideoFrameBufferPool framesPool = {});
+    SCKProcessorImpl(bool previewMode, VideoFrameBufferPool framesPool = {});
     ~SCKProcessorImpl() final;
     void setOutputSink(CapturerProxySink* sink) { _sink = sink; }
     bool start();

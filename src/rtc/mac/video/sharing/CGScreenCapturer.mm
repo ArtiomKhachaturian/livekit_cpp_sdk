@@ -26,9 +26,10 @@ inline constexpr bool validScreenId(webrtc::ScreenId id) {
 namespace LiveKitCpp
 {
 
-CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options,
+CGScreenCapturer::CGScreenCapturer(bool previewMode,
+                                   webrtc::DesktopCaptureOptions options,
                                    VideoFrameBufferPool framesPool)
-    : Base(false, options, std::move(framesPool))
+    : Base(false, previewMode, options, std::move(framesPool))
     , _cursorComposer(options.prefer_cursor_embedded() ? new DesktopWebRTCCursorComposer(options) : nullptr)
 {
     if (_cursorComposer) {
@@ -36,10 +37,11 @@ CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options,
     }
 }
 
-CGScreenCapturer::CGScreenCapturer(webrtc::DesktopCaptureOptions options,
+CGScreenCapturer::CGScreenCapturer(bool previewMode,
+                                   webrtc::DesktopCaptureOptions options,
                                    std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                                    VideoFrameBufferPool framesPool)
-    : Base(false, options, std::move(timerQueue), std::move(framesPool))
+    : Base(false, previewMode, options, std::move(timerQueue), std::move(framesPool))
     , _cursorComposer(options.prefer_cursor_embedded() ? new DesktopWebRTCCursorComposer(options) : nullptr)
 {
     if (_cursorComposer) {

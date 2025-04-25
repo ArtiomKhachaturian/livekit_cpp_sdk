@@ -71,10 +71,14 @@ public:
     void setOutputSink(CapturerProxySink* sink);
     // window or screen capturer
     bool window() const noexcept { return _window; }
+    // mode
+    bool previewMode() const noexcept { return _previewMode; }
+    // overloaded version
     void setTargetResolution(const webrtc::DesktopSize& resolution);
     virtual ~DesktopCapturer() = default;
 protected:
-    DesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    DesktopCapturer(bool window, bool previewMode,
+                    webrtc::DesktopCaptureOptions options,
                     VideoFrameBufferPool framesPool = {});
     const auto& options() const noexcept { return _options; }
     bool hasOutputSink() const { return !_sink.empty(); }
@@ -92,6 +96,7 @@ protected:
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
 private:
     const bool _window;
+    const bool _previewMode;
     const webrtc::DesktopCaptureOptions _options;
     const VideoFrameBufferPool _framesPool;
     Bricks::Listener<CapturerProxySink*> _sink;

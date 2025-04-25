@@ -41,13 +41,15 @@ public:
 protected:
     // capturer with shared queue
     template <typename... Args>
-    DesktopSimpleCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    DesktopSimpleCapturer(bool window, bool previewMode,
+                          webrtc::DesktopCaptureOptions options,
                           std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                           VideoFrameBufferPool framesPool,
                           Args&&... args);
     // capturer with own queue
     template <typename... Args>
-    DesktopSimpleCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    DesktopSimpleCapturer(bool window, bool previewMode,
+                          webrtc::DesktopCaptureOptions options,
                           VideoFrameBufferPool framesPool,
                           Args&&... args);
     void execute(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);
@@ -66,11 +68,12 @@ private:
 template <class TCapturer>
 template <typename... Args>
 inline DesktopSimpleCapturer<TCapturer>::
-    DesktopSimpleCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    DesktopSimpleCapturer(bool window, bool previewMode,
+                          webrtc::DesktopCaptureOptions options,
                           std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                           VideoFrameBufferPool framesPool,
                           Args&&... args)
-    : TCapturer(window, std::move(options), std::move(framesPool), std::forward<Args>(args)...)
+    : TCapturer(window, previewMode, std::move(options), std::move(framesPool), std::forward<Args>(args)...)
     , _timerQueue(std::move(timerQueue))
     , _timer(_timerQueue)
 {
@@ -79,11 +82,11 @@ inline DesktopSimpleCapturer<TCapturer>::
 template <class TCapturer>
 template <typename... Args>
 inline DesktopSimpleCapturer<TCapturer>::
-    DesktopSimpleCapturer(bool window,
+    DesktopSimpleCapturer(bool window, bool previewMode,
                           webrtc::DesktopCaptureOptions options,
                           VideoFrameBufferPool framesPool,
                           Args&&... args)
-    : DesktopSimpleCapturer(window, std::move(options),
+    : DesktopSimpleCapturer(window, previewMode, std::move(options),
                             createTaskQueueS(formatQueueName(this), webrtc::TaskQueueFactory::Priority::HIGH),
                             std::move(framesPool), std::forward<Args>(args)...)
 {

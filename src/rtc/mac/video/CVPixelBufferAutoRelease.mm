@@ -54,11 +54,20 @@ OSType CVPixelBufferAutoRelease::pixelFormat(CVPixelBufferRef buffer)
 
 CVImageBufferRef CVPixelBufferAutoRelease::imageBuffer(CMSampleBufferRef buffer)
 {
-    if (buffer && CMSampleBufferDataIsReady(buffer) && CMSampleBufferIsValid(buffer) &&
-        1L == CMSampleBufferGetNumSamples(buffer)) {
-            return CMSampleBufferGetImageBuffer(buffer);
+    if (hasImageBuffer(buffer)) {
+        return CMSampleBufferGetImageBuffer(buffer);
     }
     return nil;
+}
+
+bool CVPixelBufferAutoRelease::hasImageBuffer(CMSampleBufferRef buffer)
+{
+    if (buffer) {
+        return CMSampleBufferDataIsReady(buffer) &&
+               CMSampleBufferIsValid(buffer) &&
+               1L == CMSampleBufferGetNumSamples(buffer);
+    }
+    return false;
 }
 
 bool CVPixelBufferAutoRelease::lock() const

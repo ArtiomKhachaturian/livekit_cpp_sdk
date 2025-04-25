@@ -30,8 +30,8 @@ class CGScreenCapturer : public DesktopSimpleCapturer<MacDesktopCapturer>,
 {
     using Base = DesktopSimpleCapturer<MacDesktopCapturer>;
 public:
-    CGScreenCapturer(webrtc::DesktopCaptureOptions options, VideoFrameBufferPool framesPool = {});
-    CGScreenCapturer(webrtc::DesktopCaptureOptions options,
+    CGScreenCapturer(bool previewMode, webrtc::DesktopCaptureOptions options, VideoFrameBufferPool framesPool = {});
+    CGScreenCapturer(bool previewMode, webrtc::DesktopCaptureOptions options,
                      std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                      VideoFrameBufferPool framesPool = {});
     ~CGScreenCapturer() final;

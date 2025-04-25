@@ -160,7 +160,7 @@ bool RgbGenericVideoFrameBuffer::scale24bpp(const std::byte* srcRGB,
                                  srcStrideRGB, srcWidth, srcHeight,
                                  reinterpret_cast<uint8_t*>(dstRGB),
                                  dstStrideRGB, dstWidth, dstHeight,
-                                 map(contentHint()));
+                                 mapLibYUV(contentHint()));
 }
 
 bool RgbGenericVideoFrameBuffer::scale32bpp(const std::byte* srcARGB,
@@ -172,7 +172,7 @@ bool RgbGenericVideoFrameBuffer::scale32bpp(const std::byte* srcARGB,
                                   srcStrideARGB, srcWidth, srcHeight,
                                   reinterpret_cast<uint8_t*>(dstARGB),
                                   dstStrideARGB, dstWidth, dstHeight,
-                                  map(contentHint()));
+                                  mapLibYUV(contentHint()));
 }
 
 } // namespace LiveKitCpp

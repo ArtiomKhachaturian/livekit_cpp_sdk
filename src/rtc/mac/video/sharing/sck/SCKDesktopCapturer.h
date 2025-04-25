@@ -25,7 +25,8 @@ class SCKProcessor;
 class SCKDesktopCapturer : public MacDesktopCapturer, private CapturerProxySink
 {
 public:
-    SCKDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    SCKDesktopCapturer(bool window, bool previewMode,
+                       webrtc::DesktopCaptureOptions options,
                        VideoFrameBufferPool framesPool = {});
     ~SCKDesktopCapturer() final;
     static bool available();

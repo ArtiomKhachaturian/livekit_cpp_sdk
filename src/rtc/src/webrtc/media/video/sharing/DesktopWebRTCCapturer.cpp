@@ -20,17 +20,19 @@
 namespace LiveKitCpp
 {
 
-DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options,
+DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, bool previewMode,
+                                             webrtc::DesktopCaptureOptions options,
                                              std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                                              VideoFrameBufferPool framesPool)
-    : Base(window, std::move(options), std::move(timerQueue), std::move(framesPool))
+    : Base(window, previewMode, std::move(options), std::move(timerQueue), std::move(framesPool))
     , _source(defaultSource(window))
 {
 }
 
-DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options,
+DesktopWebRTCCapturer::DesktopWebRTCCapturer(bool window, bool previewMode,
+                                             webrtc::DesktopCaptureOptions options,
                                              VideoFrameBufferPool framesPool)
-    : Base(window, std::move(options), std::move(framesPool))
+    : Base(window, previewMode, std::move(options), std::move(framesPool))
     , _source(defaultSource(window))
 {
 }
@@ -65,7 +67,7 @@ void DesktopWebRTCCapturer::stop()
 
 void DesktopWebRTCCapturer::focusOnSelectedSource()
 {
-    if (!_focusOnSelectedSource.exchange(true)) {
+    if (!previewMode() && !_focusOnSelectedSource.exchange(true)) {
         LOCK_READ_SAFE_OBJ(_capturer);
         if (const auto& capturer = _capturer.constRef()) {
             execute([capturerRef = CapturerWeak(capturer)]() {

@@ -176,18 +176,21 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
     std::unique_ptr<DesktopCapturer> impl;
 #ifdef WEBRTC_MAC
     if (SCKDesktopCapturer::available()) {
-        return std::make_unique<SCKDesktopCapturer>(window, makeOptions(!previewMode),
+        return std::make_unique<SCKDesktopCapturer>(window, previewMode,
+                                                    makeOptions(!previewMode),
                                                     std::move(framesPool));
     }
     if (!window) {
         
-        return std::make_unique<CGScreenCapturer>(makeOptions(!previewMode),
+        return std::make_unique<CGScreenCapturer>(previewMode,
+                                                  makeOptions(!previewMode),
                                                   commonSharedQueue(),
                                                   std::move(framesPool));
     }
 #endif
     if (!impl) {
-        impl = std::make_unique<DesktopWebRTCCapturer>(window, makeOptions(!previewMode),
+        impl = std::make_unique<DesktopWebRTCCapturer>(window, previewMode,
+                                                       makeOptions(!previewMode),
                                                        commonSharedQueue(), std::move(framesPool));
     }
     return impl;

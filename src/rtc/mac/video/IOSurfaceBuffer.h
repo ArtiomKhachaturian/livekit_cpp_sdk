@@ -22,15 +22,20 @@
 namespace LiveKitCpp
 {
 
+enum class VideoContentHint;
+
 class IOSurfaceBuffer
 {
 public:
     static bool supported(IOSurfaceRef buffer);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(IOSurfaceRef buffer,
-                                                               VideoFrameBufferPool framesPool = {},
-                                                               bool retain = true);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> createFromSampleBuffer(CMSampleBufferRef buffer,
-                                                                               VideoFrameBufferPool framesPool = {});
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+        create(IOSurfaceRef buffer, VideoFrameBufferPool framesPool = {},
+               std::optional<VideoContentHint> contentHint = std::nullopt,
+               bool retain = true);
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+        createFromSampleBuffer(CMSampleBufferRef buffer,
+                               VideoFrameBufferPool framesPool = {},
+                               std::optional<VideoContentHint> contentHint = std::nullopt);
     static IOSurfaceRef pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer, bool retain = true);
 };
 

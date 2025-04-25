@@ -24,7 +24,8 @@ class MacDesktopCapturer : public DesktopCapturer
 public:
     ~MacDesktopCapturer() override;
 protected:
-    MacDesktopCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    MacDesktopCapturer(bool window, bool previewMode,
+                       webrtc::DesktopCaptureOptions options,
                        VideoFrameBufferPool framesPool = {});
     std::unique_ptr<webrtc::DesktopFrame> captureDisplay(webrtc::ScreenId sId) const;
     std::unique_ptr<webrtc::DesktopFrame> captureWindow(webrtc::WindowId wId) const;

@@ -103,7 +103,7 @@ bool NV12VideoFrameBuffer::scale(const uint8_t* srcY, int srcStrideY,
                                   dstY, dstStrideY,
                                   dstUV, dstStrideUV,
                                   dstWidth, dstHeight,
-                                  map(contentHint()));
+                                  mapLibYUV(contentHint()));
 }
 
 } // namespace LiveKitCpp

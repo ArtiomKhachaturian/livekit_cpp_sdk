@@ -23,11 +23,11 @@
 namespace LiveKitCpp
 {
 
-SCKDesktopCapturer::SCKDesktopCapturer(bool window,
+SCKDesktopCapturer::SCKDesktopCapturer(bool window, bool previewMode,
                                        webrtc::DesktopCaptureOptions options,
                                        VideoFrameBufferPool framesPool)
-    : MacDesktopCapturer(window, std::move(options), framesPool)
-    , _processor(std::make_unique<SCKProcessor>(std::move(framesPool)))
+    : MacDesktopCapturer(window, previewMode, std::move(options), framesPool)
+    , _processor(std::make_unique<SCKProcessor>(previewMode, std::move(framesPool)))
 {
     _processor->setShowCursor(this->options().prefer_cursor_embedded());
     _processor->setOutputSink(this);
@@ -128,7 +128,7 @@ void SCKDesktopCapturer::setExcludedWindow(webrtc::WindowId wId)
 
 void SCKDesktopCapturer::focusOnSelectedSource()
 {
-    if (window()) {
+    if (window() && !previewMode()) {
         _processor->focusOnSelectedWindow();
     }
 }

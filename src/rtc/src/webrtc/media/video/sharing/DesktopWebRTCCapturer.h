@@ -27,10 +27,12 @@ class DesktopWebRTCCapturer : public DesktopSimpleCapturer<DesktopCapturer>,
     using Base = DesktopSimpleCapturer<DesktopCapturer>;
     using CapturerWeak = std::weak_ptr<webrtc::DesktopCapturer>;
 public:
-    DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    DesktopWebRTCCapturer(bool window, bool previewMode,
+                          webrtc::DesktopCaptureOptions options,
                           std::shared_ptr<webrtc::TaskQueueBase> timerQueue,
                           VideoFrameBufferPool framesPool = {});
-    DesktopWebRTCCapturer(bool window, webrtc::DesktopCaptureOptions options,
+    DesktopWebRTCCapturer(bool window, bool previewMode,
+                          webrtc::DesktopCaptureOptions options,
                           VideoFrameBufferPool framesPool = {});
     ~DesktopWebRTCCapturer() override;
     // overrides & impl. of DesktopCapturer

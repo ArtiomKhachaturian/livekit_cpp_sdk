@@ -33,7 +33,7 @@ class CapturerProxySink;
 class SCKProcessor : public RtcObject<SCKProcessorImpl>
 {
 public:
-    SCKProcessor(VideoFrameBufferPool framesPool = {});
+    SCKProcessor(bool previewMode, VideoFrameBufferPool framesPool = {});
     ~SCKProcessor();
     void setOutputSink(CapturerProxySink* sink);
     bool start();

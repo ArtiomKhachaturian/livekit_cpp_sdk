@@ -36,7 +36,7 @@ protected:
     VideoFrameBuffer(VideoFrameBufferPool framesPool, Args... args);
     webrtc::scoped_refptr<webrtc::I420Buffer> createI420(int width, int height) const;
     webrtc::scoped_refptr<webrtc::NV12Buffer> createNV12(int width, int height) const;
-    VideoContentHint contentHint() const { return _framesPool.contentHint(); }
+    virtual VideoContentHint contentHint() const { return _framesPool.contentHint(); }
 private:
     virtual rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const = 0;
 private:
