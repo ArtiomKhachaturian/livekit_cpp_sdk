@@ -39,21 +39,6 @@ protected:
 private:
     // impl. of VideoFrameBuffer<>
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
-    // common
-    bool scale(VideoFrameType type, const std::byte* srcRGB,
-               int srcStrideRGB, int srcWidth, int srcHeight,
-               std::byte* dstRGB, int dstStrideRGB,
-               int dstWidth, int dstHeight) const;
-    // 24bpp
-    bool scale24bpp(const std::byte* srcRGB, int srcStrideRGB,
-                    int srcWidth, int srcHeight,
-                    std::byte* dstRGB, int dstStrideRGB,
-                    int dstWidth, int dstHeight) const;
-    // 32bpp
-    bool scale32bpp(const std::byte* srcARGB, int srcStrideARGB,
-                    int srcWidth, int srcHeight,
-                    std::byte* dstARGB, int dstStrideARGB,
-                    int dstWidth, int dstHeight) const;
 private:
     const VideoFrameType _rgbFormat;
 };

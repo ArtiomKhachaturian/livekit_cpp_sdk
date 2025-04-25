@@ -24,6 +24,8 @@
 namespace LiveKitCpp
 {
 
+enum class VideoFrameType;
+
 // new frames factory
 // webrtc::VideoFrameBuffer::Type::kNative & webrtc::VideoFrameBuffer::Type::kI420A types
 // are ignored - output frame will be with webrtc::VideoFrameBuffer::Type::kI420 buffer
@@ -42,6 +44,31 @@ std::optional<webrtc::VideoFrame> createBlackVideoFrame(int width, int height,
                                                         const std::optional<webrtc::ColorSpace>& colorSpace = {});
 webrtc::VideoTrackInterface::ContentHint map(VideoContentHint hint);
 VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint);
+
+bool scaleNV12(const uint8_t* srcY, int srcStrideY,
+               const uint8_t* srcUV, int srcStrideUV,
+               int srcWidth, int srcHeight,
+               uint8_t* dstY, int dstStrideY,
+               uint8_t* dstUV, int dstStrideUV,
+               int dstWidth, int dstHeight,
+               VideoContentHint hint = VideoContentHint::None);
+bool scaleRGB(VideoFrameType type, const std::byte* srcRGB,
+              int srcStrideRGB, int srcWidth, int srcHeight,
+              std::byte* dstRGB, int dstStrideRGB,
+              int dstWidth, int dstHeight,
+              VideoContentHint hint = VideoContentHint::None);
+// 24 bpp
+bool scaleRGB24(const std::byte* srcRGB, int srcStrideRGB,
+                int srcWidth, int srcHeight,
+                std::byte* dstRGB, int dstStrideRGB,
+                int dstWidth, int dstHeight,
+                VideoContentHint hint = VideoContentHint::None);
+// 32bpp
+bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
+                int srcWidth, int srcHeight,
+                std::byte* dstARGB, int dstStrideARGB,
+                int dstWidth, int dstHeight,
+                VideoContentHint hint = VideoContentHint::None);
 
 #ifdef WEBRTC_MAC
 // constants

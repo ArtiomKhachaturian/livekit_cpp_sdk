@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "NV12VideoFrameBuffer.h"
 #include "LibyuvImport.h"
+#include "VideoUtils.h"
 #include <api/video/i420_buffer.h>
 
 namespace LiveKitCpp 
@@ -55,11 +56,12 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> NV12VideoFrameBuffer::
                     offsetY = std::max(0, offsetY);
                     if (width - offsetX > 0 && height - offsetY > 0) {
                         if (const auto scaled = createNV12(scaledWidth, scaledHeight)) {
-                            if (!scale(dataY, strideY, dataUV, strideUV,
-                                      cropWidth, cropHeight,
-                                      scaled->MutableDataY(), scaled->StrideY(),
-                                      scaled->MutableDataUV(), scaled->StrideUV(),
-                                      scaled->width(), scaled->height())) {
+                            if (!scaleNV12(dataY, strideY, dataUV, strideUV,
+                                           cropWidth, cropHeight,
+                                           scaled->MutableDataY(), scaled->StrideY(),
+                                           scaled->MutableDataUV(), scaled->StrideUV(),
+                                           scaled->width(), scaled->height(),
+                                           contentHint())) {
                                 scaled->CropAndScaleFrom(*this, offsetX, offsetY, cropWidth, cropHeight);
                             }
                             return scaled;
@@ -88,22 +90,6 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI
         return i420;
     }
     return nullptr;
-}
-
-bool NV12VideoFrameBuffer::scale(const uint8_t* srcY, int srcStrideY,
-                                 const uint8_t* srcUV, int srcStrideUV,
-                                 int srcWidth, int srcHeight,
-                                 uint8_t* dstY, int dstStrideY,
-                                 uint8_t* dstUV, int dstStrideUV,
-                                 int dstWidth, int dstHeight) const
-{
-    return 0 == libyuv::NV12Scale(srcY, srcStrideY,
-                                  srcUV, srcStrideUV,
-                                  srcWidth, srcHeight,
-                                  dstY, dstStrideY,
-                                  dstUV, dstStrideUV,
-                                  dstWidth, dstHeight,
-                                  mapLibYUV(contentHint()));
 }
 
 } // namespace LiveKitCpp

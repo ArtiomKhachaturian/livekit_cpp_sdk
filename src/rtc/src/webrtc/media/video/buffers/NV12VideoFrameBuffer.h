@@ -41,13 +41,6 @@ public:
 protected:
     NV12VideoFrameBuffer(VideoFrameBufferPool framesPool);
 private:
-    bool scale(const uint8_t* srcY, int srcStrideY,
-               const uint8_t* srcUV, int srcStrideUV,
-               int srcWidth, int srcHeight,
-               uint8_t* dstY, int dstStrideY,
-               uint8_t* dstUV, int dstStrideUV,
-               int dstWidth, int dstHeight) const;
-private:
     // impl. of VideoFrameBuffer
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
