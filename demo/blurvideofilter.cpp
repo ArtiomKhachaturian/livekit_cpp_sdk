@@ -8,7 +8,7 @@ Q_GUI_EXPORT extern void qt_blurImage(QPainter *p, QImage &blurImage, qreal radi
 QT_END_NAMESPACE
 
 BlurVideofilter::BlurVideofilter(QObject* parent)
-    : VideoFilter(blurFilterName(), parent)
+    : VideoFilter{filterName(), parent}
 {
 }
 

@@ -1,6 +1,8 @@
 #include "videofilter.h"
 #include "grayscalevideofilter.h"
 #include "blurvideofilter.h"
+#include "sepiavideofilter.h"
+#include "pencilvideofilter.h"
 #include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
 
 VideoFilter::VideoFilter(QString name, QObject* parent)
@@ -12,13 +14,18 @@ VideoFilter::VideoFilter(QString name, QObject* parent)
 
 VideoFilter* VideoFilter::create(const QString& name, QObject* parent)
 {
-    VideoFilter* newFilter = nullptr;
     if (!name.isEmpty()) {
-        if (0 == name.compare(BlurVideofilter::blurFilterName(), Qt::CaseInsensitive)) {
-            return new BlurVideofilter(parent);
+        if (const auto filter = createFilter<BlurVideofilter>(name, parent)) {
+            return filter;
         }
-        if (0 == name.compare(GrayscaleVideoFilter::grayscaleFilterName(), Qt::CaseInsensitive)) {
-            return new GrayscaleVideoFilter(parent);
+        if (const auto filter = createFilter<GrayscaleVideoFilter>(name, parent)) {
+            return filter;
+        }
+        if (const auto filter = createFilter<SepiaVideoFilter>(name, parent)) {
+            return filter;
+        }
+        if (const auto filter = createFilter<PencilVideoFilter>(name, parent)) {
+            return filter;
         }
     }
     return nullptr;
@@ -26,7 +33,8 @@ VideoFilter* VideoFilter::create(const QString& name, QObject* parent)
 
 QStringList VideoFilter::available()
 {
-    return {{BlurVideofilter::blurFilterName(), GrayscaleVideoFilter::grayscaleFilterName()}};
+    return {{BlurVideofilter::filterName(), GrayscaleVideoFilter::filterName(),
+             PencilVideoFilter::filterName(), SepiaVideoFilter::filterName()}};
 }
 
 void VideoFilter::setPaused(bool paused)
@@ -81,4 +89,13 @@ bool VideoFilter::hasReceiver() const
 {
     const QReadLocker locker(&_receiver._lock);
     return nullptr != _receiver._val;
+}
+
+template <class TFilter>
+VideoFilter* VideoFilter::createFilter(const QString& name, QObject* parent)
+{
+    if (0 == name.compare(TFilter::filterName(), Qt::CaseInsensitive)) {
+        return new TFilter(parent);
+    }
+    return nullptr;
 }

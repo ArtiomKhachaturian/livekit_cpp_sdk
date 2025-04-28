@@ -30,6 +30,9 @@ protected:
     void sendProcessed(const QVideoFrame& frame);
     bool hasReceiver() const;
 private:
+    template <class TFilter>
+    static VideoFilter* createFilter(const QString& name, QObject* parent);
+private:
     const QString _name;
     Lockable<LiveKitCpp::VideoSink*> _receiver = nullptr;
     std::atomic_bool _paused = false;

@@ -9,7 +9,7 @@ class BlurVideofilter : public VideoFilter
     Q_PROPERTY(qreal radius READ radius WRITE setRadius NOTIFY radiusChanged FINAL)
 public:
     BlurVideofilter(QObject* parent = nullptr);
-    static QString blurFilterName() { return QStringLiteral("blur"); }
+    static QString filterName() { return QStringLiteral("blur"); }
     bool quality() const { return _quality; }
     qreal radius() const { return _radius; }
 public slots:

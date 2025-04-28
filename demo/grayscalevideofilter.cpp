@@ -1,7 +1,7 @@
 #include "grayscalevideofilter.h"
 
 GrayscaleVideoFilter::GrayscaleVideoFilter(QObject* parent)
-    : VideoFilter(grayscaleFilterName(), parent)
+    : VideoFilter{filterName(), parent}
 {
 }
 
