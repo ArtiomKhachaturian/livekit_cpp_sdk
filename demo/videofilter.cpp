@@ -1,4 +1,6 @@
 #include "videofilter.h"
+#include "grayscalevideofilter.h"
+#include "blurvideofilter.h"
 #include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
 
 VideoFilter::VideoFilter(QString name, QObject* parent)
@@ -6,6 +8,25 @@ VideoFilter::VideoFilter(QString name, QObject* parent)
     , _name(std::move(name))
 {
     Q_ASSERT(!_name.isEmpty());
+}
+
+VideoFilter* VideoFilter::create(const QString& name, QObject* parent)
+{
+    VideoFilter* newFilter = nullptr;
+    if (!name.isEmpty()) {
+        if (0 == name.compare(BlurVideofilter::blurFilterName(), Qt::CaseInsensitive)) {
+            return new BlurVideofilter(parent);
+        }
+        if (0 == name.compare(GrayscaleVideoFilter::grayscaleFilterName(), Qt::CaseInsensitive)) {
+            return new GrayscaleVideoFilter(parent);
+        }
+    }
+    return nullptr;
+}
+
+QStringList VideoFilter::available()
+{
+    return {{BlurVideofilter::blurFilterName(), GrayscaleVideoFilter::grayscaleFilterName()}};
 }
 
 void VideoFilter::setPaused(bool paused)

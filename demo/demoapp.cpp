@@ -1,6 +1,6 @@
 #include "demoapp.h"
 #include "logger.h"
-#include "videosource.h"
+#include "videofilter.h"
 #include <livekit/rtc/Options.h>
 #include <livekit/rtc/Service.h>
 #include <livekit/signaling/sfu/ICETransportPolicy.h>
@@ -142,7 +142,7 @@ void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
 
 QStringList DemoApp::availableFilters() const
 {
-    return VideoSource::availableFilters();
+    return VideoFilter::available();
 }
 
 bool DemoApp::isValid() const

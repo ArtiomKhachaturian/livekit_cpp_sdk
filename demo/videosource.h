@@ -39,11 +39,10 @@ public:
     QString frameType() const;
     QString filter() const;
     virtual QString name() const { return {}; }
-    static QStringList availableFilters();
 public slots:
     Q_INVOKABLE void addOutput(QVideoSink* output);
     Q_INVOKABLE void removeOutput(QVideoSink* output);
-    bool setFilter(const QString& filter);
+    void setFilter(const QString& filter);
 signals:
     void fpsChanged();
     void frameSizeChanged();

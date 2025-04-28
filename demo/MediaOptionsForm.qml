@@ -7,6 +7,13 @@ Pane {
     id: root
     readonly property alias cameraDeviceInfo: cameraModelComboBox.deviceInfo
     readonly property alias cameraOptions: cameraOptionsComboBox.options
+    readonly property string videoFilter: {
+        if (videoFilterChx.checked) {
+            return videoFilterCombo.currentText
+        }
+        return ""
+    }
+
     property alias micGroupEnabled : micGroup.enabled
     readonly property var sharingOptions: {
         var options = app.emptyVideoOptions()
@@ -33,6 +40,12 @@ Pane {
 
     signal accepted
 
+    function notifyAboutAccepted(force = false) {
+        if (force || liveChangesChx.checked) {
+            Qt.callLater(root.accepted)
+        }
+    }
+
     contentItem: ColumnLayout {
         anchors.fill: parent
 
@@ -46,32 +59,29 @@ Pane {
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Camera")
-            ColumnLayout {
+            GridLayout {
                 anchors.fill: parent
                 CameraModelComboBox {
                     id: cameraModelComboBox
                     Layout.fillWidth: true
-                    onCurrentIndexChanged: {
-                        if (liveChangesChx.checked) {
-                            root.accepted()
-                        }
-                    }
+                    Layout.columnSpan: 2
+                    onCurrentIndexChanged: notifyAboutAccepted()
                 }
 
                 CameraOptionsComboBox {
                     id: cameraOptionsComboBox
                     deviceInfo: cameraModelComboBox.deviceInfo
+                    Layout.column: 0
+                    Layout.row: 1
                     Layout.fillWidth: true
-                    onCurrentIndexChanged: {
-                        if (liveChangesChx.checked) {
-                            root.accepted()
-                        }
-                    }
+                    onCurrentIndexChanged: notifyAboutAccepted()
                 }
 
                 CheckBox {
+                    Layout.column: 1
+                    Layout.row: 1
                     id: interlacedChx
-                    text: qsTr("Interlaced frames")
+                    text: qsTr("Interlaced")
                 }
             }
         }
@@ -85,58 +95,58 @@ Pane {
                     id: sharingOrigResChx
                     text: qsTr("Original resolution (width x height)")
                     checked: true
-                    onCheckedChanged: {
-                        if (liveChangesChx.checked && checked) {
-                            root.accepted()
+                    onCheckedChanged: notifyAboutAccepted()
+                }
+                RowLayout {
+                    Layout.preferredWidth: parent.implicitWidth
+                    ValueControl {
+                        id: sharingResWidth
+                        from: 128
+                        to: 8912
+                        stepSize: 64
+                        value: 1920
+                        enabled: !sharingOrigResChx.checked
+                        LayoutMirroring.enabled: true
+                        onValueChanged: {
+                            if (enabled) {
+                                notifyAboutAccepted()
+                            }
+                        }
+                    }
+                    ValueControl {
+                        id: sharingResHeight
+                        from: sharingResWidth.from
+                        to: sharingResWidth.to
+                        stepSize: sharingResWidth.stepSize
+                        value: 1080
+                        enabled: sharingResWidth.enabled
+                        onValueChanged: {
+                            if (enabled) {
+                                notifyAboutAccepted()
+                            }
                         }
                     }
                 }
-                ValueControl {
-                    id: sharingResWidth
-                    from: 128
-                    to: 8912
-                    stepSize: 64
-                    value: 1920
-                    enabled: !sharingOrigResChx.checked
-                    onValueChanged: {
-                        if (liveChangesChx.checked && enabled) {
-                            root.accepted()
-                        }
+
+                RowLayout {
+                    Layout.preferredWidth: parent.implicitWidth
+                    CheckBox {
+                        id: defaultFpsChx
+                        text: qsTr("Default framerate")
+                        checked: true
+                        onCheckedChanged: notifyAboutAccepted()
                     }
-                }
-                ValueControl {
-                    id: sharingResHeight
-                    from: sharingResWidth.from
-                    to: sharingResWidth.to
-                    stepSize: sharingResWidth.stepSize
-                    value: 1080
-                    enabled: sharingResWidth.enabled
-                    onValueChanged: {
-                        if (liveChangesChx.checked && enabled) {
-                            root.accepted()
-                        }
-                    }
-                }
-                CheckBox {
-                    id: defaultFpsChx
-                    text: qsTr("Framerate by default")
-                    checked: true
-                    onCheckedChanged: {
-                        if (liveChangesChx.checked && checked) {
-                            root.accepted()
-                        }
-                    }
-                }
-                ValueControl {
-                    id: sharingFps
-                    from: 1
-                    to: 60
-                    stepSize: 5
-                    value: 30
-                    enabled: !defaultFpsChx.checked
-                    onValueChanged: {
-                        if (liveChangesChx.checked && enabled) {
-                            root.accepted()
+                    ValueControl {
+                        id: sharingFps
+                        from: 1
+                        to: 60
+                        stepSize: 5
+                        value: 30
+                        enabled: !defaultFpsChx.checked
+                        onValueChanged: {
+                            if (enabled) {
+                                notifyAboutAccepted()
+                            }
                         }
                     }
                 }
@@ -149,56 +159,55 @@ Pane {
             title: qsTr("Microphone")
             ColumnLayout {
                 anchors.fill: parent
+                spacing: 0
                 CheckBox {
                     id: echoCancellationChx
                     text: qsTr("Echo cancellation")
                     tristate: true
-                    onCheckStateChanged: {
-                        if (liveChangesChx.checked) {
-                            root.accepted()
-                        }
-                    }
+                    onCheckStateChanged: notifyAboutAccepted()
                 }
                 CheckBox {
                     id: autoGainControlChx
                     text: qsTr("Auto gain control")
                     tristate: true
-                    onCheckStateChanged: {
-                        if (liveChangesChx.checked) {
-                            root.accepted()
-                        }
-                    }
+                    onCheckStateChanged: notifyAboutAccepted()
                 }
                 CheckBox {
                     id: noiseSuppressionChx
                     text: qsTr("Noise suppression")
                     tristate: true
-                    onCheckStateChanged: {
-                        if (liveChangesChx.checked) {
-                            root.accepted()
-                        }
-                    }
+                    onCheckStateChanged: notifyAboutAccepted()
                 }
                 CheckBox {
                     id: highpassFilterChx
                     text: qsTr("Highpass filter")
                     tristate: true
-                    onCheckStateChanged: {
-                        if (liveChangesChx.checked) {
-                            root.accepted()
-                        }
-                    }
+                    onCheckStateChanged: notifyAboutAccepted()
                 }
                 CheckBox {
                     id: stereoSwappingChx
                     text: qsTr("Stereo swapping")
                     tristate: true
-                    onCheckStateChanged: {
-                        if (liveChangesChx.checked) {
-                            root.accepted()
-                        }
-                    }
+                    onCheckStateChanged: notifyAboutAccepted()
                 }
+            }
+        }
+
+        RowLayout {
+            CheckBox {
+                id: videoFilterChx
+                Layout.fillWidth: true
+                text: qsTr("Video filter:")
+                checked: false
+                onCheckedChanged: notifyAboutAccepted()
+            }
+            ComboBox {
+                id: videoFilterCombo
+                enabled: videoFilterChx.checked
+                model: app.availableFilters()
+                currentIndex: -1
+                Layout.fillWidth: true
+                onCurrentIndexChanged: notifyAboutAccepted()
             }
         }
 
@@ -214,7 +223,7 @@ Pane {
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             onAccepted: {
-                root.accepted()
+                notifyAboutAccepted(true)
             }
             onRejected: {
                 root.visible = false
@@ -239,7 +248,6 @@ Pane {
                 id: sliderValue
                 value: textValue.text
                 Layout.fillWidth: true
-                Layout.columnSpan: 2
             }
         }
     }

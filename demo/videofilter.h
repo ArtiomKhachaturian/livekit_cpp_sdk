@@ -12,6 +12,8 @@ class VideoFilter : public QObject,
     Q_OBJECT
     Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY pauseChanged FINAL)
 public:
+    static VideoFilter* create(const QString& name, QObject* parent = nullptr);
+    static QStringList available();
     void setPaused(bool paused);
     const auto& name() const noexcept { return _name; }
     // impl. of LiveKitCpp::LocalVideoFilterPin

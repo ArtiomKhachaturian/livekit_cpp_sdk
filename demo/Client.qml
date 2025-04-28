@@ -6,7 +6,7 @@ Pane {
     id: root
 
     property bool closable: true
-    property string videoFilter: "gray"
+    property string videoFilter
     property alias urlText: connectionForm.urlText
     property alias tokenText: connectionForm.tokenText
     property alias identity: sessionForm.identity
@@ -182,6 +182,8 @@ Pane {
                     sessionForm.microphoneOptions = mediaOptionsForm.microphoneOptions
                     // sharing form
                     sharingSelection.options = mediaOptionsForm.sharingOptions
+                    // video filter
+                    root.videoFilter = mediaOptionsForm.videoFilter
                 }
             }
         }
