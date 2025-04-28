@@ -1,24 +1,22 @@
 diff --git a/config/win/BUILD.gn b/config/win/BUILD.gn
-index c51ad032a..340c82826 100644
+index 9928e7683..2d2fd690e 100644
 --- a/config/win/BUILD.gn
 +++ b/config/win/BUILD.gn
-@@ -471,8 +471,8 @@ config("default_crt") {
-       # CRT in Visual Studio releases related to Windows store applications.
+@@ -521,7 +521,7 @@ config("default_crt") {
        configs = [ ":dynamic_crt" ]
      } else {
--      # Desktop Windows: static CRT.
+       # Desktop Windows: static CRT.
 -      configs = [ ":static_crt" ]
-+      # Desktop Windows: dynamic CRT.
 +      configs = [ ":dynamic_crt" ]
      }
    }
  }
-@@ -501,7 +501,7 @@ config("release_crt") {
+@@ -544,7 +544,7 @@ config("release_crt") {
        ldflags = [ "/DEFAULTLIB:msvcprt.lib" ]
      }
    } else {
 -    cflags = [ "/MT" ]
 +    cflags = [ "/MD" ]
  
-     if (rust_prebuilt_stdlib) {
-       rustflags = [ "-Ctarget-feature=+crt-static" ]
+     # /MT specifies libcmt.lib as the CRT library, which is the static+release
+     # version. Rust needs to agree, so we tell it to use the static+release CRT

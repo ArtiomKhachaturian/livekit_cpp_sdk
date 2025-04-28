@@ -181,9 +181,9 @@ void RemoteParticipantImpl::setInfo(const std::weak_ptr<TrackManager>& trackMana
     {
         LOCK_WRITE_SAFE_OBJ(_info);
         using SeqType = Seq<TrackInfo>;
-        added = SeqType::difference(info._tracks, _info->_tracks, compareTrackInfo);
-        removed = SeqType::difference(_info->_tracks, info._tracks, compareTrackInfo);
-        updated = SeqType::intersection(_info->_tracks, info._tracks, compareTrackInfo);
+        added = SeqType::difference<std::vector>(info._tracks, _info->_tracks, compareTrackInfo);
+        removed = SeqType::difference<std::vector>(_info->_tracks, info._tracks, compareTrackInfo);
+        updated = SeqType::intersection<std::vector>(_info->_tracks, info._tracks, compareTrackInfo);
         sidChanged = info._sid != _info->_sid;
         identityChanged = info._identity != _info->_identity;
         nameChanged = info._name != _info->_name;

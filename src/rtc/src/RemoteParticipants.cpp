@@ -107,9 +107,9 @@ void RemoteParticipants::updateInfo(const std::weak_ptr<TrackManager>& trackMana
         using SeqType = Seq<ParticipantInfo>;
         LOCK_WRITE_SAFE_OBJ(_participants);
         const auto current = this->infos();
-        const auto added = SeqType::difference(infos, current, compareParticipantInfo);
-        const auto removed = SeqType::difference(current, infos, compareParticipantInfo);
-        const auto updated = SeqType::intersection(current, infos, compareParticipantInfo);
+        const auto added = SeqType::difference<std::vector>(infos, current, compareParticipantInfo);
+        const auto removed = SeqType::difference<std::vector>(current, infos, compareParticipantInfo);
+        const auto updated = SeqType::intersection<std::vector>(current, infos, compareParticipantInfo);
         // add new
         for (const auto& info : added) {
             auto participant = std::make_shared<RemoteParticipantImpl>(_nonBindedReceivers, logger());

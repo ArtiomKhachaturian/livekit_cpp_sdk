@@ -162,10 +162,18 @@ target_include_directories(${SIGNALING_LIB} PRIVATE
 )
 
 # Link Protobuf library
-target_link_libraries(${SIGNALING_LIB} PRIVATE protobuf::libprotobuf-lite protobuf::libprotobuf protobuf::libprotoc)
+target_link_libraries(${SIGNALING_LIB} PRIVATE protobuf::libprotobuf-lite 
+                                               protobuf::libprotobuf 
+                                               protobuf::libprotoc)
 # Link abseil
-target_link_libraries(${SIGNALING_LIB} PRIVATE absl::base absl::strings absl::status 
-                      absl::statusor absl::flat_hash_map absl::log absl::log_internal_check_op)
+target_link_libraries(${SIGNALING_LIB} PRIVATE absl::base 
+                                               absl::strings 
+                                               absl::status 
+                                               absl::statusor 
+                                               absl::flat_hash_map 
+                                               absl::log 
+                                               absl::log_internal_check_op 
+                                               absl::log_internal_message)
 
 # Link UFT8_range
 target_link_libraries(${SIGNALING_LIB} PRIVATE utf8_range::utf8_validity utf8_range::utf8_range)

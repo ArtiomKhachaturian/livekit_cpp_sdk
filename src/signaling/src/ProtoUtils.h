@@ -17,6 +17,7 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/map.h>
 #include <google/protobuf/repeated_field.h>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_map>

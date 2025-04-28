@@ -23,7 +23,7 @@ namespace LiveKitCpp
 {
 
 template <class TMediaDevice, class TTrackApi>
-class TrackImpl : public TTrackApi, private MediaEventsListener
+class TrackImpl : public TTrackApi, protected MediaEventsListener
 {
     static_assert(std::is_base_of_v<MediaDevice, TMediaDevice>);
     static_assert(std::is_base_of_v<Track, TTrackApi>);
