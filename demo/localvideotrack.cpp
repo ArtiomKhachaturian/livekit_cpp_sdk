@@ -1,4 +1,5 @@
 #include "localvideotrack.h"
+#include "videofilter.h"
 #include <livekit/rtc/media/LocalVideoTrack.h>
 
 LocalVideoTrack::LocalVideoTrack(QObject* parent)
@@ -10,6 +11,13 @@ LocalVideoTrack::LocalVideoTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTra
     : VideoTrack(impl, parent)
     , _impl(impl)
 {
+}
+
+LocalVideoTrack::~LocalVideoTrack()
+{
+    if (const auto impl = _impl.lock()) {
+        impl->setFilter(nullptr);
+    }
 }
 
 MediaDeviceInfo LocalVideoTrack::deviceInfo() const
@@ -39,6 +47,22 @@ void LocalVideoTrack::setOptions(const VideoOptions& options)
 {
     if (const auto impl = _impl.lock()) {
         impl->setOptions(options);
+    }
+}
+
+QString LocalVideoTrack::name() const
+{
+    if (const auto impl = _impl.lock()) {
+        return QString::fromStdString(impl->deviceInfo()._name);
+    }
+    return VideoTrack::name();
+}
+
+void LocalVideoTrack::applyFilter(VideoFilter* filter)
+{
+    VideoTrack::applyFilter(filter);
+    if (const auto impl = _impl.lock()) {
+        impl->setFilter(filter);
     }
 }
 

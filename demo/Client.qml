@@ -6,6 +6,7 @@ Pane {
     id: root
 
     property bool closable: true
+    property string videoFilter: "gray"
     property alias urlText: connectionForm.urlText
     property alias tokenText: connectionForm.tokenText
     property alias identity: sessionForm.identity
@@ -139,6 +140,7 @@ Pane {
                     activePreview: !sessionActive
                     activeCamera: cameraAddSwitch.checked
                     activeSharing: sharingAddSwitch.checked
+                    videoFilter: root.videoFilter
                     onConnectClicked: {
                         sessionForm.connect(urlText, tokenText,
                                             autoSubscribe, adaptiveStream,
@@ -154,6 +156,7 @@ Pane {
                     microphoneMuted: micMuteCheckbox.checked
                     cameraMuted: cameraMuteCheckbox.checked
                     sharingMuted: sharingMuteCheckbox.checked
+                    localVideoFilter: root.videoFilter
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     onError: (desc, details) => {

@@ -1,7 +1,8 @@
 #include "videosource.h"
+#include "grayscalevideofilter.h"
+#include "blurvideofilter.h"
 #include <QtCore/qthread.h>
-#include <livekit/rtc/media/VideoFrame.h>
-#include <livekit/rtc/media/VideoFrameQtHelper.h>
+#include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
 
 VideoSource::VideoSource(QObject *parent)
     : QObject{parent}
@@ -23,6 +24,19 @@ VideoSource::~VideoSource()
 QString VideoSource::frameType() const
 {
     return QString::fromStdString(LiveKitCpp::toString(_frameType));
+}
+
+QString VideoSource::filter() const
+{
+    if (_filter) {
+        return _filter->name();
+    }
+    return {};
+}
+
+QStringList VideoSource::availableFilters()
+{
+    return {{BlurVideofilter::blurFilterName(), GrayscaleVideoFilter::grayscaleFilterName()}};
 }
 
 void VideoSource::addOutput(QVideoSink* output)
@@ -48,6 +62,32 @@ void VideoSource::addOutput(QVideoSink* output)
 void VideoSource::removeOutput(QVideoSink* output)
 {
     removeSink(output);
+}
+
+bool VideoSource::setFilter(const QString& filter)
+{
+    if (filter != this->filter()) {
+        if (filter.isEmpty()) {
+            applyFilter(nullptr);
+            _filter.reset();
+            emit filterChanged();
+            return true;
+        }
+        VideoFilter* newFilter = nullptr;
+        if (0 == filter.compare(BlurVideofilter::blurFilterName(), Qt::CaseInsensitive)) {
+            newFilter = new BlurVideofilter;
+        }
+        else if (0 == filter.compare(GrayscaleVideoFilter::grayscaleFilterName(), Qt::CaseInsensitive)) {
+            newFilter = new GrayscaleVideoFilter;
+        }
+        if (newFilter) {
+            applyFilter(newFilter);
+            _filter.reset(newFilter);
+            emit filterChanged();
+        }
+        return nullptr != newFilter;
+    }
+    return false;
 }
 
 void VideoSource::startMetricsCollection()

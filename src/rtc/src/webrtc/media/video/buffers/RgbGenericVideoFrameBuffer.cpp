@@ -108,6 +108,9 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> RgbGenericVideoFrameBuffer::conv
             case VideoFrameType::ABGR32:
                 func = &libyuv::RGBAToI420;
                 break;
+            case VideoFrameType::RGB565:
+                func = &libyuv::RGB565ToI420;
+                break;
             default:
                 assert(false);
                 break;

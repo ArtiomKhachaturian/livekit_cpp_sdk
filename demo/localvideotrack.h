@@ -17,11 +17,16 @@ class LocalVideoTrack : public VideoTrack
 public:
     explicit LocalVideoTrack(QObject *parent = nullptr);
     LocalVideoTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& impl, QObject *parent = nullptr);
+    ~LocalVideoTrack() override;
     MediaDeviceInfo deviceInfo() const;
     VideoOptions options() const;
+    // overrides of VideoSource
+    QString name() const final;
 public slots:
     void setDeviceInfo(const MediaDeviceInfo& info = {});
     void setOptions(const VideoOptions& options);
+protected:
+    void applyFilter(VideoFilter* filter) final;
 signals:
     void deviceInfoChanged();
     void optionsChanged();

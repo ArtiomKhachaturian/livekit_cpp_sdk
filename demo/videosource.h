@@ -5,7 +5,7 @@
 #include <livekit/rtc/media/MediaEventsListener.h>
 #include <livekit/rtc/media/VideoSink.h>
 #include <QObject>
-#include <QPointer>
+#include <QScopedPointer>
 #include <QQmlEngine>
 #include <QSize>
 #include <QVideoSink>
@@ -14,6 +14,8 @@
 namespace LiveKitCpp {
 enum class VideoFrameType;
 }
+
+class VideoFilter;
 
 class VideoSource : public QObject,
                     protected LiveKitCpp::VideoSink,
@@ -27,6 +29,7 @@ class VideoSource : public QObject,
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged FINAL)
     Q_PROPERTY(QString frameType READ frameType NOTIFY frameTypeChanged FINAL)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
+    Q_PROPERTY(QString filter READ filter WRITE setFilter NOTIFY filterChanged FINAL)
 public:
     explicit VideoSource(QObject *parent = nullptr);
     ~VideoSource() override;
@@ -34,16 +37,20 @@ public:
     QSize frameSize() const { return _frameSize; }
     bool isActive() const { return _active; }
     QString frameType() const;
+    QString filter() const;
     virtual QString name() const { return {}; }
+    static QStringList availableFilters();
 public slots:
     Q_INVOKABLE void addOutput(QVideoSink* output);
     Q_INVOKABLE void removeOutput(QVideoSink* output);
+    bool setFilter(const QString& filter);
 signals:
     void fpsChanged();
     void frameSizeChanged();
     void activeChanged();
     void frameTypeChanged();
     void nameChanged();
+    void filterChanged();
 protected:
     void startMetricsCollection();
     void stopMetricsCollection();
@@ -52,6 +59,7 @@ protected:
     virtual bool hasVideoInput() const { return true; }
     virtual bool isMuted() const { return false; }
     virtual void subsribe(bool /*subscribe*/) {}
+    virtual void applyFilter(VideoFilter* /*filter*/ = nullptr) {}
 private slots:
     void removeSink(QObject* sink);
 private:
@@ -69,6 +77,7 @@ private:
     void onMediaFatalError(const std::string&, const std::string&) override { setInactive(); }
 private:
     static constexpr QSize _nullSize = {0, 0};
+    QScopedPointer<VideoFilter> _filter;
     Lockable<QList<QVideoSink*>> _outputs;
     SafeObj<QSize> _frameSize;
     FpsMeter _fpsMeter;

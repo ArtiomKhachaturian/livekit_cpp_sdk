@@ -5,7 +5,8 @@
 class GrayscaleVideoFilter : public VideoFilter
 {
 public:
-    GrayscaleVideoFilter() = default;
+    GrayscaleVideoFilter(QObject* parent = nullptr);
+    static QString grayscaleFilterName() { return QStringLiteral("gray"); }
 protected:
     // impl. of VideoFilter
     void processFrame(QImage&& image) final;

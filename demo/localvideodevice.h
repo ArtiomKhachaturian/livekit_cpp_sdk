@@ -3,8 +3,6 @@
 #include "mediadeviceinfo.h"
 #include "videooptions.h"
 #include "videosource.h"
-#include "grayscalevideofilter.h"
-#include "blurvideofilter.h"
 #include <QObject>
 #include <QQmlEngine>
 #include <memory>
@@ -44,10 +42,9 @@ protected:
     bool hasVideoInput() const final { return isValid(); }
     bool isMuted() const final;
     void subsribe(bool subscribe) final;
+    void applyFilter(VideoFilter* filter) final;
 private:
     const std::shared_ptr<LiveKitCpp::LocalVideoDevice> _device;
-    //GrayscaleVideoFilter _videoFilter;
-    BlurVideofilter _videoFilter;
 };
 
 #endif // LOCALVIDEODEVICE_H

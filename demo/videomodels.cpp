@@ -121,6 +121,20 @@ void ConnectionFormVideoModel::setSharingOptions(const VideoOptions& options)
     setOptions(&_sharing, options, &ConnectionFormVideoModel::sharingOptionsChanged);
 }
 
+void ConnectionFormVideoModel::setFilter(const QString& filter)
+{
+    if (filter != _filter) {
+        _filter = filter;
+        if (_camera._source) {
+            _camera._source->setFilter(filter);
+        }
+        if (_sharing._source) {
+            _sharing._source->setFilter(filter);
+        }
+        emit filterChanged();
+    }
+}
+
 template <typename TSignal>
 void ConnectionFormVideoModel::setDeviceActive(DeviceData* data, bool active, TSignal signal)
 {
@@ -177,6 +191,9 @@ void ConnectionFormVideoModel::addSource(DeviceData* data)
         }
         if (-1 != index) {
             data->_source = dynamic_cast<LocalVideoDevice*>(itemAt(index));
+            if (data->_source) {
+                data->_source->setFilter(_filter);
+            }
         }
     }
 }

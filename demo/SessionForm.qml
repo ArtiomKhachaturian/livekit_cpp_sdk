@@ -18,8 +18,11 @@ Frame {
     property alias sharingOptions: session.sharingOptions
     property alias sharingMuted: session.sharingMuted
 
+    property string localVideoFilter
+
     property alias microphoneMuted: session.microphoneMuted
     property alias microphoneOptions: session.microphoneOptions
+
 
     readonly property bool connected: session.connected
     readonly property bool connecting: session.connecting
@@ -103,6 +106,10 @@ Frame {
                 }
             }
         }
+    }
+
+    onLocalVideoFilterChanged: {
+        session.localParticipant.videoFilter = localVideoFilter
     }
 
     function connect(url, token, autoSubscribe, adaptiveStream, e2e, iceTransportPolicy, passPhrase = "") {

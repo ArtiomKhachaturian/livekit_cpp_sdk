@@ -310,25 +310,16 @@ void AsyncVideoSourceImpl::OnConstraintsChanged(const webrtc::VideoTrackSourceCo
     }
 }
 
-void AsyncVideoSourceImpl::resetStats()
-{
-    _lastResolution = 0ULL;
-    _lastFrameId = 0U;
-}
-
 void AsyncVideoSourceImpl::broadcast(const webrtc::VideoFrame& frame)
 {
     _lastResolution = clueToUint64(frame.width(), frame.height());
-    _lastFrameId = frame.id();
     LOCK_READ_SAFE_OBJ(_broadcasters);
-    if (!_broadcasters->empty()) {
-        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-            if (it->second) {
-                it->second->OnFrame(frame);
-            }
-            else {
-                it->first->OnFrame(frame);
-            }
+    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+        if (it->second) {
+            it->second->OnFrame(frame);
+        }
+        else {
+            it->first->OnFrame(frame);
         }
     }
 }

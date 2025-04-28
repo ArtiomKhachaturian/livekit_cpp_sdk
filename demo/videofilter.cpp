@@ -1,18 +1,19 @@
 #include "videofilter.h"
-#include <livekit/rtc/media/VideoFrameQtHelper.h>
+#include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
 
-class VideoFilter::RGB24Frame : public LiveKitCpp::VideoFrame
+VideoFilter::VideoFilter(QString name, QObject* parent)
+    : QObject(parent)
+    , _name(std::move(name))
 {
-public:
-    RGB24Frame(QImage image, int64_t timestampUs = 0LL);
-    int width() const final { return _image.width(); }
-    int height() const final { return _image.height(); }
-    int stride(size_t) const final { return _image.bytesPerLine(); }
-    const std::byte* data(size_t) const final { return reinterpret_cast<const std::byte*>(_image.bits()); }
-    int dataSize(size_t) const final { return _image.sizeInBytes(); }
-private:
-    const QImage _image;
-};
+    Q_ASSERT(!_name.isEmpty());
+}
+
+void VideoFilter::setPaused(bool paused)
+{
+    if (paused != _paused.exchange(paused)) {
+        emit pauseChanged();
+    }
+}
 
 void VideoFilter::setReceiver(LiveKitCpp::VideoSink* sink)
 {
@@ -38,10 +39,12 @@ void VideoFilter::processFrame(QVideoFrame frame)
 void VideoFilter::sendProcessed(QImage&& image, int64_t timestampUs)
 {
     if (!image.isNull()) {
-        image = image.convertToFormat(QImage::Format_RGB888);
         const QReadLocker locker(&_receiver._lock);
         if (const auto receiver = _receiver._val) {
-            receiver->onFrame(std::make_shared<RGB24Frame>(std::move(image), timestampUs));
+            auto frame = LiveKitCpp::QImageVideoFrame::create(std::move(image), 0, timestampUs);
+            if (frame) {
+                receiver->onFrame(frame);
+            }
         }
     }
 }
@@ -57,10 +60,4 @@ bool VideoFilter::hasReceiver() const
 {
     const QReadLocker locker(&_receiver._lock);
     return nullptr != _receiver._val;
-}
-
-VideoFilter::RGB24Frame::RGB24Frame(QImage image, int64_t timestampUs)
-    : LiveKitCpp::VideoFrame(LiveKitCpp::VideoFrameType::RGB24, 0, timestampUs)
-    , _image(std::move(image))
-{
 }

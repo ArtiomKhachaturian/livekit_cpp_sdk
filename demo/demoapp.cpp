@@ -1,5 +1,6 @@
 #include "demoapp.h"
 #include "logger.h"
+#include "videosource.h"
 #include <livekit/rtc/Options.h>
 #include <livekit/rtc/Service.h>
 #include <livekit/signaling/sfu/ICETransportPolicy.h>
@@ -139,32 +140,9 @@ void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
     }
 }
 
-AudioDevice* DemoApp::createMicrophone()
+QStringList DemoApp::availableFilters() const
 {
-    if (_service) {
-        if (auto device = _service->createMicrophone()) {
-            return new AudioDevice(std::move(device), this);
-        }
-    }
-    return nullptr;
-}
-
-LocalVideoDevice* DemoApp::createCamera(const MediaDeviceInfo& info,
-                                        const VideoOptions& options)
-{
-    if (_service) {
-        if (auto device = _service->createCamera(info, options)) {
-            return new LocalVideoDevice(std::move(device), this);
-        }
-    }
-    return nullptr;
-}
-
-void DemoApp::destroyMicrophone(AudioDevice* microphone)
-{
-    if (microphone) {
-        delete microphone;
-    }
+    return VideoSource::availableFilters();
 }
 
 bool DemoApp::isValid() const

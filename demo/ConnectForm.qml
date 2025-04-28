@@ -7,6 +7,7 @@ Item {
 
     id: root
     readonly property alias passPhrase: passPhrase.text
+    property string videoFilter
     property alias urlText: url.text
     property alias tokenText: token.text
     property alias activePreview: previewTracksModel.active
@@ -39,6 +40,7 @@ Item {
                 Repeater {
                     model: ConnectionFormVideoModel {
                         id: previewTracksModel
+                        filter: root.videoFilter
                     }
                     delegate: VideoRenderer {
                         Layout.fillWidth: true

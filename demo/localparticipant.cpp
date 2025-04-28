@@ -42,6 +42,7 @@ void LocalParticipant::activateCamera(const std::shared_ptr<LiveKitCpp::LocalVid
     if (sdkTrack && !_camera._track) {
         _camera._track = addVideo<LocalVideoTrack>(sdkTrack);
         if (_camera._track) {
+            _camera._track->setFilter(_videoFilter);
             _camera._track->setDeviceInfo(_camera._deviceinfo);
             _camera._track->setMuted(_camera._muted);
             QObject::connect(_camera._track, &LocalVideoTrack::deviceInfoChanged,
@@ -74,6 +75,7 @@ void LocalParticipant::activateSharing(const std::shared_ptr<LiveKitCpp::LocalVi
     if (sdkTrack && !_sharing._track) {
         _sharing._track = addVideo<LocalVideoTrack>(sdkTrack);
         if (_sharing._track) {
+            _sharing._track->setFilter(_videoFilter);
             _sharing._track->setDeviceInfo(_sharing._deviceinfo);
             _sharing._track->setMuted(_sharing._muted);
             QObject::connect(_sharing._track, &LocalVideoTrack::deviceInfoChanged,
@@ -164,6 +166,20 @@ void LocalParticipant::setSharingMuted(bool muted)
 void LocalParticipant::setMicrophoneMuted(bool muted)
 {
     setMuted(&_microphone, muted, &LocalParticipant::microphoneMutedChanged);
+}
+
+void LocalParticipant::setVideoFilter(const QString& filter)
+{
+    if (filter != _videoFilter) {
+        _videoFilter = filter;
+        if (_camera._track) {
+            _camera._track->setFilter(filter);
+        }
+        if (_sharing._track) {
+            _sharing._track->setFilter(filter);
+        }
+        emit videoFilterChanged();
+    }
 }
 
 void LocalParticipant::onCameraDeviceInfoChanged()

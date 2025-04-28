@@ -3,9 +3,28 @@
 
 // https://stackoverflow.com/a/21301895/29318346
 QT_BEGIN_NAMESPACE
-    Q_GUI_EXPORT extern void qt_blurImage(QPainter *p, QImage &blurImage, qreal radius,
-                                          bool quality, bool alphaOnly, int transposed = 0);
+Q_GUI_EXPORT extern void qt_blurImage(QPainter *p, QImage &blurImage, qreal radius,
+                                      bool quality, bool alphaOnly, int transposed = 0);
 QT_END_NAMESPACE
+
+BlurVideofilter::BlurVideofilter(QObject* parent)
+    : VideoFilter(blurFilterName(), parent)
+{
+}
+
+void BlurVideofilter::setQuality(bool quality)
+{
+    if (quality != _quality.exchange(quality)) {
+        emit qualityChanged();
+    }
+}
+
+void BlurVideofilter::setRadius(qreal radius)
+{
+    if (!qFuzzyCompare(radius, _radius.exchange(radius))) {
+        emit radiusChanged();
+    }
+}
 
 void BlurVideofilter::processFrame(QImage&& image)
 {

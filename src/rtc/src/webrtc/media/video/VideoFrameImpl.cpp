@@ -53,13 +53,14 @@ protected:
                              VideoFrameBufferPool framesPool = {});
 };
 
-class ExternalNativeBuffer : public ExternalVideoFrameBuffer<NativeVideoFrameBuffer>
+class ExternalMJpegBuffer : public ExternalVideoFrameBuffer<NativeVideoFrameBuffer>
 {
+    using Base = ExternalVideoFrameBuffer<NativeVideoFrameBuffer>;
 public:
-    ExternalNativeBuffer(const std::shared_ptr<VideoFrame>& frame,
-                         VideoFrameBufferPool framesPool = {});
+    ExternalMJpegBuffer(const std::shared_ptr<VideoFrame>& frame,
+                        VideoFrameBufferPool framesPool = {});
     // impl. of NativeVideoFrameBuffer
-    VideoFrameType nativeType() const final { return frame()->type(); }
+    VideoFrameType nativeType() const final { return VideoFrameType::MJPEG; }
     int stride(size_t planeIndex) const final { return frame()->stride(planeIndex); }
     const std::byte* data(size_t planeIndex) const final { return frame()->data(planeIndex); }
     int dataSize(size_t planeIndex) const final { return frame()->dataSize(planeIndex); }
@@ -263,8 +264,10 @@ std::optional<webrtc::VideoFrame> VideoFrameImpl::create(const std::shared_ptr<V
                     case VideoFrameType::I410:
                         buffer = webrtc::make_ref_counted<ExternalI410Buffer>(frame, std::move(framesPool));
                         break;
+                    case VideoFrameType::MJPEG:
+                        buffer = webrtc::make_ref_counted<ExternalMJpegBuffer>(frame, std::move(framesPool));
+                        break;
                     default:
-                        buffer = webrtc::make_ref_counted<ExternalNativeBuffer>(frame, std::move(framesPool));
                         break;
                 }
             }
@@ -749,6 +752,7 @@ bool isRGB(VideoFrameType type)
         case VideoFrameType::ARGB32:
         case VideoFrameType::RGBA32:
         case VideoFrameType::ABGR32:
+        case VideoFrameType::RGB565:
             return true;
         default:
             break;
@@ -778,16 +782,22 @@ ExternalVideoFrameBuffer<TBaseBuffer>::ExternalVideoFrameBuffer(const std::share
 {
 }
 
-ExternalNativeBuffer::ExternalNativeBuffer(const std::shared_ptr<VideoFrame>& frame,
+ExternalMJpegBuffer::ExternalMJpegBuffer(const std::shared_ptr<VideoFrame>& frame,
                                            VideoFrameBufferPool framesPool)
-    : ExternalVideoFrameBuffer<NativeVideoFrameBuffer>(frame, std::move(framesPool))
+    : Base(frame, std::move(framesPool))
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalNativeBuffer::convertToI420() const
+rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalMJpegBuffer::convertToI420() const
 {
-    if (const auto i420 = frame()->convertToI420()) {
-        return webrtc::make_ref_counted<ExternalI420Buffer>(i420);
+    auto i420 = createI420(width(), height());
+    if (i420 && 0 == libyuv::MJPGToI420(Base::data<uint8_t>(0U), dataSize(0),
+                                        i420->MutableDataY(), i420->StrideY(),
+                                        i420->MutableDataU(), i420->StrideU(),
+                                        i420->MutableDataV(), i420->StrideV(),
+                                        width(), height(),
+                                        i420->width(), i420->height())) {
+        return i420;
     }
     return {};
 }

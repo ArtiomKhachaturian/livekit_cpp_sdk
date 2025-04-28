@@ -1,0 +1,213 @@
+// Copyright 2025 Artiom Khachaturian
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#pragma once // VideoFrameQtHelper.h
+#if __has_include(<QVideoFrame>)
+#include "livekit/rtc/media/VideoFrame.h"
+#include "livekit/rtc/media/qt/VideoFormatsQt.h"
+#include <QAbstractVideoBuffer> // since QT 6.8
+#include <QImage>
+#include <memory>
+
+namespace LiveKitCpp
+{
+
+// API
+class QtVideoBuffer : public QAbstractVideoBuffer
+{
+public:
+    QtVideoBuffer(std::shared_ptr<VideoFrame> frame);
+    bool valid() const;
+    int rotation() const { return _frame ? _frame->rotation() : 0; }
+    int64_t timestamp() const { return _frame ? _frame->timestampUs() : 0LL; }
+    // impl. of QAbstractVideoBuffer
+    MapData map(QVideoFrame::MapMode mode) final;
+    void unmap() final {}
+    QVideoFrameFormat format() const final;
+private:
+    std::shared_ptr<VideoFrame> _frame;
+    QVideoFrameFormat::PixelFormat _format = QVideoFrameFormat::Format_Invalid;
+};
+
+template <class TQtData>
+class VideoFrameQtData : public VideoFrame
+{
+public:
+    // impl. of VideoFrame
+    int width() const final { return _data.width(); }
+    int height() const final { return _data.height(); }
+protected:
+    VideoFrameQtData(TQtData data, VideoFrameType type, int rotation, int64_t timestampUs = 0LL);
+protected:
+    const TQtData _data;
+};
+
+QVideoFrame convert(std::shared_ptr<VideoFrame> frame);
+
+class QImageVideoFrame : public VideoFrameQtData<QImage>
+{
+public:
+    static std::shared_ptr<VideoFrame> create(QImage&& data, int rotation = 0,
+                                              int64_t timestampUs = 0LL);
+    // impl. of VideoFrame
+    size_t planesCount() const final { return 1U; }
+    int stride(size_t planeIndex) const final;
+    const std::byte* data(size_t planeIndex) const final;
+    int dataSize(size_t planeIndex) const final;
+private:
+    QImageVideoFrame(QImage data, VideoFrameType type, int rotation, int64_t timestampUs);
+};
+
+// implementation
+inline QtVideoBuffer::QtVideoBuffer(std::shared_ptr<VideoFrame> frame)
+{
+    if (frame) {
+        auto format = toQVideoPixelFormat(frame->type());
+        if (QVideoFrameFormat::Format_Invalid == format) {
+            frame = frame->convertToI420();
+            if (frame) {
+                format = toQVideoPixelFormat(frame->type());
+            }
+        }
+        if (QVideoFrameFormat::Format_Invalid != format) {
+            _format = format;
+            _frame = std::move(frame);
+        }
+    }
+}
+
+inline bool QtVideoBuffer::valid() const
+{
+    if (_frame && QVideoFrameFormat::Format_Invalid != _format) {
+        return _frame->planesCount() > 0U;
+    }
+    return false;
+}
+
+inline QAbstractVideoBuffer::MapData QtVideoBuffer::map(QVideoFrame::MapMode mode)
+{
+    MapData mapdata;
+    if (_frame && QVideoFrame::MapMode::ReadOnly == (mode & QVideoFrame::MapMode::ReadOnly)) {
+        if (const auto planes = _frame->planesCount()) {
+            mapdata.planeCount = static_cast<int>(planes);
+            for (size_t i = 0U; i < planes; ++i) {
+                mapdata.bytesPerLine[i] = _frame->stride(i);
+                const auto data = reinterpret_cast<const uchar*>(_frame->data(i));
+                mapdata.data[i] = const_cast<uchar*>(data);
+                mapdata.dataSize[i] = _frame->dataSize(i);
+            }
+        }
+    }
+    return mapdata;
+}
+
+inline QVideoFrameFormat QtVideoBuffer::format() const
+{
+    if (_frame && QVideoFrameFormat::Format_Invalid != _format) {
+        return QVideoFrameFormat(QSize(_frame->width(), _frame->height()), _format);
+    }
+    return {};
+}
+
+inline QVideoFrame convert(std::shared_ptr<VideoFrame> frame)
+{
+    if (frame) {
+        auto buffer = std::make_unique<QtVideoBuffer>(std::move(frame));
+        if (buffer->valid()) {
+            const auto rotation = buffer->rotation();
+            const auto timestamp = buffer->timestamp();
+            QVideoFrame rtcFrame(std::move(buffer));
+            switch (rotation) {
+                case 90:
+                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise90);
+                    break;
+                case 180:
+                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise180);
+                    break;
+                case 270:
+                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise270);
+                    break;
+                default:
+                    break;
+            }
+            rtcFrame.setStartTime(timestamp);
+            return rtcFrame;
+        }
+    }
+    return {};
+}
+
+template <class TQtData>
+inline VideoFrameQtData<TQtData>::VideoFrameQtData(TQtData data,
+                                                   VideoFrameType type,
+                                                   int rotation,
+                                                   int64_t timestampUs)
+    : VideoFrame(type, rotation, timestampUs)
+    , _data(std::move(data))
+{
+}
+
+inline QImageVideoFrame::QImageVideoFrame(QImage data,
+                                          VideoFrameType type,
+                                          int rotation,
+                                          int64_t timestampUs)
+    : VideoFrameQtData<QImage>(std::move(data), type, rotation, timestampUs)
+{
+}
+
+inline int QImageVideoFrame::stride(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return _data.bytesPerLine();
+    }
+    return 0;
+}
+
+inline const std::byte* QImageVideoFrame::data(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return reinterpret_cast<const std::byte*>(_data.bits());
+    }
+    return nullptr;
+}
+
+inline int QImageVideoFrame::dataSize(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return _data.sizeInBytes();
+    }
+    return 0;
+}
+
+inline std::shared_ptr<VideoFrame> QImageVideoFrame::create(QImage&& data,
+                                                            int rotation,
+                                                            int64_t timestampUs)
+{
+    std::shared_ptr<VideoFrame> frame;
+    if (!data.isNull()) {
+        auto type = fromQImageFormat(data.format());
+        if (!type) {
+            data = data.convertToFormat(QImage::Format_RGB888);
+            type = fromQImageFormat(data.format());
+        }
+        if (type) {
+            frame.reset(new QImageVideoFrame(std::move(data),
+                                             type.value(),
+                                             rotation, timestampUs));
+        }
+    }
+    return frame;
+}
+
+} // namespace LiveKitCpp
+#endif

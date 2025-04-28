@@ -39,7 +39,6 @@ public:
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     bool stats(int& inputWidth, int& inputHeight) const;
-    uint16_t lastFrameId() const noexcept { return _lastFrameId; }
     VideoContentHint contentHint() const { return _contentHint; }
     void setContentHint(VideoContentHint hint);
     MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }
@@ -77,7 +76,7 @@ protected:
     void OnDiscardedFrame() override;
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& c) override;
 private:
-    void resetStats();
+    void resetStats() { _lastResolution = 0ULL; }
     void broadcast(const webrtc::VideoFrame& frame);
     bool broadcastToFilter(const webrtc::VideoFrame& frame) const;
     // impl. of VideoSink
@@ -89,7 +88,6 @@ private:
     Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
     Bricks::SafeObj<VideoOptions> _options;
     std::atomic<uint64_t> _lastResolution = 0ULL;
-    std::atomic<uint16_t> _lastFrameId = 0U;
     std::atomic<VideoContentHint> _contentHint = VideoContentHint::None;
 };
 

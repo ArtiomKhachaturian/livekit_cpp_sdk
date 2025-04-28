@@ -34,6 +34,7 @@ class LocalParticipant : public Participant
     Q_PROPERTY(bool cameraMuted READ cameraMuted WRITE setCameraMuted NOTIFY cameraMutedChanged FINAL)
     Q_PROPERTY(bool sharingMuted READ sharingMuted WRITE setSharingMuted NOTIFY sharingMutedChanged FINAL)
     Q_PROPERTY(bool microphoneMuted READ microphoneMuted WRITE setMicrophoneMuted NOTIFY microphoneMutedChanged FINAL)
+    Q_PROPERTY(QString videoFilter READ videoFilter WRITE setVideoFilter NOTIFY videoFilterChanged FINAL)
 private:
     template <typename TOptions, class TTrack> struct Element {
         // members
@@ -90,6 +91,7 @@ public:
     bool cameraMuted() const { return _camera.trackIsMuted(); }
     bool sharingMuted() const { return _sharing.trackIsMuted(); }
     bool microphoneMuted() const { return _microphone.trackIsMuted(); }
+    const auto& videoFilter() const noexcept { return _videoFilter; }
     // overrides of Participant
     QString sid() const final { return _sid; }
     QString identity() const final { return _identity; }
@@ -103,6 +105,7 @@ public slots:
     void setCameraMuted(bool muted);
     void setSharingMuted(bool muted);
     void setMicrophoneMuted(bool muted);
+    void setVideoFilter(const QString& filter);
 signals:
     void activeCameraChanged();
     void activeSharingChanged();
@@ -115,6 +118,7 @@ signals:
     void sharingDeviceInfoChanged();
     void microphoneMutedChanged();
     void microphoneOptionsChanged();
+    void videoFilterChanged();
 private slots:
     void onCameraDeviceInfoChanged();
     void onCameraOptionsChanged();
@@ -138,6 +142,7 @@ private:
     AudioElement _microphone;
     VideoElement _camera;
     VideoElement _sharing;
+    QString _videoFilter;
     SafeObj<QString> _sid;
     SafeObj<QString> _identity;
     SafeObj<QString> _name;
