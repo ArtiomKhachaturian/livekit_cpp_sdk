@@ -17,6 +17,7 @@
 #include "MediaTimer.h"
 #include "SafeObj.h"
 #include "VideoUtils.h"
+#include "RtcUtils.h"
 #include "Utils.h"
 #include <atomic>
 #include <type_traits>

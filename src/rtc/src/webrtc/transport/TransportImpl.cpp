@@ -15,7 +15,7 @@
 #include "DataChannel.h"
 #include "PeerConnectionFactory.h"
 #include "TransportListener.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "livekit/signaling/sfu/SignalTarget.h"
 
 namespace LiveKitCpp

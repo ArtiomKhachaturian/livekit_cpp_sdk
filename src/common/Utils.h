@@ -13,20 +13,13 @@
 // limitations under the License.
 #pragma once // Utils.h
 #include "SafeObj.h"
-#ifdef WEBRTC_MAC
-#include "CFAutoRelease.h"
-#endif
-#include <api/media_types.h>
-#include <api/peer_connection_interface.h>
-#include <api/task_queue/task_queue_base.h>
-#include <modules/desktop_capture/desktop_capture_types.h>
 #include <memory>
-#ifdef WEBRTC_MAC
+#ifdef __APPLE__
 #include <CoreMedia/CMTime.h>
 #include <CoreGraphics/CGDirectDisplay.h>
 #elif defined(_WIN32)
 #include <Windows.h>
-#endif // WEBRTC_MAC
+#endif // __APPLE__
 #include <algorithm>
 #include <atomic>
 #include <optional>
@@ -34,7 +27,7 @@
 #include <sstream>
 #include <vector>
 
-#ifdef WEBRTC_MAC
+#ifdef __APPLE__
 #ifdef __OBJC__
 @class NSString;
 @class NSError;
@@ -42,24 +35,17 @@
 typedef struct objc_object NSString;
 typedef struct objc_object NSError;
 #endif
-#endif // WEBRTC_MAC
+#endif // __APPLE__
 
 namespace LiveKitCpp
 {
 
-enum class DisconnectReason;
-enum class LiveKitError;
-enum class TrackType;
-
-#ifdef WEBRTC_MAC
+#ifdef __APPLE__
 std::string fromNSString(NSString* nsString);
 NSString* toNSString(std::string_view string);
 std::string toString(NSError* error);
 // timestamps
 // return zero if failed
-int64_t cmTimeToMicro(const CMTime& time);
-int32_t cmTimeToMilli(const CMTime& time);
-CFStringRefAutoRelease stringToCFString(std::string_view str);
 bool compareCFStrings(CFStringRef s1, CFStringRef s2, bool caseInsensitive);
 std::string stringFromCFString(CFStringRef str);
 #elif defined(_WIN32)
@@ -91,8 +77,6 @@ inline constexpr bool testFlag(unsigned flags) { return flag == (flag & flags); 
 inline constexpr uint64_t clueToUint64(int32_t i32hw, int32_t i32lw) { return (uint64_t(i32hw) << 32) | i32lw; }
 inline constexpr int32_t extractHiWord(uint64_t i64) { return int32_t(i64 >> 32); }
 inline constexpr int32_t extractLoWord(uint64_t i64) { return int32_t(i64 & 0xffffffffUL); }
-
-std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
 
 template <typename T>
 inline std::string toHexValue(T value) {
@@ -160,30 +144,5 @@ inline size_t hashCombineRange(InputIt first, InputIt last) {
 }
 
 uint16_t checksumISO3309(const uint8_t* data, size_t len);
-
-TrackType mediaTypeToTrackType(cricket::MediaType type);
-std::string fourccToString(int fourcc);
-std::string makeUuid();
-// human readable string for reflect of changes for some types
-std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,
-                                   webrtc::PeerConnectionInterface::PeerConnectionState to);
-std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceConnectionState from,
-                                   webrtc::PeerConnectionInterface::IceConnectionState to);
-std::string makeStateChangesString(webrtc::PeerConnectionInterface::SignalingState from,
-                                   webrtc::PeerConnectionInterface::SignalingState to);
-std::string makeStateChangesString(webrtc::PeerConnectionInterface::IceGatheringState from,
-                                   webrtc::PeerConnectionInterface::IceGatheringState to);
-std::string makeStateChangesString(webrtc::TaskQueueBase::DelayPrecision from,
-                                   webrtc::TaskQueueBase::DelayPrecision to);
-// task queue helpers
-std::unique_ptr<webrtc::TaskQueueFactory> createTaskQueueFactory(const webrtc::FieldTrialsView* fieldTrials = nullptr);
-std::shared_ptr<webrtc::TaskQueueBase>
-    createTaskQueueS(absl::string_view queueName = {},
-                     webrtc::TaskQueueFactory::Priority priority = webrtc::TaskQueueFactory::Priority::LOW,
-                     const webrtc::FieldTrialsView* fieldTrials = nullptr);
-std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
-    createTaskQueueU(absl::string_view queueName = {},
-                     webrtc::TaskQueueFactory::Priority priority = webrtc::TaskQueueFactory::Priority::LOW,
-                     const webrtc::FieldTrialsView* fieldTrials = nullptr);
 
 } // namespace LiveKitCpp

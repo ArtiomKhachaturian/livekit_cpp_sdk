@@ -14,7 +14,7 @@
 #include "DataChannelsStorage.h"
 #include "DataExchangeListener.h"
 #include "DataChannelListener.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "livekit/signaling/SignalClient.h"
 #include "livekit/signaling/sfu/ChatMessage.h"
 #include "livekit/signaling/sfu/DataPacket.h"

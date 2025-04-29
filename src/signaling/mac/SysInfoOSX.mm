@@ -12,28 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "SysInfo.h"
+#include "Utils.h"
 #include "livekit/signaling/NetworkType.h"
 #import <Foundation/Foundation.h>
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <CoreWLAN/CoreWLAN.h>
-
-namespace {
-
-inline std::string fromNSString(NSString* nsString)
-{
-    if (nsString) {
-        @autoreleasepool {
-            NSData* charData = [nsString dataUsingEncoding:NSUTF8StringEncoding];
-            if (charData) {
-                return std::string(reinterpret_cast<const char *>(charData.bytes),
-                                   charData.length);
-            }
-        }
-    }
-    return {};
-}
-
-}
 
 namespace LiveKitCpp
 {

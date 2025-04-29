@@ -32,7 +32,7 @@
 #include "WebsocketEndPoint.h"
 #include "WebsocketFactory.h"
 #include "VolumeControl.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "livekit/signaling/NetworkType.h"
 #include "livekit/rtc/e2e/KeyProviderOptions.h"
 #include "livekit/rtc/e2e/KeyProvider.h"

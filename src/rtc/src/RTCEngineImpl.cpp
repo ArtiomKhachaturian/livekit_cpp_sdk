@@ -19,7 +19,7 @@
 #include "RoomUtils.h"
 #include "TransportManager.h"
 #include "WebsocketEndPoint.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "livekit/rtc/SessionListener.h"
 #include "livekit/rtc/SessionListener.h"
 #include "livekit/rtc/LiveKitError.h"

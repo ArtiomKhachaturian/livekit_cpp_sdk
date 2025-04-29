@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "CameraManager.h"
 #include "CameraCapturer.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <modules/video_capture/video_capture_config.h>
 #include <cassert>

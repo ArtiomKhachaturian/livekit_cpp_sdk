@@ -14,7 +14,7 @@
 #include "PeerConnectionFactory.h"
 #include "WebRtcLogSink.h"
 #include "Logger.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "ThreadUtils.h"
 #include "AdmProxy.h"
 #include "AdmProxyFacade.h"

@@ -50,12 +50,15 @@ find_package(Protobuf 5.29.3 CONFIG REQUIRED)
 # common sources for both librarires
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
 file(GLOB_RECURSE BRICKS_API_HEADERS ${CMAKE_SOURCE_DIR}/bricks/include/*.${HEADER_FILE_EXT})
+file(GLOB_RECURSE COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/common/*.${HEADER_FILE_EXT})
+file(GLOB_RECURSE COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/common/*.${SOURCE_FILE_EXT})
+file(GLOB_RECURSE COMMON_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/common/*.${PLATFORM_SRC_EXT})
 
 if(APPLE)
     set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
 endif(APPLE)
 
-set(ABSL_PCH_FILE ${CMAKE_SOURCE_DIR}/src/signaling/src/AbslAliasing.h)
+set(ABSL_PCH_FILE ${CMAKE_SOURCE_DIR}/src/common/AbslAliasing.h)
 
 function(recreateDir DIR)
     if (EXISTS ${DIR})
@@ -117,12 +120,11 @@ file(GLOB_RECURSE SIGNALING_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/src
 file(GLOB SIGNALING_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
 file(GLOB SIGNALING_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 
-if (WIN32)
-    list(APPEND SIGNALING_COMMON_HEADERS ${ABSL_PCH_FILE})
-endif(WIN32)
-
 # Create a shared library
 add_library(${SIGNALING_LIB} SHARED
+    ${COMMON_HEADERS}
+    ${COMMON_SOURCES}
+    ${COMMON_PLATFORM_SOURCES}
     ${SIGNALING_PUBLIC_HEADERS}
     ${SIGNALING_COMMON_HEADERS}
     ${SIGNALING_COMMON_SOURCES}
@@ -142,6 +144,8 @@ endif()
 
 protobuf_generate(TARGET ${SIGNALING_LIB} APPEND_PATH ${PROTO_IMPORT_DIRS} OUT_VAR PROTO_CPP IMPORT_DIRS ${PROTO_IMPORT_DIRS})
 
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/common PREFIX "Common" FILES ${COMMON_HEADERS} ${COMMON_SOURCES} ${COMMON_PLATFORM_SOURCES})
+
 source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsAPI" FILES ${WEBSOCKETS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
 
@@ -159,6 +163,7 @@ target_include_directories(${SIGNALING_LIB} PRIVATE
     ${CMAKE_SOURCE_DIR}/bricks/include/listeners
     ${CMAKE_SOURCE_DIR}/bricks/include/logger
     ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
+    ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/signaling/src
     ${CMAKE_SOURCE_DIR}/websockets_api/include
     ${CMAKE_BINARY_DIR}
@@ -276,6 +281,9 @@ if (WEBRTC_AVAILABLE)
 
     # Create a shared library
     add_library(${RTC_LIB} SHARED
+        ${COMMON_HEADERS}
+        ${COMMON_SOURCES}
+        ${COMMON_PLATFORM_SOURCES} 
         ${RTC_PUBLIC_HEADERS}
         ${RTC_COMMON_HEADERS}
         ${RTC_COMMON_SOURCES}
@@ -287,6 +295,8 @@ if (WEBRTC_AVAILABLE)
     if (APPLE)
         signDylib(${RTC_LIB})
     endif(APPLE)
+
+    target_precompile_headers(${RTC_LIB} PRIVATE ${ABSL_PCH_FILE})
 
     source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/rtc PREFIX "RtcApi" FILES ${RTC_PUBLIC_HEADERS})
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/src PREFIX "Rtc" FILES ${RTC_COMMON_HEADERS} 
@@ -302,6 +312,7 @@ if (WEBRTC_AVAILABLE)
         ${CMAKE_SOURCE_DIR}/bricks/include/logger
         ${CMAKE_SOURCE_DIR}/bricks/include/threadsafety
         ${CMAKE_SOURCE_DIR}/websockets_api/include
+        ${CMAKE_SOURCE_DIR}/src/common
         ${RTC_SRC_DIR}
         ${RTC_SRC_DIR}/src/utils
         ${RTC_SRC_DIR}/src/stats

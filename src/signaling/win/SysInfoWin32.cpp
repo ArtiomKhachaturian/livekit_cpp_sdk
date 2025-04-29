@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "SysInfo.h"
+#include "Utils.h"
 #include "livekit/signaling/NetworkType.h"
-#include <codecvt>
-#include <locale>
 #include <atlbase.h>
 #include <Windows.h>
 #include <wbemidl.h>
@@ -32,17 +31,6 @@ public:
 private:
     const HRESULT _hr;
 };
-
-using ConvertType = std::codecvt_utf8<wchar_t>;
-
-inline std::string fromWideChar(const std::wstring& w)
-{
-    if (!w.empty()) {
-        std::wstring_convert<ConvertType, wchar_t> converter;
-        return converter.to_bytes(w);
-    }
-    return {};
-}
 
 }
 

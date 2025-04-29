@@ -12,23 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
-#include <rtc_base/time_utils.h>
-#include <api/units/timestamp.h>
-#include <optional>
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
-
-namespace {
-
-inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
-{
-    if (0 != CMTimeCompare(kCMTimeInvalid, time) && (time.flags & kCMTimeFlags_Valid)) {
-        return webrtc::Timestamp::Seconds(CMTimeGetSeconds(time));
-    }
-    return std::nullopt;
-}
-
-}
 
 namespace LiveKitCpp
 {
@@ -63,33 +48,7 @@ std::string toString(NSError* error)
     if (error) {
         return fromNSString(error.localizedDescription);
     }
-    return std::string();
-}
-
-int64_t cmTimeToMicro(const CMTime& time)
-{
-    const auto ts = toTimestamp(time);
-    if (ts.has_value()) {
-        return ts->us<int64_t>();
-    }
-    return 0LL;
-}
-
-int32_t cmTimeToMilli(const CMTime& time)
-{
-    const auto ts = toTimestamp(time);
-    if (ts.has_value()) {
-        return ts->ms<int32_t>();
-    }
-    return 0;
-}
-
-CFStringRefAutoRelease stringToCFString(std::string_view str)
-{
-    if (!str.empty()) {
-        return CFStringCreateWithCString(kCFAllocatorDefault, str.data(), kCFStringEncodingUTF8);
-    }
-    return nullptr;
+    return {};
 }
 
 bool compareCFStrings(CFStringRef s1, CFStringRef s2, bool caseInsensitive)
@@ -121,7 +80,7 @@ std::string stringFromCFString(CFStringRef str)
             }
         }
     }
-    return std::string();
+    return {};
 }
 
 } // namespace LiveKitCpp

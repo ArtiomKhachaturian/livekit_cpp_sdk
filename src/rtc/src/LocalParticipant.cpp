@@ -17,7 +17,7 @@
 #include "Blob.h"
 #include "LocalVideoDeviceImpl.h"
 #include "DataChannel.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "PeerConnectionFactory.h"
 #include "livekit/signaling/sfu/ParticipantInfo.h"
 

@@ -18,7 +18,7 @@
 #include "AesCgmCryptor.h"
 #include "Listeners.h"
 #include "Seq.h"
-#include "Utils.h"
+#include "RtcUtils.h"
 #include "e2e/AesCgmCryptorObserver.h"
 #include "livekit/rtc/e2e/E2ECryptoError.h"
 #include <api/media_stream_interface.h>

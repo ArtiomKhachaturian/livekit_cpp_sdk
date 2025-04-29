@@ -16,6 +16,7 @@
 #include "PeerConnectionFactory.h"
 #include "RoomUtils.h"
 #include "DataChannel.h"
+#include "RtcUtils.h"
 #include "Utils.h"
 
 namespace {
