@@ -18,6 +18,10 @@
 #if __has_include(<QAbstractVideoBuffer>)
 #include <QAbstractVideoBuffer> // since QT 6.8
 #define HAS_ABSTRACT_VIDEO_BUFFER
+#elif __has_include(<private/qabstractvideobuffer_p.h>)
+#include <private/qabstractvideobuffer_p.h>
+#define HAS_ABSTRACT_VIDEO_BUFFER
+#define DEPRECATED_ABSTRACT_VIDEO_BUFFER
 #endif
 #include <QImage>
 #include <memory>
@@ -35,11 +39,18 @@ public:
     // impl. of QAbstractVideoBuffer
     MapData map(QVideoFrame::MapMode mode) final;
     void unmap() final {}
+#ifdef DEPRECATED_ABSTRACT_VIDEO_BUFFER
+    QVideoFrameFormat format() const;
+#else
     QVideoFrameFormat format() const final;
+#endif
 private:
     std::shared_ptr<VideoFrame> _frame;
     QVideoFrameFormat::PixelFormat _format = QVideoFrameFormat::Format_Invalid;
 };
+
+QVideoFrame convert(std::shared_ptr<VideoFrame> frame);
+
 #endif
 
 template <class TQtData>
@@ -54,8 +65,6 @@ protected:
 protected:
     const TQtData _data;
 };
-
-QVideoFrame convert(std::shared_ptr<VideoFrame> frame);
 
 class QImageVideoFrame : public VideoFrameQtData<QImage>
 {
@@ -74,6 +83,9 @@ private:
 // implementation
 #ifdef HAS_ABSTRACT_VIDEO_BUFFER
 inline QtVideoBuffer::QtVideoBuffer(std::shared_ptr<VideoFrame> frame)
+#ifdef DEPRECATED_ABSTRACT_VIDEO_BUFFER
+    : QAbstractVideoBuffer(QVideoFrame::HandleType::NoHandle)
+#endif
 {
     if (frame) {
         auto format = toQVideoPixelFormat(frame->type());
@@ -103,12 +115,20 @@ inline QAbstractVideoBuffer::MapData QtVideoBuffer::map(QVideoFrame::MapMode mod
     MapData mapdata;
     if (_frame && QVideoFrame::MapMode::ReadOnly == (mode & QVideoFrame::MapMode::ReadOnly)) {
         if (const auto planes = _frame->planesCount()) {
+#ifdef DEPRECATED_ABSTRACT_VIDEO_BUFFER
+            mapdata.nPlanes = static_cast<int>(planes);
+#else
             mapdata.planeCount = static_cast<int>(planes);
+#endif
             for (size_t i = 0U; i < planes; ++i) {
                 mapdata.bytesPerLine[i] = _frame->stride(i);
                 const auto data = reinterpret_cast<const uchar*>(_frame->data(i));
                 mapdata.data[i] = const_cast<uchar*>(data);
+#ifdef DEPRECATED_ABSTRACT_VIDEO_BUFFER
+                mapdata.size[i] = _frame->dataSize(i);
+#else
                 mapdata.dataSize[i] = _frame->dataSize(i);
+#endif
             }
         }
     }
@@ -122,39 +142,40 @@ inline QVideoFrameFormat QtVideoBuffer::format() const
     }
     return {};
 }
-#endif
 
 inline QVideoFrame convert(std::shared_ptr<VideoFrame> frame)
 {
-    QVideoFrame output;
     if (frame) {
         const auto rotation = frame->rotation();
         const auto timestamp = frame->timestampUs();
-#ifdef HAS_ABSTRACT_VIDEO_BUFFER
         auto buffer = std::make_unique<QtVideoBuffer>(std::move(frame));
         if (buffer->valid()) {
-            output = QVideoFrame(std::move(buffer));
-        }
+#ifdef DEPRECATED_ABSTRACT_VIDEO_BUFFER
+            const auto format = buffer->format();
+            QVideoFrame output(buffer.release(), format);
+#else
+            QVideoFrame output(std::move(buffer));
 #endif
-        if (output.isValid()) {
             switch (rotation) {
-                case 90:
-                    output.setRotation(QtVideo::Rotation::Clockwise90);
-                    break;
-                case 180:
-                    output.setRotation(QtVideo::Rotation::Clockwise180);
-                    break;
-                case 270:
-                    output.setRotation(QtVideo::Rotation::Clockwise270);
-                    break;
-                default:
-                    break;
+            case 90:
+                output.setRotation(QtVideo::Rotation::Clockwise90);
+                break;
+            case 180:
+                output.setRotation(QtVideo::Rotation::Clockwise180);
+                break;
+            case 270:
+                output.setRotation(QtVideo::Rotation::Clockwise270);
+                break;
+            default:
+                break;
             }
             output.setStartTime(timestamp);
+                return output;
         }
     }
-    return output;
+    return {};
 }
+#endif
 
 template <class TQtData>
 inline VideoFrameQtData<TQtData>::VideoFrameQtData(TQtData data,

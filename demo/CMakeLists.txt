@@ -109,7 +109,10 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE LiveKitClient::Signaling LiveKitClient::Rtc ZaphoydTppWebsockets)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Quick Qt6::QuickControls2 Qt6::Multimedia
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Quick
+                                             Qt6::QuickControls2
+                                             Qt6::Multimedia
+                                             Qt6::MultimediaPrivate
                                              LiveKitClient::Signaling
                                              LiveKitClient::Rtc
                                              ZaphoydTppWebsockets)
