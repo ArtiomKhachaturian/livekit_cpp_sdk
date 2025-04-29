@@ -22,10 +22,13 @@ namespace webrtc {
 class VideoCaptureModule;
 }
 
+namespace Bricks {
+class Logger;
+}
+
 namespace LiveKitCpp 
 {
 
-class CapturerObserver;
 class CameraCapturer;
 struct MediaDeviceInfo;
 
@@ -36,8 +39,9 @@ class WinCameraPool
     class CameraWrapper;
 public:
     static ::rtc::scoped_refptr<CameraCapturer>
-        create(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool = {},
-               CapturerObserver* observer = nullptr);
+        create(const MediaDeviceInfo& device, 
+               VideoFrameBufferPool framesPool = {},
+               const std::shared_ptr<Bricks::Logger>& logger = {});
 private:
     static const std::shared_ptr<Impl>& implementation();
 };

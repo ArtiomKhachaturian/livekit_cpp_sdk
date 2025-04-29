@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // TransportListener.h
+#include "DataChannel.h"
 #include <api/jsep.h>
 #include <api/peer_connection_interface.h>
 #include <memory>
@@ -20,7 +21,6 @@ namespace LiveKitCpp
 {
 
 class Transport;
-class DataChannel;
 enum class SignalTarget;
 
 /**

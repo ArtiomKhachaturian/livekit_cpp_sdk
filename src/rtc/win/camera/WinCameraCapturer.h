@@ -15,6 +15,7 @@
 #ifdef WEBRTC_WIN
 #include "CameraCapturer.h"
 #include "CapturedFrameReceiver.h"
+#include "Loggable.h"
 #include "SafeObjAliases.h"
 #include "Listener.h"
 #include <atlbase.h> //CComPtr support
@@ -28,14 +29,15 @@ class CaptureSinkFilter;
 class DVCameraConfig;
 enum class CapturerState;
 
-class WinCameraCapturer : public CameraCapturer,
+class WinCameraCapturer : public Bricks::LoggableS<CameraCapturer>,
                           private CapturedFrameReceiver
 {
     using DeviceInfoDS = webrtc::videocapturemodule::DeviceInfoDS;
 public:
     ~WinCameraCapturer() override;
     static ::rtc::scoped_refptr<CameraCapturer> 
-        create(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool = {});
+        create(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool = {},
+               const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of CameraCapturer
     void setObserver(CapturerObserver* observer) final;
     // impl. of webrtc::VideoCaptureModule
@@ -50,7 +52,8 @@ protected:
                       const CComPtr<IGraphBuilder>& graphBuilder,
                       const CComPtr<IMediaControl>& mediaControl,
                       const CComPtr<IPin>& outputCapturePin,
-                      VideoFrameBufferPool framesPool);
+                      VideoFrameBufferPool framesPool,
+                      const std::shared_ptr<Bricks::Logger>& logger);
 private:
     static bool connectDVCamera(const CComPtr<IGraphBuilder>& graphBuilder,
                                 const CComPtr<IPin>& inputSendPin,

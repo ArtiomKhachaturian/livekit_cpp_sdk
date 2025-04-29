@@ -38,15 +38,16 @@ WinCameraCapturer::WinCameraCapturer(const MediaDeviceInfo& device,
                                      const CComPtr<IGraphBuilder>& graphBuilder,
                                      const CComPtr<IMediaControl>& mediaControl,
                                      const CComPtr<IPin>& outputCapturePin,
-                                     VideoFrameBufferPool framesPool)
-    : CameraCapturer(device, std::move(framesPool))
-    , _sinkFilter(new CaptureSinkFilter(this, /*logger*/nullptr))
+                                     VideoFrameBufferPool framesPool,
+                                     const std::shared_ptr<Bricks::Logger>& logger)
+    : Bricks::LoggableS<CameraCapturer>(logger, device, std::move(framesPool))
+    , _sinkFilter(new CaptureSinkFilter(this, logger))
     , _deviceInfo(std::move(deviceInfo))
     , _captureFilter(captureFilter)
     , _graphBuilder(graphBuilder)
     , _mediaControl(mediaControl)
     , _outputCapturePin(outputCapturePin)
-    , _inputSendPin(findInputSendPin(graphBuilder, _sinkFilter, /*logger*/nullptr))
+    , _inputSendPin(findInputSendPin(graphBuilder, _sinkFilter, logger))
     , _observer(nullptr)
 {
     assert(_deviceInfo);
@@ -65,7 +66,8 @@ WinCameraCapturer::~WinCameraCapturer()
 }
 
 ::rtc::scoped_refptr<CameraCapturer> WinCameraCapturer::create(const MediaDeviceInfo& device,
-                                                               VideoFrameBufferPool framesPool)
+                                                               VideoFrameBufferPool framesPool,
+                                                               const std::shared_ptr<Bricks::Logger>& logger)
 {
     const auto& guid = device._guid;
     if (guid.empty()) {
@@ -73,16 +75,16 @@ WinCameraCapturer::~WinCameraCapturer()
     }
     std::unique_ptr<DeviceInfoDS> deviceInfo(DeviceInfoDS::Create());
     if (!deviceInfo) {
-        /*if (logger) {
+        if (logger) {
             logger->logError("failed to create DS info module");
-        }*/
+        }
         return {};
     }
     const CComPtr<IBaseFilter> captureFilter = deviceInfo->GetDeviceFilter(guid.data());
     if (!captureFilter) {
-        /*if (logger) {
+        if (logger) {
             logger->logError("failed to create capture filter");
-        }*/
+        }
         return {};
     }
     CComPtr<IGraphBuilder> graphBuilder;
@@ -109,6 +111,7 @@ WinCameraCapturer::~WinCameraCapturer()
                                                                    graphBuilder,
                                                                    mediaControl,
                                                                    outputCapturePin,
+                                                                   std::move(framesPool),
                                                                    logger);
     if (!capturer->_inputSendPin) {
         return {};
