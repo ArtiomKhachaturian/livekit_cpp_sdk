@@ -58,8 +58,6 @@ if(APPLE)
     set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
 endif(APPLE)
 
-set(ABSL_PCH_FILE ${CMAKE_SOURCE_DIR}/src/common/AbslAliasing.h)
-
 function(recreateDir DIR)
     if (EXISTS ${DIR})
         file(REMOVE_RECURSE ${DIR})
@@ -120,6 +118,8 @@ file(GLOB_RECURSE SIGNALING_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/src
 file(GLOB SIGNALING_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
 file(GLOB SIGNALING_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
 
+set(ABSL_PCH_FILE ${CMAKE_SOURCE_DIR}/src/signaling/src/AbslAliasing.h)
+
 # Create a shared library
 add_library(${SIGNALING_LIB} SHARED
     ${COMMON_HEADERS}
@@ -144,7 +144,9 @@ endif()
 
 protobuf_generate(TARGET ${SIGNALING_LIB} APPEND_PATH ${PROTO_IMPORT_DIRS} OUT_VAR PROTO_CPP IMPORT_DIRS ${PROTO_IMPORT_DIRS})
 
-source_group(TREE ${CMAKE_SOURCE_DIR}/src/common PREFIX "Common" FILES ${COMMON_HEADERS} ${COMMON_SOURCES} ${COMMON_PLATFORM_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/common PREFIX "Common" FILES ${COMMON_HEADERS}
+                                                                        ${COMMON_SOURCES}
+                                                                        ${COMMON_PLATFORM_SOURCES})
 
 source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsAPI" FILES ${WEBSOCKETS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
@@ -152,7 +154,8 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRI
 source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/signaling PREFIX "SignalingApi" FILES ${SIGNALING_PUBLIC_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling/src PREFIX "Signaling" FILES ${SIGNALING_COMMON_HEADERS} 
                                                                                  ${SIGNALING_COMMON_SOURCES})
-source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER} PREFIX "Signaling" FILES ${SIGNALING_PLATFORM_HEADERS} ${SIGNALING_PLATFORM_SOURCES})
+source_group(TREE ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER} PREFIX "Signaling" FILES ${SIGNALING_PLATFORM_HEADERS}
+                                                                                                    ${SIGNALING_PLATFORM_SOURCES})
 source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "Proto/Generated" FILES ${PROTO_CPP})
 source_group(TREE ${CMAKE_BINARY_DIR} PREFIX "Proto/Sources" FILES ${PROTO_FILES})
 
@@ -299,7 +302,8 @@ if (WEBRTC_AVAILABLE)
     source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/rtc PREFIX "RtcApi" FILES ${RTC_PUBLIC_HEADERS})
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/src PREFIX "Rtc" FILES ${RTC_COMMON_HEADERS} 
                                                                          ${RTC_COMMON_SOURCES})
-    source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER} PREFIX "Rtc/${PLATFORM_SRC_FOLDER}" FILES ${RTC_PLATFORM_HEADERS} ${RTC_PLATFORM_SOURCES})
+    source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER} PREFIX "Rtc/${PLATFORM_SRC_FOLDER}" FILES ${RTC_PLATFORM_HEADERS}
+                                                                                                                   ${RTC_PLATFORM_SOURCES})
 
     set(RTC_SRC_DIR ${CMAKE_SOURCE_DIR}/src/rtc)
     # Add include directories
