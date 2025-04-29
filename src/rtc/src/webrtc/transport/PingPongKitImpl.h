@@ -38,9 +38,9 @@ private:
     // interval & timeout in milliseconds
     const uint64_t _pingInterval;
     const uint64_t _pingTimeout;
+    const uint64_t _pingTimeoutTimerId;
     Bricks::Listener<PingPongKitListener*> _listener;
     MediaTimer _pingIntervalTimer;
-    MediaTimer _pingTimeoutTimer;
 };
 
 } // namespace LiveKitCpp

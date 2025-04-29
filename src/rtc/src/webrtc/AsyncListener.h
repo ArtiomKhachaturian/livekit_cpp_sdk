@@ -104,7 +104,7 @@ template <class T, bool forcePost>
 template <typename R, class Method, typename... Args>
 inline R AsyncListener<T, forcePost>::invokeR(const Method& method, Args&&... args) const
 {
-    return _listener->invokeR<R>(method, std::forward<Args>(args)...);
+    return _listener->template invokeR<R>(method, std::forward<Args>(args)...);
 }
 
 } // namespace LiveKitCpp

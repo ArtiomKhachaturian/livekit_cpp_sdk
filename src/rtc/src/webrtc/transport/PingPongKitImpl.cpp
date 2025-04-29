@@ -23,7 +23,7 @@ PingPongKitImpl::PingPongKitImpl(uint32_t pingInterval, uint32_t pingTimeout,
     : _pingInterval(pingInterval * 1000U)
     , _pingTimeout(pingTimeout * 1000U)
     , _pingIntervalTimer(pcf, this)
-    , _pingTimeoutTimer(pcf, this)
+    , _pingTimeoutTimerId(reinterpret_cast<uint64_t>(this))
 {
 }
 
@@ -31,7 +31,6 @@ PingPongKitImpl::~PingPongKitImpl()
 {
     stop();
     _pingIntervalTimer.setCallback(nullptr);
-    _pingTimeoutTimer.setCallback(nullptr);
 }
 
 void PingPongKitImpl::start(PingPongKitListener* listener)
@@ -48,30 +47,29 @@ void PingPongKitImpl::stop()
     if (_listener) {
         _listener.reset();
         _pingIntervalTimer.stop();
-        _pingTimeoutTimer.stop();
+        _pingIntervalTimer.cancelSingleShot(_pingTimeoutTimerId);
     }
 }
 
 void PingPongKitImpl::notifyThatPongReceived()
 {
-    _pingTimeoutTimer.stop();
+    _pingIntervalTimer.cancelSingleShot(_pingTimeoutTimerId);
 }
 
 void PingPongKitImpl::onTimeout(uint64_t timerId)
 {
     if (_pingIntervalTimer.id() == timerId) {
-        _pingTimeoutTimer.stop();
+        _pingIntervalTimer.cancelSingleShot(_pingTimeoutTimerId);
         const auto ok = _listener.invokeR<bool>(&PingPongKitListener::onPingRequested);
         if (ok && _pingTimeout > 0U) {
-            _pingTimeoutTimer.start(_pingTimeout);
+            _pingIntervalTimer.singleShot(this, _pingTimeout, _pingTimeoutTimerId);
         }
         if (!ok) {
             _pingIntervalTimer.stop();
         }
     }
-    else if (_pingTimeoutTimer.id() == timerId) {
+    else if (_pingTimeoutTimerId == timerId) {
         _pingIntervalTimer.stop();
-        _pingTimeoutTimer.stop();
         _listener.invoke(&PingPongKitListener::onPongTimeout);
     }
 }
