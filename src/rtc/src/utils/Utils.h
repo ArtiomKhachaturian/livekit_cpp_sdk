@@ -73,6 +73,8 @@ bool compareCaseInsensitive(std::string_view s1, std::string_view s2);
 inline bool compareCaseSensitive(std::string_view s1, std::string_view s2) {
     return 0 == s1.compare(s2);
 }
+
+std::string toLower(std::string s);
 std::string fromWideChar(const std::wstring& w);
 std::vector<std::string> split(std::string_view s, std::string_view delim);
 std::string join(const std::vector<std::string>& strings,

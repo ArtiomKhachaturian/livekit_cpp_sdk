@@ -55,6 +55,7 @@ if(APPLE)
     set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
 endif(APPLE)
 
+set(ABSL_PCH_FILE ${CMAKE_SOURCE_DIR}/src/signaling/src/AbslAliasing.h)
 
 function(recreateDir DIR)
     if (EXISTS ${DIR})
@@ -115,6 +116,10 @@ file(GLOB_RECURSE SIGNALING_COMMON_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/src
 file(GLOB_RECURSE SIGNALING_COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/src/*.${SOURCE_FILE_EXT})
 file(GLOB SIGNALING_PLATFORM_HEADERS ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${HEADER_FILE_EXT})
 file(GLOB SIGNALING_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFORM_SRC_FOLDER}/*.${PLATFORM_SRC_EXT})
+
+if (WIN32)
+    list(APPEND SIGNALING_COMMON_HEADERS ${ABSL_PCH_FILE})
+endif(WIN32)
 
 # Create a shared library
 add_library(${SIGNALING_LIB} SHARED
@@ -179,6 +184,7 @@ target_link_libraries(${SIGNALING_LIB} PRIVATE absl::base
 target_link_libraries(${SIGNALING_LIB} PRIVATE utf8_range::utf8_validity utf8_range::utf8_range)
 # Generic attributes for the library
 set_target_properties(${SIGNALING_LIB} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
+target_precompile_headers(${SIGNALING_LIB} PRIVATE ${ABSL_PCH_FILE})
 if (WIN32)
     target_compile_definitions(${SIGNALING_LIB} PRIVATE -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS 
                                                         -DUNICODE 
@@ -202,7 +208,7 @@ set(WEBRTC_LIB_DIR CACHE PATH "Path to folder with WebRTCC static libraries")
 if (WEBRTC_INCLUDE_DIR AND WEBRTC_LIB_DIR)
     if (EXISTS ${WEBRTC_INCLUDE_DIR} AND EXISTS ${WEBRTC_LIB_DIR})
         message(STATUS "Found WebRTC")
-        set(WEBRTC_LIBS "webrtc" "common_video")
+        set(WEBRTC_LIBS "webrtc")
         if (APPLE)
             list(APPEND WEBRTC_LIBS
                 "base_native_additions_objc"
@@ -355,8 +361,10 @@ if (WEBRTC_AVAILABLE)
                                                  msdmo.lib 
                                                  avrt.lib 
                                                  strmiids.lib 
+                                                 shcore.lib
                                                  winmm.lib
                                                  windowscodecs.lib 
+                                                 dwmapi.lib 
                                                  crypt32.lib 
                                                  secur32.lib 
                                                  ws2_32.lib 

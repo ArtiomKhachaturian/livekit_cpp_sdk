@@ -43,6 +43,12 @@ using ConvertType = std::codecvt_utf8<wchar_t>;
 namespace LiveKitCpp
 {
 
+std::string toLower(std::string s)
+{
+    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+    return s;
+}
+
 std::string fromWideChar(const std::wstring& w)
 {
     if (!w.empty()) {

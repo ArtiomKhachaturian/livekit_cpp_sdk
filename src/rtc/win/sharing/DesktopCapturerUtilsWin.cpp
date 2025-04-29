@@ -12,9 +12,174 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "DesktopCapturerUtils.h"
+#include "Utils.h"
+#include <modules/desktop_capture/win/screen_capture_utils.h>
+#include <rtc_base/string_utils.h> // required for string manipulations
+
+namespace
+{
+const char g_devPrefix[] = "\\\\.\\";
+
+bool windowIsValidForPreview(HWND hwnd);
+HMONITOR hMonitorFromDeviceIndex(webrtc::ScreenId sId);
+std::string screenFriendlyTitle(const wchar_t* name);
+
+}
+
 
 namespace LiveKitCpp
 {
 
+bool screenExists(webrtc::ScreenId sId)
+{
+    if (webrtc::kInvalidScreenId != sId) {
+        if (webrtc::kFullDesktopScreenId != sId) {
+            return NULL != hMonitorFromDeviceIndex(sId);
+        }
+        return true;
+    }
+    return false;
+}
+
+bool windowExists(webrtc::WindowId wId)
+{
+    return webrtc::kNullWindowId != wId && NULL != ::IsWindow(reinterpret_cast<HWND>(wId));
+}
+
+std::string screenTitle(webrtc::ScreenId sId)
+{
+    if (const auto hMonitor = hMonitorFromDeviceIndex(sId)) {
+        MONITORINFOEXW info;
+        info.cbSize = sizeof(MONITORINFOEXW);
+        if (::GetMonitorInfoW(hMonitor, &info)) {
+            return screenFriendlyTitle(info.szDevice);
+        }
+    }
+    return std::string();
+}
+
+std::optional<std::string> windowTitle(webrtc::WindowId wId)
+{
+    if (HWND hwnd = reinterpret_cast<HWND>(wId)) {
+        int length = ::GetWindowTextLengthW(hwnd);
+        if (length++) {
+            std::wstring result(length, '\0');
+            length = ::GetWindowTextW(hwnd, result.data(), length);
+            result.resize(length);
+            return rtc::ToUtf8(result);
+        }
+    }
+    return std::nullopt;
+}
+
+webrtc::DesktopSize screenResolution(const webrtc::DesktopCaptureOptions& options, webrtc::ScreenId sId)
+{
+    if (webrtc::kFullDesktopScreenId == sId) {
+        return { ::GetSystemMetrics(SM_CXVIRTUALSCREEN),
+                ::GetSystemMetrics(SM_CYVIRTUALSCREEN) };
+    }
+    if (const auto hMonitor = hMonitorFromDeviceIndex(sId)) {
+        MONITORINFOEXA info;
+        info.cbSize = sizeof(MONITORINFOEXA);
+        if (::GetMonitorInfoA(hMonitor, &info)) {
+            return webrtc::DesktopSize{ std::abs(info.rcMonitor.left - info.rcMonitor.right),
+                                        std::abs(info.rcMonitor.top - info.rcMonitor.bottom) };
+        }
+    }
+    return {};
+}
+
+bool enumerateScreens(const webrtc::DesktopCaptureOptions& options, std::vector<std::string>& out)
+{
+    return false;
+}
+
+bool enumerateWindows(const webrtc::DesktopCaptureOptions& options, std::vector<std::string>& out)
+{
+    return false;
+}
 
 } // namespace LiveKitCpp
+
+namespace
+{
+
+// https://code.woboq.org/qt5/qtbase/src/plugins/platforms/windows/qwindowscontext.cpp.html#511
+const char* g_qtClassKeys[] = {
+    "qwindowpopupdropshadow",
+    "qwindowtooldropshadow",
+    "qwindowtooltipdropshadow" };
+
+bool windowIsValidForPreview(HWND hwnd)
+{
+    if (hwnd && !::GetParent(hwnd)) { // only root windows acceptable
+        static thread_local char className[256] = "";
+        const int classNameLength = ::GetClassNameA(hwnd, className, sizeof(className) / sizeof(className[0]));
+        if (classNameLength > 0) {
+            // check that windows is not QT popup (comboboxes dropdowns, tooltips)
+            const auto classView = LiveKitCpp::toLower(std::string(className, classNameLength));
+            for (const char* qtClassKey : g_qtClassKeys) {
+                if (std::string::npos != classView.find(qtClassKey)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+HMONITOR hMonitorFromDeviceIndex(webrtc::ScreenId sId)
+{
+    HMONITOR hMonitor = NULL;
+    if (webrtc::GetHmonitorFromDeviceIndex(sId, &hMonitor)) {
+        return hMonitor;
+    }
+    return NULL;
+}
+
+std::string screenFriendlyTitle(const wchar_t* name)
+{
+    if (name) {
+        // https://social.msdn.microsoft.com/Forums/en-US/668e3cf9-4e00-4b40-a6f8-c7d2fc1afd39/how-can-i-retrieve-monitor-information?forum=windowsgeneraldevelopmentissues#be6e67f3-c2a7-4647-bb39-ed4fbec5dce4
+        UINT32 requiredPaths, requiredModes;
+        if (ERROR_SUCCESS == ::GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS,
+            &requiredPaths, &requiredModes)) {
+            std::vector<DISPLAYCONFIG_PATH_INFO> paths(requiredPaths);
+            std::vector<DISPLAYCONFIG_MODE_INFO> modes(requiredModes);
+            if (ERROR_SUCCESS == ::QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &requiredPaths,
+                paths.data(), &requiredModes, modes.data(), nullptr)) {
+                for (const auto& path : paths) {
+                    DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName;
+                    sourceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+                    sourceName.header.size = sizeof(sourceName);
+                    sourceName.header.adapterId = path.sourceInfo.adapterId;
+                    sourceName.header.id = path.sourceInfo.id;
+                    if (ERROR_SUCCESS == ::DisplayConfigGetDeviceInfo(&sourceName.header) &&
+                        0 == ::wcscmp(name, sourceName.viewGdiDeviceName)) {
+                        DISPLAYCONFIG_TARGET_DEVICE_NAME name;
+                        name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+                        name.header.size = sizeof(name);
+                        name.header.adapterId = path.sourceInfo.adapterId;
+                        name.header.id = path.targetInfo.id;
+                        if (ERROR_SUCCESS == ::DisplayConfigGetDeviceInfo(&name.header) &&
+                            0 != ::wcslen(name.monitorFriendlyDeviceName)) {
+                            return rtc::ToUtf8(name.monitorFriendlyDeviceName);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        std::string friendlyName = rtc::ToUtf8(name);
+        if (!friendlyName.empty()) {
+            if (0UL == friendlyName.rfind(g_devPrefix, 0UL)) {
+                friendlyName.erase(0UL, sizeof(g_devPrefix) - 1UL);
+            }
+            return friendlyName;
+        }
+    }
+    return {};
+}
+
+} // namespace
