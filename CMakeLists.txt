@@ -43,9 +43,9 @@ endif(APPLE)
 # Generate C++ code from proto files
 # Find Protobuf (ensure it is installed)
 # Specify search paths in CMAKE_PREFIX_PATH variable (if needed): "/path/to/module_a;/another/path/to/module_b"
-find_package(absl REQUIRED)
-find_package(utf8_range REQUIRED)
-find_package(Protobuf 5.29.3 REQUIRED)
+find_package(absl CONFIG REQUIRED)
+find_package(utf8_range CONFIG REQUIRED)
+find_package(Protobuf 5.29.3 CONFIG REQUIRED)
 
 # common sources for both librarires
 file(GLOB_RECURSE WEBSOCKETS_API_HEADERS ${CMAKE_SOURCE_DIR}/websockets_api/include/*.${HEADER_FILE_EXT})
