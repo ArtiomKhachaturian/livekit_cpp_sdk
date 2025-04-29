@@ -42,7 +42,7 @@ void AsyncCameraSourceImpl::requestCapturer()
     if (frameWanted()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer.constRef()) {
-            if (auto capturer = CameraManager::createCapturer(deviceInfo(), framesPool())) {
+            if (auto capturer = CameraManager::createCapturer(deviceInfo(), framesPool(), logger())) {
                 const auto capability = bestMatched(map(options()), capturer);
                 capturer->RegisterCaptureDataCallback(this);
                 capturer->setObserver(this);
