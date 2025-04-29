@@ -1,6 +1,5 @@
 #include "videofilter.h"
 #include "grayscalevideofilter.h"
-#include "blurvideofilter.h"
 #include "sepiavideofilter.h"
 #include "pencilvideofilter.h"
 #include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
@@ -15,9 +14,6 @@ VideoFilter::VideoFilter(QString name, QObject* parent)
 VideoFilter* VideoFilter::create(const QString& name, QObject* parent)
 {
     if (!name.isEmpty()) {
-        if (const auto filter = createFilter<BlurVideofilter>(name, parent)) {
-            return filter;
-        }
         if (const auto filter = createFilter<GrayscaleVideoFilter>(name, parent)) {
             return filter;
         }
@@ -33,7 +29,7 @@ VideoFilter* VideoFilter::create(const QString& name, QObject* parent)
 
 QStringList VideoFilter::available()
 {
-    return {{BlurVideofilter::filterName(), GrayscaleVideoFilter::filterName(),
+    return {{GrayscaleVideoFilter::filterName(),
              PencilVideoFilter::filterName(), SepiaVideoFilter::filterName()}};
 }
 

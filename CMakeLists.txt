@@ -296,8 +296,6 @@ if (WEBRTC_AVAILABLE)
         signDylib(${RTC_LIB})
     endif(APPLE)
 
-    target_precompile_headers(${RTC_LIB} PRIVATE ${ABSL_PCH_FILE})
-
     source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/rtc PREFIX "RtcApi" FILES ${RTC_PUBLIC_HEADERS})
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/src PREFIX "Rtc" FILES ${RTC_COMMON_HEADERS} 
                                                                          ${RTC_COMMON_SOURCES})

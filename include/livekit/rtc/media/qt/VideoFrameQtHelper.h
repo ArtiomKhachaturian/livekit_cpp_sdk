@@ -15,7 +15,10 @@
 #if __has_include(<QVideoFrame>)
 #include "livekit/rtc/media/VideoFrame.h"
 #include "livekit/rtc/media/qt/VideoFormatsQt.h"
+#if __has_include(<QAbstractVideoBuffer>)
 #include <QAbstractVideoBuffer> // since QT 6.8
+#define HAS_ABSTRACT_VIDEO_BUFFER
+#endif
 #include <QImage>
 #include <memory>
 
@@ -23,13 +26,12 @@ namespace LiveKitCpp
 {
 
 // API
+#ifdef HAS_ABSTRACT_VIDEO_BUFFER
 class QtVideoBuffer : public QAbstractVideoBuffer
 {
 public:
     QtVideoBuffer(std::shared_ptr<VideoFrame> frame);
     bool valid() const;
-    int rotation() const { return _frame ? _frame->rotation() : 0; }
-    int64_t timestamp() const { return _frame ? _frame->timestampUs() : 0LL; }
     // impl. of QAbstractVideoBuffer
     MapData map(QVideoFrame::MapMode mode) final;
     void unmap() final {}
@@ -38,6 +40,7 @@ private:
     std::shared_ptr<VideoFrame> _frame;
     QVideoFrameFormat::PixelFormat _format = QVideoFrameFormat::Format_Invalid;
 };
+#endif
 
 template <class TQtData>
 class VideoFrameQtData : public VideoFrame
@@ -69,6 +72,7 @@ private:
 };
 
 // implementation
+#ifdef HAS_ABSTRACT_VIDEO_BUFFER
 inline QtVideoBuffer::QtVideoBuffer(std::shared_ptr<VideoFrame> frame)
 {
     if (frame) {
@@ -118,33 +122,38 @@ inline QVideoFrameFormat QtVideoBuffer::format() const
     }
     return {};
 }
+#endif
 
 inline QVideoFrame convert(std::shared_ptr<VideoFrame> frame)
 {
+    QVideoFrame output;
     if (frame) {
+        const auto rotation = frame->rotation();
+        const auto timestamp = frame->timestampUs();
+#ifdef HAS_ABSTRACT_VIDEO_BUFFER
         auto buffer = std::make_unique<QtVideoBuffer>(std::move(frame));
         if (buffer->valid()) {
-            const auto rotation = buffer->rotation();
-            const auto timestamp = buffer->timestamp();
-            QVideoFrame rtcFrame(std::move(buffer));
+            output = QVideoFrame(std::move(buffer));
+        }
+#endif
+        if (output.isValid()) {
             switch (rotation) {
                 case 90:
-                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise90);
+                    output.setRotation(QtVideo::Rotation::Clockwise90);
                     break;
                 case 180:
-                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise180);
+                    output.setRotation(QtVideo::Rotation::Clockwise180);
                     break;
                 case 270:
-                    rtcFrame.setRotation(QtVideo::Rotation::Clockwise270);
+                    output.setRotation(QtVideo::Rotation::Clockwise270);
                     break;
                 default:
                     break;
             }
-            rtcFrame.setStartTime(timestamp);
-            return rtcFrame;
+            output.setStartTime(timestamp);
         }
     }
-    return {};
+    return output;
 }
 
 template <class TQtData>

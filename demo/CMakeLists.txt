@@ -15,7 +15,7 @@ if(APPLE)
     set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
 endif(APPLE)
 
-qt_standard_project_setup(REQUIRES 6.8)
+qt_standard_project_setup(REQUIRES 6.7.3)
 
 qt_add_executable(${PROJECT_NAME})
 
@@ -84,8 +84,6 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             videofilter.cpp
             grayscalevideofilter.h
             grayscalevideofilter.cpp
-            blurvideofilter.h
-            blurvideofilter.cpp
             sepiavideofilter.h
             sepiavideofilter.cpp
             pencilvideofilter.h
