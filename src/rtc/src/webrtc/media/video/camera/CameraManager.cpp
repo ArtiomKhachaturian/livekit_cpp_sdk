@@ -22,83 +22,18 @@
 namespace LiveKitCpp
 {
 
-bool CameraManager::available()
+CameraManager::CameraManager(std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> deviceInfo)
+    : _deviceInfo(std::move(deviceInfo))
 {
-    return nullptr != deviceInfo();
 }
 
-uint32_t CameraManager::devicesNumber()
+std::shared_ptr<CameraManager> CameraManager::create()
 {
-    if (const auto di = deviceInfo()) {
-        return di->NumberOfDevices();
+    std::shared_ptr<CameraManager> manager;
+    if (auto deviceInfo = createDeviceInfo()) {
+        manager.reset(new CameraManager(std::move(deviceInfo)));
     }
-    return 0U;
-}
-
-bool CameraManager::device(uint32_t number, std::string& name, std::string& guid)
-{
-    if (const auto di = deviceInfo()) {
-        thread_local static char deviceNameUTF8[webrtc::kVideoCaptureDeviceNameLength] = {0};
-        thread_local static char deviceUniqueIdUTF8[webrtc::kVideoCaptureProductIdLength] = {0};
-        if (0 == di->GetDeviceName(number, deviceNameUTF8, webrtc::kVideoCaptureDeviceNameLength,
-                                   deviceUniqueIdUTF8, webrtc::kVideoCaptureProductIdLength)) {
-            name = deviceNameUTF8;
-            guid = deviceUniqueIdUTF8;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool CameraManager::device(uint32_t number, MediaDeviceInfo& out)
-{
-    return device(number, out._name, out._guid);
-}
-
-bool CameraManager::defaultdevice(uint32_t number, std::string& name, std::string& guid)
-{
-    return device(0U, name, guid);
-}
-
-bool CameraManager::defaultDevice(MediaDeviceInfo& out)
-{
-    return device(0U, out);
-}
-
-std::vector<MediaDeviceInfo> CameraManager::devices()
-{
-    if (const auto count = devicesNumber()) {
-        std::vector<MediaDeviceInfo> devicesInfo;
-        devicesInfo.reserve(count);
-        for (uint32_t i = 0u; i < count; ++i) {
-            MediaDeviceInfo deviceInfo;
-            if (device(i, deviceInfo)) {
-                devicesInfo.push_back(std::move(deviceInfo));
-            }
-        }
-        return devicesInfo;
-    }
-    return {};
-}
-
-bool CameraManager::deviceIsValid(std::string_view guid)
-{
-    if (!guid.empty()) {
-        if (const auto count = devicesNumber()) {
-            for (uint32_t i = 0u; i < count; ++i) {
-                MediaDeviceInfo deviceInfo;
-                if (device(i, deviceInfo) && guid == deviceInfo._guid) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool CameraManager::deviceIsValid(const MediaDeviceInfo& info)
-{
-    return deviceIsValid(info._guid);
+    return manager;
 }
 
 webrtc::VideoCaptureCapability CameraManager::defaultCapability()
@@ -114,61 +49,6 @@ webrtc::VideoCaptureCapability CameraManager::defaultCapability()
     capability.videoType = webrtc::VideoType::kI420;
 #endif
     return capability;
-}
-
-uint32_t CameraManager::capabilitiesNumber(std::string_view guid)
-{
-    if (!guid.empty()) {
-        if (const auto di = deviceInfo()) {
-            const auto number = di->NumberOfCapabilities(guid.data()); // signed int
-            if (number > 0) {
-                return static_cast<uint32_t>(number);
-            }
-        }
-    }
-    return 0U;
-}
-
-uint32_t CameraManager::capabilitiesNumber(const MediaDeviceInfo& info)
-{
-    return capabilitiesNumber(info._guid);
-}
-
-bool CameraManager::capability(std::string_view guid,
-                               uint32_t number,
-                               webrtc::VideoCaptureCapability& capability)
-{
-    if (!guid.empty()) {
-        if (const auto di = deviceInfo()) {
-            return 0 == di->GetCapability(guid.data(), number, capability);
-        }
-    }
-    return false;
-}
-
-bool CameraManager::capability(const MediaDeviceInfo& info, uint32_t number,
-                               webrtc::VideoCaptureCapability& capability)
-{
-    return CameraManager::capability(info._guid, number, capability);
-}
-
-bool CameraManager::bestMatchedCapability(std::string_view guid,
-                                          const webrtc::VideoCaptureCapability& requested,
-                                          webrtc::VideoCaptureCapability& resulting)
-{
-    if (!guid.empty()) {
-        if (const auto di = deviceInfo()) {
-            return di->GetBestMatchedCapability(guid.data(), requested, resulting) >= 0;
-        }
-    }
-    return false;
-}
-
-bool CameraManager::bestMatchedCapability(const MediaDeviceInfo& info,
-                                          const webrtc::VideoCaptureCapability& requested,
-                                          webrtc::VideoCaptureCapability& resulting)
-{
-    return bestMatchedCapability(info._guid, requested, resulting);
 }
 
 std::string_view CameraManager::logCategory()
@@ -192,33 +72,146 @@ std::string CameraManager::formatLogMessage(const MediaDeviceInfo& info, const s
     return formatLogMessage(info._name, message);
 }
 
-bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& orientation)
+uint32_t CameraManager::devicesNumber() const
+{
+    return _deviceInfo->NumberOfDevices();
+}
+
+bool CameraManager::device(uint32_t number, std::string& name, std::string& guid) const
+{
+    thread_local static char deviceNameUTF8[webrtc::kVideoCaptureDeviceNameLength] = {0};
+    thread_local static char deviceUniqueIdUTF8[webrtc::kVideoCaptureProductIdLength] = {0};
+    if (0 == _deviceInfo->GetDeviceName(number, deviceNameUTF8, webrtc::kVideoCaptureDeviceNameLength,
+                                        deviceUniqueIdUTF8, webrtc::kVideoCaptureProductIdLength)) {
+        name = deviceNameUTF8;
+        guid = deviceUniqueIdUTF8;
+        return true;
+    }
+    return false;
+}
+
+bool CameraManager::device(uint32_t number, MediaDeviceInfo& out) const
+{
+    return device(number, out._name, out._guid);
+}
+
+bool CameraManager::defaultdevice(uint32_t number, std::string& name, std::string& guid) const
+{
+    return device(0U, name, guid);
+}
+
+bool CameraManager::defaultDevice(MediaDeviceInfo& out) const
+{
+    return device(0U, out);
+}
+
+std::vector<MediaDeviceInfo> CameraManager::devices() const
+{
+    if (const auto count = devicesNumber()) {
+        std::vector<MediaDeviceInfo> devicesInfo;
+        devicesInfo.reserve(count);
+        for (uint32_t i = 0u; i < count; ++i) {
+            MediaDeviceInfo deviceInfo;
+            if (device(i, deviceInfo)) {
+                devicesInfo.push_back(std::move(deviceInfo));
+            }
+        }
+        return devicesInfo;
+    }
+    return {};
+}
+
+bool CameraManager::deviceIsValid(std::string_view guid) const
 {
     if (!guid.empty()) {
-        if (const auto di = deviceInfo()) {
-            return 0 == di->GetOrientation(guid.data(), orientation);
+        if (const auto count = devicesNumber()) {
+            for (uint32_t i = 0u; i < count; ++i) {
+                MediaDeviceInfo deviceInfo;
+                if (device(i, deviceInfo) && guid == deviceInfo._guid) {
+                    return true;
+                }
+            }
         }
     }
     return false;
 }
 
-bool CameraManager::orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation)
+bool CameraManager::deviceIsValid(const MediaDeviceInfo& info) const
+{
+    return deviceIsValid(info._guid);
+}
+
+uint32_t CameraManager::capabilitiesNumber(std::string_view guid) const
+{
+    if (!guid.empty()) {
+        const auto number = _deviceInfo->NumberOfCapabilities(guid.data()); // signed int
+        if (number > 0) {
+            return static_cast<uint32_t>(number);
+        }
+    }
+    return 0U;
+}
+
+uint32_t CameraManager::capabilitiesNumber(const MediaDeviceInfo& info) const
+{
+    return capabilitiesNumber(info._guid);
+}
+
+bool CameraManager::capability(std::string_view guid, uint32_t number,
+                               webrtc::VideoCaptureCapability& capability) const
+{
+    if (!guid.empty()) {
+        return 0 == _deviceInfo->GetCapability(guid.data(), number, capability);
+    }
+    return false;
+}
+
+bool CameraManager::capability(const MediaDeviceInfo& info, uint32_t number,
+                               webrtc::VideoCaptureCapability& capability) const
+{
+    return CameraManager::capability(info._guid, number, capability);
+}
+
+bool CameraManager::bestMatchedCapability(std::string_view guid,
+                                          const webrtc::VideoCaptureCapability& requested,
+                                          webrtc::VideoCaptureCapability& resulting) const
+{
+    if (!guid.empty()) {
+        return _deviceInfo->GetBestMatchedCapability(guid.data(), requested, resulting) >= 0;
+    }
+    return false;
+}
+
+bool CameraManager::bestMatchedCapability(const MediaDeviceInfo& info,
+                                          const webrtc::VideoCaptureCapability& requested,
+                                          webrtc::VideoCaptureCapability& resulting) const
+{
+    return bestMatchedCapability(info._guid, requested, resulting);
+}
+
+bool CameraManager::orientation(std::string_view guid, webrtc::VideoRotation& orientation) const
+{
+    if (!guid.empty()) {
+        return 0 == _deviceInfo->GetOrientation(guid.data(), orientation);
+    }
+    return false;
+}
+
+bool CameraManager::orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation) const
 {
     return CameraManager::orientation(info._guid, orientation);
 }
 
 rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_view guid,
                                                                  VideoFrameBufferPool framesPool,
-                                                                 const std::shared_ptr<Bricks::Logger>& logger)
+                                                                 const std::shared_ptr<Bricks::Logger>& logger) const
 {
     if (!guid.empty()) {
-        if (const auto di = deviceInfo()) {
-            if (const uint32_t count = di->NumberOfDevices()) {
-                MediaDeviceInfo deviceInfo;
-                for (uint32_t i = 0U; i < count; ++i) {
-                    if (CameraManager::device(i, deviceInfo) && deviceInfo._guid == guid) {
-                        return createCapturer(deviceInfo, std::move(framesPool), logger);
-                    }
+        if (const uint32_t count = _deviceInfo->NumberOfDevices()) {
+            MediaDeviceInfo deviceInfo;
+            for (uint32_t i = 0U; i < count; ++i) {
+                if (CameraManager::device(i, deviceInfo) && deviceInfo._guid == guid) {
+                    return createCapturer(deviceInfo, std::move(framesPool), logger);
                 }
             }
         }

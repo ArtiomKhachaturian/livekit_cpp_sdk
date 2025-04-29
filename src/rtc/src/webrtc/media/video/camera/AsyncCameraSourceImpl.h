@@ -19,10 +19,13 @@
 namespace LiveKitCpp
 {
 
+class CameraManager;
+
 class AsyncCameraSourceImpl : public AsyncVideoSourceImpl
 {
 public:
     AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                          std::weak_ptr<CameraManager> manager,
                           const std::shared_ptr<Bricks::Logger>& logger);
     ~AsyncCameraSourceImpl() final { close(); }
     // override of AsyncVideoSourceImpl
@@ -38,9 +41,10 @@ protected:
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
     VideoOptions validate(VideoOptions options) const final;
 private:
-    static webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
-                                                      const rtc::scoped_refptr<CameraCapturer>& capturer);
+    webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
+                                               const rtc::scoped_refptr<CameraCapturer>& capturer) const;
     webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability) const;
+    rtc::scoped_refptr<CameraCapturer> create(const MediaDeviceInfo& dev) const;
     bool startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
                        const webrtc::VideoCaptureCapability& capability) const;
     bool stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
@@ -48,6 +52,7 @@ private:
                   const std::string& message, int code = 0) const;
     void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
 private:
+    const std::weak_ptr<CameraManager> _manager;
     SafeScopedRefPtr<CameraCapturer> _capturer;
 };
 

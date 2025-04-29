@@ -34,49 +34,51 @@ struct MediaDeviceInfo;
 class CameraManager
 {
 public:
-    // valid or not
-    static bool available();
-    // enumeration
-    static uint32_t devicesNumber();
-    static bool device(uint32_t number, std::string& name, std::string& guid);
-    static bool device(uint32_t number, MediaDeviceInfo& out);
-    static bool defaultdevice(uint32_t number, std::string& name, std::string& guid);
-    static bool defaultDevice(MediaDeviceInfo& out);
-    static std::vector<MediaDeviceInfo> devices();
-    static bool deviceIsValid(std::string_view guid);
-    static bool deviceIsValid(const MediaDeviceInfo& info);
-    // capabilities API
+    static std::shared_ptr<CameraManager> create();
     static webrtc::VideoCaptureCapability defaultCapability();
-    // Returns the number of capabilities this device.
-    static uint32_t capabilitiesNumber(std::string_view guid);
-    static uint32_t capabilitiesNumber(const MediaDeviceInfo& info);
-    // Gets the capability of the named device.
-    static bool capability(std::string_view guid, uint32_t number,
-                           webrtc::VideoCaptureCapability& capability);
-    static bool capability(const MediaDeviceInfo& info, uint32_t number,
-                           webrtc::VideoCaptureCapability& capability);
-    static bool bestMatchedCapability(std::string_view guid,
-                                      const webrtc::VideoCaptureCapability& requested,
-                                      webrtc::VideoCaptureCapability& resulting);
-    static bool bestMatchedCapability(const MediaDeviceInfo& info,
-                                      const webrtc::VideoCaptureCapability& requested,
-                                      webrtc::VideoCaptureCapability& resulting);
-    // common
     static std::string_view logCategory();
     static std::string formatLogMessage(std::string_view deviceName, const std::string& message);
     static std::string formatLogMessage(const MediaDeviceInfo& info, const std::string& message);
+    // enumeration
+    uint32_t devicesNumber() const;
+    bool device(uint32_t number, std::string& name, std::string& guid) const;
+    bool device(uint32_t number, MediaDeviceInfo& out) const;
+    bool defaultdevice(uint32_t number, std::string& name, std::string& guid) const;
+    bool defaultDevice(MediaDeviceInfo& out) const;
+    std::vector<MediaDeviceInfo> devices() const;
+    bool deviceIsValid(std::string_view guid) const;
+    bool deviceIsValid(const MediaDeviceInfo& info) const;
+    // capabilities API
+    // Returns the number of capabilities this device.
+    uint32_t capabilitiesNumber(std::string_view guid) const;
+    uint32_t capabilitiesNumber(const MediaDeviceInfo& info) const;
+    // Gets the capability of the named device.
+    bool capability(std::string_view guid, uint32_t number,
+                    webrtc::VideoCaptureCapability& capability) const;
+    bool capability(const MediaDeviceInfo& info, uint32_t number,
+                    webrtc::VideoCaptureCapability& capability) const;
+    bool bestMatchedCapability(std::string_view guid,
+                               const webrtc::VideoCaptureCapability& requested,
+                               webrtc::VideoCaptureCapability& resulting) const;
+    bool bestMatchedCapability(const MediaDeviceInfo& info,
+                               const webrtc::VideoCaptureCapability& requested,
+                               webrtc::VideoCaptureCapability& resulting) const;
+    // common
     // Gets clockwise angle the captured frames should be rotated in order
     // to be displayed correctly on a normally rotated display.
-    static bool orientation(std::string_view guid, webrtc::VideoRotation& orientation);
-    static bool orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation);
-    static rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
-                                                             VideoFrameBufferPool framesPool = {},
-                                                             const std::shared_ptr<Bricks::Logger>& logger = {});
-    static rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev,
-                                                             VideoFrameBufferPool framesPool = {},
-                                                             const std::shared_ptr<Bricks::Logger>& logger = {});
+    bool orientation(std::string_view guid, webrtc::VideoRotation& orientation) const;
+    bool orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation) const;
+    rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
+                                                      VideoFrameBufferPool framesPool = {},
+                                                      const std::shared_ptr<Bricks::Logger>& logger = {}) const;
+    rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev,
+                                                      VideoFrameBufferPool framesPool = {},
+                                                      const std::shared_ptr<Bricks::Logger>& logger = {}) const;
 private:
-    static webrtc::VideoCaptureModule::DeviceInfo* deviceInfo();
+    CameraManager(std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> deviceInfo);
+    static std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> createDeviceInfo();
+private:
+    const std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> _deviceInfo;
 };
 
 std::string toString(const webrtc::VideoCaptureCapability& capability);

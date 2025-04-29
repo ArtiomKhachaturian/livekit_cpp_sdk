@@ -60,15 +60,14 @@ inline NSArray<AVCaptureDevice*>* availableDevices()
 namespace LiveKitCpp
 {
 
-webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
+std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> CameraManager::createDeviceInfo()
 {
-    static const auto info = std::make_unique<MacOSDeviceInfoImpl>();
-    return info.get();
+    return std::make_unique<MacOSDeviceInfoImpl>();
 }
 
 rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev,
                                                                  VideoFrameBufferPool framesPool,
-                                                                 const std::shared_ptr<Bricks::Logger>& /*logger*/)
+                                                                 const std::shared_ptr<Bricks::Logger>& /*logger*/) const
 {
     return MacCameraCapturer::create(dev, std::move(framesPool));
 }

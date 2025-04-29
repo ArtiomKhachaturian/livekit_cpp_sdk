@@ -55,6 +55,7 @@ class AsyncCameraSource : public AsyncVideoSource
 {
 public:
     AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                      std::weak_ptr<CameraManager> manager,
                       const std::shared_ptr<Bricks::Logger>& logger);
     // impl. of webrtc::VideoTrackSourceInterface
     bool is_screencast() const final { return false;}
@@ -99,6 +100,8 @@ public:
     std::vector<MediaDeviceInfo> windows() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
+    std::vector<MediaDeviceInfo> cameraDevices() const;
+    std::vector<VideoOptions> cameraOptions(const MediaDeviceInfo& info) const;
     double recordingAudioVolume() const noexcept;
     double playoutAudioVolume() const noexcept;
     void setRecordingAudioVolume(double volume);
@@ -141,6 +144,7 @@ private:
     static inline const VolumeControl _defaultRecording = {70U, 0U, 255U};
     static inline const VolumeControl _defaultPlayout = {51U, 0U, 255U};
     const std::shared_ptr<Websocket::Factory> _websocketsFactory;
+    const std::shared_ptr<CameraManager> _cameraManager;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     const std::shared_ptr<DesktopConfiguration> _desktopConfiguration;
     Bricks::SafeObj<VolumeControl> _recordingVolume;
@@ -341,7 +345,7 @@ std::vector<MediaDeviceInfo> Service::playoutAudioDevices() const
 std::vector<MediaDeviceInfo> Service::cameraDevices() const
 {
     if (_impl) {
-        return CameraManager::devices();
+        return _impl->cameraDevices();
     }
     return {};
 }
@@ -349,17 +353,7 @@ std::vector<MediaDeviceInfo> Service::cameraDevices() const
 std::vector<VideoOptions> Service::cameraOptions(const MediaDeviceInfo& info) const
 {
     if (_impl) {
-        if (const uint32_t number = CameraManager::capabilitiesNumber(info)) {
-            std::vector<VideoOptions> options;
-            options.reserve(number);
-            for (uint32_t i = 0U; i < number; ++i) {
-                webrtc::VideoCaptureCapability capability;
-                if (CameraManager::capability(info, i, capability)) {
-                    options.push_back(map(capability));
-                }
-            }
-            return options;
-        }
+        return _impl->cameraOptions(info);
     }
     return {};
 }
@@ -389,6 +383,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
                     bool logWebrtcEvents)
     : Bricks::LoggableS<AdmProxyListener>(logger)
     , _websocketsFactory(websocketsFactory)
+    , _cameraManager(CameraManager::create())
     , _pcf(PeerConnectionFactory::create(true, logWebrtcEvents ? logger : nullptr))
     , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>() : std::shared_ptr<DesktopConfiguration>{})
     , _recordingVolume(_defaultRecording)
@@ -403,6 +398,9 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
         _pcf->registerAdmPlayoutListener(this, true);
         if (!_pcf->eventsQueue()) {
             logError("failed to create of events queue");
+        }
+        if (!_cameraManager) {
+            logError("camera devices are not available");
         }
         auto dev = _pcf->recordingAudioDevice();
         if (!dev.empty()) {
@@ -531,6 +529,32 @@ std::vector<MediaDeviceInfo> Service::Impl::playoutAudioDevices() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevices();
+    }
+    return {};
+}
+
+std::vector<MediaDeviceInfo> Service::Impl::cameraDevices() const
+{
+    if (_cameraManager) {
+        return _cameraManager->devices();
+    }
+    return {};
+}
+
+std::vector<VideoOptions> Service::Impl::cameraOptions(const MediaDeviceInfo& info) const
+{
+    if (_cameraManager) {
+        if (const uint32_t number = _cameraManager->capabilitiesNumber(info)) {
+            std::vector<VideoOptions> options;
+            options.reserve(number);
+            for (uint32_t i = 0U; i < number; ++i) {
+                webrtc::VideoCaptureCapability capability;
+                if (_cameraManager->capability(info, i, capability)) {
+                    options.push_back(map(capability));
+                }
+            }
+            return options;
+        }
     }
     return {};
 }
@@ -759,8 +783,10 @@ void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
 
 webrtc::scoped_refptr<LocalWebRtcTrack> Service::Impl::createCameraTrack() const
 {
-    if (_pcf) {
-        auto source = webrtc::make_ref_counted<AsyncCameraSource>(_pcf->signalingThread(), logger());
+    if (_pcf && _cameraManager) {
+        auto source = webrtc::make_ref_counted<AsyncCameraSource>(_pcf->signalingThread(),
+                                                                  _cameraManager,
+                                                                  logger());
         return webrtc::make_ref_counted<LocalWebRtcTrack>(makeUuid(), std::move(source));
     }
     return {};
@@ -878,8 +904,11 @@ namespace
 {
 
 AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                                     std::weak_ptr<CameraManager> manager,
                                      const std::shared_ptr<Bricks::Logger>& logger)
-    : AsyncVideoSource(std::make_shared<AsyncCameraSourceImpl>(std::move(signalingQueue), logger))
+    : AsyncVideoSource(std::make_shared<AsyncCameraSourceImpl>(std::move(signalingQueue),
+                                                               std::move(manager),
+                                                               logger))
 {
     setContentHint(VideoContentHint::Fluid);
 }

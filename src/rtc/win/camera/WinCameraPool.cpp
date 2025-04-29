@@ -225,19 +225,18 @@ void WinCameraPool::CameraWrapper::OnDiscardedFrame()
     }
 }
 
+std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> CameraManager::createDeviceInfo()
+{
+    using Module = std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo>;
+    return webrtc::videocapturemodule::DeviceInfoDS::Create();
+}
+
 rtc::scoped_refptr<CameraCapturer> CameraManager::
     createCapturer(const MediaDeviceInfo& device, 
                    VideoFrameBufferPool framesPool,
-                   const std::shared_ptr<Bricks::Logger>& logger)
+                   const std::shared_ptr<Bricks::Logger>& logger) const
 {
     return WinCameraPool::create(device, std::move(framesPool), logger);
-}
-
-webrtc::VideoCaptureModule::DeviceInfo* CameraManager::deviceInfo()
-{
-    using Module = std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo>;
-    static const Module info(webrtc::videocapturemodule::DeviceInfoDS::Create());
-    return info.get();
 }
 
 } // namespace LiveKitCpp

@@ -31,8 +31,10 @@ namespace LiveKitCpp
 {
 
 AsyncCameraSourceImpl::AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+                                             std::weak_ptr<CameraManager> manager,
                                              const std::shared_ptr<Bricks::Logger>& logger)
     : AsyncVideoSourceImpl(std::move(signalingQueue), logger, false)
+    , _manager(std::move(manager))
 {
     setOptions(map(CameraManager::defaultCapability()));
 }
@@ -42,7 +44,7 @@ void AsyncCameraSourceImpl::requestCapturer()
     if (frameWanted()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer.constRef()) {
-            if (auto capturer = CameraManager::createCapturer(deviceInfo(), framesPool(), logger())) {
+            if (auto capturer = create(deviceInfo())) {
                 const auto capability = bestMatched(map(options()), capturer);
                 capturer->RegisterCaptureDataCallback(this);
                 capturer->setObserver(this);
@@ -106,7 +108,12 @@ MediaDeviceInfo AsyncCameraSourceImpl::validate(MediaDeviceInfo info) const
 {
     bool ok = true;
     if (info._guid.empty()) {
-        ok = CameraManager::defaultDevice(info);
+        if (const auto manager = _manager.lock()) {
+            ok = manager->defaultDevice(info);
+        }
+        else {
+            ok = false;
+        }
     }
     if (ok) {
         return info;
@@ -128,11 +135,12 @@ VideoOptions AsyncCameraSourceImpl::validate(VideoOptions options) const
 
 webrtc::VideoCaptureCapability AsyncCameraSourceImpl::
     bestMatched(webrtc::VideoCaptureCapability capability,
-                const rtc::scoped_refptr<CameraCapturer>& capturer)
+                const rtc::scoped_refptr<CameraCapturer>& capturer) const
 {
     if (capturer) {
         webrtc::VideoCaptureCapability matched;
-        if (CameraManager::bestMatchedCapability(capturer->guid(), capability, matched)) {
+        const auto manager = _manager.lock();
+        if (manager && manager->bestMatchedCapability(capturer->guid(), capability, matched)) {
             return matched;
         }
     }
@@ -142,6 +150,14 @@ webrtc::VideoCaptureCapability AsyncCameraSourceImpl::
 webrtc::VideoCaptureCapability AsyncCameraSourceImpl::bestMatched(webrtc::VideoCaptureCapability capability) const
 {
     return bestMatched(std::move(capability), _capturer());
+}
+
+rtc::scoped_refptr<CameraCapturer> AsyncCameraSourceImpl::create(const MediaDeviceInfo& dev) const
+{
+    if (const auto manager = _manager.lock()) {
+        return manager->createCapturer(dev, framesPool(), logger());
+    }
+    return {};
 }
 
 bool AsyncCameraSourceImpl::startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
