@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#ifdef WEBRTC_WIN
 #include "MFVideoBuffer.h"
+#include "NativeVideoFrameBuffer.h"
 #include "VideoFrameBuffer.h"
 #include <strmif.h>
 
@@ -27,9 +27,9 @@ namespace LiveKitCpp
 
 class I420BuffersPool;
 
-class MFMediaSampleBuffer : public MFVideoBuffer<VideoFrameBuffer<webrtc::VideoFrameBuffer>, IMediaSample>
+class MFMediaSampleBuffer : public MFVideoBuffer<VideoFrameBuffer<NativeVideoFrameBuffer>, IMediaSample>
 {
-    using BaseClass = MFVideoBuffer<VideoFrameBuffer<webrtc::VideoFrameBuffer>, IMediaSample>;
+    using BaseClass = MFVideoBuffer<VideoFrameBuffer<NativeVideoFrameBuffer>, IMediaSample>;
 public:
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(int width, int height, webrtc::VideoType bufferType,
                                                                BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
@@ -41,14 +41,12 @@ public:
                                                                const CComPtr<IMediaSample>& sample,
                                                                webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                                                                VideoFrameBufferPool framesPool = {});
-    // impl. of MFVideoBufferInterface
-    rtc::scoped_refptr<webrtc::NV12BufferInterface> toNV12() final;
-    // impl. of VideoFrameBuffer<>
-    Type type() const final { return Type::kNative; }
-    rtc::scoped_refptr<webrtc::VideoFrameBuffer>
-        GetMappedFrameBuffer(rtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes) final;
+    // impl. of NativeVideoFrameBuffer
+    VideoFrameType nativeType() const final { return _bufferType;  }
+    int stride(size_t planeIndex) const final;
+    const std::byte* data(size_t planeIndex) const final;
 protected:
-    MFMediaSampleBuffer(int width, int height, webrtc::VideoType bufferType,
+    MFMediaSampleBuffer(int width, int height, VideoFrameType bufferType,
                         BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
                         const CComPtr<IMediaSample>& sample,
                         webrtc::VideoRotation rotation,
@@ -63,7 +61,7 @@ private:
     const int _originalWidth;
     const int _originalHeight;
     const webrtc::VideoRotation _rotation;
+    const VideoFrameType _bufferType;
 };
 
 } // namespace LiveKitCpp
-#endif

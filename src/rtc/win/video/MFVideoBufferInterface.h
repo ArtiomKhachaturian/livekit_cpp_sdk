@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#ifdef WEBRTC_WIN
 #include <Windows.h>
-#include <api/video/video_frame_buffer.h>
-#include <common_video/libyuv/include/webrtc_libyuv.h>
 
 namespace LiveKitCpp 
 {
@@ -23,9 +20,6 @@ namespace LiveKitCpp
 class MFVideoBufferInterface
 {
 public:
-    // return NULL if conversion failed or impossible
-    virtual rtc::scoped_refptr<webrtc::NV12BufferInterface> toNV12() = 0;
-    virtual webrtc::VideoType bufferType() const = 0;
     virtual const BYTE* buffer() const = 0;
     virtual DWORD actualBufferLen() const = 0;
     virtual DWORD totalBufferLen() const { return actualBufferLen(); }
@@ -34,4 +28,3 @@ protected:
 };
 
 } // namespace LiveKitCpp
-#endif

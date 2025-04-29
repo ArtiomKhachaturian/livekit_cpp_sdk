@@ -95,5 +95,7 @@ bool isSupportedFormat(OSType format);
 
 webrtc::VideoType map(VideoFrameType type);
 std::optional<VideoFrameType> map(webrtc::VideoType type);
+int fourcc(VideoFrameType type);
+int fourcc(webrtc::VideoType type);
 	
 } // namespace LiveKitCpp

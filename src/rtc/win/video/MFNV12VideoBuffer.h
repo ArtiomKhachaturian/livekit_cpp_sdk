@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#ifdef WEBRTC_WIN
 #include "MFVideoBuffer.h"
 #include "NV12VideoFrameBuffer.h"
 
@@ -27,8 +26,6 @@ public:
     MFNV12VideoBuffer(int width, int height, BYTE* buffer,
                       DWORD actualBufferLen, DWORD totalBufferLen,
                       const CComPtr<IMFMediaBuffer>& data);
-    // impl. of MFVideoBufferInterface
-    rtc::scoped_refptr<webrtc::NV12BufferInterface> toNV12() final;
     // impl. of NV12VideoFrameBuffer
     const uint8_t* DataY() const final;
     const uint8_t* DataUV() const final;
@@ -40,12 +37,6 @@ inline MFNV12VideoBuffer<TMFData>::MFNV12VideoBuffer(int width, int height, BYTE
                                                      const CComPtr<IMFMediaBuffer>& data)
     : BaseClass(width, height, webrtc::VideoType::kNV12, buffer, actualBufferLen, totalBufferLen, data)
 {
-}
-
-template <class TMFData>
-inline rtc::scoped_refptr<webrtc::NV12BufferInterface> MFNV12VideoBuffer<TMFData>::toNV12()
-{
-    return rtc::scoped_refptr<webrtc::NV12BufferInterface>(this);
 }
 
 template <class TMFData>
@@ -63,4 +54,3 @@ inline const uint8_t* MFNV12VideoBuffer<TMFData>::DataUV() const
 }
 
 } // namespace LiveKitCpp
-#endif

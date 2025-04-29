@@ -344,6 +344,16 @@ std::optional<VideoFrameType> map(webrtc::VideoType type)
     return {};
 }
 
+int fourcc(VideoFrameType type)
+{
+    return fourcc(map(type));
+}
+
+int fourcc(webrtc::VideoType type)
+{
+    return webrtc::ConvertVideoType(type);
+}
+
 } // namespace LiveKitCpp
 
 namespace

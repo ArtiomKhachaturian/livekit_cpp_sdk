@@ -11,10 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifdef WEBRTC_WIN
 #include "MFMediaSampleBuffer.h"
 #include "MFI420VideoBuffer.h"
 #include "MFNV12VideoBuffer.h"
+#include "VideoUtils.h"
 #include <api/make_ref_counted.h>
 #include <common_video/libyuv/include/webrtc_libyuv.h>
 #include <libyuv/convert.h>
@@ -50,19 +50,36 @@ inline bool contains(webrtc::VideoFrameBuffer::Type type, const rtc::ArrayView<w
 namespace LiveKitCpp 
 {
 
-MFMediaSampleBuffer::MFMediaSampleBuffer(int width, int height, webrtc::VideoType bufferType,
+MFMediaSampleBuffer::MFMediaSampleBuffer(int width, int height, VideoFrameType bufferType,
                                          BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
                                          const CComPtr<IMediaSample>& sample,
                                          webrtc::VideoRotation rotation,
                                          VideoFrameBufferPool framesPool)
     : BaseClass(targetWidth(width, std::abs(height), rotation), 
                 targetHeight(width, std::abs(height), rotation),
-                bufferType, buffer, actualBufferLen, totalBufferLen, 
+                buffer, actualBufferLen, totalBufferLen, 
                 sample, std::move(framesPool))
     , _originalWidth(width)
     , _originalHeight(height)
     , _rotation(rotation)
+    , _bufferType(bufferType)
 {
+}
+
+int MFMediaSampleBuffer::stride(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return actualBufferLen();
+    }
+    return 0;
+}
+
+const std::byte* MFMediaSampleBuffer::data(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return reinterpret_cast<const std::byte*>(buffer());
+    }
+    return nullptr;
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int width, int height,
@@ -93,12 +110,15 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                     default:
                         break;
                 }
-                return rtc::make_ref_counted<MFMediaSampleBuffer>(width, height, 
-                                                                  bufferType, buffer,
-                                                                  actualBufferLen, 
-                                                                  totalBufferLen,
-                                                                  sample, rotation,
-                                                                  std::move(framesPool));
+                const auto nativeType = map(bufferType);
+                if (nativeType) {
+                    return rtc::make_ref_counted<MFMediaSampleBuffer>(width, height,
+                                                                      nativeType.value(), buffer,
+                                                                      actualBufferLen,
+                                                                      totalBufferLen,
+                                                                      sample, rotation,
+                                                                      std::move(framesPool));
+                }
             }
         }
     }
@@ -116,32 +136,6 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(const w
                   buffer, actualBufferLen, totalBufferLen, sample, rotation, std::move(framesPool));
 }
 
-::rtc::scoped_refptr<webrtc::NV12BufferInterface> MFMediaSampleBuffer::toNV12()
-{
-    if (webrtc::VideoType::kMJPEG == bufferType()) { // only MJPEG conversion supported
-        const auto nv12 = createNV12(width(), height());
-        if (nv12 && 0 == libyuv::MJPGToNV12(buffer(), actualBufferLen(),
-                                            nv12->MutableDataY(), nv12->StrideY(),
-                                            nv12->MutableDataUV(), nv12->StrideUV(),
-                                            _originalWidth, _originalHeight,
-                                            nv12->width(), nv12->height())) {
-            return nv12;
-        }
-    }
-    return nullptr;
-}
-
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::
-    GetMappedFrameBuffer(rtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes)
-{
-    if (!mappedTypes.empty() && contains(webrtc::VideoFrameBuffer::Type::kNV12, mappedTypes)) {
-        if (const auto mappedBuffer = toNV12()) {
-            return mappedBuffer;
-        }
-    }
-    return BaseClass::GetMappedFrameBuffer(mappedTypes);
-}
-
 rtc::scoped_refptr<webrtc::I420BufferInterface> MFMediaSampleBuffer::convertToI420() const
 {
     const auto i420 = createI420(width(), height());
@@ -153,7 +147,7 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> MFMediaSampleBuffer::convertToI4
                          _originalWidth, _originalHeight,
                          i420->width(), i420->height(),
                          fromVideoFrameRotation(_rotation),
-                         webrtc::ConvertVideoType(bufferType()))) {
+                         fourcc(_bufferType))) {
         return i420;
     }
     return nullptr;
@@ -184,4 +178,3 @@ void MFMediaSampleBuffer::swapIfRotated(webrtc::VideoRotation rotation, int& wid
 }
 
 } // namespace LiveKitCpp
-#endif

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#ifdef WEBRTC_WIN
 #include "MFVideoBuffer.h"
 #include "LibyuvImport.h"
 #include "VideoFrameBufferPool.h"
@@ -31,8 +30,6 @@ public:
                       DWORD actualBufferLen, DWORD totalBufferLen,
                       const CComPtr<TMFData>& data,
                       VideoFrameBufferPool framesPool = {});
-    // impl. of MFVideoBufferInterface
-    rtc::scoped_refptr<webrtc::NV12BufferInterface> toNV12() final;
     // impl. of webrtc::I420BufferInterface
     int StrideY() const final { return BaseClass::width(); }
     int StrideU() const final { return (BaseClass::width() + 1) / 2; }
@@ -49,24 +46,9 @@ inline MFI420VideoBuffer<TMFData>::MFI420VideoBuffer(int width, int height, BYTE
                                                      DWORD actualBufferLen, DWORD totalBufferLen,
                                                      const CComPtr<TMFData>& data,
                                                      VideoFrameBufferPool framesPool)
-    : BaseClass(width, height, webrtc::VideoType::kI420, buffer, actualBufferLen, totalBufferLen, data)
+    : BaseClass(width, height, buffer, actualBufferLen, totalBufferLen, data)
     , _framesPool(std::move(framesPool))
 {
-}
-
-template <class TMFData>
-inline rtc::scoped_refptr<webrtc::NV12BufferInterface> MFI420VideoBuffer<TMFData>::toNV12()
-{
-    const auto nv12 = _framesPool.createNV12(BaseClass::width(), BaseClass::height());
-    if (nv12 && 0 == libyuv::I420ToNV12(DataY(), StrideY(), 
-                                        DataU(), StrideU(),
-                                        DataV(), StrideV(),
-                                        nv12->MutableDataY(), nv12->StrideY(),
-                                        nv12->MutableDataUV(), nv12->StrideUV(),
-                                        nv12->width(), nv12->height())) {
-        return nv12;
-    }
-    return {};
 }
 
 template <class TMFData>
@@ -83,4 +65,3 @@ inline const uint8_t* MFI420VideoBuffer<TMFData>::DataV() const
 }
 
 } // namespace LiveKitCpp
-#endif

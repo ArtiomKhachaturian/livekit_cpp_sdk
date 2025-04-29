@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#ifdef WEBRTC_WIN
 #include "MFVideoBufferInterface.h"
+#include <cassert>
 #include <atlbase.h> //CComPtr support
 #include <mfobjects.h>
 
@@ -29,21 +29,19 @@ public:
     int width() const final { return _width; }
     int height() const final { return _height; }
     // impl. of MFVideoBufferInterface
-    webrtc::VideoType bufferType() const final { return _bufferType; }
     const BYTE* buffer() const final { return _buffer; }
     DWORD actualBufferLen() const final { return _actualBufferLen; }
     DWORD totalBufferLen() const final { return _totalBufferLen; }
 protected:
     template <class... Types>
-    MFVideoBuffer(int width, int height, webrtc::VideoType bufferType,
-                  BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
+    MFVideoBuffer(int width, int height,  BYTE* buffer, 
+                  DWORD actualBufferLen, DWORD totalBufferLen,
                   const CComPtr<TMFData>& data, 
                   Types&&... args);
 private:
     const int _width;
     const int _height;
     const CComPtr<TMFData> _data;
-    const webrtc::VideoType _bufferType;
     BYTE* const _buffer;
     const DWORD _actualBufferLen;
     const DWORD _totalBufferLen;
@@ -52,7 +50,6 @@ private:
 template <class TBaseBuffer, class TMFData>
 template <class... Types>
 inline MFVideoBuffer<TBaseBuffer, TMFData>::MFVideoBuffer(int width, int height, 
-                                                          webrtc::VideoType bufferType,
                                                           BYTE* buffer, DWORD actualBufferLen, 
                                                           DWORD totalBufferLen,
                                                           const CComPtr<TMFData>& data, Types&&... args)
@@ -60,7 +57,6 @@ inline MFVideoBuffer<TBaseBuffer, TMFData>::MFVideoBuffer(int width, int height,
     , _width(width)
     , _height(height)
     , _data(data)
-    , _bufferType(bufferType)
     , _buffer(buffer)
     , _actualBufferLen(actualBufferLen)
     , _totalBufferLen(totalBufferLen)
@@ -82,4 +78,3 @@ inline MFVideoBuffer<TBaseBuffer, TMFData>::~MFVideoBuffer()
 }
 
 } // namespace LiveKitCpp
-#endif
