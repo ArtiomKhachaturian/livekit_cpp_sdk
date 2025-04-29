@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once
 #ifdef WEBRTC_WIN
-#include "Loggable.h"
 #include "CameraCapturer.h"
 #include "CapturedFrameReceiver.h"
 #include "SafeObjAliases.h"
@@ -27,33 +26,31 @@ namespace LiveKitCpp
 
 class CaptureSinkFilter;
 class DVCameraConfig;
-enum class CameraState;
+enum class CapturerState;
 
-class WinCameraCapturer : public Bricks::LoggableS<CameraCapturer>,
+class WinCameraCapturer : public CameraCapturer,
                           private CapturedFrameReceiver
 {
     using DeviceInfoDS = webrtc::videocapturemodule::DeviceInfoDS;
 public:
     ~WinCameraCapturer() override;
     static ::rtc::scoped_refptr<CameraCapturer> 
-        create(const MediaDevice& device, const std::shared_ptr<Bricks::Logger>& logger = {});
+        create(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool = {});
     // impl. of CameraCapturer
-    void setObserver(CameraObserver* observer) final;
+    void setObserver(CapturerObserver* observer) final;
     // impl. of webrtc::VideoCaptureModule
     int32_t StartCapture(const webrtc::VideoCaptureCapability& capability) final;
     int32_t StopCapture() final;
     bool CaptureStarted() final;
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
 protected:
-    WinCameraCapturer(const MediaDevice& device,
+    WinCameraCapturer(const MediaDeviceInfo& device,
                       std::unique_ptr<DeviceInfoDS> deviceInfo,
                       const CComPtr<IBaseFilter>& captureFilter,
                       const CComPtr<IGraphBuilder>& graphBuilder,
                       const CComPtr<IMediaControl>& mediaControl,
                       const CComPtr<IPin>& outputCapturePin,
-                      const std::shared_ptr<Bricks::Logger>& logger);
-    // overrides of Bricks::LoggableS
-    std::string_view logCategory() const final;
+                      VideoFrameBufferPool framesPool);
 private:
     static bool connectDVCamera(const CComPtr<IGraphBuilder>& graphBuilder,
                                 const CComPtr<IPin>& inputSendPin,
@@ -71,7 +68,7 @@ private:
                                  const std::shared_ptr<Bricks::Logger>& logger,
                                  PIN_DIRECTION expectedDir, 
                                  REFGUID category = GUID_NULL);
-    void setCameraState(CameraState state);
+    void setCameraState(CapturerState state);
     bool setCameraOutput(const webrtc::VideoCaptureCapability& requestedCapability);
     void disconnect();
     // impl. of CapturedFrameReceiver
@@ -88,7 +85,7 @@ private:
     const CComPtr<IPin> _inputSendPin;
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _requestedCapability;
     Bricks::SafeUniquePtr<DVCameraConfig> _dvCameraConfig;
-    Bricks::Listener<CameraObserver*> _observer;
+    Bricks::Listener<CapturerObserver*> _observer;
 };
 
 } // namespace LiveKitCpp

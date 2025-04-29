@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #ifdef WEBRTC_WIN
+#include "VideoFrameBufferPool.h"
 #include <api/scoped_refptr.h>
 #include <memory>
 #include <string>
@@ -21,16 +22,12 @@ namespace webrtc {
 class VideoCaptureModule;
 }
 
-namespace Bricks {
-class Logger;
-}
-
 namespace LiveKitCpp 
 {
 
-class CameraObserver;
+class CapturerObserver;
 class CameraCapturer;
-struct MediaDevice;
+struct MediaDeviceInfo;
 
 class WinCameraPool
 {
@@ -39,8 +36,8 @@ class WinCameraPool
     class CameraWrapper;
 public:
     static ::rtc::scoped_refptr<CameraCapturer>
-        create(const MediaDevice& device, const std::shared_ptr<Bricks::Logger>& logger = {},
-               CameraObserver* observer = nullptr);
+        create(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool = {},
+               CapturerObserver* observer = nullptr);
 private:
     static const std::shared_ptr<Impl>& implementation();
 };

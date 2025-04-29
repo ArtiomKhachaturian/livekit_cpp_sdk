@@ -14,10 +14,11 @@
 #ifdef WEBRTC_WIN
 #include "WinCameraCapturer.h"
 #include "CameraManager.h"
-#include "CameraObserver.h"
+#include "CapturerObserver.h"
 #include "CaptureSinkFilter.h"
 #include "CameraErrorHandling.h"
 #include "DVCameraConfig.h"
+#include "VideoUtils.h"
 #include "./video/MFMediaSampleBuffer.h"
 #include <api/media_stream_interface.h>
 #include <dvdmedia.h>
@@ -31,21 +32,21 @@
 namespace LiveKitCpp 
 {
 
-WinCameraCapturer::WinCameraCapturer(const MediaDevice& device,
+WinCameraCapturer::WinCameraCapturer(const MediaDeviceInfo& device,
                                      std::unique_ptr<DeviceInfoDS> deviceInfo,
                                      const CComPtr<IBaseFilter>& captureFilter,
                                      const CComPtr<IGraphBuilder>& graphBuilder,
                                      const CComPtr<IMediaControl>& mediaControl,
                                      const CComPtr<IPin>& outputCapturePin,
-                                     const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<CameraCapturer>(logger, device)
-    , _sinkFilter(new CaptureSinkFilter(this, logger))
+                                     VideoFrameBufferPool framesPool)
+    : CameraCapturer(device, std::move(framesPool))
+    , _sinkFilter(new CaptureSinkFilter(this, /*logger*/nullptr))
     , _deviceInfo(std::move(deviceInfo))
     , _captureFilter(captureFilter)
     , _graphBuilder(graphBuilder)
     , _mediaControl(mediaControl)
     , _outputCapturePin(outputCapturePin)
-    , _inputSendPin(findInputSendPin(graphBuilder, _sinkFilter, logger))
+    , _inputSendPin(findInputSendPin(graphBuilder, _sinkFilter, /*logger*/nullptr))
     , _observer(nullptr)
 {
     assert(_deviceInfo);
@@ -63,13 +64,8 @@ WinCameraCapturer::~WinCameraCapturer()
     _graphBuilder->RemoveFilter(_captureFilter);
 }
 
-std::string_view WinCameraCapturer::logCategory() const
-{
-    return CameraManager::logCategory();
-}
-
-::rtc::scoped_refptr<CameraCapturer> WinCameraCapturer::create(const MediaDevice& device,
-                                                               const std::shared_ptr<Bricks::Logger>& logger)
+::rtc::scoped_refptr<CameraCapturer> WinCameraCapturer::create(const MediaDeviceInfo& device,
+                                                               VideoFrameBufferPool framesPool)
 {
     const auto& guid = device._guid;
     if (guid.empty()) {
@@ -77,16 +73,16 @@ std::string_view WinCameraCapturer::logCategory() const
     }
     std::unique_ptr<DeviceInfoDS> deviceInfo(DeviceInfoDS::Create());
     if (!deviceInfo) {
-        if (logger) {
+        /*if (logger) {
             logger->logError("failed to create DS info module");
-        }
+        }*/
         return {};
     }
     const CComPtr<IBaseFilter> captureFilter = deviceInfo->GetDeviceFilter(guid.data());
     if (!captureFilter) {
-        if (logger) {
+        /*if (logger) {
             logger->logError("failed to create capture filter");
-        }
+        }*/
         return {};
     }
     CComPtr<IGraphBuilder> graphBuilder;
@@ -128,7 +124,7 @@ std::string_view WinCameraCapturer::logCategory() const
     return capturer;
 }
 
-void WinCameraCapturer::setObserver(CameraObserver* observer)
+void WinCameraCapturer::setObserver(CapturerObserver* observer)
 {
     _observer = observer;
 }
@@ -146,9 +142,9 @@ int32_t WinCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& ca
             }
         }
         if (started) {
-            setCameraState(CameraState::Started);
+            setCameraState(CapturerState::Started);
         } else if (stopped) {
-            setCameraState(CameraState::Stopped);
+            setCameraState(CapturerState::Stopped);
         }
         if (!started) {
             return -1;
@@ -160,7 +156,7 @@ int32_t WinCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& ca
 int32_t WinCameraCapturer::StopCapture()
 {
     if (LOGGABLE_COM_IS_OK(_mediaControl->Pause())) {
-        setCameraState(CameraState::Stopped);
+        setCameraState(CapturerState::Stopped);
         return 0;
     }
     return -1;
@@ -305,9 +301,9 @@ CComPtr<IPin> WinCameraCapturer::findPin(IBaseFilter* filter,
     return {};
 }
 
-void WinCameraCapturer::setCameraState(CameraState state)
+void WinCameraCapturer::setCameraState(CapturerState state)
 {
-    _observer.invoke(&CameraObserver::onStateChanged, state);
+    _observer.invoke(&CapturerObserver::onStateChanged, state);
 }
 
 bool WinCameraCapturer::setCameraOutput(const webrtc::VideoCaptureCapability& requestedCapability)

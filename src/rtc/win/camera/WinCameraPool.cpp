@@ -14,7 +14,7 @@
 #ifdef WEBRTC_WIN
 #include "WinCameraPool.h"
 #include "CameraCapturerProxy.h"
-#include "CameraCapturerProxySink.h"
+#include "CapturerProxySink.h"
 #include "CameraManager.h"
 #include "SafeObjAliases.h"
 #include "WinCameraCapturer.h"
@@ -43,19 +43,19 @@ class WinCameraPool::Impl : public WinCameraPool::ReleaseManager
     using CacheMap = std::unordered_map<size_t, std::shared_ptr<CameraCapturerProxy>>;
 
 public:
-    std::shared_ptr<CameraCapturerProxy> acquire(const MediaDevice& device,
-                                                 const std::shared_ptr<Bricks::Logger>& logger);
+    std::shared_ptr<CameraCapturerProxy> acquire(const MediaDeviceInfo& device,
+                                                 VideoFrameBufferPool framesPool = {});
     // impl. of ReleaseManager
     void release(std::string_view deviceGuid, std::shared_ptr<CameraCapturerProxy> proxy) final;
 private:
     Bricks::SafeObj<CacheMap> _cache;
 };
 
-class WinCameraPool::CameraWrapper : public CameraCapturer, private CameraCapturerProxySink
+class WinCameraPool::CameraWrapper : public CameraCapturer, private CapturerProxySink
 {
 public:
-    CameraWrapper(const MediaDevice& device,
-                  CameraObserver* observer,
+    CameraWrapper(const MediaDeviceInfo& device,
+                  CapturerObserver* observer,
                   const std::weak_ptr<ReleaseManager>& releaseManagerRef,
                   std::shared_ptr<CameraCapturerProxy> proxyImpl);
     ~CameraWrapper() override;
@@ -66,19 +66,20 @@ public:
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
 private:
     // impl. of CameraObserver
-    void onStateChanged(CameraState state) final;
+    void onStateChanged(CapturerState state) final;
     // impl. of ::rtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final;
     void OnDiscardedFrame() final;
 private:
-    CameraObserver* const _observer;
+    CapturerObserver* const _observer;
     const std::weak_ptr<ReleaseManager> _releaseManagerRef;
     Bricks::SafeSharedPtr<CameraCapturerProxy> _proxyImpl;
     std::atomic_bool _captureStarted = false;
 };
 
 ::rtc::scoped_refptr<CameraCapturer> WinCameraPool::
-    create(const MediaDevice& device, const std::shared_ptr<Bricks::Logger>& logger, CameraObserver* observer)
+    create(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool,
+           CapturerObserver* observer)
 {
     if (!device._guid.empty()) {
         const auto& impl = implementation();
@@ -96,7 +97,7 @@ const std::shared_ptr<WinCameraPool::Impl>& WinCameraPool::implementation()
 }
 
 std::shared_ptr<CameraCapturerProxy> WinCameraPool::Impl::
-    acquire(const MediaDevice& device, const std::shared_ptr<Bricks::Logger>& logger)
+    acquire(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool)
 {
     const auto& guid = device._guid;
     if (!guid.empty()) {
@@ -105,7 +106,8 @@ std::shared_ptr<CameraCapturerProxy> WinCameraPool::Impl::
         auto& cache = _cache.ref();
         auto it = cache.find(key);
         if (it == cache.end()) {
-            if (auto proxy = CameraCapturerProxy::create(WinCameraCapturer::create(device, logger))) {
+            if (auto proxy = CameraCapturerProxy::create(WinCameraCapturer::create(device, 
+                                                                                   std::move(framesPool)))) {
                 it = cache.insert({key, std::move(proxy)}).first;
             }
         }
@@ -132,7 +134,7 @@ void WinCameraPool::Impl::release(std::string_view deviceGuid, std::shared_ptr<C
     }
 }
 
-WinCameraPool::CameraWrapper::CameraWrapper(const MediaDevice& device,
+WinCameraPool::CameraWrapper::CameraWrapper(const MediaDeviceInfo& device,
                                             CameraObserver* observer,
                                             const std::weak_ptr<ReleaseManager>& releaseManagerRef,
                                             std::shared_ptr<CameraCapturerProxy> proxyImpl)
@@ -200,7 +202,7 @@ int32_t WinCameraPool::CameraWrapper::CaptureSettings(webrtc::VideoCaptureCapabi
     return -1;
 }
 
-void WinCameraPool::CameraWrapper::onStateChanged(CameraState state)
+void WinCameraPool::CameraWrapper::onStateChanged(CapturerState state)
 {
     if (_observer) {
         _observer->onStateChanged(state);
@@ -222,7 +224,7 @@ void WinCameraPool::CameraWrapper::OnDiscardedFrame()
 }
 
 rtc::scoped_refptr<CameraCapturer> CameraManager::
-    createCapturer(const MediaDevice& device, const std::shared_ptr<Bricks::Logger>& logger)
+    createCapturer(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool)
 {
     return WinCameraPool::create(device, logger);
 }

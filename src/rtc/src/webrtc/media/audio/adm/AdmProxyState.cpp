@@ -67,7 +67,9 @@ bool AdmProxyState::setStarted(bool started)
         else {
             invoke(&AdmProxyListener::onStopped);
         }
+        return true;
     }
+    return false;
 }
 
 bool AdmProxyState::setMute(bool mute)
