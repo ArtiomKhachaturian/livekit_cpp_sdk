@@ -62,6 +62,8 @@ std::string toString(TransportState state)
 std::string toString(NetworkType state)
 {
     switch (state) {
+        case NetworkType::Unknown:
+            break;
         case NetworkType::WiFi:
             return "wifi";
         case NetworkType::Wired:
