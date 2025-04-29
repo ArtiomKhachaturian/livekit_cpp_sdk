@@ -228,7 +228,7 @@ void WinCameraPool::CameraWrapper::OnDiscardedFrame()
 std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> CameraManager::createDeviceInfo()
 {
     using Module = std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo>;
-    return webrtc::videocapturemodule::DeviceInfoDS::Create();
+    return std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo>{webrtc::videocapturemodule::DeviceInfoDS::Create()};
 }
 
 rtc::scoped_refptr<CameraCapturer> CameraManager::
