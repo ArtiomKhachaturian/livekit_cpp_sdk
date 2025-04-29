@@ -92,11 +92,32 @@ webrtc::DesktopSize screenResolution(const webrtc::DesktopCaptureOptions& option
 
 bool enumerateScreens(const webrtc::DesktopCaptureOptions& options, std::vector<std::string>& out)
 {
+    webrtc::DesktopCapturer::SourceList sources;
+    if (webrtc::GetScreenList(&sources)) {
+        out.clear();
+        out.reserve(sources.size());
+        for (const auto& source : sources) {
+            out.push_back(screenIdToString(source.id));
+        }
+        return true;
+    }
     return false;
 }
 
 bool enumerateWindows(const webrtc::DesktopCaptureOptions& options, std::vector<std::string>& out)
 {
+    webrtc::WindowCaptureHelperWin helper;
+    webrtc::DesktopCapturer::SourceList sources;
+    if (helper.EnumerateCapturableWindows(&sources, options.enumerate_current_process_windows())) {
+        out.clear();
+        out.reserve(sources.size());
+        for (const auto& source : sources) {
+            if (windowIsValidForPreview(reinterpret_cast<HWND>(source.id))) {
+                out.push_back(windowIdToString(source.id));
+            }
+        }
+        return true;
+    }
     return false;
 }
 

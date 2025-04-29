@@ -186,13 +186,17 @@ void WinCameraCapturer::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
         return;
     }
     assert(totalBufferLen >= actualBufferLen);
-    const auto sampleBuffer = MFMediaSampleBuffer::create(frameInfo, buffer,
-                                                          actualBufferLen, totalBufferLen, 
+    const auto type = map(frameInfo.videoType);
+    if (!type) {
+        logWarning("failed to map video buffer type, fourcc " + std::to_string(fourcc(frameInfo.videoType)));
+    }
+    const auto sampleBuffer = MFMediaSampleBuffer::create(frameInfo.width, frameInfo.height,
+                                                          type.value(), buffer, 
+                                                          actualBufferLen, totalBufferLen,
                                                           sample, captureRotation(),
                                                           framesPool());
     if (!sampleBuffer) {
-        logWarning("failed to create captured video buffer from type " + 
-                   std::to_string(static_cast<int>(frameInfo.videoType)));
+        logWarning("failed to create captured video buffer from type " + toString(type.value()));
         discardFrame();
         return;
     }

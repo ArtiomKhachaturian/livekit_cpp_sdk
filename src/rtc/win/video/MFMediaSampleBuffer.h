@@ -31,13 +31,10 @@ class MFMediaSampleBuffer : public MFVideoBuffer<VideoFrameBuffer<NativeVideoFra
 {
     using BaseClass = MFVideoBuffer<VideoFrameBuffer<NativeVideoFrameBuffer>, IMediaSample>;
 public:
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(int width, int height, webrtc::VideoType bufferType,
-                                                               BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
-                                                               const CComPtr<IMediaSample>& sample,
-                                                               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
-                                                               VideoFrameBufferPool framesPool = {});
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(const webrtc::VideoCaptureCapability& frameInfo,
-                                                               BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(int width, int height, 
+                                                               VideoFrameType bufferType,
+                                                               BYTE* buffer, DWORD actualBufferLen, 
+                                                               DWORD totalBufferLen,
                                                                const CComPtr<IMediaSample>& sample,
                                                                webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                                                                VideoFrameBufferPool framesPool = {});

@@ -83,24 +83,23 @@ const std::byte* MFMediaSampleBuffer::data(size_t planeIndex) const
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int width, int height,
-                                                                         webrtc::VideoType bufferType, BYTE* buffer,
+                                                                         VideoFrameType bufferType, BYTE* buffer,
                                                                          DWORD actualBufferLen, DWORD totalBufferLen,
                                                                          const CComPtr<IMediaSample>& sample,
                                                                          webrtc::VideoRotation rotation,
                                                                          VideoFrameBufferPool framesPool)
 {
-    if (width > 0 && buffer && actualBufferLen && sample && webrtc::VideoType::kUnknown != bufferType) {
+    if (width > 0 && buffer && actualBufferLen && sample) {
         // setting absolute height (in case it was negative),
         // in Windows, the image starts bottom left, instead of top left,
         // setting a negative source height, inverts the image (within LibYuv),
         // see also [translateMediaTypeToVideoCaptureCapability] function for RGB24 cases
         const int absHeight = std::abs(height);
         if (absHeight > 0) {
-            if (webrtc::VideoType::kMJPEG == bufferType || actualBufferLen == webrtc::CalcBufferSize(bufferType,
-                                                                                                     width,
-                                                                                                     absHeight)) {
+            if (VideoFrameType::MJPEG == bufferType || actualBufferLen == webrtc::CalcBufferSize(map(bufferType),
+                                                                                                 width, absHeight)) {
                 switch (bufferType) {
-                    case webrtc::VideoType::kI420:
+                    case VideoFrameType::I420:
                         return rtc::make_ref_counted<MFI420VideoBuffer<IMediaSample>>(width, height, 
                                                                                       buffer,
                                                                                       actualBufferLen, 
@@ -110,30 +109,15 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                     default:
                         break;
                 }
-                const auto nativeType = map(bufferType);
-                if (nativeType) {
-                    return rtc::make_ref_counted<MFMediaSampleBuffer>(width, height,
-                                                                      nativeType.value(), buffer,
-                                                                      actualBufferLen,
-                                                                      totalBufferLen,
-                                                                      sample, rotation,
-                                                                      std::move(framesPool));
-                }
+                return rtc::make_ref_counted<MFMediaSampleBuffer>(width, height, bufferType, buffer,
+                                                                  actualBufferLen,
+                                                                  totalBufferLen,
+                                                                  sample, rotation,
+                                                                  std::move(framesPool));
             }
         }
     }
     return nullptr;
-}
-
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(const webrtc::VideoCaptureCapability& frameInfo,
-                                                                         BYTE* buffer, DWORD actualBufferLen, 
-                                                                         DWORD totalBufferLen,
-                                                                         const CComPtr<IMediaSample>& sample,
-                                                                         webrtc::VideoRotation rotation,
-                                                                         VideoFrameBufferPool framesPool)
-{
-    return create(frameInfo.width, frameInfo.height, frameInfo.videoType,
-                  buffer, actualBufferLen, totalBufferLen, sample, rotation, std::move(framesPool));
 }
 
 rtc::scoped_refptr<webrtc::I420BufferInterface> MFMediaSampleBuffer::convertToI420() const
