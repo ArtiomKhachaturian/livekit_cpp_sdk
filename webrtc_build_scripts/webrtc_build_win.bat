@@ -54,7 +54,7 @@ echo Output build directory: %output_dir%
 set is_debug=true
 
 echo Generate config for WebRTC build
-call gn gen %output_dir% --args="use_rtti=true libcxx_is_shared=true use_custom_libcxx=false is_debug=%is_debug% rtc_include_tests=false rtc_build_tools=false rtc_libvpx_build_vp9=true rtc_include_builtin_audio_codecs=true is_component_build=false target_cpu=\"x64\"rtc_use_h264=true rtc_use_h265=true rtc_enable_protobuf=false"
+call gn gen %output_dir% --args="use_lld=false target_os=\"win\" use_rtti=true libcxx_is_shared=true use_custom_libcxx=false is_debug=%is_debug% rtc_include_tests=false rtc_build_tools=false rtc_libvpx_build_vp9=true rtc_include_builtin_audio_codecs=true is_component_build=false target_cpu=\"x64\"rtc_use_h264=true rtc_use_h265=true rtc_enable_protobuf=false"
 
 echo Build of WebRTC started
 call ninja -C %output_dir%
