@@ -79,6 +79,7 @@ const std::string& Stats::id() const
     if (const auto stats = getRtcStats(_stats)) {
         return stats->id();
     }
+    return g_empty;
 }
 
 std::chrono::time_point<std::chrono::system_clock> Stats::timestamp() const

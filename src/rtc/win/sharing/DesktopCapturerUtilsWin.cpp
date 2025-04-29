@@ -14,6 +14,7 @@
 #include "DesktopCapturerUtils.h"
 #include "Utils.h"
 #include <modules/desktop_capture/win/screen_capture_utils.h>
+#include <modules/desktop_capture/win/window_capture_utils.h>
 #include <rtc_base/string_utils.h> // required for string manipulations
 
 namespace

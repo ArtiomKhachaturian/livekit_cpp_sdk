@@ -741,6 +741,7 @@ std::string toString(VideoFrameType type)
             assert(false);
             break;
     }
+    return {};
 }
 
 bool isRGB(VideoFrameType type)

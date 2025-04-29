@@ -218,7 +218,7 @@ bool VideoFrameBufferPoolSource::matched(const webrtc::scoped_refptr<webrtc::Vid
 {
     if (buffer && buffer->width() == width && buffer->height() == height && buffer->type() == type) {
         if (webrtc::VideoFrameBuffer::Type::kNative == type) {
-            if constexpr (sizeof...(Args)) {
+            if constexpr (sizeof...(Args) > 0U) {
                 const auto rgb = static_cast<webrtc::RefCountedObject<NativeVideoFrameBuffer>*>(buffer.get());
                 return rgb->nativeType() == std::get<0U>(std::tie(args...));
             }
