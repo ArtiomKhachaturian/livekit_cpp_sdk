@@ -188,7 +188,8 @@ void WinCameraCapturer::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
     assert(totalBufferLen >= actualBufferLen);
     const auto sampleBuffer = MFMediaSampleBuffer::create(frameInfo, buffer,
                                                           actualBufferLen, totalBufferLen, 
-                                                          sample, captureRotation());
+                                                          sample, captureRotation(),
+                                                          framesPool());
     if (!sampleBuffer) {
         logWarning("failed to create captured video buffer from type " + 
                    std::to_string(static_cast<int>(frameInfo.videoType)));

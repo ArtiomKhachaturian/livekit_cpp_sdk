@@ -34,11 +34,13 @@ public:
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(int width, int height, webrtc::VideoType bufferType,
                                                                BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
                                                                const CComPtr<IMediaSample>& sample,
-                                                               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0);
+                                                               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
+                                                               VideoFrameBufferPool framesPool = {});
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> create(const webrtc::VideoCaptureCapability& frameInfo,
                                                                BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
                                                                const CComPtr<IMediaSample>& sample,
-                                                               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0);
+                                                               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
+                                                               VideoFrameBufferPool framesPool = {});
     // impl. of MFVideoBufferInterface
     rtc::scoped_refptr<webrtc::NV12BufferInterface> toNV12() final;
     // impl. of VideoFrameBuffer<>
@@ -49,7 +51,8 @@ protected:
     MFMediaSampleBuffer(int width, int height, webrtc::VideoType bufferType,
                         BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
                         const CComPtr<IMediaSample>& sample,
-                        webrtc::VideoRotation rotation);
+                        webrtc::VideoRotation rotation,
+                        VideoFrameBufferPool framesPool);
     // impl. of VideoFrameBuffer<>
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 private:

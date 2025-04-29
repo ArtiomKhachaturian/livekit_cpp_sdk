@@ -55,7 +55,11 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
     , _framesPool(VideoFrameBufferPoolSource::create())
 {
+#ifdef WEBRTC_MAC
     static_assert(64U == sizeof(rtc::VideoSinkWants), "check changes in rtc::VideoSinkWants structure");
+#elif defined(WEBRTC_WIN)
+    // TODO: add assertion
+#endif
     if (_framesPool) {
         _framesPool->resize(webrtc::videocapturemodule::kDefaultFrameRate);
     }

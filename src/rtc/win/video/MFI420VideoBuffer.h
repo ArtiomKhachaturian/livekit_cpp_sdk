@@ -14,25 +14,10 @@
 #pragma once
 #ifdef WEBRTC_WIN
 #include "MFVideoBuffer.h"
+#include "LibyuvImport.h"
+#include "VideoFrameBufferPool.h"
 #include <api/video/i420_buffer.h>
 #include <memory>
-
-namespace libyuv {
-    extern "C" {
-        extern int I420ToNV12(const uint8_t* src_y,
-            int src_stride_y,
-            const uint8_t* src_u,
-            int src_stride_u,
-            const uint8_t* src_v,
-            int src_stride_v,
-            uint8_t* dst_y,
-            int dst_stride_y,
-            uint8_t* dst_uv,
-            int dst_stride_uv,
-            int width,
-            int height);
-    }
-}
 
 namespace LiveKitCpp 
 {
@@ -44,7 +29,8 @@ class MFI420VideoBuffer : public MFVideoBuffer<webrtc::I420BufferInterface, TMFD
 public:
     MFI420VideoBuffer(int width, int height, BYTE* buffer,
                       DWORD actualBufferLen, DWORD totalBufferLen,
-                      const CComPtr<TMFData>& data);
+                      const CComPtr<TMFData>& data,
+                      VideoFrameBufferPool framesPool = {});
     // impl. of MFVideoBufferInterface
     rtc::scoped_refptr<webrtc::NV12BufferInterface> toNV12() final;
     // impl. of webrtc::I420BufferInterface
@@ -54,20 +40,24 @@ public:
     const uint8_t* DataY() const final { return BaseClass::buffer(); }
     const uint8_t* DataU() const final;
     const uint8_t* DataV() const final;
+private:
+    const VideoFrameBufferPool _framesPool;
 };
 
 template <class TMFData>
 inline MFI420VideoBuffer<TMFData>::MFI420VideoBuffer(int width, int height, BYTE* buffer,
                                                      DWORD actualBufferLen, DWORD totalBufferLen,
-                                                     const CComPtr<TMFData>& data)
+                                                     const CComPtr<TMFData>& data,
+                                                     VideoFrameBufferPool framesPool)
     : BaseClass(width, height, webrtc::VideoType::kI420, buffer, actualBufferLen, totalBufferLen, data)
+    , _framesPool(std::move(framesPool))
 {
 }
 
 template <class TMFData>
 inline rtc::scoped_refptr<webrtc::NV12BufferInterface> MFI420VideoBuffer<TMFData>::toNV12()
 {
-    const auto nv12 = createNV12(BaseClass::width(), BaseClass::height());
+    const auto nv12 = _framesPool.createNV12(BaseClass::width(), BaseClass::height());
     if (nv12 && 0 == libyuv::I420ToNV12(DataY(), StrideY(), 
                                         DataU(), StrideU(),
                                         DataV(), StrideV(),

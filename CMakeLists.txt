@@ -180,14 +180,18 @@ target_link_libraries(${SIGNALING_LIB} PRIVATE utf8_range::utf8_validity utf8_ra
 # Generic attributes for the library
 set_target_properties(${SIGNALING_LIB} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 if (WIN32)
-    target_compile_definitions(${SIGNALING_LIB} PRIVATE -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+    target_compile_definitions(${SIGNALING_LIB} PRIVATE -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS 
+                                                        -DUNICODE 
+                                                        -DNOMINMAX 
+                                                        -DWIN32_LEAN_AND_MEAN)
     target_compile_options(${SIGNALING_LIB} PRIVATE /wd4068 /wd4141)
 elseif (APPLE)
     set_target_properties(${SIGNALING_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
     target_link_libraries(${SIGNALING_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework CoreWLAN -framework SystemConfiguration")
     signDylib(${SIGNALING_LIB})
 endif()
-target_compile_definitions(${SIGNALING_LIB} PRIVATE -DLIVEKIT_SIGNALING_EXPORTS -DLIVEKIT_PROTOCOL_VERSION=${LIVEKIT_PROTOCOL_VERSION} 
+target_compile_definitions(${SIGNALING_LIB} PRIVATE -DLIVEKIT_SIGNALING_EXPORTS 
+                                                    -DLIVEKIT_PROTOCOL_VERSION=${LIVEKIT_PROTOCOL_VERSION} 
                                                     -DPROJECT_VERSION="${PROJECT_VERSION}")
 
 # RTC/WebRTC SDK
@@ -335,7 +339,14 @@ if (WEBRTC_AVAILABLE)
         target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit -framework Metal")
     elseif(WIN32)
         target_compile_options(${RTC_LIB} PRIVATE /wd4068 /wd4141)
-        target_compile_definitions(${RTC_LIB} PRIVATE -DWINRT_DIAGNOSTICS -DWEBRTC_WIN -D_CRT_SECURE_NO_WARNINGS -DRTC_ENABLE_WIN_WGC -DUNICODE -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+        target_compile_definitions(${RTC_LIB} PRIVATE -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS 
+                                                      -DWINRT_DIAGNOSTICS 
+                                                      -DWEBRTC_WIN 
+                                                      -D_CRT_SECURE_NO_WARNINGS 
+                                                      -DRTC_ENABLE_WIN_WGC 
+                                                      -DUNICODE 
+                                                      -DNOMINMAX 
+                                                      -DWIN32_LEAN_AND_MEAN)
         # C++20 required for supporting of designated initializers (related to video codecs) in WebRTC code
         # maybe we need to review this approach and remove such initializer with replacement to own code
         target_compile_options(${RTC_LIB} PRIVATE /std:c++20)

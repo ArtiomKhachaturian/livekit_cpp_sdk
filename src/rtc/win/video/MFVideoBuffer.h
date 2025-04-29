@@ -37,7 +37,8 @@ protected:
     template <class... Types>
     MFVideoBuffer(int width, int height, webrtc::VideoType bufferType,
                   BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
-                  const CComPtr<TMFData>& data, Types&&... args);
+                  const CComPtr<TMFData>& data, 
+                  Types&&... args);
 private:
     const int _width;
     const int _height;

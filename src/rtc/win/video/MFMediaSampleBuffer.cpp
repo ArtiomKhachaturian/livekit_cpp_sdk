@@ -53,9 +53,12 @@ namespace LiveKitCpp
 MFMediaSampleBuffer::MFMediaSampleBuffer(int width, int height, webrtc::VideoType bufferType,
                                          BYTE* buffer, DWORD actualBufferLen, DWORD totalBufferLen,
                                          const CComPtr<IMediaSample>& sample,
-                                         webrtc::VideoRotation rotation)
-    : BaseClass(targetWidth(width, std::abs(height), rotation), targetHeight(width, std::abs(height), rotation),
-                bufferType, buffer, actualBufferLen, totalBufferLen, sample)
+                                         webrtc::VideoRotation rotation,
+                                         VideoFrameBufferPool framesPool)
+    : BaseClass(targetWidth(width, std::abs(height), rotation), 
+                targetHeight(width, std::abs(height), rotation),
+                bufferType, buffer, actualBufferLen, totalBufferLen, 
+                sample, std::move(framesPool))
     , _originalWidth(width)
     , _originalHeight(height)
     , _rotation(rotation)
@@ -66,7 +69,8 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                                                                          webrtc::VideoType bufferType, BYTE* buffer,
                                                                          DWORD actualBufferLen, DWORD totalBufferLen,
                                                                          const CComPtr<IMediaSample>& sample,
-                                                                         webrtc::VideoRotation rotation)
+                                                                         webrtc::VideoRotation rotation,
+                                                                         VideoFrameBufferPool framesPool)
 {
     if (width > 0 && buffer && actualBufferLen && sample && webrtc::VideoType::kUnknown != bufferType) {
         // setting absolute height (in case it was negative),
@@ -84,7 +88,8 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                                                                                       buffer,
                                                                                       actualBufferLen, 
                                                                                       totalBufferLen,
-                                                                                      sample);
+                                                                                      sample,
+                                                                                      std::move(framesPool));
                     default:
                         break;
                 }
@@ -92,7 +97,8 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                                                                   bufferType, buffer,
                                                                   actualBufferLen, 
                                                                   totalBufferLen,
-                                                                  sample, rotation);
+                                                                  sample, rotation,
+                                                                  std::move(framesPool));
             }
         }
     }
@@ -103,10 +109,11 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(const w
                                                                          BYTE* buffer, DWORD actualBufferLen, 
                                                                          DWORD totalBufferLen,
                                                                          const CComPtr<IMediaSample>& sample,
-                                                                         webrtc::VideoRotation rotation)
+                                                                         webrtc::VideoRotation rotation,
+                                                                         VideoFrameBufferPool framesPool)
 {
     return create(frameInfo.width, frameInfo.height, frameInfo.videoType,
-                  buffer, actualBufferLen, totalBufferLen, sample, rotation);
+                  buffer, actualBufferLen, totalBufferLen, sample, rotation, std::move(framesPool));
 }
 
 ::rtc::scoped_refptr<webrtc::NV12BufferInterface> MFMediaSampleBuffer::toNV12()
