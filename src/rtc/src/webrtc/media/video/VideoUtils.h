@@ -21,6 +21,10 @@
 #endif
 #include <optional>
 
+namespace webrtc {
+enum class VideoType;
+}
+
 namespace LiveKitCpp
 {
 
@@ -88,5 +92,8 @@ bool isRGB32Format(OSType format);
 inline bool isRGBFormat(OSType format) { return isRGB24Format(format) || isRGB32Format(format); }
 bool isSupportedFormat(OSType format);
 #endif
+
+webrtc::VideoType map(VideoFrameType type);
+std::optional<VideoFrameType> map(webrtc::VideoType type);
 	
 } // namespace LiveKitCpp

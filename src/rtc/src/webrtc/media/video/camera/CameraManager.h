@@ -82,7 +82,5 @@ private:
 std::string toString(const webrtc::VideoCaptureCapability& capability);
 VideoOptions map(const webrtc::VideoCaptureCapability& capability);
 webrtc::VideoCaptureCapability map(const VideoOptions& options);
-webrtc::VideoType map(VideoFrameType type);
-std::optional<VideoFrameType> map(webrtc::VideoType type);
 
 } // namespace LiveKitCpp

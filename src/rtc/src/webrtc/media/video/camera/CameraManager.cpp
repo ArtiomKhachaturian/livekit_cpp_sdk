@@ -14,6 +14,7 @@
 #include "CameraManager.h"
 #include "CameraCapturer.h"
 #include "RtcUtils.h"
+#include "VideoUtils.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <modules/video_capture/video_capture_config.h>
 #include <cassert>
@@ -254,79 +255,6 @@ webrtc::VideoCaptureCapability map(const VideoOptions& options)
         capability.videoType = map(options._type.value());
     }
     return capability;
-}
-
-webrtc::VideoType map(VideoFrameType type)
-{
-    switch (type) {
-        case VideoFrameType::I420:
-            return webrtc::VideoType::kI420;
-        case VideoFrameType::IYUV:
-            return webrtc::VideoType::kIYUV;
-        case VideoFrameType::RGB24:
-            return webrtc::VideoType::kRGB24;
-        case VideoFrameType::BGR24:
-            return webrtc::VideoType::kBGR24;
-        case VideoFrameType::ARGB32:
-            return webrtc::VideoType::kARGB;
-        case VideoFrameType::ABGR32:
-            return webrtc::VideoType::kABGR;
-        case VideoFrameType::RGB565:
-            return webrtc::VideoType::kRGB565;
-        case VideoFrameType::YUY2:
-            return webrtc::VideoType::kYUY2;
-        case VideoFrameType::YV12:
-            return webrtc::VideoType::kYV12;
-        case VideoFrameType::UYVY:
-            return webrtc::VideoType::kUYVY;
-        case VideoFrameType::MJPEG:
-            return webrtc::VideoType::kMJPEG;
-        case VideoFrameType::BGRA32:
-            return webrtc::VideoType::kBGRA;
-        case VideoFrameType::NV12:
-            return webrtc::VideoType::kNV12;
-        default:
-            break;
-    }
-    return webrtc::VideoType::kUnknown;
-}
-
-std::optional<VideoFrameType> map(webrtc::VideoType type)
-{
-    switch (type) {
-        case webrtc::VideoType::kUnknown:
-            break;
-        case webrtc::VideoType::kI420:
-            return VideoFrameType::I420;
-        case webrtc::VideoType::kIYUV:
-            return VideoFrameType::IYUV;
-        case webrtc::VideoType::kRGB24:
-            return VideoFrameType::RGB24;
-        case webrtc::VideoType::kBGR24:
-            return VideoFrameType::BGR24;
-        case webrtc::VideoType::kARGB:
-            return VideoFrameType::ARGB32;
-        case webrtc::VideoType::kABGR:
-            return VideoFrameType::ABGR32;
-        case webrtc::VideoType::kRGB565:
-            return VideoFrameType::RGB565;
-        case webrtc::VideoType::kYUY2:
-            return VideoFrameType::YUY2;
-        case webrtc::VideoType::kYV12:
-            return VideoFrameType::YV12;
-        case webrtc::VideoType::kUYVY:
-            return VideoFrameType::UYVY;
-        case webrtc::VideoType::kMJPEG:
-            return VideoFrameType::MJPEG;
-        case webrtc::VideoType::kBGRA:
-            return VideoFrameType::BGRA32;
-        case webrtc::VideoType::kNV12:
-            return VideoFrameType::NV12;
-        default:
-            assert(false);
-            break;
-    }
-    return {};
 }
 
 } // namespace LiveKitCpp
