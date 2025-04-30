@@ -52,6 +52,7 @@ class RemoteParticipants;
 class RemoteParticipant;
 class RTCEngineImpl;
 class SessionListener;
+class LocalAudioTrack;
 class LocalVideoTrack;
 enum class SessionState;
 enum class EncryptionType;
@@ -88,7 +89,7 @@ public:
                                                             EncryptionType encryption);
     std::shared_ptr<LocalVideoTrackImpl> addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
                                                             EncryptionType encryption);
-    bool removeLocalAudioTrack(std::shared_ptr<AudioTrack> track);
+    bool removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<const LocalParticipant> localParticipant() const;
     std::shared_ptr<const RemoteParticipants> remoteParticipants() const;

@@ -11,25 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // CameraTrack.h
-#include "livekit/rtc/media/VideoTrack.h"
-#include "livekit/rtc/media/VideoOptions.h"
-#include "livekit/rtc/media/MediaDeviceInfo.h"
+#pragma once // LocalAudioTrack.h
+#include "livekit/rtc/media/AudioTrack.h"
 #include "livekit/rtc/media/NetworkPriority.h"
 
 namespace LiveKitCpp
 {
 
-class LocalVideoFilterPin;
-
-class LocalVideoTrack : public VideoTrack
+class LocalAudioTrack : public AudioTrack
 {
 public:
-    virtual void setDeviceInfo(MediaDeviceInfo info = {}) = 0;
-    virtual MediaDeviceInfo deviceInfo() const = 0;
-    virtual void setOptions(VideoOptions options = {}) = 0;
-    virtual VideoOptions options() const = 0;
-    virtual void setFilter(LocalVideoFilterPin* inputPin) = 0;
     // RTP
     // The relative DiffServ Code Point priority for this encoding, allowing
     // packets to be marked relatively higher or lower without affecting

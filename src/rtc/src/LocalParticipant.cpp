@@ -89,7 +89,7 @@ std::shared_ptr<LocalVideoTrackImpl> LocalParticipant::addVideoTrack(std::shared
 }
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
-    removeAudioTrack(std::shared_ptr<AudioTrack> track)
+    removeAudioTrack(std::shared_ptr<LocalAudioTrack> track)
 {
     if (auto local = std::dynamic_pointer_cast<LocalAudioTrackImpl>(track)) {
         LOCK_WRITE_SAFE_OBJ(_audioTracks);
@@ -118,7 +118,7 @@ webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
     return {};
 }
 
-std::shared_ptr<AudioTrack> LocalParticipant::audioTrack(size_t index) const
+std::shared_ptr<LocalAudioTrack> LocalParticipant::audioTrack(size_t index) const
 {
     LOCK_READ_SAFE_OBJ(_audioTracks);
     if (index < _audioTracks->size()) {

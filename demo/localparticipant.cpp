@@ -101,7 +101,7 @@ std::shared_ptr<LiveKitCpp::LocalVideoTrack> LocalParticipant::deactivateSharing
     return std::dynamic_pointer_cast<LiveKitCpp::LocalVideoTrack>(track);
 }
 
-void LocalParticipant::activateMicrophone(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack)
+void LocalParticipant::activateMicrophone(const std::shared_ptr<LiveKitCpp::LocalAudioTrack>& sdkTrack)
 {
     if (sdkTrack && !_microphone._track) {
         _microphone._track = addAudio<>(sdkTrack);
@@ -114,7 +114,7 @@ void LocalParticipant::activateMicrophone(const std::shared_ptr<LiveKitCpp::Audi
     }
 }
 
-std::shared_ptr<LiveKitCpp::AudioTrack> LocalParticipant::deactivateMicrophone()
+std::shared_ptr<LiveKitCpp::LocalAudioTrack> LocalParticipant::deactivateMicrophone()
 {
     std::shared_ptr<LiveKitCpp::AudioTrack> track;
     if (_microphone._track) {
@@ -125,7 +125,7 @@ std::shared_ptr<LiveKitCpp::AudioTrack> LocalParticipant::deactivateMicrophone()
             emit activeMicrophoneChanged();
         }
     }
-    return track;
+    return std::dynamic_pointer_cast<LiveKitCpp::LocalAudioTrack>(track);
 }
 
 void LocalParticipant::setCameraDeviceInfo(const MediaDeviceInfo& info)

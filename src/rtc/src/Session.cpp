@@ -87,8 +87,8 @@ size_t Session::localVideoTracksCount() const
     return 0U;
 }
 
-std::shared_ptr<AudioTrack> Session::addAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                   EncryptionType encryption)
+std::shared_ptr<LocalAudioTrack> Session::addAudioTrack(std::shared_ptr<AudioDevice> device,
+                                                        EncryptionType encryption)
 {
     return _impl->_engine.addLocalAudioTrack(std::move(device), encryption);
 }
@@ -99,7 +99,7 @@ std::shared_ptr<LocalVideoTrack> Session::addVideoTrack(std::shared_ptr<LocalVid
     return _impl->_engine.addLocalVideoTrack(std::move(device), encryption);
 }
 
-void Session::removeAudioTrack(std::shared_ptr<AudioTrack> track)
+void Session::removeAudioTrack(std::shared_ptr<LocalAudioTrack> track)
 {
     _impl->_engine.removeLocalAudioTrack(std::move(track));
 }
@@ -109,7 +109,7 @@ void Session::removeVideoTrack(std::shared_ptr<LocalVideoTrack> track)
     _impl->_engine.removeLocalVideoTrack(std::move(track));
 }
 
-std::shared_ptr<AudioTrack> Session::audioTrack(size_t index) const
+std::shared_ptr<LocalAudioTrack> Session::audioTrack(size_t index) const
 {
     if (const auto participant = _impl->_engine.localParticipant()) {
         return participant->audioTrack(index);

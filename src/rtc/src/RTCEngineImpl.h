@@ -61,6 +61,7 @@ class CameraTrackImpl;
 class KeyProvider;
 class LocalParticipant;
 class LocalTrackAccessor;
+class LocalAudioTrack;
 class LocalVideoTrack;
 class LocalAudioTrackImpl;
 class LocalVideoTrackImpl;
@@ -105,7 +106,7 @@ public:
                                                             EncryptionType encryption);
     std::shared_ptr<LocalVideoTrackImpl> addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
                                                             EncryptionType encryption);
-    bool removeLocalAudioTrack(std::shared_ptr<AudioTrack> track);
+    bool removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     void setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider = {});
     void setAudioPlayout(bool playout);

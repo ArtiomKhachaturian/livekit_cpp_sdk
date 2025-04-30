@@ -10,6 +10,7 @@
 #include <QQmlEngine>
 
 namespace LiveKitCpp {
+class LocalAudioTrack;
 class LocalVideoTrack;
 }
 
@@ -75,8 +76,8 @@ public:
     std::shared_ptr<LiveKitCpp::LocalVideoTrack> deactivateCamera();
     void activateSharing(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack);
     std::shared_ptr<LiveKitCpp::LocalVideoTrack> deactivateSharing();
-    void activateMicrophone(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack);
-    std::shared_ptr<LiveKitCpp::AudioTrack> deactivateMicrophone();
+    void activateMicrophone(const std::shared_ptr<LiveKitCpp::LocalAudioTrack>& sdkTrack);
+    std::shared_ptr<LiveKitCpp::LocalAudioTrack> deactivateMicrophone();
     bool activeCamera() const { return _sharing.activeTrack(); }
     bool activeSharing() const { return _sharing.activeTrack(); }
     bool activeMicrophone() const { return _microphone.activeTrack(); }

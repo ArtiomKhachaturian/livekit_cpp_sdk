@@ -52,11 +52,7 @@ protected:
                     std::shared_ptr<TMediaDevice> mediaDevice,
                     const std::weak_ptr<TrackManager>& trackManager);
     const auto& info() const noexcept { return _info; }
-    webrtc::RtpParameters rtpParameters() const;
-    void setRtpParameters(const webrtc::RtpParameters& parameters);
     void onMuteChanged(bool mute) const final;
-    void onNetworkPriorityChanged(NetworkPriority priority) final;
-    void onBitratePriorityChanged(double priority) final;
 private:
     Bricks::SafeObj<TrackInfo> _info;
     const rtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;
@@ -72,14 +68,6 @@ inline RemoteTrackImpl<TBaseImpl>::RemoteTrackImpl(const TrackInfo& initialInfo,
     , _info(initialInfo)
     , _receiver(receiver)
 {
-    if (_receiver) {
-        auto parameters = _receiver->GetParameters();
-        const auto b1 = TBaseImpl::setBitratePriority(TBaseImpl::bitratePriority(), parameters);
-        const auto b2 = TBaseImpl::setNetworkPriority(TBaseImpl::networkPriority(), parameters);
-        if (b1 || b2) {
-            setRtpParameters(parameters);
-        }
-    }
 }
 
 template <class TBaseImpl>
@@ -166,50 +154,11 @@ inline bool RemoteTrackImpl<TBaseImpl>::remoteMuted() const
 }
 
 template <class TBaseImpl>
-inline webrtc::RtpParameters RemoteTrackImpl<TBaseImpl>::rtpParameters() const
-{
-    if (_receiver) {
-        return _receiver->GetParameters();
-    }
-    return {};
-}
-
-template <class TBaseImpl>
-inline void RemoteTrackImpl<TBaseImpl>::setRtpParameters(const webrtc::RtpParameters& parameters)
-{
-    if (_receiver && !_receiver->SetParameters(parameters)) {
-        if (const auto m = TBaseImpl::trackManager()) {
-            m->notifyAboutSetRtpParametersFailure(sid());
-        }
-    }
-}
-
-template <class TBaseImpl>
 inline void RemoteTrackImpl<TBaseImpl>::onMuteChanged(bool mute) const
 {
     TBaseImpl::onMuteChanged(mute);
     if (const auto m = TBaseImpl::trackManager()) {
         m->notifyAboutMuteChanges(sid(), mute);
-    }
-}
-
-template <class TBaseImpl>
-inline void RemoteTrackImpl<TBaseImpl>::onNetworkPriorityChanged(NetworkPriority priority)
-{
-    TBaseImpl::onNetworkPriorityChanged(priority);
-    auto parameters = rtpParameters();
-    if (TBaseImpl::setNetworkPriority(priority, parameters)) {
-        setRtpParameters(parameters);
-    }
-}
-
-template <class TBaseImpl>
-inline void RemoteTrackImpl<TBaseImpl>::onBitratePriorityChanged(double priority)
-{
-    TBaseImpl::onBitratePriorityChanged(priority);
-    auto parameters = rtpParameters();
-    if (TBaseImpl::setBitratePriority(priority, parameters)) {
-        setRtpParameters(parameters);
     }
 }
 

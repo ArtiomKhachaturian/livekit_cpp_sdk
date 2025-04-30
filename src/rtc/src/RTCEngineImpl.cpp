@@ -111,7 +111,7 @@ std::shared_ptr<LocalVideoTrackImpl> RTCEngineImpl::addLocalVideoTrack(std::shar
     return track;
 }
 
-bool RTCEngineImpl::removeLocalAudioTrack(std::shared_ptr<AudioTrack> track)
+bool RTCEngineImpl::removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track)
 {
     if (auto rtcTrack = _localParticipant->removeAudioTrack(track)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {

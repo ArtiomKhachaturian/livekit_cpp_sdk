@@ -149,7 +149,7 @@ std::shared_ptr<LocalVideoTrackImpl> RTCEngine::addLocalVideoTrack(std::shared_p
     return {};
 }
 
-bool RTCEngine::removeLocalAudioTrack(std::shared_ptr<AudioTrack> track)
+bool RTCEngine::removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track)
 {
     if (track) {
         if (const auto impl = loadImpl()) {

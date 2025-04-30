@@ -41,6 +41,13 @@ Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         source: model.track
+                        readonly property bool local: {
+                            if (source !== null) {
+                                return !source.remote
+                            }
+                            return false
+                        }
+
                         MouseArea {
                             anchors.fill: parent
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -117,6 +124,7 @@ Item {
                            Menu {
                                title: qsTr("Network priority")
                                ActionGroup { id: networkPriorityGroup }
+                               enabled: renderer.local
                                Action {
                                    text: qsTr("Very low")
                                    checkable: true
@@ -164,6 +172,7 @@ Item {
                            }
                            Menu {
                                title: qsTr("Degradation preference")
+                               enabled: renderer.local
                                ActionGroup { id: degradationGroup }
                                Action {
                                    text: qsTr("Default")

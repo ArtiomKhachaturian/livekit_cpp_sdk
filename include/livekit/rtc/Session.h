@@ -18,7 +18,7 @@
 #include "livekit/rtc/RemoteParticipant.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
 #include "livekit/rtc/e2e/KeyProviderOptions.h"
-#include "livekit/rtc/media/AudioTrack.h"
+#include "livekit/rtc/media/LocalAudioTrack.h"
 #include "livekit/rtc/media/LocalVideoTrack.h"
 #include "livekit/rtc/stats/StatsSource.h"
 #include "livekit/signaling/sfu/EncryptionType.h"
@@ -65,13 +65,13 @@ public:
     bool audioRecordingEnabled() const;
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    std::shared_ptr<AudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device,
-                                              EncryptionType encryption = EncryptionType::None);
+    std::shared_ptr<LocalAudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device,
+                                                   EncryptionType encryption = EncryptionType::None);
     std::shared_ptr<LocalVideoTrack> addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
                                                    EncryptionType encryption = EncryptionType::None);
-    void removeAudioTrack(std::shared_ptr<AudioTrack> track);
+    void removeAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     void removeVideoTrack(std::shared_ptr<LocalVideoTrack> track);
-    std::shared_ptr<AudioTrack> audioTrack(size_t index) const;
+    std::shared_ptr<LocalAudioTrack> audioTrack(size_t index) const;
     std::shared_ptr<LocalVideoTrack> videoTrack(size_t index) const;
     // remote
     size_t remoteParticipantsCount() const;

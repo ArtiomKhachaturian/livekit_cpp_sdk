@@ -1,5 +1,5 @@
 #include "videotrack.h"
-#include <livekit/rtc/media/VideoTrack.h>
+#include <livekit/rtc/media/LocalVideoTrack.h>
 
 VideoTrack::VideoTrack(QObject* parent)
     : VideoSource{parent}
@@ -67,8 +67,8 @@ bool VideoTrack::isRemote() const
 
 VideoTrack::NetworkPriority VideoTrack::networkPriority() const
 {
-    if (_sdkTrack) {
-        switch (_sdkTrack->networkPriority()) {
+    if (const auto localSdkTrack = std::dynamic_pointer_cast<const LiveKitCpp::LocalVideoTrack>(_sdkTrack)) {
+        switch (localSdkTrack->networkPriority()) {
             case LiveKitCpp::NetworkPriority::VeryLow:
                 break;
             case LiveKitCpp::NetworkPriority::Low:
@@ -107,8 +107,8 @@ VideoTrack::ContentHint VideoTrack::contentHint() const
 
 VideoTrack::DegradationPreference VideoTrack::degradationPreference() const
 {
-    if (_sdkTrack) {
-        switch (_sdkTrack->degradationPreference()) {
+    if (const auto localSdkTrack = std::dynamic_pointer_cast<const LiveKitCpp::LocalVideoTrack>(_sdkTrack)) {
+        switch (localSdkTrack->degradationPreference()) {
             case LiveKitCpp::DegradationPreference::Default:
                 break;
             case LiveKitCpp::DegradationPreference::Disabled:
@@ -136,7 +136,7 @@ void VideoTrack::setMuted(bool mute)
 
 void VideoTrack::setNetworkPriority(NetworkPriority priority)
 {
-    if (_sdkTrack) {
+    if (const auto localSdkTrack = std::dynamic_pointer_cast<LiveKitCpp::LocalVideoTrack>(_sdkTrack)) {
         LiveKitCpp::NetworkPriority sdkPriority = LiveKitCpp::NetworkPriority::VeryLow;
         switch (priority) {
             case NetworkPriority::VeryLow:
@@ -154,8 +154,8 @@ void VideoTrack::setNetworkPriority(NetworkPriority priority)
                 Q_ASSERT(false);
                 break;
         }
-        if (sdkPriority != _sdkTrack->networkPriority()) {
-            _sdkTrack->setNetworkPriority(sdkPriority);
+        if (sdkPriority != localSdkTrack->networkPriority()) {
+            localSdkTrack->setNetworkPriority(sdkPriority);
             emit networkPriorityChanged();
         }
     }
@@ -190,7 +190,7 @@ void VideoTrack::setContentHint(ContentHint hint)
 
 void VideoTrack::setDegradationPreference(DegradationPreference preference)
 {
-    if (_sdkTrack) {
+    if (const auto localSdkTrack = std::dynamic_pointer_cast<LiveKitCpp::LocalVideoTrack>(_sdkTrack)) {
         LiveKitCpp::DegradationPreference sdkPreference = LiveKitCpp::DegradationPreference::Default;
         switch (preference) {
             case DegradationPreference::Default:
@@ -211,8 +211,8 @@ void VideoTrack::setDegradationPreference(DegradationPreference preference)
                 Q_ASSERT(false);
                 break;
         }
-        if (sdkPreference != _sdkTrack->degradationPreference()) {
-            _sdkTrack->setDegradationPreference(sdkPreference);
+        if (sdkPreference != localSdkTrack->degradationPreference()) {
+            localSdkTrack->setDegradationPreference(sdkPreference);
             emit degradationPreferenceChanged();
         }
     }

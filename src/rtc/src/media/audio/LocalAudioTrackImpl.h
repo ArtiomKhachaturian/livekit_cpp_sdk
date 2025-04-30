@@ -14,15 +14,16 @@
 #pragma once // LocalAudioTrack.h
 #include "LocalTrackImpl.h"
 #include "AudioTrackImpl.h"
+#include "livekit/rtc/media/LocalAudioTrack.h"
 
 namespace LiveKitCpp
 {
 
 class AudioDeviceImpl;
 
-class LocalAudioTrackImpl : public LocalTrackImpl<AudioTrackImpl<>>
+class LocalAudioTrackImpl : public LocalTrackImpl<AudioTrackImpl<LocalAudioTrack>>
 {
-    using Base = LocalTrackImpl<AudioTrackImpl<>>;
+    using Base = LocalTrackImpl<AudioTrackImpl<LocalAudioTrack>>;
 public:
     LocalAudioTrackImpl(EncryptionType encryption,
                         std::shared_ptr<AudioDeviceImpl> audioDevice,

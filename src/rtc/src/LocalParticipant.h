@@ -70,10 +70,10 @@ public:
                                                        EncryptionType encryption,
                                                        const std::weak_ptr<TrackManager>& trackManager);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
-        removeAudioTrack(std::shared_ptr<AudioTrack> track);
+        removeAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeVideoTrack(std::shared_ptr<LocalVideoTrack> track);
-    std::shared_ptr<AudioTrack> audioTrack(size_t index) const;
+    std::shared_ptr<LocalAudioTrack> audioTrack(size_t index) const;
     std::shared_ptr<LocalVideoTrack> videoTrack(size_t index) const;
     std::vector<std::shared_ptr<LocalTrackAccessor>> tracks() const;
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> media() const;

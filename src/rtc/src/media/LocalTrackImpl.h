@@ -21,6 +21,7 @@
 #include "livekit/signaling/sfu/EncryptionType.h"
 #include "livekit/rtc/media/Track.h"
 #include "livekit/rtc/media/MediaEventsListener.h"
+#include "livekit/rtc/media/NetworkPriority.h"
 #include <api/media_stream_interface.h>
 #include <api/rtp_sender_interface.h>
 #include <atomic>
@@ -29,10 +30,13 @@
 namespace LiveKitCpp
 {
 
+class LocalAudioTrack;
+class LocalVideoTrack;
+
 template <class TBaseImpl>
 class LocalTrackImpl : public TBaseImpl, public LocalTrackAccessor
 {
-    static_assert(std::is_base_of_v<Track, TBaseImpl>);
+    static_assert(std::is_base_of_v<LocalAudioTrack, TBaseImpl> || std::is_base_of_v<LocalVideoTrack, TBaseImpl>);
 public:
     ~LocalTrackImpl() override = default;
     // impl. of LocalTrack
@@ -52,6 +56,10 @@ public:
     EncryptionType encryption() const final { return _encryption; }
     std::string name() const final { return _name; }
     bool remote() const noexcept final { return false; }
+    NetworkPriority networkPriority() const final { return _networkPriority; }
+    void setNetworkPriority(NetworkPriority priority) final;
+    double bitratePriority() const final { return _bitratePriority; }
+    void setBitratePriority(double priority) final;
 protected:
     template <class TMediaDevice>
     LocalTrackImpl(std::string name,
@@ -63,16 +71,20 @@ protected:
     void setRtpParameters(const webrtc::RtpParameters& parameters);
     // overrides of TrackImpl<>
     void onMuteChanged(bool mute) const final;
-    void onNetworkPriorityChanged(NetworkPriority priority) final;
-    void onBitratePriorityChanged(double priority) final;
 private:
     bool added() const;
+    static bool setBitratePriority(double priority, std::vector<webrtc::RtpEncodingParameters>& encodings);
+    static bool setBitratePriority(double priority, webrtc::RtpParameters& parameters);
+    static bool setNetworkPriority(NetworkPriority priority, std::vector<webrtc::RtpEncodingParameters>& encodings);
+    static bool setNetworkPriority(NetworkPriority priority, webrtc::RtpParameters& parameters);
 private:
     const std::string _name;
     const EncryptionType _encryption;
     std::atomic_bool _remoteMuted = false;
     Bricks::SafeObj<std::string> _sid;
     SafeScopedRefPtr<webrtc::RtpSenderInterface> _sender;
+    std::atomic<NetworkPriority> _networkPriority = NetworkPriority::Low;
+    std::atomic<double> _bitratePriority = webrtc::kDefaultBitratePriority;
 };
 
 template <class TBaseImpl>
@@ -164,6 +176,28 @@ inline void LocalTrackImpl<TBaseImpl>::queryStats() const
 }
 
 template <class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::setNetworkPriority(NetworkPriority priority)
+{
+    if (exchangeVal(priority, _networkPriority)) {
+        auto parameters = rtpParameters();
+        if (setNetworkPriority(priority, parameters)) {
+            setRtpParameters(parameters);
+        }
+    }
+}
+
+template <class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::setBitratePriority(double priority)
+{
+    if (exchangeVal(priority, _bitratePriority)) {
+        auto parameters = rtpParameters();
+        if (setBitratePriority(priority, parameters)) {
+            setRtpParameters(parameters);
+        }
+    }
+}
+
+template <class TBaseImpl>
 inline bool LocalTrackImpl<TBaseImpl>::added() const
 {
     LOCK_READ_SAFE_OBJ(_sender);
@@ -173,8 +207,8 @@ inline bool LocalTrackImpl<TBaseImpl>::added() const
 template <class TBaseImpl>
 inline bool LocalTrackImpl<TBaseImpl>::updateSenderInitialParameters(webrtc::RtpParameters& parameters) const
 {
-    const auto b1 = TBaseImpl::setBitratePriority(TBaseImpl::bitratePriority(), parameters);
-    const auto b2 = TBaseImpl::setNetworkPriority(TBaseImpl::networkPriority(), parameters);
+    const auto b1 = setBitratePriority(bitratePriority(), parameters);
+    const auto b2 = setNetworkPriority(networkPriority(), parameters);
     return b1 || b2;
 }
 
@@ -219,23 +253,67 @@ inline void LocalTrackImpl<TBaseImpl>::onMuteChanged(bool mute) const
 }
 
 template <class TBaseImpl>
-inline void LocalTrackImpl<TBaseImpl>::onNetworkPriorityChanged(NetworkPriority priority)
+inline bool LocalTrackImpl<TBaseImpl>::setBitratePriority(double priority,
+                                                          std::vector<webrtc::RtpEncodingParameters>& encodings)
 {
-    TBaseImpl::onNetworkPriorityChanged(priority);
-    auto parameters = rtpParameters();
-    if (TBaseImpl::setNetworkPriority(priority, parameters)) {
-        setRtpParameters(parameters);
+    bool changed = false;
+    if (!encodings.empty()) {
+        for (auto& encoding : encodings) {
+            if (!floatsIsEqual(encoding.bitrate_priority, priority)) {
+                encoding.bitrate_priority = priority;
+                changed = true;
+            }
+        }
     }
+    return changed;
 }
 
 template <class TBaseImpl>
-inline void LocalTrackImpl<TBaseImpl>::onBitratePriorityChanged(double priority)
+inline bool LocalTrackImpl<TBaseImpl>::setBitratePriority(double priority,
+                                                          webrtc::RtpParameters& parameters)
 {
-    TBaseImpl::onBitratePriorityChanged(priority);
-    auto parameters = rtpParameters();
-    if (TBaseImpl::setBitratePriority(priority, parameters)) {
-        setRtpParameters(parameters);
-    }
+    return setBitratePriority(priority, parameters.encodings);
 }
+
+template <class TBaseImpl>
+inline bool LocalTrackImpl<TBaseImpl>::setNetworkPriority(NetworkPriority priority,
+                                                          std::vector<webrtc::RtpEncodingParameters>& encodings)
+{
+    bool changed = false;
+    if (!encodings.empty()) {
+        webrtc::Priority rtcPriority = webrtc::Priority::kLow;
+        switch (priority) {
+            case NetworkPriority::VeryLow:
+                rtcPriority = webrtc::Priority::kVeryLow;
+                break;
+            case NetworkPriority::Low:
+                break;
+            case NetworkPriority::Medium:
+                rtcPriority = webrtc::Priority::kMedium;
+                break;
+            case NetworkPriority::High:
+                rtcPriority = webrtc::Priority::kHigh;
+                break;
+            default:
+                assert(false);
+                break;
+        }
+        for (auto& encoding : encodings) {
+            if (encoding.network_priority != rtcPriority) {
+                encoding.network_priority = rtcPriority;
+                changed = true;
+            }
+        }
+    }
+    return changed;
+}
+
+template <class TBaseImpl>
+inline bool LocalTrackImpl<TBaseImpl>::setNetworkPriority(NetworkPriority priority,
+                                                          webrtc::RtpParameters& parameters)
+{
+    return setNetworkPriority(priority, parameters.encodings);
+}
+
 
 } // namespace LiveKitCpp
