@@ -116,14 +116,10 @@ WinCameraCapturer::~WinCameraCapturer()
     if (!capturer->_inputSendPin) {
         return {};
     }
-    if (!capturer->setCameraOutput(CameraManager::defaultCapability())) {
-        return {};
-    }
     hr = capturer->_mediaControl->Pause();
     if (!CAMERA_IS_OK(hr, logger)) {
         return {};
     }
-    capturer->_requestedCapability({});
     return capturer;
 }
 
@@ -360,12 +356,21 @@ bool WinCameraCapturer::setCameraOutput(const webrtc::VideoCaptureCapability& re
         if (capability.maxFPS > 0 && windowsCapability.supportFrameRateControl) {
             h->AvgTimePerFrame = REFERENCE_TIME(10000000.0 / capability.maxFPS);
         }
+        h->bmiHeader.biWidth = capability.width;
+        h->bmiHeader.biHeight = capability.height;
     }
     else {
         VIDEOINFOHEADER* h = reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
         if (capability.maxFPS > 0 && windowsCapability.supportFrameRateControl) {
             h->AvgTimePerFrame = REFERENCE_TIME(10000000.0 / capability.maxFPS);
         }
+        h->bmiHeader.biWidth = capability.width;
+        h->bmiHeader.biHeight = capability.height;
+    }
+    hr = streamConfig->SetFormat(pmt);
+    if (!LOGGABLE_COM_IS_OK(hr)) {
+        webrtc::videocapturemodule::FreeMediaType(pmt);
+        return false;
     }
     // Set the sink filter to request this capability
     hr = _sinkFilter->setRequestedCapability(capability);
