@@ -36,12 +36,14 @@ struct AddTrackRequest
     // true to add track and initialize to muted
     bool _muted = {};
     // true if DTX (Discontinuous Transmission) is disabled for audio
+    [[deprecated("deprecated in favor of AudioTrackFeature::NoDtx")]]
     bool _disableDtx = {};
     TrackSource _source = {};
     std::vector<VideoLayer> _layers;
     std::vector<SimulcastCodec> _simulcastCodecs;
     // server ID of track, publish new codec to exist track
     std::string _sid;
+    [[deprecated("deprecated in favor of AudioTrackFeature::Stereo")]]
     bool _stereo = {};
     // true if RED (Redundant Encoding) is disabled for audio
     bool _disableRed = {};

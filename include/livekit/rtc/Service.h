@@ -80,6 +80,10 @@ public:
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     std::vector<MediaDeviceInfo> cameraDevices() const;
     std::vector<VideoOptions> cameraOptions(const MediaDeviceInfo& info) const;
+    bool displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
+                                        std::string_view dialogTitleUTF8,
+                                        void* parentWindow,
+                                        uint32_t positionX, uint32_t positionY) const;
     // listeners
     void addListener(ServiceListener* listener);
     void removeListener(ServiceListener* listener);

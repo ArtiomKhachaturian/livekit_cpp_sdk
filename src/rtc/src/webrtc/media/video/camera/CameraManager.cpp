@@ -219,6 +219,23 @@ rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(std::string_vie
     return {};
 }
 
+bool CameraManager::displaySettingsDialogBox(std::string_view guid,
+                                             std::string_view dialogTitleUTF8,
+                                             void* parentWindow,
+                                             uint32_t positionX, uint32_t positionY) const
+{
+    return 0 == _deviceInfo->DisplayCaptureSettingsDialogBox(guid.data(), dialogTitleUTF8.data(),
+                                                             parentWindow, positionX, positionY);
+}
+
+bool CameraManager::displaySettingsDialogBox(const MediaDeviceInfo& dev,
+                                             std::string_view dialogTitleUTF8,
+                                             void* parentWindow,
+                                             uint32_t positionX, uint32_t positionY) const
+{
+    return displaySettingsDialogBox(dev._guid, std::move(dialogTitleUTF8), parentWindow, positionX, positionY);
+}
+
 std::string toString(const webrtc::VideoCaptureCapability& capability)
 {
     return std::to_string(capability.width) + "x" + std::to_string(capability.height) +

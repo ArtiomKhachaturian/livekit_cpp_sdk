@@ -59,29 +59,37 @@ Pane {
         GroupBox {
             Layout.fillWidth: true
             title: qsTr("Camera")
-            GridLayout {
+            ColumnLayout {
                 anchors.fill: parent
-                CameraModelComboBox {
-                    id: cameraModelComboBox
-                    Layout.fillWidth: true
-                    Layout.columnSpan: 2
-                    onCurrentIndexChanged: notifyAboutAccepted()
+                spacing: 0
+                RowLayout {
+                    CameraModelComboBox {
+                        id: cameraModelComboBox
+                        Layout.fillWidth: true
+                        onCurrentIndexChanged: notifyAboutAccepted()
+                    }
+                    ToolButton {
+                        Layout.alignment: Qt.AlignRight
+                        //icon.width: 16
+                        //icon.height: icon.width
+                        icon.name: "camera-video"
+                        onClicked: {
+                            app.displayCameraSettingsDialogBox(cameraModelComboBox.deviceInfo,
+                                                               qsTr("Camera settings"), 0, 0)
+                        }
+                    }
                 }
-
-                CameraOptionsComboBox {
-                    id: cameraOptionsComboBox
-                    deviceInfo: cameraModelComboBox.deviceInfo
-                    Layout.column: 0
-                    Layout.row: 1
-                    Layout.fillWidth: true
-                    onCurrentIndexChanged: notifyAboutAccepted()
-                }
-
-                CheckBox {
-                    Layout.column: 1
-                    Layout.row: 1
-                    id: interlacedChx
-                    text: qsTr("Interlaced")
+                RowLayout {
+                    CameraOptionsComboBox {
+                        id: cameraOptionsComboBox
+                        deviceInfo: cameraModelComboBox.deviceInfo
+                        Layout.fillWidth: true
+                        onCurrentIndexChanged: notifyAboutAccepted()
+                    }
+                    CheckBox {
+                        id: interlacedChx
+                        text: qsTr("Interlaced")
+                    }
                 }
             }
         }

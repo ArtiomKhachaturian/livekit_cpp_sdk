@@ -8,6 +8,7 @@
 #include <QGuiApplication>
 #include <QStringList>
 #include <QScopedPointer>
+#include <QQuickWindow>
 #include <QPointer>
 #include <memory>
 #include <optional>
@@ -54,6 +55,9 @@ public slots:
     Q_INVOKABLE VideoOptions emptyVideoOptions() const { return {}; }
     Q_INVOKABLE AudioRecordingOptions emptyAudioRecordingOptions() const { return {}; }
     Q_INVOKABLE QStringList availableFilters() const;
+    Q_INVOKABLE bool displayCameraSettingsDialogBox(const MediaDeviceInfo& info,
+                                                    const QString& dialogTitle,
+                                                    uint32_t positionX, uint32_t positionY) const;
 public:
     bool isValid() const;
     bool audioRecordingEnabled() const;
@@ -92,7 +96,7 @@ private:
     const int _defaultIceTransportPolicyIndex;
     std::shared_ptr<LiveKitCpp::Service> _service;
     std::optional<LiveKitCpp::ServiceState> _serviceInitFailure;
-    QPointer<QObject> _appWindow;
+    QPointer<QQuickWindow> _appWindow;
     SafeObj<MediaDeviceInfo> _recordingAudioDevice;
     SafeObj<MediaDeviceInfo> _playoutAudioDevice;
 };

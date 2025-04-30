@@ -76,7 +76,7 @@ DemoApp::~DemoApp()
 void DemoApp::setAppWindow(QObject* appWindow, const QUrl&)
 {
     if (_appWindow != appWindow) {
-        _appWindow = appWindow;
+        _appWindow = qobject_cast<QQuickWindow*>(appWindow);
         if (appWindow && _serviceInitFailure.has_value()) {
             switch (_serviceInitFailure.value()) {
                 case LiveKitCpp::ServiceState::OK:
@@ -143,6 +143,20 @@ void DemoApp::setPlayoutAudioDevice(const MediaDeviceInfo& device)
 QStringList DemoApp::availableFilters() const
 {
     return VideoFilter::available();
+}
+
+bool DemoApp::displayCameraSettingsDialogBox(const MediaDeviceInfo& info,
+                                             const QString& dialogTitle,
+                                             uint32_t positionX, uint32_t positionY) const
+{
+    if (_service) {
+        const auto dialogTitleUTF8 = dialogTitle.toStdString();
+        WId parentWindow = _appWindow ? _appWindow->winId() : WId{};
+        return _service->displayCameraSettingsDialogBox(info, dialogTitleUTF8,
+                                                        reinterpret_cast<void*>(parentWindow),
+                                                        positionX, positionY);
+    }
+    return false;
 }
 
 bool DemoApp::isValid() const

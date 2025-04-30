@@ -74,6 +74,14 @@ public:
     rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev,
                                                       VideoFrameBufferPool framesPool = {},
                                                       const std::shared_ptr<Bricks::Logger>& logger = {}) const;
+    bool displaySettingsDialogBox(std::string_view guid,
+                                  std::string_view dialogTitleUTF8,
+                                  void* parentWindow,
+                                  uint32_t positionX, uint32_t positionY) const;
+    bool displaySettingsDialogBox(const MediaDeviceInfo& dev,
+                                  std::string_view dialogTitleUTF8,
+                                  void* parentWindow,
+                                  uint32_t positionX, uint32_t positionY) const;
 private:
     CameraManager(std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> deviceInfo);
     static std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> createDeviceInfo();

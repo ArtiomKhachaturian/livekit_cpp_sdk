@@ -102,6 +102,10 @@ public:
     std::vector<MediaDeviceInfo> playoutAudioDevices() const;
     std::vector<MediaDeviceInfo> cameraDevices() const;
     std::vector<VideoOptions> cameraOptions(const MediaDeviceInfo& info) const;
+    bool displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
+                                        std::string_view dialogTitleUTF8,
+                                        void* parentWindow,
+                                        uint32_t positionX, uint32_t positionY) const;
     double recordingAudioVolume() const noexcept;
     double playoutAudioVolume() const noexcept;
     void setRecordingAudioVolume(double volume);
@@ -358,6 +362,18 @@ std::vector<VideoOptions> Service::cameraOptions(const MediaDeviceInfo& info) co
     return {};
 }
 
+bool Service::displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
+                                             std::string_view dialogTitleUTF8,
+                                             void* parentWindow,
+                                             uint32_t positionX, uint32_t positionY) const
+{
+    return _impl && _impl->displayCameraSettingsDialogBox(dev,
+                                                          std::move(dialogTitleUTF8),
+                                                          parentWindow,
+                                                          positionX,
+                                                          positionY);
+}
+
 void Service::addListener(ServiceListener* listener)
 {
     if (_impl) {
@@ -557,6 +573,18 @@ std::vector<VideoOptions> Service::Impl::cameraOptions(const MediaDeviceInfo& in
         }
     }
     return {};
+}
+
+bool Service::Impl::displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
+                                                   std::string_view dialogTitleUTF8,
+                                                   void* parentWindow,
+                                                   uint32_t positionX, uint32_t positionY) const
+{
+    return _cameraManager && _cameraManager->displaySettingsDialogBox(dev,
+                                                                      std::move(dialogTitleUTF8),
+                                                                      parentWindow,
+                                                                      positionX,
+                                                                      positionY);
 }
 
 double Service::Impl::recordingAudioVolume() const noexcept
