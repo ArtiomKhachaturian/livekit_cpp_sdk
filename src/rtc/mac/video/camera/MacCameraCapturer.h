@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MacCameraCapturer.h
 #include "CameraCapturer.h"
+#include "VideoFrameBufferPool.h"
 #include <CoreMedia/CMSampleBuffer.h>
 #include <list>
 #include <optional>
@@ -52,9 +53,7 @@ public:
     int32_t CaptureSettings(webrtc::VideoCaptureCapability& settings) final;
     bool CaptureStarted() final;
 protected:
-    MacCameraCapturer(const MediaDeviceInfo& deviceInfo,
-                      VideoFrameBufferPool framesPool,
-                      std::unique_ptr<Impl> impl);
+    MacCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl);
 private:
     static webrtc::VideoType fromMediaSubType(OSType type);
     static webrtc::VideoType fromMediaSubType(CMFormatDescriptionRef format);

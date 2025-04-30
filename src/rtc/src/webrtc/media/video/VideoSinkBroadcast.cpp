@@ -58,7 +58,7 @@ void VideoSinkBroadcast::setContentHint(VideoContentHint hint)
 
 void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
 {
-    if (const auto buffer = frame.video_frame_buffer()) {
+    if (auto buffer = frame.video_frame_buffer()) {
         int adaptedWidth, adaptedHeight, cropWidth, cropHeight, cropX, cropY;
         VideoFrameBufferPool pool{_framesPool};
         if (adaptFrame(frame.width(), frame.height(), frame.timestamp_us(),
@@ -68,11 +68,10 @@ void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
                 // No adaption - optimized path.
                 broadcast(frame, std::move(pool));
             }
-            else if (const auto srcI420 = toI420(frame)) {
-                auto dstI420 = pool.createI420(adaptedWidth, adaptedHeight);
-                dstI420->CropAndScaleFrom(*srcI420, cropX, cropY, cropWidth, cropHeight);
+            else {
+                buffer = buffer->CropAndScale(cropX, cropY, cropWidth, cropHeight, adaptedWidth, adaptedHeight);
                 webrtc::VideoFrame adapted(frame);
-                adapted.set_video_frame_buffer(dstI420);
+                adapted.set_video_frame_buffer(buffer);
                 broadcast(adapted, std::move(pool));
             }
         }

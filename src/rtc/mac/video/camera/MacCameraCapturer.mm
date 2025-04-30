@@ -14,6 +14,7 @@
 #include "MacCameraCapturer.h"
 #include "CapturerObserver.h"
 #include "CameraManager.h"
+#include "CoreVideoPixelBuffer.h"
 #include "Listener.h"
 #include "VideoUtils.h"
 #include "Utils.h"
@@ -22,6 +23,7 @@
 #include <rtc_base/ref_counted_object.h>
 #include <rtc_base/time_utils.h>
 #include <components/capturer/RTCCameraVideoCapturer.h>
+#include <components/video_frame_buffer/RTCCVPixelBuffer.h>
 #include <native/api/video_frame_buffer.h>
 #include <helpers/RTCDispatcher+Private.h>
 #include <set>
@@ -34,28 +36,34 @@
 namespace
 {
 
+using namespace LiveKitCpp;
+
 NSArray<AVCaptureDeviceFormat*>* eligibleDeviceFormats(const AVCaptureDevice* device,
                                                        int32_t supportedFps);
 int32_t minFrameRate(AVFrameRateRange* range);
 int32_t maxFrameRate(AVFrameRateRange* range);
 
 inline size_t hashCode(const webrtc::VideoCaptureCapability& cap) {
-    return LiveKitCpp::hashCombine(cap.width, cap.height,
-                                   cap.interlaced, cap.maxFPS,
-                                   cap.videoType);
+    return hashCombine(cap.width, cap.height,
+                       cap.interlaced, cap.maxFPS,
+                       cap.videoType);
 }
+
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> getBuffer(RTCVideoFrame* frame,
+                                                          const VideoFrameBufferPool& framesPool = {});
 
 }
 
 @interface CapturerDelegate : NSObject<RTC_OBJC_TYPE(RTCVideoCapturerDelegate)>
-
-- (instancetype) init NS_DESIGNATED_INITIALIZER;
+- (instancetype) init NS_UNAVAILABLE;
+- (instancetype) initWithFrameBufferPool:(LiveKitCpp::VideoFrameBufferPool) framesPool NS_DESIGNATED_INITIALIZER;
 - (void) reportAboutError:(NSError* _Nullable) error;
 - (void) reportAboutErrorMessage:(NSString* _Nonnull) error;
 - (BOOL) changeState:(LiveKitCpp::CapturerState) state;
 @property (nullable, nonatomic) rtc::VideoSinkInterface<webrtc::VideoFrame>* sink;
 @property (nullable, nonatomic) LiveKitCpp::CapturerObserver* observer;
 @property (nonatomic) LiveKitCpp::CapturerState state;
+@property (readonly, nonatomic) LiveKitCpp::VideoContentHint contentHint;
 @property (weak) RTCCameraVideoCapturer* capturerRef;
 
 @end
@@ -66,10 +74,10 @@ namespace LiveKitCpp
 class MacCameraCapturer::Impl
 {
 public:
-    Impl(AVCaptureDevice* device);
+    Impl(AVCaptureDevice* device, VideoFrameBufferPool framesPool);
     ~Impl();
     AVCaptureDevice* device() const noexcept { return _device; }
-    void setContentHint(VideoContentHint hint);
+    void updateQualityToContentHint();
     bool startCapture(AVCaptureDeviceFormat* format, NSInteger fps);
     void stopCapture();
     void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) { _delegate.sink = sink; }
@@ -83,10 +91,8 @@ private:
     RTC_OBJC_TYPE(RTCCameraVideoCapturer)* _capturer;
 };
 
-MacCameraCapturer::MacCameraCapturer(const MediaDeviceInfo& deviceInfo,
-                                     VideoFrameBufferPool framesPool,
-                                     std::unique_ptr<Impl> impl)
-    : CameraCapturer(deviceInfo, std::move(framesPool))
+MacCameraCapturer::MacCameraCapturer(const MediaDeviceInfo& deviceInfo, std::unique_ptr<Impl> impl)
+    : CameraCapturer(deviceInfo)
     , _impl(std::move(impl))
 {
     _impl->setSink(this);
@@ -110,10 +116,8 @@ rtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::
             const auto guid = deviceInfo._guid.c_str();
             AVCaptureDevice* device = deviceWithUniqueIDUTF8(guid);
             if (device) {
-                auto impl = std::make_unique<Impl>(device);
-                return rtc::make_ref_counted<MacCameraCapturer>(deviceInfo,
-                                                                std::move(framesPool),
-                                                                std::move(impl));
+                auto impl = std::make_unique<Impl>(device, std::move(framesPool));
+                return rtc::make_ref_counted<MacCameraCapturer>(deviceInfo, std::move(impl));
             }
         }
     }
@@ -202,7 +206,7 @@ std::string MacCameraCapturer::deviceUniqueIdUTF8(AVCaptureDevice* device)
 void MacCameraCapturer::updateQualityToContentHint()
 {
     CameraCapturer::updateQualityToContentHint();
-    _impl->setContentHint(framesPool().contentHint());
+    _impl->updateQualityToContentHint();
 }
 
 void MacCameraCapturer::setObserver(CapturerObserver* observer)
@@ -347,9 +351,9 @@ AVCaptureDeviceFormat* MacCameraCapturer::findClosestFormat(const webrtc::VideoC
     return nil;
 }
 
-MacCameraCapturer::Impl::Impl(AVCaptureDevice* device)
+MacCameraCapturer::Impl::Impl(AVCaptureDevice* device, VideoFrameBufferPool framesPool)
     : _device(device)
-    , _delegate([CapturerDelegate new])
+    , _delegate([[CapturerDelegate alloc] initWithFrameBufferPool:std::move(framesPool)])
     , _capturer([[RTCCameraVideoCapturer alloc] initWithDelegate:_delegate])
 {
     @autoreleasepool {
@@ -373,12 +377,12 @@ MacCameraCapturer::Impl::~Impl()
     }
 }
 
-void MacCameraCapturer::Impl::setContentHint(VideoContentHint hint)
+void MacCameraCapturer::Impl::updateQualityToContentHint()
 {
     @autoreleasepool {
         AVCaptureSession* session = _capturer.captureSession;
         if (session) {
-            switch (hint) {
+            switch (_delegate.contentHint) {
                 case VideoContentHint::Fluid:
                     session.sessionPreset = AVCaptureSessionPresetHigh;
                     break;
@@ -449,14 +453,16 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
     Bricks::Listener<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink;
     Bricks::Listener<LiveKitCpp::CapturerObserver*> _observer;
     Bricks::SafeObj<LiveKitCpp::CapturerState> _state;
+    LiveKitCpp::VideoFrameBufferPool _framesPool;
 }
 
 @synthesize capturerRef = _capturerRef;
 
-- (instancetype) init
+- (instancetype) initWithFrameBufferPool:(LiveKitCpp::VideoFrameBufferPool) framesPool
 {
     if (self = [super init]) {
         _state(LiveKitCpp::CapturerState::Stopped);
+        _framesPool = std::move(framesPool);
     }
     return self;
 }
@@ -521,6 +527,11 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
     return _state();
 }
 
+- (LiveKitCpp::VideoContentHint) contentHint
+{
+    return _framesPool.contentHint();
+}
+
 - (void) setState:(LiveKitCpp::CapturerState) state
 {
     [self changeState:state];
@@ -530,7 +541,7 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
 {
     if (_sink) {
         if (frame) {
-            if (const auto buffer = webrtc::ObjCToNativeVideoFrameBuffer(frame.buffer)) {
+            if (const auto buffer = getBuffer(frame, _framesPool)) {
                 const auto rotation = webrtc::VideoRotation(frame.rotation);
                 const auto timeStampMicro = frame.timeStampNs / rtc::kNumNanosecsPerMicrosec;
                 if (auto rtcFrame = LiveKitCpp::createVideoFrame(buffer, rotation, timeStampMicro)) {
@@ -602,6 +613,22 @@ int32_t maxFrameRate(AVFrameRateRange* range)
         return static_cast<int32_t>(std::round(max));
     }
     return 0;
+}
+
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> getBuffer(RTCVideoFrame* frame,
+                                                          const VideoFrameBufferPool& framesPool)
+{
+    if (frame) {
+        @autoreleasepool {
+            id<RTCVideoFrameBuffer> buffer = frame.buffer;
+            if ([buffer isKindOfClass:[RTCCVPixelBuffer class]]) {
+                RTCCVPixelBuffer* pixelBuffer = (RTCCVPixelBuffer*)buffer;
+                return CoreVideoPixelBuffer::create(pixelBuffer.pixelBuffer, framesPool);
+            }
+            return webrtc::ObjCToNativeVideoFrameBuffer(buffer);
+        }
+    }
+    return {};
 }
 
 }
