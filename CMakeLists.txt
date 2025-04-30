@@ -56,6 +56,8 @@ file(GLOB_RECURSE COMMON_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/common/*.${PLA
 
 if(APPLE)
     set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
+elseif(WIN32)
+    set(EXECUTABLE_FILE_FOLDER_PATH $ENV{EXECUTABLE_FILE_FOLDER_PATH} CACHE PATH "The path to folder with executable file, for testing")
 endif(APPLE)
 
 function(recreateDir DIR)
@@ -90,6 +92,14 @@ function(signDylib target)
             COMMAND codesign --force --sign ${CODE_SIGNING_CERT} $<TARGET_FILE:${target}>
             COMMENT "Signing ${target}" VERBATIM
         )
+    endif()
+endfunction()
+
+function(copyDylib target)
+    if(NOT "${EXECUTABLE_FILE_FOLDER_PATH}" STREQUAL "")
+        add_custom_command(TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND}
+                           -E copy_if_different $<TARGET_FILE:${target}> ${EXECUTABLE_FILE_FOLDER_PATH}
+                           COMMENT "Copying ${target} artifacts to ${EXECUTABLE_FILE_FOLDER_PATH}")
     endif()
 endfunction()
 
@@ -199,6 +209,7 @@ if (WIN32)
                                                         -DNOMINMAX 
                                                         -DWIN32_LEAN_AND_MEAN)
     target_compile_options(${SIGNALING_LIB} PRIVATE /wd4068 /wd4141)
+    copyDylib(${SIGNALING_LIB})
 elseif (APPLE)
     set_target_properties(${SIGNALING_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
     target_link_libraries(${SIGNALING_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework CoreWLAN -framework SystemConfiguration")
@@ -295,10 +306,6 @@ if (WEBRTC_AVAILABLE)
         ${WEBSOCKETS_API_HEADERS}
         ${BRICKS_API_HEADERS})
 
-    if (APPLE)
-        signDylib(${RTC_LIB})
-    endif(APPLE)
-
     source_group(TREE ${CMAKE_SOURCE_DIR}/include/livekit/rtc PREFIX "RtcApi" FILES ${RTC_PUBLIC_HEADERS})
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/src PREFIX "Rtc" FILES ${RTC_COMMON_HEADERS} 
                                                                          ${RTC_COMMON_SOURCES})
@@ -345,6 +352,7 @@ if (WEBRTC_AVAILABLE)
     set_target_properties(${RTC_LIB} PROPERTIES POSITION_INDEPENDENT_CODE YES SOVERSION ${PROJECT_VERSION} VERSION ${PROJECT_VERSION})
 
     if (APPLE)
+        signDylib(${RTC_LIB})
         set_target_properties(${RTC_LIB} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
         target_include_directories(${RTC_LIB} PRIVATE 
             ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/video
@@ -357,6 +365,7 @@ if (WEBRTC_AVAILABLE)
         target_compile_definitions(${RTC_LIB} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
         target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit -framework Metal")
     elseif(WIN32)
+        copyDylib(${RTC_LIB})
         target_compile_options(${RTC_LIB} PRIVATE /wd4068 /wd4141)
         target_compile_definitions(${RTC_LIB} PRIVATE -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS 
                                                       -DWINRT_DIAGNOSTICS 

@@ -44,15 +44,12 @@ protected:
 
 inline NSArray<AVCaptureDevice*>* availableDevices()
 {
-    if (@available(macOS 10.15,*)) {
-        AVCaptureDeviceDiscoverySession* video = [AVCaptureDeviceDiscoverySession
-                                                  discoverySessionWithDeviceTypes:@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
-                                                                                    AVCaptureDeviceTypeExternalUnknown]
-                                                  mediaType:AVMediaTypeVideo
-                                                  position:AVCaptureDevicePositionUnspecified];
-        return [video devices];
-    }
-    return [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+    AVCaptureDeviceDiscoverySession* video = [AVCaptureDeviceDiscoverySession
+                                              discoverySessionWithDeviceTypes:@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
+                                                                                AVCaptureDeviceTypeExternal]
+                                              mediaType:AVMediaTypeVideo
+                                              position:AVCaptureDevicePositionUnspecified];
+    return [video devices];
 }
 
 }
