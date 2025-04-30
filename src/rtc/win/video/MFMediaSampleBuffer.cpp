@@ -87,7 +87,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                                                                          DWORD actualBufferLen, DWORD totalBufferLen,
                                                                          const CComPtr<IMediaSample>& sample,
                                                                          webrtc::VideoRotation rotation,
-                                                                         VideoFrameBufferPool framesPool)
+                                                                         const VideoFrameBufferPool& framesPool)
 {
     if (width > 0 && buffer && actualBufferLen && sample) {
         // setting absolute height (in case it was negative),
@@ -105,7 +105,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                                                                                       actualBufferLen, 
                                                                                       totalBufferLen,
                                                                                       sample,
-                                                                                      std::move(framesPool));
+                                                                                      framesPool);
                     default:
                         break;
                 }
@@ -113,7 +113,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::create(int wid
                                                                   actualBufferLen,
                                                                   totalBufferLen,
                                                                   sample, rotation,
-                                                                  std::move(framesPool));
+                                                                  framesPool);
             }
         }
     }

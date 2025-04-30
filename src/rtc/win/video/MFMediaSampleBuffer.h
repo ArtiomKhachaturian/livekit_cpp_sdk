@@ -37,7 +37,7 @@ public:
                                                                DWORD totalBufferLen,
                                                                const CComPtr<IMediaSample>& sample,
                                                                webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
-                                                               VideoFrameBufferPool framesPool = {});
+                                                               const VideoFrameBufferPool& framesPool = {});
     // impl. of NativeVideoFrameBuffer
     VideoFrameType nativeType() const final { return _bufferType;  }
     int stride(size_t planeIndex) const final;
