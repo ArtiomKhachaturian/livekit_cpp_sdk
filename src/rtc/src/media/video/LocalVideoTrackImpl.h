@@ -36,6 +36,10 @@ public:
     void setOptions(VideoOptions options) final;
     VideoOptions options() const final;
     void setFilter(LocalVideoFilterPin* inputPin) final;
+protected:
+    // overrides of VideoTrackImpl<>
+    bool updateSenderInitialParameters(webrtc::RtpParameters& parameters) const final;
+    void onDegradationPreferenceChanged(DegradationPreference preference) final;
 };
 	
 } // namespace LiveKitCpp

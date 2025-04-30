@@ -34,6 +34,9 @@ public:
     std::vector<SimulcastCodecInfo> codecs() const final { return info()()._codecs; }
     std::string mime() const final { return info()()._mimeType; }
     std::string stream() const final { return info()()._stream; }
+protected:
+    // overrides of VideoTrackImpl<>
+    void onDegradationPreferenceChanged(DegradationPreference preference) final;
 };
 
 } // namespace LiveKitCpp

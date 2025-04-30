@@ -87,4 +87,20 @@ void LocalVideoTrackImpl::setFilter(LocalVideoFilterPin* inputPin)
     }
 }
 
+bool LocalVideoTrackImpl::updateSenderInitialParameters(webrtc::RtpParameters& parameters) const
+{
+    const auto b1 = Base::updateSenderInitialParameters(parameters);
+    const auto b2 = setDegradationPreference(degradationPreference(), parameters);
+    return b1 || b2;
+}
+
+void LocalVideoTrackImpl::onDegradationPreferenceChanged(DegradationPreference preference)
+{
+    Base::onDegradationPreferenceChanged(preference);
+    auto parameters = rtpParameters();
+    if (setDegradationPreference(preference, parameters)) {
+        setRtpParameters(parameters);
+    }
+}
+
 } // namespace LiveKitCpp

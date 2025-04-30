@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import LiveKitClient 1.0
 
 Item {
@@ -36,9 +37,191 @@ Item {
                     Layout.fillHeight: true
                     model: videoTracks
                     VideoRenderer {
+                        id: renderer
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         source: model.track
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: (mouse) => {
+                                switch (mouse.button) {
+                                    case Qt.RightButton:
+                                        contextMenu.popup()
+                                        break
+                                   case Qt.LeftButton:
+                                       contextMenu.close()
+                                       break
+                                }
+                            }
+                            onPressAndHold: (mouse) => {
+                                if (mouse.source === Qt.MouseEventNotSynthesized) {
+                                    contextMenu.popup()
+                                }
+                                else {
+                                     contextMenu.close()
+                                }
+                            }
+                        }
+                        Menu {
+                           id: contextMenu
+                           closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+                           Menu {
+                               title: qsTr("Content hint")
+                               ActionGroup { id: contentHintGroup }
+                               Action {
+                                   text: qsTr("None")
+                                   checkable: true
+                                   checked: VideoTrack.None === renderer.source.contentHint
+                                   ActionGroup.group: contentHintGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.contentHint = VideoTrack.None
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Fluid")
+                                   checkable: true
+                                   checked: VideoTrack.Fluid === renderer.source.contentHint
+                                   ActionGroup.group: contentHintGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.contentHint = VideoTrack.Fluid
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Detailed")
+                                   checkable: true
+                                   checked: VideoTrack.Detailed === renderer.source.contentHint
+                                   ActionGroup.group: contentHintGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.contentHint = VideoTrack.Detailed
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Text")
+                                   checkable: true
+                                   checked: VideoTrack.Text === renderer.source.contentHint
+                                   ActionGroup.group: contentHintGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.contentHint = VideoTrack.Text
+                                       }
+                                   }
+                               }
+                           }
+                           Menu {
+                               title: qsTr("Network priority")
+                               ActionGroup { id: networkPriorityGroup }
+                               Action {
+                                   text: qsTr("Very low")
+                                   checkable: true
+                                   checked: VideoTrack.VeryLow === renderer.source.networkPriority
+                                   ActionGroup.group: networkPriorityGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.networkPriority = VideoTrack.VeryLow
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Low")
+                                   checkable: true
+                                   checked: VideoTrack.Low === renderer.source.networkPriority
+                                   ActionGroup.group: networkPriorityGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.networkPriority = VideoTrack.Low
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Medium")
+                                   checkable: true
+                                   checked: VideoTrack.Medium === renderer.source.networkPriority
+                                   ActionGroup.group: networkPriorityGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.networkPriority = VideoTrack.Medium
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("High")
+                                   checkable: true
+                                   checked: VideoTrack.High === renderer.source.networkPriority
+                                   ActionGroup.group: networkPriorityGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.networkPriority = VideoTrack.High
+                                       }
+                                   }
+                               }
+                           }
+                           Menu {
+                               title: qsTr("Degradation preference")
+                               ActionGroup { id: degradationGroup }
+                               Action {
+                                   text: qsTr("Default")
+                                   checkable: true
+                                   checked: VideoTrack.Default === renderer.source.degradationPreference
+                                   ActionGroup.group: degradationGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.degradationPreference = VideoTrack.Default
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Disabled")
+                                   checkable: true
+                                   checked: VideoTrack.Disabled === renderer.source.degradationPreference
+                                   ActionGroup.group: degradationGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.degradationPreference = VideoTrack.Disabled
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Maintain framerate")
+                                   checkable: true
+                                   checked: VideoTrack.MaintainFramerate === renderer.source.degradationPreference
+                                   ActionGroup.group: degradationGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.degradationPreference = VideoTrack.MaintainFramerate
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Maintain resolution")
+                                   checkable: true
+                                   checked: VideoTrack.MaintainResolution === renderer.source.degradationPreference
+                                   ActionGroup.group: degradationGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.degradationPreference = VideoTrack.MaintainResolution
+                                       }
+                                   }
+                               }
+                               Action {
+                                   text: qsTr("Balanced")
+                                   checkable: true
+                                   checked: VideoTrack.Balanced === renderer.source.degradationPreference
+                                   ActionGroup.group: degradationGroup
+                                   onCheckedChanged: (checked) => {
+                                       if (checked) {
+                                           renderer.source.degradationPreference = VideoTrack.Balanced
+                                       }
+                                   }
+                               }
+                           }
+                       }
                     }
                 }
             }

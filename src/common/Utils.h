@@ -22,6 +22,7 @@
 #endif // __APPLE__
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <sstream>
@@ -116,6 +117,18 @@ inline bool exchangeVal(const T& source, std::atomic<T>& dst) {
 template <typename T> // this function is better than [std::clamp] (constexpr, no dangling references on output)
 inline constexpr T bound(const T& min, const T& val, const T& max) {
     return std::max(min, std::min(max, val));
+}
+
+template <typename TFloat1, typename TFloat2>
+inline bool floatsIsEqual(TFloat1 x, TFloat2 y)
+{
+    static_assert(std::is_arithmetic<TFloat1>::value && std::is_arithmetic<TFloat2>::value);
+    bool const xnan = std::isnan(x), ynan = std::isnan(y);
+    if (xnan || ynan) { // if one is nan -> return false, if both -> true
+        return xnan && ynan;
+    }
+    // both values should not be greater or less of each other
+    return !std::islessgreater(x, y);
 }
 
 template <typename T>

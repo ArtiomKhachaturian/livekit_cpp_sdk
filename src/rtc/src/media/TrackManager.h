@@ -39,6 +39,7 @@ public:
                                                                                    std::string identity, std::string trackId,
                                                                                    const std::weak_ptr<AesCgmCryptorObserver>& observer = {}) const = 0;
     virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
+    virtual void notifyAboutSetRtpParametersFailure(const std::string& trackSid, std::string_view details = {}) = 0;
     virtual std::optional<bool> stereoRecording() const = 0;
     virtual void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                             const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;

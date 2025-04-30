@@ -37,9 +37,15 @@ public:
     void removeSink(VideoSink* sink) final;
     void setContentHint(VideoContentHint hint) final;
     VideoContentHint contentHint() const final;
+    DegradationPreference degradationPreference() const final { return _degradationPreference; }
+    void setDegradationPreference(DegradationPreference preference) final;
 protected:
     VideoTrackImpl(std::shared_ptr<TMediaDevice> mediaDevice,
                    const std::weak_ptr<TrackManager>& trackManager);
+    virtual void onDegradationPreferenceChanged(DegradationPreference /*preference*/) {}
+    static bool setDegradationPreference(DegradationPreference preference, webrtc::RtpParameters& parameters);
+private:
+    std::atomic<DegradationPreference> _degradationPreference = DegradationPreference::Default;
 };
 
 template <class TMediaDevice, class TTrackApi>
@@ -80,6 +86,43 @@ inline VideoContentHint VideoTrackImpl<TMediaDevice, TTrackApi>::contentHint() c
         return md->contentHint();
     }
     return TTrackApi::contentHint();
+}
+
+template <class TMediaDevice, class TTrackApi>
+inline void VideoTrackImpl<TMediaDevice, TTrackApi>::
+    setDegradationPreference(DegradationPreference preference)
+{
+    if (exchangeVal(preference, _degradationPreference)) {
+        onDegradationPreferenceChanged(preference);
+    }
+}
+
+template <class TMediaDevice, class TTrackApi>
+inline bool VideoTrackImpl<TMediaDevice, TTrackApi>::setDegradationPreference(DegradationPreference preference,
+                                                                              webrtc::RtpParameters& parameters)
+{
+    std::optional<webrtc::DegradationPreference> rtcPreference;
+    switch (preference) {
+        case DegradationPreference::Default:
+            break;
+        case DegradationPreference::Disabled:
+            rtcPreference = webrtc::DegradationPreference::DISABLED;
+            break;
+        case DegradationPreference::MaintainFramerate:
+            rtcPreference = webrtc::DegradationPreference::MAINTAIN_FRAMERATE;
+            break;
+        case DegradationPreference::MaintainResolution:
+            rtcPreference = webrtc::DegradationPreference::MAINTAIN_RESOLUTION;
+            break;
+        case DegradationPreference::Balanced:
+            rtcPreference = webrtc::DegradationPreference::BALANCED;
+            break;
+    }
+    if (parameters.degradation_preference != rtcPreference) {
+        parameters.degradation_preference = std::move(rtcPreference);
+        return true;
+    }
+    return false;
 }
 
 } // namespace LiveKitCpp

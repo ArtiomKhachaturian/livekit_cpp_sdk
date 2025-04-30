@@ -28,7 +28,7 @@ std::shared_ptr<LiveKitCpp::VideoTrack> VideoTrack::takeSdkTrack()
         _sdkTrack->removeSink(this);
         return std::move(_sdkTrack);
     }
-    return {};
+    return nullptr;
 }
 
 QString VideoTrack::id() const
@@ -65,10 +65,156 @@ bool VideoTrack::isRemote() const
     return _sdkTrack && _sdkTrack->remote();
 }
 
+VideoTrack::NetworkPriority VideoTrack::networkPriority() const
+{
+    if (_sdkTrack) {
+        switch (_sdkTrack->networkPriority()) {
+            case LiveKitCpp::NetworkPriority::VeryLow:
+                break;
+            case LiveKitCpp::NetworkPriority::Low:
+                return NetworkPriority::Low;
+            case LiveKitCpp::NetworkPriority::Medium:
+                return NetworkPriority::Medium;
+            case LiveKitCpp::NetworkPriority::High:
+                return NetworkPriority::High;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+    }
+    return NetworkPriority::VeryLow;
+}
+
+VideoTrack::ContentHint VideoTrack::contentHint() const
+{
+    if (_sdkTrack) {
+        switch (_sdkTrack->contentHint()) {
+            case LiveKitCpp::VideoContentHint::None:
+                break;
+            case LiveKitCpp::VideoContentHint::Fluid:
+                return ContentHint::Fluid;
+            case LiveKitCpp::VideoContentHint::Detailed:
+                return ContentHint::Detailed;
+            case LiveKitCpp::VideoContentHint::Text:
+                return ContentHint::Text;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+    }
+    return ContentHint::None;
+}
+
+VideoTrack::DegradationPreference VideoTrack::degradationPreference() const
+{
+    if (_sdkTrack) {
+        switch (_sdkTrack->degradationPreference()) {
+            case LiveKitCpp::DegradationPreference::Default:
+                break;
+            case LiveKitCpp::DegradationPreference::Disabled:
+                return DegradationPreference::Disabled;
+            case LiveKitCpp::DegradationPreference::MaintainFramerate:
+                return DegradationPreference::MaintainFramerate;
+            case LiveKitCpp::DegradationPreference::MaintainResolution:
+                return DegradationPreference::MaintainResolution;
+            case LiveKitCpp::DegradationPreference::Balanced:
+                return DegradationPreference::Balanced;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+    }
+    return DegradationPreference::Default;
+}
+
 void VideoTrack::setMuted(bool mute)
 {
     if (_sdkTrack) {
         _sdkTrack->mute(mute);
+    }
+}
+
+void VideoTrack::setNetworkPriority(NetworkPriority priority)
+{
+    if (_sdkTrack) {
+        LiveKitCpp::NetworkPriority sdkPriority = LiveKitCpp::NetworkPriority::VeryLow;
+        switch (priority) {
+            case NetworkPriority::VeryLow:
+                break;
+            case NetworkPriority::Low:
+                sdkPriority = LiveKitCpp::NetworkPriority::Low;
+                break;
+            case NetworkPriority::Medium:
+                sdkPriority = LiveKitCpp::NetworkPriority::Medium;
+                break;
+            case NetworkPriority::High:
+                sdkPriority = LiveKitCpp::NetworkPriority::High;
+                break;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+        if (sdkPriority != _sdkTrack->networkPriority()) {
+            _sdkTrack->setNetworkPriority(sdkPriority);
+            emit networkPriorityChanged();
+        }
+    }
+}
+
+void VideoTrack::setContentHint(ContentHint hint)
+{
+    if (_sdkTrack) {
+        LiveKitCpp::VideoContentHint sdkHint = LiveKitCpp::VideoContentHint::None;
+        switch (hint) {
+            case None:
+                break;
+            case Fluid:
+                sdkHint = LiveKitCpp::VideoContentHint::Fluid;
+                break;
+            case Detailed:
+                sdkHint = LiveKitCpp::VideoContentHint::Detailed;
+                break;
+            case Text:
+                sdkHint = LiveKitCpp::VideoContentHint::Text;
+                break;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+        if (sdkHint != _sdkTrack->contentHint()) {
+            _sdkTrack->setContentHint(sdkHint);
+            emit contentHintChanged();
+        }
+    }
+}
+
+void VideoTrack::setDegradationPreference(DegradationPreference preference)
+{
+    if (_sdkTrack) {
+        LiveKitCpp::DegradationPreference sdkPreference = LiveKitCpp::DegradationPreference::Default;
+        switch (preference) {
+            case DegradationPreference::Default:
+                break;
+            case Disabled:
+                sdkPreference = LiveKitCpp::DegradationPreference::Disabled;
+                break;
+            case MaintainFramerate:
+                sdkPreference = LiveKitCpp::DegradationPreference::MaintainFramerate;
+                break;
+            case MaintainResolution:
+                sdkPreference = LiveKitCpp::DegradationPreference::MaintainResolution;
+                break;
+            case Balanced:
+                sdkPreference = LiveKitCpp::DegradationPreference::Balanced;
+                break;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+        if (sdkPreference != _sdkTrack->degradationPreference()) {
+            _sdkTrack->setDegradationPreference(sdkPreference);
+            emit degradationPreferenceChanged();
+        }
     }
 }
 

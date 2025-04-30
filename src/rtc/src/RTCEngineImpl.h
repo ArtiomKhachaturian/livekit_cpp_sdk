@@ -167,6 +167,7 @@ private:
     void onUpdateSubscription(UpdateSubscription subscription) final;
     // impl. TrackManager
     void notifyAboutMuteChanges(const std::string& trackSid, bool muted) final;
+    void notifyAboutSetRtpParametersFailure(const std::string& trackSid, std::string_view details) final;
     std::optional<bool> stereoRecording() const final;
     // impl. of RemoteParticipantsListener
     void onParticipantAdded(const std::string& sid) final;

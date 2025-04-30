@@ -32,6 +32,19 @@ RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
         default:
             break;
     }
+    auto parameters = rtpParameters();
+    if (setDegradationPreference(degradationPreference(), parameters)) {
+        setRtpParameters(parameters);
+    }
+}
+
+void RemoteVideoTrackImpl::onDegradationPreferenceChanged(DegradationPreference preference)
+{
+    Base::onDegradationPreferenceChanged(preference);
+    auto parameters = rtpParameters();
+    if (setDegradationPreference(preference, parameters)) {
+        setRtpParameters(parameters);
+    }
 }
 
 } // namespace LiveKitCpp

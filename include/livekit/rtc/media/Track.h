@@ -16,6 +16,7 @@
 #include "livekit/signaling/sfu/TrackSource.h"
 #include "livekit/signaling/sfu/EncryptionType.h"
 #include "livekit/signaling/sfu/BackupCodecPolicy.h"
+#include "livekit/rtc/media/NetworkPriority.h"
 #include "livekit/rtc/stats/StatsSource.h"
 #include <string>
 
@@ -54,6 +55,22 @@ public:
     // track events
     virtual void addListener(MediaEventsListener* listener) = 0;
     virtual void removeListener(MediaEventsListener* listener) = 0;
+    // RTP
+    // The relative DiffServ Code Point priority for this encoding, allowing
+    // packets to be marked relatively higher or lower without affecting
+    // bandwidth allocations. See https://w3c.github.io/webrtc-dscp-exp/ .
+    virtual NetworkPriority networkPriority() const = 0;
+    virtual void setNetworkPriority(NetworkPriority priority) = 0;
+    // The relative bitrate priority of this encoding. Currently this is
+    // implemented for the entire rtp sender by using the value of the first
+    // encoding parameter.
+    // See: https://w3c.github.io/webrtc-priority/#enumdef-rtcprioritytype
+    // "very-low" = 0.5
+    // "low" = 1.0
+    // "medium" = 2.0
+    // "high" = 4.0
+    virtual double bitratePriority() const = 0;
+    virtual void setBitratePriority(double priority) = 0;
 };
 
 } // namespace LiveKitCpp
