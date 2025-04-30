@@ -42,8 +42,8 @@ namespace {
 static const std::string_view g_pcfInit("PeerConnectionFactory_Init");
 
 inline std::shared_ptr<rtc::Thread> CreateRunningThread(bool withSocketServer,
-                                                           const absl::string_view& threadName,
-                                                           const std::shared_ptr<Bricks::Logger>& logger = {})
+                                                        const absl::string_view& threadName,
+                                                        const std::shared_ptr<Bricks::Logger>& logger = {})
 {
     if (auto thread = withSocketServer ? rtc::Thread::CreateWithSocketServer() : rtc::Thread::Create()) {
         thread->SetName(threadName, thread.get());
@@ -112,6 +112,10 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              std::shared_ptr<rtc::Thread> workingThread,
                                              std::shared_ptr<rtc::Thread> signalingThread,
                                              webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
+                                             const webrtc::VideoEncoderFactory* videoEncoderFactory,
+                                             const webrtc::VideoDecoderFactory* videoDecoderFactory,
+                                             webrtc::AudioEncoderFactory* audioEncoderFactory,
+                                             webrtc::AudioDecoderFactory* audioDecoderFactory,
                                              webrtc::scoped_refptr<AdmProxy> admProxy)
     : _eventsQueue(createTaskQueueS("events_queue"))
     , _webrtcLogSink(std::move(webrtcLogSink))
@@ -119,6 +123,10 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     , _workingThread(std::move(workingThread))
     , _signalingThread(std::move(signalingThread))
     , _innerImpl(std::move(innerImpl))
+    , _videoEncoderFactory(videoEncoderFactory)
+    , _videoDecoderFactory(videoDecoderFactory)
+    , _audioEncoderFactory(audioEncoderFactory)
+    , _audioDecoderFactory(audioDecoderFactory)
 {
     // check GCM suites for DTLS-SRTP are enabled
     webrtc::PeerConnectionFactoryInterface::Options peerConnectionFactoryOptions;
@@ -167,6 +175,12 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     dependencies.video_encoder_factory = webrtc::CreateBuiltinVideoEncoderFactory();
     dependencies.audio_decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
     dependencies.audio_encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
+    
+    const auto videoEncoderFactory = dependencies.video_encoder_factory.get();
+    const auto videoDecoderFactory = dependencies.video_decoder_factory.get();
+    const auto audioEncoderFactory = dependencies.audio_encoder_factory.get();
+    const auto audioDecoderFactory = dependencies.audio_decoder_factory.get();
+    
     auto admProxy = AdmProxy::create(workingThread, signalingThread,
                                      dependencies.task_queue_factory.get());
     if (audioProcessing) {
@@ -186,6 +200,10 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
                                                                std::move(workingThread),
                                                                std::move(signalingThread),
                                                                std::move(pcf),
+                                                               videoEncoderFactory,
+                                                               videoDecoderFactory,
+                                                               audioEncoderFactory,
+                                                               audioDecoderFactory,
                                                                std::move(admProxy));
     }
     return {};
@@ -286,6 +304,38 @@ void PeerConnectionFactory::registerAdmPlayoutListener(AdmProxyListener* l, bool
     if (_admProxy) {
         _admProxy->registerPlayoutListener(l, reg);
     }
+}
+
+std::vector<webrtc::SdpVideoFormat> PeerConnectionFactory::videoEncoderFormats() const
+{
+    if (_videoEncoderFactory) {
+        return _videoEncoderFactory->GetSupportedFormats();
+    }
+    return {};
+}
+
+std::vector<webrtc::SdpVideoFormat> PeerConnectionFactory::videoDecoderFormats() const
+{
+    if (_videoDecoderFactory) {
+        return _videoDecoderFactory->GetSupportedFormats();
+    }
+    return {};
+}
+
+std::vector<webrtc::AudioCodecSpec> PeerConnectionFactory::audioEncoderFormats() const
+{
+    if (_audioEncoderFactory) {
+        return _audioEncoderFactory->GetSupportedEncoders();
+    }
+    return {};
+}
+
+std::vector<webrtc::AudioCodecSpec> PeerConnectionFactory::audioDecoderFormats() const
+{
+    if (_audioDecoderFactory) {
+        return _audioDecoderFactory->GetSupportedDecoders();
+    }
+    return {};
 }
 
 void PeerConnectionFactory::SetOptions(const Options& options)

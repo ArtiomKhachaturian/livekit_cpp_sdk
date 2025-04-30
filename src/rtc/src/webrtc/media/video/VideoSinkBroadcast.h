@@ -42,7 +42,7 @@ private:
                     int& outWidth, int& outHeight,
                     int& cropWidth, int& cropHeight,
                     int& cropX, int& cropY);
-    void broadcast(const webrtc::VideoFrame& frame, VideoFrameBufferPool framesPool);
+    void broadcast(const webrtc::VideoFrame& frame);
 private:
     rtc::VideoSinkInterface<webrtc::VideoFrame>* const _sink;
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;

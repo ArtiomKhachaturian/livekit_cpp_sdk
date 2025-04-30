@@ -72,6 +72,9 @@ public:
     bool is_screencast() const final { return true;}
 };
 
+template <typename TMediaFormat>
+std::vector<std::string> extractCodecNames(std::vector<TMediaFormat>&& formats);
+
 }
 
 namespace LiveKitCpp
@@ -96,6 +99,10 @@ public:
     MediaDeviceInfo recordingAudioDevice() const;
     bool setAudioPlayoutDevice(const MediaDeviceInfo& info);
     MediaDeviceInfo playoutAudioDevice() const;
+    std::vector<std::string> videoEncoderFormats() const;
+    std::vector<std::string> videoDecoderFormats() const;
+    std::vector<std::string> audioEncoderFormats() const;
+    std::vector<std::string> audioDecoderFormats() const;
     std::vector<MediaDeviceInfo> screens() const;
     std::vector<MediaDeviceInfo> windows() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;
@@ -314,6 +321,38 @@ bool Service::audioPlayoutEnabled() const
     return _impl && !_impl->playoutMuted();
 }
 
+std::vector<std::string> Service::videoEncoderFormats() const
+{
+    if (_impl) {
+        return _impl->videoEncoderFormats();
+    }
+    return {};
+}
+
+std::vector<std::string> Service::videoDecoderFormats() const
+{
+    if (_impl) {
+        return _impl->videoDecoderFormats();
+    }
+    return {};
+}
+
+std::vector<std::string> Service::audioEncoderFormats() const
+{
+    if (_impl) {
+        return _impl->audioEncoderFormats();
+    }
+    return {};
+}
+
+std::vector<std::string> Service::audioDecoderFormats() const
+{
+    if (_impl) {
+        return _impl->audioDecoderFormats();
+    }
+    return {};
+}
+
 std::vector<MediaDeviceInfo> Service::screens() const
 {
     if (_impl) {
@@ -513,6 +552,38 @@ MediaDeviceInfo Service::Impl::playoutAudioDevice() const
 {
     if (_pcf) {
         return _pcf->playoutAudioDevice();
+    }
+    return {};
+}
+
+std::vector<std::string> Service::Impl::videoEncoderFormats() const
+{
+    if (_pcf) {
+        return extractCodecNames(_pcf->videoEncoderFormats());
+    }
+    return {};
+}
+
+std::vector<std::string> Service::Impl::videoDecoderFormats() const
+{
+    if (_pcf) {
+        return extractCodecNames(_pcf->videoDecoderFormats());
+    }
+    return {};
+}
+
+std::vector<std::string> Service::Impl::audioEncoderFormats() const
+{
+    if (_pcf) {
+        return extractCodecNames(_pcf->audioEncoderFormats());
+    }
+    return {};
+}
+
+std::vector<std::string> Service::Impl::audioDecoderFormats() const
+{
+    if (_pcf) {
+        return extractCodecNames(_pcf->audioDecoderFormats());
     }
     return {};
 }
@@ -951,6 +1022,33 @@ AsyncSharingSource::AsyncSharingSource(bool previewMode,
                                                                 logger))
 {
     setContentHint(VideoContentHint::Detailed);
+}
+
+inline std::string extractFormatName(webrtc::SdpVideoFormat&& format)
+{
+    return std::move(format.name);
+}
+
+inline std::string extractFormatName(webrtc::AudioCodecSpec&& spec)
+{
+    return std::move(spec.format.name);
+}
+
+template <typename TMediaFormat>
+std::vector<std::string> extractCodecNames(std::vector<TMediaFormat>&& formats)
+{
+    if (const auto s = formats.size()) {
+        std::vector<std::string> names;
+        names.reserve(s);
+        for (size_t i = 0U; i < s; ++i) {
+            auto name = extractFormatName(std::move(formats[i]));
+            if (!name.empty() && names.end() == std::find(names.begin(), names.end(), name)) {
+                names.push_back(std::move(name));
+            }
+        }
+        return names;
+    }
+    return {};
 }
 
 }

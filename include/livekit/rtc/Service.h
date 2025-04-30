@@ -74,6 +74,10 @@ public:
     void setAudioPlayoutEnabled(bool enabled);
     bool audioPlayoutEnabled() const;
     // enumeration
+    std::vector<std::string> videoEncoderFormats() const;
+    std::vector<std::string> videoDecoderFormats() const;
+    std::vector<std::string> audioEncoderFormats() const;
+    std::vector<std::string> audioDecoderFormats() const;
     std::vector<MediaDeviceInfo> screens() const;
     std::vector<MediaDeviceInfo> windows() const;
     std::vector<MediaDeviceInfo> recordingAudioDevices() const;

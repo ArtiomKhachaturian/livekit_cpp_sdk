@@ -60,19 +60,18 @@ void VideoSinkBroadcast::OnFrame(const webrtc::VideoFrame& frame)
 {
     if (auto buffer = frame.video_frame_buffer()) {
         int adaptedWidth, adaptedHeight, cropWidth, cropHeight, cropX, cropY;
-        VideoFrameBufferPool pool{_framesPool};
         if (adaptFrame(frame.width(), frame.height(), frame.timestamp_us(),
                        adaptedWidth, adaptedHeight,
                        cropWidth, cropHeight, cropX, cropY)) {
             if (adaptedWidth == frame.width() && adaptedHeight == frame.height()) {
                 // No adaption - optimized path.
-                broadcast(frame, std::move(pool));
+                broadcast(frame);
             }
             else {
                 buffer = buffer->CropAndScale(cropX, cropY, cropWidth, cropHeight, adaptedWidth, adaptedHeight);
                 webrtc::VideoFrame adapted(frame);
                 adapted.set_video_frame_buffer(buffer);
-                broadcast(adapted, std::move(pool));
+                broadcast(adapted);
             }
         }
     }
@@ -108,8 +107,7 @@ bool VideoSinkBroadcast::adaptFrame(int width, int height, int64_t timeUs,
     return true;
 }
 
-void VideoSinkBroadcast::broadcast(const webrtc::VideoFrame& frame,
-                                   VideoFrameBufferPool /*framesPool*/)
+void VideoSinkBroadcast::broadcast(const webrtc::VideoFrame& frame)
 {
     if (_rotationApplied && frame.rotation() != webrtc::kVideoRotation_0) {
         if (const auto srcI420 = toI420(frame)) {

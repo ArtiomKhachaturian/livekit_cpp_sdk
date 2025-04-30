@@ -67,6 +67,10 @@ public:
     void setPlayoutMute(bool mute);
     void registerAdmRecordingListener(AdmProxyListener* l, bool reg);
     void registerAdmPlayoutListener(AdmProxyListener* l, bool reg);
+    std::vector<webrtc::SdpVideoFormat> videoEncoderFormats() const;
+    std::vector<webrtc::SdpVideoFormat> videoDecoderFormats() const;
+    std::vector<webrtc::AudioCodecSpec> audioEncoderFormats() const;
+    std::vector<webrtc::AudioCodecSpec> audioDecoderFormats() const;
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>
@@ -90,6 +94,10 @@ protected:
                           std::shared_ptr<rtc::Thread> workingThread,
                           std::shared_ptr<rtc::Thread> signalingThread,
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
+                          const webrtc::VideoEncoderFactory* videoEncoderFactory,
+                          const webrtc::VideoDecoderFactory* videoDecoderFactory,
+                          webrtc::AudioEncoderFactory* audioEncoderFactory,
+                          webrtc::AudioDecoderFactory* audioDecoderFactory,
                           webrtc::scoped_refptr<AdmProxy> admProxy);
 private:
     template <class Method, typename... Args>
@@ -101,6 +109,10 @@ private:
     const std::shared_ptr<rtc::Thread> _workingThread;
     const std::shared_ptr<rtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
+    const webrtc::VideoEncoderFactory* const _videoEncoderFactory;
+    const webrtc::VideoDecoderFactory* const _videoDecoderFactory;
+    webrtc::AudioEncoderFactory* const _audioEncoderFactory;
+    webrtc::AudioDecoderFactory* const _audioDecoderFactory;
     std::shared_ptr<AdmFacade> _admProxy;
 };
 

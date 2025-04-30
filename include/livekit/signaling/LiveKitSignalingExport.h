@@ -6,5 +6,5 @@
     #define LIVEKIT_SIGNALING_API __declspec(dllimport)
 #endif
 #else
-    #define LIVEKIT_SIGNALING_API
+    #define LIVEKIT_SIGNALING_API __attribute__((visibility("default")))
 #endif

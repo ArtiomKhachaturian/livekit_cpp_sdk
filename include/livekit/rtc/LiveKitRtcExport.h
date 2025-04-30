@@ -6,5 +6,5 @@
     #define LIVEKIT_RTC_API __declspec(dllimport)
 #endif
 #else
-    #define LIVEKIT_RTC_API
+    #define LIVEKIT_RTC_API __attribute__((visibility("default")))
 #endif
