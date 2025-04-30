@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifdef WEBRTC_WIN
 #include "CaptureInputPin.h"
 #include "CaptureSinkFilter.h"
 #include "CameraManager.h"
@@ -764,4 +763,3 @@ bool isMediaTypePartialMatch(const AM_MEDIA_TYPE& a, const AM_MEDIA_TYPE& b)
 }
 
 } // namespace
-#endif

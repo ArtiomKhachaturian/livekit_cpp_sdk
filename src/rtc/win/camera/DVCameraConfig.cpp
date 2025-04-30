@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifdef WEBRTC_WIN
 #include "DVCameraConfig.h"
 #include "CameraErrorHandling.h"
 #include "CameraManager.h"
@@ -68,4 +67,3 @@ std::string_view DVCameraConfig::logCategory() const
 }
 
 } // namespace LiveKitCpp
-#endif

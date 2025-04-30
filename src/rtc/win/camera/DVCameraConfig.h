@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // DVCameraConfig.h
-#ifdef WEBRTC_WIN
 #include "Loggable.h"
 #include <atlbase.h> //CComPtr support
 #include <Dshow.h>
@@ -47,4 +46,3 @@ private:
 };
 
 } // namespace LiveKitCpp
-#endif

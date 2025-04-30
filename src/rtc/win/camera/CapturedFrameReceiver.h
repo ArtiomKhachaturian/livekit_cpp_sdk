@@ -1,15 +1,17 @@
-/********************************************************************************************************************
-**                                                                                                               **
-** Copyright (C) 2022, Dark Matter LLC. All rights Reserved                                                      **
-** This software and/or source code may be used, copied and/or disseminated only with the written                **
-** permission of Dark Matter LLC, or in accordance with the terms and conditions stipulated in the               **
-** agreement/contract under which the software and/or source code has been                                       **
-** supplied by Dark Matter LLC or its affiliates. Unauthorized use, copying, or dissemination of this file, via  **
-** any medium, is strictly prohibited, and will constitute an infringement of copyright.                         **
-**                                                                                                               **
-*********************************************************************************************************************/
-#pragma once
-#ifdef WEBRTC_WIN
+// Copyright 2025 Artiom Khachaturian
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#pragma once // CapturedFrameReceiver.h
 #include <atlbase.h> //CComPtr support
 #include <stddef.h>
 #include <strmif.h>
@@ -33,4 +35,3 @@ protected:
 };
 
 } // namespace LiveKitCpp
-#endif

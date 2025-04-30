@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#ifdef WEBRTC_WIN
 #include "CameraCapturer.h"
 #include "CapturedFrameReceiver.h"
 #include "Loggable.h"
-#include "SafeObjAliases.h"
 #include "Listener.h"
+#include "SafeObjAliases.h"
+#include "VideoFrameBufferPool.h"
 #include <atlbase.h> //CComPtr support
 #include <modules/video_capture/windows/device_info_ds.h>
 #include <optional>
@@ -86,10 +86,10 @@ private:
     const CComPtr<IMediaControl> _mediaControl;
     const CComPtr<IPin> _outputCapturePin;
     const CComPtr<IPin> _inputSendPin;
+    const VideoFrameBufferPool _framesPool;
     Bricks::SafeObj<webrtc::VideoCaptureCapability> _requestedCapability;
     Bricks::SafeUniquePtr<DVCameraConfig> _dvCameraConfig;
     Bricks::Listener<CapturerObserver*> _observer;
 };
 
 } // namespace LiveKitCpp
-#endif

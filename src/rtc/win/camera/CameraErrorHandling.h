@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // CameraErrorHandling.h
-#ifdef WEBRTC_WIN
 #include "ComErrorHandling.h"
 #include "CameraManager.h"
 
 #define LOG_CAMERA_ERROR(hr, logger) LOG_COM_ERROR(hr, logger, LiveKitCpp::CameraManager::logCategory())
 #define CAMERA_IS_OK(hr, logger) COM_IS_OK(hr, logger, LiveKitCpp::CameraManager::logCategory())
-#endif

@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifdef WEBRTC_WIN
 #include "WinCameraCapturer.h"
 #include "CameraManager.h"
 #include "CapturerObserver.h"
@@ -40,7 +39,7 @@ WinCameraCapturer::WinCameraCapturer(const MediaDeviceInfo& device,
                                      const CComPtr<IPin>& outputCapturePin,
                                      VideoFrameBufferPool framesPool,
                                      const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<CameraCapturer>(logger, device, std::move(framesPool))
+    : Bricks::LoggableS<CameraCapturer>(logger, device)
     , _sinkFilter(new CaptureSinkFilter(this, logger))
     , _deviceInfo(std::move(deviceInfo))
     , _captureFilter(captureFilter)
@@ -48,7 +47,7 @@ WinCameraCapturer::WinCameraCapturer(const MediaDeviceInfo& device,
     , _mediaControl(mediaControl)
     , _outputCapturePin(outputCapturePin)
     , _inputSendPin(findInputSendPin(graphBuilder, _sinkFilter, logger))
-    , _observer(nullptr)
+    , _framesPool(std::move(framesPool))
 {
     assert(_deviceInfo);
     assert(_captureFilter);
@@ -190,7 +189,7 @@ void WinCameraCapturer::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
                                                           type.value(), buffer, 
                                                           actualBufferLen, totalBufferLen,
                                                           sample, captureRotation(),
-                                                          framesPool());
+                                                          _framesPool);
     if (!sampleBuffer) {
         logWarning("failed to create captured video buffer from type " + toString(type.value()));
         discardFrame();
@@ -417,4 +416,3 @@ void WinCameraCapturer::disconnect()
 }
 
 } // namespace LiveKitCpp
-#endif
