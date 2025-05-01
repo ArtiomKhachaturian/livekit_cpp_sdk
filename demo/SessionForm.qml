@@ -19,6 +19,8 @@ Frame {
     property alias sharingMuted: session.sharingMuted
 
     property string localVideoFilter
+    property string prefferedVideoEncoder
+    property string prefferedAudioEncoder
 
     property alias microphoneMuted: session.microphoneMuted
     property alias microphoneOptions: session.microphoneOptions
@@ -110,6 +112,14 @@ Frame {
 
     onLocalVideoFilterChanged: {
         session.localParticipant.videoFilter = localVideoFilter
+    }
+
+    onPrefferedVideoEncoderChanged: {
+        session.setPrefferedVideoEncoder(prefferedVideoEncoder)
+    }
+
+    onPrefferedAudioEncoderChanged: {
+        session.setPrefferedAudioEncoder(prefferedAudioEncoder)
     }
 
     function connect(url, token, autoSubscribe, adaptiveStream, e2e, iceTransportPolicy, passPhrase = "") {

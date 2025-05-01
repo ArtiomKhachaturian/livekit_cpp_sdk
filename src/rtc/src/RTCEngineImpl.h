@@ -126,6 +126,10 @@ public:
                          const std::vector<std::string>& destinationIdentities = {}) const;
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     void cleanup(const std::optional<LiveKitError>& error = {}, const std::string& errorDetails = {});
+    void setPrefferedVideoEncoder(const std::string& encoder);
+    void setPrefferedAudioEncoder(const std::string& encoder);
+    std::string prefferedVideoEncoder() const { return _prefferedVideoEncoder(); }
+    std::string prefferedAudioEncoder() const { return _prefferedAudioEncoder(); }
 private:
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     SendResult sendAddTrack(AddTrackRequest request) const;
@@ -238,6 +242,8 @@ private:
     std::atomic_uint _reconnectAttempts = 0U;
     std::atomic<SessionState> _state = SessionState::TransportDisconnected;
     Bricks::SafeObj<JoinResponse> _lastJoinResponse;
+    Bricks::SafeObj<std::string> _prefferedVideoEncoder;
+    Bricks::SafeObj<std::string> _prefferedAudioEncoder;
 };
 	
 } // namespace LiveKitCpp

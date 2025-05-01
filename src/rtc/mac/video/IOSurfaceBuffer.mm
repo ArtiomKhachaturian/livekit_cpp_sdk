@@ -177,7 +177,7 @@ IOSurfaceRef IOSurfaceBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::Video
     return nullptr;
 }
 
-} // namespace darkmatter::rtc
+} // namespace LiveKitCpp
 
 
 namespace {

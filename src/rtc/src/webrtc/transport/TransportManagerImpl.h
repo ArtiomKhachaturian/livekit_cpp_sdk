@@ -58,6 +58,8 @@ public:
     void setAudioRecording(bool recording);
     void close();
     void setListener(TransportManagerListener* listener);
+    void setPrefferedVideoEncoder(const std::string& encoder) { _prefferedVideoEncoder(encoder); }
+    void setPrefferedAudioEncoder(const std::string& encoder) { _prefferedAudioEncoder(encoder); }
 private:
     void createPublisherOffer();
     bool canNegotiate() const noexcept;
@@ -114,6 +116,8 @@ private:
     std::atomic<uint8_t> _embeddedDCCount = 0U;
     std::atomic_bool _pendingNegotiation = false;
     std::atomic_bool _embeddedDCRequested = false;
+    Bricks::SafeObj<std::string> _prefferedVideoEncoder;
+    Bricks::SafeObj<std::string> _prefferedAudioEncoder;
 };
 	
 } // namespace LiveKitCpp

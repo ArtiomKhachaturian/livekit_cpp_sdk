@@ -397,7 +397,7 @@ if (WEBRTC_AVAILABLE)
 
     target_link_libraries(${RTC_LIB} PRIVATE ${WEBRTC_LIB_FILES})
     target_link_libraries(${RTC_LIB} PUBLIC ${SIGNALING_LIB})
-    target_compile_definitions(${RTC_LIB} PRIVATE -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}")
+    target_compile_definitions(${RTC_LIB} PRIVATE -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}" -DWEBRTC_USE_H264)
 endif()
 
 # install steps

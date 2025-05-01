@@ -125,6 +125,26 @@ std::shared_ptr<LocalVideoTrack> Session::videoTrack(size_t index) const
     return {};
 }
 
+void Session::setPrefferedVideoEncoder(const std::string& encoder)
+{
+    _impl->_engine.setPrefferedVideoEncoder(encoder);
+}
+
+void Session::setPrefferedAudioEncoder(const std::string& encoder)
+{
+    _impl->_engine.setPrefferedAudioEncoder(encoder);
+}
+
+std::string Session::prefferedVideoEncoder() const
+{
+    return _impl->_engine.prefferedVideoEncoder();
+}
+
+std::string Session::prefferedAudioEncoder() const
+{
+    return _impl->_engine.prefferedAudioEncoder();
+}
+
 size_t Session::remoteParticipantsCount() const
 {
     if (const auto participant = _impl->_engine.remoteParticipants()) {

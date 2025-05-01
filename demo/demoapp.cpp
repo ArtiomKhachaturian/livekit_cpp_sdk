@@ -159,6 +159,38 @@ bool DemoApp::displayCameraSettingsDialogBox(const MediaDeviceInfo& info,
     return false;
 }
 
+QStringList DemoApp::videoEncoders() const
+{
+    if (_service) {
+        const auto utf8Encoders = _service->videoEncoderFormats();
+        if (!utf8Encoders.empty()) {
+            QStringList encoders;
+            encoders.reserve(utf8Encoders.size());
+            for (const auto& encoder : utf8Encoders) {
+                encoders.append(QString::fromStdString(encoder));
+            }
+            return encoders;
+        }
+    }
+    return {};
+}
+
+QStringList DemoApp::audioEncoders() const
+{
+    if (_service) {
+        const auto utf8Encoders = _service->audioEncoderFormats();
+        if (!utf8Encoders.empty()) {
+            QStringList encoders;
+            encoders.reserve(utf8Encoders.size());
+            for (const auto& encoder : utf8Encoders) {
+                encoders.append(QString::fromStdString(encoder));
+            }
+            return encoders;
+        }
+    }
+    return {};
+}
+
 bool DemoApp::isValid() const
 {
     return nullptr != _service;

@@ -95,6 +95,8 @@ bool Session::connectToSfu(const QString& url, const QString& token,
         else {
             _encryption = LiveKitCpp::EncryptionType::None;
         }
+        impl->setPrefferedVideoEncoder(_prefferedVideoEncoder.toStdString());
+        impl->setPrefferedAudioEncoder(_prefferedAudioEncoder.toStdString());
     }
     setSessionImpl(std::move(impl));
     return _impl && _impl->connect(url.toStdString(), token.toStdString());
@@ -199,6 +201,26 @@ void Session::setActiveSharing(bool active)
             removeSharingTrack();
         }
         emit activeSharingChanged();
+    }
+}
+
+void Session::setPrefferedVideoEncoder(const QString& encoder)
+{
+    if (_prefferedVideoEncoder != encoder) {
+        _prefferedVideoEncoder = encoder;
+        if (_impl) {
+            _impl->setPrefferedVideoEncoder(encoder.toStdString());
+        }
+    }
+}
+
+void Session::setPrefferedAudioEncoder(const QString& encoder)
+{
+    if (_prefferedAudioEncoder != encoder) {
+        _prefferedAudioEncoder = encoder;
+        if (_impl) {
+            _impl->setPrefferedAudioEncoder(encoder.toStdString());
+        }
     }
 }
 

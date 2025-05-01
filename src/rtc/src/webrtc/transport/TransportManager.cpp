@@ -190,4 +190,18 @@ void TransportManager::setListener(TransportManagerListener* listener)
     }
 }
 
+void TransportManager::setPrefferedVideoEncoder(const std::string& encoder)
+{
+    if (const auto impl = loadImpl()) {
+        impl->setPrefferedVideoEncoder(encoder);
+    }
+}
+
+void TransportManager::setPrefferedAudioEncoder(const std::string& encoder)
+{
+    if (const auto impl = loadImpl()) {
+        impl->setPrefferedAudioEncoder(encoder);
+    }
+}
+
 } // namespace LiveKitCpp

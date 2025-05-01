@@ -14,9 +14,10 @@
 #include "TransportManagerImpl.h"
 #include "TransportManagerListener.h"
 #include "PeerConnectionFactory.h"
-#include "RoomUtils.h"
 #include "DataChannel.h"
+#include "RoomUtils.h"
 #include "RtcUtils.h"
+#include "SdpPatch.h"
 #include "Utils.h"
 
 namespace {
@@ -290,6 +291,11 @@ void TransportManagerImpl::updateState()
 void TransportManagerImpl::onSdpCreated(SignalTarget target,
                                         std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
+    if (SignalTarget::Publisher == target && desc) {
+        SdpPatch patch(desc.get());
+        patch.setCodec(_prefferedVideoEncoder(), cricket::MEDIA_TYPE_VIDEO);
+        patch.setCodec(_prefferedAudioEncoder(), cricket::MEDIA_TYPE_AUDIO);
+    }
     switch (target) {
         case SignalTarget::Publisher:
             _publisher.setLocalDescription(std::move(desc));

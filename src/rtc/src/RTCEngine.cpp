@@ -185,4 +185,34 @@ std::shared_ptr<const RemoteParticipants> RTCEngine::remoteParticipants() const
     return {};
 }
 
+void RTCEngine::setPrefferedVideoEncoder(const std::string& encoder)
+{
+    if (const auto impl = loadImpl()) {
+        impl->setPrefferedVideoEncoder(encoder);
+    }
+}
+
+void RTCEngine::setPrefferedAudioEncoder(const std::string& encoder)
+{
+    if (const auto impl = loadImpl()) {
+        impl->setPrefferedAudioEncoder(encoder);
+    }
+}
+
+std::string RTCEngine::prefferedVideoEncoder() const
+{
+    if (const auto impl = loadImpl()) {
+        return impl->prefferedVideoEncoder();
+    }
+    return {};
+}
+
+std::string RTCEngine::prefferedAudioEncoder() const
+{
+    if (const auto impl = loadImpl()) {
+        return impl->prefferedAudioEncoder();
+    }
+    return {};
+}
+
 } // namespace LiveKitCpp

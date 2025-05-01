@@ -90,6 +90,8 @@ public slots:
     void setSharingMuted(bool muted) { _localParticipant->setSharingMuted(muted); }
     void setSharingOptions(const VideoOptions& options) { _localParticipant->setSharingOptions(options); }
     void setMicrophoneOptions(const AudioRecordingOptions& options) { _localParticipant->setMicrophoneOptions(options); }
+    Q_INVOKABLE void setPrefferedVideoEncoder(const QString& encoder = {});
+    Q_INVOKABLE void setPrefferedAudioEncoder(const QString& encoder = {});
     Q_INVOKABLE void disconnectFromSfu();
     Q_INVOKABLE bool sendChatMessage(const QString& message);
 signals:
@@ -145,6 +147,8 @@ private:
     bool _activeCamera = false;
     bool _activeMicrophone = false;
     bool _activeSharing = false;
+    QString _prefferedVideoEncoder;
+    QString _prefferedAudioEncoder;
 };
 
 #endif // Session_H

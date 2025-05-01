@@ -58,6 +58,8 @@ public slots:
     Q_INVOKABLE bool displayCameraSettingsDialogBox(const MediaDeviceInfo& info,
                                                     const QString& dialogTitle,
                                                     uint32_t positionX, uint32_t positionY) const;
+    Q_INVOKABLE QStringList videoEncoders() const;
+    Q_INVOKABLE QStringList audioEncoders() const;
 public:
     bool isValid() const;
     bool audioRecordingEnabled() const;

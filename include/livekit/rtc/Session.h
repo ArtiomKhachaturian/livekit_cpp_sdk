@@ -73,6 +73,10 @@ public:
     void removeVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<LocalAudioTrack> audioTrack(size_t index) const;
     std::shared_ptr<LocalVideoTrack> videoTrack(size_t index) const;
+    void setPrefferedVideoEncoder(const std::string& encoder = {});
+    void setPrefferedAudioEncoder(const std::string& encoder = {});
+    std::string prefferedVideoEncoder() const;
+    std::string prefferedAudioEncoder() const;
     // remote
     size_t remoteParticipantsCount() const;
     // given participant by index or server ID

@@ -61,6 +61,8 @@ public:
     void setAudioRecording(bool recording);
     void close();
     void setListener(TransportManagerListener* listener);
+    void setPrefferedVideoEncoder(const std::string& encoder = {});
+    void setPrefferedAudioEncoder(const std::string& encoder = {});
 };
 
 } // namespace LiveKitCpp

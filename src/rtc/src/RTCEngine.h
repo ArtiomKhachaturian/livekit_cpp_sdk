@@ -93,6 +93,10 @@ public:
     bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<const LocalParticipant> localParticipant() const;
     std::shared_ptr<const RemoteParticipants> remoteParticipants() const;
+    void setPrefferedVideoEncoder(const std::string& encoder);
+    void setPrefferedAudioEncoder(const std::string& encoder);
+    std::string prefferedVideoEncoder() const;
+    std::string prefferedAudioEncoder() const;
 };
 
 } // namespace LiveKitCpp
