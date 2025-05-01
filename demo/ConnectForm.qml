@@ -8,6 +8,8 @@ Item {
     id: root
     readonly property alias passPhrase: passPhrase.text
     property string videoFilter
+    property string prefferedVideoEncoder
+    property string prefferedAudioEncoder
     property alias urlText: url.text
     property alias tokenText: token.text
     property alias activePreview: previewTracksModel.active
@@ -109,6 +111,55 @@ Item {
                         id: adaptiveStreamChx
                         text: qsTr("Adaptive stream")
                         checked: true
+                    }
+                    Switch {
+                        id: videoEncoderChx
+                        text: qsTr("Video encoder:")
+                        checked: false
+                        onCheckedChanged: {
+                            if (checked) {
+                                root.prefferedVideoEncoder = videoEncoderCb.currentText
+                            }
+                            else {
+                                root.prefferedVideoEncoder = ""
+                            }
+                        }
+                    }
+                    ComboBox {
+                        id: videoEncoderCb
+                        enabled: videoEncoderChx.checked
+                        Layout.preferredWidth: 70
+                        model: app.videoEncoders()
+                        onCurrentTextChanged: {
+                            if (enabled) {
+                                root.prefferedVideoEncoder = currentText
+                            }
+                        }
+                    }
+                    Switch {
+                        id: audioEncoderChx
+                        text: qsTr("Audio encoder:")
+                        checked: false
+                        onCheckedChanged: {
+                            if (checked) {
+                                root.prefferedAudioEncoder = audioEncoderCb.currentText
+                            }
+                            else {
+                                root.prefferedAudioEncoder = ""
+                            }
+                        }
+                    }
+
+                    ComboBox {
+                        id: audioEncoderCb
+                        enabled: audioEncoderChx.checked
+                        Layout.preferredWidth: 70
+                        model: app.audioEncoders()
+                        onCurrentTextChanged: {
+                            if (enabled) {
+                                root.prefferedAudioEncoder = currentText
+                            }
+                        }
                     }
                     Label {
                         text: qsTr("ICE transport policy:")

@@ -19,6 +19,7 @@
 #include <media/base/codec.h>
 #include <pc/media_session.h>
 #include <cassert>
+#include <set>
 
 namespace LiveKitCpp
 {
@@ -51,10 +52,10 @@ bool SdpPatch::setCodec(std::string_view codecName, cricket::MediaType kind)
         if (const auto content = contentDescription(kind)) {
             switch (kind) {
                 case cricket::MediaType::MEDIA_TYPE_VIDEO:
-                    changed = moveCodecProfilesToFront(content->as_video(), std::move(codecName));
+                    changed = moveCodecProfilesToFront(content, std::move(codecName));
                     break;
                 case cricket::MediaType::MEDIA_TYPE_AUDIO:
-                    changed = moveCodecProfilesToFront(content->as_audio(), std::move(codecName));
+                    changed = moveCodecProfilesToFront(content, std::move(codecName));
                     break;
                 default:
                     assert(false);
@@ -78,29 +79,42 @@ bool SdpPatch::setMediaBandwidth(int bps, cricket::MediaType kind)
     return false;
 }
 
-template <class TContentDescription>
-bool SdpPatch::moveCodecProfilesToFront(TContentDescription* desc, std::string_view codecName)
+bool SdpPatch::moveCodecProfilesToFront(cricket::MediaContentDescription* desc, std::string_view codecName)
 {
     bool changed = false;
-    if (desc && !codecName.empty()) {
-        auto availableCodecs = desc->codecs();
-        if (!availableCodecs.empty()) {
-            AssociatedPayloads payloads;
-            for (const auto& availableCodec : availableCodecs) {
-                if (compareCaseInsensitive(availableCodec.name, codecName)) {
-                    payloads.insert(availableCodec.id);
-                }
+    if (desc && !codecName.empty() && !desc->codecs().empty()) {
+        std::set<int> payloads;
+        for (const auto& codec : desc->codecs()) {
+            if (compareCaseInsensitive(codec.name, codecName)) {
+                payloads.insert(codec.id);
             }
-            if (!payloads.empty()) {
-                for (auto it = availableCodecs.begin(), swapIt = it; it != availableCodecs.end(); ++it) {
-                    if (isAssociatedCodec(payloads, *it) && swapIt != it) {
-                        std::swap(*it, *swapIt++);
-                        changed = true;
+        }
+        if (!payloads.empty()) {
+            std::vector<cricket::Codec> input(desc->codecs()), output;
+            output.reserve(input.size());
+            for (int payload : payloads) {
+                auto it = std::find_if(input.begin(), input.end(), [payload](const auto& codec) {
+                    return codec.id == payload;
+                });
+                if (it != input.end()) {
+                    output.push_back(std::move(*it));
+                    input.erase(it);
+                    for (it = input.begin(); it != input.end();) {
+                        if (isAssociatedCodec(payload, *it)) {
+                            output.push_back(std::move(*it));
+                            input.erase(it);
+                        }
+                        else {
+                            ++it;
+                        }
                     }
                 }
             }
+            // copy rest of codecs
+            output.insert(output.end(), std::make_move_iterator(input.begin()), std::make_move_iterator(input.end()));
+            changed = output != desc->codecs();
             if (changed) {
-                desc->set_codecs(availableCodecs);
+                desc->set_codecs(output);
             }
         }
     }
@@ -119,17 +133,16 @@ cricket::MediaContentDescription* SdpPatch::contentDescription(cricket::MediaTyp
     return nullptr;
 }
 
-bool SdpPatch::isAssociatedCodec(const AssociatedPayloads& payloads, const cricket::Codec& codec)
+bool SdpPatch::isAssociatedCodec(int payload, const cricket::Codec& codec)
 {
     if (cricket::Codec::ResiliencyType::kNone != codec.GetResiliencyType()) {
         int associatedPayloadType = 0;
         if (codec.GetParam(cricket::kCodecParamAssociatedPayloadType, &associatedPayloadType) &&
             cricket::IsValidRtpPayloadType(associatedPayloadType)) {
-                return payloads.count(associatedPayloadType) > 0UL;
+                return payload == associatedPayloadType;
         }
-        return false;
     }
-    return payloads.count(codec.id) > 0UL;
+    return false;
 }
 
 } // namespace LiveKitCpp

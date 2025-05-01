@@ -14,7 +14,6 @@
 #pragma once
 #include <api/media_types.h>
 #include <memory>
-#include <set>
 #include <string>
 #include <optional>
 
@@ -34,7 +33,6 @@ namespace LiveKitCpp
 
 class SdpPatch
 {
-    using AssociatedPayloads = std::set<int>;
 public:
     SdpPatch(webrtc::SessionDescriptionInterface* session);
     bool hasSendStreams(cricket::MediaType kind) const;
@@ -46,9 +44,8 @@ public:
     const webrtc::SessionDescriptionInterface* session() const { return _session; }
 private:
     cricket::MediaContentDescription* contentDescription(cricket::MediaType kind) const;
-    template <class TContentDescription>
-    static bool moveCodecProfilesToFront(TContentDescription* desc, std::string_view codecName);
-    static bool isAssociatedCodec(const AssociatedPayloads& payloads, const cricket::Codec& codec);
+    static bool moveCodecProfilesToFront(cricket::MediaContentDescription* desc, std::string_view codecName);
+    static bool isAssociatedCodec(int payload, const cricket::Codec& codec);
 private:
     webrtc::SessionDescriptionInterface* const _session;
 };

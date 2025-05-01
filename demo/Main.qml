@@ -4,9 +4,9 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 
 ApplicationWindow {
-    visibility: Qt.WindowMaximized
-    width: 1024
-    height: 768
+    width: 1200
+    height: 800
+    //visibility: Window.Maximized
     visible: true
     title: qsTr("LiveKit client demo")
 

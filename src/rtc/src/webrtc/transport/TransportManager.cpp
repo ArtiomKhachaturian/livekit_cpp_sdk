@@ -24,9 +24,12 @@ TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                    const std::string& identity,
+                                   const std::string& prefferedAudioEncoder,
+                                   const std::string& prefferedVideoEncoder,
                                    const std::shared_ptr<Bricks::Logger>& logger)
     : RtcObject<TransportManagerImpl>(subscriberPrimary, fastPublish, pingTimeout,
-                                      pingInterval, negotiationDelay, pcf, conf, identity, logger)
+                                      pingInterval, negotiationDelay, pcf, conf, identity,
+                                      prefferedAudioEncoder, prefferedVideoEncoder, logger)
 {
 }
 
@@ -187,20 +190,6 @@ void TransportManager::setListener(TransportManagerListener* listener)
 {
     if (const auto impl = loadImpl()) {
         impl->setListener(listener);
-    }
-}
-
-void TransportManager::setPrefferedVideoEncoder(const std::string& encoder)
-{
-    if (const auto impl = loadImpl()) {
-        impl->setPrefferedVideoEncoder(encoder);
-    }
-}
-
-void TransportManager::setPrefferedAudioEncoder(const std::string& encoder)
-{
-    if (const auto impl = loadImpl()) {
-        impl->setPrefferedAudioEncoder(encoder);
     }
 }
 

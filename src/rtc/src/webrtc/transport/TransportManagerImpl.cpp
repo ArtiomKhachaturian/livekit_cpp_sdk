@@ -55,6 +55,8 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
                                            const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                            const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                            const std::string& identity,
+                                           const std::string& prefferedAudioEncoder,
+                                           const std::string& prefferedVideoEncoder,
                                            const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<TransportListener, PingPongKitListener>(logger)
     , _negotiationTimerId(reinterpret_cast<uint64_t>(this))
@@ -62,6 +64,8 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
     , _negotiationDelay(negotiationDelay)
     , _subscriberPrimary(subscriberPrimary)
     , _fastPublish(fastPublish)
+    , _prefferedAudioEncoder(prefferedAudioEncoder)
+    , _prefferedVideoEncoder(prefferedVideoEncoder)
     , _logCategory("transport_manager_" + identity)
     , _negotiationTimer(_negotiationDelay ? new MediaTimer(pcf) : nullptr)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, identity, logger)
@@ -291,10 +295,10 @@ void TransportManagerImpl::updateState()
 void TransportManagerImpl::onSdpCreated(SignalTarget target,
                                         std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    if (SignalTarget::Publisher == target && desc) {
+    if (SignalTarget::Publisher == target && desc && (!_prefferedAudioEncoder.empty() || !_prefferedVideoEncoder.empty())) {
         SdpPatch patch(desc.get());
-        patch.setCodec(_prefferedVideoEncoder(), cricket::MEDIA_TYPE_VIDEO);
-        patch.setCodec(_prefferedAudioEncoder(), cricket::MEDIA_TYPE_AUDIO);
+        patch.setCodec(_prefferedAudioEncoder, cricket::MEDIA_TYPE_AUDIO);
+        patch.setCodec(_prefferedVideoEncoder, cricket::MEDIA_TYPE_VIDEO);
     }
     switch (target) {
         case SignalTarget::Publisher:

@@ -233,24 +233,6 @@ void RTCEngineImpl::cleanup(const std::optional<LiveKitError>& error, const std:
     }
 }
 
-void RTCEngineImpl::setPrefferedVideoEncoder(const std::string& encoder)
-{
-    if (exchangeVal(encoder, _prefferedVideoEncoder)) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->setPrefferedVideoEncoder(encoder);
-        }
-    }
-}
-
-void RTCEngineImpl::setPrefferedAudioEncoder(const std::string& encoder)
-{
-    if (exchangeVal(encoder, _prefferedAudioEncoder)) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->setPrefferedAudioEncoder(encoder);
-        }
-    }
-}
-
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngineImpl::localTrack(const std::string& id,
                                                                                    bool cid) const
 {
@@ -469,6 +451,8 @@ void RTCEngineImpl::createTransportManager(const JoinResponse& response,
                                                         negotiationDelay,
                                                         _pcf, conf,
                                                         response._participant._identity,
+                                                        _options._prefferedAudioEncoder,
+                                                        _options._prefferedVideoEncoder,
                                                         logger());
     pcManager->setListener(this);
     // both playout & recording are enabled by default
@@ -478,8 +462,6 @@ void RTCEngineImpl::createTransportManager(const JoinResponse& response,
     if (!audioRecordingEnabled()) {
         pcManager->setAudioRecording(false);
     }
-    pcManager->setPrefferedVideoEncoder(prefferedVideoEncoder());
-    pcManager->setPrefferedAudioEncoder(prefferedAudioEncoder());
     _reconnectAttempts = 0U;
     std::atomic_store(&_pcManager, pcManager);
     for (auto track : _localParticipant->media()) {

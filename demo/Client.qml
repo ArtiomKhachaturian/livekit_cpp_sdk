@@ -79,63 +79,7 @@ Pane {
                     text: qsTr("Muted")
                     enabled: sessionActive && sessionForm.activeCamera
                     checked: false
-                }
-
-                ToolSeparator {}
-
-                CheckBox {
-                    id: videoEncoderChx
-                    text: qsTr("Video encoder:")
-                    checked: false
-                    onCheckedChanged: {
-                        if (checked) {
-                            sessionForm.prefferedVideoEncoder = videoEncoderCb.currentText
-                        }
-                        else {
-                            sessionForm.prefferedVideoEncoder = ""
-                        }
-                    }
-                }
-
-                ComboBox {
-                    id: videoEncoderCb
-                    enabled: videoEncoderChx.checked
-                    Layout.preferredWidth: 70
-                    model: app.videoEncoders()
-                    onCurrentTextChanged: {
-                        if (enabled) {
-                            sessionForm.prefferedVideoEncoder = currentText
-                        }
-                    }
-                }
-
-                ToolSeparator {}
-
-                CheckBox {
-                    id: audioEncoderChx
-                    text: qsTr("Audio encoder:")
-                    checked: false
-                    onCheckedChanged: {
-                        if (checked) {
-                            sessionForm.prefferedAudioEncoder = audioEncoderCb.currentText
-                        }
-                        else {
-                            sessionForm.prefferedAudioEncoder = ""
-                        }
-                    }
-                }
-
-                ComboBox {
-                    id: audioEncoderCb
-                    enabled: audioEncoderChx.checked
-                    Layout.preferredWidth: 70
-                    model: app.audioEncoders()
-                    onCurrentTextChanged: {
-                        if (enabled) {
-                            sessionForm.prefferedAudioEncoder = currentText
-                        }
-                    }
-                }
+                }                
 
                 ToolSeparator {}
 
@@ -218,6 +162,8 @@ Pane {
                     cameraMuted: cameraMuteCheckbox.checked
                     sharingMuted: sharingMuteCheckbox.checked
                     localVideoFilter: root.videoFilter
+                    prefferedAudioEncoder: connectionForm.prefferedAudioEncoder
+                    prefferedVideoEncoder: connectionForm.prefferedVideoEncoder
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     onError: (desc, details) => {

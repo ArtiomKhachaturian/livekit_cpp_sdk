@@ -43,7 +43,9 @@ struct Options
     
     std::optional<ClientInfo> _clientsInfo;
     
-    // DisabledCodecs            []webrtc.RTPCodecCapability
+    std::string _prefferedAudioEncoder;
+    
+    std::string _prefferedVideoEncoder;
     
     /**
      * @brief Delay applied to the renegotiation process to

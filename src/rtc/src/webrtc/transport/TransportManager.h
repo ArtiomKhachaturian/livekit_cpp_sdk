@@ -37,6 +37,8 @@ public:
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::string& identity,
+                     const std::string& prefferedAudioEncoder = {},
+                     const std::string& prefferedVideoEncoder = {},
                      const std::shared_ptr<Bricks::Logger>& logger = {});
     ~TransportManager();
     bool valid() const noexcept;
@@ -61,8 +63,6 @@ public:
     void setAudioRecording(bool recording);
     void close();
     void setListener(TransportManagerListener* listener);
-    void setPrefferedVideoEncoder(const std::string& encoder = {});
-    void setPrefferedAudioEncoder(const std::string& encoder = {});
 };
 
 } // namespace LiveKitCpp

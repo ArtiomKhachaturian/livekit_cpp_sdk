@@ -34,6 +34,8 @@ public:
                          const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                          const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                          const std::string& identity,
+                         const std::string& prefferedAudioEncoder = {},
+                         const std::string& prefferedVideoEncoder = {},
                          const std::shared_ptr<Bricks::Logger>& logger = {});
     ~TransportManagerImpl() final;
     bool valid() const noexcept;
@@ -58,8 +60,6 @@ public:
     void setAudioRecording(bool recording);
     void close();
     void setListener(TransportManagerListener* listener);
-    void setPrefferedVideoEncoder(const std::string& encoder) { _prefferedVideoEncoder(encoder); }
-    void setPrefferedAudioEncoder(const std::string& encoder) { _prefferedAudioEncoder(encoder); }
 private:
     void createPublisherOffer();
     bool canNegotiate() const noexcept;
@@ -106,6 +106,8 @@ private:
     const uint64_t _negotiationDelay;
     const bool _subscriberPrimary;
     const bool _fastPublish;
+    const std::string _prefferedAudioEncoder;
+    const std::string _prefferedVideoEncoder;
     const std::string _logCategory;
     const std::unique_ptr<MediaTimer> _negotiationTimer;
     AsyncListener<TransportManagerListener*> _listener;
@@ -116,8 +118,6 @@ private:
     std::atomic<uint8_t> _embeddedDCCount = 0U;
     std::atomic_bool _pendingNegotiation = false;
     std::atomic_bool _embeddedDCRequested = false;
-    Bricks::SafeObj<std::string> _prefferedVideoEncoder;
-    Bricks::SafeObj<std::string> _prefferedAudioEncoder;
 };
 	
 } // namespace LiveKitCpp
