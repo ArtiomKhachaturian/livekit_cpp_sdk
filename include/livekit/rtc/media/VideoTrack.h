@@ -14,7 +14,6 @@
 #pragma once // VideoTrack.h
 #include "livekit/rtc/media/Track.h"
 #include "livekit/rtc/media/VideoContentHint.h"
-#include "livekit/rtc/media/DegradationPreference.h"
 
 namespace LiveKitCpp
 {
@@ -30,11 +29,6 @@ public:
     virtual void removeSink(VideoSink* sink) = 0;
     virtual void setContentHint(VideoContentHint /*hint*/) {}
     virtual VideoContentHint contentHint() const { return VideoContentHint::None; }
-    // When bandwidth is constrained and the RtpSender needs to choose between
-    // degrading resolution or degrading framerate, degradationPreference
-    // indicates which is preferred. Only for video tracks.
-    virtual DegradationPreference degradationPreference() const = 0;
-    virtual void setDegradationPreference(DegradationPreference preference) = 0;
 };
 
 } // namespace LiveKitCpp

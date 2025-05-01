@@ -13,30 +13,11 @@
 // limitations under the License.
 #pragma once // LocalAudioTrack.h
 #include "livekit/rtc/media/AudioTrack.h"
-#include "livekit/rtc/media/NetworkPriority.h"
+#include "livekit/rtc/media/LocalMediaTrack.h"
 
 namespace LiveKitCpp
 {
 
-class LocalAudioTrack : public AudioTrack
-{
-public:
-    // RTP
-    // The relative DiffServ Code Point priority for this encoding, allowing
-    // packets to be marked relatively higher or lower without affecting
-    // bandwidth allocations. See https://w3c.github.io/webrtc-dscp-exp/ .
-    virtual NetworkPriority networkPriority() const = 0;
-    virtual void setNetworkPriority(NetworkPriority priority) = 0;
-    // The relative bitrate priority of this encoding. Currently this is
-    // implemented for the entire rtp sender by using the value of the first
-    // encoding parameter.
-    // See: https://w3c.github.io/webrtc-priority/#enumdef-rtcprioritytype
-    // "very-low" = 0.5
-    // "low" = 1.0
-    // "medium" = 2.0
-    // "high" = 4.0
-    virtual double bitratePriority() const = 0;
-    virtual void setBitratePriority(double priority) = 0;
-};
+class LocalAudioTrack : public LocalMediaTrack<AudioTrack> {};
 
 } // namespace LiveKitCpp

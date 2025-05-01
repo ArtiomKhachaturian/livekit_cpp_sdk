@@ -16,6 +16,7 @@
 #include "LocalVideoDeviceImpl.h"
 #include "VideoTrackImpl.h"
 #include "livekit/rtc/media/LocalVideoTrack.h"
+#include <limits>
 
 namespace LiveKitCpp
 {
@@ -36,10 +37,34 @@ public:
     void setOptions(VideoOptions options) final;
     VideoOptions options() const final;
     void setFilter(LocalVideoFilterPin* inputPin) final;
+    DegradationPreference degradationPreference() const final { return _degradationPreference; }
+    void setDegradationPreference(DegradationPreference preference) final;
+    std::optional<int> maxBitrateBps() const final;
+    void setMaxBitrateBps(const std::optional<int>& bps) final;
+    std::optional<int> minBitrateBps() const final;
+    void setMinBitrateBps(const std::optional<int>& bps) final;
+    std::optional<int> maxFramerate() const final;
+    void setMaxFramerate(const std::optional<int>& fps) final;
 protected:
     // overrides of VideoTrackImpl<>
     bool updateSenderInitialParameters(webrtc::RtpParameters& parameters) const final;
-    void onDegradationPreferenceChanged(DegradationPreference preference) final;
+private:
+    static std::optional<int> optionalValue(int v);
+    static int value(const std::optional<int>& v);
+    static bool setMaxBitrateBps(const std::optional<int>& bps, webrtc::RtpParameters& parameters);
+    static bool setMaxBitrateBps(const std::optional<int>& bps, webrtc::RtpEncodingParameters& parameters);
+    static bool setMinBitrateBps(const std::optional<int>& bps, webrtc::RtpParameters& parameters);
+    static bool setMinBitrateBps(const std::optional<int>& bps, webrtc::RtpEncodingParameters& parameters);
+    static bool setMaxFramerate(const std::optional<int>& fps, webrtc::RtpParameters& parameters);
+    static bool setMaxFramerate(const std::optional<int>& fps, webrtc::RtpEncodingParameters& parameters);
+    static bool setDegradationPreference(DegradationPreference preference,
+                                         webrtc::RtpParameters& parameters);
+private:
+    static constexpr int _noValue = std::numeric_limits<int>::min();
+    std::atomic<DegradationPreference> _degradationPreference = DegradationPreference::Default;
+    std::atomic<int> _maxBitrateBps = _noValue;
+    std::atomic<int> _minBitrateBps = _noValue;
+    std::atomic<int> _maxFramerate = _noValue;
 };
 	
 } // namespace LiveKitCpp

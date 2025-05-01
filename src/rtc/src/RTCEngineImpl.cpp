@@ -530,8 +530,11 @@ void RTCEngineImpl::notifyAboutMuteChanges(const std::string& trackSid, bool mut
 void RTCEngineImpl::notifyAboutSetRtpParametersFailure(const std::string& trackSid,
                                                        std::string_view details)
 {
-    if (!trackSid.empty()) {
-        // TODO: log error
+    if (!trackSid.empty() && canLogError()) {
+        std::vector<std::string_view> errors;
+        errors.push_back("failed to set RTP parameters for track '" + trackSid + "'");
+        errors.push_back(std::move(details));
+        logError(join(errors, ": "));
     }
 }
 
