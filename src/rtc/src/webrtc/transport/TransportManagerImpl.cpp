@@ -297,8 +297,8 @@ void TransportManagerImpl::onSdpCreated(SignalTarget target,
 {
     if (SignalTarget::Publisher == target && desc && (!_prefferedAudioEncoder.empty() || !_prefferedVideoEncoder.empty())) {
         SdpPatch patch(desc.get());
-        patch.setCodec(_prefferedAudioEncoder, cricket::MEDIA_TYPE_AUDIO);
-        patch.setCodec(_prefferedVideoEncoder, cricket::MEDIA_TYPE_VIDEO);
+        patch.setCodec(_prefferedAudioEncoder, webrtc::MediaType::AUDIO);
+        patch.setCodec(_prefferedVideoEncoder, webrtc::MediaType::VIDEO);
     }
     switch (target) {
         case SignalTarget::Publisher:
@@ -382,7 +382,7 @@ void TransportManagerImpl::onTransceiverAdded(SignalTarget target,
 
 void TransportManagerImpl::onTransceiverAddFailure(SignalTarget target,
                                                    const std::string& id,
-                                                   cricket::MediaType type,
+                                                   webrtc::MediaType type,
                                                    const webrtc::RtpTransceiverInit& init,
                                                    webrtc::RTCError error)
 {
@@ -394,7 +394,7 @@ void TransportManagerImpl::onTransceiverAddFailure(SignalTarget target,
 
 void TransportManagerImpl::onLocalTrackRemoved(SignalTarget target,
                                                const std::string& id,
-                                               cricket::MediaType type,
+                                               webrtc::MediaType type,
                                                const std::vector<std::string>&)
 {
     if (SignalTarget::Publisher == target) {

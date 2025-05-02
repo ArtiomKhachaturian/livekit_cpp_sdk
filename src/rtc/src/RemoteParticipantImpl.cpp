@@ -103,7 +103,7 @@ public:
     void remove(RemoteParticipantListener* listener) { _listeners.remove(listener); }
     void reset();
     // impl. of AesCgmCryptorObserver
-    void onDecryptionStateChanged(cricket::MediaType mediaType, const std::string&,
+    void onDecryptionStateChanged(webrtc::MediaType mediaType, const std::string&,
                                   const std::string& trackSid, AesCgmCryptorState state) final;
 private:
     Bricks::SafeObj<RemoteParticipantImpl*> _owner;
@@ -143,7 +143,7 @@ bool RemoteParticipantImpl::addAudio(const std::string& trackSid,
     if (!receiver && _receiversStorage) {
         receiver = _receiversStorage->take(trackSid);
     }
-    if (receiver && cricket::MEDIA_TYPE_AUDIO == receiver->media_type()) {
+    if (receiver && webrtc::MediaType::AUDIO == receiver->media_type()) {
         return addTrack(trackSid, trackManager, std::move(receiver), _audioTracks);
     }
     return false;
@@ -156,7 +156,7 @@ bool RemoteParticipantImpl::addVideo(const std::string& trackSid,
     if (!receiver && _receiversStorage) {
         receiver = _receiversStorage->take(trackSid);
     }
-    if (receiver && cricket::MEDIA_TYPE_VIDEO == receiver->media_type()) {
+    if (receiver && webrtc::MediaType::VIDEO == receiver->media_type()) {
         return addTrack(trackSid, trackManager, std::move(receiver), _videoTracks);
     }
     return false;
@@ -561,7 +561,7 @@ void RemoteParticipantImpl::ListenerImpl::reset()
 }
 
 void RemoteParticipantImpl::ListenerImpl::
-    onDecryptionStateChanged(cricket::MediaType mediaType, const std::string&,
+    onDecryptionStateChanged(webrtc::MediaType mediaType, const std::string&,
                              const std::string& trackSid, AesCgmCryptorState state)
 {
     if (const auto err = toCryptoError(state)) {

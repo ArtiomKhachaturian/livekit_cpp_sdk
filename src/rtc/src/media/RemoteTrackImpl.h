@@ -33,7 +33,7 @@ class RemoteTrackImpl : public TBaseImpl
     static_assert(std::is_base_of_v<Track, TBaseImpl>);
 public:
     void setInfo(const TrackInfo& info);
-    cricket::MediaType mediaType() const;
+    webrtc::MediaType mediaType() const;
     // impl. of StatsSource
     void queryStats() const final;
     // impl. of Track
@@ -89,12 +89,12 @@ inline void RemoteTrackImpl<TBaseImpl>::setInfo(const TrackInfo& info)
 }
 
 template <class TBaseImpl>
-inline cricket::MediaType RemoteTrackImpl<TBaseImpl>::mediaType() const
+inline webrtc::MediaType RemoteTrackImpl<TBaseImpl>::mediaType() const
 {
     if (_receiver) {
         return _receiver->media_type();
     }
-    return cricket::MEDIA_TYPE_UNSUPPORTED;
+    return webrtc::MediaType::UNSUPPORTED;
 }
 
 template <class TBaseImpl>

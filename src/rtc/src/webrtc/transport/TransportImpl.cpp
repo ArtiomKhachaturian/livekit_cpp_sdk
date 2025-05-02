@@ -30,7 +30,7 @@ TransportImpl::TransportImpl(SignalTarget target,
     : Bricks::LoggableS<webrtc::PeerConnectionObserver>(logger)
     , _target(target)
     , _logCategory(toString(target) + "_" + identity)
-    , _signalingThread(pcf ? pcf->signalingThread() : std::weak_ptr<rtc::Thread>())
+    , _signalingThread(pcf ? pcf->signalingThread() : std::weak_ptr<webrtc::Thread>())
     , _pcState(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
     , _iceConnState(webrtc::PeerConnectionInterface::IceConnectionState::kIceConnectionNew)
     , _signalingState(webrtc::PeerConnectionInterface::SignalingState::kStable)
@@ -53,7 +53,7 @@ webrtc::scoped_refptr<webrtc::PeerConnectionInterface> TransportImpl::peerConnec
     return {};
 }
 
-std::shared_ptr<rtc::Thread> TransportImpl::signalingThread() const
+std::shared_ptr<webrtc::Thread> TransportImpl::signalingThread() const
 {
     return _signalingThread.lock();
 }
@@ -93,7 +93,7 @@ void TransportImpl::removeTrackBySender(const rtc::scoped_refptr<webrtc::RtpSend
     if (sender) {
         const auto id = sender->id();
         const auto type = sender->media_type();
-        const auto kind = cricket::MediaTypeToString(type);
+        const auto kind = webrtc::MediaTypeToString(type);
         const auto streamIds = sender->stream_ids();
         const auto res = _pc->RemoveTrackOrError(std::move(sender));
         if (res.ok()) {

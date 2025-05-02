@@ -104,14 +104,14 @@ inline std::string stateToString(webrtc::TaskQueueBase::DelayPrecision precision
     return {};
 }
 
-TrackType mediaTypeToTrackType(cricket::MediaType type)
+TrackType mediaTypeToTrackType(webrtc::MediaType type)
 {
     switch (type) {
-        case cricket::MEDIA_TYPE_AUDIO:
+        case webrtc::MediaType::AUDIO:
             return TrackType::Audio;
-        case cricket::MEDIA_TYPE_VIDEO:
+        case webrtc::MediaType::VIDEO:
             return TrackType::Video;
-        case cricket::MEDIA_TYPE_DATA:
+        case webrtc::MediaType::DATA:
             break;
         default:
             assert(false);

@@ -37,7 +37,7 @@ public:
                   const std::shared_ptr<Bricks::Logger>& logger);
     bool closed() const noexcept { return _closed; }
     SignalTarget target() const { return _target; }
-    std::shared_ptr<rtc::Thread> signalingThread() const;
+    std::shared_ptr<webrtc::Thread> signalingThread() const;
     webrtc::scoped_refptr<webrtc::PeerConnectionInterface> peerConnection() const noexcept;
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const {
@@ -83,7 +83,7 @@ private:
 private:
     const SignalTarget _target;
     const std::string _logCategory;
-    const std::weak_ptr<rtc::Thread> _signalingThread;
+    const std::weak_ptr<webrtc::Thread> _signalingThread;
     Bricks::Listener<TransportListener*> _listener;
     std::atomic_bool _closed = false;
     std::atomic<webrtc::PeerConnectionInterface::PeerConnectionState> _pcState;

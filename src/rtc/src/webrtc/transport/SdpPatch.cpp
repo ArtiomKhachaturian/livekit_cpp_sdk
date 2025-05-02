@@ -29,13 +29,13 @@ SdpPatch::SdpPatch(webrtc::SessionDescriptionInterface* session)
 {
 }
 
-bool SdpPatch::hasSendStreams(cricket::MediaType kind) const
+bool SdpPatch::hasSendStreams(webrtc::MediaType kind) const
 {
     const auto content = contentDescription(kind);
     return content && !content->streams().empty();
 }
 
-bool SdpPatch::setRtpTransceiverDirection(webrtc::RtpTransceiverDirection direction, cricket::MediaType kind)
+bool SdpPatch::setRtpTransceiverDirection(webrtc::RtpTransceiverDirection direction, webrtc::MediaType kind)
 {
     const auto content = contentDescription(kind);
     if (content && direction != content->direction()) {
@@ -45,16 +45,16 @@ bool SdpPatch::setRtpTransceiverDirection(webrtc::RtpTransceiverDirection direct
     return false;
 }
 
-bool SdpPatch::setCodec(std::string_view codecName, cricket::MediaType kind)
+bool SdpPatch::setCodec(std::string_view codecName, webrtc::MediaType kind)
 {
     bool changed = false;
     if (!codecName.empty()) {
         if (const auto content = contentDescription(kind)) {
             switch (kind) {
-                case cricket::MediaType::MEDIA_TYPE_VIDEO:
+                case webrtc::MediaType::VIDEO:
                     changed = moveCodecProfilesToFront(content, std::move(codecName));
                     break;
-                case cricket::MediaType::MEDIA_TYPE_AUDIO:
+                case webrtc::MediaType::AUDIO:
                     changed = moveCodecProfilesToFront(content, std::move(codecName));
                     break;
                 default:
@@ -66,7 +66,7 @@ bool SdpPatch::setCodec(std::string_view codecName, cricket::MediaType kind)
     return changed;
 }
 
-bool SdpPatch::setMediaBandwidth(int bps, cricket::MediaType kind)
+bool SdpPatch::setMediaBandwidth(int bps, webrtc::MediaType kind)
 {
     if (const auto content = contentDescription(kind)) {
         if (bps > 0) {
@@ -121,7 +121,7 @@ bool SdpPatch::moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, s
     return changed;
 }
 
-webrtc::MediaContentDescription* SdpPatch::contentDescription(cricket::MediaType kind) const
+webrtc::MediaContentDescription* SdpPatch::contentDescription(webrtc::MediaType kind) const
 {
     if (_session && _session->description()) {
         for (auto& content : _session->description()->contents()) {

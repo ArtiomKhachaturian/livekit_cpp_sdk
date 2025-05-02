@@ -35,10 +35,10 @@ public:
                                         int /*sdpMlineIndex*/, cricket::Candidate /*candidate*/) {}
     virtual void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
     virtual void onLocalTrackAddFailure(std::string /*id*/,
-                                        cricket::MediaType /*type*/,
+                                        webrtc::MediaType /*type*/,
                                         std::vector<std::string> /*streamIds*/,
                                         webrtc::RTCError /*error*/) {}
-    virtual void onLocalTrackRemoved(std::string /*id*/, cricket::MediaType /*type*/) {}
+    virtual void onLocalTrackRemoved(std::string /*id*/, webrtc::MediaType /*type*/) {}
     virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
                                     std::string /*trackId*/,
                                     std::string /*participantSid*/ = {}) {}

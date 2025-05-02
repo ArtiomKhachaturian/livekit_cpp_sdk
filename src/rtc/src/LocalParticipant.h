@@ -78,7 +78,7 @@ public:
     std::vector<std::shared_ptr<LocalTrackAccessor>> tracks() const;
     std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> media() const;
     std::shared_ptr<LocalTrackAccessor> track(const std::string& id, bool cid,
-                                      const std::optional<cricket::MediaType>& hint = {}) const;
+                                      const std::optional<webrtc::MediaType>& hint = {}) const;
     std::shared_ptr<LocalTrackAccessor> track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const;
     void setListener(ParticipantListener* listener) { _listener = listener; }
     void setInfo(const ParticipantInfo& info);
@@ -103,7 +103,7 @@ private:
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
     // impl. of AesCgmCryptorObserver
-    void onEncryptionStateChanged(cricket::MediaType mediaType, const std::string&,
+    void onEncryptionStateChanged(webrtc::MediaType mediaType, const std::string&,
                                   const std::string& trackId, AesCgmCryptorState state) final;
 private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;

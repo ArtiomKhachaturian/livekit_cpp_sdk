@@ -33,12 +33,12 @@ inline bool addToParticipant(const std::shared_ptr<RemoteParticipantImpl>& parti
                              const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
     if (participant && receiver) {
         switch (receiver->media_type()) {
-            case cricket::MEDIA_TYPE_AUDIO:
+            case webrtc::MediaType::AUDIO:
                 if (participant->addAudio(trackSid, trackManager, receiver)) {
                     return true;
                 }
                 break;
-            case cricket::MEDIA_TYPE_VIDEO:
+            case webrtc::MediaType::VIDEO:
                 if (participant->addVideo(trackSid, trackManager, receiver)) {
                     return true;
                 }
@@ -167,12 +167,12 @@ bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceive
             LOCK_READ_SAFE_OBJ(_participants);
             const auto type = receiver->media_type();
             for (const auto& participant : _participants.constRef()) {
-                if (cricket::MEDIA_TYPE_VIDEO == type) {
+                if (webrtc::MediaType::VIDEO == type) {
                     if (participant->removeVideo(sid)) {
                         break;
                     }
                 }
-                else if (cricket::MEDIA_TYPE_AUDIO == type) {
+                else if (webrtc::MediaType::AUDIO == type) {
                     if (participant->removeAudio(sid)) {
                         break;
                     }

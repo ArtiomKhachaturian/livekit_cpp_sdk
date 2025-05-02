@@ -154,7 +154,7 @@ public:
      */
     virtual void onLocalTrackAddFailure(SignalTarget /*target*/,
                                         const std::string& /*id*/,
-                                        cricket::MediaType /*type*/,
+                                        webrtc::MediaType /*type*/,
                                         const std::vector<std::string>& /*streamIds*/,
                                         webrtc::RTCError /*error*/) {}
 
@@ -168,7 +168,7 @@ public:
      */
     virtual void onLocalTrackRemoved(SignalTarget /*target*/,
                                      const std::string& /*id*/,
-                                     cricket::MediaType /*type*/,
+                                     webrtc::MediaType /*type*/,
                                      const std::vector<std::string>& /*streamIds*/) {}
 
     /**
@@ -182,7 +182,7 @@ public:
      */
     virtual void onLocalTrackRemoveFailure(SignalTarget /*target*/,
                                            const std::string& /*id*/,
-                                           cricket::MediaType /*type*/,
+                                           webrtc::MediaType /*type*/,
                                            const std::vector<std::string>& /*streamIds*/,
                                            webrtc::RTCError /*error*/) {}
 
@@ -206,7 +206,7 @@ public:
      */
     virtual void onTransceiverAddFailure(SignalTarget /*target*/,
                                          const std::string& /*id*/,
-                                         cricket::MediaType /*type*/,
+                                         webrtc::MediaType /*type*/,
                                          const webrtc::RtpTransceiverInit& /*init*/,
                                          webrtc::RTCError /*error*/) {}
 

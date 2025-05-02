@@ -350,12 +350,12 @@ webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>> PeerC
     return _innerImpl->CreatePeerConnectionOrError(configuration, std::move(dependencies));
 }
 
-webrtc::RtpCapabilities PeerConnectionFactory::GetRtpSenderCapabilities(cricket::MediaType kind) const
+webrtc::RtpCapabilities PeerConnectionFactory::GetRtpSenderCapabilities(webrtc::MediaType kind) const
 {
     return _innerImpl->GetRtpSenderCapabilities(kind);
 }
 
-webrtc::RtpCapabilities PeerConnectionFactory::GetRtpReceiverCapabilities(cricket::MediaType kind) const
+webrtc::RtpCapabilities PeerConnectionFactory::GetRtpReceiverCapabilities(webrtc::MediaType kind) const
 {
     return _innerImpl->GetRtpReceiverCapabilities(kind);
 }

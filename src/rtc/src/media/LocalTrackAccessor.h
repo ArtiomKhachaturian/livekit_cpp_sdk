@@ -30,7 +30,7 @@ class LocalTrackAccessor
 {
 public:
     std::string cid() const;
-    cricket::MediaType mediaType() const;
+    webrtc::MediaType mediaType() const;
     std::string kind() const;
     virtual void setRemoteSideMute(bool mute) = 0;
     // Terminates all media, closes the capturers, and in general releases any

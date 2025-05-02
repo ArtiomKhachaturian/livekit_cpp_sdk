@@ -30,17 +30,17 @@ inline auto weak(const std::shared_ptr<T>& strong) {
     return std::weak_ptr<T>(strong);
 }
 
-inline cricket::MediaType fromString(const std::string& type) {
-    if (type == cricket::MediaTypeToString(cricket::MEDIA_TYPE_AUDIO)) {
-        return cricket::MEDIA_TYPE_AUDIO;
+inline webrtc::MediaType fromString(const std::string& type) {
+    if (type == webrtc::MediaTypeToString(webrtc::MediaType::AUDIO)) {
+        return webrtc::MediaType::AUDIO;
     }
-    if (type == cricket::MediaTypeToString(cricket::MEDIA_TYPE_VIDEO)) {
-        return cricket::MEDIA_TYPE_VIDEO;
+    if (type == webrtc::MediaTypeToString(webrtc::MediaType::VIDEO)) {
+        return webrtc::MediaType::VIDEO;
     }
-    if (type == cricket::MediaTypeToString(cricket::MEDIA_TYPE_DATA)) {
-        return cricket::MEDIA_TYPE_DATA;
+    if (type == webrtc::MediaTypeToString(webrtc::MediaType::DATA)) {
+        return webrtc::MediaType::DATA;
     }
-    return cricket::MEDIA_TYPE_UNSUPPORTED;
+    return webrtc::MediaType::UNSUPPORTED;
 }
 
 rtc::scoped_refptr<webrtc::RtpSenderInterface>
@@ -188,7 +188,7 @@ bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sende
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
                 const auto id = sender->id();
-                const auto kind = cricket::MediaTypeToString(sender->media_type());
+                const auto kind = webrtc::MediaTypeToString(sender->media_type());
                 impl->logInfo("request to removal '" + id + "' local " + kind + " track");
                 thread->PostTask([sender = std::move(sender), implRef = weak(impl)]() {
                     if (const auto impl = implRef.lock()) {

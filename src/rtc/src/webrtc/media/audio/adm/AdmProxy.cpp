@@ -68,7 +68,7 @@ private:
 namespace LiveKitCpp
 {
 
-AdmProxy::AdmProxy(const std::shared_ptr<rtc::Thread>& workingThread,
+AdmProxy::AdmProxy(const std::shared_ptr<webrtc::Thread>& workingThread,
                    const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
                    rtc::scoped_refptr<webrtc::AudioDeviceModule> impl)
     : _workingThread(workingThread)
@@ -800,7 +800,7 @@ AdmPtr AdmProxy::defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory)
     return webrtc::AudioDeviceModule::Create(_layer, taskQueueFactory);
 }
 
-std::shared_ptr<rtc::Thread> AdmProxy::workingThread() const
+std::shared_ptr<webrtc::Thread> AdmProxy::workingThread() const
 {
     return _workingThread.lock();
 }

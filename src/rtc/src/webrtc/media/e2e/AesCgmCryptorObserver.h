@@ -22,11 +22,11 @@ namespace LiveKitCpp
 class AesCgmCryptorObserver
 {
 public:
-    virtual void onEncryptionStateChanged(cricket::MediaType /*mediaType*/,
+    virtual void onEncryptionStateChanged(webrtc::MediaType /*mediaType*/,
                                           const std::string& /*identity*/,
                                           const std::string& /*trackId*/,
                                           AesCgmCryptorState /*state*/) {}
-    virtual void onDecryptionStateChanged(cricket::MediaType /*mediaType*/,
+    virtual void onDecryptionStateChanged(webrtc::MediaType /*mediaType*/,
                                           const std::string& /*identity*/,
                                           const std::string& /*trackId*/,
                                           AesCgmCryptorState /*state*/) {}

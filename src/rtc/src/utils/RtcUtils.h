@@ -42,7 +42,7 @@ CFStringRefAutoRelease stringToCFString(std::string_view str);
 
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);
 
-TrackType mediaTypeToTrackType(cricket::MediaType type);
+TrackType mediaTypeToTrackType(webrtc::MediaType type);
 std::string fourccToString(int fourcc);
 std::string makeUuid();
 // human readable string for reflect of changes for some types

@@ -24,16 +24,16 @@ std::string LocalTrackAccessor::cid() const
     return {};
 }
 
-cricket::MediaType LocalTrackAccessor::mediaType() const
+webrtc::MediaType LocalTrackAccessor::mediaType() const
 {
     const auto kind = this->kind();
-    if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_AUDIO) == kind) {
-        return cricket::MEDIA_TYPE_AUDIO;
+    if (webrtc::MediaTypeToString(webrtc::MediaType::AUDIO) == kind) {
+        return webrtc::MediaType::AUDIO;
     }
-    if (cricket::MediaTypeToString(cricket::MEDIA_TYPE_VIDEO) == kind) {
-        return cricket::MEDIA_TYPE_VIDEO;
+    if (webrtc::MediaTypeToString(webrtc::MediaType::VIDEO) == kind) {
+        return webrtc::MediaType::VIDEO;
     }
-    return cricket::MEDIA_TYPE_UNSUPPORTED;
+    return webrtc::MediaType::UNSUPPORTED;
 }
 
 std::string LocalTrackAccessor::kind() const

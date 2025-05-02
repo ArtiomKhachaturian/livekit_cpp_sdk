@@ -501,7 +501,7 @@ void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterfa
 }
 
 webrtc::scoped_refptr<webrtc::FrameTransformerInterface> RTCEngineImpl::
-    createCryptor(EncryptionType encryption, cricket::MediaType mediaType,
+    createCryptor(EncryptionType encryption, webrtc::MediaType mediaType,
                   std::string identity, std::string trackId,
                   const std::weak_ptr<AesCgmCryptorObserver>& observer) const
 {
@@ -623,7 +623,7 @@ void RTCEngineImpl::onTrackPublished(TrackPublishedResponse published)
             notifyAboutMuteChanges(sid, muted);
         }
         switch (t->mediaType()) {
-            case cricket::MEDIA_TYPE_AUDIO:
+            case webrtc::MediaType::AUDIO:
                 if (const auto audio = std::dynamic_pointer_cast<AudioTrack>(t)) {
                     auto features = audio->features();
                     if (!features.empty()) {
@@ -634,7 +634,7 @@ void RTCEngineImpl::onTrackPublished(TrackPublishedResponse published)
                     }
                 }
                 break;
-            case cricket::MEDIA_TYPE_VIDEO:
+            case webrtc::MediaType::VIDEO:
                 break;
             default:
                 break;
@@ -779,7 +779,7 @@ void RTCEngineImpl::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterf
     }
 }
 
-void RTCEngineImpl::onLocalTrackRemoved(std::string id, cricket::MediaType)
+void RTCEngineImpl::onLocalTrackRemoved(std::string id, webrtc::MediaType)
 {
     if (const auto track = _localParticipant->track(id, true)) {
         track->notifyThatMediaRemovedFromTransport();

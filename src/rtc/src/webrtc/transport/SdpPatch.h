@@ -35,15 +35,15 @@ class SdpPatch
 {
 public:
     SdpPatch(webrtc::SessionDescriptionInterface* session);
-    bool hasSendStreams(cricket::MediaType kind) const;
+    bool hasSendStreams(webrtc::MediaType kind) const;
     // return true if changed
-    bool setRtpTransceiverDirection(webrtc::RtpTransceiverDirection direction, cricket::MediaType kind);
-    bool setCodec(std::string_view codecName, cricket::MediaType kind);
+    bool setRtpTransceiverDirection(webrtc::RtpTransceiverDirection direction, webrtc::MediaType kind);
+    bool setCodec(std::string_view codecName, webrtc::MediaType kind);
     //in bits
-    bool setMediaBandwidth(int bps, cricket::MediaType kind);
+    bool setMediaBandwidth(int bps, webrtc::MediaType kind);
     const webrtc::SessionDescriptionInterface* session() const { return _session; }
 private:
-    webrtc::MediaContentDescription* contentDescription(cricket::MediaType kind) const;
+    webrtc::MediaContentDescription* contentDescription(webrtc::MediaType kind) const;
     static bool moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName);
     static bool isAssociatedCodec(int payload, const cricket::Codec& codec);
 private:

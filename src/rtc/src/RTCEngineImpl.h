@@ -161,7 +161,7 @@ private:
     void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
                     const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
     webrtc::scoped_refptr<webrtc::FrameTransformerInterface> createCryptor(EncryptionType encryption,
-                                                                           cricket::MediaType mediaType,
+                                                                           webrtc::MediaType mediaType,
                                                                            std::string identity, std::string trackId,
                                                                            const std::weak_ptr<AesCgmCryptorObserver>& observer) const final;
     // overrides of RemoteParticipantsListener
@@ -192,7 +192,7 @@ private:
     void onRefreshToken(std::string authToken) final;
     // impl. of TransportManagerListener
     void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
-    void onLocalTrackRemoved(std::string id, cricket::MediaType) final;
+    void onLocalTrackRemoved(std::string id, webrtc::MediaType) final;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
                        webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                        webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) final;

@@ -51,7 +51,7 @@ public:
     static webrtc::scoped_refptr<PeerConnectionFactory> create(bool audioProcessing,
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& eventsQueue() const noexcept { return _eventsQueue; }
-    std::weak_ptr<rtc::Thread> signalingThread() const noexcept { return _signalingThread; }
+    std::weak_ptr<webrtc::Thread> signalingThread() const noexcept { return _signalingThread; }
     std::weak_ptr<AdmProxyFacade> admProxy() const;
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
@@ -76,8 +76,8 @@ public:
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>
     CreatePeerConnectionOrError(const webrtc::PeerConnectionInterface::RTCConfiguration& configuration,
                                 webrtc::PeerConnectionDependencies dependencies) final;
-    webrtc::RtpCapabilities GetRtpSenderCapabilities(cricket::MediaType kind) const final;
-    webrtc::RtpCapabilities GetRtpReceiverCapabilities(cricket::MediaType kind) const final;
+    webrtc::RtpCapabilities GetRtpSenderCapabilities(webrtc::MediaType kind) const final;
+    webrtc::RtpCapabilities GetRtpReceiverCapabilities(webrtc::MediaType kind) const final;
     webrtc::scoped_refptr<webrtc::MediaStreamInterface> CreateLocalMediaStream(const std::string& streamId) final;
     webrtc::scoped_refptr<webrtc::AudioSourceInterface> CreateAudioSource(const cricket::AudioOptions& options) final;
     webrtc::scoped_refptr<webrtc::VideoTrackInterface> CreateVideoTrack(const std::string& label,

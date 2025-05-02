@@ -35,7 +35,7 @@ class TrackManager
 {
 public:
     virtual webrtc::scoped_refptr<webrtc::FrameTransformerInterface> createCryptor(EncryptionType encryption,
-                                                                                   cricket::MediaType mediaType,
+                                                                                   webrtc::MediaType mediaType,
                                                                                    std::string identity, std::string trackId,
                                                                                    const std::weak_ptr<AesCgmCryptorObserver>& observer = {}) const = 0;
     virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;

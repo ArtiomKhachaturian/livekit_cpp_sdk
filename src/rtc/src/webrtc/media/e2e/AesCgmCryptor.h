@@ -40,7 +40,7 @@ class AesCgmCryptor : public Bricks::LoggableS<webrtc::FrameTransformerInterface
     using Sinks = std::map<uint32_t, webrtc::scoped_refptr<webrtc::TransformedFrameCallback>>;
 public:
     ~AesCgmCryptor() override;
-    static webrtc::scoped_refptr<AesCgmCryptor> create(cricket::MediaType mediaType,
+    static webrtc::scoped_refptr<AesCgmCryptor> create(webrtc::MediaType mediaType,
                                                        std::string identity,
                                                        std::string trackId,
                                                        std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
@@ -59,7 +59,7 @@ public:
     void UnregisterTransformedFrameCallback() final;
     void UnregisterTransformedFrameSinkCallback(uint32_t ssrc) final;
 protected:
-    AesCgmCryptor(cricket::MediaType mediaType,
+    AesCgmCryptor(webrtc::MediaType mediaType,
                   std::string identity,
                   std::string trackId,
                   std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
@@ -89,7 +89,7 @@ private:
     rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
 private:
     static thread_local inline std::map<uint32_t, uint32_t> _sendCounts;
-    const cricket::MediaType _mediaType;
+    const webrtc::MediaType _mediaType;
     const std::string _identity;
     const std::string _trackId;
     const std::shared_ptr<KeyProvider> _keyProvider;

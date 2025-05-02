@@ -61,16 +61,16 @@ inline bool needsRbspUnescaping(const uint8_t* frameData, size_t frameSize) {
     return false;
 }
 
-uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
-bool frameIsH264(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
-bool frameIsH265(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type);
+uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, webrtc::MediaType type);
+bool frameIsH264(const webrtc::TransformableFrameInterface* frame, webrtc::MediaType type);
+bool frameIsH265(const webrtc::TransformableFrameInterface* frame, webrtc::MediaType type);
 
 }
 
 namespace LiveKitCpp
 {
 
-AesCgmCryptor::AesCgmCryptor(cricket::MediaType mediaType,
+AesCgmCryptor::AesCgmCryptor(webrtc::MediaType mediaType,
                              std::string identity,
                              std::string trackId,
                              std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
@@ -91,7 +91,7 @@ AesCgmCryptor::~AesCgmCryptor()
 }
 
 webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
-    create(cricket::MediaType mediaType,
+    create(webrtc::MediaType mediaType,
            std::string identity,
            std::string trackId,
            std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
@@ -103,11 +103,11 @@ webrtc::scoped_refptr<AesCgmCryptor> AesCgmCryptor::
         return {};
     }
     switch (mediaType) {
-        case cricket::MEDIA_TYPE_VIDEO:
-        case cricket::MEDIA_TYPE_AUDIO:
+        case webrtc::MediaType::VIDEO:
+        case webrtc::MediaType::AUDIO:
             break;
         default:
-            logInitError(logger, "unsupported media type: " + cricket::MediaTypeToString(mediaType));
+            logInitError(logger, "unsupported media type: " + webrtc::MediaTypeToString(mediaType));
             return {};
     }
     if (identity.empty()) {
@@ -186,7 +186,7 @@ void AesCgmCryptor::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
 {
     if (frame) {
         webrtc::scoped_refptr<webrtc::TransformedFrameCallback> sink;
-        if (cricket::MEDIA_TYPE_AUDIO == _mediaType) {
+        if (webrtc::MediaType::AUDIO == _mediaType) {
             sink = _sink();
         }
         else {
@@ -291,7 +291,7 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
 {
     if (frame) {
         webrtc::scoped_refptr<webrtc::TransformedFrameCallback> sink;
-        if (cricket::MEDIA_TYPE_AUDIO == _mediaType) {
+        if (webrtc::MediaType::AUDIO == _mediaType) {
             sink = _sink();
         }
         else {
@@ -631,13 +631,13 @@ uint8_t unencryptedH265Bytes(const rtc::ArrayView<const uint8_t>& data)
     return 12; // ?
 }
 
-uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type)
+uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, webrtc::MediaType type)
 {
     if (frame) {
-        if (cricket::MEDIA_TYPE_AUDIO == type) {
+        if (webrtc::MediaType::AUDIO == type) {
             return 1; // opus
         }
-        if (cricket::MEDIA_TYPE_VIDEO == type) {
+        if (webrtc::MediaType::VIDEO == type) {
             const auto videoFrame = static_cast<const webrtc::TransformableVideoFrameInterface*>(frame);
             const auto metaData = videoFrame->Metadata();
             switch (metaData.GetCodec()) {
@@ -661,22 +661,22 @@ uint8_t unencryptedBytes(const webrtc::TransformableFrameInterface* frame, crick
 }
 
 inline bool checkVideoCodecType(const webrtc::TransformableFrameInterface* frame,
-                                cricket::MediaType mediaType,
+                                webrtc::MediaType mediaType,
                                 webrtc::VideoCodecType codecType)
 {
-    if (frame && cricket::MEDIA_TYPE_VIDEO == mediaType) {
+    if (frame && webrtc::MediaType::VIDEO == mediaType) {
         const auto videoFrame = static_cast<const webrtc::TransformableVideoFrameInterface*>(frame);
         return codecType == videoFrame->Metadata().GetCodec();
     }
     return false;
 }
 
-bool frameIsH264(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type)
+bool frameIsH264(const webrtc::TransformableFrameInterface* frame, webrtc::MediaType type)
 {
     return checkVideoCodecType(frame, type, webrtc::kVideoCodecH264);
 }
 
-bool frameIsH265(const webrtc::TransformableFrameInterface* frame, cricket::MediaType type)
+bool frameIsH265(const webrtc::TransformableFrameInterface* frame, webrtc::MediaType type)
 {
     return checkVideoCodecType(frame, type, webrtc::kVideoCodecH265);
 }

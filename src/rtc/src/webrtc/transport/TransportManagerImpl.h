@@ -77,10 +77,10 @@ private:
                             rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     void onTransceiverAddFailure(SignalTarget target,
                                  const std::string& id,
-                                 cricket::MediaType type,
+                                 webrtc::MediaType type,
                                  const webrtc::RtpTransceiverInit& init,
                                  webrtc::RTCError error) final;
-    void onLocalTrackRemoved(SignalTarget target, const std::string& id, cricket::MediaType type,
+    void onLocalTrackRemoved(SignalTarget target, const std::string& id, webrtc::MediaType type,
                              const std::vector<std::string>&) final;
     void onLocalDataChannelCreated(SignalTarget target,
                                    rtc::scoped_refptr<DataChannel> channel) final;

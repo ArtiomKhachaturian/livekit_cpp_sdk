@@ -169,16 +169,16 @@ std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> LocalParti
 }
 
 std::shared_ptr<LocalTrackAccessor> LocalParticipant::track(const std::string& id, bool cid,
-                                                            const std::optional<cricket::MediaType>& hint) const
+                                                            const std::optional<webrtc::MediaType>& hint) const
 {
     std::shared_ptr<LocalTrackAccessor> result;
     if (!id.empty()) {
         if (hint.has_value()) {
             switch (hint.value()) {
-                case cricket::MEDIA_TYPE_AUDIO:
+                case webrtc::MediaType::AUDIO:
                     result = lookup(id, cid, _audioTracks);
                     break;
-                case cricket::MEDIA_TYPE_VIDEO:
+                case webrtc::MediaType::VIDEO:
                     result = lookup(id, cid, _videoTracks);
                     break;
                 default:
@@ -311,7 +311,7 @@ void LocalParticipant::notify(const Method& method, Args&&... args) const
     }
 }
 
-void LocalParticipant::onEncryptionStateChanged(cricket::MediaType mediaType,
+void LocalParticipant::onEncryptionStateChanged(webrtc::MediaType mediaType,
                                                 const std::string&,
                                                 const std::string& trackId,
                                                 AesCgmCryptorState state)
