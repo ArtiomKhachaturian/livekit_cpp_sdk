@@ -16,6 +16,9 @@
 #include "Utils.h"
 #include <modules/desktop_capture/desktop_capture_options.h>
 #include <modules/desktop_capture/desktop_and_cursor_composer.h>
+#ifdef RTC_ENABLE_WIN_WGC
+#include <modules/desktop_capture/win/wgc_capturer_win.h>
+#endif
 
 namespace LiveKitCpp
 {
@@ -128,6 +131,27 @@ intptr_t DesktopWebRTCCapturer::defaultSource(bool window)
     return webrtc::kInvalidScreenId;
 }
 
+std::unique_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::
+    createCapturer(bool window, webrtc::DesktopCaptureOptions& options)
+{
+    std::unique_ptr<webrtc::DesktopCapturer> capturer;
+#ifdef RTC_ENABLE_WIN_WGC
+    static const auto osv = operatingSystemVersion();
+#endif
+    if (!capturer) {
+#ifdef WEBRTC_MAC
+        options.set_allow_sck_capturer(false);
+#endif
+        if (window) {
+            capturer = webrtc::DesktopCapturer::CreateWindowCapturer(options);
+        }
+        else {
+            capturer = webrtc::DesktopCapturer::CreateScreenCapturer(options);
+        }
+    }
+    return capturer;
+}
+
 std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(bool take)
 {
     if (take) {
@@ -137,15 +161,10 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(b
     if (hasValidSource()) {
         LOCK_WRITE_SAFE_OBJ(_capturer);
         if (!_capturer->get()) {
-            std::unique_ptr<webrtc::DesktopCapturer> capturer;
-            if (window()) {
-                capturer = webrtc::DesktopCapturer::CreateWindowCapturer(options());
-            }
-            else {
-                capturer = webrtc::DesktopCapturer::CreateScreenCapturer(options());
-            }
+            auto capturerOptions = options();
+            auto capturer = createCapturer(window(), capturerOptions);
             if (capturer) {
-                if (options().prefer_cursor_embedded()) {
+                if (capturerOptions.prefer_cursor_embedded()) {
                     capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(std::move(capturer), options());
                 }
                 if (capturer->SelectSource(_source)) {
