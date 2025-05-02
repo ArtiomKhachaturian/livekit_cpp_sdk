@@ -33,5 +33,10 @@ std::string windowIdToString(webrtc::WindowId id);
 std::string screenIdToString(webrtc::ScreenId id);
 std::optional<webrtc::WindowId> windowIdFromString(const std::string& str);
 std::optional<webrtc::ScreenId> screenIdFromString(const std::string& str);
+#ifdef WEBRTC_WIN
+// unfortunately standard webrtc::IsWgcSupported doesn't work properly 
+// for applications without manifest, because rtc::rtc_win::GetVersion() returns incorrect OS version
+bool isWgcSupported(bool window);
+#endif
 	
 } // namespace LiveKitCpp

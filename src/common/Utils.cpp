@@ -49,11 +49,11 @@ std::tuple<int, int, int> operatingSystemVersion()
         // RtlGetVersion is documented public API but we must load it dynamically
         // because linking to it at load time will not pass the Windows App Certification Kit
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff561910.aspx
-        if (auto RtlGetVersion = (RtlGetVersionPtr)::GetProcAddress(hNtdll, "RtlGetVersion")) {
+        if (auto RtlGetVersion = (RtlGetVersionPtr)::GetProcAddress(ntdll, "RtlGetVersion")) {
             osv.dwOSVersionInfoSize = sizeof(osv);
             // GetVersionEx() has been deprecated in Windows 8.1 and will return
             // only Windows 8 from that version on, so use the kernel API function.
-            RtlGetVersion(&osInfo); // always returns STATUS_SUCCESS
+            RtlGetVersion(&osv); // always returns STATUS_SUCCESS
         }
     }
     return std::make_tuple(osv.dwMajorVersion, osv.dwMinorVersion, osv.dwBuildNumber);

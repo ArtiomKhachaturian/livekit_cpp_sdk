@@ -159,6 +159,7 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool embeddedCur
     // only pure GDI capturers works stable on all devices (enumeration based on device indices)
 #ifdef WEBRTC_WIN
     options.set_allow_wgc_screen_capturer(true);
+    options.set_allow_wgc_window_capturer(true);
     // force to OFF DirectX capturers
     options.set_allow_directx_capturer(false);
 #elif defined(WEBRTC_MAC)
@@ -188,8 +189,15 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
     }
 #endif
     if (!impl) {
+        auto options = makeOptions(!previewMode);
+#ifdef WEBRTC_WIN
+        if (previewMode) {
+            options.set_allow_wgc_screen_capturer(false);
+            options.set_allow_wgc_window_capturer(false);
+        }
+#endif
         impl = std::make_unique<DesktopWebRTCCapturer>(window, previewMode,
-                                                       makeOptions(!previewMode),
+                                                      std::move(options),
                                                        commonSharedQueue(), std::move(framesPool));
     }
     return impl;

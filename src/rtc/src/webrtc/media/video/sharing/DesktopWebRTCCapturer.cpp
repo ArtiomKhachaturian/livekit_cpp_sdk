@@ -135,8 +135,20 @@ std::unique_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::
     createCapturer(bool window, webrtc::DesktopCaptureOptions& options)
 {
     std::unique_ptr<webrtc::DesktopCapturer> capturer;
-#ifdef RTC_ENABLE_WIN_WGC
-    static const auto osv = operatingSystemVersion();
+#ifdef WEBRTC_WIN
+    if (window) {
+        if (options.allow_wgc_window_capturer() && isWgcSupported(true)) {
+            capturer = webrtc::WgcCapturerWin::CreateRawWindowCapturer(options);
+        }
+    }
+    else {
+        if (options.allow_wgc_screen_capturer() && isWgcSupported(false)) {
+            capturer = webrtc::WgcCapturerWin::CreateRawScreenCapturer(options);
+        }
+    }
+    if (capturer && options.prefer_cursor_embedded()) {
+        options.set_prefer_cursor_embedded(false);
+    }
 #endif
     if (!capturer) {
 #ifdef WEBRTC_MAC
