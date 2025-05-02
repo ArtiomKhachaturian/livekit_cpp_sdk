@@ -85,23 +85,51 @@ function(copyProtoFiles INPUT_DIR OUTPUT_DIR)
     endforeach()
 endfunction()
 
-function(signDylib target)
+function(signDylib TARGET)
     if(NOT "${CODE_SIGNING_CERT}" STREQUAL "")
-        message(STATUS "Code signing added, for ${target}, with cert '${CODE_SIGNING_CERT}'")
-        add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND codesign --force --sign ${CODE_SIGNING_CERT} $<TARGET_FILE:${target}>
+        message(STATUS "Code signing added, for ${TARGET}, with cert '${CODE_SIGNING_CERT}'")
+        add_custom_command(TARGET ${TARGET} POST_BUILD
+            COMMAND codesign --force --sign ${CODE_SIGNING_CERT} $<TARGET_FILE:${TARGET}>
             COMMENT "Signing ${target}" VERBATIM
         )
     endif()
 endfunction()
 
-function(copyDylib target)
+function(copyDylib TARGET)
     if(NOT "${EXECUTABLE_FILE_FOLDER_PATH}" STREQUAL "")
-        add_custom_command(TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND}
-                           -E copy_if_different $<TARGET_FILE:${target}> ${EXECUTABLE_FILE_FOLDER_PATH}
-                           COMMENT "Copying ${target} artifacts to ${EXECUTABLE_FILE_FOLDER_PATH}")
+        add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND}
+                           -E copy_if_different $<TARGET_FILE:${TARGET}> ${EXECUTABLE_FILE_FOLDER_PATH}
+                           COMMENT "Copying ${TARGET} artifacts to ${EXECUTABLE_FILE_FOLDER_PATH}")
     endif()
 endfunction()
+
+function(preprocessAndAddResource TARGET)
+    # split version string into major/minor/patch
+	string(REPLACE "." ";" BUILD_VERSION_LIST ${PROJECT_VERSION})
+	list(GET BUILD_VERSION_LIST 0 PRODUCT_VERSION_MAJOR) 
+	list(GET BUILD_VERSION_LIST 1 PRODUCT_VERSION_MINOR) 
+	list(GET BUILD_VERSION_LIST 2 PRODUCT_VERSION_PATCH)
+    # strip non-numbers
+	string(REGEX MATCH "[0-9]+" PRODUCT_VERSION_PATCH ${PRODUCT_VERSION_MAJOR})
+	string(REGEX MATCH "[0-9]+" PRODUCT_VERSION_PATCH ${PRODUCT_VERSION_MINOR})
+	string(REGEX MATCH "[0-9]+" PRODUCT_VERSION_PATCH ${PRODUCT_VERSION_PATCH})
+	# get current year for copyright
+	string(TIMESTAMP PRODUCT_CURRENT_YEAR "%Y")
+    set(PRODUCT_COMMENTS "")
+	set(PRODUCT_COMPANY_NAME "Artiom Khachaturian")
+	set(PRODUCT_FILE_DESCRIPTION "")
+	set(PRODUCT_NAME "${PROJECT_NAME} - ${TARGET}")
+	set(PRODUCT_ORIGINAL_FILENAME "${TARGET}.dll")
+	set(PRODUCT_COMPANY_COPYRIGHT "${PRODUCT_COMPANY_NAME} (C) Copyright ${PRODUCT_CURRENT_YEAR}")
+    # preprocess header
+    set(RC_INCLUDE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.dir")
+	set(OUTPUT_VERSION_HEADER ${RC_INCLUDE_DIRECTORY}/VersionInfo.h)
+    configure_file(${CMAKE_SOURCE_DIR}/src/common/VersionInfo.in ${OUTPUT_VERSION_HEADER} @ONLY)
+    # ajust of project settings for including of header & RC-file
+	list(APPEND RC_FILES ${OUTPUT_VERSION_HEADER} ${CMAKE_SOURCE_DIR}/src/${TARGET}/win/VersionInfo.rc)
+    set(${TARGET}_RC_FILES ${RC_FILES} PARENT_SCOPE)
+    set(${TARGET}_RC_INCLUDE_DIRECTORY ${RC_INCLUDE_DIRECTORY} PARENT_SCOPE)
+endfunction(preprocessAndAddResource)
 
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/proto_files)
 recreateDir(${GENERATED_DIR})
@@ -130,10 +158,15 @@ file(GLOB SIGNALING_PLATFORM_SOURCES ${CMAKE_SOURCE_DIR}/src/signaling/${PLATFOR
 
 set(ABSL_PCH_FILE ${CMAKE_SOURCE_DIR}/src/signaling/src/AbslAliasing.h)
 
+if (WIN32)
+    preprocessAndAddResource(${SIGNALING_LIB})
+endif()
+
 # Create a shared library
 add_library(${SIGNALING_LIB} SHARED
     ${COMMON_HEADERS}
     ${COMMON_SOURCES}
+    ${${SIGNALING_LIB}_RC_FILES} 
     ${COMMON_PLATFORM_SOURCES}
     ${SIGNALING_PUBLIC_HEADERS}
     ${SIGNALING_COMMON_HEADERS}
@@ -155,8 +188,8 @@ endif()
 protobuf_generate(TARGET ${SIGNALING_LIB} APPEND_PATH ${PROTO_IMPORT_DIRS} OUT_VAR PROTO_CPP IMPORT_DIRS ${PROTO_IMPORT_DIRS})
 
 source_group(TREE ${CMAKE_SOURCE_DIR}/src/common PREFIX "Common" FILES ${COMMON_HEADERS}
-                                                                        ${COMMON_SOURCES}
-                                                                        ${COMMON_PLATFORM_SOURCES})
+                                                                       ${COMMON_SOURCES}
+                                                                       ${COMMON_PLATFORM_SOURCES})
 
 source_group(TREE ${CMAKE_SOURCE_DIR}/websockets_api/include PREFIX "WebsocketsAPI" FILES ${WEBSOCKETS_API_HEADERS})
 source_group(TREE ${CMAKE_SOURCE_DIR}/bricks/include PREFIX "Bricks" FILES ${BRICKS_API_HEADERS})
@@ -180,6 +213,7 @@ target_include_directories(${SIGNALING_LIB} PRIVATE
     ${CMAKE_SOURCE_DIR}/src/signaling/src
     ${CMAKE_SOURCE_DIR}/websockets_api/include
     ${CMAKE_BINARY_DIR}
+    ${${SIGNALING_LIB}_RC_INCLUDE_DIRECTORY} 
     ${NLOHMANN_HDRS_DIR}
     ${Protobuf_INCLUDE_DIRS} # Add Protobuf include paths
 )
@@ -293,11 +327,16 @@ if (WEBRTC_AVAILABLE)
     set(LIBYUV_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include CACHE PATH "Path to folder with LibYUV C++ headers")
     set(ABSEIL_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp CACHE PATH "Path to folder with Abseil C++ headers")
 
+    if (WIN32)
+        preprocessAndAddResource(${RTC_LIB})
+    endif()
+
     # Create a shared library
     add_library(${RTC_LIB} SHARED
         ${COMMON_HEADERS}
         ${COMMON_SOURCES}
         ${COMMON_PLATFORM_SOURCES} 
+        ${${RTC_LIB}_RC_FILES} 
         ${RTC_PUBLIC_HEADERS}
         ${RTC_COMMON_HEADERS}
         ${RTC_COMMON_SOURCES}
@@ -343,6 +382,7 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/sharing
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}
+        ${${RTC_LIB}_RC_INCLUDE_DIRECTORY} 
         ${ABSEIL_INCLUDE_DIR}
         ${LIBYUV_INCLUDE_DIR}
         ${OPENSSL_INCLUDE_DIR}
