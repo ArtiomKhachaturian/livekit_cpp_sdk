@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "ProtoUtils.h"
 #include "SysInfo.h"
+#include "Utils.h"
 #include "livekit/signaling/sfu/ClientInfo.h"
 #include "livekit/signaling/NetworkType.h"
 
@@ -46,7 +47,7 @@ ClientInfo ClientInfo::defaultClientInfo()
 {
     ClientInfo ci;
     ci._os = operatingSystemName();
-    ci._osVersion = operatingSystemVersion();
+    ci._osVersion = operatingSystemVersionString();
     ci._deviceModel = modelIdentifier();
     ci._network = toString(activeNetworkType());
     return ci;

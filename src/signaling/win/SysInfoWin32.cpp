@@ -34,33 +34,12 @@ private:
 
 }
 
-typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOEXW);
 #pragma comment(lib, "wbemuuid.lib")
 
 namespace LiveKitCpp
 {
 
-std::string operatingSystemVersion()
-{
-    if (HMODULE hNtdll = ::GetModuleHandleA("ntdll.dll")) {
-        if (auto RtlGetVersion = (RtlGetVersionPtr)::GetProcAddress(hNtdll,
-            "RtlGetVersion")) {
-            RTL_OSVERSIONINFOEXW osInfo = { 0 };
-            osInfo.dwOSVersionInfoSize = sizeof(osInfo);
-            if (0 == RtlGetVersion(&osInfo)) {
-                return std::to_string(osInfo.dwMajorVersion) + "." +
-                    std::to_string(osInfo.dwMinorVersion);
-            }
-        }
-    }
-    return {};
-}
-
-std::string operatingSystemName()
-{
-    return "Windows";
-}
-
+// defined in NetworkType.h
 NetworkType activeNetworkType()
 {
     // TODO: implement it

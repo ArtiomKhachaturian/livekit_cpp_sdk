@@ -21,22 +21,6 @@
 namespace LiveKitCpp
 {
 
-std::string operatingSystemVersion()
-{
-    @autoreleasepool {
-        NSProcessInfo *processInfo = [NSProcessInfo processInfo];
-        NSOperatingSystemVersion osv = processInfo.operatingSystemVersion;
-        return std::to_string(osv.majorVersion) + "." +
-               std::to_string(osv.minorVersion) + "." +
-               std::to_string(osv.patchVersion);
-    }
-}
-
-std::string operatingSystemName()
-{
-    return "macos";
-}
-
 std::string modelIdentifier()
 {
     std::string model;
@@ -56,6 +40,7 @@ std::string modelIdentifier()
     return model;
 }
 
+// defined in NetworkType.h
 NetworkType activeNetworkType()
 {
     NetworkType type = NetworkType::Unknown;

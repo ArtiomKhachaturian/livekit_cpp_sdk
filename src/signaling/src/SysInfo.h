@@ -17,8 +17,6 @@
 namespace LiveKitCpp
 {
 
-std::string operatingSystemVersion();
-std::string operatingSystemName();
 std::string modelIdentifier();
 
 } // namespace LiveKitCpp

@@ -19,6 +19,7 @@
 #include "WebsocketListener.h"
 #include "WebsocketOptions.h"
 #include "SysInfo.h"
+#include "Utils.h"
 #include "livekit/signaling/SignalTransportListener.h"
 #include "livekit/signaling/SignalClientWs.h"
 #include "livekit/signaling/NetworkType.h"
@@ -334,7 +335,7 @@ Websocket::Options SignalClientWs::UrlData::buildOptions() const
             options._host += urlQueryItem("os", ci->_os.empty() ?
                                           operatingSystemName() : ci->_os);
             options._host += urlQueryItem("os_version", ci->_osVersion.empty() ?
-                                          operatingSystemVersion() : ci->_osVersion);
+                                          operatingSystemVersionString() : ci->_osVersion);
             options._host += urlQueryItem("device_model", ci->_deviceModel.empty() ?
                                           modelIdentifier() : ci->_deviceModel);
             auto network = ci->_network;
@@ -348,7 +349,7 @@ Websocket::Options SignalClientWs::UrlData::buildOptions() const
             options._host += urlQueryItem("version", g_libraryVersion);
             options._host += urlQueryItem("protocol", LIVEKIT_PROTOCOL_VERSION);
             options._host += urlQueryItem("os", operatingSystemName());
-            options._host += urlQueryItem("os_version", operatingSystemVersion());
+            options._host += urlQueryItem("os_version", operatingSystemVersionString());
             options._host += urlQueryItem("device_model", modelIdentifier());
             options._host += urlQueryItem("network", toString(activeNetworkType()));
         }
