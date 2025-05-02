@@ -379,6 +379,15 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngineImpl::
         //Set iceServers provided by the server
         config.servers = RoomUtils::map(iceServers);
     }
+    if (_options._audioJitterBufferFastAccelerate) {
+        config.audio_jitter_buffer_fast_accelerate = _options._audioJitterBufferFastAccelerate.value();
+    }
+    if (_options._audioJitterBufferMinDelayMs) {
+        config.audio_jitter_buffer_min_delay_ms = _options._audioJitterBufferMinDelayMs.value();
+    }
+    if (_options._audioJitterBufferMaxPackets) {
+        config.audio_jitter_buffer_max_packets = _options._audioJitterBufferMaxPackets.value();
+    }
     config.continual_gathering_policy = webrtc::PeerConnectionInterface::ContinualGatheringPolicy::GATHER_CONTINUALLY;
     return config;
 }

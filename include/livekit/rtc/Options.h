@@ -47,6 +47,17 @@ struct Options
     
     std::string _prefferedVideoEncoder;
     
+    // Whether to use the NetEq "fast mode" which will accelerate audio quicker
+    // if it falls behind.
+    std::optional<bool> _audioJitterBufferFastAccelerate;
+    
+    // The minimum delay in milliseconds for the audio jitter buffer.
+    std::optional<int32_t> _audioJitterBufferMinDelayMs;
+    
+    // The maximum number of packets that can be stored in the NetEq audio
+    // jitter buffer. Can be reduced to lower tolerated audio latency.
+    std::optional<int32_t> _audioJitterBufferMaxPackets;
+    
     /**
      * @brief Delay applied to the renegotiation process to
      * minimize frequent exchange of SDP between client and server.
