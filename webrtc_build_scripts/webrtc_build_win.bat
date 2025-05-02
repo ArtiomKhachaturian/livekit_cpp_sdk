@@ -32,7 +32,7 @@ set GYP_MSVS_VERSION=2019
 REM Revision of WebRTC sources
 REM https://chromiumdash.appspot.com/releases?platform=Windows
 REM stable 136
-set release_revision=9e5db68b15087eccd8d2493b4e8539c1657e0f75
+set release_revision=2c8f5be6924d507ee74191b1aeadcec07f747f21
 
 echo Fetch WebRTC sources, revision %release_revision%
 call fetch --nohooks webrtc
