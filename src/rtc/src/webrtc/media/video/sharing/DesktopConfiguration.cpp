@@ -197,7 +197,7 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
         }
 #endif
         impl = std::make_unique<DesktopWebRTCCapturer>(window, previewMode,
-                                                      std::move(options),
+                                                       std::move(options),
                                                        commonSharedQueue(), std::move(framesPool));
     }
     return impl;

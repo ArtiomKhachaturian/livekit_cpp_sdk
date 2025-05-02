@@ -90,9 +90,9 @@ public:
     void StopAecDump() final;
 protected:
     PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webrtcLogSink,
-                          std::shared_ptr<rtc::Thread> networkThread,
-                          std::shared_ptr<rtc::Thread> workingThread,
-                          std::shared_ptr<rtc::Thread> signalingThread,
+                          std::shared_ptr<webrtc::Thread> networkThread,
+                          std::shared_ptr<webrtc::Thread> workingThread,
+                          std::shared_ptr<webrtc::Thread> signalingThread,
                           webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> innerImpl,
                           const webrtc::VideoEncoderFactory* videoEncoderFactory,
                           const webrtc::VideoDecoderFactory* videoDecoderFactory,
@@ -105,9 +105,9 @@ private:
 private:
     const std::shared_ptr<webrtc::TaskQueueBase> _eventsQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;
-    const std::shared_ptr<rtc::Thread> _networkThread;
-    const std::shared_ptr<rtc::Thread> _workingThread;
-    const std::shared_ptr<rtc::Thread> _signalingThread;
+    const std::shared_ptr<webrtc::Thread> _networkThread;
+    const std::shared_ptr<webrtc::Thread> _workingThread;
+    const std::shared_ptr<webrtc::Thread> _signalingThread;
     const webrtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _innerImpl;
     const webrtc::VideoEncoderFactory* const _videoEncoderFactory;
     const webrtc::VideoDecoderFactory* const _videoDecoderFactory;

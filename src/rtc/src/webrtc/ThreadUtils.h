@@ -21,7 +21,7 @@
 namespace LiveKitCpp
 {
 
-inline void invokeInThread(rtc::Thread* to,
+inline void invokeInThread(webrtc::Thread* to,
                            rtc::FunctionView<void()> handler) {
     if (to && !to->IsQuitting()) {
         if (to->IsCurrent()) {
@@ -34,7 +34,7 @@ inline void invokeInThread(rtc::Thread* to,
 }
 
 template <typename Handler, typename R = std::invoke_result_t<Handler>>
-inline R invokeInThreadR(rtc::Thread* to, Handler handler, R defaultVal = {})
+inline R invokeInThreadR(webrtc::Thread* to, Handler handler, R defaultVal = {})
 {
     if (to && !to->IsQuitting()) {
         if (to->IsCurrent()) {

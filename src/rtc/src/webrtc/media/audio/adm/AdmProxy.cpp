@@ -101,7 +101,7 @@ AdmProxy::~AdmProxy()
 }
 
 rtc::scoped_refptr<AdmProxy> AdmProxy::
-    create(const std::shared_ptr<rtc::Thread>& workingThread,
+    create(const std::shared_ptr<webrtc::Thread>& workingThread,
            const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
            webrtc::TaskQueueFactory* taskQueueFactory)
 {
