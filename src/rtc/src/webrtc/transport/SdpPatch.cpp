@@ -79,7 +79,7 @@ bool SdpPatch::setMediaBandwidth(int bps, cricket::MediaType kind)
     return false;
 }
 
-bool SdpPatch::moveCodecProfilesToFront(cricket::MediaContentDescription* desc, std::string_view codecName)
+bool SdpPatch::moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName)
 {
     bool changed = false;
     if (desc && !codecName.empty() && !desc->codecs().empty()) {
@@ -121,7 +121,7 @@ bool SdpPatch::moveCodecProfilesToFront(cricket::MediaContentDescription* desc, 
     return changed;
 }
 
-cricket::MediaContentDescription* SdpPatch::contentDescription(cricket::MediaType kind) const
+webrtc::MediaContentDescription* SdpPatch::contentDescription(cricket::MediaType kind) const
 {
     if (_session && _session->description()) {
         for (auto& content : _session->description()->contents()) {

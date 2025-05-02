@@ -21,10 +21,10 @@ namespace webrtc {
 enum class RtpTransceiverDirection;
 struct SdpParseError;
 class SessionDescriptionInterface;
+class MediaContentDescription;
 } // namespace webrtc
 
 namespace cricket {
-class MediaContentDescription;
 struct Codec;
 } // namespace cricket
 
@@ -43,8 +43,8 @@ public:
     bool setMediaBandwidth(int bps, cricket::MediaType kind);
     const webrtc::SessionDescriptionInterface* session() const { return _session; }
 private:
-    cricket::MediaContentDescription* contentDescription(cricket::MediaType kind) const;
-    static bool moveCodecProfilesToFront(cricket::MediaContentDescription* desc, std::string_view codecName);
+    webrtc::MediaContentDescription* contentDescription(cricket::MediaType kind) const;
+    static bool moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName);
     static bool isAssociatedCodec(int payload, const cricket::Codec& codec);
 private:
     webrtc::SessionDescriptionInterface* const _session;

@@ -227,7 +227,7 @@ const webrtc::RTCStats* getRtcStats(const std::shared_ptr<const StatsData>& stat
 
 StatsAttribute::Value map(webrtc::Attribute::StatVariant&& value)
 {
-    return absl::visit(Visitor{}, std::move(value));
+    return std::visit(Visitor{}, std::move(value));
 }
 
 }
