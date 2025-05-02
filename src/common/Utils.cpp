@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Utils.h"
-#ifndef _WIN32
+#ifdef _WIN32
+#include <Windows.h>
+#else
 #include <pthread.h>
 #ifndef __APPLE__
 #include <sys/prctl.h>
@@ -36,6 +38,50 @@ using ConvertType = std::codecvt_utf8<wchar_t>;
 
 namespace LiveKitCpp
 {
+
+#ifdef _WIN32
+std::tuple<int, int, int> operatingSystemVersion()
+{
+    RTL_OSVERSIONINFOEXW osv = {0};
+    HMODULE ntdll = ::GetModuleHandleW(L"ntdll.dll");
+    if (ntdll) {
+        typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOEXW);
+        // RtlGetVersion is documented public API but we must load it dynamically
+        // because linking to it at load time will not pass the Windows App Certification Kit
+        // https://msdn.microsoft.com/en-us/library/windows/hardware/ff561910.aspx
+        if (auto RtlGetVersion = (RtlGetVersionPtr)::GetProcAddress(hNtdll, "RtlGetVersion")) {
+            osv.dwOSVersionInfoSize = sizeof(osv);
+            // GetVersionEx() has been deprecated in Windows 8.1 and will return
+            // only Windows 8 from that version on, so use the kernel API function.
+            RtlGetVersion(&osInfo); // always returns STATUS_SUCCESS
+        }
+    }
+    return std::make_tuple(osv.dwMajorVersion, osv.dwMinorVersion, osv.dwBuildNumber);
+}
+#endif
+
+std::string operatingSystemVersionString(bool withPatchVersion)
+{
+    const auto osv = operatingSystemVersion();
+    std::vector<std::string> components;
+    components.push_back(std::to_string(std::get<0>(osv)));
+    components.push_back(std::to_string(std::get<1>(osv)));
+    if (withPatchVersion) {
+        components.push_back(std::to_string(std::get<2>(osv)));
+    }
+    return join(components, ".");
+}
+
+std::string operatingSystemName()
+{
+#ifdef __APPLE__
+    return "macos";
+#elif defined(_WIN32)
+    return "windows";
+#else
+    static_assert(false, "not yet implemented");
+#endif
+}
 
 std::string toLower(std::string s)
 {

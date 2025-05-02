@@ -26,6 +26,7 @@
 #include <optional>
 #include <string>
 #include <sstream>
+#include <tuple>
 #include <vector>
 
 #ifdef __APPLE__
@@ -53,6 +54,11 @@ std::string stringFromCFString(CFStringRef str);
 // https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types
 std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueName = NULL, LPDWORD lpType = NULL);
 #endif // __APPLE__
+
+// major version / major version / patch version
+std::tuple<int, int, int> operatingSystemVersion();
+std::string operatingSystemVersionString(bool withPatchVersion = false);
+std::string operatingSystemName();
 
 // string utilities
 // emulation of non-standard [::strcmpi] function, return true if both strings are identical

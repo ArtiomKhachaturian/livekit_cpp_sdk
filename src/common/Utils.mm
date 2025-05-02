@@ -18,6 +18,15 @@
 namespace LiveKitCpp
 {
 
+std::tuple<int, int, int> operatingSystemVersion()
+{
+    @autoreleasepool {
+        NSProcessInfo *processInfo = [NSProcessInfo processInfo];
+        NSOperatingSystemVersion osv = processInfo.operatingSystemVersion;
+        return std::make_tuple(osv.majorVersion, osv.minorVersion, osv.patchVersion);
+    }
+}
+
 std::string fromNSString(NSString* nsString)
 {
     if (nsString) {

@@ -47,6 +47,8 @@ protected:
     bool canStart() const final;
 private:
     static intptr_t defaultSource(bool window);
+    static std::unique_ptr<webrtc::DesktopCapturer> createCapturer(bool window,
+                                                                   webrtc::DesktopCaptureOptions& options);
     std::shared_ptr<webrtc::DesktopCapturer> webRtcCapturer(bool take = false);
     std::optional<intptr_t> parse(const std::string& source) const;
     bool hasValidSource() const;
