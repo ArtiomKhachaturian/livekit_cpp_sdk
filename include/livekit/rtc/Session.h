@@ -128,8 +128,8 @@ public:
     size_t audioTracksCount() const final;
     size_t videoTracksCount() const final;
     // impl. of StatsSource
-    void addListener(StatsListener* listener) final;
-    void removeListener(StatsListener* listener) final;
+    void addStatsListener(StatsListener* listener) final;
+    void removeStatsListener(StatsListener* listener) final;
     void queryStats() const final;
 private:
     Session(std::unique_ptr<Websocket::EndPoint> socket,

@@ -31,8 +31,8 @@ class TrackImpl : public TTrackApi, protected MediaEventsListener
 public:
     ~TrackImpl() override;
     // impl. of StatsSource
-    void addListener(StatsListener* listener) final;
-    void removeListener(StatsListener* listener) final;
+    void addStatsListener(StatsListener* listener) final;
+    void removeStatsListener(StatsListener* listener) final;
     // impl. of Track
     std::string id() const override;
     bool live() const final { return _mediaDevice && _mediaDevice->live(); }
@@ -82,13 +82,13 @@ inline TrackImpl<TMediaDevice, TTrackApi>::~TrackImpl()
 }
 
 template <class TMediaDevice, class TTrackApi>
-inline void TrackImpl<TMediaDevice, TTrackApi>::addListener(StatsListener* listener)
+inline void TrackImpl<TMediaDevice, TTrackApi>::addStatsListener(StatsListener* listener)
 {
     _statsCollector->addListener(listener);
 }
 
 template <class TMediaDevice, class TTrackApi>
-inline void TrackImpl<TMediaDevice, TTrackApi>::removeListener(StatsListener* listener)
+inline void TrackImpl<TMediaDevice, TTrackApi>::removeStatsListener(StatsListener* listener)
 {
     _statsCollector->removeListener(listener);
 }

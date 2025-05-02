@@ -278,12 +278,12 @@ size_t Session::videoTracksCount() const
     return 0U;
 }
 
-void Session::addListener(StatsListener* listener)
+void Session::addStatsListener(StatsListener* listener)
 {
     _impl->_statsCollector->addListener(listener);
 }
 
-void Session::removeListener(StatsListener* listener)
+void Session::removeStatsListener(StatsListener* listener)
 {
     _impl->_statsCollector->removeListener(listener);
 }

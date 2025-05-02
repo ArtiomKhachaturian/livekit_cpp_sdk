@@ -18,12 +18,12 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             property VideoSource source: null
-            VideoDiagnosticsView {
-                id: fpsArea
+            TextPanel {
+                id: stats
                 anchors.top: parent.top
                 anchors.right: parent.right
                 z: 1
-                visible: false
+                visible: root.showDiagnostics && text !== ""
             }
         }
         TextPanel {
@@ -44,31 +44,11 @@ Item {
         }
         if (source !== null) {
             source.addOutput(renderer.videoSink)
-            fpsArea.fps = Qt.binding(function() {
+            stats.text = Qt.binding(function() {
                 if (source !== null) {
-                    return source.fps
-                }
-                return 0
-            })
-            fpsArea.frameSize = Qt.binding(function() {
-                if (source !== null) {
-                    return source.frameSize
-                }
-                return Qt.size(0, 0)
-            })
-            fpsArea.frameType = Qt.binding(function() {
-                if (source !== null) {
-                    return source.frameType
+                    return source.stats
                 }
                 return ""
-            })
-            fpsArea.visible = Qt.binding(function() {
-                if (source !== null && showDiagnostics) {
-                    var size = source.frameSize
-                    var fps = source.fps
-                    return (size.width > 0 && size.height > 0) || fps > 0
-                }
-                return false
             })
             renderer.source = source
         }
@@ -81,6 +61,11 @@ Item {
         target: renderer.source
         function onActiveChanged() {
             if (clearOutputWhenInactive && !renderer.source.active) {
+                renderer.clearOutput()
+            }
+        }
+        function onMutedChanged() {
+            if (renderer.source.muted) {
                 renderer.clearOutput()
             }
         }

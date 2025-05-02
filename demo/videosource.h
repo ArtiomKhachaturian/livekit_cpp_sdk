@@ -23,40 +23,42 @@ class VideoSource : public QObject,
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(VideoSource)
-    QML_UNCREATABLE("Create LocalVideoDevice or LocalVideoTrack instead of")
-    Q_PROPERTY(quint16 fps READ fps NOTIFY fpsChanged FINAL)
-    Q_PROPERTY(QSize frameSize READ frameSize NOTIFY frameSizeChanged FINAL)
+    QML_UNCREATABLE("Create LocalVideoDevice or VideoTrack instead of")
     Q_PROPERTY(bool active READ isActive NOTIFY activeChanged FINAL)
-    Q_PROPERTY(QString frameType READ frameType NOTIFY frameTypeChanged FINAL)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
     Q_PROPERTY(QString filter READ filter WRITE setFilter NOTIFY filterChanged FINAL)
+    Q_PROPERTY(QString stats READ stats NOTIFY statsChanged)
+    Q_PROPERTY(bool muted READ isMuted WRITE setMuted NOTIFY muteChanged)
 public:
     explicit VideoSource(QObject *parent = nullptr);
     ~VideoSource() override;
-    quint16 fps() const noexcept { return _fpsMeter.fps(); }
-    QSize frameSize() const { return _frameSize; }
-    bool isActive() const { return _active; }
-    QString frameType() const;
-    QString filter() const;
+    Q_INVOKABLE quint16 fps() const noexcept { return _fpsMeter.fps(); }
+    Q_INVOKABLE QSize frameSize() const { return _frameSize; }
+    Q_INVOKABLE bool isActive() const { return _active; }
+    Q_INVOKABLE QString frameType() const;
+    Q_INVOKABLE QString filter() const;
+    virtual bool isMuted() const { return false; }
+    virtual QString stats() const;
     virtual QString name() const { return {}; }
 public slots:
     Q_INVOKABLE void addOutput(QVideoSink* output);
     Q_INVOKABLE void removeOutput(QVideoSink* output);
     void setFilter(const QString& filter);
+    virtual void setMuted(bool /*muted*/) {}
 signals:
-    void fpsChanged();
-    void frameSizeChanged();
+    void muteChanged();
     void activeChanged();
-    void frameTypeChanged();
     void nameChanged();
     void filterChanged();
+    void statsChanged();
 protected:
+    static QString formatVideoInfo(const QSize& frameSize, quint16 fps);
+    static QString formatVideoInfo(int frameWidth, int frameHeight, quint16 fps);
     void startMetricsCollection();
     void stopMetricsCollection();
     bool isMetricsCollectionStarted() const { return _fpsMeter.isActive(); }
     bool hasOutputs() const;
-    virtual bool hasVideoInput() const { return true; }
-    virtual bool isMuted() const { return false; }
+    virtual bool metricsAllowed() const { return true; }
     virtual void subsribe(bool /*subscribe*/) {}
     virtual void applyFilter(VideoFilter* /*filter*/ = nullptr) {}
 private slots:
@@ -65,8 +67,9 @@ private:
     void setFrameType(LiveKitCpp::VideoFrameType type);
     void setActive(bool active = true);
     void setInactive() { setActive(false); }
-    void setFrameSize(QSize frameSize, bool updateFps = true);
-    void setFrameSize(int width, int height, bool updateFps = true);
+    void setFrameSize(QSize frameSize);
+    void setFrameSize(int width, int height);
+    void onFpsChanged();
     // impl. of LiveKitCpp::VideoSource
     void onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame) override;
     // impl. of LiveKitCpp::CameraEventsListener

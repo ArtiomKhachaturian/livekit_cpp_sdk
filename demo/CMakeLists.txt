@@ -28,7 +28,6 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             ChatView.qml
             AudioServiceControl.qml
             VideoRenderer.qml
-            VideoDiagnosticsView.qml
             CameraModelComboBox.qml
             ParticipantView.qml
             CameraOptionsComboBox.qml
@@ -88,6 +87,7 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             sepiavideofilter.cpp
             pencilvideofilter.h
             pencilvideofilter.cpp
+            successivedifferenceestimator.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

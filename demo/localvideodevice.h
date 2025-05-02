@@ -30,6 +30,7 @@ public:
     VideoOptions options() const;
     // overrides of VideoSource
     QString name() const final;
+    bool isMuted() const final;
 signals:
     void deviceInfoChanged();
     void optionsChanged();
@@ -39,8 +40,7 @@ protected:
     void onMediaChanged(const std::string&) final { emit deviceInfoChanged(); }
     void onMuteChanged(const std::string&, bool) final {}
     // overrides of VideoSource
-    bool hasVideoInput() const final { return isValid(); }
-    bool isMuted() const final;
+    bool metricsAllowed() const final { return isValid(); }
     void subsribe(bool subscribe) final;
     void applyFilter(VideoFilter* filter) final;
 private:

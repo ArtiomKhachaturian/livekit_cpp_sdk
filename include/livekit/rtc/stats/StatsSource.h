@@ -21,8 +21,8 @@ class StatsSource
 {
 public:
     virtual ~StatsSource() = default;
-    virtual void addListener(StatsListener* listener) = 0;
-    virtual void removeListener(StatsListener* listener) = 0;
+    virtual void addStatsListener(StatsListener* listener) = 0;
+    virtual void removeStatsListener(StatsListener* listener) = 0;
     virtual void queryStats() const = 0;
 };
 

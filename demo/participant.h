@@ -48,6 +48,7 @@ public slots:
     void muteVideoTrack(const QString& id, bool mute = true);
     void unmuteAudioTrack(const QString& id) { muteAudioTrack(id, false); }
     void unmuteVideoTrack(const QString& id) { muteVideoTrack(id, false); }
+    Q_INVOKABLE void queryVideoStats();
 signals:
     void audioTrackAdded(const QString& id);
     void videoTrackAdded(const QString& id);

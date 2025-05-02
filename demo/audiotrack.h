@@ -13,7 +13,7 @@ class AudioTrack : public QObject, private LiveKitCpp::MediaEventsListener
     Q_OBJECT
     QML_NAMED_ELEMENT(AudioTrack)
     Q_PROPERTY(QString id READ id CONSTANT)
-    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY muteChanged)
+    Q_PROPERTY(bool muted READ isMuted WRITE setMuted NOTIFY muteChanged)
 public:
     explicit AudioTrack(QObject* parent = nullptr);
     AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack,
@@ -21,7 +21,7 @@ public:
     ~AudioTrack() override;
     std::shared_ptr<LiveKitCpp::AudioTrack> takeSdkTrack();
     QString id() const;
-    bool muted() const;
+    bool isMuted() const;
 public slots:
     void setVolume(qreal volume);
     void setMuted(bool muted);

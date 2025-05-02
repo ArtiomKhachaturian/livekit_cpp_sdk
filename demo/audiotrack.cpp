@@ -45,7 +45,7 @@ QString AudioTrack::id() const
     return {};
 }
 
-bool AudioTrack::muted() const
+bool AudioTrack::isMuted() const
 {
     return _sdkTrack && _sdkTrack->muted();
 }

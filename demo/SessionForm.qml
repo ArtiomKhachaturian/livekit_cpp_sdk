@@ -110,6 +110,18 @@ Frame {
         }
     }
 
+    Timer {
+        id: statsTimer
+        interval: 1000
+        repeat: true
+        running: session.connected || session.connected
+        onTriggered: {
+            for (var i = 0; i < participants.count; i++) {
+                participants.get(i).data.queryVideoStats()
+            }
+        }
+    }
+
     onLocalVideoFilterChanged: {
         session.localParticipant.videoFilter = localVideoFilter
     }

@@ -3,16 +3,29 @@
 #include <QtCore/qthread.h>
 #include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
 
+namespace
+{
+
+inline QString toString(const QSize& s) {
+    if (!s.isEmpty()) {
+        return QString::number(s.width()) + QStringLiteral("x") + QString::number(s.height());
+    }
+    return {};
+}
+
+}
+
+
 VideoSource::VideoSource(QObject *parent)
     : QObject{parent}
     , _frameType(LiveKitCpp::VideoFrameType::I420)
 {
-    QObject::connect(&_fpsMeter, &FpsMeter::fpsChanged, this, &VideoSource::fpsChanged);
+    QObject::connect(&_fpsMeter, &FpsMeter::fpsChanged, this, &VideoSource::onFpsChanged);
 }
 
 VideoSource::~VideoSource()
 {
-    stopMetricsCollection();
+    _fpsMeter.stop();
     const QWriteLocker locker(&_outputs._lock);
     for (qsizetype i = 0; i < _outputs->size(); ++i) {
         _outputs->at(i)->disconnect(this);
@@ -31,6 +44,18 @@ QString VideoSource::filter() const
         return _filter->name();
     }
     return {};
+}
+
+QString VideoSource::stats() const
+{
+    auto videoInfo = formatVideoInfo(frameSize(), _fpsMeter.fps());
+    if (!videoInfo.isEmpty()) {
+        QStringList report;
+        report.append(frameType());
+        report.append(std::move(videoInfo));
+        return report.join(QStringLiteral(": "));
+    }
+    return videoInfo;
 }
 
 void VideoSource::addOutput(QVideoSink* output)
@@ -74,9 +99,23 @@ void VideoSource::setFilter(const QString& filter)
     }
 }
 
+QString VideoSource::formatVideoInfo(const QSize& frameSize, quint16 fps)
+{
+    const auto frameInfo = toString(frameSize);
+    if (!frameInfo.isEmpty()) {
+        return frameInfo + QStringLiteral(": ") + tr("%1 fps").arg(fps);
+    }
+    return {};
+}
+
+QString VideoSource::formatVideoInfo(int frameWidth, int frameHeight, quint16 fps)
+{
+    return formatVideoInfo(QSize(frameWidth, frameHeight), fps);
+}
+
 void VideoSource::startMetricsCollection()
 {
-    if (isActive() && hasVideoInput()) {
+    if (isActive() && metricsAllowed()) {
          _fpsMeter.start();
     }
 }
@@ -84,7 +123,7 @@ void VideoSource::startMetricsCollection()
 void VideoSource::stopMetricsCollection()
 {
     _fpsMeter.stop();
-    setFrameSize(_nullSize, false);
+    setFrameSize(_nullSize);
 }
 
 bool VideoSource::hasOutputs() const
@@ -122,7 +161,9 @@ void VideoSource::removeSink(QObject* sink)
 void VideoSource::setFrameType(LiveKitCpp::VideoFrameType type)
 {
     if (type != _frameType.exchange(type)) {
-        emit frameTypeChanged();
+        if (metricsAllowed()) {
+            emit statsChanged();
+        }
     }
 }
 
@@ -139,19 +180,25 @@ void VideoSource::setActive(bool active)
     }
 }
 
-void VideoSource::setFrameSize(QSize frameSize, bool updateFps)
+void VideoSource::setFrameSize(QSize frameSize)
 {
-    if (updateFps) {
-        _fpsMeter.addFrame();
-    }
     if (_frameSize.exchange(std::move(frameSize))) {
-        emit frameSizeChanged();
+        if (metricsAllowed()) {
+            emit statsChanged();
+        }
     }
 }
 
-void VideoSource::setFrameSize(int width, int height, bool updateFps)
+void VideoSource::setFrameSize(int width, int height)
 {
-    setFrameSize(QSize(width, height), updateFps);
+    setFrameSize(QSize(width, height));
+}
+
+void VideoSource::onFpsChanged()
+{
+    if (metricsAllowed()) {
+        emit statsChanged();
+    }
 }
 
 void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
@@ -165,11 +212,12 @@ void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
                     _outputs->at(i)->setVideoFrame(qtFrame);
                 }
                 if (!isMuted()) {
+                    _fpsMeter.addFrame();
                     setFrameType(frame->type());
                     setFrameSize(qtFrame.width(), qtFrame.height());
                 }
                 else {
-                    setFrameSize(_nullSize, false);
+                    setFrameSize(_nullSize);
                 }
             }
         }

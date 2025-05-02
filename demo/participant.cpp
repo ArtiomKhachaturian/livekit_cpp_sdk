@@ -90,6 +90,13 @@ void Participant::muteVideoTrack(const QString& id, bool mute)
     muteTrack(id, mute, _videoTracks);
 }
 
+void Participant::queryVideoStats()
+{
+    for (qsizetype i = 0; i < _videoTracks.count(); ++i) {
+        _videoTracks[i]->queryStats();
+    }
+}
+
 template <class TSdkTrack, class TTrack>
 std::shared_ptr<TSdkTrack> Participant::remove(const QString& id, Tracks<TTrack>& tracks)
 {

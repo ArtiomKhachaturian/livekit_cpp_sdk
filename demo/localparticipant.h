@@ -44,7 +44,7 @@ private:
         bool _muted = false;
         QPointer<TTrack> _track;
         // getters
-        bool trackIsMuted() const { return _track ? _track->muted() : _muted; }
+        bool trackIsMuted() const { return _track ? _track->isMuted() : _muted; }
         MediaDeviceInfo trackDeviceInfo() const {
             return _track ? _track->deviceInfo() : _deviceinfo;
         }
