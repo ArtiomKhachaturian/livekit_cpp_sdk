@@ -7,9 +7,9 @@
 #include <livekit/signaling/sfu/ICETransportPolicy.h>
 #if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
 #include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
-#include <QPalette>
 #include <QQuickItem>
 #include <QVideoSink>
+#include <private/qquickpalette_p.h>
 #endif
 #include <memory>
 
@@ -202,21 +202,21 @@ void DemoApp::clearVideoOutput(QObject* videoOutput) const
 #if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
         QMetaObject::invokeMethod(videoOutput, "clearOutput");
 #else
-    if (const auto sink = videoOutput->property("videoSink").value<QVideoSink*>()) {
-        const auto r = videoOutput->property("sourceRect").toRectF();
-        if (!r.isEmpty()) {
-            QImage image(r.size().toSize(), QImage::Format_ARGB32);
-            QColor clearColor(Qt::transparent);
-            if (_appWindow && _appWindow->contentItem()) {
-                const auto palette = _appWindow->contentItem()->property("palette").value<QPalette>();
-                clearColor = palette.color(QPalette::Window);
-            }
-            image.fill(clearColor);
-            if (auto frame = LiveKitCpp::QImageVideoFrame::create(std::move(image))) {
-                sink->setVideoFrame(LiveKitCpp::convert(std::move(frame)));
+        if (const auto sink = videoOutput->property("videoSink").value<QVideoSink*>()) {
+            const auto r = videoOutput->property("sourceRect").toRectF();
+            if (!r.isEmpty()) {
+                QImage image(r.size().toSize(), QImage::Format_ARGB32);
+                QColor clearColor(Qt::transparent);
+                const auto palette = videoOutput->property("palette");
+                if (palette.canConvert<QQuickPalette*>()) {
+                    clearColor = palette.value<QQuickPalette*>()->base();
+                }
+                image.fill(clearColor);
+                if (auto frame = LiveKitCpp::QImageVideoFrame::create(std::move(image))) {
+                    sink->setVideoFrame(LiveKitCpp::convert(std::move(frame)));
+                }
             }
         }
-    }
 #endif
     }
 }

@@ -113,6 +113,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Quick
                                              Qt6::QuickControls2
                                              Qt6::Multimedia
                                              Qt6::MultimediaPrivate
+                                             Qt6::QuickPrivate
                                              LiveKitClient::Signaling
                                              LiveKitClient::Rtc
                                              ZaphoydTppWebsockets)
