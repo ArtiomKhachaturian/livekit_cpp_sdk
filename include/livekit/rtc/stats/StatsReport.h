@@ -27,6 +27,19 @@ class LIVEKIT_RTC_API StatsReport
 {
     friend class StatsSourceImpl;
 public:
+    class Iterator
+    {
+    public:
+        Iterator(const StatsReport& report, size_t index);
+        Stats operator*() const { return _report.get(_index); }
+        Iterator& operator++();
+        Iterator& operator--();
+        bool operator != (const Iterator& other) const;
+    private:
+        const StatsReport& _report;
+        size_t _index;
+    };
+public:
     StatsReport() = default;
     StatsReport(const StatsReport& src) noexcept;
     StatsReport(StatsReport&& tmp) noexcept;
@@ -43,10 +56,40 @@ public:
     // listing all of its stats objects.
     std::string json() const;
     explicit operator bool() const { return size() > 0U; }
+    // iterators support
+    Iterator begin() const { return Iterator(*this, 0U); }
+    Iterator end() const { return Iterator(*this, size()); }
 private:
     StatsReport(StatsReportData* data) noexcept;
 private:
     std::shared_ptr<StatsReportData> _data;
 };
+
+inline StatsReport::Iterator::Iterator(const StatsReport& report, size_t index)
+    : _report(report)
+    , _index(index)
+{
+}
+
+inline StatsReport::Iterator& StatsReport::Iterator::operator ++ ()
+{
+    if (_index <= _report.size()) {
+        ++_index;
+    }
+    return *this;
+}
+
+inline StatsReport::Iterator& StatsReport::Iterator::operator -- ()
+{
+    if (_index >= 0U) {
+        --_index;
+    }
+    return *this;
+}
+
+inline bool StatsReport::Iterator::operator != (const Iterator& other) const
+{
+    return &_report != &other._report || _index != other._index;
+}
 
 } // namespace LiveKitCpp

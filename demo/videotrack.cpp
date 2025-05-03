@@ -392,8 +392,7 @@ QString VideoTrack::bitrateInfo(const BitrateEstimator& bitrate)
 LiveKitCpp::Stats VideoTrack::lookup(LiveKitCpp::StatsType type,
                                      const LiveKitCpp::StatsReport& report)
 {
-    for (size_t i = 0U, end = report.size(); i < end; ++i) {
-        const auto& stats = report.get(i);
+    for (auto stats : report) {
         if (type == stats.type()) {
             return stats;
         }
