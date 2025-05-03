@@ -345,9 +345,6 @@ QString VideoTrack::outboundStats(const LiveKitCpp::Stats& stats,
         if (const auto frames = rtp->framesSent().value_or(0)) {
             parameters.append(tr("sent frames: %1").arg(frames));
         }
-        if (rtp->scalabilityMode().has_value()) {
-            parameters.append(tr("scalability mode: %1").arg(rtp->scalabilityMode().value()));
-        }
         return parameters.join(QStringLiteral("\n"));
     }
     return {};
