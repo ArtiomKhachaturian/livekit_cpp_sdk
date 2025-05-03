@@ -47,6 +47,8 @@ public:
     IOSurfaceRef buffer(bool retain) const final { return _buffer.ref(retain); }
     // override of VideoFrameBuffer<>
     VideoContentHint contentHint() const final;
+    // override of VideoBufferHandleProvider
+    VideoBufferHandleProvider::Handle handle(bool retain) const final;
 protected:
     template <class... Args>
     IOSBuffer(IOSurfaceAutoRelease buffer,
@@ -226,6 +228,12 @@ VideoContentHint IOSBuffer<TBaseVideoBuffer>::contentHint() const
         return _contentHint.value();
     }
     return TBaseVideoBuffer::contentHint();
+}
+
+template <class TBaseVideoBuffer>
+VideoBufferHandleProvider::Handle IOSBuffer<TBaseVideoBuffer>::handle(bool retain) const
+{
+    return std::make_pair(VideoBufferHandleProvider::Kind::IOSurfaceRef, _buffer.ref(retain));
 }
 
 NV12Buffer::NV12Buffer(IOSurfaceAutoRelease buffer,

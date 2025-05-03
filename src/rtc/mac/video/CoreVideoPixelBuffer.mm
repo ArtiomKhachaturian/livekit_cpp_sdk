@@ -50,6 +50,8 @@ public:
     CVPixelBufferRef buffer(bool retain) const final { return _lockedBuffer.ref(retain); }
     // override of VideoFrameBuffer<>
     VideoContentHint contentHint() const final;
+    // override of VideoBufferHandleProvider
+    VideoBufferHandleProvider::Handle handle(bool retain) const final;
 protected:
     template <class... Args>
     CVBuffer(CVPixelBufferAutoRelease lockedBuffer,
@@ -205,6 +207,12 @@ VideoContentHint CVBuffer<TBaseVideoBuffer>::contentHint() const
         return _contentHint.value();
     }
     return TBaseVideoBuffer::contentHint();
+}
+
+template <class TBaseVideoBuffer>
+VideoBufferHandleProvider::Handle CVBuffer<TBaseVideoBuffer>::handle(bool retain) const
+{
+    return std::make_pair(VideoBufferHandleProvider::Kind::CVPixelBufferRef, _lockedBuffer.ref(retain));
 }
 
 NV12Buffer::NV12Buffer(CVPixelBufferAutoRelease lockedBuffer,
