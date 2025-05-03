@@ -299,6 +299,7 @@ void Session::setSessionImpl(std::unique_ptr<LiveKitCpp::Session> impl)
 {
     if (_impl.get() != impl.get()) {
         removeCameraTrack();
+        removeSharingTrack();
         removeMicrophoneTrack();
         if (_impl) {
             _impl->setListener(nullptr);
