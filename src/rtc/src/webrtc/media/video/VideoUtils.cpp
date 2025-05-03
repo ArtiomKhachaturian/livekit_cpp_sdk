@@ -14,9 +14,11 @@
 #include "VideoUtils.h"
 #include "CapturerState.h"
 #include "LibyuvImport.h"
-/*#ifdef WEBRTC_MAC
-#include "MetalRGBScaler.h"
-#endif*/
+#include "RtcUtils.h"
+#ifdef WEBRTC_MAC
+//#include "MetalRGBScaler.h"
+#include "CFNumber.h"
+#endif
 #include "livekit/rtc/media/VideoOptions.h"
 #include <rtc_base/time_utils.h>
 #include <cassert>
@@ -268,6 +270,131 @@ bool isRGB32Format(OSType format)
 bool isSupportedFormat(OSType format)
 {
     return isNV12Format(format) || isRGBFormat(format);
+}
+
+std::optional<CMVideoCodecType> toVTCodecType(webrtc::VideoCodecType codecType)
+{
+    switch (codecType) {
+        case webrtc::VideoCodecType::kVideoCodecVP9:
+            return codecTypeVP9();
+        case webrtc::VideoCodecType::kVideoCodecH264:
+            return codecTypeH264();
+        case webrtc::VideoCodecType::kVideoCodecH265:
+            return codecTypeH265();
+        default:
+            break;
+    }
+    return std::nullopt;
+}
+
+std::optional<webrtc::VideoCodecType> fromVTCodecType(CMVideoCodecType codecType)
+{
+    switch (codecType) {
+        case codecTypeVP9():
+            return webrtc::VideoCodecType::kVideoCodecVP9;
+        case codecTypeH264():
+            return webrtc::VideoCodecType::kVideoCodecH264;
+        case codecTypeH265():
+            return webrtc::VideoCodecType::kVideoCodecH265;
+        default:
+            break;
+    }
+    return std::nullopt;
+}
+
+std::string videoCodecTypeToString(FourCharCode fccCodecTtype)
+{
+    switch (fccCodecTtype) {
+        case kCMVideoCodecType_Animation:
+            return "Animation";
+        case kCMVideoCodecType_Cinepak:
+            return "Cinepak";
+        case kCMVideoCodecType_JPEG:
+            return "JPEG";
+        case kCMVideoCodecType_JPEG_OpenDML:
+            return "JPEG opendml";
+        case kCMVideoCodecType_SorensonVideo:
+            return "Sorenson video";
+        case kCMVideoCodecType_SorensonVideo3:
+            return "Sorenson video3";
+        case kCMVideoCodecType_H263:
+            return "H263";
+        case kCMVideoCodecType_H264:
+            return "H264";
+        case kCMVideoCodecType_HEVC:
+            return "H265";
+        case kCMVideoCodecType_HEVCWithAlpha:
+            return "H265 with alpha";
+        case kCMVideoCodecType_DolbyVisionHEVC:
+            return "Dolby Vision HEVC";
+        case kCMVideoCodecType_MPEG4Video:
+            return "MPEG4 video";
+        case kCMVideoCodecType_MPEG2Video:
+            return "MPEG2 video";
+        case kCMVideoCodecType_MPEG1Video:
+            return "MPEG1 video";
+        case kCMVideoCodecType_VP9:
+            return "VP9";
+        case kCMVideoCodecType_DVCNTSC:
+            return "DVC NTSC";
+        case kCMVideoCodecType_DVCPAL:
+            return "DVC PAL";
+        case kCMVideoCodecType_DVCProPAL:
+            return "DVC PRO PAL";
+        case kCMVideoCodecType_DVCPro50NTSC:
+            return "DVC PRO 50 NTSC";
+        case kCMVideoCodecType_DVCPro50PAL:
+            return "DVC PRO 50 PAL";
+        case kCMVideoCodecType_DVCPROHD720p60:
+            return "DVC PRO HD 720p60";
+        case kCMVideoCodecType_DVCPROHD720p50:
+            return "DVC PRO HD 720p50";
+        case kCMVideoCodecType_DVCPROHD1080i60:
+            return "DVC PRO HD 1080i60";
+        case kCMVideoCodecType_DVCPROHD1080i50:
+            return "DVC PRO HD 1080i50";
+        case kCMVideoCodecType_DVCPROHD1080p30:
+            return "DVC PRO HD 1080p30";
+        case kCMVideoCodecType_DVCPROHD1080p25:
+            return "DVC PRO HD 1080p25";
+        case kCMVideoCodecType_AppleProRes4444XQ:
+            return "Apple PRO res 4444XQ";
+        case kCMVideoCodecType_AppleProRes4444:
+            return "Apple PRO res 4444";
+        case kCMVideoCodecType_AppleProRes422HQ:
+            return "Apple PRO res 422HQ";
+        case kCMVideoCodecType_AppleProRes422:
+            return "Apple PRO res 422";
+        case kCMVideoCodecType_AppleProRes422LT:
+            return "Apple PRO res 422LT";
+        case kCMVideoCodecType_AppleProResRAW:
+            return "Apple PRO res Raw";
+        case kCMVideoCodecType_AppleProResRAWHQ:
+            return "Apple PRO res RawHQ";
+        case kCMVideoCodecType_DisparityHEVC:
+            return "Disparity HEVC";
+        case kCMVideoCodecType_DepthHEVC:
+            return "Depth HEVC";
+        default:
+            break;
+    }
+    return fourccToString(fccCodecTtype);
+}
+
+CFDictionaryRefAutoRelease createImageBufferAttributes(const void* pixelFormats,
+                                                       int32_t width, int32_t height)
+{
+    if (pixelFormats && width > 0 && height > 0) {
+        if (auto dictionary = CFDictionaryCreateMutable(kCFAllocatorDefault, 3 /* capacity*/,
+                                                        &kCFTypeDictionaryKeyCallBacks,
+                                                        &kCFTypeDictionaryValueCallBacks)) {
+            CFDictionarySetValue(dictionary, kCVPixelBufferPixelFormatTypeKey, pixelFormats);
+            CFDictionarySetValue(dictionary, kCVPixelBufferWidthKey, createCFNumber(width));
+            CFDictionarySetValue(dictionary, kCVPixelBufferHeightKey, createCFNumber(height));
+            return dictionary;
+        }
+    }
+    return nullptr;
 }
 #endif
 

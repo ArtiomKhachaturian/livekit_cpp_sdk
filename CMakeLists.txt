@@ -378,10 +378,13 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/src/webrtc/media/video
         ${RTC_SRC_DIR}/src/webrtc/media/video/buffers
         ${RTC_SRC_DIR}/src/webrtc/media/video/camera
+        ${RTC_SRC_DIR}/src/webrtc/media/video/codec
         ${RTC_SRC_DIR}/src/webrtc/media/video/sharing
-        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/camera
-        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/sharing
         ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}
+        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/video
+        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/video/camera
+        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/video/codec
+        ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/video/sharing
         ${${RTC_LIB}_RC_INCLUDE_DIRECTORY} 
         ${ABSEIL_INCLUDE_DIR}
         ${LIBYUV_INCLUDE_DIR}
@@ -403,7 +406,7 @@ if (WEBRTC_AVAILABLE)
             ${WEBRTC_INCLUDE_DIR}/sdk/objc/base
         )
         target_compile_definitions(${RTC_LIB} PRIVATE -DWEBRTC_POSIX -DWEBRTC_MAC)
-        target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit -framework Metal")
+        target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit -framework Metal -framework VideoToolbox")
     elseif(WIN32)
         copyDylib(${RTC_LIB})
         target_compile_options(${RTC_LIB} PRIVATE /wd4068 /wd4141)

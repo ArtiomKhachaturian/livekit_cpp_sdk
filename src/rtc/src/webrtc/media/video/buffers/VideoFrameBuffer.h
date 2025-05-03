@@ -28,7 +28,7 @@ public:
     const auto& framesPool() const noexcept { return _framesPool; }
     // impl. of webrtc::VideoFrameBuffer
     rtc::scoped_refptr<webrtc::VideoFrameBuffer>
-        GetMappedFrameBuffer(rtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes) override;
+        GetMappedFrameBuffer(webrtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes) override;
     rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
 protected:
     template <class... Args>
@@ -54,7 +54,7 @@ inline VideoFrameBuffer<TBaseBuffer>::VideoFrameBuffer(VideoFrameBufferPool fram
 
 template <class TBaseBuffer>
 inline rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBuffer<TBaseBuffer>::
-    GetMappedFrameBuffer(rtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes)
+    GetMappedFrameBuffer(webrtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes)
 {
     if (!mappedTypes.empty()) {
         for (const auto mappedType : mappedTypes) {

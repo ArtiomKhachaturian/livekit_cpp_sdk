@@ -82,9 +82,9 @@ private:
     std::shared_ptr<E2EKeyHandler> keyHandler() const;
     bool encryptOrDecrypt(bool encrypt,
                           const std::vector<uint8_t>& rawKey,
-                          const rtc::ArrayView<uint8_t>& iv,
-                          const rtc::ArrayView<uint8_t>& additionalData,
-                          const rtc::ArrayView<uint8_t>& data,
+                          const webrtc::ArrayView<uint8_t>& iv,
+                          const webrtc::ArrayView<uint8_t>& additionalData,
+                          const webrtc::ArrayView<uint8_t>& data,
                           std::vector<uint8_t>& buffer) const;
     rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
 private:

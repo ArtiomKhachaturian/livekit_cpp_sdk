@@ -11,22 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include <api/video_codecs/video_decoder_factory.h>
+#pragma once // EncodedImageBuffer.h
+#include <api/video/encoded_image.h>
+#include <rtc_base/buffer.h>
+#include <memory>
+#include <vector>
+
+namespace Bricks {
+class Blob;
+}
 
 namespace LiveKitCpp
 {
 
-class VideoDecoderFactory : public webrtc::VideoDecoderFactory
+class EncodedImageBuffer : public webrtc::EncodedImageBufferInterface
 {
 public:
-    VideoDecoderFactory() = default;
-    // impl. of webrtc::VideoDecoderFactory
-    std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const final;
-    CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
-                                   bool referenceScaling) const final;
-    std::unique_ptr<webrtc::VideoDecoder> Create(const webrtc::Environment& env,
-                                                 const webrtc::SdpVideoFormat& format) final;
+    static webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface> create(webrtc::Buffer buffer);
+    static webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface> create(std::vector<uint8_t> buffer);
+    static webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface> create(std::unique_ptr<Bricks::Blob> buffer);
 };
 
 } // namespace LiveKitCpp

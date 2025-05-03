@@ -13,12 +13,14 @@
 // limitations under the License.
 #pragma once // VideoUtils.h
 #include "livekit/rtc/media/VideoContentHint.h"
+#ifdef WEBRTC_MAC
+#include "CFAutoRelease.h"
+#include <CoreVideo/CVPixelBuffer.h>
+#include <VideoToolbox/VideoToolbox.h>
+#endif
 #include <api/media_stream_interface.h>
 #include <api/video/video_frame.h>
 #include <modules/video_capture/video_capture_config.h> // for values in webrtc::videocapturemodule
-#ifdef WEBRTC_MAC
-#include <CoreVideo/CVPixelBuffer.h>
-#endif
 #include <optional>
 
 namespace webrtc {
@@ -67,8 +69,17 @@ bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                 int dstWidth, int dstHeight,
                 VideoContentHint hint = VideoContentHint::None);
 
+// these thresholds deviate from the default h264 QP thresholds, as they
+// have been found to work better on devices that support VideoToolbox (APPLE)
+inline constexpr int lowH264QpThreshold() { return 28; }
+inline constexpr int highH264QpThreshold() { return 56; }
+
 #ifdef WEBRTC_MAC
 // constants
+constexpr CMVideoCodecType codecTypeVP9() { return kCMVideoCodecType_VP9; }
+constexpr CMVideoCodecType codecTypeH264() { return kCMVideoCodecType_H264; }
+// https://en.wikipedia.org/wiki/High_Efficiency_Video_Coding
+constexpr CMVideoCodecType codecTypeH265() { return kCMVideoCodecType_HEVC; }
 // NV12
 // full NV12 format is suitable as default pixel format for VT codecs
 constexpr OSType formatNV12Full() { return kCVPixelFormatType_420YpCbCr8BiPlanarFullRange; }   // luma=[0,255] chroma=[1,255]
@@ -91,6 +102,11 @@ bool isRGB24Format(OSType format);
 bool isRGB32Format(OSType format);
 inline bool isRGBFormat(OSType format) { return isRGB24Format(format) || isRGB32Format(format); }
 bool isSupportedFormat(OSType format);
+// codec type conversion
+std::optional<CMVideoCodecType> toVTCodecType(webrtc::VideoCodecType codecType);
+std::optional<webrtc::VideoCodecType> fromVTCodecType(CMVideoCodecType codecType);
+std::string videoCodecTypeToString(FourCharCode fccCodecTtype); // alias of CMVideoCodecType
+CFDictionaryRefAutoRelease createImageBufferAttributes(const void* pixelFormats, int32_t width, int32_t height);
 #endif
 
 webrtc::VideoType map(VideoFrameType type);

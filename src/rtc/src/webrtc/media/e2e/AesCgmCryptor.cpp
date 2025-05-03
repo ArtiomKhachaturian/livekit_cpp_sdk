@@ -510,9 +510,9 @@ std::shared_ptr<E2EKeyHandler> AesCgmCryptor::keyHandler() const
 
 bool AesCgmCryptor::encryptOrDecrypt(bool encrypt,
                                      const std::vector<uint8_t>& rawKey,
-                                     const rtc::ArrayView<uint8_t>& iv,
-                                     const rtc::ArrayView<uint8_t>& additionalData,
-                                     const rtc::ArrayView<uint8_t>& data,
+                                     const webrtc::ArrayView<uint8_t>& iv,
+                                     const webrtc::ArrayView<uint8_t>& additionalData,
+                                     const webrtc::ArrayView<uint8_t>& data,
                                      std::vector<uint8_t>& buffer) const
 {
     const EVP_AEAD* aeadAlg = aesGcmAlgorithmFromKeySize(rawKey.size());
@@ -598,7 +598,7 @@ std::optional<E2ECryptoError> toCryptoError(AesCgmCryptorState state)
 namespace
 {
 
-uint8_t unencryptedH264Bytes(const rtc::ArrayView<const uint8_t>& data)
+uint8_t unencryptedH264Bytes(const webrtc::ArrayView<const uint8_t>& data)
 {
     const auto indices = webrtc::H264::FindNaluIndices(data);
     for (const auto& index : indices) {
@@ -614,7 +614,7 @@ uint8_t unencryptedH264Bytes(const rtc::ArrayView<const uint8_t>& data)
     return 12; // ?
 }
 
-uint8_t unencryptedH265Bytes(const rtc::ArrayView<const uint8_t>& data)
+uint8_t unencryptedH265Bytes(const webrtc::ArrayView<const uint8_t>& data)
 {
     const auto indices = webrtc::H265::FindNaluIndices(data);
     for (const auto& index : indices) {
