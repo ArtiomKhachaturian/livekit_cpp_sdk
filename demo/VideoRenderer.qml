@@ -53,7 +53,7 @@ Item {
             renderer.source = source
         }
         else {
-            renderer.clearOutput()
+            app.clearVideoOutput(renderer)
         }
     }
 
@@ -61,12 +61,12 @@ Item {
         target: renderer.source
         function onActiveChanged() {
             if (clearOutputWhenInactive && !renderer.source.active) {
-                renderer.clearOutput()
+                app.clearVideoOutput(renderer)
             }
         }
         function onMutedChanged() {
             if (renderer.source.muted) {
-                renderer.clearOutput()
+                app.clearVideoOutput(renderer)
             }
         }
     }

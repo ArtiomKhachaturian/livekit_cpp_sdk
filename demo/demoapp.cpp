@@ -1,11 +1,16 @@
 #include "demoapp.h"
 #include "logger.h"
 #include "videofilter.h"
+#include <ZaphoydTppFactory.h>
 #include <livekit/rtc/Options.h>
 #include <livekit/rtc/Service.h>
 #include <livekit/signaling/sfu/ICETransportPolicy.h>
-#include <ZaphoydTppFactory.h>
-#include <QDebug>
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
+#include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
+#include <QPalette>
+#include <QQuickItem>
+#include <QVideoSink>
+#endif
 #include <memory>
 
 namespace
@@ -189,6 +194,31 @@ QStringList DemoApp::audioEncoders() const
         }
     }
     return {};
+}
+
+void DemoApp::clearVideoOutput(QObject* videoOutput) const
+{
+    if (videoOutput) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+        QMetaObject::invokeMethod(videoOutput, "clearOutput");
+#else
+    if (const auto sink = videoOutput->property("videoSink").value<QVideoSink*>()) {
+        const auto r = videoOutput->property("sourceRect").toRectF();
+        if (!r.isEmpty()) {
+            QImage image(r.size().toSize(), QImage::Format_ARGB32);
+            QColor clearColor(Qt::transparent);
+            if (_appWindow && _appWindow->contentItem()) {
+                const auto palette = _appWindow->contentItem()->property("palette").value<QPalette>();
+                clearColor = palette.color(QPalette::Window);
+            }
+            image.fill(clearColor);
+            if (auto frame = LiveKitCpp::QImageVideoFrame::create(std::move(image))) {
+                sink->setVideoFrame(LiveKitCpp::convert(std::move(frame)));
+            }
+        }
+    }
+#endif
+    }
 }
 
 bool DemoApp::isValid() const

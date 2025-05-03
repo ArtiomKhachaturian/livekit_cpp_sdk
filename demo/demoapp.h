@@ -43,14 +43,6 @@ public:
     DemoApp(int &argc, char **argv);
     ~DemoApp() override;
     std::weak_ptr<LiveKitCpp::Service> service() const { return _service; }
-public slots:
-    void setAppWindow(QObject* appWindow, const QUrl&);
-    void setAudioRecordingEnabled(bool enabled);
-    void setAudioPlayoutEnabled(bool enabled);
-    void setAudioRecordingVolume(int volume);
-    void setAudioPlayoutVolume(int volume);
-    void setRecordingAudioDevice(const MediaDeviceInfo& device);
-    void setPlayoutAudioDevice(const MediaDeviceInfo& device);
     Q_INVOKABLE MediaDeviceInfo emptyDeviceInfo() const { return {}; }
     Q_INVOKABLE VideoOptions emptyVideoOptions() const { return {}; }
     Q_INVOKABLE AudioRecordingOptions emptyAudioRecordingOptions() const { return {}; }
@@ -60,6 +52,15 @@ public slots:
                                                     uint32_t positionX, uint32_t positionY) const;
     Q_INVOKABLE QStringList videoEncoders() const;
     Q_INVOKABLE QStringList audioEncoders() const;
+    Q_INVOKABLE void clearVideoOutput(QObject* videoOutput) const;
+public slots:
+    void setAppWindow(QObject* appWindow, const QUrl&);
+    void setAudioRecordingEnabled(bool enabled);
+    void setAudioPlayoutEnabled(bool enabled);
+    void setAudioRecordingVolume(int volume);
+    void setAudioPlayoutVolume(int volume);
+    void setRecordingAudioDevice(const MediaDeviceInfo& device);
+    void setPlayoutAudioDevice(const MediaDeviceInfo& device);
 public:
     bool isValid() const;
     bool audioRecordingEnabled() const;

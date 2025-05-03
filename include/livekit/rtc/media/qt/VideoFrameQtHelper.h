@@ -170,7 +170,7 @@ inline QVideoFrame convert(std::shared_ptr<VideoFrame> frame)
                 break;
             }
             output.setStartTime(timestamp);
-                return output;
+            return output;
         }
     }
     return {};
