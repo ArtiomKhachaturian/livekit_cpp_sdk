@@ -15,6 +15,7 @@
 #include "VTH264EncodedBuffer.h"
 #include "VTEncoderSession.h"
 #include "VideoUtils.h"
+#include "CFMemoryPool.h"
 #include "H264Utils.h"
 #include "EncodedImageBuffer.h"
 #include <components/video_codec/nalu_rewriter.h>
@@ -26,7 +27,7 @@ namespace LiveKitCpp
 VTH264Encoder::VTH264Encoder(bool hardwareAccelerated,
                              webrtc::H264PacketizationMode mode,
                              const webrtc::SdpVideoFormat& format)
-    : VTEncoder(hardwareAccelerated, H264Utils::createCodecInfo(mode))
+    : VTEncoder(hardwareAccelerated, H264Utils::createCodecInfo(mode), CFMemoryPool::create())
     , _profileLevelId(webrtc::ParseSdpForH264ProfileLevelId(format.parameters))
 {
 }
@@ -229,7 +230,7 @@ RtcErrorOrEncodedImageBuffer VTH264Encoder::createEncodedImageFromSampleBuffer(C
         }
         // non-cached version
         if (!encodedBuffer) {
-            ::rtc::Buffer buffer;
+            rtc::Buffer buffer;
             if (!webrtc::H264CMSampleBufferToAnnexBBuffer(sampleBuffer, isKeyFrame, &buffer)) {
                 return toRtcError(kCMSampleBufferError_InvalidMediaTypeForOperation);
             }

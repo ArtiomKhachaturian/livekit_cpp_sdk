@@ -182,8 +182,10 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(b
                 if (capturer->SelectSource(_source)) {
                     capturer->SetExcludedWindow(_excludeWindowId);
                     capturer->SetMaxFrameRate(targetFramerate());
-                    LOCK_WRITE_SAFE_OBJ(_smf);
-                    capturer->SetSharedMemoryFactory(_smf.take());
+                    {
+                        LOCK_WRITE_SAFE_OBJ(_smf);
+                        capturer->SetSharedMemoryFactory(_smf.take());
+                    }
                     capturer->Start(this);
                     if (_focusOnSelectedSource) {
                         capturer->FocusOnSelectedSource();

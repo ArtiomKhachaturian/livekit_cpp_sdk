@@ -249,4 +249,4 @@ void VTEncoderSourceFrame::Planes::releaseCallback(void* frameRef,
     reinterpret_cast<const webrtc::VideoFrameBuffer*>(frameRef)->Release();
 }
 
-} // namespace darkmatter::rtc
+} // namespace LiveKitCpp

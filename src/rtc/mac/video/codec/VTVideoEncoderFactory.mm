@@ -33,4 +33,4 @@ std::vector<webrtc::SdpVideoFormat> VTVideoEncoderFactory::customFormats() const
     return H264Utils::supportedFormats(true);
 }
 
-} // namespace darkmatter::rtc
+} // namespace LiveKitCpp

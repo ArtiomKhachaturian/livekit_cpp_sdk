@@ -153,8 +153,6 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool embeddedCur
 {
     auto options = webrtc::DesktopCaptureOptions::CreateDefault();
     // Leave desktop effects enabled during WebRTC captures.
-    options.set_disable_effects(false);
-    options.set_detect_updated_region(false);
     options.set_prefer_cursor_embedded(embeddedCursor);
     // only pure GDI capturers works stable on all devices (enumeration based on device indices)
 #ifdef WEBRTC_WIN
@@ -181,7 +179,6 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
                                                     std::move(framesPool));
     }
     if (!window) {
-        
         return std::make_unique<CGScreenCapturer>(previewMode,
                                                   makeOptions(!previewMode),
                                                   commonSharedQueue(),

@@ -29,7 +29,7 @@ H264BitstreamParser::H264BitstreamParser()
     reset();
 }
 
-void H264BitstreamParser::parseForSliceQp(::webrtc::ArrayView<const uint8_t> bitstream)
+void H264BitstreamParser::parseForSliceQp(webrtc::ArrayView<const uint8_t> bitstream)
 {
     _impl->ParseBitstream(std::move(bitstream));
 }
