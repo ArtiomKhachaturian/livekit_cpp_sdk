@@ -119,12 +119,6 @@ void VideoSource::stopMetricsCollection()
     setFrameSize(_nullSize);
 }
 
-bool VideoSource::hasOutputs() const
-{
-    const QReadLocker locker(&_outputs._lock);
-    return !_outputs->isEmpty();
-}
-
 void VideoSource::removeSink(QObject* sink)
 {
     if (sink) {
@@ -147,6 +141,18 @@ void VideoSource::removeSink(QObject* sink)
         if (deactivate) {
             setActive(false);
             subsribe(false);
+        }
+    }
+}
+
+void VideoSource::sendFrame(const QVideoFrame& frame)
+{
+    if (frame.isValid()) {
+        const QReadLocker locker(&_outputs._lock);
+        for (qsizetype i = 0; i < _outputs->size(); ++i) {
+            if (const auto& sink = _outputs->at(i)) {
+                sink->setVideoFrame(frame);
+            }
         }
     }
 }
@@ -196,22 +202,17 @@ void VideoSource::onFpsChanged()
 
 void VideoSource::onFrame(const std::shared_ptr<LiveKitCpp::VideoFrame>& frame)
 {
-    if (frame && frame->planesCount() && isActive()) {
-        const QReadLocker locker(&_outputs._lock);
-        if (!_outputs->isEmpty()) {
-            const auto qtFrame = LiveKitCpp::convert(frame);
-            if (qtFrame.isValid()) {
-                for (qsizetype i = 0; i < _outputs->size(); ++i) {
-                    _outputs->at(i)->setVideoFrame(qtFrame);
-                }
-                if (!isMuted()) {
-                    _fpsMeter.addFrame();
-                    setFrameType(frame->type());
-                    setFrameSize(qtFrame.width(), qtFrame.height());
-                }
-                else {
-                    setFrameSize(_nullSize);
-                }
+    if (frame && isActive()) {
+        const auto qtFrame = LiveKitCpp::convert(frame);
+        if (qtFrame.isValid()) {
+            sendFrame(qtFrame);
+            if (!isMuted()) {
+                _fpsMeter.addFrame();
+                setFrameType(frame->type());
+                setFrameSize(qtFrame.width(), qtFrame.height());
+            }
+            else {
+                setFrameSize(_nullSize);
             }
         }
     }

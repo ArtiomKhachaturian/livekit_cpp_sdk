@@ -57,12 +57,12 @@ protected:
     void startMetricsCollection();
     void stopMetricsCollection();
     bool isMetricsCollectionStarted() const { return _fpsMeter.isActive(); }
-    bool hasOutputs() const;
     virtual bool metricsAllowed() const { return true; }
     virtual void subsribe(bool /*subscribe*/) {}
     virtual void applyFilter(VideoFilter* /*filter*/ = nullptr) {}
 private slots:
     void removeSink(QObject* sink);
+    void sendFrame(const QVideoFrame& frame);
 private:
     void setFrameType(LiveKitCpp::VideoFrameType type);
     void setActive(bool active = true);
@@ -80,7 +80,7 @@ private:
 private:
     static constexpr QSize _nullSize = {0, 0};
     QScopedPointer<VideoFilter> _filter;
-    Lockable<QList<QVideoSink*>> _outputs;
+    Lockable<QList<QPointer<QVideoSink>>> _outputs;
     SafeObj<QSize> _frameSize;
     FpsMeter _fpsMeter;
     std::atomic_bool _active = false;
