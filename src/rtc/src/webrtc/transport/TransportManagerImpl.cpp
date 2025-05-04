@@ -17,7 +17,6 @@
 #include "DataChannel.h"
 #include "RoomUtils.h"
 #include "RtcUtils.h"
-#include "SdpPatch.h"
 #include "Utils.h"
 
 namespace {
@@ -64,12 +63,10 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
     , _negotiationDelay(negotiationDelay)
     , _subscriberPrimary(subscriberPrimary)
     , _fastPublish(fastPublish)
-    , _prefferedAudioEncoder(prefferedAudioEncoder)
-    , _prefferedVideoEncoder(prefferedVideoEncoder)
     , _logCategory("transport_manager_" + identity)
     , _negotiationTimer(_negotiationDelay ? new MediaTimer(pcf) : nullptr)
-    , _publisher(SignalTarget::Publisher, this, pcf, conf, identity, logger)
-    , _subscriber(SignalTarget::Subscriber, this, pcf, conf, identity, logger)
+    , _publisher(SignalTarget::Publisher, this, pcf, conf, identity, prefferedAudioEncoder, prefferedVideoEncoder, logger)
+    , _subscriber(SignalTarget::Subscriber, this, pcf, conf, identity, {}, {}, logger)
     , _pingPongKit(positiveOrZero(pingInterval), positiveOrZero(pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
 {
@@ -295,11 +292,6 @@ void TransportManagerImpl::updateState()
 void TransportManagerImpl::onSdpCreated(SignalTarget target,
                                         std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
-    if (SignalTarget::Publisher == target && desc && (!_prefferedAudioEncoder.empty() || !_prefferedVideoEncoder.empty())) {
-        SdpPatch patch(desc.get());
-        patch.setCodec(_prefferedAudioEncoder, webrtc::MediaType::AUDIO);
-        patch.setCodec(_prefferedVideoEncoder, webrtc::MediaType::VIDEO);
-    }
     switch (target) {
         case SignalTarget::Publisher:
             _publisher.setLocalDescription(std::move(desc));

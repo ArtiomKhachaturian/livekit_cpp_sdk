@@ -29,33 +29,17 @@ SdpPatch::SdpPatch(webrtc::SessionDescriptionInterface* session)
 {
 }
 
-bool SdpPatch::hasSendStreams(webrtc::MediaType kind) const
-{
-    const auto content = contentDescription(kind);
-    return content && !content->streams().empty();
-}
-
-bool SdpPatch::setRtpTransceiverDirection(webrtc::RtpTransceiverDirection direction, webrtc::MediaType kind)
-{
-    const auto content = contentDescription(kind);
-    if (content && direction != content->direction()) {
-        content->set_direction(direction);
-        return true;
-    }
-    return false;
-}
-
-bool SdpPatch::setCodec(std::string_view codecName, webrtc::MediaType kind)
+void SdpPatch::setCodec(std::string_view codecName, webrtc::MediaType kind)
 {
     bool changed = false;
     if (!codecName.empty()) {
-        if (const auto content = contentDescription(kind)) {
+        for (const auto description : descriptions(kind)) {
             switch (kind) {
                 case webrtc::MediaType::VIDEO:
-                    changed = moveCodecProfilesToFront(content, std::move(codecName));
+                    moveCodecProfilesToFront(description, std::move(codecName));
                     break;
                 case webrtc::MediaType::AUDIO:
-                    changed = moveCodecProfilesToFront(content, std::move(codecName));
+                    moveCodecProfilesToFront(description, std::move(codecName));
                     break;
                 default:
                     assert(false);
@@ -63,23 +47,20 @@ bool SdpPatch::setCodec(std::string_view codecName, webrtc::MediaType kind)
             }
         }
     }
-    return changed;
 }
 
-bool SdpPatch::setMediaBandwidth(int bps, webrtc::MediaType kind)
+void SdpPatch::setMediaBandwidth(int bps, webrtc::MediaType kind)
 {
-    if (const auto content = contentDescription(kind)) {
+    for (const auto description : descriptions(kind)) {
         if (bps > 0) {
-            content->set_bandwidth(bps);
+            description->set_bandwidth(bps);
         } else {
-            content->set_bandwidth(cricket::kAutoBandwidth);
+            description->set_bandwidth(cricket::kAutoBandwidth);
         }
-        return true;
     }
-    return false;
 }
 
-bool SdpPatch::moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName)
+void SdpPatch::moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName)
 {
     bool changed = false;
     if (desc && !codecName.empty() && !desc->codecs().empty()) {
@@ -118,19 +99,20 @@ bool SdpPatch::moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, s
             }
         }
     }
-    return changed;
 }
 
-webrtc::MediaContentDescription* SdpPatch::contentDescription(webrtc::MediaType kind) const
+std::vector<webrtc::MediaContentDescription*> SdpPatch::descriptions(webrtc::MediaType kind) const
 {
+    std::vector<webrtc::MediaContentDescription*> descriptions;
     if (_session && _session->description()) {
         for (auto& content : _session->description()->contents()) {
-            if (content.media_description() && content.media_description()->type() == kind) {
-                return content.media_description();
+            const auto description = content.media_description();
+            if (description && description->type() == kind) {
+                descriptions.push_back(description);
             }
         }
     }
-    return nullptr;
+    return descriptions;
 }
 
 bool SdpPatch::isAssociatedCodec(int payload, const cricket::Codec& codec)

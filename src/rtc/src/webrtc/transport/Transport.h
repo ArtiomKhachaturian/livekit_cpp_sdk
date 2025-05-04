@@ -47,6 +47,8 @@ public:
               const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
               const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
               const std::string& identity,
+              const std::string& prefferedAudioCodec = {},
+              const std::string& prefferedVideoCodec = {},
               const std::shared_ptr<Bricks::Logger>& logger = {});
     ~Transport() override;
     SignalTarget target() const noexcept { return _target; }
@@ -108,6 +110,7 @@ public:
     // thus the listener object can be safely destroyed.
     void close();
 private:
+    std::unique_ptr<webrtc::SessionDescriptionInterface> patch(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) const;
     // impl. of CreateSdpObserver
     void onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onFailure(webrtc::SdpType type, webrtc::RTCError error) final;
@@ -116,6 +119,8 @@ private:
     void onFailure(bool local, webrtc::RTCError error) final;
 private:
     const SignalTarget _target;
+    const std::string _prefferedAudioCodec;
+    const std::string _prefferedVideoCodec;
     webrtc::scoped_refptr<CreateSdpObserver> _offerCreationObserver;
     webrtc::scoped_refptr<CreateSdpObserver> _answerCreationObserver;
     webrtc::scoped_refptr<SetLocalSdpObserver> _setLocalSdpObserver;

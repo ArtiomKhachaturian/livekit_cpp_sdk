@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Transport.h"
+#include "CreateSdpObserver.h"
 #include "DataChannel.h"
 #include "Logger.h"
 #include "Loggable.h"
 #include "TransportImpl.h"
 #include "TransportListener.h"
-#include "CreateSdpObserver.h"
+#include "SdpPatch.h"
 #include "SetSdpObservers.h"
 #include "PeerConnectionFactory.h"
 #include "RoomUtils.h"
@@ -57,9 +58,13 @@ Transport::Transport(SignalTarget target, TransportListener* listener,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::string& identity,
+                     const std::string& prefferedAudioCodec,
+                     const std::string& prefferedVideoCodec,
                      const std::shared_ptr<Bricks::Logger>& logger)
     : RtcObject<TransportImpl, CreateSdpListener, SetSdpListener>(target, pcf, listener, conf, identity, logger)
     , _target(target)
+    , _prefferedAudioCodec(prefferedAudioCodec)
+    , _prefferedVideoCodec(prefferedVideoCodec)
 {
     const auto impl = loadImpl();
     if (impl && impl->peerConnection()) {
@@ -370,7 +375,7 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
                 impl->logInfo("request to set local " + desc->type());
-                thread->PostTask([desc = std::move(desc),
+                thread->PostTask([desc = patch(std::move(desc)),
                                   observer = _setLocalSdpObserver,
                                   implRef = weak(impl)]() mutable {
                     if (const auto impl = implRef.lock()) {
@@ -390,7 +395,7 @@ void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionI
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
                 impl->logInfo("request to set remote " + desc->type());
-                thread->PostTask([desc = std::move(desc),
+                thread->PostTask([desc = patch(std::move(desc)),
                                   observer = _setRemoteSdpObserver,
                                   implRef = weak(impl)]() mutable {
                     if (const auto impl = implRef.lock()) {
@@ -556,13 +561,23 @@ void Transport::close()
     }
 }
 
+std::unique_ptr<webrtc::SessionDescriptionInterface> Transport::patch(std::unique_ptr<webrtc::SessionDescriptionInterface> desc) const
+{
+    if (desc && (!_prefferedAudioCodec.empty() || !_prefferedVideoCodec.empty())) {
+        SdpPatch patch(desc.get());
+        patch.setCodec(_prefferedAudioCodec, webrtc::MediaType::AUDIO);
+        patch.setCodec(_prefferedVideoCodec, webrtc::MediaType::VIDEO);
+    }
+    return desc;
+}
+
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (const auto impl = loadImpl()) {
         if (desc) {
             impl->logVerbose(desc->type() + " created successfully");
         }
-        impl->notify(&TransportListener::onSdpCreated, std::move(desc));
+        impl->notify(&TransportListener::onSdpCreated, patch(std::move(desc)));
     }
 }
 

@@ -106,8 +106,6 @@ private:
     const uint64_t _negotiationDelay;
     const bool _subscriberPrimary;
     const bool _fastPublish;
-    const std::string _prefferedAudioEncoder;
-    const std::string _prefferedVideoEncoder;
     const std::string _logCategory;
     const std::unique_ptr<MediaTimer> _negotiationTimer;
     AsyncListener<TransportManagerListener*> _listener;

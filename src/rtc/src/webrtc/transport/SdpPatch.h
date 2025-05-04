@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include <api/media_types.h>
+#include <media/base/codec.h>
 #include <memory>
 #include <string>
 #include <optional>
@@ -35,16 +36,12 @@ class SdpPatch
 {
 public:
     SdpPatch(webrtc::SessionDescriptionInterface* session);
-    bool hasSendStreams(webrtc::MediaType kind) const;
-    // return true if changed
-    bool setRtpTransceiverDirection(webrtc::RtpTransceiverDirection direction, webrtc::MediaType kind);
-    bool setCodec(std::string_view codecName, webrtc::MediaType kind);
+    void setCodec(std::string_view codecName, webrtc::MediaType kind);
     //in bits
-    bool setMediaBandwidth(int bps, webrtc::MediaType kind);
-    const webrtc::SessionDescriptionInterface* session() const { return _session; }
+    void setMediaBandwidth(int bps, webrtc::MediaType kind);
 private:
-    webrtc::MediaContentDescription* contentDescription(webrtc::MediaType kind) const;
-    static bool moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName);
+    std::vector<webrtc::MediaContentDescription*> descriptions(webrtc::MediaType kind) const;
+    static void moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName);
     static bool isAssociatedCodec(int payload, const cricket::Codec& codec);
 private:
     webrtc::SessionDescriptionInterface* const _session;
