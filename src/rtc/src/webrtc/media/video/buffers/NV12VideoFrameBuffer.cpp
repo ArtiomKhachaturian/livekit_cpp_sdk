@@ -12,9 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "NV12VideoFrameBuffer.h"
+#include "RgbGenericVideoFrameBuffer.h"
 #include "LibyuvImport.h"
 #include "VideoUtils.h"
+#ifdef WEBRTC_WIN
+#include "MFVideoBufferInterface.h"
+#endif
 #include <api/video/i420_buffer.h>
+
+namespace
+{
+
+using namespace LiveKitCpp;
+
+webrtc::scoped_refptr<webrtc::NV12BufferInterface> i420ToNV12(const webrtc::I420BufferInterface* i420,
+                                                              const VideoFrameBufferPool& pool);
+webrtc::scoped_refptr<webrtc::NV12BufferInterface> i444ToNV12(const webrtc::I444BufferInterface* i444,
+                                                              const VideoFrameBufferPool& pool);
+webrtc::scoped_refptr<webrtc::NV12BufferInterface> rgbToNV12(RgbGenericVideoFrameBuffer* rgb,
+                                                             const VideoFrameBufferPool& pool);
+
+webrtc::VideoFrameBuffer::Type g_nv12Format[] = {webrtc::VideoFrameBuffer::Type::kNV12};
+
+}
 
 namespace LiveKitCpp 
 {
@@ -33,6 +53,50 @@ int NV12VideoFrameBuffer::StrideUV() const
 {
     const auto w = width();
     return w + w % 2;
+}
+
+webrtc::scoped_refptr<webrtc::NV12BufferInterface>NV12VideoFrameBuffer::toNV12(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+                                 const VideoFrameBufferPool& pool)
+{
+    webrtc::scoped_refptr<webrtc::NV12BufferInterface> target;
+    if (buffer) {
+        switch (buffer->type()) {
+            case webrtc::VideoFrameBuffer::Type::kNV12:
+                target = const_cast<webrtc::NV12BufferInterface*>(buffer->GetNV12());
+                break;
+            case webrtc::VideoFrameBuffer::Type::kI420:
+               target = i420ToNV12(buffer->GetI420(), pool);
+               break;
+           case webrtc::VideoFrameBuffer::Type::kI444:
+               target = i444ToNV12(buffer->GetI444(), pool);
+               break;
+            case webrtc::VideoFrameBuffer::Type::kNative:
+              if (const auto rgbBuffer = dynamic_cast<RgbGenericVideoFrameBuffer*>(buffer.get())) {
+                  target = rgbToNV12(rgbBuffer, pool);
+              }
+#ifdef WEBRTC_WIN
+              else if (const auto mfBuffer = dynamic_cast<MFVideoBufferInterface*>(buffer.get())) {
+                  target = mfBuffer->toNV12(pool);
+              }
+#endif
+              break;
+          default:
+              break;
+        }
+        if (!target) {
+           if (webrtc::VideoFrameBuffer::Type::kNative == buffer->type()) {
+               if (const auto mappedNV12 = buffer->GetMappedFrameBuffer(webrtc::MakeArrayView(&g_nv12Format[0], 1U))) {
+                   target = dynamic_cast<webrtc::NV12BufferInterface*>(mappedNV12.get());
+               }
+           }
+           if (!target) {
+               if (const auto i420 = buffer->ToI420()) {
+                   target = i420ToNV12(i420.get(), pool);
+               }
+           }
+       }
+    }
+    return target;
 }
 
 const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int width, int height)
@@ -93,3 +157,90 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI
 }
 
 } // namespace LiveKitCpp
+
+
+namespace
+{
+
+webrtc::scoped_refptr<webrtc::NV12BufferInterface> i420ToNV12(const webrtc::I420BufferInterface* i420,
+                                                              const VideoFrameBufferPool& pool)
+{
+    if (i420) {
+        const auto nv12 = pool.createNV12(i420->width(), i420->height());
+        if (nv12 && 0 == libyuv::I420ToNV12(i420->DataY(), i420->StrideY(),
+                                            i420->DataU(), i420->StrideU(),
+                                            i420->DataV(), i420->StrideV(),
+                                            nv12->MutableDataY(), nv12->StrideY(),
+                                            nv12->MutableDataUV(), nv12->StrideUV(),
+                                            nv12->width(), nv12->height())) {
+            return nv12;
+        }
+    }
+    return {};
+}
+
+webrtc::scoped_refptr<webrtc::NV12BufferInterface> i444ToNV12(const webrtc::I444BufferInterface* i444,
+                                                              const VideoFrameBufferPool& pool)
+{
+    if (i444) {
+        const auto nv12 = pool.createNV12(i444->width(), i444->height());
+        if (nv12 && 0 == libyuv::I444ToNV12(i444->DataY(), i444->StrideY(),
+                                            i444->DataU(), i444->StrideU(),
+                                            i444->DataV(), i444->StrideV(),
+                                            nv12->MutableDataY(), nv12->StrideY(),
+                                            nv12->MutableDataUV(), nv12->StrideUV(),
+                                            nv12->width(), nv12->height())) {
+            return nv12;
+        }
+    }
+    return {};
+}
+
+webrtc::scoped_refptr<webrtc::NV12BufferInterface> rgbToNV12(RgbGenericVideoFrameBuffer* rgb,
+                                                             const VideoFrameBufferPool& pool)
+{
+    if (rgb) {
+        const auto format = rgb->nativeType();
+        bool useI420Mapping = VideoFrameType::RGB24 == format || VideoFrameType::BGR24 == format;
+        if (!useI420Mapping) {
+            decltype(&libyuv::ARGBToNV12) func = nullptr;
+            switch (format) {
+                case VideoFrameType::BGRA32:
+                    func = &libyuv::ARGBToNV12;
+                    break;
+                case VideoFrameType::RGBA32:
+                    func = &libyuv::ABGRToNV12;
+                    break;
+                // no conversion routines for ARGB32 & ABGR32
+                case VideoFrameType::ARGB32:
+                case VideoFrameType::ABGR32:
+                    break;
+                default:
+                    break;
+            }
+            if (func) {
+                const auto nv12 = pool.createNV12(rgb->width(), rgb->height());
+                if (nv12) {
+                    useI420Mapping = 0 != func(reinterpret_cast<const uint8_t*>(rgb->data(0U)),
+                                               rgb->stride(0U),
+                                               nv12->MutableDataY(), nv12->StrideY(),
+                                               nv12->MutableDataUV(), nv12->StrideUV(),
+                                               nv12->width(), nv12->height());
+                    if (!useI420Mapping) {
+                        return nv12;
+                    }
+                }
+            } else {
+                useI420Mapping = true;
+            }
+        }
+        if (useI420Mapping) {
+            if (const auto i420 = rgb->ToI420()) {
+                return i420ToNV12(i420.get(), pool);
+            }
+        }
+    }
+    return nullptr;
+}
+
+}

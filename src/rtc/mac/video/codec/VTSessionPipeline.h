@@ -48,7 +48,7 @@ protected:
     OSStatus endInput(OSStatus result);
     bool endOutput(OSStatus result);
     template <class Method, typename... Args>
-    void invokeCallback(const Method& method, Args&&... args) const;
+    void callback(const Method& method, Args&&... args) const;
 private:
     std::string name() const { return videoCodecTypeToString(_codecType); }
 private:
@@ -111,7 +111,7 @@ bool VTSessionPipeline<TPipelineCallback>::endOutput(OSStatus result)
 
 template <class TPipelineCallback>
 template <class Method, typename... Args>
-void VTSessionPipeline<TPipelineCallback>::invokeCallback(const Method& method, Args&&... args) const
+void VTSessionPipeline<TPipelineCallback>::callback(const Method& method, Args&&... args) const
 {
     if (_callback && active()) {
         (_callback->*method)(std::forward<Args>(args)...);

@@ -20,6 +20,9 @@
 #include "AdmProxyFacade.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
+#ifdef WEBRTC_MAC
+#include "VTVideoDecoderFactory.h"
+#endif
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
 #include <api/audio_codecs/builtin_audio_encoder_factory.h>
@@ -69,7 +72,7 @@ inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer
 namespace webrtc {
 
 std::unique_ptr<VideoDecoderFactory> CreateBuiltinVideoDecoderFactory() {
-    return std::make_unique<LiveKitCpp::VideoDecoderFactory>();
+    return std::make_unique<LiveKitCpp::VTVideoDecoderFactory>();
 }
 
 std::unique_ptr<VideoEncoderFactory> CreateBuiltinVideoEncoderFactory() {

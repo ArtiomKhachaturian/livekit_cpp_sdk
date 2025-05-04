@@ -192,6 +192,68 @@ bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                          hint);
 }
 
+size_t planesCount(VideoFrameType type)
+{
+    switch (type) {
+        case VideoFrameType::RGB24:
+        case VideoFrameType::BGR24:
+        case VideoFrameType::BGRA32:
+        case VideoFrameType::ARGB32:
+        case VideoFrameType::RGBA32:
+        case VideoFrameType::ABGR32:
+        case VideoFrameType::RGB565:
+        case VideoFrameType::MJPEG:
+        case VideoFrameType::UYVY:
+        case VideoFrameType::YUY2:
+            return 1U;
+        case VideoFrameType::NV12:
+            return 2U;
+        case VideoFrameType::I420:
+        case VideoFrameType::I422:
+        case VideoFrameType::I444:
+        case VideoFrameType::I010:
+        case VideoFrameType::I210:
+        case VideoFrameType::I410:
+        case VideoFrameType::YV12:
+        case VideoFrameType::IYUV:
+            return 3U;
+        default:
+            assert(false);
+            break;
+    }
+    return 0U;
+}
+
+bool isVP8VideoFormat(const webrtc::SdpVideoFormat& format)
+{
+    return isVP8CodecName(format.name);
+}
+
+bool isVP8CodecName(const std::string& codecName)
+{
+    return webrtc::VideoCodecType::kVideoCodecVP8 == webrtc::PayloadStringToCodecType(codecName);
+}
+
+bool isVP9VideoFormat(const webrtc::SdpVideoFormat& format)
+{
+    return isVP9CodecName(format.name);
+}
+
+bool isVP9CodecName(const std::string& codecName)
+{
+    return webrtc::VideoCodecType::kVideoCodecVP9 == webrtc::PayloadStringToCodecType(codecName);
+}
+
+bool isH264VideoFormat(const webrtc::SdpVideoFormat& format)
+{
+    return isH264CodecName(format.name);
+}
+
+bool isH264CodecName(const std::string& codecName)
+{
+    return webrtc::VideoCodecType::kVideoCodecH264 == webrtc::PayloadStringToCodecType(codecName);
+}
+
 std::string toString(const VideoOptions& options)
 {
     std::string desc;
@@ -260,6 +322,7 @@ bool isRGB32Format(OSType format)
         case formatBGRA32():
         case formatARGB32():
         case formatRGBA32():
+        case formatABGR32():
             return true;
         default:
             break;
@@ -479,6 +542,18 @@ int fourcc(VideoFrameType type)
 int fourcc(webrtc::VideoType type)
 {
     return webrtc::ConvertVideoType(type);
+}
+
+bool maybeHardwareAccelerated(CodecStatus status)
+{
+    switch (status) {
+    case CodecStatus::SupportedHardware:
+    case CodecStatus::SupportedMixed:
+        return true;
+    default:
+        break;
+    }
+    return false;
 }
 
 } // namespace LiveKitCpp

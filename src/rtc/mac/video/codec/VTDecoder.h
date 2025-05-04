@@ -13,20 +13,23 @@
 // limitations under the License.
 #pragma once // VTDecoder.h
 #include "CFAutoRelease.h"
+#include "CodecStatus.h"
+#include "SafeObj.h"
 #include "VTDecoderSessionCallback.h"
+#include "VTDecoderSession.h"
 #include "VideoDecoder.h"
 
 namespace LiveKitCpp
 {
 
 class CFMemoryPool;
-class VTDecoderSession;
 class VideoFrameBufferPoolSource;
 
 class VTDecoder : public VideoDecoder, private VTDecoderSessionCallback
 {
 public:
     ~VTDecoder() override;
+    static CodecStatus hardwaredDecodeSupported(CMVideoCodecType codecType);
     // overrides of VideoDecoder
     bool Configure(const Settings& settings) override;
     int32_t Decode(const webrtc::EncodedImage& inputImage, bool missingFrames, int64_t renderTimeMs) final;
@@ -36,6 +39,7 @@ protected:
               bool hardwareAccelerated = true,
               const std::shared_ptr<Bricks::Logger>& logger = {},
               const std::shared_ptr<CFMemoryPool>& memoryPool = {});
+    const auto& memoryPool() const noexcept { return _memoryPool; }
     CMVideoFormatDescriptionRef createInitialVideoFormat(const webrtc::RenderResolution& resolution) const;
     virtual CMVideoFormatDescriptionRef createInitialVideoFormat(uint32_t encodedWidth, uint32_t encodedHeight) const;
     virtual CMVideoFormatDescriptionRef createVideoFormat(const webrtc::EncodedImage& inputImage) const = 0;
@@ -57,8 +61,8 @@ protected:
     const OSType _outputPixelFormat;
     const std::shared_ptr<CFMemoryPool> _memoryPool;
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
-    std::unique_ptr<VTDecoderSession> _session;
-    int _numberOfCores = 0;
+    VTDecoderSession _session;
+    std::atomic<int> _numberOfCores = 0;
 };
 
 } // namespace LiveKitCpp

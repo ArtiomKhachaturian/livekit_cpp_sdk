@@ -36,8 +36,13 @@ class VTDecoderSession : public VTSession<CFAutoRelease<CMVideoFormatDescription
     class DecodePipeline;
     using BaseClass = VTSession<CFAutoRelease<CMVideoFormatDescriptionRef>, VTDecompressionSessionRef>;
 public:
+    VTDecoderSession();
+    VTDecoderSession(const VTDecoderSession&) = delete;
+    VTDecoderSession(VTDecoderSession&&);
     ~VTDecoderSession();
-    static webrtc::RTCErrorOr<std::unique_ptr<VTDecoderSession>>
+    VTDecoderSession& operator = (const VTDecoderSession&) = delete;
+    VTDecoderSession& operator = (VTDecoderSession&&);
+    static webrtc::RTCErrorOr<VTDecoderSession>
         create(bool hardwareAccelerated, CMVideoCodecType codecType,
                CFAutoRelease<CMVideoFormatDescriptionRef> format,
                OSType outputPixelFormat,
@@ -53,7 +58,7 @@ public:
                                 VTDecodeInfoFlags* CM_NULLABLE infoFlags = nullptr) const;
     // impl. of VTSession
     uint64_t pendingFramesCount() const final;
-    webrtc::RTCError lastOutputStatus() const final;
+    OSStatus lastOutputStatus() const final;
 private:
     VTDecoderSession(std::unique_ptr<DecodePipeline> pipeline,
                      CFAutoRelease<CMVideoFormatDescriptionRef> format,
@@ -63,7 +68,7 @@ private:
                                                             int32_t width,
                                                             int32_t height);
 private:
-    const std::unique_ptr<DecodePipeline> _pipeline;
+    std::unique_ptr<DecodePipeline> _pipeline;
 };
 
 } // namespace LiveKitCpp

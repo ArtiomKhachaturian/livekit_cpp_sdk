@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // EncodedImageBuffer.h
+#include <api/rtc_error.h>
 #include <api/video/encoded_image.h>
 #include <rtc_base/buffer.h>
 #include <memory>
@@ -31,5 +32,7 @@ public:
     static webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface> create(std::vector<uint8_t> buffer);
     static webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface> create(std::unique_ptr<Bricks::Blob> buffer);
 };
+
+using RtcErrorOrEncodedImageBuffer = webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface>>;
 
 } // namespace LiveKitCpp

@@ -27,6 +27,9 @@ class NV12VideoFrameBuffer : public VideoFrameBuffer<webrtc::NV12BufferInterface
 public:
     static const uint8_t* nv12DataY(const uint8_t* buffer) { return buffer; }
     static const uint8_t* nv12DataUV(const uint8_t* buffer, int width, int height);
+    static webrtc::scoped_refptr<webrtc::NV12BufferInterface>
+        toNV12(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+               const VideoFrameBufferPool& pool = {});
     // overrides of webrtc::VideoFrameBuffer
     rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
                                                               int offsetY,

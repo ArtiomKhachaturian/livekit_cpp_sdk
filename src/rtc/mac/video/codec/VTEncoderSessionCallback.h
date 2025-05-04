@@ -11,22 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // VideoDecoderFactory.h
-#include <api/video_codecs/video_decoder_factory.h>
+#pragma once // VTEncoderSessionCallback.h
+#include "VTEncoderSourceFrame.h"
+#include <VideoToolbox/VTErrors.h>
 
 namespace LiveKitCpp
 {
 
-class VideoDecoderFactory : public webrtc::VideoDecoderFactory
+class VTEncoderSessionCallback
 {
 public:
-    VideoDecoderFactory() = default;
-    // impl. of webrtc::VideoDecoderFactory
-    std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
-    CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
-                                   bool referenceScaling) const override;
-    std::unique_ptr<webrtc::VideoDecoder> Create(const webrtc::Environment& env,
-                                                 const webrtc::SdpVideoFormat& format) override;
+    virtual void onEncodedImage(VTEncoderSourceFrame frame,
+                                VTEncodeInfoFlags infoFlags,
+                                CMSampleBufferRef sampleBuffer) = 0;
+    virtual void onError(OSStatus error, bool fatal) = 0;
+protected:
+    virtual ~VTEncoderSessionCallback() = default;
 };
 
 } // namespace LiveKitCpp

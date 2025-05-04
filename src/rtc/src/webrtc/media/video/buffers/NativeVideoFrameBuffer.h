@@ -28,6 +28,7 @@ public:
     virtual int stride(size_t planeIndex) const = 0;
     virtual const std::byte* data(size_t planeIndex) const = 0;
     virtual int dataSize(size_t planeIndex) const { return stride(planeIndex) * height(); }
+    virtual int dataSize() const;
 };
 	
 } // namespace LiveKitCpp

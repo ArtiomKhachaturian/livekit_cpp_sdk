@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VideoUtils.h
+#include "CodecStatus.h"
 #include "livekit/rtc/media/VideoContentHint.h"
 #ifdef WEBRTC_MAC
 #include "CFAutoRelease.h"
@@ -20,6 +21,7 @@
 #endif
 #include <api/media_stream_interface.h>
 #include <api/video/video_frame.h>
+#include <api/video_codecs/sdp_video_format.h>
 #include <modules/video_capture/video_capture_config.h> // for values in webrtc::videocapturemodule
 #include <optional>
 
@@ -69,10 +71,22 @@ bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                 int dstWidth, int dstHeight,
                 VideoContentHint hint = VideoContentHint::None);
 
+size_t planesCount(VideoFrameType type);
+
 // these thresholds deviate from the default h264 QP thresholds, as they
 // have been found to work better on devices that support VideoToolbox (APPLE)
 inline constexpr int lowH264QpThreshold() { return 28; }
 inline constexpr int highH264QpThreshold() { return 56; }
+// VPX
+bool isVP8VideoFormat(const webrtc::SdpVideoFormat& format);
+bool isVP8CodecName(const std::string& codecName);
+bool isVP9VideoFormat(const webrtc::SdpVideoFormat& format);
+bool isVP9CodecName(const std::string& codecName);
+// H264
+std::vector<webrtc::SdpVideoFormat> supportedH264Formats(bool encoder);
+// https://en.wikipedia.org/wiki/Context-adaptive_binary_arithmetic_coding
+bool isH264VideoFormat(const webrtc::SdpVideoFormat& format);
+bool isH264CodecName(const std::string& codecName);
 
 #ifdef WEBRTC_MAC
 // constants
@@ -90,13 +104,14 @@ constexpr OSType formatYUY2() { return kCVPixelFormatType_422YpCbCr8_yuvs; }
 constexpr OSType formatI420() { return kCVPixelFormatType_420YpCbCr8Planar; }
 // UYVY
 constexpr OSType formatUYVY() { return kCVPixelFormatType_422YpCbCr8; }
-// RGB24
+// RGB 24bpp
 constexpr OSType formatRGB24() { return kCVPixelFormatType_24RGB; }
 constexpr OSType formatBGR24() { return kCVPixelFormatType_24BGR; }
-// RGB32
+// RGB 32bpp
 constexpr OSType formatBGRA32() { return kCVPixelFormatType_32BGRA; }
 constexpr OSType formatARGB32() { return kCVPixelFormatType_32ARGB; }
 constexpr OSType formatRGBA32() { return kCVPixelFormatType_32RGBA; }
+constexpr OSType formatABGR32() { return kCVPixelFormatType_32ABGR; }
 bool isNV12Format(OSType format);
 bool isRGB24Format(OSType format);
 bool isRGB32Format(OSType format);

@@ -73,12 +73,20 @@ VTDecoderSession::VTDecoderSession(std::unique_ptr<DecodePipeline> pipeline,
 {
 }
 
+VTDecoderSession::VTDecoderSession() = default;
+
+VTDecoderSession::VTDecoderSession(VTDecoderSession&&) = default;
+
 VTDecoderSession::~VTDecoderSession()
 {
-    VTDecompressionSessionInvalidate(sessionRef());
+    if (valid()) {
+        VTDecompressionSessionInvalidate(sessionRef());
+    }
 }
 
-webrtc::RTCErrorOr<std::unique_ptr<VTDecoderSession>> VTDecoderSession::
+VTDecoderSession& VTDecoderSession::operator = (VTDecoderSession&&) = default;
+
+webrtc::RTCErrorOr<VTDecoderSession> VTDecoderSession::
     create(bool hardwareAccelerated, CMVideoCodecType codecType,
            CFAutoRelease<CMVideoFormatDescriptionRef> format, OSType outputPixelFormat,
            int numberOfCores, VTDecoderSessionCallback* callback,
@@ -117,10 +125,7 @@ webrtc::RTCErrorOr<std::unique_ptr<VTDecoderSession>> VTDecoderSession::
                                                                      nil, &hwacclEnabled) && CFBooleanGetValue(hwacclEnabled);
                 // enable low-latency mode
                 VTSessionSetProperty(session, latencyKey(realtime), kCFBooleanTrue);
-                return std::unique_ptr<VTDecoderSession>(new VTDecoderSession(std::move(pipeline),
-                                                                              std::move(format),
-                                                                              session,
-                                                                              hardwareAccelerated));
+                return VTDecoderSession(std::move(pipeline), std::move(format), session, hardwareAccelerated);
             }
             return toRtcError(status);
         }
@@ -130,7 +135,10 @@ webrtc::RTCErrorOr<std::unique_ptr<VTDecoderSession>> VTDecoderSession::
 
 webrtc::RTCError VTDecoderSession::waitForAsynchronousFrames()
 {
-    return toRtcError(VTDecompressionSessionWaitForAsynchronousFrames(sessionRef()));
+    if (valid()) {
+        return toRtcError(VTDecompressionSessionWaitForAsynchronousFrames(sessionRef()));
+    }
+    return toRtcError(kVTInvalidSessionErr, webrtc::RTCErrorType::INVALID_STATE);
 }
 
 webrtc::RTCError VTDecoderSession::setOutputPoolRequestedMinimumBufferCount(int bufferPoolSize)
@@ -142,21 +150,27 @@ webrtc::RTCError VTDecoderSession::decompress(CMSampleBufferRef encodedBufferDat
                                               const webrtc::EncodedImage& image,
                                               VTDecodeInfoFlags* infoFlags) const
 {
-    if (const auto encodedBuffer = image.GetEncodedData()) {
-        return _pipeline->input(sessionRef(), encodedBufferData, encodedBuffer, image.RtpTimestamp(),
-                                infoFlags, image.qp_, image.ColorSpace());
+    if (_pipeline) {
+        if (const auto encodedBuffer = image.GetEncodedData()) {
+            return _pipeline->input(sessionRef(), encodedBufferData, encodedBuffer, image.RtpTimestamp(),
+                                    infoFlags, image.qp_, image.ColorSpace());
+        }
+        return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
     }
-    return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
+    return toRtcError(kVTInvalidSessionErr, webrtc::RTCErrorType::INVALID_STATE);
 }
 
 uint64_t VTDecoderSession::pendingFramesCount() const
 {
-    return _pipeline->pendingFramesCount();
+    return _pipeline ? _pipeline->pendingFramesCount() : 0ULL;
 }
 
-webrtc::RTCError VTDecoderSession::lastOutputStatus() const
+OSStatus VTDecoderSession::lastOutputStatus() const
 {
-    return toRtcError(_pipeline->lastOutputStatus());
+    if (_pipeline) {
+        return _pipeline->lastOutputStatus();
+    }
+    return kVTInvalidSessionErr;
 }
 
 CFDictionaryRefAutoRelease VTDecoderSession::sourceImageAttributes(OSType pixelFormat, int32_t width, int32_t height)
@@ -207,14 +221,14 @@ void VTDecoderSession::DecodePipeline::output(void* pipeline, void *params, OSSt
             if (!testFlag<kVTDecodeInfo_FrameDropped>(infoFlags)) {
                 buffer = selfRef->createBuffer(imageBuffer);
             }
-            selfRef->invokeCallback(&VTDecoderSessionCallback::onDecodedImage, timestamp,
-                                    duration, infoFlags,
-                                    encodedData->_timestamp, buffer,
-                                    std::move(encodedData->_qp),
-                                    std::move(encodedData->_colorspace));
+            selfRef->callback(&VTDecoderSessionCallback::onDecodedImage, timestamp,
+                              duration, infoFlags,
+                              encodedData->_timestamp, buffer,
+                              std::move(encodedData->_qp),
+                              std::move(encodedData->_colorspace));
         }
         else if (statusChanged) {
-            selfRef->invokeCallback(&VTDecoderSessionCallback::onError, status, true);
+            selfRef->callback(&VTDecoderSessionCallback::onError, status, true);
         }
     }
 }
@@ -230,7 +244,7 @@ void VTDecoderSession::DecodePipeline::adjustPresentationTimestamp(CMSampleBuffe
         const auto presentationTimeStamp = CMTimeMake(timestamp, 1000);
         const auto status = CMSampleBufferSetOutputPresentationTimeStamp(encodedBuffer, presentationTimeStamp);
         if (!status) {
-            invokeCallback(&VTDecoderSessionCallback::onError, status, false);
+            callback(&VTDecoderSessionCallback::onError, status, false);
         }
     }
 }

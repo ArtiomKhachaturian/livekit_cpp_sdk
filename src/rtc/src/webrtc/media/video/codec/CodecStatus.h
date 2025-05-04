@@ -11,22 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // VideoDecoderFactory.h
-#include <api/video_codecs/video_decoder_factory.h>
+#pragma once // CodecStatus.h
 
 namespace LiveKitCpp
 {
 
-class VideoDecoderFactory : public webrtc::VideoDecoderFactory
+enum class CodecStatus
 {
-public:
-    VideoDecoderFactory() = default;
-    // impl. of webrtc::VideoDecoderFactory
-    std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
-    CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
-                                   bool referenceScaling) const override;
-    std::unique_ptr<webrtc::VideoDecoder> Create(const webrtc::Environment& env,
-                                                 const webrtc::SdpVideoFormat& format) override;
+    NotSupported,
+    SupportedSoftware,
+    SupportedHardware,
+    SupportedMixed // hardware or software mode - depends from input configuration
 };
+
+bool maybeHardwareAccelerated(CodecStatus status);
 
 } // namespace LiveKitCpp
