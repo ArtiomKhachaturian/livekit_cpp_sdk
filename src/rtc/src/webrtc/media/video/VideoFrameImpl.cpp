@@ -198,6 +198,13 @@ private:
     rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
+inline int halfHeight(const webrtc::VideoFrameBuffer* buffer) {
+    if (buffer) {
+        return (buffer->height() + 1) / 2;
+    }
+    return 0;
+}
+
 }
 
 namespace LiveKitCpp
@@ -364,25 +371,24 @@ const std::byte* VideoFrameImpl::data(size_t planeIndex) const
     return nullptr;
 }
 
-
 int VideoFrameImpl::dataSize(size_t planeIndex) const
 {
     if (_buffer) {
         switch (_buffer->type()) {
             case webrtc::VideoFrameBuffer::Type::kI420:
-                return dataSizeI420(planeIndex, _buffer->width(), _buffer->height());
+                return dataSizeI420(planeIndex, _buffer->GetI420());
             case webrtc::VideoFrameBuffer::Type::kI422:
-                return dataSizeI422(planeIndex, _buffer->width(), _buffer->height());
+                return dataSizeI422(planeIndex, _buffer->GetI422());
             case webrtc::VideoFrameBuffer::Type::kI444:
-                return dataSizeI444(planeIndex, _buffer->width(), _buffer->height());
+                return dataSizeI444(planeIndex, _buffer->GetI444());
             case webrtc::VideoFrameBuffer::Type::kI010:
-                return dataSizeI010(planeIndex, _buffer->width(), _buffer->height());
+                return dataSizeI010(planeIndex, _buffer->GetI010());
             case webrtc::VideoFrameBuffer::Type::kI210:
-                return dataSizeI210(planeIndex, _buffer->width(), _buffer->height());
+                return dataSizeI210(planeIndex, _buffer->GetI210());
             case webrtc::VideoFrameBuffer::Type::kI410:
-                return dataSizeI410(planeIndex, _buffer->width(), _buffer->height());
+                return dataSizeI410(planeIndex, _buffer->GetI410());
             case webrtc::VideoFrameBuffer::Type::kNV12:
-                return dataSizeNV12(planeIndex, _buffer->width(), _buffer->height());
+                return dataSizeNV12(planeIndex, _buffer->GetNV12());
             case webrtc::VideoFrameBuffer::Type::kNative:
                 if (const auto native = dynamic_cast<const NativeVideoFrameBuffer*>(_buffer.get())) {
                     return native->dataSize(planeIndex);
@@ -564,95 +570,133 @@ const std::byte* VideoFrameImpl::data(size_t planeIndex, const webrtc::BiplanarY
     return nullptr;
 }
 
-int VideoFrameImpl::dataSizeI420(size_t planeIndex, int width, int height)
+int VideoFrameImpl::dataSizeI420(size_t planeIndex, const webrtc::I420BufferInterface* buffer)
 {
-    switch (planeIndex) {
-        case 0U: // Y
-            return width * height;
-        case 1U: // U
-        case 2U: // V
-            return (width / 2) * (height / 2);
-        default:
-            break;
+    if (buffer) {
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/api/video/i420_buffer.cc#46
+        switch (planeIndex) {
+            case 0U: // Y
+                return buffer->StrideY() * buffer->height();
+            case 1U: // U
+                return buffer->StrideU() * halfHeight(buffer);
+            case 2U: // V
+                return buffer->StrideV() * halfHeight(buffer);
+            default:
+                assert(false);
+                break;
+        }
     }
     return 0;
 }
 
-int VideoFrameImpl::dataSizeI422(size_t planeIndex, int width, int height)
+int VideoFrameImpl::dataSizeI422(size_t planeIndex, const webrtc::I422BufferInterface* buffer)
 {
-    switch (planeIndex) {
-        case 0U: // Y
-            return width * height;
-        case 1U: // U
-        case 2U: // V
-            return (width / 2) * height;
-        default:
-            break;
+    if (buffer) {
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/api/video/i422_buffer.cc#46
+        switch (planeIndex) {
+            case 0U: // Y
+                return buffer->StrideY() * buffer->height();
+            case 1U: // U
+                return buffer->StrideU() * buffer->height();
+            case 2U: // V
+                return buffer->StrideV() * buffer->height();
+            default:
+                assert(false);
+                break;
+        }
     }
     return 0;
 }
 
-int VideoFrameImpl::dataSizeI444(size_t planeIndex, int width, int height)
+int VideoFrameImpl::dataSizeI444(size_t planeIndex, const webrtc::I444BufferInterface* buffer)
 {
-    switch (planeIndex) {
-        case 0U: // Y
-        case 1U: // U
-        case 2U: // V
-            return width * height;
-        default:
-            break;
+    if (buffer) {
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/api/video/i444_buffer.cc#45
+        switch (planeIndex) {
+            case 0U: // Y
+                return buffer->StrideY() * buffer->height();
+            case 1U: // U
+                return buffer->StrideU() * buffer->height();
+            case 2U: // V
+                return buffer->StrideV() * buffer->height();
+            default:
+                assert(false);
+                break;
+        }
     }
     return 0;
 }
 
-int VideoFrameImpl::dataSizeI010(size_t planeIndex, int width, int height)
+int VideoFrameImpl::dataSizeI010(size_t planeIndex, const webrtc::I010BufferInterface* buffer)
 {
-    switch (planeIndex) {
-        case 0U: // Y
-            return width * height * 2;
-        case 1U: // U
-        case 2U: // V
-            return (width / 2) * (height / 2) * 2;
-        default:
-            break;
+    if (buffer) {
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/api/video/i010_buffer.cc#43
+        switch (planeIndex) {
+            case 0U: // Y
+                return buffer->StrideY() * buffer->height() * 2;
+            case 1U: // U
+                return buffer->StrideU() * halfHeight(buffer) * 2;
+            case 2U: // V
+                return buffer->StrideV() * halfHeight(buffer) * 2;
+            default:
+                assert(false);
+                break;
+        }
     }
     return 0;
 }
 
-int VideoFrameImpl::dataSizeI210(size_t planeIndex, int width, int height)
+int VideoFrameImpl::dataSizeI210(size_t planeIndex, const webrtc::I210BufferInterface* buffer)
 {
-    switch (planeIndex) {
-        case 0U: // Y
-            return width * height * 2;
-        case 1U: // U
-        case 2U: // V
-            return (width / 2) * height * 2;
-        default:
-            break;
+    if (buffer) {
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/api/video/i210_buffer.cc#44
+        switch (planeIndex) {
+            case 0U: // Y
+                return buffer->StrideY() * buffer->height() * 2;
+            case 1U: // U
+                return buffer->StrideU() * buffer->height() * 2;
+            case 2U: // V
+                return buffer->StrideV() * buffer->height() * 2;
+            default:
+                assert(false);
+                break;
+        }
     }
     return 0;
 }
 
-int VideoFrameImpl::dataSizeI410(size_t planeIndex, int width, int height)
+int VideoFrameImpl::dataSizeI410(size_t planeIndex, const webrtc::I410BufferInterface* buffer)
 {
-    switch (planeIndex) {
-        case 0U: // Y
-        case 1U: // U
-        case 2U: // V
-            return width * height * 2;
-        default:
-            break;
+    if (buffer) {
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/api/video/i410_buffer.cc#46
+        switch (planeIndex) {
+            case 0U: // Y
+                return buffer->StrideY() * buffer->height() * 2;
+            case 1U: // U
+                return buffer->StrideU() * buffer->height() * 2;
+            case 2U: // V
+                return buffer->StrideV() * buffer->height() * 2;
+            default:
+                assert(false);
+                break;
+        }
     }
     return 0;
 }
 
-int VideoFrameImpl::dataSizeNV12(size_t planeIndex, int width, int height)
+int VideoFrameImpl::dataSizeNV12(size_t planeIndex, const webrtc::NV12BufferInterface* buffer)
 {
-    switch (planeIndex) {
-        case 0U: // Y
-            return width * height;
-        case 1U: // UV
-            return width * height / 2;
+    if (buffer) {
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/api/video/nv12_buffer.cc#37
+        switch (planeIndex) {
+            case 0U: // Y
+                return buffer->StrideY() * buffer->height();
+            case 1U: // UV
+                return buffer->StrideUV() * halfHeight(buffer);
+            default:
+                assert(false);
+                break;
+        }
     }
     return 0;
 }

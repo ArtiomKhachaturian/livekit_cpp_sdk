@@ -395,7 +395,7 @@ void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionI
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
                 impl->logInfo("request to set remote " + desc->type());
-                thread->PostTask([desc = patch(std::move(desc)),
+                thread->PostTask([desc = std::move(desc),
                                   observer = _setRemoteSdpObserver,
                                   implRef = weak(impl)]() mutable {
                     if (const auto impl = implRef.lock()) {

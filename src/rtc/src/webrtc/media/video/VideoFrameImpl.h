@@ -48,13 +48,13 @@ private:
     static const std::byte* data(size_t planeIndex, const webrtc::PlanarYuv8Buffer* buffer);
     static const std::byte* data(size_t planeIndex, const webrtc::PlanarYuv16BBuffer* buffer);
     static const std::byte* data(size_t planeIndex, const webrtc::BiplanarYuv8Buffer* buffer);
-    static int dataSizeI420(size_t planeIndex, int width, int height);
-    static int dataSizeI422(size_t planeIndex, int width, int height);
-    static int dataSizeI444(size_t planeIndex, int width, int height);
-    static int dataSizeI010(size_t planeIndex, int width, int height);
-    static int dataSizeI210(size_t planeIndex, int width, int height);
-    static int dataSizeI410(size_t planeIndex, int width, int height);
-    static int dataSizeNV12(size_t planeIndex, int width, int height);
+    static int dataSizeI420(size_t planeIndex, const webrtc::I420BufferInterface* buffer);
+    static int dataSizeI422(size_t planeIndex, const webrtc::I422BufferInterface* buffer);
+    static int dataSizeI444(size_t planeIndex, const webrtc::I444BufferInterface* buffer);
+    static int dataSizeI010(size_t planeIndex, const webrtc::I010BufferInterface* buffer);
+    static int dataSizeI210(size_t planeIndex, const webrtc::I210BufferInterface* buffer);
+    static int dataSizeI410(size_t planeIndex, const webrtc::I410BufferInterface* buffer);
+    static int dataSizeNV12(size_t planeIndex, const webrtc::NV12BufferInterface* buffer);
 private:
     const rtc::scoped_refptr<webrtc::VideoFrameBuffer> _buffer;
 };

@@ -32,7 +32,6 @@ public:
     static webrtc::scoped_refptr<webrtc::NV12BufferInterface>
         toNV12(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
                const VideoFrameBufferPool& pool = {});
-    bool consistent() const;
     // overrides of webrtc::VideoFrameBuffer
     rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
                                                               int offsetY,
