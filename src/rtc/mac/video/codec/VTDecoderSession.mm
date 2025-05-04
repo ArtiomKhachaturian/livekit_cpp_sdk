@@ -47,8 +47,7 @@ public:
     DecodePipeline(CMVideoCodecType codecType,
                    int32_t width, int32_t height,
                    VTDecoderSessionCallback* callback = nullptr,
-                   VideoFrameBufferPool framesPool = {},
-                   const std::shared_ptr<Bricks::Logger>& logger = {});
+                   VideoFrameBufferPool framesPool = {});
     OSStatus input(VTDecompressionSessionRef session,
                    CFAutoRelease<CMSampleBufferRef> encodedBufferData,
                    const webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface>& encodedBuffer,
@@ -90,8 +89,7 @@ webrtc::RTCErrorOr<VTDecoderSession> VTDecoderSession::
     create(bool hardwareAccelerated, CMVideoCodecType codecType,
            CFAutoRelease<CMVideoFormatDescriptionRef> format, OSType outputPixelFormat,
            int numberOfCores, VTDecoderSessionCallback* callback,
-           VideoFrameBufferPool framesPool,
-           const std::shared_ptr<Bricks::Logger>& logger, bool realtime)
+           VideoFrameBufferPool framesPool, bool realtime)
 {
     if (format) {
         const auto dimensions = CMVideoFormatDescriptionGetDimensions(format);
@@ -112,8 +110,7 @@ webrtc::RTCErrorOr<VTDecoderSession> VTDecoderSession::
                                                              dimensions.width,
                                                              dimensions.height,
                                                              callback,
-                                                             std::move(framesPool),
-                                                             logger);
+                                                             std::move(framesPool));
             VTDecompressionSessionRef session = nullptr;
             VTDecompressionOutputCallbackRecord record = { DecodePipeline::output, pipeline.get() };
             auto status = VTDecompressionSessionCreate(kCFAllocatorDefault, format, decoderConfig,
@@ -185,9 +182,8 @@ CFDictionaryRefAutoRelease VTDecoderSession::sourceImageAttributes(OSType pixelF
 VTDecoderSession::DecodePipeline::DecodePipeline(CMVideoCodecType codecType,
                                                  int32_t width, int32_t height,
                                                  VTDecoderSessionCallback* callback,
-                                                 VideoFrameBufferPool framesPool,
-                                                 const std::shared_ptr<Bricks::Logger>& logger)
-    :  VTSessionPipeline<VTDecoderSessionCallback>(codecType, callback, logger)
+                                                 VideoFrameBufferPool framesPool)
+    :  VTSessionPipeline<VTDecoderSessionCallback>(codecType, callback)
     , _framesPool(std::move(framesPool))
 {
 }

@@ -19,9 +19,9 @@
 namespace LiveKitCpp
 {
 
-VTH264Decoder::VTH264Decoder(bool hardwareAccelerated, const std::shared_ptr<Bricks::Logger>& logger)
+VTH264Decoder::VTH264Decoder(bool hardwareAccelerated)
     : VTDecoder(formatNV12Full(), webrtc::VideoCodecType::kVideoCodecH264,
-                hardwareAccelerated, logger, CFMemoryPool::create())
+                hardwareAccelerated, CFMemoryPool::create())
 {
 }
 
@@ -29,14 +29,13 @@ VTH264Decoder::~VTH264Decoder()
 {
 }
 
-std::unique_ptr<webrtc::VideoDecoder> VTH264Decoder::create(const webrtc::SdpVideoFormat& format,
-                                                            const std::shared_ptr<Bricks::Logger>& logger)
+std::unique_ptr<webrtc::VideoDecoder> VTH264Decoder::create(const webrtc::SdpVideoFormat& format)
 {
     std::unique_ptr<webrtc::VideoDecoder> decoder;
     if (isH264VideoFormat(format)) {
         const auto status = VideoDecoder::status(format);
         if (CodecStatus::NotSupported != status) {
-            decoder.reset(new VTH264Decoder(maybeHardwareAccelerated(status), logger));
+            decoder.reset(new VTH264Decoder(maybeHardwareAccelerated(status)));
         }
     }
     return decoder;

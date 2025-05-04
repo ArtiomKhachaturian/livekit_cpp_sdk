@@ -14,7 +14,6 @@
 #include "MacH264BitstreamParser.h"
 #include "CFAutoRelease.h"
 #include "RtcUtils.h"
-//#include "VTCommon.h"
 #include <components/video_codec/nalu_rewriter.h>
 #include <cassert>
 

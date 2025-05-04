@@ -38,9 +38,7 @@ public:
     webrtc::VideoDecoder::DecoderInfo GetDecoderInfo() const override;
     const char* ImplementationName() const override { return mediaBackendName(); }
 protected:
-    VideoDecoder(webrtc::VideoCodecType codecType,
-                 bool hardwareAccelerated,
-                 const std::shared_ptr<Bricks::Logger>& logger = {});
+    VideoDecoder(webrtc::VideoCodecType codecType, bool hardwareAccelerated);
     void sendDecodedImage(webrtc::VideoFrame& decodedImage,
                           std::optional<int32_t> decodeTimeMs = std::nullopt,
                           std::optional<uint8_t> qp = std::nullopt) const;

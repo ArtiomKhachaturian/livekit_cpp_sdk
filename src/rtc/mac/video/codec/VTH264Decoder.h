@@ -27,10 +27,9 @@ class VTH264Decoder : public VTDecoder
 {
 public:
     ~VTH264Decoder() override;
-    static std::unique_ptr<webrtc::VideoDecoder> create(const webrtc::SdpVideoFormat& format,
-                                                        const std::shared_ptr<Bricks::Logger>& logger = {});
+    static std::unique_ptr<webrtc::VideoDecoder> create(const webrtc::SdpVideoFormat& format);
 protected:
-    VTH264Decoder(bool hardwareAccelerated, const std::shared_ptr<Bricks::Logger>& logger);
+    VTH264Decoder(bool hardwareAccelerated);
     // impl. of VTDecoder
     CMVideoFormatDescriptionRef createVideoFormat(const webrtc::EncodedImage& inputImage) const final;
     CMSampleBufferRef createSampleBuffer(const webrtc::EncodedImage& inputImage,

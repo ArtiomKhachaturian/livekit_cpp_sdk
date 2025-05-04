@@ -22,6 +22,7 @@
 #include "VideoEncoderFactory.h"
 #ifdef WEBRTC_MAC
 #include "VTVideoDecoderFactory.h"
+#include "VTVideoEncoderFactory.h"
 #endif
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
@@ -79,6 +80,9 @@ std::unique_ptr<VideoDecoderFactory> CreateBuiltinVideoDecoderFactory() {
 }
 
 std::unique_ptr<VideoEncoderFactory> CreateBuiltinVideoEncoderFactory() {
+#ifdef WEBRTC_MAC
+    return std::make_unique<LiveKitCpp::VTVideoEncoderFactory>();
+#endif
     return std::make_unique<LiveKitCpp::VideoEncoderFactory>();
 }
 

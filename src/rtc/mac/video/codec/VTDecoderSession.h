@@ -49,7 +49,6 @@ public:
                int numberOfCores = 0, // auto
                VTDecoderSessionCallback* CM_NULLABLE callback = nullptr,
                VideoFrameBufferPool framesPool = {},
-               const std::shared_ptr<Bricks::Logger>& logger = {},
                bool realtime = true);
     webrtc::RTCError waitForAsynchronousFrames();
     webrtc::RTCError setOutputPoolRequestedMinimumBufferCount(int bufferPoolSize);

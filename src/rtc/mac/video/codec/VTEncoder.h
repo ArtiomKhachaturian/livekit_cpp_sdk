@@ -40,12 +40,12 @@ public:
 protected:
     VTEncoder(bool hardwareAccelerated,
               webrtc::CodecSpecificInfo codecSpecificInfo,
-              const std::shared_ptr<Bricks::Logger>& logger = {},
               const std::shared_ptr<CFMemoryPool>& memoryPool = {});
     virtual webrtc::RTCError configureCompressionSession(VTEncoderSession* session);
     virtual RtcErrorOrEncodedImageBuffer createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
                                                                             bool isKeyFrame,
                                                                             const CFMemoryPool* memoryPool = nullptr) = 0;
+    virtual int lastQp() const { return -1; }
     // overrides of VideoEncoder
     void destroySession() override;
     webrtc::RTCError setEncoderBitrate(uint32_t bitrateBps) override;

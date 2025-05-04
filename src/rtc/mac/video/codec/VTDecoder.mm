@@ -22,9 +22,8 @@ namespace LiveKitCpp
 VTDecoder::VTDecoder(OSType outputPixelFormat,
                      webrtc::VideoCodecType codecType,
                      bool hardwareAccelerated,
-                     const std::shared_ptr<Bricks::Logger>& logger,
                      const std::shared_ptr<CFMemoryPool>& memoryPool)
-    : VideoDecoder(codecType, hardwareAccelerated, logger)
+    : VideoDecoder(codecType, hardwareAccelerated)
     , _outputPixelFormat(outputPixelFormat)
     , _memoryPool(memoryPool)
     , _framesPool(VideoFrameBufferPoolSource::create())
@@ -149,7 +148,6 @@ webrtc::RTCError VTDecoder::createSession(CFAutoRelease<CMVideoFormatDescription
                                                 _numberOfCores,
                                                 this,
                                                 VideoFrameBufferPool{_framesPool},
-                                                logger(),
                                                 realtime);
         if (session.ok()) {
             _session = session.MoveValue();

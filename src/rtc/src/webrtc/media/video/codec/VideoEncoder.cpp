@@ -15,6 +15,7 @@
 #include "SafeObjAliases.h"
 #include "Utils.h"
 #include <common_video/include/bitrate_adjuster.h>
+#include <media/base/media_constants.h>
 #include <modules/video_coding/codecs/h264/include/h264.h>
 #include <modules/video_coding/utility/simulcast_utility.h>
 
@@ -63,10 +64,10 @@ private:
     std::atomic_bool _hasPendingBitrateUpdates = false;
 };
 
-VideoEncoder::VideoEncoder(bool hardwareAccelerated, webrtc::CodecSpecificInfo codecSpecificInfo,
-                           bool useTrustedBitrateController,
-                           const std::shared_ptr<Bricks::Logger>& logger)
-    : GenericCodec<webrtc::VideoEncoder>(hardwareAccelerated, logger)
+VideoEncoder::VideoEncoder(bool hardwareAccelerated,
+                           webrtc::CodecSpecificInfo codecSpecificInfo,
+                           bool useTrustedBitrateController)
+    : GenericCodec<webrtc::VideoEncoder>(hardwareAccelerated)
     , _codecSpecificInfo(std::move(codecSpecificInfo))
     , _bitrateAdjuster(useTrustedBitrateController ? std::make_unique<BitrateAdjuster>() : std::unique_ptr<BitrateAdjuster>())
 {
@@ -74,6 +75,41 @@ VideoEncoder::VideoEncoder(bool hardwareAccelerated, webrtc::CodecSpecificInfo c
 
 VideoEncoder::~VideoEncoder()
 {
+}
+
+webrtc::H264PacketizationMode VideoEncoder::packetizationModeH264(const webrtc::SdpVideoFormat& format)
+{
+    const auto it = format.parameters.find(cricket::kH264FmtpPacketizationMode);
+    if (it != format.parameters.end()) {
+        return packetizationModeH264(it->second);
+    }
+    return webrtc::H264PacketizationMode::SingleNalUnit;
+}
+
+webrtc::H264PacketizationMode VideoEncoder::packetizationModeH264(const std::string_view& mode)
+{
+    if (compareCaseInsensitive(mode, "1")) {
+        return webrtc::H264PacketizationMode::NonInterleaved;
+    }
+    return webrtc::H264PacketizationMode::SingleNalUnit;
+}
+
+webrtc::CodecSpecificInfo VideoEncoder::createH264CodecInfo(const webrtc::SdpVideoFormat& format)
+{
+    return createH264CodecInfo(packetizationModeH264(format));
+}
+
+webrtc::CodecSpecificInfo VideoEncoder::createH264CodecInfo(webrtc::H264PacketizationMode packetizationMode)
+{
+    webrtc::CodecSpecificInfo codecInfo;
+    codecInfo.codecType = webrtc::VideoCodecType::kVideoCodecH264;
+    codecInfo.codecSpecific.H264.packetization_mode = packetizationMode;
+    return codecInfo;
+}
+
+bool VideoEncoder::cabacH264IsSupported(webrtc::H264Profile profile)
+{
+    return profile >= webrtc::H264Profile::kProfileMain;
 }
 
 int32_t VideoEncoder::InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings)

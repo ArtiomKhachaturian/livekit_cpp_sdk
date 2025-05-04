@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTSessionPipeline.h
-#include "Loggable.h"
 #include "VideoUtils.h"
 #include "Utils.h"
 #include <CoreMedia/CMFormatDescription.h>
@@ -29,7 +28,7 @@ template <>
 inline bool isEncoderPipeline<VTEncoderSessionCallback>() { return true; }
 
 template <class TPipelineCallback>
-class VTSessionPipeline : public Bricks::LoggableS<>
+class VTSessionPipeline
 {
 public:
     OSStatus lastOutputStatus() const { return _lastOutputStatus.load(std::memory_order_relaxed); }
@@ -40,9 +39,7 @@ public:
     bool active() const { return _active.load(std::memory_order_relaxed); }
     void setActive(bool active = true) { _active = active; }
 protected:
-    VTSessionPipeline(CMVideoCodecType codecType,
-                      TPipelineCallback* callback = nullptr,
-                      const std::shared_ptr<Bricks::Logger>& logger = {});
+    VTSessionPipeline(CMVideoCodecType codecType, TPipelineCallback* callback = nullptr);
     ~VTSessionPipeline();
     void beginInput() { _inputFramesCount.fetch_add(1ULL); }
     OSStatus endInput(OSStatus result);
@@ -64,10 +61,8 @@ private:
 
 template <class TPipelineCallback>
 VTSessionPipeline<TPipelineCallback>::VTSessionPipeline(CMVideoCodecType codecType,
-                                                        TPipelineCallback* callback,
-                                                        const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<>(logger)
-    , _codecType(codecType)
+                                                        TPipelineCallback* callback)
+    :  _codecType(codecType)
     , _callback(callback)
 {
 }
@@ -75,18 +70,14 @@ VTSessionPipeline<TPipelineCallback>::VTSessionPipeline(CMVideoCodecType codecTy
 template <class TPipelineCallback>
 VTSessionPipeline<TPipelineCallback>::~VTSessionPipeline()
 {
-    if (canLogInfo()) {
-        if (const auto pendingFrames = pendingFramesCount()) {
-            //LOGI(logger()) << name() << ": non-" << (_isEncoderPipeline ? "encoded" : "decoded")
-             //              << " frames count is " << pendingFrames;
-        }
+    if (const auto pendingFrames = pendingFramesCount()) {
+        RTC_LOG(LS_INFO) << name() << ": non-" << (_isEncoderPipeline ? "encoded" : "decoded")
+                         << " frames count is " << pendingFrames;
     }
-    if (canLogWarning()) {
-        if (const auto errors = outputErrorsCount()) {
-            //const auto errorRatio = static_cast<uint32_t>(std::round(errors / (outputFramesCount() / 100.)));
-            //LOGI(logger()) << name() << ": " << (_isEncoderPipeline ? "encode" : "decode")
-            //               << " errors " << errorRatio << "%";
-        }
+    if (const auto errors = outputErrorsCount()) {
+        const auto errorRatio = static_cast<uint32_t>(std::round(errors / (outputFramesCount() / 100.)));
+        RTC_LOG(LS_WARNING) << name() << ": " << (_isEncoderPipeline ? "encode" : "decode")
+                            << " errors " << errorRatio << "%";
     }
 }
 

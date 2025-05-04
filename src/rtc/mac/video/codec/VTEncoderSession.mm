@@ -28,8 +28,7 @@ class VTEncoderSession::EncodePipeline : public VTSessionPipeline<VTEncoderSessi
 {
 public:
     EncodePipeline(CMVideoCodecType codecType,
-                   VTEncoderSessionCallback* callback = nullptr,
-                   const std::shared_ptr<Bricks::Logger>& logger = {});
+                   VTEncoderSessionCallback* callback = nullptr);
     OSStatus input(VTCompressionSessionRef session,
                    VTEncoderSourceFrame sourceFrame,
                    bool forceKeyFrame, VTEncodeInfoFlags* infoFlagsOut);
@@ -166,12 +165,11 @@ webrtc::RTCErrorOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
                                                               bool hardwareAccelerated,
                                                               uint32_t qpMax,
                                                               VTEncoderSessionCallback* callback,
-                                                              const std::shared_ptr<Bricks::Logger>& logger,
                                                               const std::shared_ptr<CFMemoryPool>& compressedDataAllocator)
 {
     if (const auto imageAttrs = sourceImageAttributes(width, height)) {
         VTCompressionSessionRef session = nullptr;
-        auto pipeline = std::make_unique<EncodePipeline>(codecType, callback, logger);
+        auto pipeline = std::make_unique<EncodePipeline>(codecType, callback);
         const auto dataAllocator = compressedDataAllocator ? compressedDataAllocator->allocator() : nullptr;
         const auto specs = encoderSpecification(hardwareAccelerated, width, height);
         if (specs && qpMax > 0U) {
@@ -235,9 +233,8 @@ CFArrayRefAutoRelease VTEncoderSession::createPixelFormats()
 }
 
 VTEncoderSession::EncodePipeline::EncodePipeline(CMVideoCodecType codecType,
-                                                 VTEncoderSessionCallback* callback,
-                                                 const std::shared_ptr<Bricks::Logger>& logger)
-    : VTSessionPipeline<VTEncoderSessionCallback>(codecType, callback, logger)
+                                                 VTEncoderSessionCallback* callback)
+    : VTSessionPipeline<VTEncoderSessionCallback>(codecType, callback)
 {
 }
 

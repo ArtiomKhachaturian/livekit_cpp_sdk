@@ -17,10 +17,8 @@
 namespace LiveKitCpp
 {
 
-VideoDecoder::VideoDecoder(webrtc::VideoCodecType codecType,
-                           bool hardwareAccelerated,
-                           const std::shared_ptr<Bricks::Logger>& logger)
-    : Base(hardwareAccelerated, logger)
+VideoDecoder::VideoDecoder(webrtc::VideoCodecType codecType, bool hardwareAccelerated)
+    : Base(hardwareAccelerated)
     , _codecType(codecType)
 {
 }

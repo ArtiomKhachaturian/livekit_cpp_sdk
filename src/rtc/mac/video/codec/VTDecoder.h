@@ -37,7 +37,6 @@ protected:
     VTDecoder(OSType outputPixelFormat,
               webrtc::VideoCodecType codecType,
               bool hardwareAccelerated = true,
-              const std::shared_ptr<Bricks::Logger>& logger = {},
               const std::shared_ptr<CFMemoryPool>& memoryPool = {});
     const auto& memoryPool() const noexcept { return _memoryPool; }
     CMVideoFormatDescriptionRef createInitialVideoFormat(const webrtc::RenderResolution& resolution) const;

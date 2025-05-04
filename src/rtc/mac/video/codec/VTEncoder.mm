@@ -13,23 +13,31 @@
 // limitations under the License.
 #include "VTEncoder.h"
 #include "VideoFrameBufferPoolSource.h"
-/*#include "TestFlag.h"
-#include "Platform.h"
-#include "RtcUtils.h"
-#include "Pool/NV12BuffersPool.h"*/
+#include "VideoUtils.h"
 #include "VTEncoderSourceFrame.h"
 #include "VTEncoderSession.h"
+#include "VTH264Encoder.h"
 #include "Utils.h"
+#include <api/video_codecs/h264_profile_level_id.h>
 #include <Foundation/Foundation.h>
+
+namespace
+{
+
+using namespace LiveKitCpp;
+
+VTEncoderSession createH264Compressor(bool hardwareAccelerated,
+                                      int32_t width = 640, int32_t height = 480,
+                                      CFStringRef profile = nullptr);
+}
 
 namespace LiveKitCpp
 {
 
 VTEncoder::VTEncoder(bool hardwareAccelerated,
                      webrtc::CodecSpecificInfo codecSpecificInfo,
-                     const std::shared_ptr<Bricks::Logger>& logger,
                      const std::shared_ptr<CFMemoryPool>& memoryPool)
-    : VideoEncoder(hardwareAccelerated, std::move(codecSpecificInfo), true, logger)
+    : VideoEncoder(hardwareAccelerated, std::move(codecSpecificInfo), true)
     , _memoryPool(memoryPool)
     , _framesPool(VideoFrameBufferPoolSource::create())
 {
@@ -176,8 +184,8 @@ webrtc::RTCError VTEncoder::createSession(int32_t width, int32_t height)
     destroySession();
     if (const auto vtType = toVTCodecType(type())) {
         auto session = VTEncoderSession::create(width, height, vtType.value(),
-                                                hardwareAccelerated(), qpMax(), this,
-                                                logger(), _memoryPool);
+                                                hardwareAccelerated(), qpMax(),
+                                                this, _memoryPool);
         if (session.ok()) {
             auto status = configureCompressionSession(&session.value());
             if (status.ok()) {
@@ -219,6 +227,7 @@ void VTEncoder::onEncodedImage(VTEncoderSourceFrame frame,
                 encodedImage.SetEncodedData(result.MoveValue());
                 encodedImage._encodedWidth = frame.width();
                 encodedImage._encodedHeight = frame.height();
+                encodedImage.qp_ = lastQp();
                 encodedImage.rotation_ = frame.rotation();
                 encodedImage.SetRtpTimestamp(frame.timestampRtp());
                 encodedImage.SetEncodeTime(frame.startTimestampMs(), frame.finishTimestampMs());
@@ -236,4 +245,56 @@ void VTEncoder::onError(OSStatus error, bool fatal)
     log(toRtcError(error), fatal);
 }
 
+CodecStatus VideoEncoder::status(const webrtc::SdpVideoFormat& format)
+{
+    CodecStatus status = CodecStatus::NotSupported;
+    const auto codecType = webrtc::PayloadStringToCodecType(format.name);
+    if (webrtc::VideoCodecType::kVideoCodecGeneric != codecType) {
+        switch (codecType) {
+            case webrtc::kVideoCodecVP8:
+            case webrtc::kVideoCodecVP9:
+            case webrtc::kVideoCodecAV1:
+                status = CodecStatus::SupportedSoftware;
+            default:
+                break;
+        }
+        if (webrtc::kVideoCodecH264 == codecType) {
+            if (@available(macOS 10.9, *)) {
+                static std::once_flag registerProfessionalVideoWorkflowVideoEncoders;
+                std::call_once(registerProfessionalVideoWorkflowVideoEncoders, VTRegisterProfessionalVideoWorkflowVideoEncoders);
+            }
+            CFStringRef profile = nullptr;
+            if (const auto profileLevelId = webrtc::ParseSdpForH264ProfileLevelId(format.parameters)) {
+                profile = VTH264Encoder::extractProfile(profileLevelId.value());
+                if (auto compressor = createH264Compressor(true, 1280, 720, profile)) {
+                    if (compressor.hardwareAccelerated()) {
+                        status = CodecStatus::SupportedHardware;
+                    }
+                    else {
+                        status = CodecStatus::SupportedSoftware;
+                    }
+                }
+            }
+        }
+    }
+    return status;
+}
+
 } // namespace LiveKitCpp
+
+namespace
+{
+
+VTEncoderSession createH264Compressor(bool hardwareAccelerated, int32_t width,
+                                      int32_t height, CFStringRef profile)
+{
+    auto session = VTEncoderSession::create(width, height, codecTypeH264(), hardwareAccelerated, false);
+    if (session.ok()) {
+        if (profile && !session.value().setProfileLevel(profile).ok()) {
+            return {};
+        }
+    }
+    return session.MoveValue();
+}
+
+}

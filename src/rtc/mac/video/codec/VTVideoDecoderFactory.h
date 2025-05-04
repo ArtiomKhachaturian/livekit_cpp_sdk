@@ -21,7 +21,6 @@ class VTVideoDecoderFactory : public VideoDecoderFactory
 {
 public:
     VTVideoDecoderFactory() = default;
-protected:
     // impl. of VideoDecoderFactory
     CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
                                    bool referenceScaling) const override;

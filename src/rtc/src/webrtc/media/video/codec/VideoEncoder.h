@@ -13,9 +13,12 @@
 // limitations under the License.
 #pragma once // VideoEncoder.h
 #include "GenericCodec.h"
+#include "CodecStatus.h"
 #include "SafeObj.h"
 #include <atomic>
+#include <api/video_codecs/h264_profile_level_id.h>
 #include <modules/video_coding/include/video_codec_interface.h>
+#include <modules/video_coding/codecs/h264/include/h264_globals.h>
 
 namespace webrtc {
 enum class H264Level;
@@ -33,6 +36,14 @@ public:
     // upper bound outputted adjusted bitrates as a percentage of the target bitrate
     static constexpr float minAdjustedBitratePct() { return .5f; }
     static constexpr float maxAdjustedBitratePct() { return .95f; }
+    static CodecStatus status(const webrtc::SdpVideoFormat& format);
+    static webrtc::H264PacketizationMode packetizationModeH264(const webrtc::SdpVideoFormat& format);
+    static webrtc::H264PacketizationMode packetizationModeH264(const std::string_view& mode);
+    static webrtc::CodecSpecificInfo createH264CodecInfo(const webrtc::SdpVideoFormat& format);
+    static webrtc::CodecSpecificInfo createH264CodecInfo(webrtc::H264PacketizationMode packetizationMode);
+    // https://en.wikipedia.org/wiki/Context-adaptive_binary_arithmetic_coding
+    // only supported in the Main and higher profiles (but not the extended profile)
+    bool cabacH264IsSupported(webrtc::H264Profile profile);
     // overrides of webrtc::VideoEncoder
     int32_t InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings) override;
     int32_t Release() override;
@@ -40,8 +51,9 @@ public:
     void SetRates(const RateControlParameters& parameters) override;
     EncoderInfo GetEncoderInfo() const override;
 protected:
-    VideoEncoder(bool hardwareAccelerated, webrtc::CodecSpecificInfo codecSpecificInfo,
-                 bool useTrustedBitrateController, const std::shared_ptr<Bricks::Logger>& logger = {});
+    VideoEncoder(bool hardwareAccelerated,
+                 webrtc::CodecSpecificInfo codecSpecificInfo,
+                 bool useTrustedBitrateController);
     // impl. of GenericCodec<>
     webrtc::VideoCodecType type() const noexcept final { return _codecSpecificInfo.codecType; }
     uint32_t currentBitrate() const { return _currentBitrate.load(std::memory_order_relaxed); }

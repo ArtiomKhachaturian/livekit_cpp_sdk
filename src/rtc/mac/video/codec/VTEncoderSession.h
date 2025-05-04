@@ -15,10 +15,6 @@
 #include "VTSession.h"
 #include "VTEncoderSourceFrame.h"
 
-namespace Bricks {
-class Logger;
-}
-
 namespace LiveKitCpp
 {
 
@@ -59,7 +55,6 @@ public:
                                                        bool hardwareAccelerated,
                                                        uint32_t qpMax = 100U,
                                                        VTEncoderSessionCallback* CM_NULLABLE callback = nullptr,
-                                                       const std::shared_ptr<Bricks::Logger>& logger = {},
                                                        const std::shared_ptr<CFMemoryPool>& compressedDataAllocator = {});
 private:
     VTEncoderSession(const std::shared_ptr<CFMemoryPool>& compressedDataAllocator,
