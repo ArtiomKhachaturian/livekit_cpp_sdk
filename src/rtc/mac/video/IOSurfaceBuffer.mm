@@ -112,9 +112,13 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
         if (isSupportedFormat(format)) {
             if (kIOReturnSuccess == IOSurfaceLock(buffer, kIOSurfaceLockReadOnly, nullptr)) {
                 if (isNV12Format(format)) {
-                    return rtc::make_ref_counted<NV12Buffer>(IOSurfaceAutoRelease(buffer, retain),
-                                                             std::move(framesPool),
-                                                             std::move(contentHint));
+                    auto nv12buffer = rtc::make_ref_counted<NV12Buffer>(IOSurfaceAutoRelease(buffer, retain),
+                                                                        std::move(framesPool),
+                                                                        std::move(contentHint));
+                     if (!nv12buffer->consistent()) {
+                         return nv12buffer->ToI420();
+                     }
+                     return nv12buffer;
                 }
                 if (isRGB24Format(format)) {
                     std::optional<VideoFrameType> rgbFormat;

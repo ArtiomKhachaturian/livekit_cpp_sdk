@@ -95,12 +95,12 @@ protected:
     void subsribe(bool subscribe) final;
 private:
     static QString codec(const LiveKitCpp::Stats& stats);
-    static QString outboundStats(const LiveKitCpp::Stats& stats,
-                                 const BitrateEstimator& bitrate,
-                                 const QString& codec = {});
-    static QString inboundStats(const LiveKitCpp::Stats& stats,
-                                const BitrateEstimator& bitrate,
-                                const QString& codec = {});
+    QString outboundStats(const LiveKitCpp::Stats& stats,
+                          const BitrateEstimator& bitrate,
+                          const QString& codec = {}) const;
+    QString inboundStats(const LiveKitCpp::Stats& stats,
+                        const BitrateEstimator& bitrate,
+                        const QString& codec = {}) const;
     static QString bitrateInfo(const BitrateEstimator& bitrate);
     static LiveKitCpp::Stats lookup(LiveKitCpp::StatsType type, const LiveKitCpp::StatsReport& report);
     void resetStats();

@@ -48,14 +48,7 @@ QString VideoSource::filter() const
 
 QString VideoSource::stats() const
 {
-    auto videoInfo = formatVideoInfo(frameSize(), _fpsMeter.fps());
-    if (!videoInfo.isEmpty()) {
-        QStringList report;
-        report.append(frameType());
-        report.append(std::move(videoInfo));
-        return report.join(QStringLiteral(": "));
-    }
-    return videoInfo;
+    return formatVideoInfo(frameSize(), _fpsMeter.fps());
 }
 
 void VideoSource::addOutput(QVideoSink* output)
@@ -99,16 +92,16 @@ void VideoSource::setFilter(const QString& filter)
     }
 }
 
-QString VideoSource::formatVideoInfo(const QSize& frameSize, quint16 fps)
+QString VideoSource::formatVideoInfo(const QSize& frameSize, quint16 fps) const
 {
     const auto frameInfo = toString(frameSize);
     if (!frameInfo.isEmpty()) {
-        return frameInfo + QStringLiteral(": ") + tr("%1 fps").arg(fps);
+        return frameType() + QStringLiteral(": ") + frameInfo + tr(" %1 fps").arg(fps);
     }
     return {};
 }
 
-QString VideoSource::formatVideoInfo(int frameWidth, int frameHeight, quint16 fps)
+QString VideoSource::formatVideoInfo(int frameWidth, int frameHeight, quint16 fps) const
 {
     return formatVideoInfo(QSize(frameWidth, frameHeight), fps);
 }

@@ -52,8 +52,8 @@ signals:
     void filterChanged();
     void statsChanged();
 protected:
-    static QString formatVideoInfo(const QSize& frameSize, quint16 fps);
-    static QString formatVideoInfo(int frameWidth, int frameHeight, quint16 fps);
+    QString formatVideoInfo(const QSize& frameSize, quint16 fps) const;
+    QString formatVideoInfo(int frameWidth, int frameHeight, quint16 fps) const;
     void startMetricsCollection();
     void stopMetricsCollection();
     bool isMetricsCollectionStarted() const { return _fpsMeter.isActive(); }

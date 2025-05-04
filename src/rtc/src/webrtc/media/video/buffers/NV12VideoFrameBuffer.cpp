@@ -44,15 +44,10 @@ NV12VideoFrameBuffer::NV12VideoFrameBuffer(VideoFrameBufferPool framesPool)
 {
 }
 
-int NV12VideoFrameBuffer::StrideY() const
-{
-    return width();
-}
-
-int NV12VideoFrameBuffer::StrideUV() const
+bool NV12VideoFrameBuffer::consistent() const
 {
     const auto w = width();
-    return w + w % 2;
+    return strideY(w) == StrideY() && strideUV(w) == StrideUV();
 }
 
 webrtc::scoped_refptr<webrtc::NV12BufferInterface>NV12VideoFrameBuffer::toNV12(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,

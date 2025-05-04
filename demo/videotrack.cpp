@@ -325,7 +325,7 @@ QString VideoTrack::codec(const LiveKitCpp::Stats& stats)
 
 QString VideoTrack::outboundStats(const LiveKitCpp::Stats& stats,
                                   const BitrateEstimator& bitrate,
-                                  const QString& codec)
+                                  const QString& codec) const
 {
     if (const auto rtp = stats.extOutboundRtpStream()) {
         QStringList parameters;
@@ -352,7 +352,7 @@ QString VideoTrack::outboundStats(const LiveKitCpp::Stats& stats,
 
 QString VideoTrack::inboundStats(const LiveKitCpp::Stats& stats,
                                  const BitrateEstimator& bitrate,
-                                 const QString& codec)
+                                 const QString& codec) const
 {
     if (const auto rtp = stats.extInboundRtpStream()) {
         QStringList parameters;
