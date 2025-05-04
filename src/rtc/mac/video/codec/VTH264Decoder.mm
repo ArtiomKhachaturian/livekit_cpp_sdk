@@ -34,7 +34,7 @@ std::unique_ptr<webrtc::VideoDecoder> VTH264Decoder::create(const webrtc::SdpVid
 {
     std::unique_ptr<webrtc::VideoDecoder> decoder;
     if (isH264VideoFormat(format)) {
-        const auto status = checkDecoderSupport(format);
+        const auto status = VideoDecoder::status(format);
         if (CodecStatus::NotSupported != status) {
             decoder.reset(new VTH264Decoder(maybeHardwareAccelerated(status), logger));
         }

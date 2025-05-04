@@ -69,7 +69,7 @@ int32_t VTDecoder::Decode(const webrtc::EncodedImage& inputImage, bool missingFr
         return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
     }
     if (_session) {
-        auto status = _session.lastOutputStatus();
+        const auto status = _session.lastOutputStatus();
         if (noErr != status) {
             log(toRtcError(status));
             return WEBRTC_VIDEO_CODEC_ERROR;
@@ -104,9 +104,9 @@ int32_t VTDecoder::Decode(const webrtc::EncodedImage& inputImage, bool missingFr
         return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
     }
     VTDecodeInfoFlags infoFlags;
-    auto decompressStatus = _session.decompress(sampleBuffer, inputImage, &infoFlags);
-    if (!decompressStatus.ok()) {
-        log(std::move(decompressStatus));
+    const auto status = _session.decompress(sampleBuffer, inputImage, &infoFlags);
+    if (noErr != status) {
+        log(toRtcError(status));
         return WEBRTC_VIDEO_CODEC_ERROR;
     }
     if (testFlag<kVTDecodeInfo_FrameDropped>(infoFlags)) {
@@ -195,7 +195,7 @@ void VTDecoder::onError(OSStatus error, bool fatal)
     log(toRtcError(error), fatal);
 }
 
-CodecStatus VideoDecoder::checkDecoderSupport(const webrtc::SdpVideoFormat& format)
+CodecStatus VideoDecoder::status(const webrtc::SdpVideoFormat& format)
 {
     CodecStatus status = CodecStatus::NotSupported;
     const auto codecType = webrtc::PayloadStringToCodecType(format.name);

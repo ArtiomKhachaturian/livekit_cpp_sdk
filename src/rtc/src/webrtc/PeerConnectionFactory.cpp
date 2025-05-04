@@ -72,7 +72,10 @@ inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer
 namespace webrtc {
 
 std::unique_ptr<VideoDecoderFactory> CreateBuiltinVideoDecoderFactory() {
+#ifdef WEBRTC_MAC
     return std::make_unique<LiveKitCpp::VTVideoDecoderFactory>();
+#endif
+    return std::make_unique<LiveKitCpp::VideoDecoderFactory>();
 }
 
 std::unique_ptr<VideoEncoderFactory> CreateBuiltinVideoEncoderFactory() {

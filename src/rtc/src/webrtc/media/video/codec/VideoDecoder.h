@@ -28,7 +28,7 @@ class VideoDecoder : public GenericCodec<webrtc::VideoDecoder>
                                                                     std::optional<uint8_t>);
 public:
     static int maxDecodingThreads(int width, int height, int maxCores);
-    static CodecStatus checkDecoderSupport(const webrtc::SdpVideoFormat& format);
+    static CodecStatus status(const webrtc::SdpVideoFormat& format);
     // impl. of GenericCodec<>
     webrtc::VideoCodecType type() const noexcept final { return _codecType; }
     // impl. or overrides of GenericCodec<webrtc::VideoDecoder>

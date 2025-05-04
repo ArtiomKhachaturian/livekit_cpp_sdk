@@ -116,9 +116,13 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
             CVPixelBufferAutoRelease lockedBuffer(buffer, retain);
             if (lockedBuffer.lock()) {
                 if (isNV12Format(format)) {
-                    return rtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer),
-                                                             std::move(framesPool),
-                                                             std::move(contentHint));
+                    auto nv12 = rtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer),
+                                                                  std::move(framesPool),
+                                                                  std::move(contentHint));
+                    if (!nv12->consistent()) {
+                        return nv12->ToI420();
+                    }
+                    return nv12;
                 }
                 if (isRGBFormat(format)) {
                     std::optional<VideoFrameType> rgbFormat;

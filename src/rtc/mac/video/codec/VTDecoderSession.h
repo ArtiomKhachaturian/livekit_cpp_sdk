@@ -53,9 +53,9 @@ public:
                bool realtime = true);
     webrtc::RTCError waitForAsynchronousFrames();
     webrtc::RTCError setOutputPoolRequestedMinimumBufferCount(int bufferPoolSize);
-    webrtc::RTCError decompress(CMSampleBufferRef CM_NONNULL encodedBufferData,
-                                const webrtc::EncodedImage& image,
-                                VTDecodeInfoFlags* CM_NULLABLE infoFlags = nullptr) const;
+    OSStatus decompress(CMSampleBufferRef CM_NONNULL encodedBufferData,
+                        const webrtc::EncodedImage& image,
+                        VTDecodeInfoFlags* CM_NULLABLE infoFlags = nullptr) const;
     // impl. of VTSession
     uint64_t pendingFramesCount() const final;
     OSStatus lastOutputStatus() const final;

@@ -23,7 +23,7 @@ webrtc::VideoDecoderFactory::CodecSupport VTVideoDecoderFactory::
                       bool referenceScaling) const
 {
     auto support = VideoDecoderFactory::QueryCodecSupport(format, referenceScaling);
-    if (support.is_supported && CodecStatus::SupportedHardware == VTDecoder::checkDecoderSupport(format)) {
+    if (support.is_supported && maybeHardwareAccelerated(VideoDecoder::status(format))) {
         support.is_power_efficient = true;
     }
     return support;
@@ -33,8 +33,7 @@ std::unique_ptr<webrtc::VideoDecoder> VTVideoDecoderFactory::Create(const webrtc
                                                                     const webrtc::SdpVideoFormat& format)
 {
     if (isH264VideoFormat(format)) {
-        auto decoder = VTH264Decoder::create(format);
-        if (decoder) {
+        if (auto decoder = VTH264Decoder::create(format)) {
             return decoder;
         }
     }

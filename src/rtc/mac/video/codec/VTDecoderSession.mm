@@ -49,11 +49,11 @@ public:
                    VTDecoderSessionCallback* callback = nullptr,
                    VideoFrameBufferPool framesPool = {},
                    const std::shared_ptr<Bricks::Logger>& logger = {});
-    webrtc::RTCError input(VTDecompressionSessionRef session,
-                           CFAutoRelease<CMSampleBufferRef> encodedBufferData,
-                           const webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface>& encodedBuffer,
-                           uint32_t timestamp, VTDecodeInfoFlags* infoFlags = nullptr,
-                           int qp = -1, const webrtc::ColorSpace* colorSpace = nullptr);
+    OSStatus input(VTDecompressionSessionRef session,
+                   CFAutoRelease<CMSampleBufferRef> encodedBufferData,
+                   const webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface>& encodedBuffer,
+                   uint32_t timestamp, VTDecodeInfoFlags* infoFlags = nullptr,
+                   int qp = -1, const webrtc::ColorSpace* colorSpace = nullptr);
     static void output(void* pipeline, void *params, OSStatus status,
                        VTDecodeInfoFlags infoFlags, CVImageBufferRef imageBuffer,
                        CMTime timestamp, CMTime duration);
@@ -146,18 +146,18 @@ webrtc::RTCError VTDecoderSession::setOutputPoolRequestedMinimumBufferCount(int 
     return setProperty(kVTDecompressionPropertyKey_OutputPoolRequestedMinimumBufferCount, bufferPoolSize);
 }
 
-webrtc::RTCError VTDecoderSession::decompress(CMSampleBufferRef encodedBufferData,
-                                              const webrtc::EncodedImage& image,
-                                              VTDecodeInfoFlags* infoFlags) const
+OSStatus VTDecoderSession::decompress(CMSampleBufferRef encodedBufferData,
+                                      const webrtc::EncodedImage& image,
+                                      VTDecodeInfoFlags* infoFlags) const
 {
     if (_pipeline) {
         if (const auto encodedBuffer = image.GetEncodedData()) {
             return _pipeline->input(sessionRef(), encodedBufferData, encodedBuffer, image.RtpTimestamp(),
                                     infoFlags, image.qp_, image.ColorSpace());
         }
-        return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return kVTParameterErr;
     }
-    return toRtcError(kVTInvalidSessionErr, webrtc::RTCErrorType::INVALID_STATE);
+    return kVTInvalidSessionErr;
 }
 
 uint64_t VTDecoderSession::pendingFramesCount() const
@@ -192,21 +192,21 @@ VTDecoderSession::DecodePipeline::DecodePipeline(CMVideoCodecType codecType,
 {
 }
 
-webrtc::RTCError VTDecoderSession::DecodePipeline::input(VTDecompressionSessionRef session,
-                                                         CFAutoRelease<CMSampleBufferRef> encodedBufferData,
-                                                         const webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface>& encodedBuffer,
-                                                         uint32_t timestamp, VTDecodeInfoFlags* infoFlags,
-                                                         int qp, const webrtc::ColorSpace* colorspace)
+OSStatus VTDecoderSession::DecodePipeline::input(VTDecompressionSessionRef session,
+                                                 CFAutoRelease<CMSampleBufferRef> encodedBufferData,
+                                                 const webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface>& encodedBuffer,
+                                                 uint32_t timestamp, VTDecodeInfoFlags* infoFlags,
+                                                 int qp, const webrtc::ColorSpace* colorspace)
 {
     if (session && encodedBuffer) {
         adjustPresentationTimestamp(encodedBufferData, timestamp);
         auto encodedData = std::make_unique<EncodedData>(encodedBuffer, timestamp, qp, colorspace);
         beginInput();
-        return toRtcError(endInput(VTDecompressionSessionDecodeFrame(session, encodedBufferData,
-                                                                     kVTDecodeFrame_EnableAsynchronousDecompression,
-                                                                     encodedData.release(), infoFlags)));
+        return endInput(VTDecompressionSessionDecodeFrame(session, encodedBufferData,
+                                                          kVTDecodeFrame_EnableAsynchronousDecompression,
+                                                          encodedData.release(), infoFlags));
     }
-    return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
+    return kVTParameterErr;
 }
 
 void VTDecoderSession::DecodePipeline::output(void* pipeline, void *params, OSStatus status,
