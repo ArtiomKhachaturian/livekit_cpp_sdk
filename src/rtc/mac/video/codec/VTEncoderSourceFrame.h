@@ -30,6 +30,7 @@ namespace LiveKitCpp
 class VTEncoderSourceFrame
 {
     using PixelBuffer = webrtc::RTCErrorOr<CVPixelBufferAutoRelease>;
+    class Planes;
 public:
     VTEncoderSourceFrame() = default;
     ~VTEncoderSourceFrame();

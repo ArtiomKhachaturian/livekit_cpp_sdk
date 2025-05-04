@@ -12,76 +12,79 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoDecoderFactory.h"
-#include <absl/strings/match.h>
-#include <api/environment/environment.h>
-#include <api/video_codecs/av1_profile.h>
-#include <api/video_codecs/sdp_video_format.h>
-#include <api/video_codecs/video_codec.h>
-#include <media/base/codec.h>
-#include <media/base/media_constants.h>
-#include <modules/video_coding/codecs/h264/include/h264.h>
-#include <modules/video_coding/codecs/vp8/include/vp8.h>
-#include <modules/video_coding/codecs/vp9/include/vp9.h>
-#include <modules/video_coding/codecs/av1/dav1d_decoder.h>
-#include <rtc_base/checks.h>
+#include "VideoUtils.h"
+#include <api/video_codecs/video_decoder_factory_template.h>
+#include <api/video_codecs/video_decoder_factory_template_dav1d_adapter.h>  // nogncheck
+#include <api/video_codecs/video_decoder_factory_template_libvpx_vp8_adapter.h>
+#include <api/video_codecs/video_decoder_factory_template_libvpx_vp9_adapter.h>
+#include <api/video_codecs/video_decoder_factory_template_open_h264_adapter.h>  // nogncheck
 #include <rtc_base/logging.h>
-#include <system_wrappers/include/field_trial.h>
+
+namespace {
+
+using Factory = webrtc::VideoDecoderFactoryTemplate<webrtc::LibvpxVp8DecoderTemplateAdapter,
+                                                    //webrtc::OpenH264DecoderTemplateAdapter,
+                                                    webrtc::Dav1dDecoderTemplateAdapter,
+                                                    webrtc::LibvpxVp9DecoderTemplateAdapter>;
+}
 
 namespace LiveKitCpp
 {
 
-std::vector<webrtc::SdpVideoFormat> VideoDecoderFactory::GetSupportedFormats() const
+VideoDecoderFactory::VideoDecoderFactory()
+    : _defaultFallback(std::make_unique<Factory>())
 {
-    std::vector<webrtc::SdpVideoFormat> formats;
-    formats.push_back(webrtc::SdpVideoFormat::VP8());
-    for (const auto& format : webrtc::SupportedVP9DecoderCodecs()) {
-        formats.push_back(format);
-    }
-    for (const auto& h264_format : webrtc::SupportedH264DecoderCodecs()) {
-        formats.push_back(h264_format);
-    }
-    formats.push_back(webrtc::SdpVideoFormat::AV1Profile0());
-    formats.push_back(webrtc::SdpVideoFormat::AV1Profile1());
-    return formats;
 }
 
-webrtc::VideoDecoderFactory::CodecSupport VideoDecoderFactory::
-    QueryCodecSupport(const webrtc::SdpVideoFormat& format, bool referenceScaling) const {
-    // Query for supported formats and check if the specified format is supported.
-    // Return unsupported if an invalid combination of format and
-    // reference_scaling is specified.
-    if (referenceScaling) {
-        auto codec = webrtc::PayloadStringToCodecType(format.name);
-        if (codec != webrtc::kVideoCodecVP9 && codec != webrtc::kVideoCodecAV1) {
-            return {/*is_supported=*/false, /*is_power_efficient=*/false};
-        }
-    }
-    CodecSupport codec_support;
-    codec_support.is_supported = format.IsCodecInList(GetSupportedFormats());
-    return codec_support;
+std::vector<webrtc::SdpVideoFormat> VideoDecoderFactory::GetSupportedFormats() const
+{
+    return mergeFormats(_defaultFallback.get(), customFormats());
 }
 
 std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
-    Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format) {
-    if (!format.IsCodecInList(GetSupportedFormats())) {
-        RTC_LOG(LS_WARNING) << "Trying to create decoder for unsupported format. "
-                            << format.ToString();
-        return nullptr;
+    Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
+{
+    std::unique_ptr<webrtc::VideoDecoder> decoder;
+    if (const auto originalFormat = webrtc::FuzzyMatchSdpVideoFormat(GetSupportedFormats(), format)) {
+        decoder = customDecoder(env, originalFormat.value());
+        if (!decoder) {
+            decoder = defaultDecoder(env, originalFormat.value());
+        }
+        if (!decoder) {
+            RTC_LOG(LS_ERROR) << "Decoder for video format [" << originalFormat.value() << "] was not found";
+        }
     }
-    if (absl::EqualsIgnoreCase(format.name, cricket::kVp8CodecName)) {
-        return webrtc::CreateVp8Decoder(env);
+    else {
+        RTC_LOG(LS_ERROR) << "Requested video format [" << format << "] is not suitable for decoder factory";
     }
-    if (absl::EqualsIgnoreCase(format.name, cricket::kVp9CodecName)) {
-        return webrtc::VP9Decoder::Create();
+    return decoder;
+}
+
+webrtc::VideoDecoderFactory::CodecSupport VideoDecoderFactory::
+    QueryCodecSupport(const webrtc::SdpVideoFormat& format, bool referenceScaling) const
+{
+    auto support = webrtc::VideoDecoderFactory::QueryCodecSupport(format, referenceScaling);
+    if (support.is_supported) {
+        support.is_power_efficient = powerEfficient(format);
     }
-    if (absl::EqualsIgnoreCase(format.name, cricket::kH264CodecName)) {
-        return webrtc::H264Decoder::Create();
-    }
-    if (absl::EqualsIgnoreCase(format.name, cricket::kAv1CodecName)) {
-        return webrtc::CreateDav1dDecoder();
-    }
-    RTC_DCHECK_NOTREACHED();
+    return support;
+}
+
+std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
+    defaultDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format) const
+{
+    return _defaultFallback->Create(env, format);
+}
+
+std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
+    customDecoder(const webrtc::Environment& /*env*/, const webrtc::SdpVideoFormat& /*format*/)
+{
     return nullptr;
+}
+
+bool VideoDecoderFactory::powerEfficient(const webrtc::SdpVideoFormat& format) const
+{
+    return maybeHardwareAccelerated(decoderStatus(format));
 }
 
 } // namespace LiveKitCpp

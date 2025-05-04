@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoEncoderFactory.h"
-#include <absl/types/optional.h>
-#include <api/environment/environment.h>
-#include <api/video_codecs/sdp_video_format.h>
-#include <api/video_codecs/video_encoder_factory.h>
+#include "VideoUtils.h"
 #include <api/video_codecs/video_encoder_factory_template.h>
 #include <api/video_codecs/video_encoder_factory_template_libaom_av1_adapter.h>  // nogncheck
 #include <api/video_codecs/video_encoder_factory_template_libvpx_vp8_adapter.h>
 #include <api/video_codecs/video_encoder_factory_template_libvpx_vp9_adapter.h>
 #include <api/video_codecs/video_encoder_factory_template_open_h264_adapter.h>  // nogncheck
+#include <rtc_base/logging.h>
 
 namespace {
 
 using Factory = webrtc::VideoEncoderFactoryTemplate<webrtc::LibvpxVp8EncoderTemplateAdapter,
-                                                    webrtc::OpenH264EncoderTemplateAdapter,
+                                                    //webrtc::OpenH264EncoderTemplateAdapter,
                                                     webrtc::LibaomAv1EncoderTemplateAdapter,
                                                     webrtc::LibvpxVp9EncoderTemplateAdapter>;
 }
@@ -34,34 +32,59 @@ namespace LiveKitCpp
 {
 
 VideoEncoderFactory::VideoEncoderFactory()
-    : _factory(std::make_unique<Factory>())
+    : _defaultFallback(std::make_unique<Factory>())
 {
 }
 
 std::vector<webrtc::SdpVideoFormat> VideoEncoderFactory::GetSupportedFormats() const
 {
-    return _factory->GetSupportedFormats();
+    return mergeFormats(_defaultFallback.get(), customFormats());
+}
+
+std::unique_ptr<webrtc::VideoEncoder> VideoEncoderFactory::
+    Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
+{
+    std::unique_ptr<webrtc::VideoEncoder> encoder;
+    if (const auto originalFormat = webrtc::FuzzyMatchSdpVideoFormat(GetSupportedFormats(), format)) {
+        encoder = customEncoder(env, originalFormat.value());
+        if (!encoder) {
+            encoder = defaultEncoder(env, originalFormat.value());
+        }
+        if (!encoder) {
+            RTC_LOG(LS_ERROR) << "Encoder for video format [" << originalFormat.value() << "] was not found";
+        }
+    }
+    else {
+        RTC_LOG(LS_ERROR) << "Requested video format [" << format << "] is not suitable for encoder factory";
+    }
+    return encoder;
 }
 
 webrtc::VideoEncoderFactory::CodecSupport VideoEncoderFactory::
-    QueryCodecSupport(const webrtc::SdpVideoFormat& format,
-                      std::optional<std::string> scalabilityMode) const
+    QueryCodecSupport(const webrtc::SdpVideoFormat& format, std::optional<std::string> scalabilityMode) const
 {
-    const auto originalFormat = webrtc::FuzzyMatchSdpVideoFormat(_factory->GetSupportedFormats(), format);
-    if (originalFormat) {
-        return _factory->QueryCodecSupport(originalFormat.value(), std::move(scalabilityMode));
+    auto support = webrtc::VideoEncoderFactory::QueryCodecSupport(format, scalabilityMode);
+    if (support.is_supported) {
+        support.is_power_efficient = powerEfficient(format);
     }
-    return {};
+    return support;
 }
 
-std::unique_ptr<webrtc::VideoEncoder> VideoEncoderFactory::Create(const webrtc::Environment& env,
-                                                                  const webrtc::SdpVideoFormat& format)
+std::unique_ptr<webrtc::VideoEncoder> VideoEncoderFactory::
+    defaultEncoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format) const
 {
-    const auto originalFormat = webrtc::FuzzyMatchSdpVideoFormat(_factory->GetSupportedFormats(), format);
-    if (originalFormat) {
-        return _factory->Create(env, originalFormat.value());
-    }
+    return _defaultFallback->Create(env, format);
+}
+
+std::unique_ptr<webrtc::VideoEncoder> VideoEncoderFactory::
+    customEncoder(const webrtc::Environment& /*env*/, const webrtc::SdpVideoFormat& /*format*/)
+{
     return nullptr;
+}
+
+bool VideoEncoderFactory::powerEfficient(const webrtc::SdpVideoFormat& format) const
+{
+    return maybeHardwareAccelerated(encoderStatus(format));
 }
 
 } // namespace LiveKitCpp

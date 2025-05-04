@@ -56,34 +56,15 @@ inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer
             return std::shared_ptr<webrtc::Thread>(thread.release());
         }
         if (logger) {
-            logger->logError("Failed to start of '" + std::string(threadName)
+            logger->logError("failed to start of '" + std::string(threadName)
                              + "' thread", g_pcfInit);
         }
     }
     else if (logger) {
-        logger->logError("Failed to create of '" + std::string(threadName)
+        logger->logError("failed to create of '" + std::string(threadName)
                          + "' thread", g_pcfInit);
     }
     return nullptr;
-}
-
-
-}
-
-namespace webrtc {
-
-std::unique_ptr<VideoDecoderFactory> CreateBuiltinVideoDecoderFactory() {
-#ifdef WEBRTC_MAC
-    return std::make_unique<LiveKitCpp::VTVideoDecoderFactory>();
-#endif
-    return std::make_unique<LiveKitCpp::VideoDecoderFactory>();
-}
-
-std::unique_ptr<VideoEncoderFactory> CreateBuiltinVideoEncoderFactory() {
-#ifdef WEBRTC_MAC
-    return std::make_unique<LiveKitCpp::VTVideoEncoderFactory>();
-#endif
-    return std::make_unique<LiveKitCpp::VideoEncoderFactory>();
 }
 
 }
@@ -181,8 +162,13 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     dependencies.worker_thread = workingThread.get();
     dependencies.signaling_thread = signalingThread.get();
     dependencies.task_queue_factory = createTaskQueueFactory();
-    dependencies.video_decoder_factory = webrtc::CreateBuiltinVideoDecoderFactory();
-    dependencies.video_encoder_factory = webrtc::CreateBuiltinVideoEncoderFactory();
+#ifdef WEBRTC_MAC
+    dependencies.video_decoder_factory = std::make_unique<VTVideoDecoderFactory>();
+    dependencies.video_encoder_factory = std::make_unique<VTVideoEncoderFactory>();
+#else
+    dependencies.video_decoder_factory = std::make_unique<VideoDecoderFactory>();
+    dependencies.video_encoder_factory = std::make_unique<VideoEncoderFactory>();
+#endif
     dependencies.audio_decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
     dependencies.audio_encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
     

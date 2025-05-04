@@ -12,30 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoEncoder.h"
+#include "H264Utils.h"
 #include "SafeObjAliases.h"
 #include "Utils.h"
 #include <common_video/include/bitrate_adjuster.h>
-#include <media/base/media_constants.h>
-#include <modules/video_coding/codecs/h264/include/h264.h>
 #include <modules/video_coding/utility/simulcast_utility.h>
-
-namespace
-{
-
-float maxAllowedFrameRateH264(webrtc::H264Level level, uint16_t width, uint16_t height, float maxFrameRate);
-
-template <class TCodecSource>
-inline float maxAllowedFrameRate(webrtc::H264Level level, const TCodecSource* source)
-{
-    if (source) {
-        return maxAllowedFrameRateH264(level, static_cast<uint16_t>(source->width),
-                                       static_cast<uint16_t>(source->height),
-                                       source->maxFramerate);
-    }
-    return 0.f;
-}
-
-} // namespace
 
 namespace LiveKitCpp
 {
@@ -75,41 +56,6 @@ VideoEncoder::VideoEncoder(bool hardwareAccelerated,
 
 VideoEncoder::~VideoEncoder()
 {
-}
-
-webrtc::H264PacketizationMode VideoEncoder::packetizationModeH264(const webrtc::SdpVideoFormat& format)
-{
-    const auto it = format.parameters.find(cricket::kH264FmtpPacketizationMode);
-    if (it != format.parameters.end()) {
-        return packetizationModeH264(it->second);
-    }
-    return webrtc::H264PacketizationMode::SingleNalUnit;
-}
-
-webrtc::H264PacketizationMode VideoEncoder::packetizationModeH264(const std::string_view& mode)
-{
-    if (compareCaseInsensitive(mode, "1")) {
-        return webrtc::H264PacketizationMode::NonInterleaved;
-    }
-    return webrtc::H264PacketizationMode::SingleNalUnit;
-}
-
-webrtc::CodecSpecificInfo VideoEncoder::createH264CodecInfo(const webrtc::SdpVideoFormat& format)
-{
-    return createH264CodecInfo(packetizationModeH264(format));
-}
-
-webrtc::CodecSpecificInfo VideoEncoder::createH264CodecInfo(webrtc::H264PacketizationMode packetizationMode)
-{
-    webrtc::CodecSpecificInfo codecInfo;
-    codecInfo.codecType = webrtc::VideoCodecType::kVideoCodecH264;
-    codecInfo.codecSpecific.H264.packetization_mode = packetizationMode;
-    return codecInfo;
-}
-
-bool VideoEncoder::cabacH264IsSupported(webrtc::H264Profile profile)
-{
-    return profile >= webrtc::H264Profile::kProfileMain;
 }
 
 int32_t VideoEncoder::InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings)
@@ -164,7 +110,7 @@ void VideoEncoder::SetRates(const RateControlParameters& parameters)
 webrtc::VideoEncoder::EncoderInfo VideoEncoder::GetEncoderInfo() const
 {
     webrtc::VideoEncoder::EncoderInfo encoderInfo;
-    encoderInfo.supports_native_handle = true; // RGB buffers
+    encoderInfo.supports_native_handle = true;
     encoderInfo.implementation_name = mediaBackendName();
     encoderInfo.is_hardware_accelerated = hardwareAccelerated();
     encoderInfo.has_trusted_rate_controller = nullptr != _bitrateAdjuster.get();
@@ -172,8 +118,8 @@ webrtc::VideoEncoder::EncoderInfo VideoEncoder::GetEncoderInfo() const
         case webrtc::VideoCodecType::kVideoCodecH264:
             encoderInfo.requested_resolution_alignment = 1;
             encoderInfo.apply_alignment_to_all_simulcast_layers = false;
-            encoderInfo.scaling_settings = webrtc::VideoEncoder::ScalingSettings(lowH264QpThreshold(),
-                                                                                 highH264QpThreshold());
+            encoderInfo.scaling_settings = webrtc::VideoEncoder::ScalingSettings(H264Utils::lowQpThreshold(),
+                                                                                 H264Utils::highQpThreshold());
             break;
         default:
             break;
@@ -238,38 +184,6 @@ bool VideoEncoder::dropNextFrame()
         setCurrentBitrate(_bitrateAdjuster->adjustedBitrate());
     }
     return drop;
-}
-
-webrtc::VideoCodec VideoEncoder::toH264Settings(const webrtc::VideoCodec& settings,
-                                                webrtc::H264Level level)
-{
-    webrtc::VideoCodec h264;
-    h264.codecType = webrtc::VideoCodecType::kVideoCodecH264;
-    h264.width = settings.width;
-    h264.height = settings.height;
-    h264.startBitrate = settings.startBitrate;
-    h264.maxBitrate = settings.maxBitrate;
-    h264.minBitrate = settings.minBitrate;
-    h264.maxFramerate = static_cast<uint32_t>(maxAllowedFrameRate(level, &settings) + 0.5f);
-    h264.active = settings.active;
-    h264.qpMax = settings.qpMax;
-    h264.numberOfSimulcastStreams = settings.numberOfSimulcastStreams;
-    for (int i = 0; i < webrtc::kMaxSimulcastStreams; ++i) {
-        h264.simulcastStream[i] = settings.simulcastStream[i];
-        h264.simulcastStream[i].maxFramerate = maxAllowedFrameRate(level, &h264.simulcastStream[i]);
-    }
-    for (int i = 0; i < webrtc::kMaxSpatialLayers; ++i) {
-        h264.spatialLayers[i] = settings.spatialLayers[i];
-        h264.spatialLayers[i].maxFramerate = maxAllowedFrameRate(level, &h264.spatialLayers[i]);
-    }
-    h264.mode = settings.mode;
-    h264.expect_encode_from_texture = settings.expect_encode_from_texture;
-    h264.timing_frame_thresholds = settings.timing_frame_thresholds;
-    h264.legacy_conference_mode = settings.legacy_conference_mode;
-    //h264.H264()->frameDroppingOn = settings.H264().frameDroppingOn;
-    h264.H264()->keyFrameInterval = settings.H264().keyFrameInterval;
-    h264.H264()->numberOfTemporalLayers = settings.H264().numberOfTemporalLayers;
-    return h264;
 }
 
 bool VideoEncoder::keyFrameRequested(const std::vector<webrtc::VideoFrameType>* frameTypes)
@@ -394,57 +308,3 @@ std::shared_ptr<webrtc::BitrateAdjuster> VideoEncoder::BitrateAdjuster::createIm
 }
 
 } // namespace LiveKitCpp
-
-namespace
-{
-    
-inline unsigned long maxSampleRateH264(webrtc::H264Level level)
-{
-    switch (level) {
-        case webrtc::H264Level::kLevel3:
-            return 10368000;
-        case webrtc::H264Level::kLevel3_1:
-            return 27648000;
-        case webrtc::H264Level::kLevel3_2:
-            return 55296000;
-        case webrtc::H264Level::kLevel4:
-        case webrtc::H264Level::kLevel4_1:
-            return 62914560;
-        case webrtc::H264Level::kLevel4_2:
-            return 133693440;
-        case webrtc::H264Level::kLevel5:
-            return 150994944;
-        case webrtc::H264Level::kLevel5_1:
-            return 251658240;
-        case webrtc::H264Level::kLevel5_2:
-            return 530841600;
-        case webrtc::H264Level::kLevel1:
-        case webrtc::H264Level::kLevel1_b:
-        case webrtc::H264Level::kLevel1_1:
-        case webrtc::H264Level::kLevel1_2:
-        case webrtc::H264Level::kLevel1_3:
-        case webrtc::H264Level::kLevel2:
-        case webrtc::H264Level::kLevel2_1:
-        case webrtc::H264Level::kLevel2_2:
-        default:
-            // Zero means auto rate setting.
-            break;
-    }
-    return 0; // zero means auto rate setting
-}
-    
-float maxAllowedFrameRateH264(webrtc::H264Level level, uint16_t width,
-                              uint16_t height, float maxFrameRate)
-{
-    if (width && height) {
-        if (const auto maxSampleRate = maxSampleRateH264(level)) {
-            const uint32_t alignedWidth = (((width + 15) >> 4) << 4);
-            const uint32_t alignedHeight = (((height + 15) >> 4) << 4);
-            return std::min<float>(maxFrameRate, (1.f * maxSampleRate) / (alignedWidth * alignedHeight));
-        }
-        return maxFrameRate;
-    }
-    return 0.f;
-}
-    
-}

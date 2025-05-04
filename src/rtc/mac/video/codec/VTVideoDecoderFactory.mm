@@ -13,31 +13,24 @@
 // limitations under the License.
 #include "VTVideoDecoderFactory.h"
 #include "VideoUtils.h"
+#include "H264Utils.h"
 #include "VTH264Decoder.h"
 
 namespace LiveKitCpp
 {
 
-webrtc::VideoDecoderFactory::CodecSupport VTVideoDecoderFactory::
-    QueryCodecSupport(const webrtc::SdpVideoFormat& format,
-                      bool referenceScaling) const
+std::vector<webrtc::SdpVideoFormat> VTVideoDecoderFactory::customFormats() const
 {
-    auto support = VideoDecoderFactory::QueryCodecSupport(format, referenceScaling);
-    if (support.is_supported && maybeHardwareAccelerated(VideoDecoder::status(format))) {
-        support.is_power_efficient = true;
-    }
-    return support;
+    return H264Utils::supportedFormats(false);
 }
 
-std::unique_ptr<webrtc::VideoDecoder> VTVideoDecoderFactory::Create(const webrtc::Environment& env,
-                                                                    const webrtc::SdpVideoFormat& format)
+std::unique_ptr<webrtc::VideoDecoder> VTVideoDecoderFactory::
+    customDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
-    if (isH264VideoFormat(format)) {
-        if (auto decoder = VTH264Decoder::create(format)) {
-            return decoder;
-        }
+    if (auto decoder = VTH264Decoder::create(format)) {
+        return decoder;
     }
-    return VideoDecoderFactory::Create(env, format);
+    return VideoDecoderFactory::customDecoder(env, format);
 }
 
 } // namespace LiveKitCpp

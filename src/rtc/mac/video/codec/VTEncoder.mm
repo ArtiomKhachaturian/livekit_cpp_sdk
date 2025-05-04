@@ -16,20 +16,8 @@
 #include "VideoUtils.h"
 #include "VTEncoderSourceFrame.h"
 #include "VTEncoderSession.h"
-#include "VTH264Encoder.h"
 #include "Utils.h"
-#include <api/video_codecs/h264_profile_level_id.h>
 #include <Foundation/Foundation.h>
-
-namespace
-{
-
-using namespace LiveKitCpp;
-
-VTEncoderSession createH264Compressor(bool hardwareAccelerated,
-                                      int32_t width = 640, int32_t height = 480,
-                                      CFStringRef profile = nullptr);
-}
 
 namespace LiveKitCpp
 {
@@ -166,12 +154,18 @@ void VTEncoder::destroySession()
 
 webrtc::RTCError VTEncoder::setEncoderBitrate(uint32_t bitrateBps)
 {
-    return _session.setAverageBitRate(bitrateBps);
+    if (_session) {
+        return _session.setAverageBitRate(bitrateBps);
+    }
+    return {};
 }
 
 webrtc::RTCError VTEncoder::setEncoderFrameRate(uint32_t frameRate)
 {
-    return _session.setExpectedFrameRate(frameRate);
+    if (_session) {
+        return _session.setExpectedFrameRate(frameRate);
+    }
+    return {};
 }
 
 webrtc::RTCErrorOr<VTEncoderSourceFrame> VTEncoder::createSourceFrame(const webrtc::VideoFrame& frame) const
@@ -245,56 +239,4 @@ void VTEncoder::onError(OSStatus error, bool fatal)
     log(toRtcError(error), fatal);
 }
 
-CodecStatus VideoEncoder::status(const webrtc::SdpVideoFormat& format)
-{
-    CodecStatus status = CodecStatus::NotSupported;
-    const auto codecType = webrtc::PayloadStringToCodecType(format.name);
-    if (webrtc::VideoCodecType::kVideoCodecGeneric != codecType) {
-        switch (codecType) {
-            case webrtc::kVideoCodecVP8:
-            case webrtc::kVideoCodecVP9:
-            case webrtc::kVideoCodecAV1:
-                status = CodecStatus::SupportedSoftware;
-            default:
-                break;
-        }
-        if (webrtc::kVideoCodecH264 == codecType) {
-            if (@available(macOS 10.9, *)) {
-                static std::once_flag registerProfessionalVideoWorkflowVideoEncoders;
-                std::call_once(registerProfessionalVideoWorkflowVideoEncoders, VTRegisterProfessionalVideoWorkflowVideoEncoders);
-            }
-            CFStringRef profile = nullptr;
-            if (const auto profileLevelId = webrtc::ParseSdpForH264ProfileLevelId(format.parameters)) {
-                profile = VTH264Encoder::extractProfile(profileLevelId.value());
-                if (auto compressor = createH264Compressor(true, 1280, 720, profile)) {
-                    if (compressor.hardwareAccelerated()) {
-                        status = CodecStatus::SupportedHardware;
-                    }
-                    else {
-                        status = CodecStatus::SupportedSoftware;
-                    }
-                }
-            }
-        }
-    }
-    return status;
-}
-
 } // namespace LiveKitCpp
-
-namespace
-{
-
-VTEncoderSession createH264Compressor(bool hardwareAccelerated, int32_t width,
-                                      int32_t height, CFStringRef profile)
-{
-    auto session = VTEncoderSession::create(width, height, codecTypeH264(), hardwareAccelerated, false);
-    if (session.ok()) {
-        if (profile && !session.value().setProfileLevel(profile).ok()) {
-            return {};
-        }
-    }
-    return session.MoveValue();
-}
-
-}

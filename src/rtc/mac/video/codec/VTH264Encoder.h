@@ -37,7 +37,9 @@ public:
     int32_t Release() final;
     EncoderInfo GetEncoderInfo() const final;
 protected:
-    VTH264Encoder(bool hardwareAccelerated, const webrtc::SdpVideoFormat& format);
+    VTH264Encoder(bool hardwareAccelerated,
+                  webrtc::H264PacketizationMode mode,
+                  const webrtc::SdpVideoFormat& format);
     // overrides of VTEncoder
     void destroySession() final;
     webrtc::RTCError configureCompressionSession(VTEncoderSession* session) final;

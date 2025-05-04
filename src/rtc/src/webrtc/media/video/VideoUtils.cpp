@@ -15,6 +15,8 @@
 #include "CapturerState.h"
 #include "LibyuvImport.h"
 #include "RtcUtils.h"
+#include "SafeObj.h"
+#include "Utils.h"
 #ifdef WEBRTC_MAC
 //#include "MetalRGBScaler.h"
 #include "CFNumber.h"
@@ -22,6 +24,17 @@
 #include "livekit/rtc/media/VideoOptions.h"
 #include <rtc_base/time_utils.h>
 #include <cassert>
+#include <unordered_map>
+
+namespace std
+{
+
+template <>
+struct hash<webrtc::SdpVideoFormat> {
+    size_t operator()(const webrtc::SdpVideoFormat& format) const;
+};
+
+} // namespace std
 
 namespace
 {
@@ -54,10 +67,15 @@ bool gpuScaleRGB(const std::byte* src, int srcStride,
                  int dstWidth, int dstHeight,
                  bool argb, VideoContentHint hint);
 
+using StatusMap = std::unordered_map<webrtc::SdpVideoFormat, CodecStatus>;
+
 }
 
 namespace LiveKitCpp
 {
+
+extern CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters);
+extern CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters);
 
 std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                                                    webrtc::VideoRotation rotation,
@@ -244,14 +262,54 @@ bool isVP9CodecName(const std::string& codecName)
     return webrtc::VideoCodecType::kVideoCodecVP9 == webrtc::PayloadStringToCodecType(codecName);
 }
 
-bool isH264VideoFormat(const webrtc::SdpVideoFormat& format)
+CodecStatus encoderStatus(const webrtc::SdpVideoFormat& format)
 {
-    return isH264CodecName(format.name);
+    CodecStatus status = CodecStatus::NotSupported;
+    const auto codecType = webrtc::PayloadStringToCodecType(format.name);
+    if (webrtc::VideoCodecType::kVideoCodecGeneric != codecType) {
+        static Bricks::SafeObj<StatusMap> supported;
+        LOCK_WRITE_SAFE_OBJ(supported);
+        auto it = supported->find(format);
+        if (it == supported->end()) {
+            status = platformEncoderStatus(codecType, format.parameters);
+            supported->insert(std::make_pair(format, status));
+        } else {
+            status = it->second;
+        }
+    }
+    return status;
 }
 
-bool isH264CodecName(const std::string& codecName)
+CodecStatus decoderStatus(const webrtc::SdpVideoFormat& format)
 {
-    return webrtc::VideoCodecType::kVideoCodecH264 == webrtc::PayloadStringToCodecType(codecName);
+    CodecStatus status = CodecStatus::NotSupported;
+    const auto codecType = webrtc::PayloadStringToCodecType(format.name);
+    if (webrtc::VideoCodecType::kVideoCodecGeneric != codecType) {
+        static Bricks::SafeObj<StatusMap> supported;
+        LOCK_WRITE_SAFE_OBJ(supported);
+        auto it = supported->find(format);
+        if (it == supported->end()) {
+            status = platformDecoderStatus(codecType, format.parameters);
+            supported->insert(std::make_pair(format, status));
+        } else {
+            status = it->second;
+        }
+    }
+    return status;
+}
+
+std::vector<webrtc::SdpVideoFormat> mergeFormats(std::vector<webrtc::SdpVideoFormat> f1,
+                                                 std::vector<webrtc::SdpVideoFormat> f2)
+{
+    if (!f2.empty()) {
+        f1.reserve(f1.size() + f2.size());
+        for (auto& f2Format : f2) {
+            if (!f2Format.IsCodecInList(f1)) {
+                f1.push_back(std::move(f2Format));
+            }
+        }
+    }
+    return f1;
 }
 
 std::string toString(const VideoOptions& options)
@@ -622,3 +680,23 @@ bool gpuScaleRGB(const std::byte* /*src*/, int /*srcStride*/,
 }
 
 }
+
+
+namespace std
+{
+
+template <>
+struct hash<webrtc::CodecParameterMap::value_type>
+{
+    inline size_t operator()(const webrtc::CodecParameterMap::value_type& value) const
+    {
+        return LiveKitCpp::hashCombine(value.first, value.second);
+    }
+};
+
+size_t hash<webrtc::SdpVideoFormat>::operator()(const webrtc::SdpVideoFormat& format) const
+{
+    return LiveKitCpp::hashCombine(format.name, LiveKitCpp::hashCombineRange(format.parameters.begin(), format.parameters.end()));
+}
+
+} // namespace std

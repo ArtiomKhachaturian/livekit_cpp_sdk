@@ -21,11 +21,11 @@ class VTVideoEncoderFactory : public VideoEncoderFactory
 {
 public:
     VTVideoEncoderFactory() = default;
-    // impl. of VideoEncoderFactory
-    CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
-                                   std::optional<std::string> scalabilityMode) const override;
-    std::unique_ptr<webrtc::VideoEncoder> Create(const webrtc::Environment& env,
-                                                 const webrtc::SdpVideoFormat& format) override;
+protected:
+    // override of VideoDecoderFactory
+    std::unique_ptr<webrtc::VideoEncoder> customEncoder(const webrtc::Environment& env,
+                                                                const webrtc::SdpVideoFormat& format) final;
+    std::vector<webrtc::SdpVideoFormat> customFormats() const final;
 };
 
 } // namespace LiveKitCpp

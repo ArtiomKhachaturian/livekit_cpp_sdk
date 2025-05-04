@@ -14,6 +14,8 @@
 #include "VTH264Encoder.h"
 #include "VTH264EncodedBuffer.h"
 #include "VTEncoderSession.h"
+#include "VideoUtils.h"
+#include "H264Utils.h"
 #include "EncodedImageBuffer.h"
 #include <components/video_codec/nalu_rewriter.h>
 
@@ -21,8 +23,10 @@
 namespace LiveKitCpp
 {
 
-VTH264Encoder::VTH264Encoder(bool hardwareAccelerated, const webrtc::SdpVideoFormat& format)
-    : VTEncoder(hardwareAccelerated, createH264CodecInfo(webrtc::H264PacketizationMode::NonInterleaved))
+VTH264Encoder::VTH264Encoder(bool hardwareAccelerated,
+                             webrtc::H264PacketizationMode mode,
+                             const webrtc::SdpVideoFormat& format)
+    : VTEncoder(hardwareAccelerated, H264Utils::createCodecInfo(mode))
     , _profileLevelId(webrtc::ParseSdpForH264ProfileLevelId(format.parameters))
 {
 }
@@ -34,13 +38,11 @@ VTH264Encoder::~VTH264Encoder()
 std::unique_ptr<webrtc::VideoEncoder> VTH264Encoder::create(const webrtc::SdpVideoFormat& format)
 {
     std::unique_ptr<webrtc::VideoEncoder> encoder;
-    if (isH264VideoFormat(format)) {
-        const auto status = VideoEncoder::status(format);
+    if (H264Utils::formatMatched(format)) {
+        const auto status = encoderStatus(format);
         if (CodecStatus::NotSupported != status) {
-            const auto packetizationMode = VideoEncoder::packetizationModeH264(format);
-            if (webrtc::H264PacketizationMode::NonInterleaved == packetizationMode) {
-                encoder.reset(new VTH264Encoder(maybeHardwareAccelerated(status), format));
-            }
+            const auto packetizationMode = H264Utils::packetizationMode(format);
+            encoder.reset(new VTH264Encoder(maybeHardwareAccelerated(status), packetizationMode, format));
         }
     }
     return encoder;
@@ -163,7 +165,7 @@ int32_t VTH264Encoder::InitEncode(const webrtc::VideoCodec* codecSettings, const
         _outputBufferCacheSize = H264BitstreamParser::annexBHeaderSize();
         _keyFrameInterval = codecSettings->H264().keyFrameInterval;
         if (_profileLevelId) {
-            const auto h264 = toH264Settings(*codecSettings, _profileLevelId->level);
+            const auto h264 = H264Utils::map(*codecSettings, _profileLevelId->level);
             result = VTEncoder::InitEncode(&h264, encoderSettings);
         }
         else {
@@ -201,7 +203,8 @@ webrtc::RTCError VTH264Encoder::configureCompressionSession(VTEncoderSession* se
         }
         if (_profileLevelId) {
             session->setProfileLevel(extractProfile(_profileLevelId.value()));
-            if (cabacH264IsSupported(_profileLevelId->profile)) { // or maybe choose CABAC explicitly, without profile checking?
+            // or maybe choose CABAC explicitly, without profile checking?
+            if (H264Utils::cabacIsSupported(_profileLevelId->profile)) {
                 // CABAC generally gives better compression at the expense of higher computational overhead,
                 // for avoding of bitrate overshoot
                 session->setProperty(kVTCompressionPropertyKey_H264EntropyMode, kVTH264EntropyMode_CABAC);

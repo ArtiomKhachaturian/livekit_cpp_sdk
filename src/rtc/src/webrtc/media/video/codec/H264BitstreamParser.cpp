@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "H264BitstreamParser.h"
+#include "H264Utils.h"
 #include "MemoryBlock.h"
 #include "VideoUtils.h"
 #include "Utils.h"
@@ -47,7 +48,7 @@ void H264BitstreamParser::parseForSliceQp(const webrtc::scoped_refptr<webrtc::En
 
 int H264BitstreamParser::lastSliceQp() const
 {
-    return bound(lowH264QpThreshold(), _impl->GetLastSliceQp().value_or(-1), highH264QpThreshold());
+    return bound(H264Utils::lowQpThreshold(), _impl->GetLastSliceQp().value_or(-1), H264Utils::highQpThreshold());
 }
 
 void H264BitstreamParser::reset()

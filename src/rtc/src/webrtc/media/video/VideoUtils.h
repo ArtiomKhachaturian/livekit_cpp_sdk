@@ -13,12 +13,12 @@
 // limitations under the License.
 #pragma once // VideoUtils.h
 #include "CodecStatus.h"
-#include "livekit/rtc/media/VideoContentHint.h"
 #ifdef WEBRTC_MAC
 #include "CFAutoRelease.h"
 #include <CoreVideo/CVPixelBuffer.h>
 #include <VideoToolbox/VideoToolbox.h>
 #endif
+#include "livekit/rtc/media/VideoContentHint.h"
 #include <api/media_stream_interface.h>
 #include <api/video/video_frame.h>
 #include <api/video_codecs/sdp_video_format.h>
@@ -73,21 +73,24 @@ bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
 
 size_t planesCount(VideoFrameType type);
 
-// these thresholds deviate from the default h264 QP thresholds, as they
-// have been found to work better on devices that support VideoToolbox (APPLE)
-inline constexpr int lowH264QpThreshold() { return 28; }
-inline constexpr int highH264QpThreshold() { return 56; }
 // VPX
 bool isVP8VideoFormat(const webrtc::SdpVideoFormat& format);
 bool isVP8CodecName(const std::string& codecName);
 bool isVP9VideoFormat(const webrtc::SdpVideoFormat& format);
 bool isVP9CodecName(const std::string& codecName);
-// H264
-std::vector<webrtc::SdpVideoFormat> supportedH264Formats(bool encoder);
-// https://en.wikipedia.org/wiki/Context-adaptive_binary_arithmetic_coding
-bool isH264VideoFormat(const webrtc::SdpVideoFormat& format);
-bool isH264CodecName(const std::string& codecName);
-
+CodecStatus encoderStatus(const webrtc::SdpVideoFormat& format);
+CodecStatus decoderStatus(const webrtc::SdpVideoFormat& format);
+std::vector<webrtc::SdpVideoFormat> mergeFormats(std::vector<webrtc::SdpVideoFormat> f1,
+                                                 std::vector<webrtc::SdpVideoFormat> f2);
+template <class TCodecFactory>
+inline std::vector<webrtc::SdpVideoFormat> mergeFormats(const TCodecFactory* factory,
+                                                        std::vector<webrtc::SdpVideoFormat> f2)
+{
+    if (factory) {
+        return mergeFormats(factory->GetSupportedFormats(), std::move(f2));
+    }
+    return f2;
+}
 #ifdef WEBRTC_MAC
 // constants
 constexpr CMVideoCodecType codecTypeVP9() { return kCMVideoCodecType_VP9; }

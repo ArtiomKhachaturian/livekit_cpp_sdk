@@ -27,17 +27,6 @@ inline void* cast(const T* addr) {
     return reinterpret_cast<void*>(const_cast<T*>(addr));
 }
 
-// CVPixelBuffer release callback. See |GetCvPixelBufferRepresentation()|.
-inline void cvPixelBufferReleaseCallback(void* frameRef,
-                                         const void* data,
-                                         size_t /*size*/,
-                                         size_t /*numPlanes*/,
-                                         const void* /*planes*/[])
-{
-    std::free(const_cast<void*>(data));
-    reinterpret_cast<webrtc::VideoFrameBuffer*>(frameRef)->Release();
-}
-
 inline OSType mapToPixelFormat(LiveKitCpp::VideoFrameType type)
 {
     switch (type) {
@@ -67,6 +56,30 @@ inline OSType mapToPixelFormat(LiveKitCpp::VideoFrameType type)
 
 namespace LiveKitCpp
 {
+
+class VTEncoderSourceFrame::Planes
+{
+public:
+    bool set(const NativeVideoFrameBuffer* native);
+    bool set(const webrtc::NV12BufferInterface* nv12);
+    bool set(const webrtc::scoped_refptr<webrtc::NV12BufferInterface>& nv12);
+    CVPixelBufferRef create(OSStatus* error = nullptr);
+private:
+    static void releaseCallback(void* frameRef,
+                                const void* data,
+                                size_t /*size*/,
+                                size_t /*numPlanes*/,
+                                const void* /*planes*/[]);
+private:
+    void* _ptrs[_maxPlanes] = {};
+    size_t _bytesPerRow[_maxPlanes] = {};
+    size_t _widths[_maxPlanes] = {};
+    size_t _heights[_maxPlanes] = {};
+    size_t _numPlanes = 0U;
+    size_t _dataSize = 0U;
+    OSType _format = 0;
+    const webrtc::VideoFrameBuffer* _attachedBuffer;
+};
 
 VTEncoderSourceFrame::VTEncoderSourceFrame(const webrtc::VideoFrame& frame,
                                            CVPixelBufferAutoRelease mappedBuffer)
@@ -113,80 +126,127 @@ VTEncoderSourceFrame::PixelBuffer VTEncoderSourceFrame::
     convertToPixelBuffer(const webrtc::VideoFrame& frame, const VideoFrameBufferPool& framesPool)
 {
     if (const auto buffer = frame.video_frame_buffer()) {
-        auto mappedBuffer = CoreVideoPixelBuffer::pixelBuffer(buffer, true); // retain
-        if (!mappedBuffer) {
-            // build arrays for each plane's data pointer, dimensions and byte alignment
-            static thread_local void* planePtrs[_maxPlanes] = {};
-            static thread_local size_t planeBytesPerRow[_maxPlanes] = {};
-            static thread_local size_t planeWidths[_maxPlanes] = {};
-            static thread_local size_t planeHeights[_maxPlanes] = {};
-            size_t numPlanes = 0U, dataSize = 0U;
-            OSType format = 0;
-            webrtc::scoped_refptr<const webrtc::VideoFrameBuffer> attachedBuffer = buffer;
-            webrtc::scoped_refptr<const webrtc::NV12BufferInterface> mappedNV12;
-            switch (buffer->type()) {
-                case webrtc::VideoFrameBuffer::Type::kNative:
-                    if (const auto native = dynamic_cast<const NativeVideoFrameBuffer*>(buffer.get())) {
-                        format = mapToPixelFormat(native->nativeType());
-                        if (format) {
-                            numPlanes = planesCount(native->nativeType());
-                            if (numPlanes > 0U && numPlanes <= _maxPlanes) {
-                                dataSize = native->dataSize();
-                                for (size_t i = 0U; i < numPlanes; ++i) {
-                                    planePtrs[i] = cast(native->data(i));
-                                    planeBytesPerRow[i] = native->stride(i);
-                                    planeWidths[i] = native->width();
-                                    planeHeights[i] = native->height();
-                                }
-                                break;
-                            }
-                        }
-                    }
-                default:
-                    attachedBuffer = mappedNV12 = NV12VideoFrameBuffer::toNV12(buffer, framesPool);
-                    break;
+        CVPixelBufferRef mappedBuffer = CoreVideoPixelBuffer::pixelBuffer(buffer, true); // retain
+        if (mappedBuffer) {
+            return CVPixelBufferAutoRelease(mappedBuffer);
+        }
+        // build arrays for each plane's data pointer, dimensions and byte alignment
+        Planes pixmapPlanes;
+        bool ok = false;
+        switch (buffer->type()) {
+            case webrtc::VideoFrameBuffer::Type::kNative:
+                ok = pixmapPlanes.set(dynamic_cast<const NativeVideoFrameBuffer*>(buffer.get()));
+                break;
+            default:
+                break;
+        }
+        if (!ok) {
+            ok = pixmapPlanes.set(NV12VideoFrameBuffer::toNV12(buffer, framesPool));
+        }
+        if (ok) {
+            OSStatus status = noErr;
+            mappedBuffer = pixmapPlanes.create(&status);
+            if (mappedBuffer) {
+                return CVPixelBufferAutoRelease(mappedBuffer);
             }
-            if (mappedNV12) {
-                numPlanes = 2U;
-                dataSize = webrtc::CalcBufferSize(webrtc::VideoType::kNV12, buffer->width(), buffer->height());
-                planePtrs[0] = cast(mappedNV12->DataY());
-                planePtrs[1] = cast(mappedNV12->DataUV());
-                planeBytesPerRow[0] = mappedNV12->StrideY();
-                planeBytesPerRow[1] = mappedNV12->StrideUV();
-                planeWidths[0] = planeWidths[1] = mappedNV12->ChromaWidth();
-                planeHeights[0] = planeHeights[1] = mappedNV12->ChromaHeight();
-                format = formatNV12Full();
-            }
-            if (numPlanes > 0U) {
-                // CVPixelBufferCreateWithPlanarBytes needs a dummy plane descriptor or the
-                // release callback will not execute. The descriptor is freed in the callback.
-                void* dummy = std::calloc(1, std::max(sizeof(CVPlanarPixelBufferInfo_YCbCrPlanar),
-                                                      sizeof(CVPlanarPixelBufferInfo_YCbCrBiPlanar)));
-                const auto status = CVPixelBufferCreateWithPlanarBytes(kCFAllocatorDefault,           // allocator
-                                                                       attachedBuffer->width(),       // width
-                                                                       attachedBuffer->height(),      // height
-                                                                       format,                        // pixelFormatType
-                                                                       dummy,                         // dataPtr (pointer to a plane descriptor block)
-                                                                       dataSize,                      // dataSize
-                                                                       numPlanes,                     // numberOfPlanes
-                                                                       planePtrs,                     // planeBaseAddress
-                                                                       planeWidths,                   // planeWidth
-                                                                       planeHeights,                  // planeHeight
-                                                                       planeBytesPerRow,              // planeBytesPerRow
-                                                                       &cvPixelBufferReleaseCallback, // releaseCallback
-                                                                       (void*)attachedBuffer.get(),   // releaseRefCon
-                                                                       nullptr,                       // pixelBufferAttributes
-                                                                       &mappedBuffer);                // pixelBufferOut
-                if (noErr == status) {
-                    attachedBuffer->AddRef();
-                    return CVPixelBufferAutoRelease(mappedBuffer);
+            return toRtcError(status);
+        }
+    }
+    return toRtcError(kCMSampleBufferError_BufferNotReady, webrtc::RTCErrorType::INVALID_PARAMETER);
+}
+
+bool VTEncoderSourceFrame::Planes::set(const NativeVideoFrameBuffer* native)
+{
+    if (native) {
+        const auto format = mapToPixelFormat(native->nativeType());
+        if (format) {
+            const auto numPlanes = planesCount(native->nativeType());
+            if (numPlanes > 0U && numPlanes <= _maxPlanes) {
+                _format = format;
+                _numPlanes = numPlanes;
+                _dataSize = native->dataSize();
+                for (size_t i = 0U; i < numPlanes; ++i) {
+                    _ptrs[i] = cast(native->data(i));
+                    _bytesPerRow[i] = native->stride(i);
+                    _widths[i] = native->width();
+                    _heights[i] = native->height();
                 }
-                return toRtcError(status);
+                _attachedBuffer = native;
+                return true;
             }
         }
-        return toRtcError(kCMSampleBufferError_BufferNotReady, webrtc::RTCErrorType::INVALID_PARAMETER);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return false;
+}
+
+bool VTEncoderSourceFrame::Planes::set(const webrtc::NV12BufferInterface* nv12)
+{
+    if (nv12) {
+        _numPlanes = 2U;
+        _dataSize = webrtc::CalcBufferSize(webrtc::VideoType::kNV12, nv12->width(), nv12->height());
+        _ptrs[0] = cast(nv12->DataY());
+        _ptrs[1] = cast(nv12->DataUV());
+        _bytesPerRow[0] = nv12->StrideY();
+        _bytesPerRow[1] = nv12->StrideUV();
+        _widths[0] = _widths[1] = nv12->ChromaWidth();
+        _heights[0] = _heights[1] = nv12->ChromaHeight();
+        _format = formatNV12Full();
+        _attachedBuffer = nv12;
+        return true;
+    }
+    return false;
+}
+
+bool VTEncoderSourceFrame::Planes::set(const webrtc::scoped_refptr<webrtc::NV12BufferInterface>& nv12)
+{
+    return set(nv12.get());
+}
+
+CVPixelBufferRef VTEncoderSourceFrame::Planes::create(OSStatus* error)
+{
+    CVPixelBufferRef mappedBuffer = nullptr;
+    if (_numPlanes && _attachedBuffer) {
+        // CVPixelBufferCreateWithPlanarBytes needs a dummy plane descriptor or the
+        // release callback will not execute. The descriptor is freed in the callback.
+        void* dummy = std::calloc(1, std::max(sizeof(CVPlanarPixelBufferInfo_YCbCrPlanar),
+                                              sizeof(CVPlanarPixelBufferInfo_YCbCrBiPlanar)));
+        const auto status = CVPixelBufferCreateWithPlanarBytes(kCFAllocatorDefault,           // allocator
+                                                               _attachedBuffer->width(),       // width
+                                                               _attachedBuffer->height(),      // height
+                                                               _format,                        // pixelFormatType
+                                                               dummy,                         // dataPtr (pointer to a plane descriptor block)
+                                                               _dataSize,                      // dataSize
+                                                               _numPlanes,                     // numberOfPlanes
+                                                               _ptrs,                     // planeBaseAddress
+                                                               _widths,                   // planeWidth
+                                                               _heights,                  // planeHeight
+                                                               _bytesPerRow,              // planeBytesPerRow
+                                                               &releaseCallback,        // releaseCallback
+                                                               (void*)_attachedBuffer,   // releaseRefCon
+                                                               nullptr,                       // pixelBufferAttributes
+                                                               &mappedBuffer);                // pixelBufferOut
+        if (noErr == status) {
+            _attachedBuffer->AddRef();
+        }
+        if (error) {
+            *error = status;
+        }
+    }
+    else if (error) {
+        *error = kVTParameterErr;
+    }
+    return mappedBuffer;
+}
+
+// CVPixelBuffer release callback. See |GetCvPixelBufferRepresentation()|.
+void VTEncoderSourceFrame::Planes::releaseCallback(void* frameRef,
+                                                   const void* data,
+                                                   size_t /*size*/,
+                                                   size_t /*numPlanes*/,
+                                                   const void* /*planes*/[])
+{
+    std::free(const_cast<void*>(data));
+    reinterpret_cast<const webrtc::VideoFrameBuffer*>(frameRef)->Release();
 }
 
 } // namespace darkmatter::rtc

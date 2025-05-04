@@ -193,26 +193,4 @@ void VTDecoder::onError(OSStatus error, bool fatal)
     log(toRtcError(error), fatal);
 }
 
-CodecStatus VideoDecoder::status(const webrtc::SdpVideoFormat& format)
-{
-    CodecStatus status = CodecStatus::NotSupported;
-    const auto codecType = webrtc::PayloadStringToCodecType(format.name);
-    if (webrtc::VideoCodecType::kVideoCodecGeneric != codecType) {
-        switch (codecType) {
-            case webrtc::kVideoCodecVP8:
-            case webrtc::kVideoCodecVP9:
-            case webrtc::kVideoCodecAV1:
-                return CodecStatus::SupportedSoftware;
-            default:
-                break;
-        }
-        if (webrtc::kVideoCodecH264 == codecType) {
-            static const auto h264Status = VTDecoder::hardwaredDecodeSupported(codecTypeH264());
-            status = h264Status;
-        }
-    }
-    return status;
-}
-
-
 } // namespace LiveKitCpp

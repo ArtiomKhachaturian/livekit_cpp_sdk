@@ -13,30 +13,24 @@
 // limitations under the License.
 #include "VTVideoEncoderFactory.h"
 #include "VTH264Encoder.h"
+#include "H264Utils.h"
+#include "VideoUtils.h"
 
 namespace LiveKitCpp
 {
 
-webrtc::VideoEncoderFactory::CodecSupport VTVideoEncoderFactory::
-    QueryCodecSupport(const webrtc::SdpVideoFormat& format,
-                      std::optional<std::string> scalabilityMode) const
+std::unique_ptr<webrtc::VideoEncoder> VTVideoEncoderFactory::
+    customEncoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
-    auto support = VideoEncoderFactory::QueryCodecSupport(format, std::move(scalabilityMode));
-    if (support.is_supported && maybeHardwareAccelerated(VideoEncoder::status(format))) {
-        support.is_power_efficient = true;
+    if (auto encoder = VTH264Encoder::create(format)) {
+        return encoder;
     }
-    return support;
+    return VideoEncoderFactory::customEncoder(env, format);
 }
 
-std::unique_ptr<webrtc::VideoEncoder> VTVideoEncoderFactory::Create(const webrtc::Environment& env,
-                                                                    const webrtc::SdpVideoFormat& format)
+std::vector<webrtc::SdpVideoFormat> VTVideoEncoderFactory::customFormats() const
 {
-    if (isH264VideoFormat(format)) {
-        if (auto decoder = VTH264Encoder::create(format)) {
-            return decoder;
-        }
-    }
-    return VideoEncoderFactory::Create(env, format);
+    return H264Utils::supportedFormats(true);
 }
 
 } // namespace darkmatter::rtc

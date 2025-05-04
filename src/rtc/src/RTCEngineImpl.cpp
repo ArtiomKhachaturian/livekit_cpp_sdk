@@ -25,7 +25,6 @@
 #include "livekit/rtc/LiveKitError.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
 #include "livekit/rtc/e2e/KeyProviderOptions.h"
-#include "livekit/signaling/NetworkType.h"
 #include "livekit/signaling/sfu/UpdateLocalAudioTrack.h"
 #include <algorithm> // for std::min
 #include <thread>
@@ -347,22 +346,6 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngineImpl::
 {
     webrtc::PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
-    switch (activeNetworkType()) {
-        case NetworkType::WiFi:
-            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_WIFI;
-            break;
-        case NetworkType::Wired:
-            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_ETHERNET;
-            break;
-        case NetworkType::Cellular:
-            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_CELLULAR;
-            break;
-        case NetworkType::Vpn:
-            config.network_preference = rtc::AdapterType::ADAPTER_TYPE_VPN;
-            break;
-        default:
-            break;
-    }
     // enable ICE renomination, like on Android (   "a=ice-options:trickle renomination")
     //config.enable_ice_renomination = true;
     if (cc.has_value() && ClientConfigSetting::Enabled  == cc->_forceRelay) {

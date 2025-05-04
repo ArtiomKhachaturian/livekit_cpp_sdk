@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTH264Decoder.h"
+#include "H264Utils.h"
 #include "CFMemoryPool.h"
 #include "VideoUtils.h"
 #include <components/video_codec/nalu_rewriter.h>
@@ -32,8 +33,8 @@ VTH264Decoder::~VTH264Decoder()
 std::unique_ptr<webrtc::VideoDecoder> VTH264Decoder::create(const webrtc::SdpVideoFormat& format)
 {
     std::unique_ptr<webrtc::VideoDecoder> decoder;
-    if (isH264VideoFormat(format)) {
-        const auto status = VideoDecoder::status(format);
+    if (H264Utils::formatMatched(format)) {
+        const auto status = decoderStatus(format);
         if (CodecStatus::NotSupported != status) {
             decoder.reset(new VTH264Decoder(maybeHardwareAccelerated(status)));
         }
