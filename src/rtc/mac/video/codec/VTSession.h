@@ -27,7 +27,7 @@ public:
     bool valid() const { return _sessionRef.valid(); }
     const auto& format() const noexcept { return _format; }
     VTSessionType CM_NONNULL sessionRef() const { return _sessionRef; }
-    bool hardwareAccelerated() const { return _hardwareAccelerated; }
+    bool hardwareAccelerated() const noexcept { return _hardwareAccelerated; }
     operator VTSessionType CM_NONNULL() const { return sessionRef(); }
     explicit operator bool() const { return valid(); }
     // diff between input & output frames

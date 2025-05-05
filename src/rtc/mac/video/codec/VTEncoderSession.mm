@@ -162,7 +162,6 @@ OSStatus VTEncoderSession::lastOutputStatus() const
 webrtc::RTCErrorOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
                                                               int32_t height,
                                                               CMVideoCodecType codecType,
-                                                              bool hardwareAccelerated,
                                                               uint32_t qpMax,
                                                               VTEncoderSessionCallback* callback,
                                                               const std::shared_ptr<CFMemoryPool>& compressedDataAllocator)
@@ -171,7 +170,7 @@ webrtc::RTCErrorOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
         VTCompressionSessionRef session = nullptr;
         auto pipeline = std::make_unique<EncodePipeline>(codecType, callback);
         const auto dataAllocator = compressedDataAllocator ? compressedDataAllocator->allocator() : nullptr;
-        const auto specs = encoderSpecification(hardwareAccelerated, width, height);
+        const auto specs = encoderSpecification(width, height);
         if (specs && qpMax > 0U) {
             // not sure that this key is supported, according to https://trac.ffmpeg.org/ticket/5357:
             // "This isn't supported with H.264. It's normally used for JPEG encoding."
@@ -186,10 +185,10 @@ webrtc::RTCErrorOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
             status = VTCompressionSessionPrepareToEncodeFrames(session);
             if (noErr == status) {
                 CFBooleanRef hwacclEnabled = nil;
-                hardwareAccelerated = noErr == VTSessionCopyProperty(session,
-                                                                     kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder,
-                                                                     nil, &hwacclEnabled) && CFBooleanGetValue(hwacclEnabled);
-                return VTEncoderSession(compressedDataAllocator, std::move(pipeline), session, hardwareAccelerated, width, height);
+                const auto hwa = noErr == VTSessionCopyProperty(session,
+                                                                kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder,
+                                                                nil, &hwacclEnabled) && CFBooleanGetValue(hwacclEnabled);
+                return VTEncoderSession(compressedDataAllocator, std::move(pipeline), session, hwa, width, height);
             }
         }
         return toRtcError(status);
@@ -197,19 +196,16 @@ webrtc::RTCErrorOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
     return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
 }
 
-CFMutableDictionaryRefAutoRelease VTEncoderSession::encoderSpecification(bool hardwareAccelerated,
-                                                                         int32_t width, int32_t height)
+CFMutableDictionaryRefAutoRelease VTEncoderSession::encoderSpecification(int32_t width, int32_t height)
 {
     // Currently hw accl is supported above 360p on mac, below 360p
     // the compression session will be created with hw accl disabled.
     auto specs = CFDictionaryCreateMutable(kCFAllocatorDefault, 1,
                                            &kCFTypeDictionaryKeyCallBacks,
                                            &kCFTypeDictionaryValueCallBacks);
-    if (hardwareAccelerated && std::min(width, height) < 360) {
-        hardwareAccelerated = false;
-    }
+    const bool hwa = std::min(width, height) >= 360;
     CFDictionarySetValue(specs, kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
-                         hardwareAccelerated ? kCFBooleanTrue : kCFBooleanFalse);
+                         hwa ? kCFBooleanTrue : kCFBooleanFalse);
     return specs;
 }
 

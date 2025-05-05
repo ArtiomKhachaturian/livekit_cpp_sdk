@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // GenericCodec.h
-#ifdef WEBRTC_MAC
 #include "VideoUtils.h"
-#endif
 #include <api/rtc_error.h>
+#include <api/video_codecs/sdp_video_format.h>
 #include <api/video_codecs/video_codec.h>
 #include <api/video_codecs/video_decoder.h>
 #include <api/video_codecs/video_encoder.h>
@@ -29,22 +28,35 @@ template <class TCodecInterface>
 class GenericCodec : public TCodecInterface
 {
 public:
-    bool hardwareAccelerated() const { return _hardwareAccelerated; }
-    virtual webrtc::VideoCodecType type() const noexcept = 0;
+    virtual bool hardwareAccelerated() const;
     virtual std::string name() const;
+    webrtc::VideoCodecType type() const;
     static constexpr const char* mediaBackendName();
 protected:
-    GenericCodec(bool hardwareAccelerated);
+    GenericCodec(const webrtc::SdpVideoFormat& format);
     webrtc::RTCError log(webrtc::RTCError error, bool fatal = true);
     static constexpr bool isEncoder() { return std::is_same<webrtc::VideoEncoder, TCodecInterface>::value; }
 private:
-    const bool _hardwareAccelerated;
+    const webrtc::SdpVideoFormat _format;
 };
 
 template <class TCodecInterface>
-inline GenericCodec<TCodecInterface>::GenericCodec(bool hardwareAccelerated)
-    : _hardwareAccelerated(hardwareAccelerated)
+inline GenericCodec<TCodecInterface>::GenericCodec(const webrtc::SdpVideoFormat& format)
+    : _format(format)
 {
+}
+
+template <class TCodecInterface>
+inline bool GenericCodec<TCodecInterface>::hardwareAccelerated() const
+{
+    CodecStatus status = CodecStatus::NotSupported;
+    if constexpr (isEncoder()) {
+        status = encoderStatus(_format);
+    }
+    else {
+        status = decoderStatus(_format);
+    }
+    return maybeHardwareAccelerated(status);
 }
 
 template <class TCodecInterface>
@@ -55,7 +67,13 @@ inline std::string GenericCodec<TCodecInterface>::name() const
         return videoCodecTypeToString(vtType.value());
     }
 #endif
-    return webrtc::CodecTypeToPayloadString(type());
+    return _format.name;
+}
+
+template <class TCodecInterface>
+inline webrtc::VideoCodecType GenericCodec<TCodecInterface>::type() const
+{
+    return webrtc::PayloadStringToCodecType(_format.name);
 }
 
 template <class TCodecInterface>

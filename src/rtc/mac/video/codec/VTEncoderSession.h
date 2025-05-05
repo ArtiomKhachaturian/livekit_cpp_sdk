@@ -52,7 +52,6 @@ public:
     OSStatus lastOutputStatus() const final;
     static webrtc::RTCErrorOr<VTEncoderSession> create(int32_t width, int32_t height,
                                                        CMVideoCodecType codecType,
-                                                       bool hardwareAccelerated,
                                                        uint32_t qpMax = 100U,
                                                        VTEncoderSessionCallback* CM_NULLABLE callback = nullptr,
                                                        const std::shared_ptr<CFMemoryPool>& compressedDataAllocator = {});
@@ -63,7 +62,7 @@ private:
                      bool hardwareAccelerated,
                      int32_t width, int32_t height);
 private:
-    static CFMutableDictionaryRefAutoRelease encoderSpecification(bool hardwareAccelerated, int32_t width, int32_t height);
+    static CFMutableDictionaryRefAutoRelease encoderSpecification(int32_t width, int32_t height);
     static CFDictionaryRefAutoRelease sourceImageAttributes(int32_t width, int32_t height);
     static CFArrayRefAutoRelease createPixelFormats();
 private:

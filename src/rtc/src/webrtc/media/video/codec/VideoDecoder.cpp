@@ -17,9 +17,8 @@
 namespace LiveKitCpp
 {
 
-VideoDecoder::VideoDecoder(webrtc::VideoCodecType codecType, bool hardwareAccelerated)
-    : Base(hardwareAccelerated)
-    , _codecType(codecType)
+VideoDecoder::VideoDecoder(const webrtc::SdpVideoFormat& format)
+    : GenericCodec<webrtc::VideoDecoder>(format)
 {
 }
 

@@ -16,17 +16,18 @@
 #include "VideoUtils.h"
 #include "VTEncoderSourceFrame.h"
 #include "VTEncoderSession.h"
+#include "CFMemoryPool.h"
 #include "Utils.h"
 #include <Foundation/Foundation.h>
 
 namespace LiveKitCpp
 {
 
-VTEncoder::VTEncoder(bool hardwareAccelerated,
+VTEncoder::VTEncoder(const webrtc::SdpVideoFormat& format,
                      webrtc::CodecSpecificInfo codecSpecificInfo,
                      const std::shared_ptr<CFMemoryPool>& memoryPool)
-    : VideoEncoder(hardwareAccelerated, std::move(codecSpecificInfo), true)
-    , _memoryPool(memoryPool)
+    : VideoEncoder(format, std::move(codecSpecificInfo), true)
+    , _memoryPool(memoryPool ? memoryPool : CFMemoryPool::create())
     , _framesPool(VideoFrameBufferPoolSource::create())
 {
 }
@@ -34,6 +35,14 @@ VTEncoder::VTEncoder(bool hardwareAccelerated,
 VTEncoder::~VTEncoder()
 {
     VTEncoder::destroySession();
+}
+
+bool VTEncoder::hardwareAccelerated() const
+{
+    if (_session) {
+        return _session.hardwareAccelerated();
+    }
+    return VideoEncoder::hardwareAccelerated();
 }
 
 int32_t VTEncoder::InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings)
@@ -178,8 +187,7 @@ webrtc::RTCError VTEncoder::createSession(int32_t width, int32_t height)
     destroySession();
     if (const auto vtType = toVTCodecType(type())) {
         auto session = VTEncoderSession::create(width, height, vtType.value(),
-                                                hardwareAccelerated(), qpMax(),
-                                                this, _memoryPool);
+                                                qpMax(), this, _memoryPool);
         if (session.ok()) {
             auto status = configureCompressionSession(&session.value());
             if (status.ok()) {

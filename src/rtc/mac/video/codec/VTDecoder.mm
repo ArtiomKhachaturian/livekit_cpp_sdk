@@ -12,20 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTDecoder.h"
+#include "CFMemoryPool.h"
 #include "VideoFrameBufferPoolSource.h"
-#include "VideoUtils.h"
 #include "Utils.h"
 
 namespace LiveKitCpp
 {
 
-VTDecoder::VTDecoder(OSType outputPixelFormat,
-                     webrtc::VideoCodecType codecType,
-                     bool hardwareAccelerated,
-                     const std::shared_ptr<CFMemoryPool>& memoryPool)
-    : VideoDecoder(codecType, hardwareAccelerated)
+VTDecoder::VTDecoder(const webrtc::SdpVideoFormat& format,
+                     const std::shared_ptr<CFMemoryPool>& memoryPool,
+                     OSType outputPixelFormat)
+    : VideoDecoder(format)
     , _outputPixelFormat(outputPixelFormat)
-    , _memoryPool(memoryPool)
+    , _memoryPool(memoryPool ? memoryPool : CFMemoryPool::create())
     , _framesPool(VideoFrameBufferPoolSource::create())
 {
 }
@@ -35,19 +34,12 @@ VTDecoder::~VTDecoder()
     VTDecoder::destroySession();
 }
 
-CodecStatus VTDecoder::hardwaredDecodeSupported(CMVideoCodecType codecType)
+bool VTDecoder::hardwareAccelerated() const
 {
-    if (@available(macOS 10.9, *)) {
-        static std::once_flag registerProfessionalVideoWorkflowVideoDecoders;
-        std::call_once(registerProfessionalVideoWorkflowVideoDecoders, VTRegisterProfessionalVideoWorkflowVideoDecoders);
+    if (_session) {
+        return _session.hardwareAccelerated();
     }
-    if (@available(macOS 11.0, *)) {
-        VTRegisterSupplementalVideoDecoderIfAvailable(codecType);
-    }
-    if (VTIsHardwareDecodeSupported(codecType)) {
-        return CodecStatus::SupportedHardware;
-    }
-    return CodecStatus::SupportedSoftware;
+    return VideoDecoder::hardwareAccelerated();
 }
 
 bool VTDecoder::Configure(const Settings& settings)
@@ -141,14 +133,13 @@ webrtc::RTCError VTDecoder::createSession(CFAutoRelease<CMVideoFormatDescription
 {
     destroySession();
     if (const auto vtCodec = toVTCodecType(type())) {
-        auto session = VTDecoderSession::create(hardwareAccelerated(),
-                                                vtCodec.value(),
+        auto session = VTDecoderSession::create(vtCodec.value(),
                                                 std::move(format),
+                                                realtime,
                                                 _outputPixelFormat,
                                                 _numberOfCores,
                                                 this,
-                                                VideoFrameBufferPool{_framesPool},
-                                                realtime);
+                                                VideoFrameBufferPool{_framesPool});
         if (session.ok()) {
             _session = session.MoveValue();
             if (_session) {

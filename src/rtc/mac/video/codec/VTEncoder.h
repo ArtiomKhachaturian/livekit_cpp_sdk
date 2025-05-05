@@ -33,12 +33,14 @@ class VTEncoder : public VideoEncoder, private VTEncoderSessionCallback
 {
 public:
     ~VTEncoder() override;
+    // overrides of GenericCodec<>
+    bool hardwareAccelerated() const override;
     // overrides of VideoEncoder
     int32_t InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings) override;
     int32_t Encode(const webrtc::VideoFrame& frame, const std::vector<webrtc::VideoFrameType>* frameTypes) override;
     EncoderInfo GetEncoderInfo() const override;
 protected:
-    VTEncoder(bool hardwareAccelerated,
+    VTEncoder(const webrtc::SdpVideoFormat& format,
               webrtc::CodecSpecificInfo codecSpecificInfo,
               const std::shared_ptr<CFMemoryPool>& memoryPool = {});
     virtual webrtc::RTCError configureCompressionSession(VTEncoderSession* session);

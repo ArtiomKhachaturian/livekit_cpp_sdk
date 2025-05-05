@@ -38,11 +38,9 @@ public:
     void SetRates(const RateControlParameters& parameters) override;
     EncoderInfo GetEncoderInfo() const override;
 protected:
-    VideoEncoder(bool hardwareAccelerated,
+    VideoEncoder(const webrtc::SdpVideoFormat& format,
                  webrtc::CodecSpecificInfo codecSpecificInfo,
                  bool useTrustedBitrateController);
-    // impl. of GenericCodec<>
-    webrtc::VideoCodecType type() const noexcept final { return _codecSpecificInfo.codecType; }
     uint32_t currentBitrate() const { return _currentBitrate.load(std::memory_order_relaxed); }
     uint32_t minBitrateBps() const { return _minBitrate; }
     uint32_t maxBitrateBps() const { return _maxBitrate; }

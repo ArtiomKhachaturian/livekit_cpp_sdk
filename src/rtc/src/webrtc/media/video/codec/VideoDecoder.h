@@ -22,14 +22,11 @@ namespace LiveKitCpp
 
 class VideoDecoder : public GenericCodec<webrtc::VideoDecoder>
 {
-    using Base = GenericCodec<webrtc::VideoDecoder>;
     using DecodedMethodType = void(webrtc::DecodedImageCallback::*)(webrtc::VideoFrame&,
                                                                     std::optional<int32_t>,
                                                                     std::optional<uint8_t>);
 public:
     static int maxDecodingThreads(int width, int height, int maxCores);
-    // impl. of GenericCodec<>
-    webrtc::VideoCodecType type() const noexcept final { return _codecType; }
     // impl. or overrides of GenericCodec<webrtc::VideoDecoder>
     bool Configure(const webrtc::VideoDecoder::Settings& settings) override;
     int32_t RegisterDecodeCompleteCallback(webrtc::DecodedImageCallback* callback) override;
@@ -37,7 +34,7 @@ public:
     webrtc::VideoDecoder::DecoderInfo GetDecoderInfo() const override;
     const char* ImplementationName() const override { return mediaBackendName(); }
 protected:
-    VideoDecoder(webrtc::VideoCodecType codecType, bool hardwareAccelerated);
+    VideoDecoder(const webrtc::SdpVideoFormat& format);
     void sendDecodedImage(webrtc::VideoFrame& decodedImage,
                           std::optional<int32_t> decodeTimeMs = std::nullopt,
                           std::optional<uint8_t> qp = std::nullopt) const;
@@ -45,7 +42,6 @@ protected:
     int bufferPoolSize() const { return _bufferPoolSize; }
     virtual void destroySession() {}
 private:
-    const webrtc::VideoCodecType _codecType;
     Bricks::Listener<webrtc::DecodedImageCallback*> _callback;
     std::atomic<int> _bufferPoolSize = 0;
 };

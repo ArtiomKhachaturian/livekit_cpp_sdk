@@ -45,10 +45,10 @@ private:
     std::atomic_bool _hasPendingBitrateUpdates = false;
 };
 
-VideoEncoder::VideoEncoder(bool hardwareAccelerated,
+VideoEncoder::VideoEncoder(const webrtc::SdpVideoFormat& format,
                            webrtc::CodecSpecificInfo codecSpecificInfo,
                            bool useTrustedBitrateController)
-    : GenericCodec<webrtc::VideoEncoder>(hardwareAccelerated)
+    : GenericCodec<webrtc::VideoEncoder>(format)
     , _codecSpecificInfo(std::move(codecSpecificInfo))
     , _bitrateAdjuster(useTrustedBitrateController ? std::make_unique<BitrateAdjuster>() : std::unique_ptr<BitrateAdjuster>())
 {

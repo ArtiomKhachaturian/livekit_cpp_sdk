@@ -93,6 +93,7 @@ inline std::vector<webrtc::SdpVideoFormat> mergeFormats(const TCodecFactory* fac
 }
 #ifdef WEBRTC_MAC
 // constants
+constexpr CMVideoCodecType codecTypeAV1() { return kCMVideoCodecType_AV1; }
 constexpr CMVideoCodecType codecTypeVP9() { return kCMVideoCodecType_VP9; }
 constexpr CMVideoCodecType codecTypeH264() { return kCMVideoCodecType_H264; }
 // https://en.wikipedia.org/wiki/High_Efficiency_Video_Coding

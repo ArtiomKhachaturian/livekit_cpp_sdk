@@ -15,9 +15,10 @@
 #include "CFAutoRelease.h"
 #include "CodecStatus.h"
 #include "SafeObj.h"
+#include "VideoDecoder.h"
+#include "VideoUtils.h"
 #include "VTDecoderSessionCallback.h"
 #include "VTDecoderSession.h"
-#include "VideoDecoder.h"
 
 namespace LiveKitCpp
 {
@@ -29,15 +30,15 @@ class VTDecoder : public VideoDecoder, private VTDecoderSessionCallback
 {
 public:
     ~VTDecoder() override;
-    static CodecStatus hardwaredDecodeSupported(CMVideoCodecType codecType);
+    // overrides of GenericCodec<>
+    bool hardwareAccelerated() const override;
     // overrides of VideoDecoder
     bool Configure(const Settings& settings) override;
     int32_t Decode(const webrtc::EncodedImage& inputImage, bool missingFrames, int64_t renderTimeMs) final;
 protected:
-    VTDecoder(OSType outputPixelFormat,
-              webrtc::VideoCodecType codecType,
-              bool hardwareAccelerated = true,
-              const std::shared_ptr<CFMemoryPool>& memoryPool = {});
+    VTDecoder(const webrtc::SdpVideoFormat& format,
+              const std::shared_ptr<CFMemoryPool>& memoryPool = {},
+              OSType outputPixelFormat = formatNV12Full());
     const auto& memoryPool() const noexcept { return _memoryPool; }
     CMVideoFormatDescriptionRef createInitialVideoFormat(const webrtc::RenderResolution& resolution) const;
     virtual CMVideoFormatDescriptionRef createInitialVideoFormat(uint32_t encodedWidth, uint32_t encodedHeight) const;

@@ -13,16 +13,15 @@
 // limitations under the License.
 #include "VTH264Decoder.h"
 #include "H264Utils.h"
-#include "CFMemoryPool.h"
 #include "VideoUtils.h"
+#include "CFMemoryPool.h"
 #include <components/video_codec/nalu_rewriter.h>
 
 namespace LiveKitCpp
 {
 
-VTH264Decoder::VTH264Decoder(bool hardwareAccelerated)
-    : VTDecoder(formatNV12Full(), webrtc::VideoCodecType::kVideoCodecH264,
-                hardwareAccelerated, CFMemoryPool::create())
+VTH264Decoder::VTH264Decoder(const webrtc::SdpVideoFormat& format)
+    : VTDecoder(format)
 {
 }
 
@@ -36,7 +35,7 @@ std::unique_ptr<webrtc::VideoDecoder> VTH264Decoder::create(const webrtc::SdpVid
     if (H264Utils::formatMatched(format)) {
         const auto status = decoderStatus(format);
         if (CodecStatus::NotSupported != status) {
-            decoder.reset(new VTH264Decoder(maybeHardwareAccelerated(status)));
+            decoder.reset(new VTH264Decoder(format));
         }
     }
     return decoder;

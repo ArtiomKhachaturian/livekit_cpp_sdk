@@ -15,7 +15,6 @@
 #include "VTH264EncodedBuffer.h"
 #include "VTEncoderSession.h"
 #include "VideoUtils.h"
-#include "CFMemoryPool.h"
 #include "H264Utils.h"
 #include "EncodedImageBuffer.h"
 #include <components/video_codec/nalu_rewriter.h>
@@ -24,10 +23,9 @@
 namespace LiveKitCpp
 {
 
-VTH264Encoder::VTH264Encoder(bool hardwareAccelerated,
-                             webrtc::H264PacketizationMode mode,
-                             const webrtc::SdpVideoFormat& format)
-    : VTEncoder(hardwareAccelerated, H264Utils::createCodecInfo(mode), CFMemoryPool::create())
+VTH264Encoder::VTH264Encoder(const webrtc::SdpVideoFormat& format,
+                             webrtc::H264PacketizationMode mode)
+    : VTEncoder(format, H264Utils::createCodecInfo(mode))
     , _profileLevelId(webrtc::ParseSdpForH264ProfileLevelId(format.parameters))
 {
 }
@@ -43,7 +41,7 @@ std::unique_ptr<webrtc::VideoEncoder> VTH264Encoder::create(const webrtc::SdpVid
         const auto status = encoderStatus(format);
         if (CodecStatus::NotSupported != status) {
             const auto packetizationMode = H264Utils::packetizationMode(format);
-            encoder.reset(new VTH264Encoder(maybeHardwareAccelerated(status), packetizationMode, format));
+            encoder.reset(new VTH264Encoder(format, packetizationMode));
         }
     }
     return encoder;

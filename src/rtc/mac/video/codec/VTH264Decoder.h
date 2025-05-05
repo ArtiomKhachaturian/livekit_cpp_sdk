@@ -29,7 +29,7 @@ public:
     ~VTH264Decoder() override;
     static std::unique_ptr<webrtc::VideoDecoder> create(const webrtc::SdpVideoFormat& format);
 protected:
-    VTH264Decoder(bool hardwareAccelerated);
+    VTH264Decoder(const webrtc::SdpVideoFormat& format);
     // impl. of VTDecoder
     CMVideoFormatDescriptionRef createVideoFormat(const webrtc::EncodedImage& inputImage) const final;
     CMSampleBufferRef createSampleBuffer(const webrtc::EncodedImage& inputImage,

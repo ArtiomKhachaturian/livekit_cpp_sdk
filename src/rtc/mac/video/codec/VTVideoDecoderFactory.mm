@@ -15,6 +15,7 @@
 #include "VideoUtils.h"
 #include "H264Utils.h"
 #include "VTH264Decoder.h"
+#import <CoreMedia/CoreMedia.h>
 
 namespace LiveKitCpp
 {
@@ -31,6 +32,42 @@ std::unique_ptr<webrtc::VideoDecoder> VTVideoDecoderFactory::
         return decoder;
     }
     return VideoDecoderFactory::customDecoder(env, format);
+}
+
+CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
+{
+    if (webrtc::VideoCodecType::kVideoCodecGeneric != type) {
+        if (@available(macOS 10.9, *)) {
+            static std::once_flag registerProfessionalVideoWorkflowVideoDecoders;
+            std::call_once(registerProfessionalVideoWorkflowVideoDecoders, []() {
+                VTRegisterProfessionalVideoWorkflowVideoDecoders();
+                //VTRegisterSupplementalVideoDecoderIfAvailable(codecTypeAV1());
+                //VTRegisterSupplementalVideoDecoderIfAvailable(codecTypeVP9());
+                VTRegisterSupplementalVideoDecoderIfAvailable(codecTypeH264());
+            });
+        }
+        switch (type) {
+            /*case webrtc::kVideoCodecVP9:
+                if (VTIsHardwareDecodeSupported(codecTypeVP9())) {
+                    return CodecStatus::SupportedMixed;
+                }
+                break;
+            case webrtc::kVideoCodecAV1:
+                if (VTIsHardwareDecodeSupported(codecTypeAV1())) {
+                    return CodecStatus::SupportedMixed;
+                }
+                break;*/
+            case webrtc::kVideoCodecH264:
+                if (VTIsHardwareDecodeSupported(codecTypeH264())) {
+                    return CodecStatus::SupportedMixed;
+                }
+                break;
+            default:
+                break;
+        }
+        return CodecStatus::SupportedSoftware;
+    }
+    return CodecStatus::NotSupported;
 }
 
 } // namespace LiveKitCpp

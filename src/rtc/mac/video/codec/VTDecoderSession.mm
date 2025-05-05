@@ -86,10 +86,9 @@ VTDecoderSession::~VTDecoderSession()
 VTDecoderSession& VTDecoderSession::operator = (VTDecoderSession&&) = default;
 
 webrtc::RTCErrorOr<VTDecoderSession> VTDecoderSession::
-    create(bool hardwareAccelerated, CMVideoCodecType codecType,
-           CFAutoRelease<CMVideoFormatDescriptionRef> format, OSType outputPixelFormat,
-           int numberOfCores, VTDecoderSessionCallback* callback,
-           VideoFrameBufferPool framesPool, bool realtime)
+    create(CMVideoCodecType codecType, CFAutoRelease<CMVideoFormatDescriptionRef> format,
+           bool realtime, OSType outputPixelFormat, int numberOfCores,
+           VTDecoderSessionCallback* callback, VideoFrameBufferPool framesPool)
 {
     if (format) {
         const auto dimensions = CMVideoFormatDescriptionGetDimensions(format);
@@ -98,14 +97,9 @@ webrtc::RTCErrorOr<VTDecoderSession> VTDecoderSession::
                                                                                         2,  // capacity
                                                                                         &kCFTypeDictionaryKeyCallBacks,
                                                                                         &kCFTypeDictionaryValueCallBacks);
-            CFDictionarySetValue(decoderConfig, kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder,
-                                 hardwareAccelerated ? kCFBooleanTrue : kCFBooleanFalse);
-            if (!hardwareAccelerated) {
-                numberOfCores = VideoDecoder::maxDecodingThreads(dimensions.width, dimensions.height, numberOfCores);
-                if (numberOfCores > 0) {
-                    CFDictionarySetValue(decoderConfig, kVTDecompressionPropertyKey_ThreadCount, createCFNumber(numberOfCores));
-                }
-            }
+            CFDictionarySetValue(decoderConfig,
+                                 kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder,
+                                 kCFBooleanTrue);
             auto pipeline = std::make_unique<DecodePipeline>(codecType,
                                                              dimensions.width,
                                                              dimensions.height,
@@ -117,12 +111,18 @@ webrtc::RTCErrorOr<VTDecoderSession> VTDecoderSession::
                                                        imageAttrs, &record, &session);
             if (noErr == status) {
                 CFBooleanRef hwacclEnabled = nil;
-                hardwareAccelerated = noErr == VTSessionCopyProperty(session,
-                                                                     kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder,
-                                                                     nil, &hwacclEnabled) && CFBooleanGetValue(hwacclEnabled);
+                const auto hwa = noErr == VTSessionCopyProperty(session,
+                                                                kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder,
+                                                                nil, &hwacclEnabled) && CFBooleanGetValue(hwacclEnabled);
+                if (!hwa) {
+                    numberOfCores = VideoDecoder::maxDecodingThreads(dimensions.width, dimensions.height, numberOfCores);
+                    if (numberOfCores > 0) {
+                        VTSessionSetProperty(session, kVTDecompressionPropertyKey_ThreadCount, createCFNumber(numberOfCores));
+                    }
+                }
                 // enable low-latency mode
                 VTSessionSetProperty(session, latencyKey(realtime), kCFBooleanTrue);
-                return VTDecoderSession(std::move(pipeline), std::move(format), session, hardwareAccelerated);
+                return VTDecoderSession(std::move(pipeline), std::move(format), session, hwa);
             }
             return toRtcError(status);
         }

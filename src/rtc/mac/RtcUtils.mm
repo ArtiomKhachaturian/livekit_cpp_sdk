@@ -13,12 +13,7 @@
 // limitations under the License.
 #include "RtcUtils.h"
 #include "Utils.h"
-#include "VTEncoderSession.h"
-#include "VTH264Encoder.h"
-#include "VTDecoder.h"
-#include "CodecStatus.h"
 #include <api/units/timestamp.h>
-#include <api/video_codecs/h264_profile_level_id.h>
 #include <rtc_base/time_utils.h>
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
@@ -29,8 +24,6 @@
 namespace
 {
 
-using namespace LiveKitCpp;
-
 inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
 {
     if (0 != CMTimeCompare(kCMTimeInvalid, time) && (time.flags & kCMTimeFlags_Valid)) {
@@ -38,10 +31,6 @@ inline std::optional<webrtc::Timestamp> toTimestamp(const CMTime& time)
     }
     return std::nullopt;
 }
-
-VTEncoderSession createH264Compressor(bool hardwareAccelerated,
-                                      int32_t width = 640, int32_t height = 480,
-                                      CFStringRef profile = nullptr);
 
 }
 
@@ -238,73 +227,4 @@ webrtc::RTCError toRtcError(OSStatus status, webrtc::RTCErrorType type)
     return {};
 }
 
-CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
-{
-    CodecStatus status = CodecStatus::NotSupported;
-    if (webrtc::VideoCodecType::kVideoCodecGeneric != type) {
-        switch (type) {
-            case webrtc::kVideoCodecVP8:
-            case webrtc::kVideoCodecVP9:
-            case webrtc::kVideoCodecAV1:
-                status = CodecStatus::SupportedSoftware;
-            default:
-                break;
-        }
-        if (webrtc::kVideoCodecH264 == type) {
-            if (@available(macOS 10.9, *)) {
-                static std::once_flag registerProfessionalVideoWorkflowVideoEncoders;
-                std::call_once(registerProfessionalVideoWorkflowVideoEncoders, VTRegisterProfessionalVideoWorkflowVideoEncoders);
-            }
-            CFStringRef profile = nullptr;
-            if (const auto profileLevelId = webrtc::ParseSdpForH264ProfileLevelId(parameters)) {
-                profile = VTH264Encoder::extractProfile(profileLevelId.value());
-                if (auto compressor = createH264Compressor(true, 1280, 720, profile)) {
-                    if (compressor.hardwareAccelerated()) {
-                        status = CodecStatus::SupportedHardware;
-                    }
-                    else {
-                        status = CodecStatus::SupportedSoftware;
-                    }
-                }
-            }
-        }
-    }
-    return status;
-}
-
-CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
-{
-    if (webrtc::VideoCodecType::kVideoCodecGeneric != type) {
-        switch (type) {
-            case webrtc::kVideoCodecVP8:
-            case webrtc::kVideoCodecVP9:
-            case webrtc::kVideoCodecAV1:
-                return CodecStatus::SupportedSoftware;
-            default:
-                break;
-        }
-        if (webrtc::kVideoCodecH264 == type) {
-            return VTDecoder::hardwaredDecodeSupported(codecTypeH264());
-        }
-    }
-    return CodecStatus::NotSupported;
-}
-
 } // namespace LiveKitCpp
-
-namespace
-{
-
-VTEncoderSession createH264Compressor(bool hardwareAccelerated, int32_t width,
-                                      int32_t height, CFStringRef profile)
-{
-    auto session = VTEncoderSession::create(width, height, codecTypeH264(), hardwareAccelerated, false);
-    if (session.ok()) {
-        if (profile && !session.value().setProfileLevel(profile).ok()) {
-            return {};
-        }
-    }
-    return session.MoveValue();
-}
-
-}

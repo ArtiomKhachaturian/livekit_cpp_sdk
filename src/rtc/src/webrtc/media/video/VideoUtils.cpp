@@ -396,6 +396,8 @@ bool isSupportedFormat(OSType format)
 std::optional<CMVideoCodecType> toVTCodecType(webrtc::VideoCodecType codecType)
 {
     switch (codecType) {
+        case webrtc::VideoCodecType::kVideoCodecAV1:
+            return codecTypeAV1();
         case webrtc::VideoCodecType::kVideoCodecVP9:
             return codecTypeVP9();
         case webrtc::VideoCodecType::kVideoCodecH264:
@@ -411,6 +413,8 @@ std::optional<CMVideoCodecType> toVTCodecType(webrtc::VideoCodecType codecType)
 std::optional<webrtc::VideoCodecType> fromVTCodecType(CMVideoCodecType codecType)
 {
     switch (codecType) {
+        case codecTypeAV1():
+            return webrtc::VideoCodecType::kVideoCodecAV1;
         case codecTypeVP9():
             return webrtc::VideoCodecType::kVideoCodecVP9;
         case codecTypeH264():

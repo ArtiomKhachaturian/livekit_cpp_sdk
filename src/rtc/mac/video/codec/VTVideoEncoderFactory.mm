@@ -16,6 +16,17 @@
 #include "H264Utils.h"
 #include "VideoUtils.h"
 
+namespace
+{
+
+using namespace LiveKitCpp;
+
+VTEncoderSession createCompressor(CMVideoCodecType codecType,
+                                  int32_t width = 640, int32_t height = 480,
+                                  CFStringRef profile = nullptr);
+
+}
+
 namespace LiveKitCpp
 {
 
@@ -33,4 +44,57 @@ std::vector<webrtc::SdpVideoFormat> VTVideoEncoderFactory::customFormats() const
     return H264Utils::supportedFormats(true);
 }
 
+CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
+{
+    CodecStatus status = CodecStatus::NotSupported;
+    if (webrtc::VideoCodecType::kVideoCodecGeneric != type) {
+        switch (type) {
+            case webrtc::kVideoCodecVP8:
+            case webrtc::kVideoCodecVP9:
+            case webrtc::kVideoCodecAV1:
+                status = CodecStatus::SupportedSoftware;
+            default:
+                break;
+        }
+        if (@available(macOS 10.9, *)) {
+            static std::once_flag registerProfessionalVideoWorkflowVideoEncoders;
+            std::call_once(registerProfessionalVideoWorkflowVideoEncoders, VTRegisterProfessionalVideoWorkflowVideoEncoders);
+        }
+        if (webrtc::kVideoCodecH264 == type) {
+            CFStringRef profile = nullptr;
+            if (const auto profileLevelId = webrtc::ParseSdpForH264ProfileLevelId(parameters)) {
+                profile = VTH264Encoder::extractProfile(profileLevelId.value());
+                if (auto compressor = createCompressor(codecTypeH264(), 1280, 720, profile)) {
+                    if (compressor.hardwareAccelerated()) {
+                        status = CodecStatus::SupportedHardware;
+                    }
+                    else {
+                        status = CodecStatus::SupportedSoftware;
+                    }
+                }
+            }
+        }
+    }
+    return status;
+}
+
 } // namespace LiveKitCpp
+
+
+namespace
+{
+
+VTEncoderSession createCompressor(CMVideoCodecType codecType,
+                                  int32_t width, int32_t height,
+                                  CFStringRef profile)
+{
+    auto session = VTEncoderSession::create(width, height, codecType);
+    if (session.ok()) {
+        if (profile && !session.value().setProfileLevel(profile).ok()) {
+            return {};
+        }
+    }
+    return session.MoveValue();
+}
+
+}

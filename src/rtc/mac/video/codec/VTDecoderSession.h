@@ -13,8 +13,8 @@
 // limitations under the License.
 #pragma once // VTDecoderSession.h
 #include "VideoFrameBufferPool.h"
+#include "VideoUtils.h"
 #include "VTSession.h"
-#include <api/scoped_refptr.h>
 
 namespace webrtc {
 class ColorSpace;
@@ -43,13 +43,13 @@ public:
     VTDecoderSession& operator = (const VTDecoderSession&) = delete;
     VTDecoderSession& operator = (VTDecoderSession&&);
     static webrtc::RTCErrorOr<VTDecoderSession>
-        create(bool hardwareAccelerated, CMVideoCodecType codecType,
+        create(CMVideoCodecType codecType,
                CFAutoRelease<CMVideoFormatDescriptionRef> format,
-               OSType outputPixelFormat,
+               bool realtime,
+               OSType outputPixelFormat = formatNV12Full(),
                int numberOfCores = 0, // auto
                VTDecoderSessionCallback* CM_NULLABLE callback = nullptr,
-               VideoFrameBufferPool framesPool = {},
-               bool realtime = true);
+               VideoFrameBufferPool framesPool = {});
     webrtc::RTCError waitForAsynchronousFrames();
     webrtc::RTCError setOutputPoolRequestedMinimumBufferCount(int bufferPoolSize);
     OSStatus decompress(CMSampleBufferRef CM_NONNULL encodedBufferData,
