@@ -15,12 +15,14 @@ if(APPLE)
     set(CODE_SIGNING_CERT $ENV{CODE_SIGNING_CERT} CACHE PATH "The sign certificate name, like 'Apple Development: John Smith (N4SRYBN648)' for example")
 endif(APPLE)
 
+set(CMAKE_AUTORCC ON)
+
 qt_standard_project_setup(REQUIRES 6.7.3)
 
 qt_add_executable(${PROJECT_NAME})
 
 qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
-    QML_FILES
+   QML_FILES
             Main.qml
             Client.qml
             ConnectForm.qml
@@ -36,7 +38,7 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             ElementsGrid.qml
             SharingSelectionForm.qml
             MediaOptionsForm.qml
-    SOURCES
+   SOURCES
             main.cpp
             demoapp.cpp
             logger.h
@@ -88,6 +90,8 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             pencilvideofilter.h
             pencilvideofilter.cpp
             successivedifferenceestimator.h
+   RESOURCES
+      Resources.qrc
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

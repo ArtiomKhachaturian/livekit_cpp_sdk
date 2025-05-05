@@ -22,7 +22,39 @@ ApplicationWindow {
                 model: clients
                 TabButton {
                     text: model.text
-                    width: 100
+                    objectName: model.id
+                    implicitWidth: 120
+                    icon.width: 12
+                    icon.height: 12
+                    icon.source: {
+                        switch (model.state) {
+                            case 1:
+                                return "qrc:/resources/images/yellowCircle128.png"
+                            case 2:
+                                return "qrc:/resources/images/greenCircle128.png"
+                            default:
+                                break
+                        }
+                        return "qrc:/resources/images/redCircle128.png"
+                    }
+                    indicator: ToolButton {
+                        Image {
+                            source: "qrc:/resources/images/close.png"
+                            anchors.fill: parent
+                            anchors.margins: 2
+                        }
+                        implicitHeight: parent.height - 4
+                        implicitWidth: implicitHeight
+                        anchors.right: parent.right
+                        anchors.rightMargin: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        Component.onCompleted: {
+                            visible = clients.usersCount > 1
+                        }
+                        onClicked: {
+                            removeClient(parent.objectName)
+                        }
+                    }
                 }
             }
         }
@@ -47,19 +79,36 @@ ApplicationWindow {
             Client {
                 objectName: model.id
                 urlText: lastUrl
-                tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY0MTM0MDAsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjMyNzAwMCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.NutkhLAXU4Brnq85omImDWO0jcE7uBL16R_iKhLCKJQ"
+                tokenText: {
+                    if (objectName === "User #1") {
+                        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY1NDMxNTYsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjQ1Njc1Niwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.VKOR-N_Ubbj2knZKfjyjKOyWHTk4Z5ZE7MwO0AMBlvE"
+                    }
+                    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY1NDMxNTYsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjQ1Njc1Niwic3ViIjoidXNlcjIiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.tBuNEJkLvF95bNwiXk-huQL1rkMS2tvDPKeANS3Lyvk"
+                }
+                //tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY0MTM0MDAsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjMyNzAwMCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.NutkhLAXU4Brnq85omImDWO0jcE7uBL16R_iKhLCKJQ"
                 enabled: app.valid
                 Component.onCompleted: {
-                    closable = clients.usersCount > 1
+                    model.state = 0
                 }
-                onWantsToBeClosed: {
-                    removeClient(objectName)
+                Component.onDestruction: {
+                    disconnect()
                 }
                 onError: (desc, details) => {
                     showErrorMessage(desc, details, objectName)
                 }
                 onIdentityChanged: {
                     updateClientIdentity(objectName, identity)
+                }
+                onSessionActiveChanged: {
+                    if (sessionConnected) {
+                        model.state = 2
+                    }
+                    else if (sessionConnecting) {
+                        model.state = 1
+                    }
+                    else {
+                        model.state = 0
+                    }
                 }
             }
         }
@@ -92,11 +141,12 @@ ApplicationWindow {
 
     Component.onCompleted: {
         addNewClient()
+        addNewClient()
     }
 
     function addNewClient() {
         var clientId = "User #" + (++clients.usersCount)
-        clients.append({id:clientId, text:clientId})
+        clients.append({id:clientId, text:clientId, state:0})
     }
 
     function removeClient(id) {

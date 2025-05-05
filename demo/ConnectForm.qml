@@ -115,7 +115,7 @@ Item {
                     Switch {
                         id: videoEncoderChx
                         text: qsTr("Video encoder:")
-                        checked: false
+                        checked: true
                         onCheckedChanged: {
                             if (checked) {
                                 root.prefferedVideoEncoder = videoEncoderCb.currentText
@@ -133,6 +133,11 @@ Item {
                         onCurrentTextChanged: {
                             if (enabled) {
                                 root.prefferedVideoEncoder = currentText
+                            }
+                        }
+                        onModelChanged: {
+                            if (model) {
+                                currentIndex = 3
                             }
                         }
                     }

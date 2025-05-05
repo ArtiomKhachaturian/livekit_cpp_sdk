@@ -6,7 +6,6 @@ import LiveKitClient 1.0
 Item {
     id: root
 
-    property bool showIdentity: true
     property Participant participant
     readonly property bool hasVideo: videoTracks.count > 0
     readonly property bool hasAudio: participant && participant.audioTracksCount > 0
@@ -46,6 +45,16 @@ Item {
                                 return !source.remote
                             }
                             return false
+                        }
+                        Image {
+                           source: "qrc:/resources/images/secure.png"
+                           width: 12
+                           height: 12
+                           anchors.left: parent.left
+                           anchors.top: parent.top
+                           anchors.margins: 2
+                           z: 1
+                           visible: model.track && model.track.secure
                         }
 
                         MouseArea {
@@ -236,7 +245,6 @@ Item {
             }
             TextPanel {
                 Layout.fillWidth: true
-                visible: showIdentity
                 text: participant ? participant.identity : ""
             }
         }

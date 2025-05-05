@@ -5,14 +5,14 @@ import QtQuick.Layouts
 Pane {
     id: root
 
-    property bool closable: true
     property string videoFilter
     property alias urlText: connectionForm.urlText
     property alias tokenText: connectionForm.tokenText
     property alias identity: sessionForm.identity
-    readonly property bool sessionActive: sessionForm.connecting || sessionForm.connected
+    readonly property bool sessionConnecting: sessionForm.connecting
+    readonly property bool sessionConnected: sessionForm.connected
+    readonly property bool sessionActive: sessionConnecting || sessionConnected
 
-    signal wantsToBeClosed()
     signal error(string desc, string details)
 
     ColumnLayout {
@@ -113,16 +113,6 @@ Pane {
                     visible: sessionActive
                     onClicked: sessionForm.disconnect()
                 }
-
-                ToolButton {
-                    Layout.alignment: Qt.AlignRight
-                    visible: closable
-                    icon.name: "window-close"
-                    onClicked: {
-                        sessionForm.disconnect()
-                        wantsToBeClosed()
-                    }
-                }
             }
         }
 
@@ -215,5 +205,9 @@ Pane {
         onRejected: {
             //sharingAddSwitch.checked = false
         }
+    }
+
+    function disconnect() {
+        sessionForm.disconnect()
     }
 }

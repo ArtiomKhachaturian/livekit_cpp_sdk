@@ -8,7 +8,18 @@ GroupBox {
     RowLayout {
         anchors.fill: parent
         ToolButton {
-            icon.name: recording ? "audio-input-microphone" : "audio-card"
+            icon.source: {
+                if (recording) {
+                    if (checked) {
+                        return "qrc:/resources/images/mic-on.png"
+                    }
+                    return "qrc:/resources/images/mic-off.png"
+                }
+                if (checked) {
+                    return "qrc:/resources/images/volume_on.png"
+                }
+                return "qrc:/resources/images/volume-off.png"
+            }
             checkable: true
             checked: recording ? app.audioRecordingEnabled : app.audioPlayoutEnabled
             display: ToolButton.IconOnly

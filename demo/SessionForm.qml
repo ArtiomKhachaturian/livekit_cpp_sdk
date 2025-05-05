@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 import LiveKitClient 1.0
 
 Frame {
@@ -48,24 +49,30 @@ Frame {
         }
 
         Component.onCompleted: {
-            addParticipant(localParticipant)
+            addParticipant(localParticipant, false)
         }
 
         Component.onDestruction: {
-            removeParticipant(localParticipant)
+            removeParticipant(localParticipant, false)
         }
 
-        function addParticipant(participant) {
+        function addParticipant(participant, playSound = true) {
             if (null !== participant) {
                 participants.append({data:participant})
+                if (playSound) {
+                    soundEffect.join = true
+                    soundEffect.play()
+                }
             }
         }
 
-        function removeParticipant(participant) {
+        function removeParticipant(participant, playSound = true) {
             if (null !== participant) {
                 for (var i = 0; i < participants.count; i++) {
                     if (participants.get(i).data === participant) {
                         participants.remove(i)
+                        soundEffect.join = false
+                        soundEffect.play()
                         break
                     }
                 }
@@ -93,7 +100,6 @@ Frame {
                         anchors.fill: parent
                         property var modelData
                         participant: modelData
-                        showIdentity: participants.count > 1
                     }
                 }
             }
@@ -108,6 +114,12 @@ Frame {
                 }
             }
         }
+    }
+
+    SoundEffect {
+        id: soundEffect
+        property bool join: true
+        source: join ? "qrc:/resources/sounds/Join.wav" : "qrc:/resources/sounds/Left.wav"
     }
 
     Timer {

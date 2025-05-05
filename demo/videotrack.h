@@ -64,6 +64,7 @@ public:
     Q_PROPERTY(NetworkPriority networkPriority READ networkPriority WRITE setNetworkPriority NOTIFY networkPriorityChanged)
     Q_PROPERTY(ContentHint contentHint READ contentHint WRITE setContentHint NOTIFY contentHintChanged)
     Q_PROPERTY(DegradationPreference degradationPreference READ degradationPreference WRITE setDegradationPreference NOTIFY degradationPreferenceChanged)
+    Q_PROPERTY(bool secure READ isSecure CONSTANT)
 public:
     explicit VideoTrack(QObject* parent = nullptr);
     VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& sdkTrack,
@@ -73,6 +74,7 @@ public:
     QString id() const;
     bool isScreencast() const;
     bool isRemote() const { return _remote; }
+    bool isSecure() const;
     NetworkPriority networkPriority() const;
     ContentHint contentHint() const;
     DegradationPreference degradationPreference() const;

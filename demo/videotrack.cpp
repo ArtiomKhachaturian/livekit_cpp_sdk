@@ -98,6 +98,11 @@ bool VideoTrack::isScreencast() const
     return _sdkTrack && LiveKitCpp::TrackSource::ScreenShare == _sdkTrack->source();
 }
 
+bool VideoTrack::isSecure() const
+{
+    return _sdkTrack && LiveKitCpp::EncryptionType::None != _sdkTrack->encryption();
+}
+
 VideoTrack::NetworkPriority VideoTrack::networkPriority() const
 {
     if (const auto localSdkTrack = std::dynamic_pointer_cast<const LiveKitCpp::LocalVideoTrack>(_sdkTrack)) {

@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/images/greenCircle128.png</file>
+        <file>resources/images/mic-off.png</file>
+        <file>resources/images/mic-on.png</file>
+        <file>resources/images/redCircle128.png</file>
+        <file>resources/images/secure.png</file>
+        <file>resources/images/volume-off.png</file>
+        <file>resources/images/volume_on.png</file>
+        <file>resources/images/yellowCircle128.png</file>
+        <file>resources/sounds/Join.wav</file>
+        <file>resources/sounds/Left.wav</file>
+        <file>resources/images/close.png</file>
+    </qresource>
+</RCC>
