@@ -11,22 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // NativeVideoFrameBuffer.h
-#include "livekit/rtc/media/VideoFrameType.h"
-#include <api/video/video_frame_buffer.h>
+#pragma once // MFVideoDecoderFactory.h
+#include "VideoDecoderFactory.h"
 
 namespace LiveKitCpp
 {
 
-class NativeVideoFrameBuffer : public webrtc::VideoFrameBuffer
+class MFVideoDecoderFactory : public VideoDecoderFactory
 {
 public:
-    Type type() const final { return webrtc::VideoFrameBuffer::Type::kNative; }
-    virtual VideoFrameType nativeType() const = 0;
-    virtual int stride(size_t planeIndex) const = 0;
-    virtual const std::byte* data(size_t planeIndex) const = 0;
-    virtual int dataSize(size_t planeIndex) const { return stride(planeIndex) * height(); }
-    virtual int dataSize() const;
+    MFVideoDecoderFactory() = default;
+protected:
+    // override of VideoDecoderFactory
+    std::vector<webrtc::SdpVideoFormat> customFormats() const final;
+    std::unique_ptr<webrtc::VideoDecoder> customDecoder(const webrtc::Environment& env,
+                                                        const webrtc::SdpVideoFormat& format) final;
 };
-	
+
 } // namespace LiveKitCpp

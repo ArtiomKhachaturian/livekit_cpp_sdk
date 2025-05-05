@@ -14,14 +14,13 @@
 #pragma once // VideoFrameBuffer.h
 #include "SafeScopedRefPtr.h"
 #include "VideoFrameBufferPool.h"
-#include "VideoBufferHandleProvider.h"
 #include <type_traits>
 
 namespace LiveKitCpp 
 {
 
 template <class TBaseBuffer = webrtc::VideoFrameBuffer>
-class VideoFrameBuffer : public TBaseBuffer, virtual public VideoBufferHandleProvider
+class VideoFrameBuffer : public TBaseBuffer
 {
     static_assert(std::is_base_of<webrtc::VideoFrameBuffer, TBaseBuffer>::value);
 public:
