@@ -80,13 +80,14 @@ void SdpPatch::moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, s
                 if (it != input.end()) {
                     output.push_back(std::move(*it));
                     input.erase(it);
-                    for (it = input.begin(); it != input.end();) {
-                        if (isAssociatedCodec(payload, *it)) {
-                            output.push_back(std::move(*it));
-                            input.erase(it);
+                    for (size_t i = 0U; i < input.size();) {
+                        auto& codec = input[i];
+                        if (isAssociatedCodec(payload, codec)) {
+                            output.push_back(std::move(codec));
+                            input.erase(input.begin() + i);
                         }
                         else {
-                            ++it;
+                            ++i;
                         }
                     }
                 }
