@@ -71,8 +71,10 @@ Frame {
                 for (var i = 0; i < participants.count; i++) {
                     if (participants.get(i).data === participant) {
                         participants.remove(i)
-                        soundEffect.join = false
-                        soundEffect.play()
+                        if (playSound) {
+                            soundEffect.join = false
+                            soundEffect.play()
+                        }
                         break
                     }
                 }
