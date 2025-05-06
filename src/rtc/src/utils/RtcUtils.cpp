@@ -20,6 +20,8 @@
 #ifndef __APPLE__
 #include <sys/prctl.h>
 #endif
+#else
+#include "ComErrorHandling.h"
 #endif
 #include <api/peer_connection_interface.h>
 #include <api/task_queue/default_task_queue_factory.h>
@@ -103,6 +105,19 @@ inline std::string stateToString(webrtc::TaskQueueBase::DelayPrecision precision
     }
     return {};
 }
+
+#ifdef _WIN32
+webrtc::RTCError toRtcError(HRESULT status, webrtc::RTCErrorType type)
+{
+    if (FAILED(status)) {
+        if (webrtc::RTCErrorType::NONE == type) {
+            type = webrtc::RTCErrorType::UNSUPPORTED_OPERATION;
+        }
+        return webrtc::RTCError(type, comErrorToString(status));
+    }
+    return {};
+}
+#endif
 
 TrackType mediaTypeToTrackType(webrtc::MediaType type)
 {

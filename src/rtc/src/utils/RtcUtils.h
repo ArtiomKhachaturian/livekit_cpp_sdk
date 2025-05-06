@@ -39,6 +39,8 @@ int32_t cmTimeToMilli(const CMTime& time);
 CFStringRefAutoRelease stringToCFString(std::string_view str);
 std::string osStatusToString(OSStatus status);
 webrtc::RTCError toRtcError(OSStatus status, webrtc::RTCErrorType type = webrtc::RTCErrorType::UNSUPPORTED_OPERATION);
+#elif defined(WEBRTC_WIN)
+webrtc::RTCError toRtcError(HRESULT status, webrtc::RTCErrorType type = webrtc::RTCErrorType::UNSUPPORTED_OPERATION);
 #endif // __APPLE__
 
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);

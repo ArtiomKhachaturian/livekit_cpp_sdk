@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "Utils.h"
 #include "ComErrorHandling.h"
+#include "ScopedComInitializer.h"
 #include "Logger.h"
 #ifdef WEBRTC_WIN
 #include <rtc_base/string_utils.h>
@@ -55,7 +56,12 @@ std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueN
     return data;
 }
 
-#ifdef WEBRTC_WIN
+HRESULT initializeComForThisThread(bool multiThreadedModel)
+{
+    static thread_local const ScopedComInitializer init(multiThreadedModel);
+    return init.status();
+}
+
 std::string comErrorToString(const _com_error& error, const char* function, int lineNumber)
 {
     thread_local static char ss_buf[1024];
@@ -108,6 +114,5 @@ HRESULT logComError(HRESULT hr, const char* function, int lineNumber,
     }
     return hr;
 }
-#endif
 
 } // namespace LiveKitCpp

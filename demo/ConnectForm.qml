@@ -137,7 +137,7 @@ Item {
                         }
                         onModelChanged: {
                             if (model) {
-                                currentIndex = 3
+                                currentIndex = 2
                             }
                         }
                     }

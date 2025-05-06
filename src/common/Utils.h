@@ -53,6 +53,7 @@ std::string stringFromCFString(CFStringRef str);
 #elif defined(_WIN32)
 // https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types
 std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueName = NULL, LPDWORD lpType = NULL);
+HRESULT initializeComForThisThread(bool multiThreadedModel = true);
 #endif // __APPLE__
 
 // major version / major version / patch version
@@ -68,7 +69,7 @@ inline bool compareCaseSensitive(std::string_view s1, std::string_view s2) {
 }
 
 std::string toLower(std::string s);
-std::string fromWideChar(const std::wstring& w);
+std::string fromWideChar(std::wstring_view w);
 std::vector<std::string> split(std::string_view s, std::string_view delim);
 std::string join(const std::vector<std::string>& strings,
                  std::string_view delim, bool skipEmpty = false);

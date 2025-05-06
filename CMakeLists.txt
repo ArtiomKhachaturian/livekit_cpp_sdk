@@ -409,6 +409,7 @@ if (WEBRTC_AVAILABLE)
         target_link_libraries(${RTC_LIB} PRIVATE "-framework CoreServices -framework IOKit -framework IOSurface -framework Cocoa -framework CoreMedia -framework CoreVideo -framework CoreAudio -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework Security -framework SystemConfiguration -framework ScreenCaptureKit -framework Metal -framework VideoToolbox")
     elseif(WIN32)
         copyDylib(${RTC_LIB})
+        target_include_directories(${RTC_LIB} PRIVATE ${RTC_SRC_DIR}/${PLATFORM_SRC_FOLDER}/media)
         target_compile_options(${RTC_LIB} PRIVATE /wd4068 /wd4141)
         target_compile_definitions(${RTC_LIB} PRIVATE -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS 
                                                       -DWINRT_DIAGNOSTICS 

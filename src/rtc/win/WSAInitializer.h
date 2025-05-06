@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // WSAInitializer.h
-#ifdef WEBRTC_WIN
 #include <optional>
 #include <string>
 #include <rtc_base/win32.h>
@@ -45,4 +44,3 @@ private:
 };
 
 } // namespace LiveKitCpp
-#endif

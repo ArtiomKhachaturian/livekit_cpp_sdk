@@ -20,8 +20,7 @@
 #include <sys/prctl.h>
 #endif
 #endif
-#include <codecvt>
-#include <locale>
+#include <stdlib.h>
 
 namespace {
 
@@ -33,8 +32,6 @@ constexpr uint16_t g_crcTable[16] = {
 };
 
 }
-
-using ConvertType = std::codecvt_utf8<wchar_t>;
 
 namespace LiveKitCpp
 {
@@ -89,11 +86,14 @@ std::string toLower(std::string s)
     return s;
 }
 
-std::string fromWideChar(const std::wstring& w)
+std::string fromWideChar(std::wstring_view w)
 {
-    if (!w.empty()) {
-        std::wstring_convert<ConvertType, wchar_t> converter;
-        return converter.to_bytes(w);
+    if (auto size = w.size()) {
+        std::string out;
+        out.resize(size);
+        if (0 == ::wcstombs_s(&size, out.data(), out.size() + 1U, w.data(), w.size())) {
+            return out;
+        }
     }
     return {};
 }
