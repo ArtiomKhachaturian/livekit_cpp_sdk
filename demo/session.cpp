@@ -89,10 +89,10 @@ bool Session::connectToSfu(const QString& url, const QString& token,
     options._prefferedVideoEncoder = _prefferedVideoEncoder.toStdString();
     auto impl = create(std::move(options));
     if (impl) {
+        impl->setAesCgmKeyProvider(LiveKitCpp::KeyProviderOptions::defaultOptions(),
+                                   e2ePassPhrase.toStdString());
         if (e2e) {
             _encryption = LiveKitCpp::EncryptionType::Gcm;
-            impl->setAesCgmKeyProvider(LiveKitCpp::KeyProviderOptions::defaultOptions(),
-                                       e2ePassPhrase.toStdString());
         }
         else {
             _encryption = LiveKitCpp::EncryptionType::None;
