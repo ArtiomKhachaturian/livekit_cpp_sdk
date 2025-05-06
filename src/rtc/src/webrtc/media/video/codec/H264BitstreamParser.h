@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // H264BitstreamParser.h
-#include <api/rtc_error.h>
-#include <api/scoped_refptr.h>
+#include "CompletionStatusOr.h"
 #include <api/video/encoded_image.h>
 #include <common_video/h264/h264_bitstream_parser.h>
 #include <common_video/h264/h264_common.h>
@@ -41,10 +40,10 @@ public:
     // AnnexB processor
     static constexpr size_t annexBHeaderSize() { return sizeof(_annexBHeaderBytes); }
     static constexpr size_t naluParametersCount() { return 2UL; }
-    static webrtc::RTCError addNaluForKeyFrame(MemoryBlock* targetBuffer,
+    static CompletionStatus addNaluForKeyFrame(MemoryBlock* targetBuffer,
                                                const uint8_t* naluBlock,
                                                const std::vector<webrtc::H264::NaluIndex>& indices);
-    static webrtc::RTCError addNaluForKeyFrame(MemoryBlock* targetBuffer,
+    static CompletionStatus addNaluForKeyFrame(MemoryBlock* targetBuffer,
                                                const uint8_t* naluBlock,
                                                size_t naluBlockSize);
 protected:

@@ -21,26 +21,26 @@
 namespace LiveKitCpp
 {
 
-RtcErrorOrEncodedImageBuffer VTH264EncodedBuffer::create(const CFMemoryPool* memoryPool,
-                                                         CMSampleBufferRef sampleBuffer,
-                                                         bool isKeyFrame,
-                                                         size_t initialMemoryBlockSize)
+MaybeEncodedImageBuffer VTH264EncodedBuffer::create(const CFMemoryPool* memoryPool,
+                                                    CMSampleBufferRef sampleBuffer,
+                                                    bool isKeyFrame,
+                                                    size_t initialMemoryBlockSize)
 {
     if (sampleBuffer && memoryPool) {
         auto annexbBuffer = memoryPool->createMemoryBlock(initialMemoryBlockSize);
         auto status = addNaluForKeyFrame(isKeyFrame, annexbBuffer.get(), sampleBuffer);
-        if (status.ok()) {
+        if (status) {
             status = storeAnnexBFrame(annexbBuffer.get(), sampleBuffer);
-            if (status.ok()) {
+            if (status) {
                 return EncodedImageBuffer::create(std::move(annexbBuffer));
             }
         }
         return status;
     }
-    return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS(kVTParameterErr);
 }
 
-webrtc::RTCError VTH264EncodedBuffer::addNaluForKeyFrame(bool isKeyFrame,
+CompletionStatus VTH264EncodedBuffer::addNaluForKeyFrame(bool isKeyFrame,
                                                          MemoryBlock* annexbBuffer,
                                                          CMSampleBufferRef sampleBuffer)
 {
@@ -50,10 +50,10 @@ webrtc::RTCError VTH264EncodedBuffer::addNaluForKeyFrame(bool isKeyFrame,
         }
         return {};
     }
-    return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS(kVTParameterErr);
 }
 
-webrtc::RTCError VTH264EncodedBuffer::storeAnnexBFrame(MemoryBlock* annexbBuffer, CMSampleBufferRef sampleBuffer)
+CompletionStatus VTH264EncodedBuffer::storeAnnexBFrame(MemoryBlock* annexbBuffer, CMSampleBufferRef sampleBuffer)
 {
     return MacH264BitstreamParser::storeAnnexBFrame(annexbBuffer, sampleBuffer);
 }

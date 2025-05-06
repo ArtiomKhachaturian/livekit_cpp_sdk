@@ -19,15 +19,15 @@
 namespace LiveKitCpp
 {
 
-using CMVideoFormat = webrtc::RTCErrorOr<CMVideoFormatDescriptionRef>;
+using CMVideoFormat = CompletionStatusOr<CMVideoFormatDescriptionRef>;
 
 class MacH264BitstreamParser : public H264BitstreamParser
 {
 public:
-    static webrtc::RTCError addNaluForKeyFrame(MemoryBlock* targetBuffer, CMSampleBufferRef sampleBuffer);
-    static webrtc::RTCError storeAnnexBFrame(MemoryBlock* targetBuffer, CMSampleBufferRef sampleBuffer);
-    static webrtc::RTCError storeAnnexBFrame(MemoryBlock* targetBuffer, CMBlockBufferRef sampleDataContiguousBuffer);
-    static webrtc::RTCError storeAnnexBFrame(MemoryBlock* targetBuffer, const uint8_t* sampleData, size_t sampleDataSize);
+    static CompletionStatus addNaluForKeyFrame(MemoryBlock* targetBuffer, CMSampleBufferRef sampleBuffer);
+    static CompletionStatus storeAnnexBFrame(MemoryBlock* targetBuffer, CMSampleBufferRef sampleBuffer);
+    static CompletionStatus storeAnnexBFrame(MemoryBlock* targetBuffer, CMBlockBufferRef sampleDataContiguousBuffer);
+    static CompletionStatus storeAnnexBFrame(MemoryBlock* targetBuffer, const uint8_t* sampleData, size_t sampleDataSize);
     // Create a CMFormatDescription using the provided |pps| and |sps|.
     static CMVideoFormat createVideoFormatH264(const std::vector<uint8_t>& sps,
                                                const std::vector<uint8_t>& pps,

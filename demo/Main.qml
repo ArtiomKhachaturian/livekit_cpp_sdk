@@ -81,9 +81,9 @@ ApplicationWindow {
                 urlText: lastUrl
                 tokenText: {
                     if (objectName === "User #1") {
-                        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY1NDMxNTYsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjQ1Njc1Niwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.VKOR-N_Ubbj2knZKfjyjKOyWHTk4Z5ZE7MwO0AMBlvE"
+                        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY2MTYzODQsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjUyOTk4NCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.-rK7_xrOwrXgeg-33NN6Zr1OXLbwO3ubRXcXPRamJSM"
                     }
-                    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY1NDMxNTYsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjQ1Njc1Niwic3ViIjoidXNlcjIiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.tBuNEJkLvF95bNwiXk-huQL1rkMS2tvDPKeANS3Lyvk"
+                    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY2MTYzODQsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjUyOTk4NCwic3ViIjoidXNlcjIiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0._Q4huzOmE8je_pqK89m2MICffX1S9nye3JIyhs1dT1M"
                 }
                 //tokenText: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY0MTM0MDAsImlzcyI6ImRldmtleSIsIm5iZiI6MTc0NjMyNzAwMCwic3ViIjoidXNlcjEiLCJ2aWRlbyI6eyJyb29tIjoibXktZmlyc3Qtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.NutkhLAXU4Brnq85omImDWO0jcE7uBL16R_iKhLCKJQ"
                 enabled: app.valid

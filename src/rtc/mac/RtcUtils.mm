@@ -67,6 +67,14 @@ std::string osStatusToString(OSStatus status)
 {
     if (noErr != status) {
         switch (status) {
+            case paramErr:
+                return "error in parameter list";
+            case readErr:
+                return "I/O read error";
+            case badReqErr:
+                return "bad parameter or invalid state for operation";
+            case dcmNoRecordErr:
+                return "no such record";
             case kAudioHardwareNotRunningError:
                 return "audio hardware isn't running";
             case kAudioHardwareUnspecifiedError:
@@ -212,17 +220,6 @@ std::string osStatusToString(OSStatus status)
             }
         }
         return "OS error #" + std::to_string(status);
-    }
-    return {};
-}
-
-webrtc::RTCError toRtcError(OSStatus status, webrtc::RTCErrorType type)
-{
-    if (noErr != status) {
-        if (webrtc::RTCErrorType::NONE == type) {
-            type = webrtc::RTCErrorType::UNSUPPORTED_OPERATION;
-        }
-        return webrtc::RTCError(type, osStatusToString(status));
     }
     return {};
 }

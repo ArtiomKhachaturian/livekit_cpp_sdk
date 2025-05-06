@@ -42,7 +42,7 @@ public:
     ~VTDecoderSession();
     VTDecoderSession& operator = (const VTDecoderSession&) = delete;
     VTDecoderSession& operator = (VTDecoderSession&&);
-    static webrtc::RTCErrorOr<VTDecoderSession>
+    static CompletionStatusOr<VTDecoderSession>
         create(CMVideoCodecType codecType,
                CFAutoRelease<CMVideoFormatDescriptionRef> format,
                bool realtime,
@@ -50,14 +50,14 @@ public:
                int numberOfCores = 0, // auto
                VTDecoderSessionCallback* CM_NULLABLE callback = nullptr,
                VideoFrameBufferPool framesPool = {});
-    webrtc::RTCError waitForAsynchronousFrames();
-    webrtc::RTCError setOutputPoolRequestedMinimumBufferCount(int bufferPoolSize);
-    OSStatus decompress(CMSampleBufferRef CM_NONNULL encodedBufferData,
-                        const webrtc::EncodedImage& image,
-                        VTDecodeInfoFlags* CM_NULLABLE infoFlags = nullptr) const;
+    CompletionStatus waitForAsynchronousFrames();
+    CompletionStatus setOutputPoolRequestedMinimumBufferCount(int bufferPoolSize);
+    CompletionStatus decompress(CMSampleBufferRef CM_NONNULL encodedBufferData,
+                                const webrtc::EncodedImage& image,
+                                VTDecodeInfoFlags* CM_NULLABLE infoFlags = nullptr) const;
     // impl. of VTSession
     uint64_t pendingFramesCount() const final;
-    OSStatus lastOutputStatus() const final;
+    CompletionStatus lastOutputStatus() const final;
 private:
     VTDecoderSession(std::unique_ptr<DecodePipeline> pipeline,
                      CFAutoRelease<CMVideoFormatDescriptionRef> format,

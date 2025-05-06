@@ -14,6 +14,7 @@
 #pragma once // VTSessionPipeline.h
 #include "VideoUtils.h"
 #include "Utils.h"
+#include <rtc_base/logging.h>
 #include <CoreMedia/CMFormatDescription.h>
 #include <atomic>
 
@@ -60,7 +61,7 @@ private:
 };
 
 template <class TPipelineCallback>
-VTSessionPipeline<TPipelineCallback>::VTSessionPipeline(CMVideoCodecType codecType,
+inline VTSessionPipeline<TPipelineCallback>::VTSessionPipeline(CMVideoCodecType codecType,
                                                         TPipelineCallback* callback)
     :  _codecType(codecType)
     , _callback(callback)
@@ -68,7 +69,7 @@ VTSessionPipeline<TPipelineCallback>::VTSessionPipeline(CMVideoCodecType codecTy
 }
 
 template <class TPipelineCallback>
-VTSessionPipeline<TPipelineCallback>::~VTSessionPipeline()
+inline VTSessionPipeline<TPipelineCallback>::~VTSessionPipeline()
 {
     if (const auto pendingFrames = pendingFramesCount()) {
         RTC_LOG(LS_INFO) << name() << ": non-" << (_isEncoderPipeline ? "encoded" : "decoded")
@@ -82,7 +83,7 @@ VTSessionPipeline<TPipelineCallback>::~VTSessionPipeline()
 }
 
 template <class TPipelineCallback>
-OSStatus VTSessionPipeline<TPipelineCallback>::endInput(OSStatus result)
+inline OSStatus VTSessionPipeline<TPipelineCallback>::endInput(OSStatus result)
 {
     if (noErr != result) {
         _inputFramesCount.fetch_sub(1ULL);
@@ -91,7 +92,7 @@ OSStatus VTSessionPipeline<TPipelineCallback>::endInput(OSStatus result)
 }
 
 template <class TPipelineCallback>
-bool VTSessionPipeline<TPipelineCallback>::endOutput(OSStatus result)
+inline bool VTSessionPipeline<TPipelineCallback>::endOutput(OSStatus result)
 {
     _outputFramesCount.fetch_add(1ULL);
     if (noErr != result) {
@@ -102,7 +103,8 @@ bool VTSessionPipeline<TPipelineCallback>::endOutput(OSStatus result)
 
 template <class TPipelineCallback>
 template <class Method, typename... Args>
-void VTSessionPipeline<TPipelineCallback>::callback(const Method& method, Args&&... args) const
+inline void VTSessionPipeline<TPipelineCallback>::callback(const Method& method,
+                                                           Args&&... args) const
 {
     if (_callback && active()) {
         (_callback->*method)(std::forward<Args>(args)...);

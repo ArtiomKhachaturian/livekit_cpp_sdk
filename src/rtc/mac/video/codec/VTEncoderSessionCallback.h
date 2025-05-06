@@ -24,7 +24,7 @@ public:
     virtual void onEncodedImage(VTEncoderSourceFrame frame,
                                 VTEncodeInfoFlags infoFlags,
                                 CMSampleBufferRef sampleBuffer) = 0;
-    virtual void onError(OSStatus error, bool fatal) = 0;
+    virtual void onError(CompletionStatus error, bool fatal) = 0;
 protected:
     virtual ~VTEncoderSessionCallback() = default;
 };

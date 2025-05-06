@@ -29,9 +29,9 @@ class VTEncoderSession::EncodePipeline : public VTSessionPipeline<VTEncoderSessi
 public:
     EncodePipeline(CMVideoCodecType codecType,
                    VTEncoderSessionCallback* callback = nullptr);
-    OSStatus input(VTCompressionSessionRef session,
-                   VTEncoderSourceFrame sourceFrame,
-                   bool forceKeyFrame, VTEncodeInfoFlags* infoFlagsOut);
+    CompletionStatus input(VTCompressionSessionRef session,
+                           VTEncoderSourceFrame sourceFrame,
+                           bool forceKeyFrame, VTEncodeInfoFlags* infoFlagsOut);
     static void output(void* pipeline, void* params, OSStatus status,
                        VTEncodeInfoFlags infoFlags, CMSampleBufferRef sampleBuffer);
 };
@@ -65,12 +65,12 @@ VTEncoderSession::~VTEncoderSession()
     }
 }
 
-webrtc::RTCError VTEncoderSession::setExpectedFrameRate(uint32_t frameRate)
+CompletionStatus VTEncoderSession::setExpectedFrameRate(uint32_t frameRate)
 {
     return setProperty(kVTCompressionPropertyKey_ExpectedFrameRate, frameRate);
 }
 
-webrtc::RTCError VTEncoderSession::setDataRateLimits(uint32_t maxBitrateBps)
+CompletionStatus VTEncoderSession::setDataRateLimits(uint32_t maxBitrateBps)
 {
     // that say we set data in byte/second
     @autoreleasepool {
@@ -81,55 +81,55 @@ webrtc::RTCError VTEncoderSession::setDataRateLimits(uint32_t maxBitrateBps)
     }
 }
 
-webrtc::RTCError VTEncoderSession::setAverageBitRate(uint32_t bitrateBps)
+CompletionStatus VTEncoderSession::setAverageBitRate(uint32_t bitrateBps)
 {
     return setProperty(kVTCompressionPropertyKey_AverageBitRate, bitrateBps);
 }
 
-webrtc::RTCError VTEncoderSession::setRealTime(bool realtime)
+CompletionStatus VTEncoderSession::setRealTime(bool realtime)
 {
     return setProperty(kVTCompressionPropertyKey_RealTime, realtime);
 }
 
-webrtc::RTCError VTEncoderSession::setAllowFrameReordering(bool allow)
+CompletionStatus VTEncoderSession::setAllowFrameReordering(bool allow)
 {
     return setProperty(kVTCompressionPropertyKey_AllowFrameReordering, allow);
 }
 
-webrtc::RTCError VTEncoderSession::setAllowTemporalCompression(bool allow)
+CompletionStatus VTEncoderSession::setAllowTemporalCompression(bool allow)
 {
     return setProperty(kVTCompressionPropertyKey_AllowTemporalCompression, allow);
 }
 
-webrtc::RTCError VTEncoderSession::setMaxKeyFrameInterval(int maxKeyFrameInterval)
+CompletionStatus VTEncoderSession::setMaxKeyFrameInterval(int maxKeyFrameInterval)
 {
     return setProperty(kVTCompressionPropertyKey_MaxKeyFrameInterval, maxKeyFrameInterval);
 }
 
-webrtc::RTCError VTEncoderSession::setMaxKeyFrameIntervalDuration(int maxKeyFrameIntervalDuration)
+CompletionStatus VTEncoderSession::setMaxKeyFrameIntervalDuration(int maxKeyFrameIntervalDuration)
 {
     return setProperty(kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, maxKeyFrameIntervalDuration);
 }
 
-webrtc::RTCError VTEncoderSession::setProfileLevel(CFStringRef profile)
+CompletionStatus VTEncoderSession::setProfileLevel(CFStringRef profile)
 {
     return setProperty(kVTCompressionPropertyKey_ProfileLevel, profile);
 }
 
-webrtc::RTCError VTEncoderSession::prepareToEncodeFrames()
+CompletionStatus VTEncoderSession::prepareToEncodeFrames()
 {
     if (valid()) {
-        return toRtcError(VTCompressionSessionPrepareToEncodeFrames(sessionRef()));
+        return COMPLETION_STATUS(VTCompressionSessionPrepareToEncodeFrames(sessionRef()));
     }
-    return toRtcError(kVTInvalidSessionErr, webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
-webrtc::RTCError VTEncoderSession::completeFrames(CMTime completeUntilPresentationTimeStamp)
+CompletionStatus VTEncoderSession::completeFrames(CMTime completeUntilPresentationTimeStamp)
 {
     if (valid()) {
-        return toRtcError(VTCompressionSessionCompleteFrames(sessionRef(), completeUntilPresentationTimeStamp));
+        return COMPLETION_STATUS(VTCompressionSessionCompleteFrames(sessionRef(), completeUntilPresentationTimeStamp));
     }
-    return toRtcError(kVTInvalidSessionErr, webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
 bool VTEncoderSession::isCompatible(const VTEncoderSourceFrame& frame) const
@@ -137,13 +137,13 @@ bool VTEncoderSession::isCompatible(const VTEncoderSourceFrame& frame) const
     return width() == frame.width() && height() == frame.height();
 }
 
-OSStatus VTEncoderSession::compress(VTEncoderSourceFrame sourceFrame, bool forceKeyFrame,
-                                    VTEncodeInfoFlags* infoFlagsOut) const
+CompletionStatus VTEncoderSession::compress(VTEncoderSourceFrame sourceFrame, bool forceKeyFrame,
+                                            VTEncodeInfoFlags* infoFlagsOut) const
 {
     if (_pipeline) {
         return _pipeline->input(sessionRef(), std::move(sourceFrame), forceKeyFrame, infoFlagsOut);
     }
-    return kVTInvalidSessionErr;
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
 uint64_t VTEncoderSession::pendingFramesCount() const
@@ -151,15 +151,15 @@ uint64_t VTEncoderSession::pendingFramesCount() const
     return _pipeline ? _pipeline->pendingFramesCount() : 0ULL;
 }
 
-OSStatus VTEncoderSession::lastOutputStatus() const
+CompletionStatus VTEncoderSession::lastOutputStatus() const
 {
     if (_pipeline) {
-        return _pipeline->lastOutputStatus();
+        return COMPLETION_STATUS(_pipeline->lastOutputStatus());
     }
-    return kVTInvalidSessionErr;
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
-webrtc::RTCErrorOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
+CompletionStatusOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
                                                               int32_t height,
                                                               CMVideoCodecType codecType,
                                                               uint32_t qpMax,
@@ -191,9 +191,9 @@ webrtc::RTCErrorOr<VTEncoderSession> VTEncoderSession::create(int32_t width,
                 return VTEncoderSession(compressedDataAllocator, std::move(pipeline), session, hwa, width, height);
             }
         }
-        return toRtcError(status);
+        return COMPLETION_STATUS(status);
     }
-    return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS(kVTParameterErr);
 }
 
 CFMutableDictionaryRefAutoRelease VTEncoderSession::encoderSpecification(int32_t width, int32_t height)
@@ -234,9 +234,9 @@ VTEncoderSession::EncodePipeline::EncodePipeline(CMVideoCodecType codecType,
 {
 }
 
-OSStatus VTEncoderSession::EncodePipeline::input(VTCompressionSessionRef session,
-                                                 VTEncoderSourceFrame sourceFrame,
-                                                 bool forceKeyFrame, VTEncodeInfoFlags* infoFlagsOut)
+CompletionStatus VTEncoderSession::EncodePipeline::input(VTCompressionSessionRef session,
+                                                         VTEncoderSourceFrame sourceFrame,
+                                                         bool forceKeyFrame, VTEncodeInfoFlags* infoFlagsOut)
 {
     if (session && sourceFrame) {
         CMTime presentationTimeStamp = CMTimeMake(sourceFrame.timestampUs() / rtc::kNumMicrosecsPerMillisec, 1000);
@@ -249,13 +249,15 @@ OSStatus VTEncoderSession::EncodePipeline::input(VTCompressionSessionRef session
         const auto& buffer = sourceFrame.mappedBuffer();
         sourceFrame.setStartTimestamp();
         beginInput();
-        return endInput(VTCompressionSessionEncodeFrame(session, buffer, presentationTimeStamp,
-                                                        kCMTimeInvalid, frameProperties,
-                                                        // will be destroyed in [output]
-                                                        new VTEncoderSourceFrame(std::move(sourceFrame)),
-                                                        infoFlagsOut));
+        return COMPLETION_STATUS(endInput(VTCompressionSessionEncodeFrame(session, buffer,
+                                                                          presentationTimeStamp,
+                                                                          kCMTimeInvalid,
+                                                                          frameProperties,
+                                                                          // will be destroyed in [output]
+                                                                          new VTEncoderSourceFrame(std::move(sourceFrame)),
+                                                                          infoFlagsOut)));
     }
-    return kVTParameterErr;
+    return COMPLETION_STATUS(kVTParameterErr);
 }
 
 void VTEncoderSession::EncodePipeline::output(void* pipeline, void* params,
@@ -272,7 +274,7 @@ void VTEncoderSession::EncodePipeline::output(void* pipeline, void* params,
                               infoFlags, sampleBuffer);
         }
         else if (statusChanged) {
-            selfRef->callback(&VTEncoderSessionCallback::onError, status, true);
+            selfRef->callback(&VTEncoderSessionCallback::onError, COMPLETION_STATUS(status), true);
         }
     }
 }

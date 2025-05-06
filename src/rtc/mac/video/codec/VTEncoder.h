@@ -43,21 +43,21 @@ protected:
     VTEncoder(const webrtc::SdpVideoFormat& format,
               webrtc::CodecSpecificInfo codecSpecificInfo,
               const std::shared_ptr<CFMemoryPool>& memoryPool = {});
-    virtual webrtc::RTCError configureCompressionSession(VTEncoderSession* session);
-    virtual RtcErrorOrEncodedImageBuffer createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
-                                                                            bool isKeyFrame,
-                                                                            const CFMemoryPool* memoryPool = nullptr) = 0;
+    virtual CompletionStatus configureCompressionSession(VTEncoderSession* session);
+    virtual MaybeEncodedImageBuffer createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
+                                                                       bool isKeyFrame,
+                                                                       const CFMemoryPool* memoryPool = nullptr) = 0;
     virtual int lastQp() const { return -1; }
     // overrides of VideoEncoder
     void destroySession() override;
-    webrtc::RTCError setEncoderBitrate(uint32_t bitrateBps) override;
-    webrtc::RTCError setEncoderFrameRate(uint32_t frameRate) override;
+    CompletionStatus setEncoderBitrate(uint32_t bitrateBps) override;
+    CompletionStatus setEncoderFrameRate(uint32_t frameRate) override;
 private:
-    webrtc::RTCErrorOr<VTEncoderSourceFrame> createSourceFrame(const webrtc::VideoFrame& frame) const;
-    webrtc::RTCError createSession(int32_t width, int32_t height);
+    CompletionStatusOr<VTEncoderSourceFrame> createSourceFrame(const webrtc::VideoFrame& frame) const;
+    CompletionStatus createSession(int32_t width, int32_t height);
     // impl. of VTEncoderSessionCallback
     void onEncodedImage(VTEncoderSourceFrame frame, VTEncodeInfoFlags infoFlags, CMSampleBufferRef sampleBuffer) final;
-    void onError(OSStatus error, bool fatal) final;
+    void onError(CompletionStatus error, bool fatal) final;
 private:
     const std::shared_ptr<CFMemoryPool> _memoryPool;
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;

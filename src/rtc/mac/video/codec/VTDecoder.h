@@ -48,7 +48,7 @@ protected:
     void destroySession() override;
 private:
     // takes ownership to format
-    webrtc::RTCError createSession(CFAutoRelease<CMVideoFormatDescriptionRef> format, bool realtime = true);
+    CompletionStatus createSession(CFAutoRelease<CMVideoFormatDescriptionRef> format, bool realtime = true);
     // impl. of VTDecoderSessionCallback
     void onDecodedImage(CMTime timestamp, CMTime duration,
                         VTDecodeInfoFlags infoFlags,
@@ -56,7 +56,7 @@ private:
                         webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
                         std::optional<uint8_t> qp,
                         std::optional<webrtc::ColorSpace> encodedImageColorspace) final;
-    void onError(OSStatus error, bool fatal) final;
+    void onError(CompletionStatus error, bool fatal) final;
 protected:
     const OSType _outputPixelFormat;
     const std::shared_ptr<CFMemoryPool> _memoryPool;

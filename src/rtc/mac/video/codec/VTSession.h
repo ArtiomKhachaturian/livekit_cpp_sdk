@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once // VTSession.h
 #include "CFNumber.h"
-#include "RtcUtils.h"
+#include "CompletionStatusOr.h"
 #include "VideoUtils.h"
 #include <memory>
 
@@ -33,15 +33,15 @@ public:
     // diff between input & output frames
     virtual uint64_t pendingFramesCount() const = 0;
     // return the last status of output processing
-    virtual OSStatus lastOutputStatus() const = 0;
+    virtual CompletionStatus lastOutputStatus() const = 0;
     // Convenience functions for setting a VT properties.
     template <typename TNumberType>
-    webrtc::RTCError setProperty(CFStringRef CM_NONNULL key, TNumberType value);
-    webrtc::RTCError setProperty(CFStringRef CM_NONNULL key, bool value);
-    webrtc::RTCError setProperty(CFStringRef CM_NONNULL key, CFStringRef CM_NULLABLE value);
-    webrtc::RTCError setProperty(CFStringRef CM_NONNULL key, CFDictionaryRef CM_NULLABLE value);
-    webrtc::RTCError setProperty(CFStringRef CM_NONNULL key, CFArrayRef CM_NULLABLE value);
-    webrtc::RTCError propertySupported(CFStringRef CM_NONNULL key) const;
+    CompletionStatus setProperty(CFStringRef CM_NONNULL key, TNumberType value);
+    CompletionStatus setProperty(CFStringRef CM_NONNULL key, bool value);
+    CompletionStatus setProperty(CFStringRef CM_NONNULL key, CFStringRef CM_NULLABLE value);
+    CompletionStatus setProperty(CFStringRef CM_NONNULL key, CFDictionaryRef CM_NULLABLE value);
+    CompletionStatus setProperty(CFStringRef CM_NONNULL key, CFArrayRef CM_NULLABLE value);
+    CompletionStatus propertySupported(CFStringRef CM_NONNULL key) const;
 protected:
     VTSession(TFormatType format, VTSessionType sessionRef, bool hardwareAccelerated);
     VTSession() = default;
@@ -69,72 +69,72 @@ inline VTSession<TFormatType, VTSessionType>::VTSession(TFormatType format,
 
 template <typename TFormatType, typename VTSessionType>
 template <typename TNumberType>
-inline webrtc::RTCError VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
+inline CompletionStatus VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
                                                                            TNumberType value)
 {
     if (const auto session = sessionRef()) {
-        return toRtcError(VTSessionSetProperty(session, key, createCFNumber(value)));
+        return COMPLETION_STATUS(VTSessionSetProperty(session, key, createCFNumber(value)));
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS_INVALID_STATE;
 }
 
 template <typename TFormatType, typename VTSessionType>
-inline webrtc::RTCError VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
+inline CompletionStatus VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
                                                                            bool value)
 {
     if (const auto session = sessionRef()) {
-        return toRtcError(VTSessionSetProperty(session, key, value ? kCFBooleanTrue : kCFBooleanFalse));
+        return COMPLETION_STATUS(VTSessionSetProperty(session, key, value ? kCFBooleanTrue : kCFBooleanFalse));
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
 template <typename TFormatType, typename VTSessionType>
-inline webrtc::RTCError VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
+inline CompletionStatus VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
                                                                            CFStringRef CM_NULLABLE value)
 {
     if (const auto session = sessionRef()) {
-        return toRtcError(VTSessionSetProperty(session, key, value));
+        return COMPLETION_STATUS(VTSessionSetProperty(session, key, value));
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
 template <typename TFormatType, typename VTSessionType>
-inline webrtc::RTCError VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
+inline CompletionStatus VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
                                                                            CFDictionaryRef CM_NULLABLE value)
 {
     if (const auto session = sessionRef()) {
-        return toRtcError(VTSessionSetProperty(session, key, value));
+        return COMPLETION_STATUS(VTSessionSetProperty(session, key, value));
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
 template <typename TFormatType, typename VTSessionType>
-inline webrtc::RTCError VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
+inline CompletionStatus VTSession<TFormatType, VTSessionType>::setProperty(CFStringRef CM_NONNULL key,
                                                                            CFArrayRef CM_NULLABLE value)
 {
     if (const auto session = sessionRef()) {
-        return toRtcError(VTSessionSetProperty(session, key, value));
+        return COMPLETION_STATUS(VTSessionSetProperty(session, key, value));
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
 template <typename TFormatType, typename VTSessionType>
-inline webrtc::RTCError VTSession<TFormatType, VTSessionType>::propertySupported(CFStringRef CM_NONNULL key) const
+inline CompletionStatus VTSession<TFormatType, VTSessionType>::propertySupported(CFStringRef CM_NONNULL key) const
 {
     if (const auto session = sessionRef()) {
         if (!_supportedProperties) {
             CFDictionaryRef* out = _supportedProperties.pointer();
-            const auto status = VTSessionCopySupportedPropertyDictionary(session, out);
-            if (noErr != status) {
-                return toRtcError(status);
+            auto status = COMPLETION_STATUS(VTSessionCopySupportedPropertyDictionary(session, out));
+            if (!status) {
+                return status;
             }
         }
         if (CFDictionaryContainsKey(_supportedProperties, key)) {
             return {};
         }
-        return webrtc::RTCError(webrtc::RTCErrorType::INVALID_RANGE);
+        return COMPLETION_STATUS(dcmNoRecordErr);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_STATE);
+    return COMPLETION_STATUS(kVTInvalidSessionErr);
 }
 
 } // namespace LiveKitCpp

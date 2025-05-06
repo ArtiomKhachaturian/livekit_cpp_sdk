@@ -31,26 +31,26 @@ public:
     ~VTEncoderSession();
     VTEncoderSession& operator = (const VTEncoderSession&) = delete;
     VTEncoderSession& operator = (VTEncoderSession&&);
-    webrtc::RTCError setExpectedFrameRate(uint32_t frameRate);
-    webrtc::RTCError setDataRateLimits(uint32_t maxBitrateBps);
-    webrtc::RTCError setAverageBitRate(uint32_t bitrateBps);
-    webrtc::RTCError setRealTime(bool realtime);
-    webrtc::RTCError setAllowFrameReordering(bool allow);
-    webrtc::RTCError setAllowTemporalCompression(bool allow);
-    webrtc::RTCError setMaxKeyFrameInterval(int maxKeyFrameInterval);
-    webrtc::RTCError setMaxKeyFrameIntervalDuration(int maxKeyFrameIntervalDuration);
-    webrtc::RTCError setProfileLevel(CFStringRef CM_NONNULL profile);
-    webrtc::RTCError prepareToEncodeFrames();
-    webrtc::RTCError completeFrames(CMTime completeUntilPresentationTimeStamp = kCMTimeInvalid);
+    CompletionStatus setExpectedFrameRate(uint32_t frameRate);
+    CompletionStatus setDataRateLimits(uint32_t maxBitrateBps);
+    CompletionStatus setAverageBitRate(uint32_t bitrateBps);
+    CompletionStatus setRealTime(bool realtime);
+    CompletionStatus setAllowFrameReordering(bool allow);
+    CompletionStatus setAllowTemporalCompression(bool allow);
+    CompletionStatus setMaxKeyFrameInterval(int maxKeyFrameInterval);
+    CompletionStatus setMaxKeyFrameIntervalDuration(int maxKeyFrameIntervalDuration);
+    CompletionStatus setProfileLevel(CFStringRef CM_NONNULL profile);
+    CompletionStatus prepareToEncodeFrames();
+    CompletionStatus completeFrames(CMTime completeUntilPresentationTimeStamp = kCMTimeInvalid);
     int32_t width() const { return _width; }
     int32_t height() const { return _height; }
     bool isCompatible(const VTEncoderSourceFrame& frame) const;
-    OSStatus compress(VTEncoderSourceFrame sourceFrame, bool forceKeyFrame,
-                      VTEncodeInfoFlags* CM_NULLABLE infoFlagsOut = nullptr) const;
+    CompletionStatus compress(VTEncoderSourceFrame sourceFrame, bool forceKeyFrame,
+                              VTEncodeInfoFlags* CM_NULLABLE infoFlagsOut = nullptr) const;
     // impl. of VTSession
     uint64_t pendingFramesCount() const final;
-    OSStatus lastOutputStatus() const final;
-    static webrtc::RTCErrorOr<VTEncoderSession> create(int32_t width, int32_t height,
+    CompletionStatus lastOutputStatus() const final;
+    static CompletionStatusOr<VTEncoderSession> create(int32_t width, int32_t height,
                                                        CMVideoCodecType codecType,
                                                        uint32_t qpMax = 100U,
                                                        VTEncoderSessionCallback* CM_NULLABLE callback = nullptr,

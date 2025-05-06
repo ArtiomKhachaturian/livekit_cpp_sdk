@@ -26,15 +26,15 @@ class MemoryBlock;
 class VTH264EncodedBuffer : public EncodedImageBuffer
 {
 public:
-    static RtcErrorOrEncodedImageBuffer create(const CFMemoryPool* memoryPool,
-                                               CMSampleBufferRef sampleBuffer,
-                                               bool isKeyFrame,
-                                               size_t initialMemoryBlockSize);
+    static MaybeEncodedImageBuffer create(const CFMemoryPool* memoryPool,
+                                          CMSampleBufferRef sampleBuffer,
+                                          bool isKeyFrame,
+                                          size_t initialMemoryBlockSize);
 private:
-    static webrtc::RTCError addNaluForKeyFrame(bool isKeyFrame,
+    static CompletionStatus addNaluForKeyFrame(bool isKeyFrame,
                                                MemoryBlock* annexbBuffer,
                                                CMSampleBufferRef sampleBuffer);
-    static webrtc::RTCError storeAnnexBFrame(MemoryBlock* annexbBuffer,
+    static CompletionStatus storeAnnexBFrame(MemoryBlock* annexbBuffer,
                                              CMSampleBufferRef sampleBuffer);
 };
 

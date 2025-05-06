@@ -63,7 +63,7 @@ public:
     bool set(const NativeVideoFrameBuffer* native);
     bool set(const webrtc::NV12BufferInterface* nv12);
     bool set(const webrtc::scoped_refptr<webrtc::NV12BufferInterface>& nv12);
-    CVPixelBufferRef create(OSStatus* error = nullptr);
+    CVPixelBufferRef create(CompletionStatus* status = nullptr);
 private:
     static void releaseCallback(void* frameRef,
                                 const void* data,
@@ -97,14 +97,14 @@ OSType VTEncoderSourceFrame::pixelFormat() const
     return _mappedBuffer.pixelFormat();
 }
 
-webrtc::RTCErrorOr<VTEncoderSourceFrame> VTEncoderSourceFrame::create(const webrtc::VideoFrame& frame,
+CompletionStatusOr<VTEncoderSourceFrame> VTEncoderSourceFrame::create(const webrtc::VideoFrame& frame,
                                                                       const VideoFrameBufferPool& framesPool)
 {
     auto pixelBuffer = convertToPixelBuffer(frame, framesPool);
-    if (pixelBuffer.ok()) {
-        return VTEncoderSourceFrame(frame, pixelBuffer.MoveValue());
+    if (pixelBuffer) {
+        return VTEncoderSourceFrame(frame, pixelBuffer.moveValue());
     }
-    return pixelBuffer.MoveError();
+    return pixelBuffer.moveStatus();
 }
 
 void VTEncoderSourceFrame::setStartTimestamp(int64_t timestampMs)
@@ -144,15 +144,15 @@ VTEncoderSourceFrame::PixelBuffer VTEncoderSourceFrame::
             ok = pixmapPlanes.set(NV12VideoFrameBuffer::toNV12(buffer, framesPool));
         }
         if (ok) {
-            OSStatus status = noErr;
+            CompletionStatus status;
             mappedBuffer = pixmapPlanes.create(&status);
             if (mappedBuffer) {
                 return CVPixelBufferAutoRelease(mappedBuffer);
             }
-            return toRtcError(status);
+            return status;
         }
     }
-    return toRtcError(kCMSampleBufferError_BufferNotReady, webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS(kCMSampleBufferError_BufferNotReady);
 }
 
 bool VTEncoderSourceFrame::Planes::set(const NativeVideoFrameBuffer* native)
@@ -202,7 +202,7 @@ bool VTEncoderSourceFrame::Planes::set(const webrtc::scoped_refptr<webrtc::NV12B
     return set(nv12.get());
 }
 
-CVPixelBufferRef VTEncoderSourceFrame::Planes::create(OSStatus* error)
+CVPixelBufferRef VTEncoderSourceFrame::Planes::create(CompletionStatus* error)
 {
     CVPixelBufferRef mappedBuffer = nullptr;
     if (_numPlanes && _attachedBuffer) {
@@ -210,30 +210,30 @@ CVPixelBufferRef VTEncoderSourceFrame::Planes::create(OSStatus* error)
         // release callback will not execute. The descriptor is freed in the callback.
         void* dummy = std::calloc(1, std::max(sizeof(CVPlanarPixelBufferInfo_YCbCrPlanar),
                                               sizeof(CVPlanarPixelBufferInfo_YCbCrBiPlanar)));
-        const auto status = CVPixelBufferCreateWithPlanarBytes(kCFAllocatorDefault,           // allocator
-                                                               _attachedBuffer->width(),       // width
-                                                               _attachedBuffer->height(),      // height
-                                                               _format,                        // pixelFormatType
-                                                               dummy,                         // dataPtr (pointer to a plane descriptor block)
-                                                               _dataSize,                      // dataSize
-                                                               _numPlanes,                     // numberOfPlanes
-                                                               _ptrs,                     // planeBaseAddress
-                                                               _widths,                   // planeWidth
-                                                               _heights,                  // planeHeight
-                                                               _bytesPerRow,              // planeBytesPerRow
-                                                               &releaseCallback,        // releaseCallback
-                                                               (void*)_attachedBuffer,   // releaseRefCon
-                                                               nullptr,                       // pixelBufferAttributes
-                                                               &mappedBuffer);                // pixelBufferOut
-        if (noErr == status) {
+        const auto status = COMPLETION_STATUS(CVPixelBufferCreateWithPlanarBytes(kCFAllocatorDefault,           // allocator
+                                                                                 _attachedBuffer->width(),       // width
+                                                                                 _attachedBuffer->height(),      // height
+                                                                                 _format,                        // pixelFormatType
+                                                                                 dummy,                         // dataPtr (pointer to a plane descriptor block)
+                                                                                 _dataSize,                      // dataSize
+                                                                                 _numPlanes,                     // numberOfPlanes
+                                                                                 _ptrs,                     // planeBaseAddress
+                                                                                 _widths,                   // planeWidth
+                                                                                 _heights,                  // planeHeight
+                                                                                 _bytesPerRow,              // planeBytesPerRow
+                                                                                 &releaseCallback,        // releaseCallback
+                                                                                 (void*)_attachedBuffer,   // releaseRefCon
+                                                                                 nullptr,                       // pixelBufferAttributes
+                                                                                 &mappedBuffer));                // pixelBufferOut
+        if (status) {
             _attachedBuffer->AddRef();
         }
         if (error) {
-            *error = status;
+            *error = std::move(status);
         }
     }
     else if (error) {
-        *error = kVTParameterErr;
+        *error = COMPLETION_STATUS(kVTParameterErr);
     }
     return mappedBuffer;
 }

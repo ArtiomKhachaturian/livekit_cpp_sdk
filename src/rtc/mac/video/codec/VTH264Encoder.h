@@ -40,10 +40,10 @@ protected:
     VTH264Encoder(const webrtc::SdpVideoFormat& format, webrtc::H264PacketizationMode mode);
     // overrides of VTEncoder
     void destroySession() final;
-    webrtc::RTCError configureCompressionSession(VTEncoderSession* session) final;
-    RtcErrorOrEncodedImageBuffer createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
-                                                                    bool isKeyFrame,
-                                                                    const CFMemoryPool* memoryPool = nullptr) final;
+    CompletionStatus configureCompressionSession(VTEncoderSession* session) final;
+    MaybeEncodedImageBuffer createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
+                                                               bool isKeyFrame,
+                                                               const CFMemoryPool* memoryPool = nullptr) final;
     int lastQp() const final { return _h264BitstreamParser.lastSliceQp(); }
 private:
     const std::optional<webrtc::H264ProfileLevelId> _profileLevelId;

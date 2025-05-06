@@ -222,10 +222,10 @@ void VideoEncoder::setCurrentBitrate(uint32_t bps)
         if (bps != _currentBitrate) {
             // update the bitrate if needed
             auto result = setEncoderBitrate(bps);
-            if (result.ok()) {
+            if (result) {
                 _currentBitrate = bps;
             } else {
-                log(std::move(result), false);
+                logError(std::move(result), false);
             }
         }
     }
@@ -237,10 +237,10 @@ void VideoEncoder::setCurrentFramerate(double framerateFps)
         const auto framerate = static_cast<uint32_t>(bound<double>(0., framerateFps + 0.5, _maxFramerate));
         if (framerate != _currentFramerate) {
             auto result = setEncoderFrameRate(framerate);
-            if (result.ok()) {
+            if (result) {
                 _currentFramerate = framerate;
             } else {
-                log(std::move(result), false);
+                logError(std::move(result), false);
             }
         }
     }

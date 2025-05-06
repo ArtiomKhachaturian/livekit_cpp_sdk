@@ -193,10 +193,10 @@ void VTH264Encoder::destroySession()
     _h264BitstreamParser.reset();
 }
 
-webrtc::RTCError VTH264Encoder::configureCompressionSession(VTEncoderSession* session)
+CompletionStatus VTH264Encoder::configureCompressionSession(VTEncoderSession* session)
 {
     auto status = VTEncoder::configureCompressionSession(session);
-    if (status.ok()) {
+    if (status) {
         if (_keyFrameInterval > 0) { // https://bugs.chromium.org/p/webrtc/issues/detail?id=5815
             session->setMaxKeyFrameInterval(_keyFrameInterval);
         }
@@ -213,24 +213,24 @@ webrtc::RTCError VTH264Encoder::configureCompressionSession(VTEncoderSession* se
     return status;
 }
 
-RtcErrorOrEncodedImageBuffer VTH264Encoder::createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
-                                                                               bool isKeyFrame,
-                                                                               const CFMemoryPool* memoryPool)
+MaybeEncodedImageBuffer VTH264Encoder::createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
+                                                                          bool isKeyFrame,
+                                                                          const CFMemoryPool* memoryPool)
 {
     if (sampleBuffer) {
         webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface> encodedBuffer;
         if (memoryPool) {
             auto result = VTH264EncodedBuffer::create(memoryPool, sampleBuffer, isKeyFrame, _outputBufferCacheSize);
-            if (!result.ok()) {
-                return result.MoveError();
+            if (!result) {
+                return result.moveStatus();
             }
-            encodedBuffer = result.MoveValue();
+            encodedBuffer = result.moveValue();
         }
         // non-cached version
         if (!encodedBuffer) {
             rtc::Buffer buffer;
             if (!webrtc::H264CMSampleBufferToAnnexBBuffer(sampleBuffer, isKeyFrame, &buffer)) {
-                return toRtcError(kCMSampleBufferError_InvalidMediaTypeForOperation);
+                return COMPLETION_STATUS(kCMSampleBufferError_InvalidMediaTypeForOperation);
             }
             encodedBuffer = EncodedImageBuffer::create(std::move(buffer));
         }
@@ -240,7 +240,7 @@ RtcErrorOrEncodedImageBuffer VTH264Encoder::createEncodedImageFromSampleBuffer(C
             return encodedBuffer;
         }
     }
-    return toRtcError(kVTParameterErr, webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS(kVTParameterErr);
 }
 
 } // namespace LiveKitCpp

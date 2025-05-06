@@ -20,7 +20,7 @@
 namespace LiveKitCpp
 {
 
-webrtc::RTCError MacH264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetBuffer,
+CompletionStatus MacH264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetBuffer,
                                                             CMSampleBufferRef sampleBuffer)
 {
     if (targetBuffer && sampleBuffer) {
@@ -28,63 +28,64 @@ webrtc::RTCError MacH264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetB
             // get parameter set information
             size_t paramSetCount = 0UL;
             int naluHeaderSize = 0;
-            auto status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(description, 0,
-                                                                             nullptr, nullptr,
-                                                                             &paramSetCount,
-                                                                             &naluHeaderSize);
-            if (noErr == status) {
+            auto status = COMPLETION_STATUS(CMVideoFormatDescriptionGetH264ParameterSetAtIndex(description, 0,
+                                                                                               nullptr, nullptr,
+                                                                                               &paramSetCount,
+                                                                                               &naluHeaderSize));
+            if (status) {
                 assert(naluHeaderSize == avccHeaderByteSize());
                 assert(naluParametersCount() == paramSetCount);
                 size_t paramSetSize = 0;
                 const uint8_t* paramSet = nullptr;
                 for (size_t i = 0UL; i < paramSetCount; ++i) {
-                    status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(description, i,
-                                                                                &paramSet,
-                                                                                &paramSetSize,
-                                                                                nullptr,
-                                                                                nullptr);
-                    if (noErr != status) {
+                    status = COMPLETION_STATUS(CMVideoFormatDescriptionGetH264ParameterSetAtIndex(description, i,
+                                                                                                  &paramSet,
+                                                                                                  &paramSetSize,
+                                                                                                  nullptr,
+                                                                                                  nullptr));
+                    if (!status) {
                         break;
                     }
                     // update buffer
                     addData(targetBuffer, paramSet, paramSetSize);
                 }
             }
-            return toRtcError(status);
+            return status;
         }
-        return toRtcError(kCMSampleBufferError_InvalidMediaTypeForOperation, webrtc::RTCErrorType::UNSUPPORTED_PARAMETER);
+        return COMPLETION_STATUS(kCMSampleBufferError_InvalidMediaTypeForOperation);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
-webrtc::RTCError MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuffer,
+CompletionStatus MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuffer,
                                                           CMSampleBufferRef sampleBuffer)
 {
     if (targetBuffer && sampleBuffer) {
         // get block buffer from the sample buffer.
         if (const auto blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer)) {
-            OSStatus status = noErr;
+            CompletionStatus status;
             // make sure block buffer is contiguous
             CFAutoRelease<CMBlockBufferRef> contiguousBuffer;
             if (!CMBlockBufferIsRangeContiguous(blockBuffer, 0, 0)) {
-                status = CMBlockBufferCreateContiguous(nullptr, blockBuffer,
-                                                       nullptr, nullptr,
-                                                       0UL, 0UL, 0U,
-                                                       contiguousBuffer.pointer());
+                status = COMPLETION_STATUS(CMBlockBufferCreateContiguous(nullptr,
+                                                                         blockBuffer,
+                                                                         nullptr, nullptr,
+                                                                         0UL, 0UL, 0U,
+                                                                         contiguousBuffer.pointer()));
             } else {
                 contiguousBuffer.set(blockBuffer, true);
             }
-            if (noErr == status) {
+            if (status) {
                 return storeAnnexBFrame(targetBuffer, contiguousBuffer);
             }
-            return toRtcError(status);
+            return status;
         }
-        return toRtcError(kCMBlockBufferEmptyBBufErr, webrtc::RTCErrorType::UNSUPPORTED_PARAMETER);
+        return COMPLETION_STATUS(kCMBlockBufferEmptyBBufErr);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
-webrtc::RTCError MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuffer,
+CompletionStatus MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuffer,
                                                           CMBlockBufferRef sampleDataContiguousBuffer)
 {
     if (targetBuffer && sampleDataContiguousBuffer) {
@@ -92,19 +93,19 @@ webrtc::RTCError MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuf
         if (blockBufferSize) {
             // now copy the actual data
             char* data = nullptr;
-            const auto status = CMBlockBufferGetDataPointer(sampleDataContiguousBuffer, 0,
-                                                            nullptr, nullptr, &data);
-            if (noErr == status) {
+            auto status = COMPLETION_STATUS(CMBlockBufferGetDataPointer(sampleDataContiguousBuffer, 0,
+                                                                        nullptr, nullptr, &data));
+            if (status) {
                 return storeAnnexBFrame(targetBuffer, reinterpret_cast<const uint8_t*>(data), blockBufferSize);
             }
-            return toRtcError(status);
+            return status;
         }
-        return toRtcError(kCMBlockBufferBadLengthParameterErr, webrtc::RTCErrorType::UNSUPPORTED_PARAMETER);
+        return COMPLETION_STATUS(kCMBlockBufferBadLengthParameterErr);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
-webrtc::RTCError MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuffer,
+CompletionStatus MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuffer,
                                                           const uint8_t* sampleData,
                                                           size_t sampleDataSize)
 {
@@ -128,9 +129,9 @@ webrtc::RTCError MacH264BitstreamParser::storeAnnexBFrame(MemoryBlock* targetBuf
                 return {};
             }
         }
-        return toRtcError(kCMBlockBufferBadLengthParameterErr, webrtc::RTCErrorType::UNSUPPORTED_PARAMETER);
+        return COMPLETION_STATUS(kCMBlockBufferBadLengthParameterErr);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
 CMVideoFormat MacH264BitstreamParser::createVideoFormatH264(const std::vector<uint8_t>& sps,
@@ -152,18 +153,18 @@ CMVideoFormat MacH264BitstreamParser::createVideoFormatH264(const std::vector<ui
         nalu_data_ptrs.push_back(&pps.front());
         nalu_data_sizes.push_back(pps.size());
         CMFormatDescriptionRef format;
-        const auto status = CMVideoFormatDescriptionCreateFromH264ParameterSets(kCFAllocatorDefault,
-                                                                                nalu_data_ptrs.size(),     // parameter_set_count
-                                                                                &nalu_data_ptrs.front(),   // &parameter_set_pointers
-                                                                                &nalu_data_sizes.front(),  // &parameter_set_sizes
-                                                                                annexBHeaderSize(),         // nal_unit_header_length
-                                                                                &format);
-        if (noErr == status) {
+        auto status = COMPLETION_STATUS(CMVideoFormatDescriptionCreateFromH264ParameterSets(kCFAllocatorDefault,
+                                                                                            nalu_data_ptrs.size(),     // parameter_set_count
+                                                                                            &nalu_data_ptrs.front(),   // &parameter_set_pointers
+                                                                                            &nalu_data_sizes.front(),  // &parameter_set_sizes
+                                                                                            annexBHeaderSize(),         // nal_unit_header_length
+                                                                                            &format));
+        if (status) {
             return format;
         }
-        return toRtcError(status);
+        return status;
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
 CMVideoFormat MacH264BitstreamParser::createVideoFormatH264(const webrtc::scoped_refptr<webrtc::EncodedImageBufferInterface>& annexBBuffer)
@@ -177,22 +178,21 @@ CMVideoFormat MacH264BitstreamParser::createVideoFormatH264(const webrtc::scoped
             if (reader.ReadNalu(&paramSetPtrs[0], &paramSetSizes[0]) &&
                 reader.ReadNalu(&paramSetPtrs[1], &paramSetSizes[1])) {
                 CMFormatDescriptionRef format;
-                const auto status = CMVideoFormatDescriptionCreateFromH264ParameterSets(kCFAllocatorDefault,
-                                                                                        2UL,
-                                                                                        paramSetPtrs,
-                                                                                        paramSetSizes,
-                                                                                        annexBHeaderSize(),
-                                                                                        &format);
-                if (noErr == status) {
+                auto status = COMPLETION_STATUS(CMVideoFormatDescriptionCreateFromH264ParameterSets(kCFAllocatorDefault,
+                                                                                                    2UL,
+                                                                                                    paramSetPtrs,
+                                                                                                    paramSetSizes,
+                                                                                                    annexBHeaderSize(),
+                                                                                                    &format));
+                if (status) {
                     return format;
                 }
-                return toRtcError(status);
+                return status;
             }
-            return webrtc::RTCError(webrtc::RTCErrorType::RESOURCE_EXHAUSTED);
         }
-        return webrtc::RTCError(webrtc::RTCErrorType::UNSUPPORTED_OPERATION);
+        return COMPLETION_STATUS(readErr);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
 } // namespace LiveKitCpp

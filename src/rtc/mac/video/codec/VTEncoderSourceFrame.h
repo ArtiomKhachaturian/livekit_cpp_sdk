@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTEncoderSourceFrame.h
+#include "CompletionStatusOr.h"
 #include "CVPixelBufferAutoRelease.h"
 #include "VideoFrameBufferPool.h"
-#include <api/rtc_error.h>
 #include <api/video/video_frame.h>
 #include <optional>
 #include <memory>
@@ -29,7 +29,7 @@ namespace LiveKitCpp
 
 class VTEncoderSourceFrame
 {
-    using PixelBuffer = webrtc::RTCErrorOr<CVPixelBufferAutoRelease>;
+    using PixelBuffer = CompletionStatusOr<CVPixelBufferAutoRelease>;
     class Planes;
 public:
     VTEncoderSourceFrame() = default;
@@ -51,7 +51,7 @@ public:
     void setStartTimestamp(int64_t timestampMs = currentTimestampMs());
     void setFinishTimestamp(int64_t timestampMs = currentTimestampMs());
     static int64_t currentTimestampMs();
-    static webrtc::RTCErrorOr<VTEncoderSourceFrame> create(const webrtc::VideoFrame& frame,
+    static CompletionStatusOr<VTEncoderSourceFrame> create(const webrtc::VideoFrame& frame,
                                                            const VideoFrameBufferPool& framesPool = {});
 protected:
     VTEncoderSourceFrame(const webrtc::VideoFrame& frame, CVPixelBufferAutoRelease mappedBuffer);

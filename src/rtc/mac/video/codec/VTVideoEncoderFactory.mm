@@ -89,12 +89,12 @@ VTEncoderSession createCompressor(CMVideoCodecType codecType,
                                   CFStringRef profile)
 {
     auto session = VTEncoderSession::create(width, height, codecType);
-    if (session.ok()) {
+    if (session) {
         if (profile && !session.value().setProfileLevel(profile).ok()) {
             return {};
         }
     }
-    return session.MoveValue();
+    return session.moveValue();
 }
 
 }

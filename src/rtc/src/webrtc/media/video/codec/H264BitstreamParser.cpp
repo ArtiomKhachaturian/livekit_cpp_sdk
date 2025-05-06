@@ -56,23 +56,20 @@ void H264BitstreamParser::reset()
     _impl = std::make_unique<webrtc::H264BitstreamParser>();
 }
 
-webrtc::RTCError H264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetBuffer,
+CompletionStatus H264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetBuffer,
                                                          const uint8_t* naluBlock,
                                                          const std::vector<webrtc::H264::NaluIndex>& indices)
 {
-    if (targetBuffer && naluBlock) {
-        if (naluParametersCount() == indices.size()) {
-            for (const auto& index : indices) {
-                addData(targetBuffer, naluBlock + index.payload_start_offset, index.payload_size);
-            }
-            return {};
+    if (targetBuffer && naluBlock && naluParametersCount() == indices.size()) {
+        for (const auto& index : indices) {
+            addData(targetBuffer, naluBlock + index.payload_start_offset, index.payload_size);
         }
-        return webrtc::RTCError(webrtc::RTCErrorType::INVALID_RANGE);
+        return {};
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
-webrtc::RTCError H264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetBuffer,
+CompletionStatus H264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetBuffer,
                                                          const uint8_t* naluBlock,
                                                          size_t naluBlockSize)
 {
@@ -81,7 +78,7 @@ webrtc::RTCError H264BitstreamParser::addNaluForKeyFrame(MemoryBlock* targetBuff
         const auto indices = webrtc::H264::FindNaluIndices(nalu);
         return addNaluForKeyFrame(targetBuffer, naluBlock, indices);
     }
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER);
+    return COMPLETION_STATUS_INVALID_ARG;
 }
 
 void H264BitstreamParser::addData(MemoryBlock* buffer, const uint8_t* data, size_t size)

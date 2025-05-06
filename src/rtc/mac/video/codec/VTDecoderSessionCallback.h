@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTDecoderSessionCallback.h
+#include "CompletionStatus.h"
 #include <CoreMedia/CMTime.h>
 #include <api/scoped_refptr.h>
 #include <api/video/video_frame_buffer.h>
@@ -36,7 +37,7 @@ public:
                                 webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
                                 std::optional<uint8_t> qp = std::nullopt,
                                 std::optional<webrtc::ColorSpace> encodedImageColorspace = std::nullopt) = 0;
-    virtual void onError(OSStatus error, bool fatal) = 0;
+    virtual void onError(CompletionStatus error, bool fatal) = 0;
 protected:
     virtual ~VTDecoderSessionCallback() = default;
 };
