@@ -88,12 +88,18 @@ std::string toLower(std::string s)
 
 std::string fromWideChar(std::wstring_view w)
 {
-    if (auto size = w.size()) {
+    if (size_t size = w.size()) {
         std::string out;
         out.resize(size);
-        if (0 == ::wcstombs_s(&size, out.data(), out.size() + 1U, w.data(), w.size())) {
+#ifdef __APPLE__
+        if (size == wcstombs(out.data(), w.data(), w.size())) {
             return out;
         }
+#else
+        if (0 == wcstombs_s(&size, out.data(), out.size() + 1U, w.data(), w.size())) {
+            return out;
+        }
+#endif
     }
     return {};
 }
