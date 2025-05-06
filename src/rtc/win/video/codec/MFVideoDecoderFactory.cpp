@@ -28,9 +28,9 @@ std::unique_ptr<webrtc::VideoDecoder> MFVideoDecoderFactory::
     return MFVideoDecoderFactory::customDecoder(env, format);
 }
 
-/*CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
+CodecStatus platformDecoderStatus(webrtc::VideoCodecType /*type*/, const webrtc::CodecParameterMap&)
 {
     return CodecStatus::SupportedSoftware;
-}*/
+}
 
 } // namespace LiveKitCpp

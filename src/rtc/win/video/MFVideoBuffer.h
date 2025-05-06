@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MFVideoBuffer.h
-#include "VideoBufferHandleProvider.h"
 #include "MFVideoBufferInterface.h"
 #include <cassert>
 #include <atlbase.h> //CComPtr support
@@ -24,13 +23,10 @@ namespace LiveKitCpp
 
 template <class TBaseBuffer, class TMFData>
 class MFVideoBuffer : public TBaseBuffer, 
-                      public MFVideoBufferInterface,
-                      virtual public VideoBufferHandleProvider
+                      public MFVideoBufferInterface
 {
 public:
     ~MFVideoBuffer() override;
-    // override of VideoBufferHandleProvider
-    VideoBufferHandleProvider::Handle handle(bool retain) const override;
     // impl. of VideoFrameBuffer
     int width() const final { return _width; }
     int height() const final { return _height; }
@@ -82,18 +78,5 @@ inline MFVideoBuffer<TBaseBuffer, TMFData>::~MFVideoBuffer()
         _data->Unlock();
     }
 }
-
-template <class TBaseBuffer, class TMFData>
-inline VideoBufferHandleProvider::Handle MFVideoBuffer<TBaseBuffer, TMFData>::handle(bool retain) const
-{
-    if constexpr (std::is_same<IMFMediaBuffer, TMFData>::value) {
-        return std::make_pair(VideoBufferHandleProvider::Kind::IMFMediaBuffer, _data);
-    }
-    if constexpr (std::is_same<IMediaSample, TMFData>::value) {
-        return std::make_pair(VideoBufferHandleProvider::Kind::IMediaSample, _data);
-    }
-    return VideoBufferHandleProvider::handle(retain);
-}
-
 
 } // namespace LiveKitCpp

@@ -28,9 +28,9 @@ std::vector<webrtc::SdpVideoFormat> MFVideoEncoderFactory::customFormats() const
     return VideoEncoderFactory::customFormats();
 }
 
-/*CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
+CodecStatus platformEncoderStatus(webrtc::VideoCodecType /*type*/, const webrtc::CodecParameterMap& parameters)
 {
     return CodecStatus::SupportedSoftware;
-}*/
+}
 
 } // namespace LiveKitCpp

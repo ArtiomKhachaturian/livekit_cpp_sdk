@@ -15,9 +15,6 @@
 #include "RgbGenericVideoFrameBuffer.h"
 #include "LibyuvImport.h"
 #include "VideoUtils.h"
-#ifdef WEBRTC_WIN
-#include "MFVideoBufferInterface.h"
-#endif
 #include <api/video/i420_buffer.h>
 
 namespace
@@ -50,8 +47,9 @@ bool NV12VideoFrameBuffer::consistent() const
     return strideY(w) == StrideY() && strideUV(w) == StrideUV();
 }
 
-webrtc::scoped_refptr<webrtc::NV12BufferInterface>NV12VideoFrameBuffer::toNV12(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
-                                 const VideoFrameBufferPool& pool)
+webrtc::scoped_refptr<webrtc::NV12BufferInterface> NV12VideoFrameBuffer::
+    toNV12(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+           const VideoFrameBufferPool& pool)
 {
     webrtc::scoped_refptr<webrtc::NV12BufferInterface> target;
     if (buffer) {
@@ -69,11 +67,6 @@ webrtc::scoped_refptr<webrtc::NV12BufferInterface>NV12VideoFrameBuffer::toNV12(c
               if (const auto rgbBuffer = dynamic_cast<RgbGenericVideoFrameBuffer*>(buffer.get())) {
                   target = rgbToNV12(rgbBuffer, pool);
               }
-#ifdef WEBRTC_WIN
-              else if (const auto mfBuffer = dynamic_cast<MFVideoBufferInterface*>(buffer.get())) {
-                  target = mfBuffer->toNV12(pool);
-              }
-#endif
               break;
           default:
               break;
