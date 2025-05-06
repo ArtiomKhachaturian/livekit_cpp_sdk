@@ -351,7 +351,8 @@ QString VideoTrack::outboundStats(const LiveKitCpp::Stats& stats,
             parameters.append(tr("sent frames: %1").arg(frames));
         }
         if (rtp->scalabilityMode().has_value()) {
-            parameters.append(tr("scalability: %1").arg(rtp->scalabilityMode().value()));
+            const auto scalability = QString::fromStdString(rtp->scalabilityMode().value());
+            parameters.append(tr("scalability: %1").arg(scalability));
         }
         return parameters.join(QStringLiteral("\n"));
     }
@@ -384,7 +385,8 @@ QString VideoTrack::inboundStats(const LiveKitCpp::Stats& stats,
             parameters.append(tr("dropped frames: %1").arg(frames));
         }
         if (rtp->contentType().has_value()) {
-            parameters.append(tr("content: %1").arg(rtp->contentType().value()));
+            const auto contentType = QString::fromStdString(rtp->contentType().value());
+            parameters.append(tr("content: %1").arg(contentType));
         }
         return parameters.join(QStringLiteral("\n"));
     }
