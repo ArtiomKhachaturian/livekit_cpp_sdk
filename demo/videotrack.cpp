@@ -129,8 +129,8 @@ VideoTrack::ContentHint VideoTrack::contentHint() const
         switch (_sdkTrack->contentHint()) {
             case LiveKitCpp::VideoContentHint::None:
                 break;
-            case LiveKitCpp::VideoContentHint::Fluid:
-                return ContentHint::Fluid;
+            case LiveKitCpp::VideoContentHint::Motion:
+                return ContentHint::Motion;
             case LiveKitCpp::VideoContentHint::Detailed:
                 return ContentHint::Detailed;
             case LiveKitCpp::VideoContentHint::Text:
@@ -320,7 +320,9 @@ void VideoTrack::setNetworkPriority(NetworkPriority priority)
         }
         if (sdkPriority != localSdkTrack->networkPriority()) {
             localSdkTrack->setNetworkPriority(sdkPriority);
-            emit networkPriorityChanged();
+            if (sdkPriority == localSdkTrack->networkPriority()) {
+                emit networkPriorityChanged();
+            }
         }
     }
 }
@@ -332,8 +334,8 @@ void VideoTrack::setContentHint(ContentHint hint)
         switch (hint) {
             case None:
                 break;
-            case Fluid:
-                sdkHint = LiveKitCpp::VideoContentHint::Fluid;
+            case Motion:
+                sdkHint = LiveKitCpp::VideoContentHint::Motion;
                 break;
             case Detailed:
                 sdkHint = LiveKitCpp::VideoContentHint::Detailed;
@@ -347,7 +349,9 @@ void VideoTrack::setContentHint(ContentHint hint)
         }
         if (sdkHint != _sdkTrack->contentHint()) {
             _sdkTrack->setContentHint(sdkHint);
-            emit contentHintChanged();
+            if (sdkHint == _sdkTrack->contentHint()) {
+                emit contentHintChanged();
+            }
         }
     }
 }
@@ -377,7 +381,9 @@ void VideoTrack::setDegradationPreference(DegradationPreference preference)
         }
         if (sdkPreference != localSdkTrack->degradationPreference()) {
             localSdkTrack->setDegradationPreference(sdkPreference);
-            emit degradationPreferenceChanged();
+            if (sdkPreference == localSdkTrack->degradationPreference()) {
+                emit degradationPreferenceChanged();
+            }
         }
     }
 }
@@ -503,7 +509,9 @@ void VideoTrack::setScalabilityMode(ScalabilityMode mode)
         }
         if (sdkMode != localSdkTrack->scalabilityMode()) {
             localSdkTrack->setScalabilityMode(sdkMode);
-            emit scalabilityModeChanged();
+            if (sdkMode == localSdkTrack->scalabilityMode()) {
+                emit scalabilityModeChanged();
+            }
         }
     }
 }

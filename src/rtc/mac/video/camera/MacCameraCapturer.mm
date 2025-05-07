@@ -383,7 +383,7 @@ void MacCameraCapturer::Impl::updateQualityToContentHint()
         AVCaptureSession* session = _capturer.captureSession;
         if (session) {
             switch (_delegate.contentHint) {
-                case VideoContentHint::Fluid:
+                case VideoContentHint::Motion:
                     session.sessionPreset = AVCaptureSessionPresetHigh;
                     break;
                 case VideoContentHint::Detailed:

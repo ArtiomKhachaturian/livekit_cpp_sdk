@@ -51,9 +51,10 @@ namespace LiveKitCpp
 
 AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                            const std::shared_ptr<Bricks::Logger>& logger,
-                                           bool liveImmediately)
+                                           VideoContentHint initialContentHint, bool liveImmediately)
     : AsyncMediaSourceImpl(std::move(signalingQueue), logger, liveImmediately)
     , _framesPool(VideoFrameBufferPoolSource::create())
+    , _contentHint(initialContentHint)
 {
 #ifdef WEBRTC_MAC
     static_assert(64U == sizeof(rtc::VideoSinkWants), "check changes in rtc::VideoSinkWants structure");
@@ -116,14 +117,13 @@ bool AsyncVideoSourceImpl::stats(int& inputWidth, int& inputHeight) const
     return false;
 }
 
-void AsyncVideoSourceImpl::setContentHint(VideoContentHint hint)
+bool AsyncVideoSourceImpl::changeContentHint(VideoContentHint hint)
 {
     if (active() && exchangeVal(hint, _contentHint)) {
-        if (_framesPool) {
-            _framesPool->setContentHint(hint);
-        }
-        onContentHintChanged(hint);
+        notifyAboutChanges();
+        return true;
     }
+    return false;
 }
 
 bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
@@ -170,6 +170,35 @@ bool AsyncVideoSourceImpl::removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame
     return false;
 }
 
+void AsyncVideoSourceImpl::updateAfterContentHintChanges(VideoContentHint hint)
+{
+    if (active()) {
+        if (_framesPool) {
+            _framesPool->setContentHint(hint);
+        }
+        LOCK_READ_SAFE_OBJ(_broadcasters);
+        for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
+            if (it->second) {
+                it->second->setContentHint(hint);
+            }
+        }
+    }
+}
+
+void AsyncVideoSourceImpl::updateAfterEnableChanges(bool enabled)
+{
+    AsyncMediaSourceImpl::updateAfterEnableChanges(enabled);
+    if (enabled) {
+        requestCapturer();
+    }
+    else {
+        resetCapturer();
+        if (_framesPool) {
+            _framesPool->release();
+        }
+    }
+}
+
 void AsyncVideoSourceImpl::setDeviceInfo(MediaDeviceInfo info)
 {
     if (active()) {
@@ -211,16 +240,6 @@ VideoFrameBufferPool AsyncVideoSourceImpl::framesPool() const
     return {_framesPool};
 }
 
-void AsyncVideoSourceImpl::onContentHintChanged(VideoContentHint hint)
-{
-    LOCK_READ_SAFE_OBJ(_broadcasters);
-    for (auto it = _broadcasters->begin(); it != _broadcasters->end(); ++it) {
-        if (it->second) {
-            it->second->setContentHint(hint);
-        }
-    }
-}
-
 void AsyncVideoSourceImpl::onDeviceInfoChanged(const MediaDeviceInfo&)
 {
     resetCapturer();
@@ -242,20 +261,6 @@ void AsyncVideoSourceImpl::onMuted()
     resetStats();
     if (_framesPool) {
         _framesPool->release();
-    }
-}
-
-void AsyncVideoSourceImpl::onEnabled(bool enabled)
-{
-    AsyncMediaSourceImpl::onEnabled(enabled);
-    if (enabled) {
-        requestCapturer();
-    }
-    else {
-        resetCapturer();
-        if (_framesPool) {
-            _framesPool->release();
-        }
     }
 }
 

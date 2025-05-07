@@ -42,7 +42,7 @@ public:
     enum ContentHint
     {
         None,
-        Fluid,
+        Motion,
         Detailed,
         Text
     };

@@ -92,7 +92,7 @@ webrtc::VideoTrackInterface::ContentHint LocalWebRtcTrack::content_hint() const
     if (_source) {
         return map(_source->contentHint());
     }
-    return webrtc::VideoTrackInterface::ContentHint::kNone;
+    return ContentHint::kNone;
 }
 
 void LocalWebRtcTrack::set_content_hint(ContentHint hint)

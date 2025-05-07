@@ -45,6 +45,10 @@ std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webr
 
 webrtc::VideoTrackInterface::ContentHint map(VideoContentHint hint);
 VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint);
+// required for proper selection of encoding mode inside of WebRTC codecs
+constexpr VideoContentHint defaultCameraContentHint() { return VideoContentHint::Motion; }
+// or VideoContentHint::Detailed?
+constexpr VideoContentHint defaultSharingContentHint() { return VideoContentHint::Text; }
 
 bool scaleNV12(const uint8_t* srcY, int srcStrideY,
                const uint8_t* srcUV, int srcStrideUV,

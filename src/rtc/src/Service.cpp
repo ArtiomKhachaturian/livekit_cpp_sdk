@@ -1009,7 +1009,6 @@ AsyncCameraSource::AsyncCameraSource(std::weak_ptr<webrtc::TaskQueueBase> signal
                                                                std::move(manager),
                                                                logger))
 {
-    setContentHint(VideoContentHint::Fluid);
 }
 
 AsyncSharingSource::AsyncSharingSource(bool previewMode,

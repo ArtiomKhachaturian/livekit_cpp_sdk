@@ -20,6 +20,14 @@ inline std::string videoLabel(bool sharing) {
     return sharing ? "screen_share" : "camera";
 }
 
+inline std::optional<std::string> scalabilityModeToString(LiveKitCpp::VideoScalabilityMode mode) {
+    auto str = LiveKitCpp::toString(mode);
+    if (!str.empty()) {
+        return str;
+    }
+    return std::nullopt;
+}
+
 }
 
 namespace LiveKitCpp
@@ -276,14 +284,9 @@ bool LocalVideoTrackImpl::setScalabilityMode(VideoScalabilityMode mode,
 bool LocalVideoTrackImpl::setScalabilityMode(VideoScalabilityMode mode,
                                              webrtc::RtpEncodingParameters& parameters)
 {
-    auto modeStr = toString(mode);
-    if (parameters.scalability_mode != modeStr) {
-        if (modeStr.empty()) {
-            parameters.scalability_mode = std::nullopt;
-        }
-        else {
-            parameters.scalability_mode = std::move(modeStr);
-        }
+    auto newMode = scalabilityModeToString(mode);
+    if (parameters.scalability_mode != newMode) {
+        parameters.scalability_mode = std::move(newMode);
         return true;
     }
     return false;

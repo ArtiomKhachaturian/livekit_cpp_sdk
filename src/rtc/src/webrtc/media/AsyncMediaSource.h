@@ -31,7 +31,7 @@ public:
     ~AsyncMediaSource() override { close(); }
     bool active() const noexcept { return _impl && _impl->active(); }
     const auto& signalingQueue() const noexcept { return _impl->signalingQueue(); }
-    bool enabled() const noexcept { return _enabled; }
+    bool enabled() const noexcept { return _impl && _impl->enabled(); }
     bool setEnabled(bool enabled);
     void close();
     // impl. of MediaSourceInterface
@@ -50,8 +50,6 @@ protected:
     void postToImpl(Method method, Args&&... args) const;
 protected:
     const std::shared_ptr<TAsyncImpl> _impl;
-private:
-    std::atomic_bool _enabled = true;
 };
 
 template <class TMediaSource, class TAsyncImpl>
@@ -74,9 +72,8 @@ inline AsyncMediaSource<TMediaSource, TAsyncImpl>::AsyncMediaSource(std::shared_
 template <class TMediaSource, class TAsyncImpl>
 inline bool AsyncMediaSource<TMediaSource, TAsyncImpl>::setEnabled(bool enabled)
 {
-    if (_impl && _impl->active() && exchangeVal(enabled, _enabled)) {
-        postToImpl(&TAsyncImpl::setEnabled, enabled);
-        _impl->notifyAboutChanges();
+    if (_impl && _impl->setEnabled(enabled)) {
+        postToImpl(&TAsyncImpl::updateAfterEnableChanges, enabled);
         return true;
     }
     return false;

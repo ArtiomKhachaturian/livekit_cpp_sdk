@@ -12,9 +12,21 @@ Menu {
         enabled: source !== null
         ActionGroup { id: contentHintGroup }
         ContentHintAction { hint: VideoTrack.None; ActionGroup.group: contentHintGroup }
-        ContentHintAction { hint: VideoTrack.Fluid; ActionGroup.group: contentHintGroup }
-        ContentHintAction { hint: VideoTrack.Detailed; ActionGroup.group: contentHintGroup }
-        ContentHintAction { hint: VideoTrack.Text; ActionGroup.group: contentHintGroup }
+        ContentHintAction {
+            hint: VideoTrack.Motion
+            enabled: isCamera()
+            ActionGroup.group: contentHintGroup
+        }
+        ContentHintAction {
+            hint: VideoTrack.Detailed
+            enabled: isScreencast()
+            ActionGroup.group: contentHintGroup
+        }
+        ContentHintAction {
+            hint: VideoTrack.Text
+            enabled: isScreencast()
+            ActionGroup.group: contentHintGroup
+        }
     }
     Menu {
         title: qsTr("Network priority")
@@ -131,8 +143,8 @@ Menu {
         switch (contentHint) {
             case VideoTrack.None:
                 return qsTr("None")
-            case VideoTrack.Fluid:
-                return qsTr("Fluid")
+            case VideoTrack.Motion:
+                return qsTr("Motion")
             case VideoTrack.Detailed:
                 return qsTr("Detailed")
             case VideoTrack.Text:
@@ -292,4 +304,6 @@ Menu {
     }
 
     function isLocalSource() { return root.source && !root.source.remote }
+    function isScreencast() { return root.source && root.source.screencast }
+    function isCamera() { return root.source && !root.source.screencast }
 }

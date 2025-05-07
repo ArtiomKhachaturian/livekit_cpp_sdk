@@ -33,10 +33,22 @@ namespace LiveKitCpp
 AsyncCameraSourceImpl::AsyncCameraSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                              std::weak_ptr<CameraManager> manager,
                                              const std::shared_ptr<Bricks::Logger>& logger)
-    : AsyncVideoSourceImpl(std::move(signalingQueue), logger, false)
+    : AsyncVideoSourceImpl(std::move(signalingQueue), logger, defaultCameraContentHint())
     , _manager(std::move(manager))
 {
     setOptions(map(CameraManager::defaultCapability()));
+}
+
+bool AsyncCameraSourceImpl::changeContentHint(VideoContentHint hint)
+{
+    switch (hint) {
+        case VideoContentHint::None:
+        case VideoContentHint::Motion:
+            return AsyncVideoSourceImpl::changeContentHint(hint);
+        default:
+            break;
+    }
+    return false;
 }
 
 void AsyncCameraSourceImpl::requestCapturer()
@@ -71,6 +83,15 @@ void AsyncCameraSourceImpl::resetCapturer()
     }
 }
 
+void AsyncCameraSourceImpl::updateAfterContentHintChanges(VideoContentHint hint)
+{
+    AsyncVideoSourceImpl::updateAfterContentHintChanges(hint);
+    LOCK_READ_SAFE_OBJ(_capturer);
+    if (const auto& capturer = _capturer.constRef()) {
+        capturer->updateQualityToContentHint();
+    }
+}
+
 std::string_view AsyncCameraSourceImpl::logCategory() const
 {
     return CameraManager::logCategory();
@@ -80,15 +101,6 @@ void AsyncCameraSourceImpl::onCapturingError(std::string details, bool fatal)
 {
     logError(_capturer(), details);
     AsyncVideoSourceImpl::onCapturingError(std::move(details), fatal);
-}
-
-void AsyncCameraSourceImpl::onContentHintChanged(VideoContentHint hint)
-{
-    AsyncVideoSourceImpl::onContentHintChanged(hint);
-    LOCK_READ_SAFE_OBJ(_capturer);
-    if (const auto& capturer = _capturer.constRef()) {
-        capturer->updateQualityToContentHint();
-    }
 }
 
 void AsyncCameraSourceImpl::onOptionsChanged(const VideoOptions& options)

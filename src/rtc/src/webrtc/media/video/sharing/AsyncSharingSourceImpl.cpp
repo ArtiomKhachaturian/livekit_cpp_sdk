@@ -23,10 +23,23 @@ AsyncSharingSourceImpl::AsyncSharingSourceImpl(bool previewMode,
                                                std::weak_ptr<DesktopConfiguration> desktopConfiguration,
                                                std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                                const std::shared_ptr<Bricks::Logger>& logger)
-    : AsyncVideoSourceImpl(std::move(signalingQueue), logger)
+    : AsyncVideoSourceImpl(std::move(signalingQueue), logger, defaultSharingContentHint())
     , _previewMode(previewMode)
     , _desktopConfiguration(std::move(desktopConfiguration))
 {
+}
+
+bool AsyncSharingSourceImpl::changeContentHint(VideoContentHint hint)
+{
+    switch (hint) {
+        case VideoContentHint::None:
+        case VideoContentHint::Detailed:
+        case VideoContentHint::Text:
+            return AsyncVideoSourceImpl::changeContentHint(hint);
+        default:
+            break;
+    }
+    return false;
 }
 
 void AsyncSharingSourceImpl::requestCapturer()
@@ -68,6 +81,15 @@ void AsyncSharingSourceImpl::resetCapturer()
     }
 }
 
+void AsyncSharingSourceImpl::updateAfterContentHintChanges(VideoContentHint hint)
+{
+    AsyncVideoSourceImpl::updateAfterContentHintChanges(hint);
+    LOCK_READ_SAFE_OBJ(_capturer);
+    if (const auto& capturer = _capturer.constRef()) {
+        capturer->updateQualityToContentHint();
+    }
+}
+
 std::string_view AsyncSharingSourceImpl::logCategory() const
 {
     return DesktopConfiguration::logCategory();
@@ -81,15 +103,6 @@ void AsyncSharingSourceImpl::onOptionsChanged(const VideoOptions& options)
         if (const auto& capturer = _capturer.constRef()) {
             applyOptions(capturer.get(), options);
         }
-    }
-}
-
-void AsyncSharingSourceImpl::onContentHintChanged(VideoContentHint hint)
-{
-    AsyncVideoSourceImpl::onContentHintChanged(hint);
-    LOCK_READ_SAFE_OBJ(_capturer);
-    if (const auto& capturer = _capturer.constRef()) {
-        capturer->updateQualityToContentHint();
     }
 }
 

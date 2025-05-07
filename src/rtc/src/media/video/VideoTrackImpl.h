@@ -28,10 +28,6 @@ class VideoTrackImpl : public TrackImpl<TMediaDevice, TTrackApi>
     using Base = TrackImpl<TMediaDevice, TTrackApi>;
 public:
     ~VideoTrackImpl() override = default;
-    // required for proper selection of encoding mode inside of WebRTC codecs
-    static constexpr VideoContentHint cameraContentHint() { return VideoContentHint::Fluid; }
-    // or VideoContentHint::Detailed?
-    static constexpr VideoContentHint sharingContentHint() { return VideoContentHint::Text; }
     // impl. of VideoTrack
     void addSink(VideoSink* sink) final;
     void removeSink(VideoSink* sink) final;

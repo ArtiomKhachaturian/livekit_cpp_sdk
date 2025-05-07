@@ -26,16 +26,13 @@ AsyncMediaSourceImpl::AsyncMediaSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
 {
 }
 
-void AsyncMediaSourceImpl::notifyAboutChanges()
-{
-    _observers.invoke(&webrtc::ObserverInterface::OnChanged);
-}
-
-void AsyncMediaSourceImpl::setEnabled(bool enabled)
+bool AsyncMediaSourceImpl::setEnabled(bool enabled)
 {
     if (active() && exchangeVal(enabled, _enabled)) {
-        onEnabled(enabled);
+        notifyAboutChanges();
+        return true;
     }
+    return false;
 }
 
 void AsyncMediaSourceImpl::close()
@@ -56,6 +53,11 @@ void AsyncMediaSourceImpl::registerObserver(webrtc::ObserverInterface* observer)
 void AsyncMediaSourceImpl::unregisterObserver(webrtc::ObserverInterface* observer)
 {
     _observers.remove(observer);
+}
+
+void AsyncMediaSourceImpl::notifyAboutChanges()
+{
+    _observers.invoke(&webrtc::ObserverInterface::OnChanged);
 }
 
 void AsyncMediaSourceImpl::changeState(webrtc::MediaSourceInterface::SourceState state)

@@ -29,14 +29,15 @@ public:
                           const std::shared_ptr<Bricks::Logger>& logger);
     ~AsyncCameraSourceImpl() final { close(); }
     // override of AsyncVideoSourceImpl
+    bool changeContentHint(VideoContentHint hint) final;
     void requestCapturer() final;
     void resetCapturer() final;
+    void updateAfterContentHintChanges(VideoContentHint hint) final;
 protected:
     // impl. of Bricks::LoggableS<>
     std::string_view logCategory() const final;
     // overrides of AsyncVideoSourceImpl
     void onCapturingError(std::string details, bool fatal) override;
-    void onContentHintChanged(VideoContentHint hint) final;
     void onOptionsChanged(const VideoOptions& options) final;
     MediaDeviceInfo validate(MediaDeviceInfo info) const final;
     VideoOptions validate(VideoOptions options) const final;

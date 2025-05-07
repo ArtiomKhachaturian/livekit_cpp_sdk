@@ -28,7 +28,9 @@ VideoSource::~VideoSource()
     _fpsMeter.stop();
     const QWriteLocker locker(&_outputs._lock);
     for (qsizetype i = 0; i < _outputs->size(); ++i) {
-        _outputs->at(i)->disconnect(this);
+        if (const auto& sink = _outputs->at(i)) {
+            sink->disconnect(this);
+        }
     }
     _outputs->clear();
 }

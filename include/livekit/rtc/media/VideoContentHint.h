@@ -22,9 +22,9 @@ namespace LiveKitCpp
 enum class VideoContentHint
 {
     None,
-    Fluid,
-    Detailed,
-    Text
+    Motion,   // only for camera sources
+    Detailed, // only for screencast sources
+    Text      // only for screencast sources
 };
 	
 } // namespace LiveKitCpp

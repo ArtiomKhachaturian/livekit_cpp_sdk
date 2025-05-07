@@ -103,7 +103,7 @@ webrtc::VideoTrackInterface::ContentHint map(VideoContentHint hint)
     switch (hint) {
         case VideoContentHint::None:
             break;
-        case VideoContentHint::Fluid:
+        case VideoContentHint::Motion:
             return webrtc::VideoTrackInterface::ContentHint::kFluid;
         case VideoContentHint::Detailed:
             return webrtc::VideoTrackInterface::ContentHint::kDetailed;
@@ -122,7 +122,7 @@ VideoContentHint map(webrtc::VideoTrackInterface::ContentHint hint)
         case webrtc::VideoTrackInterface::ContentHint::kNone:
             break;
         case webrtc::VideoTrackInterface::ContentHint::kFluid:
-            return VideoContentHint::Fluid;
+            return VideoContentHint::Motion;
         case webrtc::VideoTrackInterface::ContentHint::kDetailed:
             return VideoContentHint::Detailed;
         case webrtc::VideoTrackInterface::ContentHint::kText:

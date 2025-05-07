@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "RemoteVideoTrackImpl.h"
+#include "VideoUtils.h"
 
 namespace LiveKitCpp
 {
@@ -24,10 +25,10 @@ RemoteVideoTrackImpl::RemoteVideoTrackImpl(const TrackInfo& info,
 {
     switch (info._source) {
         case TrackSource::Camera:
-            setContentHint(cameraContentHint());
+            setContentHint(defaultCameraContentHint());
             break;
         case TrackSource::ScreenShare:
-            setContentHint(sharingContentHint());
+            setContentHint(defaultSharingContentHint());
             break;
         default:
             break;

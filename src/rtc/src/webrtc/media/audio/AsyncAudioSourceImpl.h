@@ -30,11 +30,10 @@ public:
     virtual void addSink(webrtc::AudioTrackSinkInterface* /*sink*/) {}
     virtual void removeSink(webrtc::AudioTrackSinkInterface* /*sink*/) {}
     virtual cricket::AudioOptions options() const { return {}; }
+    // override of AsyncMediaSourceImpl
+    void updateAfterEnableChanges(bool enabled) override;
 protected:
     void onVolumeChanged(double volume) const;
-protected:
-    // override of AsyncMediaSourceImpl
-    void onEnabled(bool enabled) override;
 private:
     AsyncListeners<webrtc::AudioSourceInterface::AudioObserver*> _observers;
 };

@@ -39,9 +39,9 @@ void AsyncAudioSourceImpl::removeAudioObserver(webrtc::AudioSourceInterface::Aud
     _observers.remove(observer);
 }
 
-void AsyncAudioSourceImpl::onEnabled(bool enabled)
+void AsyncAudioSourceImpl::updateAfterEnableChanges(bool enabled)
 {
-    AsyncMediaSourceImpl::onEnabled(enabled);
+    AsyncMediaSourceImpl::updateAfterEnableChanges(enabled);
     if (enabled) {
         changeState(webrtc::MediaSourceInterface::SourceState::kLive);
     }

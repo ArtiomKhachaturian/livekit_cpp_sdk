@@ -27,8 +27,7 @@ public:
     virtual ~AsyncMediaSourceImpl() = default;
     webrtc::MediaSourceInterface::SourceState state() const noexcept { return _state; }
     const auto& signalingQueue() const noexcept { return _observers.queue(); }
-    void notifyAboutChanges();
-    void setEnabled(bool enabled);
+    bool setEnabled(bool enabled);
     bool enabled() const { return _enabled; }
     bool active() const noexcept { return _active; }
     void close();
@@ -36,17 +35,18 @@ public:
     void unregisterObserver(webrtc::ObserverInterface* observer);
     void addListener(MediaDeviceListener* listener) { _listeners.add(listener); }
     void removeListener(MediaDeviceListener* listener) { _listeners.remove(listener); }
+    virtual void updateAfterEnableChanges(bool /*enabled*/) {}
 protected:
     AsyncMediaSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                          const std::shared_ptr<Bricks::Logger>& logger = {},
                          bool liveImmediately = false);
+    void notifyAboutChanges();
     void changeState(webrtc::MediaSourceInterface::SourceState state);
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const {
         _listeners.invoke(method, std::forward<Args>(args)...);
     }
     virtual void onClosed() {}
-    virtual void onEnabled(bool /*enabled*/) {}
     virtual void onMuted() {}
     virtual void onLive() {}
 private:

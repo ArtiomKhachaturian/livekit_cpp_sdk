@@ -40,7 +40,7 @@ public:
     bool stats(webrtc::VideoTrackSourceInterface::Stats& s) const;
     bool stats(int& inputWidth, int& inputHeight) const;
     VideoContentHint contentHint() const { return _contentHint; }
-    void setContentHint(VideoContentHint hint);
+    virtual bool changeContentHint(VideoContentHint hint);
     MediaDeviceInfo deviceInfo() const { return _deviceInfo(); }
     void setDeviceInfo(MediaDeviceInfo info);
     void setOptions(VideoOptions options = {});
@@ -50,16 +50,19 @@ public:
                          const rtc::VideoSinkWants& wants);
     // return true if need to reset capturer
     bool removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
+    virtual void updateAfterContentHintChanges(VideoContentHint hint);
     virtual void requestCapturer() {}
     virtual void resetCapturer() {}
+    // override of AsyncMediaSourceImpl
+    void updateAfterEnableChanges(bool enabled) override;
 protected:
     AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                          const std::shared_ptr<Bricks::Logger>& logger = {},
+                         VideoContentHint initialContentHint = VideoContentHint::None,
                          bool liveImmediately = false);
     bool frameWanted() const;
     // video frames pool
     VideoFrameBufferPool framesPool() const;
-    virtual void onContentHintChanged(VideoContentHint hint);
     virtual void onOptionsChanged(const VideoOptions& /*options*/ ) {}
     virtual void onDeviceInfoChanged(const MediaDeviceInfo& info);
     virtual MediaDeviceInfo validate(MediaDeviceInfo info) const { return info; }
@@ -67,7 +70,6 @@ protected:
     // impl. of MediaSourceImpl
     void onClosed() override;
     void onMuted() override;
-    void onEnabled(bool enabled) override;
     // impl. of CapturerObserver
     void onStateChanged(CapturerState state) override;
     void onCapturingError(std::string details, bool fatal) override;
@@ -88,7 +90,7 @@ private:
     Bricks::SafeObj<MediaDeviceInfo> _deviceInfo;
     Bricks::SafeObj<VideoOptions> _options;
     std::atomic<uint64_t> _lastResolution = 0ULL;
-    std::atomic<VideoContentHint> _contentHint = VideoContentHint::None;
+    std::atomic<VideoContentHint> _contentHint;
 };
 
 } // namespace LiveKitCpp

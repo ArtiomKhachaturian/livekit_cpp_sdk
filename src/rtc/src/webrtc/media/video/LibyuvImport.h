@@ -32,7 +32,7 @@ inline libyuv::FilterMode mapLibYUV(VideoContentHint hint) {
     switch (hint) {
         case VideoContentHint::None:
             break;
-        case VideoContentHint::Fluid:
+        case VideoContentHint::Motion:
             return libyuv::FilterMode::kFilterLinear;
         case VideoContentHint::Detailed:
             return libyuv::FilterMode::kFilterBilinear;
