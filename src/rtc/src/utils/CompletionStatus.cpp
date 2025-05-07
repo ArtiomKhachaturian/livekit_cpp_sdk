@@ -74,7 +74,7 @@ std::string CompletionStatus::what() const
 CompletionStatus::Code CompletionStatus::invalidState()
 {
 #ifdef WEBRTC_WIN
-    return E_NOT_VALID_STATE;
+    return ERROR_INVALID_STATE;
 #elif defined(WEBRTC_MAC)
     return badReqErr;
 #else

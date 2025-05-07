@@ -102,8 +102,8 @@ CompletionStatusOrComPtr<IMFTransform> createTransform(const GUID& compressedTyp
                         if (inputStreamID && outputStreamID) {
                             auto ids = transformStreamIDs(transform);
                             if (ids) {
-                                *inputStreamID = ids.value().first;
-                                *outputStreamID = ids.value().second;
+                                *inputStreamID = ids->first;
+                                *outputStreamID = ids->second;
                             }
                             else {
                                 hr = ids.moveStatus();

@@ -68,7 +68,7 @@ public:
 private:
     // impl. of CameraObserver
     void onStateChanged(CapturerState state) final;
-    // impl. of ::rtc::VideoSinkInterface<webrtc::VideoFrame>
+    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final;
     void OnDiscardedFrame() final;
 private:
@@ -78,7 +78,7 @@ private:
     std::atomic_bool _captureStarted = false;
 };
 
-::rtc::scoped_refptr<CameraCapturer> WinCameraPool::
+rtc::scoped_refptr<CameraCapturer> WinCameraPool::
     create(const MediaDeviceInfo& device,
            VideoFrameBufferPool framesPool,
            const std::shared_ptr<Bricks::Logger>& logger)

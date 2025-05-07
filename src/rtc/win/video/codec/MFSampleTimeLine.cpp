@@ -64,13 +64,13 @@ CompletionStatus MFSampleTimeLine::setSampleTimeMetrics(const CComPtr<IMFSample>
 LONGLONG MFSampleTimeLine::timestampMicro(const webrtc::EncodedImage& from) const
 {
     // this is RTP timestamp (ms), already rounded to 90khz
-    return from.RtpTimestamp() * ::rtc::kNumMicrosecsPerMillisec;
+    return from.RtpTimestamp() * rtc::kNumMicrosecsPerMillisec;
 }
 
 LONGLONG MFSampleTimeLine::timestampMicro(const webrtc::VideoFrame& from) const
 {
     if (const auto rtpTimestampMs = from.rtp_timestamp()) { // already rounded to 90khz
-        return rtpTimestampMs * ::rtc::kNumMicrosecsPerMillisec;
+        return rtpTimestampMs * rtc::kNumMicrosecsPerMillisec;
     }
     if (auto sysTimestampMicro = from.timestamp_us()) {
         if (_roundTo90kHz) {

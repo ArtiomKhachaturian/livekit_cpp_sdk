@@ -350,16 +350,16 @@ CompletionStatusOrComPtr<IMFSample> MFPipeline::createSampleWitMemoryBuffer(bool
     if (input) {
         auto si = inputStreamInfo();
         if (si) {
-            maxLength = si.value().cbSize;
-            aligment = si.value().cbAlignment;
+            maxLength = si->cbSize;
+            aligment = si->cbAlignment;
         } else {
             return si.moveStatus();
         }
     } else {
         auto si = outputStreamInfo();
         if (si) {
-            maxLength = si.value().cbSize;
-            aligment = si.value().cbAlignment;
+            maxLength = si->cbSize;
+            aligment = si->cbAlignment;
         }
         else {
             return si.moveStatus();
@@ -497,8 +497,8 @@ CompletionStatusOrComPtr<IMFTransform> MFPipeline::
     if (!ids) {
         return ids.moveStatus();
     }
-    inputStreamID = ids.value().first;
-    outputStreamID = ids.value().second;
+    inputStreamID = ids->first;
+    outputStreamID = ids->second;
     CComPtr<IMFAttributes> attributes;
     if (SUCCEEDED(transform->GetAttributes(&attributes))) {
         actualFlags = ::MFGetAttributeUINT32(attributes, MF_TRANSFORM_FLAGS_Attribute, 0U);

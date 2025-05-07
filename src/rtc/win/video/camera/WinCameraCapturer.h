@@ -35,7 +35,7 @@ class WinCameraCapturer : public Bricks::LoggableS<CameraCapturer>,
     using DeviceInfoDS = webrtc::videocapturemodule::DeviceInfoDS;
 public:
     ~WinCameraCapturer() override;
-    static ::rtc::scoped_refptr<CameraCapturer> 
+    static rtc::scoped_refptr<CameraCapturer> 
         create(const MediaDeviceInfo& device, VideoFrameBufferPool framesPool = {},
                const std::shared_ptr<Bricks::Logger>& logger = {});
     // impl. of CameraCapturer

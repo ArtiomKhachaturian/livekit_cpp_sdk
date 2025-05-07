@@ -64,9 +64,9 @@ WinCameraCapturer::~WinCameraCapturer()
     _graphBuilder->RemoveFilter(_captureFilter);
 }
 
-::rtc::scoped_refptr<CameraCapturer> WinCameraCapturer::create(const MediaDeviceInfo& device,
-                                                               VideoFrameBufferPool framesPool,
-                                                               const std::shared_ptr<Bricks::Logger>& logger)
+rtc::scoped_refptr<CameraCapturer> WinCameraCapturer::create(const MediaDeviceInfo& device,
+                                                             VideoFrameBufferPool framesPool,
+                                                             const std::shared_ptr<Bricks::Logger>& logger)
 {
     const auto& guid = device._guid;
     if (guid.empty()) {

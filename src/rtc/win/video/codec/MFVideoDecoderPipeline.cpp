@@ -45,7 +45,7 @@ CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(bool s
         bool dxvaAccelerated = false;
         if (!software) {
             if (webrtc::VideoCodecType::kVideoCodecH264 == codecType) {
-                dxvaAccelerated = SUCCEEDED(impl.value().attributes()->SetUINT32(CODECAPI_AVDecVideoAcceleration_H264, TRUE));
+                dxvaAccelerated = SUCCEEDED(impl->attributes()->SetUINT32(CODECAPI_AVDecVideoAcceleration_H264, TRUE));
             }
         }
         auto compressedType = createCompressedMediaType(codecType);
@@ -57,9 +57,9 @@ CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(bool s
             if (hr) {
                 hr = setAllSamplesIndependent(compressedType.value(), false);
                 if (hr) {
-                    hr = impl.value().setCompressedMediaType(compressedType.value());
+                    hr = impl->setCompressedMediaType(compressedType.value());
                     if (hr) {
-                        auto status = impl.value().compressedStatus();
+                        auto status = impl->compressedStatus();
                         if (!status) {
                             hr = status.moveStatus();
                         } else if (MFT_INPUT_STATUS_ACCEPT_DATA != status.value()) {

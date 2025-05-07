@@ -29,7 +29,7 @@ MFEncoderInputMediaBuffer::~MFEncoderInputMediaBuffer()
 {
 }
 
-IMFMediaBuffer* MFEncoderInputMediaBuffer::create(const ::rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+IMFMediaBuffer* MFEncoderInputMediaBuffer::create(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
                                                   const VideoFrameBufferPool& pool)
 {
     if (auto nv12 = NV12VideoFrameBuffer::toNV12(buffer, pool)) {

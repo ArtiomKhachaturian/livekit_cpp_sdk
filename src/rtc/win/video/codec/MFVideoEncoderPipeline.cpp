@@ -43,7 +43,7 @@ CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::create(bool s
                 hr = setAvgBitrate(output.value(), avgBitsPerSecond);
                 if (hr) {
                     // always set encoder output (compressed) type before input
-                    hr = impl.value().setCompressedMediaType(output.value());
+                    hr = impl->setCompressedMediaType(output.value());
                     if (hr) {
                         auto input = createUncompressedMediaType();
                         if (!input) {
@@ -54,7 +54,7 @@ CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::create(bool s
                                                     frameRate,
                                                     MFVideoInterlace_Progressive, true);
                             if (hr) {
-                                hr = impl.value().setUncompressedMediaType(input.value());
+                                hr = impl->setUncompressedMediaType(input.value());
                                 if (hr) {
                                     return MFVideoEncoderPipeline(impl.moveValue(), codecType);
                                 }

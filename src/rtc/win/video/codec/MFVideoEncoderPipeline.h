@@ -32,6 +32,8 @@ public:
     MFVideoEncoderPipeline() = default;
     MFVideoEncoderPipeline(const MFVideoEncoderPipeline&) = default;
     MFVideoEncoderPipeline(MFVideoEncoderPipeline&&) = default;
+    MFVideoEncoderPipeline& operator = (MFVideoEncoderPipeline&&) = default;
+    MFVideoEncoderPipeline& operator = (const MFVideoEncoderPipeline&) = default;
     CComPtr<IMFMediaBuffer> createMediaBuffer(const webrtc::VideoFrame& frame) const;
     // https://learn.microsoft.com/en-us/windows/win32/medfound/mf-mt-mpeg-sequence-header-attribute
     CompletionStatusOr<std::vector<BYTE>> mpegSequenceHeader() const;

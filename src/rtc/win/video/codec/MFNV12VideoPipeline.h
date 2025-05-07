@@ -25,7 +25,7 @@ class VideoFrameBufferPoolSource;
 class MFNV12VideoPipeline
 {
 public:
-    virtual ~MFNV12VideoPipeline();
+    virtual ~MFNV12VideoPipeline() = default;
     explicit operator bool() const { return valid(); }
     bool valid() const { return _impl.valid();  }
     bool encoder() const noexcept { return _impl.encoder(); }
@@ -84,6 +84,8 @@ protected:
     MFNV12VideoPipeline(const MFNV12VideoPipeline&) = default;
     MFNV12VideoPipeline(MFNV12VideoPipeline&&) = default;
     MFNV12VideoPipeline(MFPipeline impl, webrtc::VideoCodecType codecType);
+    MFNV12VideoPipeline& operator = (MFNV12VideoPipeline&&) = default;
+    MFNV12VideoPipeline& operator = (const MFNV12VideoPipeline&) = default;
     MFSampleTimeLine& inputFramesTimeline() { return _inputFramesTimeline; }
     const MFSampleTimeLine& inputFramesTimeline() const { return _inputFramesTimeline; }
     VideoFrameBufferPool framesPool() const;

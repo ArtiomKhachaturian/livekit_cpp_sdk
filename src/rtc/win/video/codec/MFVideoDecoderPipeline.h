@@ -38,6 +38,8 @@ public:
     MFVideoDecoderPipeline(const MFVideoDecoderPipeline&) = default;
     MFVideoDecoderPipeline(MFVideoDecoderPipeline&&) = default;
     ~MFVideoDecoderPipeline() override;
+    MFVideoDecoderPipeline& operator = (MFVideoDecoderPipeline&&) = default;
+    MFVideoDecoderPipeline& operator = (const MFVideoDecoderPipeline&) = default;
     bool dxvaAccelerated() const { return _dxvaAccelerated; }
     CompletionStatusOrScopedRefPtr<webrtc::NV12BufferInterface> createBuffer(const CComPtr<IMFMediaBuffer>& inputBuffer,
                                                                              UINT32 width = 0U, UINT32 height = 0U) const;

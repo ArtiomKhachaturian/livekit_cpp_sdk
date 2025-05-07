@@ -31,10 +31,6 @@ MFNV12VideoPipeline::MFNV12VideoPipeline(MFPipeline impl, webrtc::VideoCodecType
     _inputFramesTimeline.setSetupDuration(_impl.encoder());
 }
 
-MFNV12VideoPipeline::~MFNV12VideoPipeline()
-{
-}
-
 bool MFNV12VideoPipeline::directXAccelerationSupported() const
 {
     return TRUE == ::MFGetAttributeUINT32(_impl.attributes(), MF_SA_D3D_AWARE, FALSE);
