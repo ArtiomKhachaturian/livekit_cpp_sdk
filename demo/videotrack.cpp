@@ -165,6 +165,92 @@ VideoTrack::DegradationPreference VideoTrack::degradationPreference() const
     return DegradationPreference::Default;
 }
 
+VideoTrack::ScalabilityMode VideoTrack::scalabilityMode() const
+{
+    if (const auto localSdkTrack = std::dynamic_pointer_cast<const LiveKitCpp::LocalVideoTrack>(_sdkTrack)) {
+        switch (localSdkTrack->scalabilityMode()) {
+            case LiveKitCpp::VideoScalabilityMode::Auto:
+                break;
+            case LiveKitCpp::VideoScalabilityMode::L1T1:
+                return ScalabilityMode::L1T1;
+            case LiveKitCpp::VideoScalabilityMode::L1T2:
+                return ScalabilityMode::L1T2;
+            case LiveKitCpp::VideoScalabilityMode::L1T3:
+                return ScalabilityMode::L1T3;
+            case LiveKitCpp::VideoScalabilityMode::L2T1:
+                return ScalabilityMode::L2T1;
+            case LiveKitCpp::VideoScalabilityMode::L2T2:
+                return ScalabilityMode::L2T2;
+            case LiveKitCpp::VideoScalabilityMode::L2T3:
+                return ScalabilityMode::L2T3;
+            case LiveKitCpp::VideoScalabilityMode::L3T1:
+                return ScalabilityMode::L3T1;
+            case LiveKitCpp::VideoScalabilityMode::L3T2:
+                return ScalabilityMode::L3T2;
+            case LiveKitCpp::VideoScalabilityMode::L3T3:
+                return ScalabilityMode::L3T3;
+            case LiveKitCpp::VideoScalabilityMode::L2T1h:
+                return ScalabilityMode::L2T1h;
+            case LiveKitCpp::VideoScalabilityMode::L2T2h:
+                return ScalabilityMode::L2T2h;
+            case LiveKitCpp::VideoScalabilityMode::L2T3h:
+                return ScalabilityMode::L2T3h;
+            case LiveKitCpp::VideoScalabilityMode::L3T1h:
+                return ScalabilityMode::L3T1h;
+            case LiveKitCpp::VideoScalabilityMode::L3T2h:
+                return ScalabilityMode::L3T2h;
+            case LiveKitCpp::VideoScalabilityMode::L3T3h:
+                return ScalabilityMode::L3T3h;
+            case LiveKitCpp::VideoScalabilityMode::S2T1:
+                return ScalabilityMode::S2T1;
+            case LiveKitCpp::VideoScalabilityMode::S2T2:
+                return ScalabilityMode::S2T2;
+            case LiveKitCpp::VideoScalabilityMode::S2T3:
+                return ScalabilityMode::S2T3;
+            case LiveKitCpp::VideoScalabilityMode::S2T1h:
+                return ScalabilityMode::S2T1h;
+            case LiveKitCpp::VideoScalabilityMode::S2T2h:
+                return ScalabilityMode::S2T2h;
+            case LiveKitCpp::VideoScalabilityMode::S2T3h:
+                return ScalabilityMode::S2T3h;
+            case LiveKitCpp::VideoScalabilityMode::S3T1:
+                return ScalabilityMode::S3T1;
+            case LiveKitCpp::VideoScalabilityMode::S3T2:
+                return ScalabilityMode::S3T2;
+            case LiveKitCpp::VideoScalabilityMode::S3T3:
+                return ScalabilityMode::S3T3;
+            case LiveKitCpp::VideoScalabilityMode::S3T1h:
+                return ScalabilityMode::S3T1h;
+            case LiveKitCpp::VideoScalabilityMode::S3T2h:
+                return ScalabilityMode::S3T2h;
+            case LiveKitCpp::VideoScalabilityMode::S3T3h:
+                return ScalabilityMode::S3T3h;
+            case LiveKitCpp::VideoScalabilityMode::L2T2Key:
+                return ScalabilityMode::L2T2Key;
+            case LiveKitCpp::VideoScalabilityMode::L2T2KeyShift:
+                return ScalabilityMode::L2T2KeyShift;
+            case LiveKitCpp::VideoScalabilityMode::L2T3Key:
+                return ScalabilityMode::L2T3Key;
+            case LiveKitCpp::VideoScalabilityMode::L2T3KeyShift:
+                return ScalabilityMode::L2T3KeyShift;
+            case LiveKitCpp::VideoScalabilityMode::L3T1Key:
+                return ScalabilityMode::L3T1Key;
+            case LiveKitCpp::VideoScalabilityMode::L3T2Key:
+                return ScalabilityMode::L3T2Key;
+            case LiveKitCpp::VideoScalabilityMode::L3T2KeyShift:
+                return ScalabilityMode::L3T2KeyShift;
+            case LiveKitCpp::VideoScalabilityMode::L3T3Key:
+                return ScalabilityMode::L3T3Key;
+            case LiveKitCpp::VideoScalabilityMode::L3T3KeyShift:
+                return ScalabilityMode::L3T3KeyShift;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+    }
+    return ScalabilityMode::Auto;
+}
+
 void VideoTrack::queryStats()
 {
     if (_sdkTrack && !isMuted()) {
@@ -292,6 +378,132 @@ void VideoTrack::setDegradationPreference(DegradationPreference preference)
         if (sdkPreference != localSdkTrack->degradationPreference()) {
             localSdkTrack->setDegradationPreference(sdkPreference);
             emit degradationPreferenceChanged();
+        }
+    }
+}
+
+void VideoTrack::setScalabilityMode(ScalabilityMode mode)
+{
+    if (const auto localSdkTrack = std::dynamic_pointer_cast<LiveKitCpp::LocalVideoTrack>(_sdkTrack)) {
+        LiveKitCpp::VideoScalabilityMode sdkMode = LiveKitCpp::VideoScalabilityMode::Auto;
+        switch (mode) {
+            case ScalabilityMode::Auto:
+                break;
+            case ScalabilityMode::L1T1:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L1T1;
+                break;
+            case ScalabilityMode::L1T2:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L1T2;
+                break;
+            case ScalabilityMode::L1T3:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L1T3;
+                break;
+            case ScalabilityMode::L2T1:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T1;
+                break;
+            case ScalabilityMode::L2T2:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T2;
+                break;
+            case ScalabilityMode::L2T3:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T3;
+                break;
+            case ScalabilityMode::L3T1:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T1;
+                break;
+            case ScalabilityMode::L3T2:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T2;
+                break;
+            case ScalabilityMode::L3T3:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T3;
+                break;
+            case ScalabilityMode::L2T1h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T1h;
+                break;
+            case ScalabilityMode::L2T2h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T2h;
+                break;
+            case ScalabilityMode::L2T3h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T3h;
+                break;
+            case ScalabilityMode::L3T1h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T1h;
+                break;
+            case ScalabilityMode::L3T2h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T2h;
+                break;
+            case ScalabilityMode::L3T3h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T3h;
+                break;
+            case ScalabilityMode::S2T1:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S2T1;
+                break;
+            case ScalabilityMode::S2T2:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S2T2;
+                break;
+            case ScalabilityMode::S2T3:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S2T3;
+                break;
+            case ScalabilityMode::S2T1h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S2T1h;
+                break;
+            case ScalabilityMode::S2T2h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S2T2h;
+                break;
+            case ScalabilityMode::S2T3h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S2T3h;
+                break;
+            case ScalabilityMode::S3T1:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S3T1;
+                break;
+            case ScalabilityMode::S3T2:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S3T2;
+                break;
+            case ScalabilityMode::S3T3:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S3T3;
+                break;
+            case ScalabilityMode::S3T1h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S3T1h;
+                break;
+            case ScalabilityMode::S3T2h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S3T2h;
+                break;
+            case ScalabilityMode::S3T3h:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::S3T3h;
+                break;
+            case ScalabilityMode::L2T2Key:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T2Key;
+                break;
+            case ScalabilityMode::L2T2KeyShift:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T2KeyShift;
+                break;
+            case ScalabilityMode::L2T3Key:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T3Key;
+                break;
+            case ScalabilityMode::L2T3KeyShift:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L2T3KeyShift;
+                break;
+            case ScalabilityMode::L3T1Key:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T1Key;
+                break;
+            case ScalabilityMode::L3T2Key:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T2Key;
+                break;
+            case ScalabilityMode::L3T2KeyShift:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T2KeyShift;
+                break;
+            case ScalabilityMode::L3T3Key:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T3Key;
+                break;
+            case ScalabilityMode::L3T3KeyShift:
+                sdkMode = LiveKitCpp::VideoScalabilityMode::L3T3KeyShift;
+                break;
+            default:
+                Q_ASSERT(false);
+                break;
+        }
+        if (sdkMode != localSdkTrack->scalabilityMode()) {
+            localSdkTrack->setScalabilityMode(sdkMode);
+            emit scalabilityModeChanged();
         }
     }
 }

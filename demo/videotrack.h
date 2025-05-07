@@ -54,16 +54,60 @@ public:
         MaintainResolution,
         Balanced,
     };
+    // https://www.w3.org/TR/webrtc-svc/#scalabilitymodes*
+    enum ScalabilityMode
+    {
+        Auto,
+        L1T1,
+        L1T2,
+        L1T3,
+        L2T1,
+        L2T2,
+        L2T3,
+        L3T1,
+        L3T2,
+        L3T3,
+        L2T1h,
+        L2T2h,
+        L2T3h,
+        L3T1h,
+        L3T2h,
+        L3T3h,
+        S2T1,
+        S2T2,
+        S2T3,
+        S2T1h,
+        S2T2h,
+        S2T3h,
+        S3T1,
+        S3T2,
+        S3T3,
+        S3T1h,
+        S3T2h,
+        S3T3h,
+        L2T2Key,
+        L2T2KeyShift,
+        L2T3Key,
+        L2T3KeyShift,
+        L3T1Key,
+        L3T2Key,
+        L3T2KeyShift,
+        L3T3Key,
+        L3T3KeyShift,
+    };
+
 public:
     Q_ENUM(NetworkPriority)
     Q_ENUM(ContentHint)
     Q_ENUM(DegradationPreference)
+    Q_ENUM(ScalabilityMode)
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(bool screencast READ isScreencast CONSTANT)
     Q_PROPERTY(bool remote READ isRemote CONSTANT)
     Q_PROPERTY(NetworkPriority networkPriority READ networkPriority WRITE setNetworkPriority NOTIFY networkPriorityChanged)
     Q_PROPERTY(ContentHint contentHint READ contentHint WRITE setContentHint NOTIFY contentHintChanged)
     Q_PROPERTY(DegradationPreference degradationPreference READ degradationPreference WRITE setDegradationPreference NOTIFY degradationPreferenceChanged)
+    Q_PROPERTY(ScalabilityMode scalabilityMode READ scalabilityMode WRITE setScalabilityMode NOTIFY scalabilityModeChanged)
     Q_PROPERTY(bool secure READ isSecure CONSTANT)
 public:
     explicit VideoTrack(QObject* parent = nullptr);
@@ -78,6 +122,7 @@ public:
     NetworkPriority networkPriority() const;
     ContentHint contentHint() const;
     DegradationPreference degradationPreference() const;
+    ScalabilityMode scalabilityMode() const;
     // overrides of VideoSource
     bool isMuted() const final;
     QString stats() const final;
@@ -86,11 +131,13 @@ public slots:
     void setNetworkPriority(NetworkPriority priority);
     void setContentHint(ContentHint hint);
     void setDegradationPreference(DegradationPreference preference);
+    void setScalabilityMode(ScalabilityMode mode);
     Q_INVOKABLE void queryStats();
 signals:
     void networkPriorityChanged();
     void contentHintChanged();
     void degradationPreferenceChanged();
+    void scalabilityModeChanged();
 protected:
     // overrides of VideoSource
     bool metricsAllowed() const final;
