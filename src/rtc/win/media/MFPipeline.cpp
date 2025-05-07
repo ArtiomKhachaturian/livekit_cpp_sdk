@@ -28,21 +28,21 @@ MFPipeline::MFPipeline(bool encoder, bool hardwareAccellerated,
                        DWORD inputStreamID, DWORD outputStreamID,
                        std::string friendlyName,
                        MFInitializer mftInitializer,
-                       const CComPtr<IMFTransform>& transform,
-                       const CComPtr<IMFAttributes>& attributes,
-                       const CComPtr<IMFMediaEventGenerator>& eventGenerator)
+                       CComPtr<IMFTransform> transform,
+                       CComPtr<IMFAttributes> attributes,
+                       CComPtr<IMFMediaEventGenerator> eventGenerator)
     : _encoder(encoder)
     , _hardwareAccellerated(hardwareAccellerated)
     , _inputStreamID(inputStreamID)
     , _outputStreamID(outputStreamID)
     , _friendlyName(std::move(friendlyName))
-    , _transform(transform)
-    , _attributes(attributes)
-    , _eventGenerator(eventGenerator)
+    , _transform(std::move(transform))
+    , _attributes(std::move(attributes))
+    , _eventGenerator(std::move(eventGenerator))
 {
 }
 
-webrtc::RTCErrorOr<MFPipeline> MFPipeline::create(bool video,
+CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
                                                   bool encoder, bool sync,
                                                   bool software,
                                                   bool allowTranscoders,
@@ -51,8 +51,8 @@ webrtc::RTCErrorOr<MFPipeline> MFPipeline::create(bool video,
                                                   MFTransformConfigurator* configurator)
 {
     MFInitializer mftInitializer(true);
-    auto status = toRtcError(mftInitializer);
-    if (!status.ok()) {
+    auto status = COMPLETION_STATUS(mftInitializer);
+    if (!status) {
         return status;
     }
     UINT32 desiredFlags = MFT_ENUM_FLAG_ALL, actualFlags = 0U;
@@ -75,7 +75,7 @@ webrtc::RTCErrorOr<MFPipeline> MFPipeline::create(bool video,
                                      &inputStreamID, &outputStreamID,
                                      &actualFlags, &friendlyName,
                                      configurator);
-    if (!transform.ok()) {
+    if (!transform) {
         if (testFlag<MFT_ENUM_FLAG_HARDWARE>(desiredFlags)) {
             desiredFlags &= ~MFT_ENUM_FLAG_HARDWARE; // disable HWA
             transform = createTransform(compressedType, video, encoder,
@@ -84,7 +84,7 @@ webrtc::RTCErrorOr<MFPipeline> MFPipeline::create(bool video,
                                         &actualFlags, &friendlyName,
                                         configurator);
         }
-        if (!transform.ok()) {
+        if (!transform) {
             const auto& predefinedCodec = predefinedCodecType(encoder, compressedType);
             if (GUID_NULL != predefinedCodec) {
                 transform = createPredefinedTransform(predefinedCodec, encoder,
@@ -94,27 +94,27 @@ webrtc::RTCErrorOr<MFPipeline> MFPipeline::create(bool video,
             }
         }
     }
-    if (!transform.ok()) {
-        return transform.MoveError();
+    if (!transform) {
+        return transform.moveStatus();
     }
     if (!acceptFlags(desiredFlags, actualFlags)) {
-        return toRtcError(MF_E_NOT_FOUND, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS(MF_E_NOT_FOUND);
     }
     CComPtr<IMFAttributes> attributes;
-    status = toRtcError(transform.value()->GetAttributes(&attributes));
-    if (!status.ok()) {
+    status = COMPLETION_STATUS(transform.value()->GetAttributes(&attributes));
+    if (!status) {
         return status;
     }
     CComPtr<IMFMediaEventGenerator> eventGenerator;
     if (::MFGetAttributeUINT32(attributes, MF_TRANSFORM_ASYNC, FALSE)) {
-        status = toRtcError(transform.value()->QueryInterface(&eventGenerator));
-        if (!status.ok()) {
+        status = COMPLETION_STATUS(transform.value()->QueryInterface(&eventGenerator));
+        if (!status) {
             return status;
         }
         if (eventGenerator) {
             // unlock the transform for async use if get event generator
-            status = toRtcError(attributes->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE));
-            if (!status.ok()) {
+            status = COMPLETION_STATUS(attributes->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE));
+            if (!status) {
                 return status;
             }
         }
@@ -122,105 +122,106 @@ webrtc::RTCErrorOr<MFPipeline> MFPipeline::create(bool video,
     const auto hardware = testFlag<MFT_ENUM_FLAG_HARDWARE>(actualFlags);
     return MFPipeline(encoder, hardware, inputStreamID, outputStreamID,
                       std::move(friendlyName), std::move(mftInitializer),
-                      transform.MoveValue(), attributes, eventGenerator);
+                      transform.moveValue(), std::move(attributes), 
+                      std::move(eventGenerator));
 }
 
-webrtc::RTCError MFPipeline::beginGetEvent(IMFAsyncCallback* callback, IUnknown* punkState)
+CompletionStatus MFPipeline::beginGetEvent(IMFAsyncCallback* callback, IUnknown* punkState)
 {
     if (_eventGenerator) {
-        return toRtcError(_eventGenerator->BeginGetEvent(callback, punkState));
+        return COMPLETION_STATUS(_eventGenerator->BeginGetEvent(callback, punkState));
     }
-    return toRtcError(E_NOTIMPL);
+    return COMPLETION_STATUS(E_NOTIMPL);
 }
 
-webrtc::RTCError MFPipeline::endGetEvent(IMFAsyncResult* result, IMFMediaEvent** outEvent)
+CompletionStatus MFPipeline::endGetEvent(IMFAsyncResult* result, IMFMediaEvent** outEvent)
 {
     if (_eventGenerator) {
-        return toRtcError(_eventGenerator->EndGetEvent(result, outEvent));
+        return COMPLETION_STATUS(_eventGenerator->EndGetEvent(result, outEvent));
     }
-    return toRtcError(E_NOTIMPL);
+    return COMPLETION_STATUS(E_NOTIMPL);
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFMediaEvent>> MFPipeline::asyncEvent(DWORD flags) const
+CompletionStatusOrComPtr<IMFMediaEvent> MFPipeline::asyncEvent(DWORD flags) const
 {
     if (_eventGenerator) {
         CComPtr<IMFMediaEvent> event;
-        auto hr = toRtcError(_eventGenerator->GetEvent(flags, &event));
-        if (hr.ok()) {
+        auto hr = COMPLETION_STATUS(_eventGenerator->GetEvent(flags, &event));
+        if (hr) {
             return event;
         }
         return hr;
     }
-    return toRtcError(E_NOTIMPL);
+    return COMPLETION_STATUS(E_NOTIMPL);
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFMediaType>> MFPipeline::mediaType(bool input) const
+CompletionStatusOrComPtr<IMFMediaType> MFPipeline::mediaType(bool input) const
 {
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     CComPtr<IMFMediaType> mediaType;
-    webrtc::RTCError status;
+    CompletionStatus status;
     if (input) {
-        status = toRtcError(_transform->GetInputCurrentType(_inputStreamID, &mediaType));
+        status = COMPLETION_STATUS(_transform->GetInputCurrentType(_inputStreamID, &mediaType));
     }
     else {
-        status = toRtcError(_transform->GetOutputCurrentType(_outputStreamID, &mediaType));
+        status = COMPLETION_STATUS(_transform->GetOutputCurrentType(_outputStreamID, &mediaType));
     }
-    if (status.ok()) {
+    if (status) {
         return mediaType;
     }
     return status;
 }
 
-webrtc::RTCError MFPipeline::setMediaType(bool input, const CComPtr<IMFMediaType>& mediaType)
+CompletionStatus MFPipeline::setMediaType(bool input, const CComPtr<IMFMediaType>& mediaType)
 {
     if (!mediaType) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     if (input) {
-        return toRtcError(_transform->SetInputType(_inputStreamID, mediaType, 0L));
+        return COMPLETION_STATUS(_transform->SetInputType(_inputStreamID, mediaType, 0L));
     }
-    return toRtcError(_transform->SetOutputType(_outputStreamID, mediaType, 0L));
+    return COMPLETION_STATUS(_transform->SetOutputType(_outputStreamID, mediaType, 0L));
 }
 
-webrtc::RTCError MFPipeline::setCompressedMediaType(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatus MFPipeline::setCompressedMediaType(const CComPtr<IMFMediaType>& mediaType)
 {
     return setMediaType(!encoder(), mediaType);
 }
 
-webrtc::RTCError MFPipeline::setUncompressedMediaType(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatus MFPipeline::setUncompressedMediaType(const CComPtr<IMFMediaType>& mediaType)
 {
     return setMediaType(encoder(), mediaType);
 }
 
-webrtc::RTCError MFPipeline::selectMediaType(bool input, const GUID& subType)
+CompletionStatus MFPipeline::selectMediaType(bool input, const GUID& subType)
 {
     if (GUID_NULL == subType) {
-        return toRtcError(E_INVALIDARG, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     GUID availableSubType;
     CComPtr<IMFMediaType> selected;
-    HRESULT hr = S_OK;
+    CompletionStatus hr;
     for (DWORD typeIndex = 0UL;; ++typeIndex) {
         CComPtr<IMFMediaType> mediaType;
         if (input) {
-            hr = _transform->GetInputAvailableType(_inputStreamID, typeIndex, &mediaType);
+            hr = COMPLETION_STATUS(_transform->GetInputAvailableType(_inputStreamID, typeIndex, &mediaType));
         }
         else {
-            hr = _transform->GetOutputAvailableType(_outputStreamID, typeIndex, &mediaType);
+            hr = COMPLETION_STATUS(_transform->GetOutputAvailableType(_outputStreamID, typeIndex, &mediaType));
         }
-        if (MF_E_NO_MORE_TYPES == hr || FAILED(hr)) {
+        if (MF_E_NO_MORE_TYPES == hr.code() || !hr) {
             break;
         }
-        hr = mediaType->GetGUID(MF_MT_SUBTYPE, &availableSubType);
-        if (FAILED(hr)) {
+        hr = COMPLETION_STATUS(mediaType->GetGUID(MF_MT_SUBTYPE, &availableSubType));
+        if (!hr) {
             break;
         }
         if (subType == availableSubType) {
@@ -231,14 +232,14 @@ webrtc::RTCError MFPipeline::selectMediaType(bool input, const GUID& subType)
     if (selected) {
         return setMediaType(input, selected);
     }
-    return toRtcError(hr);
+    return hr;
 }
 
-webrtc::RTCError MFPipeline::setLowLatencyMode(bool set)
+CompletionStatus MFPipeline::setLowLatencyMode(bool set)
 {
     if (set != _lowLatency) {
-        auto hr = toRtcError(setUINT32Attr(CODECAPI_AVLowLatencyMode, set ? TRUE : FALSE));
-        if (hr.ok()) {
+        auto hr = COMPLETION_STATUS(setUINT32Attr(CODECAPI_AVLowLatencyMode, set ? TRUE : FALSE));
+        if (hr) {
             _lowLatency = set;
         }
         return hr;
@@ -246,32 +247,32 @@ webrtc::RTCError MFPipeline::setLowLatencyMode(bool set)
     return {};
 }
 
-webrtc::RTCError MFPipeline::setRealtimeContent(bool set)
+CompletionStatus MFPipeline::setRealtimeContent(bool set)
 {
     if (set != _realtime) {
         auto compressed = compressedMediaType();
-        if (compressed.ok()) {
-            auto hr = toRtcError(compressed.value()->SetUINT32(MF_MT_REALTIME_CONTENT,
-                                                               set ? TRUE : FALSE));
-            if (hr.ok()) {
+        if (compressed) {
+            auto hr = COMPLETION_STATUS(compressed.value()->SetUINT32(MF_MT_REALTIME_CONTENT,
+                                                                       set ? TRUE : FALSE));
+            if (hr) {
                 _realtime = set;
             }
             return hr;
         }
-        return compressed.MoveError();
+        return compressed.moveStatus();
     }
     return {};
 }
 
-webrtc::RTCError MFPipeline::start()
+CompletionStatus MFPipeline::start()
 {
     if (!_started) {
         if (!encoder()) {
             flush(); // ignore flush errors
         }
-        auto hr = toRtcError(processMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING));
-        if (hr.ok()) {
-            hr = toRtcError(processMessage(MFT_MESSAGE_NOTIFY_START_OF_STREAM));
+        auto hr = processMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING);
+        if (hr) {
+            hr = processMessage(MFT_MESSAGE_NOTIFY_START_OF_STREAM);
             _started = hr.ok();
         }
         return hr;
@@ -279,13 +280,13 @@ webrtc::RTCError MFPipeline::start()
     return {};
 }
 
-webrtc::RTCError MFPipeline::stop()
+CompletionStatus MFPipeline::stop()
 {
     if (_started) {
-        auto hr = toRtcError(processMessage(MFT_MESSAGE_NOTIFY_END_OF_STREAM));
-        if (hr.ok()) {
-            hr = toRtcError(processMessage(MFT_MESSAGE_COMMAND_DRAIN));
-            if (hr.ok()) {
+        auto hr = processMessage(MFT_MESSAGE_NOTIFY_END_OF_STREAM);
+        if (hr) {
+            hr = processMessage(MFT_MESSAGE_COMMAND_DRAIN);
+            if (hr) {
                 if (!encoder()) {
                     flush(); // ignore flush errors
                 }
@@ -297,89 +298,89 @@ webrtc::RTCError MFPipeline::stop()
     return {};
 }
 
-webrtc::RTCError MFPipeline::flush() 
+CompletionStatus MFPipeline::flush() 
 { 
-    return toRtcError(processMessage(MFT_MESSAGE_COMMAND_FLUSH));
+    return processMessage(MFT_MESSAGE_COMMAND_FLUSH);
 }
 
-webrtc::RTCError MFPipeline::drain() 
+CompletionStatus MFPipeline::drain() 
 { 
-    return toRtcError(processMessage(MFT_MESSAGE_COMMAND_DRAIN));
+    return processMessage(MFT_MESSAGE_COMMAND_DRAIN);
 }
 
-webrtc::RTCErrorOr<DWORD> MFPipeline::compressedStatus() const
+CompletionStatusOr<DWORD> MFPipeline::compressedStatus() const
 {
     return encoder() ? outputStatus() : inputStatus();
 }
 
-webrtc::RTCErrorOr<DWORD> MFPipeline::uncompressedStatus() const
+CompletionStatusOr<DWORD> MFPipeline::uncompressedStatus() const
 {
     return encoder() ? inputStatus() : outputStatus();
 }
 
-webrtc::RTCErrorOr<DWORD> MFPipeline::inputStatus() const
+CompletionStatusOr<DWORD> MFPipeline::inputStatus() const
 {
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     DWORD status = 0UL;
-    auto hr = toRtcError(_transform->GetInputStatus(_inputStreamID, &status));
-    if (hr.ok()) {
+    auto hr = COMPLETION_STATUS(_transform->GetInputStatus(_inputStreamID, &status));
+    if (hr) {
         return status;
     }
     return hr;
 }
 
-webrtc::RTCErrorOr<DWORD> MFPipeline::outputStatus() const
+CompletionStatusOr<DWORD> MFPipeline::outputStatus() const
 {
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     DWORD status = 0UL;
-    auto hr = toRtcError(_transform->GetOutputStatus(&status));
-    if (hr.ok()) {
+    auto hr = COMPLETION_STATUS(_transform->GetOutputStatus(&status));
+    if (hr) {
         return status;
     }
     return hr;
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFSample>> MFPipeline::createSampleWitMemoryBuffer(bool input)
+CompletionStatusOrComPtr<IMFSample> MFPipeline::createSampleWitMemoryBuffer(bool input) const
 {
     DWORD maxLength = 0UL, aligment = 0UL;
     if (input) {
         auto si = inputStreamInfo();
-        if (si.ok()) {
+        if (si) {
             maxLength = si.value().cbSize;
             aligment = si.value().cbAlignment;
         } else {
-            return si.MoveError();
+            return si.moveStatus();
         }
     } else {
         auto si = outputStreamInfo();
-        if (si.ok()) {
+        if (si) {
             maxLength = si.value().cbSize;
             aligment = si.value().cbAlignment;
         }
         else {
-            return si.MoveError();
+            return si.moveStatus();
         }
     }
     return LiveKitCpp::createSampleWitMemoryBuffer(maxLength, aligment);
 }
 
-webrtc::RTCError MFPipeline::processInput(const CComPtr<IMFSample>& sample, DWORD flags)
+CompletionStatus MFPipeline::processInput(const CComPtr<IMFSample>& sample, DWORD flags)
 {
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
-    return toRtcError(_transform->ProcessInput(_inputStreamID, sample, flags));
+    return COMPLETION_STATUS(_transform->ProcessInput(_inputStreamID, sample, flags));
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFSample>> MFPipeline::processOutput(const CComPtr<IMFSample>& sample,
-                                                                 const CComPtr<IMFCollection>& events)
+CompletionStatusOrComPtr<IMFSample> MFPipeline::processOutput(const CComPtr<IMFSample>& sample,
+                                                              const CComPtr<IMFCollection>& events)
 {
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     DWORD status = 0UL;
     // create output buffer description
@@ -388,37 +389,37 @@ webrtc::RTCErrorOr<CComPtr<IMFSample>> MFPipeline::processOutput(const CComPtr<I
     outputDataBuffer.dwStreamID = _outputStreamID;
     outputDataBuffer.pEvents = events;
     outputDataBuffer.pSample = sample;
-    auto hr = toRtcError(_transform->ProcessOutput(0UL, 1UL, &outputDataBuffer, &status));
+    auto hr = COMPLETION_STATUS(_transform->ProcessOutput(0UL, 1UL, &outputDataBuffer, &status));
     if (outputDataBuffer.pEvents) { // got events from ProcessOuput, but discarding
         outputDataBuffer.pEvents->Release();
     }
-    if (hr.ok()) {
+    if (hr) {
         return CComPtr<IMFSample>(outputDataBuffer.pSample);
     }
     return hr;
 }
 
-webrtc::RTCErrorOr<MFT_INPUT_STREAM_INFO> MFPipeline::inputStreamInfo() const
+CompletionStatusOr<MFT_INPUT_STREAM_INFO> MFPipeline::inputStreamInfo() const
 {
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     MFT_INPUT_STREAM_INFO streamInfo;
-    auto hr = toRtcError(_transform->GetInputStreamInfo(_inputStreamID, &streamInfo));
-    if (hr.ok()) {
+    auto hr = COMPLETION_STATUS(_transform->GetInputStreamInfo(_inputStreamID, &streamInfo));
+    if (hr) {
         return streamInfo;
     }
     return hr;
 }
 
-webrtc::RTCErrorOr<MFT_OUTPUT_STREAM_INFO> MFPipeline::outputStreamInfo() const
+CompletionStatusOr<MFT_OUTPUT_STREAM_INFO> MFPipeline::outputStreamInfo() const
 {
     if (!_transform) {
-        return toRtcError(E_NOT_VALID_STATE, webrtc::RTCErrorType::INVALID_STATE);
+        return COMPLETION_STATUS_INVALID_STATE;
     }
     MFT_OUTPUT_STREAM_INFO streamInfo;
-    auto hr = toRtcError(_transform->GetOutputStreamInfo(_outputStreamID, &streamInfo));
-    if (hr.ok()) {
+    auto hr = COMPLETION_STATUS(_transform->GetOutputStreamInfo(_outputStreamID, &streamInfo));
+    if (hr) {
         return streamInfo;
     }
     return hr;
@@ -426,12 +427,15 @@ webrtc::RTCErrorOr<MFT_OUTPUT_STREAM_INFO> MFPipeline::outputStreamInfo() const
 
 HRESULT MFPipeline::setUINT32Attr(const GUID& attribute, UINT32 value)
 {
-    return _attributes->SetUINT32(attribute, value);
+    return _attributes ? _attributes->SetUINT32(attribute, value) : E_NOT_VALID_STATE;
 }
 
-HRESULT MFPipeline::processMessage(MFT_MESSAGE_TYPE message, ULONG_PTR param)
+CompletionStatus MFPipeline::processMessage(MFT_MESSAGE_TYPE message, ULONG_PTR param)
 {
-    return _transform->ProcessMessage(message, param);
+    if (!_transform) {
+        return COMPLETION_STATUS_INVALID_STATE;
+    }
+    return COMPLETION_STATUS(_transform->ProcessMessage(message, param));
 }
 
 const GUID& MFPipeline::predefinedCodecType(bool encoder, const GUID& compressedType)
@@ -469,29 +473,29 @@ const GUID& MFPipeline::predefinedCodecType(bool encoder, const GUID& compressed
     return GUID_NULL;
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFTransform>> MFPipeline::
+CompletionStatusOrComPtr<IMFTransform> MFPipeline::
     createPredefinedTransform(const GUID& codecType, bool encoder,
                               MFTransformConfigurator* configurator,
                               DWORD& inputStreamID, DWORD& outputStreamID,
                               UINT32& actualFlags, std::string& friendlyName)
 {
     if (GUID_NULL == codecType) {
-        return toRtcError(E_INVALIDARG, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     CComPtr<IMFTransform> transform;
-    auto hr = toRtcError(transform.CoCreateInstance(codecType, NULL, CLSCTX_INPROC_SERVER));
-    if (!hr.ok()) {
+    auto hr = COMPLETION_STATUS(transform.CoCreateInstance(codecType, NULL, CLSCTX_INPROC_SERVER));
+    if (!hr) {
         return hr;
     }
     if (configurator) {
-        hr = toRtcError(configurator->configure(transform));
-        if (!hr.ok()) {
+        hr = configurator->configure(transform);
+        if (!hr) {
             return hr;
         }
     }
     auto ids = transformStreamIDs(transform);
-    if (!ids.ok()) {
-        return ids.MoveError();
+    if (!ids) {
+        return ids.moveStatus();
     }
     inputStreamID = ids.value().first;
     outputStreamID = ids.value().second;
@@ -502,7 +506,7 @@ webrtc::RTCErrorOr<CComPtr<IMFTransform>> MFPipeline::
             // only sync
             actualFlags = MFT_ENUM_FLAG_SYNCMFT;
         }
-        friendlyName = transformFriendlyName(attributes).MoveValue();
+        friendlyName = transformFriendlyName(attributes).moveValue();
     }
     return transform;
 }

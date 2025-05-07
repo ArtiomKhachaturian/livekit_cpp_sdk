@@ -51,7 +51,7 @@ public:
     bool ok() const noexcept { return status().ok(); }
     explicit operator bool() const noexcept { return ok(); }
     const auto& status() const noexcept { return _status; }
-    auto moveStatus() const noexcept { return std::move(_status); }
+    auto moveStatus() noexcept { return std::move(_status); }
     const T& value() const noexcept { return _value; }
     T& value() noexcept { return _value; }
     T moveValue() noexcept { return std::move(_value); }

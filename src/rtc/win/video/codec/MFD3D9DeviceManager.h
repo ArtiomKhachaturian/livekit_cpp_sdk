@@ -11,20 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "CompletionStatus.h"
-#include <mftransform.h>
+#pragma once // MFD3D9DeviceManager.h
+#include "CompletionStatusOr.h"
 #include <atlbase.h> //CComPtr support
+#include <d3d9.h>
+#include <dxva2api.h>
 
 namespace LiveKitCpp 
 {
 
-class MFTransformConfigurator
+class MFD3D9DeviceManager
 {
 public:
-    virtual CompletionStatus configure(const CComPtr<IMFTransform>& transform) = 0;
-protected:
-    virtual ~MFTransformConfigurator() = default;
+    static CompletionStatusOr<MFD3D9DeviceManager> create();
+    MFD3D9DeviceManager() = default;
+    const auto& deviceManager() const noexcept { return _deviceManager; }
+private:
+    MFD3D9DeviceManager(CComPtr<IDirect3D9Ex> d3d9,
+                        CComPtr<IDirect3DDeviceManager9> deviceManager,
+                        CComPtr<IDirect3DDevice9Ex> device);
+private:
+    CComPtr<IDirect3D9Ex> _d3d9;
+    CComPtr<IDirect3DDeviceManager9> _deviceManager;
+    CComPtr<IDirect3DDevice9Ex> _device;
 };
 
 } // namespace LiveKitCpp

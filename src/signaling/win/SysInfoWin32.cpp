@@ -15,27 +15,18 @@
 #include "ScopedComInitializer.h"
 #include "Utils.h"
 #include "livekit/signaling/NetworkType.h"
-#include <atlbase.h>
+#include <atlbase.h> //CComPtr support
 #include <Windows.h>
 #include <wbemidl.h>
+#include <iphlpapi.h>
 
 #pragma comment(lib, "wbemuuid.lib")
+#pragma comment(lib, "iphlpapi.lib")
 
 namespace
 {
 
-inline std::string queryStr(IWbemClassObject* clsObj, LPCWSTR keyName) {
-    if (clsObj && keyName) {
-        VARIANT vtProp = {};
-        if (SUCCEEDED(clsObj->Get(keyName, 0, &vtProp, 0, 0))) {
-            auto result = LiveKitCpp::fromWideChar(std::wstring_view(vtProp.bstrVal, 
-                                                                     ::SysStringLen(vtProp.bstrVal)));
-            VariantClear(&vtProp);
-            return result;
-        }
-    }
-    return {};
-}
+std::string queryStr(IWbemClassObject* clsObj, LPCWSTR keyName);
 
 }
 
@@ -45,7 +36,41 @@ namespace LiveKitCpp
 // defined in NetworkType.h
 NetworkType activeNetworkType()
 {
-    // TODO: implement it
+    const ScopedComInitializer com(false);
+    if (!com) {
+        return NetworkType::Unknown;
+    }
+    // MSDN recommends a 15KB buffer for the first try at GetAdaptersAddresses.
+    size_t bufferSize = 16384;
+    std::unique_ptr<char[]> adapterInfo;
+    PIP_ADAPTER_ADDRESSES addrs = NULL;
+    int flags = GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_INCLUDE_PREFIX;
+    int ret = 0;
+    do {
+        adapterInfo.reset(new char[bufferSize]);
+        addrs = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapterInfo.get());
+        ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, 0, addrs, reinterpret_cast<PULONG>(&bufferSize));
+    } while (ret == ERROR_BUFFER_OVERFLOW);
+    if (ret == ERROR_SUCCESS) {
+        while (addrs) {
+            if (addrs->OperStatus == IfOperStatusUp) {
+                if (addrs->IfType == IF_TYPE_ETHERNET_CSMACD) {
+                    return NetworkType::Wired;
+                }
+                if (addrs->IfType == IF_TYPE_IEEE80211) {
+                    return NetworkType::WiFi;
+                }
+                if (addrs->IfType == IF_TYPE_PPP) {
+                    return NetworkType::Cellular;
+                }
+                if (addrs->IfType == IF_TYPE_TUNNEL) {
+                    return NetworkType::Vpn;
+                }
+            }
+            addrs = addrs->Next;
+        }
+        return NetworkType::NoNetwork;
+    }
     return NetworkType::Unknown;
 }
 
@@ -111,3 +136,22 @@ std::string modelIdentifier()
 }
 
 } // namespace LiveKitCpp
+
+
+namespace
+{
+
+std::string queryStr(IWbemClassObject* clsObj, LPCWSTR keyName) {
+    if (clsObj && keyName) {
+        VARIANT vtProp = {};
+        if (SUCCEEDED(clsObj->Get(keyName, 0, &vtProp, 0, 0))) {
+            auto result = LiveKitCpp::fromWideChar(std::wstring_view(vtProp.bstrVal,
+                ::SysStringLen(vtProp.bstrVal)));
+            VariantClear(&vtProp);
+            return result;
+        }
+    }
+    return {};
+}
+
+}

@@ -47,18 +47,18 @@ inline constexpr bool flagIsEqual(unsigned flagsL, unsigned flagsR)
 namespace LiveKitCpp 
 {
 
-webrtc::RTCErrorOr<CComPtr<IMFTransform>> createTransform(const GUID& compressedType,
-                                                          bool video,
-                                                          bool encoder,
-                                                          UINT32 desiredFlags,
-                                                          const GUID& uncompressedType,
-                                                          DWORD* inputStreamID, DWORD* outputStreamID,
-                                                          UINT32* actualFlags,
-                                                          std::string* friendlyName,
-                                                          MFTransformConfigurator* configurator)
+CompletionStatusOrComPtr<IMFTransform> createTransform(const GUID& compressedType,
+                                                       bool video,
+                                                       bool encoder,
+                                                       UINT32 desiredFlags,
+                                                       const GUID& uncompressedType,
+                                                       DWORD* inputStreamID, DWORD* outputStreamID,
+                                                       UINT32* actualFlags,
+                                                       std::string* friendlyName,
+                                                       MFTransformConfigurator* configurator)
 {
     if (GUID_NULL == compressedType) {
-        return toRtcError(E_INVALIDARG, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     MFT_REGISTER_TYPE_INFO compressed = { mediaCategory(video), compressedType };
     std::unique_ptr<MFT_REGISTER_TYPE_INFO> uncompressed;
@@ -70,20 +70,20 @@ webrtc::RTCErrorOr<CComPtr<IMFTransform>> createTransform(const GUID& compressed
     CComHeapPtr<IMFActivate*> activateRaw;
     desiredFlags |= MFT_ENUM_FLAG_SORTANDFILTER;
     UINT32 activateCount = 0U;
-    const auto status = ::MFTEnumEx(transformCategory(video, encoder),
-                                    desiredFlags,
-                                    encoder ? uncompressed.get() : &compressed,
-                                    encoder ? &compressed : uncompressed.get(),
-                                    &activateRaw, &activateCount);
-    if (FAILED(status)) {
-        return toRtcError(status);
+    auto status = COMPLETION_STATUS(::MFTEnumEx(transformCategory(video, encoder),
+                                                desiredFlags,
+                                                encoder ? uncompressed.get() : &compressed,
+                                                encoder ? &compressed : uncompressed.get(),
+                                                &activateRaw, &activateCount));
+    if (!status) {
+        return status;
     }
     if (0U == activateCount) {
-        return toRtcError(MF_E_NOT_FOUND);
+        return COMPLETION_STATUS(MF_E_NOT_FOUND);
     }
     CComPtr<IMFTransform> selectedTransform;
     UINT32 testedCount = 0U;
-    webrtc::RTCError hr;
+    CompletionStatus hr;
     for (UINT32 i = 0U; i < activateCount; i++) {
         if (auto& activate = activateRaw[i]) {
             if (!selectedTransform) {
@@ -93,20 +93,20 @@ webrtc::RTCErrorOr<CComPtr<IMFTransform>> createTransform(const GUID& compressed
                     continue;
                 }
                 CComPtr<IMFTransform> transform;
-                hr = toRtcError(activate->ActivateObject(IID_PPV_ARGS(&transform)));
-                if (hr.ok()) {
+                hr = COMPLETION_STATUS(activate->ActivateObject(IID_PPV_ARGS(&transform)));
+                if (hr) {
                     if (configurator) {
-                        hr = toRtcError(configurator->configure(transform));
+                        hr = configurator->configure(transform);
                     }
-                    if (hr.ok()) {
+                    if (hr) {
                         if (inputStreamID && outputStreamID) {
                             auto ids = transformStreamIDs(transform);
-                            if (ids.ok()) {
+                            if (ids) {
                                 *inputStreamID = ids.value().first;
                                 *outputStreamID = ids.value().second;
                             }
                             else {
-                                hr = ids.MoveError();
+                                hr = ids.moveStatus();
                             }
                         }
                         if (hr.ok()) {
@@ -114,7 +114,7 @@ webrtc::RTCErrorOr<CComPtr<IMFTransform>> createTransform(const GUID& compressed
                                 *actualFlags = flags;
                             }
                             if (friendlyName) {
-                                *friendlyName = transformFriendlyName(activate).MoveValue();
+                                *friendlyName = transformFriendlyName(activate).moveValue();
                             }
                         }
                     }
@@ -137,42 +137,42 @@ webrtc::RTCErrorOr<CComPtr<IMFTransform>> createTransform(const GUID& compressed
         return selectedTransform;
     }
     if (hr.ok() && 0U == testedCount) {
-        hr = toRtcError(MF_E_NOT_FOUND);
+        hr = COMPLETION_STATUS(MF_E_NOT_FOUND);
     }
     return hr;
 }
 
-webrtc::RTCErrorOr<std::pair<DWORD, DWORD>> transformStreamIDs(const CComPtr<IMFTransform>& transform)
+CompletionStatusOr<std::pair<DWORD, DWORD>> transformStreamIDs(const CComPtr<IMFTransform>& transform)
 {
     if (!transform) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     DWORD numIns = 0UL, numOuts = 0UL;
-    auto hr = toRtcError(transform->GetStreamCount(&numIns, &numOuts));
-    if (!hr.ok()) {
+    auto hr = COMPLETION_STATUS(transform->GetStreamCount(&numIns, &numOuts));
+    if (!hr) {
         return hr;
     }
     if (!numIns || !numOuts) {
-        return toRtcError(MF_E_ASF_UNSUPPORTED_STREAM_TYPE);
+        return COMPLETION_STATUS(MF_E_ASF_UNSUPPORTED_STREAM_TYPE);
     }
     std::vector<DWORD> inIDs(numIns, 0UL), outIDs(numOuts, 0UL);
-    hr = toRtcError(transform->GetStreamIDs(numIns, inIDs.data(), numOuts, outIDs.data()));
-    if (hr.ok()) {
+    hr = COMPLETION_STATUS(transform->GetStreamIDs(numIns, inIDs.data(), numOuts, outIDs.data()));
+    if (hr) {
         return std::make_pair(inIDs.front(), outIDs.front());
     }
     return std::make_pair<DWORD, DWORD>(0U, 0U); // zero for both ID
 }
 
-webrtc::RTCErrorOr<std::string> transformFriendlyName(IMFAttributes* attributes)
+CompletionStatusOr<std::string> transformFriendlyName(IMFAttributes* attributes)
 {
     if (!attributes) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     UINT32 nameLength = 0U;
     LPWSTR wName = NULL;
-    auto hr = toRtcError(attributes->GetAllocatedString(MFT_FRIENDLY_NAME_Attribute,
-                                                        &wName, &nameLength));
-    if (hr.ok()) {
+    auto hr = COMPLETION_STATUS(attributes->GetAllocatedString(MFT_FRIENDLY_NAME_Attribute,
+                                                               &wName, &nameLength));
+    if (hr) {
         std::string name;
         if (nameLength && wName) {
             name = fromWideChar(std::wstring_view(wName, nameLength));
@@ -183,119 +183,119 @@ webrtc::RTCErrorOr<std::string> transformFriendlyName(IMFAttributes* attributes)
     return hr;
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFMediaType>> createMediaType(bool video, const GUID& subtype)
+CompletionStatusOrComPtr<IMFMediaType> createMediaType(bool video, const GUID& subtype)
 {
     if (GUID_NULL == subtype) {
-        return toRtcError(E_INVALIDARG, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     CComPtr<IMFMediaType> mediaType;
-    auto hr = toRtcError(::MFCreateMediaType(&mediaType));
-    if (!hr.ok()) {
+    auto hr = COMPLETION_STATUS(::MFCreateMediaType(&mediaType));
+    if (!hr) {
         return hr;
     }
-    hr = toRtcError(mediaType->SetGUID(MF_MT_MAJOR_TYPE, mediaCategory(video)));
-    if (!hr.ok()) {
+    hr = COMPLETION_STATUS(mediaType->SetGUID(MF_MT_MAJOR_TYPE, mediaCategory(video)));
+    if (!hr) {
         return hr;
     }
-    hr = toRtcError(mediaType->SetGUID(MF_MT_SUBTYPE, subtype));
-    if (!hr.ok()) {
+    hr = COMPLETION_STATUS(mediaType->SetGUID(MF_MT_SUBTYPE, subtype));
+    if (!hr) {
         return hr;
     }
     return mediaType;
 }
 
-webrtc::RTCError setAllSamplesIndependent(const CComPtr<IMFMediaType>& mediaType, bool set)
+CompletionStatus setAllSamplesIndependent(const CComPtr<IMFMediaType>& mediaType, bool set)
 {
     if (!mediaType) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
-    return toRtcError(mediaType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, set ? TRUE : FALSE));
+    return COMPLETION_STATUS(mediaType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, set ? TRUE : FALSE));
 }
 
-webrtc::RTCError setFrameSize(const CComPtr<IMFMediaType>& mediaType, UINT32 width, UINT32 height)
+CompletionStatus setFrameSize(const CComPtr<IMFMediaType>& mediaType, UINT32 width, UINT32 height)
 {
     if (!mediaType) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
-    return toRtcError(::MFSetAttributeSize(mediaType, MF_MT_FRAME_SIZE, width, height));
+    return COMPLETION_STATUS(::MFSetAttributeSize(mediaType, MF_MT_FRAME_SIZE, width, height));
 }
 
-webrtc::RTCError setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum)
+CompletionStatus setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum)
 {
     if (!mediaType) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
-    return toRtcError(::MFSetAttributeRatio(mediaType, MF_MT_FRAME_RATE, num, denum));
+    return COMPLETION_STATUS(::MFSetAttributeRatio(mediaType, MF_MT_FRAME_RATE, num, denum));
 }
 
-webrtc::RTCError setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 frameRate)
+CompletionStatus setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 frameRate)
 {
     return setFramerate(mediaType, frameRate, 1U);
 }
 
-webrtc::RTCError setPixelAspectRatio(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum)
+CompletionStatus setPixelAspectRatio(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum)
 {
     if (!mediaType) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
-    return toRtcError(::MFSetAttributeRatio(mediaType, MF_MT_PIXEL_ASPECT_RATIO, num, denum));
+    return COMPLETION_STATUS(::MFSetAttributeRatio(mediaType, MF_MT_PIXEL_ASPECT_RATIO, num, denum));
 }
 
-webrtc::RTCError setPixelAspectRatio1x1(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatus setPixelAspectRatio1x1(const CComPtr<IMFMediaType>& mediaType)
 {
     return setPixelAspectRatio(mediaType, 1U, 1U);
 }
 
-webrtc::RTCErrorOr<std::pair<UINT32, UINT32>> frameSize(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatusOr<std::pair<UINT32, UINT32>> frameSize(const CComPtr<IMFMediaType>& mediaType)
 {
     if (!mediaType) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     UINT32 width = 0U, height = 0U;
-    auto hr = toRtcError(::MFGetAttributeSize(mediaType, MF_MT_FRAME_SIZE, &width, &height));
-    if (hr.ok()) {
+    auto hr = COMPLETION_STATUS(::MFGetAttributeSize(mediaType, MF_MT_FRAME_SIZE, &width, &height));
+    if (hr) {
         return std::make_pair(width, height);
     }
     return hr;
 }
 
-webrtc::RTCErrorOr<UINT32> framerate(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatusOr<UINT32> framerate(const CComPtr<IMFMediaType>& mediaType)
 {
     if (!mediaType) {
-        return toRtcError(E_POINTER, webrtc::RTCErrorType::INVALID_PARAMETER);
+        return COMPLETION_STATUS_INVALID_ARG;
     }
     UINT num = 0U, denum = 0U;
-    auto hr = toRtcError(::MFGetAttributeRatio(mediaType, MF_MT_FRAME_RATE, &num, &denum));
-    if (hr.ok()) {
+    auto hr = COMPLETION_STATUS(::MFGetAttributeRatio(mediaType, MF_MT_FRAME_RATE, &num, &denum));
+    if (hr) {
         return static_cast<UINT32>(std::round((1.f * num) / denum));
     }
     return hr;
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFSample>> createSample(const CComPtr<IMFMediaBuffer>& attachedBuffer)
+CompletionStatusOrComPtr<IMFSample> createSample(const CComPtr<IMFMediaBuffer>& attachedBuffer)
 {
     CComPtr<IMFSample> sample;
-    auto hr = toRtcError(::MFCreateSample(&sample));
-    if (!hr.ok()) {
+    auto hr = COMPLETION_STATUS(::MFCreateSample(&sample));
+    if (!hr) {
         return hr;
     }
     if (attachedBuffer) {
-        hr = toRtcError(sample->AddBuffer(attachedBuffer));
-        if (!hr.ok()) {
+        hr = COMPLETION_STATUS(sample->AddBuffer(attachedBuffer));
+        if (!hr) {
             return hr;
         }
     }
     return sample;
 }
 
-webrtc::RTCErrorOr<CComPtr<IMFSample>> createSampleWitMemoryBuffer(DWORD maxLength, DWORD aligment)
+CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(DWORD maxLength, DWORD aligment)
 {
     CComPtr<IMFMediaBuffer> buffer;
-    webrtc::RTCError status;
+    CompletionStatus status;
     if (aligment) {
-        status = toRtcError(::MFCreateAlignedMemoryBuffer(maxLength, aligment, &buffer));
+        status = COMPLETION_STATUS(::MFCreateAlignedMemoryBuffer(maxLength, aligment, &buffer));
     } else {
-        status = toRtcError(::MFCreateMemoryBuffer(maxLength, &buffer));
+        status = COMPLETION_STATUS(::MFCreateMemoryBuffer(maxLength, &buffer));
     }
     if (buffer) {
         return createSample(buffer);

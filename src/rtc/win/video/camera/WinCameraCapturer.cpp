@@ -18,7 +18,7 @@
 #include "CameraErrorHandling.h"
 #include "DVCameraConfig.h"
 #include "VideoUtils.h"
-#include "./video/MFMediaSampleBuffer.h"
+#include "MFVideoBuffer.h"
 #include <api/media_stream_interface.h>
 #include <dvdmedia.h>
 #include <modules/video_capture/video_capture_factory.h> //VideoCaptureFactory

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "CompletionStatusOr.h"
 #include "MFInitializer.h"
 #include <atlbase.h> //CComPtr support
-#include <api/rtc_error.h>
 #include <codecapi.h>
 #include <mftransform.h>
 
@@ -30,7 +30,7 @@ public:
     MFPipeline(MFPipeline&&) = default;
     MFPipeline(const MFPipeline&) = delete;
     ~MFPipeline() { stop(); }
-    static webrtc::RTCErrorOr<MFPipeline> create(bool video,
+    static CompletionStatusOr<MFPipeline> create(bool video,
                                                  bool encoder,
                                                  bool sync,
                                                  bool software,
@@ -42,50 +42,50 @@ public:
     MFPipeline& operator = (const MFPipeline&) = delete;
     MFPipeline& operator = (MFPipeline&&) = default;
     bool valid() const { return NULL != _transform; }
-    bool encoder() const { return _encoder; }
-    bool hardwareAccellerated() const { return _hardwareAccellerated; }
+    bool encoder() const noexcept { return _encoder; }
+    bool hardwareAccellerated() const noexcept { return _hardwareAccellerated; }
     bool sync() const { return NULL == _eventGenerator; }
-    bool started() const { return _started; }
-    const CComPtr<IMFAttributes>& attributes() const { return _attributes; }
-    const std::string& friendlyName() const { return _friendlyName; }
-    webrtc::RTCError beginGetEvent(IMFAsyncCallback* callback, IUnknown* punkState = NULL);
-    webrtc::RTCError endGetEvent(IMFAsyncResult* result, IMFMediaEvent** outEvent);
-    webrtc::RTCErrorOr<CComPtr<IMFMediaEvent>> asyncEvent(DWORD flags = MF_EVENT_FLAG_NO_WAIT) const;
-    webrtc::RTCErrorOr<CComPtr<IMFMediaType>> mediaType(bool input) const;
-    webrtc::RTCErrorOr<CComPtr<IMFMediaType>> compressedMediaType() const { return mediaType(!encoder()); }
-    webrtc::RTCErrorOr<CComPtr<IMFMediaType>> uncompressedMediaType() const { return mediaType(encoder()); }
-    webrtc::RTCError setMediaType(bool input, const CComPtr<IMFMediaType>& mediaType);
-    webrtc::RTCError setCompressedMediaType(const CComPtr<IMFMediaType>& mediaType);
-    webrtc::RTCError setUncompressedMediaType(const CComPtr<IMFMediaType>& mediaType);
-    webrtc::RTCError selectMediaType(bool input, const GUID& subType);
-    webrtc::RTCError setLowLatencyMode(bool set);
-    webrtc::RTCError setRealtimeContent(bool set);
-    webrtc::RTCError start();
-    webrtc::RTCError stop();
-    webrtc::RTCError flush();
-    webrtc::RTCError drain();
-    webrtc::RTCErrorOr<DWORD> compressedStatus() const;
-    webrtc::RTCErrorOr<DWORD> uncompressedStatus() const;
-    webrtc::RTCErrorOr<DWORD> inputStatus() const;
-    webrtc::RTCErrorOr<DWORD> outputStatus() const;
-    webrtc::RTCErrorOr<CComPtr<IMFSample>> createSampleWitMemoryBuffer(bool input);
-    webrtc::RTCError processInput(const CComPtr<IMFSample>& sample, DWORD flags = 0UL);
-    webrtc::RTCErrorOr<CComPtr<IMFSample>> processOutput(const CComPtr<IMFSample>& sample,
-                                                         const CComPtr<IMFCollection>& events = {});
-    webrtc::RTCErrorOr<MFT_INPUT_STREAM_INFO> inputStreamInfo() const;
-    webrtc::RTCErrorOr<MFT_OUTPUT_STREAM_INFO> outputStreamInfo() const;
+    bool started() const noexcept { return _started; }
+    const auto& attributes() const noexcept { return _attributes; }
+    const auto& friendlyName() const noexcept { return _friendlyName; }
+    CompletionStatus beginGetEvent(IMFAsyncCallback* callback, IUnknown* punkState = NULL);
+    CompletionStatus endGetEvent(IMFAsyncResult* result, IMFMediaEvent** outEvent);
+    CompletionStatusOrComPtr<IMFMediaEvent> asyncEvent(DWORD flags = MF_EVENT_FLAG_NO_WAIT) const;
+    CompletionStatusOrComPtr<IMFMediaType> mediaType(bool input) const;
+    CompletionStatusOrComPtr<IMFMediaType> compressedMediaType() const { return mediaType(!encoder()); }
+    CompletionStatusOrComPtr<IMFMediaType> uncompressedMediaType() const { return mediaType(encoder()); }
+    CompletionStatus setMediaType(bool input, const CComPtr<IMFMediaType>& mediaType);
+    CompletionStatus setCompressedMediaType(const CComPtr<IMFMediaType>& mediaType);
+    CompletionStatus setUncompressedMediaType(const CComPtr<IMFMediaType>& mediaType);
+    CompletionStatus selectMediaType(bool input, const GUID& subType);
+    CompletionStatus setLowLatencyMode(bool set);
+    CompletionStatus setRealtimeContent(bool set);
+    CompletionStatus start();
+    CompletionStatus stop();
+    CompletionStatus flush();
+    CompletionStatus drain();
+    CompletionStatusOr<DWORD> compressedStatus() const;
+    CompletionStatusOr<DWORD> uncompressedStatus() const;
+    CompletionStatusOr<DWORD> inputStatus() const;
+    CompletionStatusOr<DWORD> outputStatus() const;
+    CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(bool input) const;
+    CompletionStatus processInput(const CComPtr<IMFSample>& sample, DWORD flags = 0UL);
+    CompletionStatusOrComPtr<IMFSample> processOutput(const CComPtr<IMFSample>& sample,
+                                                      const CComPtr<IMFCollection>& events = {});
+    CompletionStatusOr<MFT_INPUT_STREAM_INFO> inputStreamInfo() const;
+    CompletionStatusOr<MFT_OUTPUT_STREAM_INFO> outputStreamInfo() const;
     HRESULT setUINT32Attr(const GUID& attribute, UINT32 value);
-    HRESULT processMessage(MFT_MESSAGE_TYPE message, ULONG_PTR param = NULL);
+    CompletionStatus processMessage(MFT_MESSAGE_TYPE message, ULONG_PTR param = NULL);
 private:
     MFPipeline(bool encoder, bool hardwareAccellerated,
                DWORD inputStreamID, DWORD outputStreamID,
                std::string friendlyName,
                MFInitializer mftInitializer,
-               const CComPtr<IMFTransform>& transform,
-               const CComPtr<IMFAttributes>& attributes,
-               const CComPtr<IMFMediaEventGenerator>& eventGenerator = {});
+               CComPtr<IMFTransform> transform,
+               CComPtr<IMFAttributes> attributes,
+               CComPtr<IMFMediaEventGenerator> eventGenerator = {});
     static const GUID& predefinedCodecType(bool encoder, const GUID& compressedType);
-    static webrtc::RTCErrorOr<CComPtr<IMFTransform>> 
+    static CompletionStatusOrComPtr<IMFTransform>
         createPredefinedTransform(const GUID& codecType, bool encoder,
                                   MFTransformConfigurator* configurator, // opt
                                   DWORD& inputStreamID, DWORD& outputStreamID,

@@ -49,7 +49,7 @@ public:
     static CompletionStatus::Code invalidState();
     static CompletionStatus::Code invalidArg();
 private:
-    constexpr static bool codeIsOK(Code code);
+    static bool codeIsOK(Code code);
 private:
     static constexpr const int _noErrorLine = -1;
     static const Code _ok;
@@ -64,6 +64,9 @@ bool operator == (const LiveKitCpp::CompletionStatus& l, const LiveKitCpp::Compl
 bool operator != (const LiveKitCpp::CompletionStatus& l, const LiveKitCpp::CompletionStatus& r);
 std::ostream& operator << (std::ostream& os, const LiveKitCpp::CompletionStatus& status);
 
+#if defined(_MSC_VER) && !defined(__PRETTY_FUNCTION__)
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
 #define COMPLETION_STATUS(status) LiveKitCpp::CompletionStatus(status, __PRETTY_FUNCTION__, __LINE__)
 #define COMPLETION_STATUS_INVALID_STATE COMPLETION_STATUS(LiveKitCpp::CompletionStatus::invalidState())
 #define COMPLETION_STATUS_INVALID_ARG COMPLETION_STATUS(LiveKitCpp::CompletionStatus::invalidArg())

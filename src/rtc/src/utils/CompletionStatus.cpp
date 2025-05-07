@@ -74,7 +74,7 @@ std::string CompletionStatus::what() const
 CompletionStatus::Code CompletionStatus::invalidState()
 {
 #ifdef WEBRTC_WIN
-    return E_ABORT;
+    return E_NOT_VALID_STATE;
 #elif defined(WEBRTC_MAC)
     return badReqErr;
 #else
@@ -93,7 +93,7 @@ CompletionStatus::Code CompletionStatus::invalidArg()
 #endif
 }
 
-constexpr bool CompletionStatus::codeIsOK(Code code)
+bool CompletionStatus::codeIsOK(Code code)
 {
 #ifdef WEBRTC_WIN
     return SUCCEEDED(code);
@@ -117,7 +117,11 @@ bool operator != (const LiveKitCpp::CompletionStatus& l, const LiveKitCpp::Compl
 std::ostream& operator << (std::ostream& os, const LiveKitCpp::CompletionStatus& status)
 {
     if (!status) {
-        os << "operation was not completed, error code #" << status.code() << ": " << status.what();
+        os << "operation was not completed, error code #" << status.code();
+        const auto what = status.what();
+        if (!what.empty()) {
+            os << ": " << what;
+        }
     }
     return os;
 }
