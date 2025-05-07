@@ -33,7 +33,7 @@ public:
     static CompletionStatusOr<MFPipeline> create(bool video,
                                                  bool encoder,
                                                  bool sync,
-                                                 bool software,
+                                                 bool hardwareAccellerated,
                                                  bool allowTranscoders,
                                                  const GUID& compressedType,
                                                  const GUID& uncompressedType = GUID_NULL,

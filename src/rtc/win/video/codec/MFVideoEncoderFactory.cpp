@@ -13,6 +13,7 @@
 // limitations under the License.
 #include "MFVideoEncoderFactory.h"
 #include "CodecStatus.h"
+#include "H264Utils.h"
 
 namespace LiveKitCpp
 {
@@ -25,7 +26,7 @@ std::unique_ptr<webrtc::VideoEncoder> MFVideoEncoderFactory::
 
 std::vector<webrtc::SdpVideoFormat> MFVideoEncoderFactory::customFormats() const
 {
-    return VideoEncoderFactory::customFormats();
+    return H264Utils::supportedFormats(true);
 }
 
 CodecStatus platformEncoderStatus(webrtc::VideoCodecType /*type*/, const webrtc::CodecParameterMap& parameters)

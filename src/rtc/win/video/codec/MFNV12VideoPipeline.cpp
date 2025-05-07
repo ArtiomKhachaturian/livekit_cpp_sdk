@@ -288,16 +288,16 @@ VideoFrameBufferPool MFNV12VideoPipeline::framesPool() const
 CompletionStatusOr<MFPipeline> MFNV12VideoPipeline::createImpl(webrtc::VideoCodecType codecType,
                                                                bool encoder,
                                                                bool sync,
-                                                               bool software,
+                                                               bool hardwareAccellerated,
                                                                MFTransformConfigurator* configurator)
 {
     const auto& codecFormat = compressedFormat(codecType);
     if (GUID_NULL != codecFormat) {
         // some HW encoders use DXGI API and crash when locked down
-        if (encoder && !software && isWin32LockedDown()) {
-            software = true;
+        if (encoder && hardwareAccellerated && isWin32LockedDown()) {
+            hardwareAccellerated = false;
         }
-        return MFPipeline::create(true, encoder, sync, software, false,
+        return MFPipeline::create(true, encoder, sync, hardwareAccellerated, false,
                                   codecFormat, uncompressedType(), configurator);
     }
     return COMPLETION_STATUS_INVALID_ARG;

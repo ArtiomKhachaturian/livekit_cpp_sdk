@@ -12,25 +12,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFVideoDecoderFactory.h"
+#include "MFH264Decoder.h"
 #include "CodecStatus.h"
+#include "VideoUtils.h"
+#include "H264Utils.h"
+
+namespace
+{
+
+using namespace LiveKitCpp;
+
+CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width = 1280U, UINT32 height = 1024U);
+
+}
 
 namespace LiveKitCpp
 {
 
 std::vector<webrtc::SdpVideoFormat> MFVideoDecoderFactory::customFormats() const
 {
-    return VideoDecoderFactory::customFormats();
+    return H264Utils::supportedFormats(false);
 }
 
 std::unique_ptr<webrtc::VideoDecoder> MFVideoDecoderFactory::
     customDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
+    if (H264Utils::formatMatched(format)) {
+        return std::make_unique<MFH264Decoder>(format);
+    }
     return MFVideoDecoderFactory::customDecoder(env, format);
 }
 
-CodecStatus platformDecoderStatus(webrtc::VideoCodecType /*type*/, const webrtc::CodecParameterMap&)
+CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
 {
+    if (webrtc::VideoCodecType::kVideoCodecH264 == type) {
+        return checkDecoder(type);
+    }
     return CodecStatus::SupportedSoftware;
 }
 
 } // namespace LiveKitCpp
+
+namespace
+{
+
+CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 height)
+{
+    const auto pipeline = MFVideoDecoderPipeline::create(true, codecType, width, height);
+    if (pipeline) {
+        if (pipeline->hardwareAccellerated() || pipeline->dxvaAccelerated()) {
+            return CodecStatus::SupportedMixed;
+        }
+        return CodecStatus::SupportedSoftware;
+    }
+    return CodecStatus::NotSupported;
+}
+
+}

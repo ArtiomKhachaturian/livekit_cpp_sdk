@@ -6,7 +6,7 @@ Menu {
     id: root
     property VideoTrack source: null
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-    popupType: Popup.Native
+    //popupType: Popup.Native
     Menu {
         title: qsTr("Content hint")
         enabled: source !== null

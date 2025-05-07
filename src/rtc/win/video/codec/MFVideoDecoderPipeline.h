@@ -29,7 +29,7 @@ class MFVideoDecoderPipeline : public MFNV12VideoPipeline
 public:
     // sync MFT by default
     static constexpr bool syncMFT() { return true; }
-    static CompletionStatusOr<MFVideoDecoderPipeline> create(bool software,
+    static CompletionStatusOr<MFVideoDecoderPipeline> create(bool hardwareAccellerated,
                                                              webrtc::VideoCodecType codecType,
                                                              UINT32 width = 0U,
                                                              UINT32 height = 0U,

@@ -25,6 +25,8 @@ class MFVideoDecoder : public VideoDecoder
 {
 public:
     ~MFVideoDecoder() override;
+    // overrides of GenericCodec<>
+    bool hardwareAccelerated() const override;
     // overrides of VideoDecoder
     bool Configure(const Settings& settings) final;
     int32_t Decode(const webrtc::EncodedImage& inputImage, bool missingFrames, int64_t renderTimeMs) override;

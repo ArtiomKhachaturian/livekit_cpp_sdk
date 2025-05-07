@@ -35,15 +35,15 @@ MFVideoDecoderPipeline::~MFVideoDecoderPipeline()
 {
 }
 
-CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(bool software,
+CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(bool hardwareAccellerated,
                                                                           webrtc::VideoCodecType codecType,
                                                                           UINT32 width, UINT32 height,
                                                                           bool sync)
 {
-    auto impl = createImpl(codecType, false, sync, software);
+    auto impl = createImpl(codecType, false, sync, hardwareAccellerated);
     if (impl) {
         bool dxvaAccelerated = false;
-        if (!software) {
+        if (hardwareAccellerated) {
             if (webrtc::VideoCodecType::kVideoCodecH264 == codecType) {
                 dxvaAccelerated = SUCCEEDED(impl->attributes()->SetUINT32(CODECAPI_AVDecVideoAcceleration_H264, TRUE));
             }

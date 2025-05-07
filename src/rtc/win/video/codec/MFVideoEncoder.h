@@ -36,6 +36,8 @@ class MFVideoEncoder : public VideoEncoder
     };
 public:
     ~MFVideoEncoder() override;
+    // overrides of GenericCodec<>
+    bool hardwareAccelerated() const override;
     // overrides of VideoEncoder
     int32_t InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings) override;
     int32_t Encode(const webrtc::VideoFrame& frame, const std::vector<webrtc::VideoFrameType>* frameTypes) override;

@@ -207,7 +207,11 @@ bool SignalClientWs::connect()
     if (_socket) {
         const auto result = _listener->changeTransportState(TransportState::Connecting);
         if (ChangeTransportStateResult::Changed == result) {
-            ok = _socket->open(_urlData->buildOptions());
+            auto options = _urlData->buildOptions();
+#ifndef NDEBUG
+            logInfo("Connection host info: " + options._host);
+#endif
+            ok = _socket->open(std::move(options));
             if (!ok) {
                 _listener->changeTransportState(TransportState::Disconnected);
             }

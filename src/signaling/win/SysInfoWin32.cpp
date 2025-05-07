@@ -132,7 +132,7 @@ std::string modelIdentifier()
             break;
         }
     }
-    return join(modelData, " ", true);
+    return join(modelData, "/", true);
 }
 
 } // namespace LiveKitCpp

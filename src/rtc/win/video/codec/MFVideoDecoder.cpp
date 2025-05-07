@@ -32,6 +32,14 @@ MFVideoDecoder::~MFVideoDecoder()
 {
 }
 
+bool MFVideoDecoder::hardwareAccelerated() const
+{
+    if (_pipeline) {
+        return _pipeline.hardwareAccellerated() || _pipeline.dxvaAccelerated();
+    }
+    return VideoDecoder::hardwareAccelerated();
+}
+
 bool MFVideoDecoder::Configure(const Settings& settings)
 {
     if (VideoDecoder::Configure(settings)) {
@@ -129,11 +137,8 @@ int32_t MFVideoDecoder::Decode(const webrtc::EncodedImage& inputImage, bool miss
 MFVideoDecoder::DecoderInfo MFVideoDecoder::GetDecoderInfo() const
 {
     auto decoderInfo = VideoDecoder::GetDecoderInfo();
-    if (_pipeline) {
-        decoderInfo.is_hardware_accelerated = _pipeline.hardwareAccellerated() || _pipeline.dxvaAccelerated();
-        if (!_pipeline.friendlyName().empty()) {
-            decoderInfo.implementation_name = _pipeline.friendlyName();
-        }
+    if (!_pipeline.friendlyName().empty()) {
+        decoderInfo.implementation_name = _pipeline.friendlyName();
     }
     return decoderInfo;
 }

@@ -24,7 +24,7 @@ MFVideoEncoderPipeline::MFVideoEncoderPipeline(MFPipeline impl,
 {
 }
 
-CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::create(bool software,
+CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::create(bool hardwareAccellerated,
                                                                           webrtc::VideoCodecType codecType,
                                                                           UINT32 width,
                                                                           UINT32 height,
@@ -32,7 +32,7 @@ CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::create(bool s
                                                                           UINT32 avgBitsPerSecond,
                                                                           bool sync)
 {
-    auto impl = createImpl(codecType, true, sync, software);
+    auto impl = createImpl(codecType, true, sync, hardwareAccellerated);
     if (impl) {
         auto output = createCompressedMediaType(codecType);
         if (output) {

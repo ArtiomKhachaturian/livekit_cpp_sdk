@@ -30,6 +30,14 @@ MFVideoEncoder::~MFVideoEncoder()
     MFVideoEncoder::destroySession();
 }
 
+bool MFVideoEncoder::hardwareAccelerated() const
+{
+    if (_pipeline) {
+        return _pipeline.hardwareAccellerated() || _pipeline.directXAccelerationSupported();
+    }
+    return VideoEncoder::hardwareAccelerated();
+}
+
 int32_t MFVideoEncoder::InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings)
 {
     int32_t r = VideoEncoder::InitEncode(codecSettings, encoderSettings);
@@ -122,11 +130,8 @@ webrtc::VideoEncoder::EncoderInfo MFVideoEncoder::GetEncoderInfo() const
 {
     auto encoderInfo = VideoEncoder::GetEncoderInfo();
     addVideoFrameBufferType(webrtc::VideoFrameBuffer::Type::kNV12, encoderInfo);
-    if (_pipeline) {
-        encoderInfo.is_hardware_accelerated = _pipeline.hardwareAccellerated();
-        if (!_pipeline.friendlyName().empty()) {
-            encoderInfo.implementation_name = _pipeline.friendlyName();
-        }
+    if (!_pipeline.friendlyName().empty()) {
+        encoderInfo.implementation_name = _pipeline.friendlyName();
     }
     return encoderInfo;
 }

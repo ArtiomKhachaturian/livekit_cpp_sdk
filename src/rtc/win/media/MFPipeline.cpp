@@ -44,7 +44,7 @@ MFPipeline::MFPipeline(bool encoder, bool hardwareAccellerated,
 
 CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
                                                   bool encoder, bool sync,
-                                                  bool software,
+                                                  bool hardwareAccellerated,
                                                   bool allowTranscoders,
                                                   const GUID& compressedType,
                                                   const GUID& uncompressedType,
@@ -56,7 +56,7 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
         return status;
     }
     UINT32 desiredFlags = MFT_ENUM_FLAG_ALL, actualFlags = 0U;
-    if (software) {
+    if (!hardwareAccellerated) {
         desiredFlags &= ~MFT_ENUM_FLAG_HARDWARE;
     }
     if (sync) {

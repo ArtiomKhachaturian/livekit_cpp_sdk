@@ -23,6 +23,12 @@
 #ifdef WEBRTC_MAC
 #include "VTVideoDecoderFactory.h"
 #include "VTVideoEncoderFactory.h"
+#elif defined (WEBRTC_WIN)
+#include "MFVideoDecoderFactory.h"
+#include "MFVideoEncoderFactory.h"
+#else
+#include "VideoDecoderFactory.h"
+#include "VideoEncoderFactory.h"
 #endif
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
@@ -165,6 +171,9 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
 #ifdef WEBRTC_MAC
     dependencies.video_decoder_factory = std::make_unique<VTVideoDecoderFactory>();
     dependencies.video_encoder_factory = std::make_unique<VTVideoEncoderFactory>();
+#elif defined (WEBRTC_WIN)
+    dependencies.video_decoder_factory = std::make_unique<MFVideoDecoderFactory>();
+    dependencies.video_encoder_factory = std::make_unique<MFVideoEncoderFactory>();
 #else
     dependencies.video_decoder_factory = std::make_unique<VideoDecoderFactory>();
     dependencies.video_encoder_factory = std::make_unique<VideoEncoderFactory>();

@@ -91,7 +91,7 @@ protected:
     VideoFrameBufferPool framesPool() const;
     HRESULT setUINT32Attr(const GUID& attribute, UINT32 value);
     static CompletionStatusOr<MFPipeline> createImpl(webrtc::VideoCodecType codecType,
-                                                     bool encoder, bool sync, bool software,
+                                                     bool encoder, bool sync, bool hardwareAccellerated,
                                                      MFTransformConfigurator* configurator = nullptr);
 private:
     static bool isWin32LockedDown();
