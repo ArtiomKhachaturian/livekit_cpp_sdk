@@ -45,6 +45,7 @@
 #include "livekit/signaling/sfu/UpdateLocalVideoTrack.h"
 #include "livekit/signaling/sfu/ClientInfo.h"
 #include "livekit/signaling/sfu/DataPacket.h"
+#include "livekit/signaling/sfu/RoomMovedResponse.h"
 #include "livekit_rtc.pb.h"
 #include "livekit_models.pb.h"
 #include <optional>
@@ -192,6 +193,7 @@ public:
     DataStreamHeader map(livekit::DataStream::Header in) const;
     livekit::DataStream::Trailer map(DataStreamTrailer in) const;
     DataStreamTrailer map(livekit::DataStream::Trailer in) const;
+    RoomMovedResponse map(livekit::RoomMovedResponse in) const;
 protected:
     // overrides of Bricks::LoggableR
     std::string_view logCategory() const final;

@@ -33,6 +33,7 @@
 #include "livekit/signaling/sfu/SubscriptionPermissionUpdate.h"
 #include "livekit/signaling/sfu/Pong.h"
 #include "livekit/signaling/sfu/DataPacket.h"
+#include "livekit/signaling/sfu/RoomMovedResponse.h"
 
 namespace LiveKitCpp
 {
@@ -62,6 +63,7 @@ public:
     virtual void onSubscriptionResponse(SubscriptionResponse /*response*/) {}
     virtual void onPong(Pong /*pong*/) {}
     virtual void onDataPacket(DataPacket /*packet*/) {}
+    virtual void onRoomMovedResponse(RoomMovedResponse /*response*/) {}
     // error handling
     virtual void onResponseParseError(std::string /*details*/ = {}) {}
 protected:

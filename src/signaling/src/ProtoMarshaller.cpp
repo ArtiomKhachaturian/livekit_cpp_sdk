@@ -1911,6 +1911,20 @@ DataStreamTrailer ProtoMarshaller::map(livekit::DataStream::Trailer in) const
     return out;
 }
 
+RoomMovedResponse ProtoMarshaller::map(livekit::RoomMovedResponse in) const
+{
+    RoomMovedResponse out;
+    if (in.has_room()) {
+        out._room = map(in.room());
+    }
+    out._token = in.token();
+    if (in.has_participant()) {
+        out._participant = map(in.participant());
+    }
+    out._otherParticipants = rconv<ParticipantInfo, livekit::ParticipantInfo>(in.other_participants());
+    return out;
+}
+
 std::string_view ProtoMarshaller::logCategory() const
 {
     static const std::string_view category("proto_marshaller");

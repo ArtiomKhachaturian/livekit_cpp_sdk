@@ -57,6 +57,7 @@ MARSHALLED_TYPE_NAME_DECL(livekit::RequestResponse)
 MARSHALLED_TYPE_NAME_DECL(livekit::TrackSubscribed)
 MARSHALLED_TYPE_NAME_DECL(livekit::Pong)
 MARSHALLED_TYPE_NAME_DECL(livekit::DataPacket)
+MARSHALLED_TYPE_NAME_DECL(livekit::RoomMovedResponse)
 
 ResponseReceiver::ResponseReceiver(Bricks::Logger* logger)
     : Bricks::LoggableR<>(logger)
@@ -142,6 +143,9 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
                     break;
                 case livekit::SignalResponse::kTrackSubscribed:
                     handle(response->track_subscribed());
+                    break;
+                case livekit::SignalResponse::kRoomMoved:
+                    handle(response->room_moved());
                     break;
                 default:
                     // TODO: dump response to log
@@ -301,6 +305,11 @@ void ResponseReceiver::handle(livekit::Pong pong) const
 void ResponseReceiver::handle(livekit::DataPacket packet) const
 {
     signal(&ResponsesListener::onDataPacket, std::move(packet));
+}
+
+void ResponseReceiver::handle(livekit::RoomMovedResponse response) const
+{
+    signal(&ResponsesListener::onRoomMovedResponse, std::move(response));
 }
 
 } // namespace LiveKitCpp

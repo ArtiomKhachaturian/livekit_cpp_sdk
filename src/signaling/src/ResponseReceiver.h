@@ -62,6 +62,7 @@ private:
     void handle(livekit::TrackSubscribed subscribed) const;
     void handle(livekit::Pong pong) const;
     void handle(livekit::DataPacket packet) const;
+    void handle(livekit::RoomMovedResponse response) const;
 private:
     const ProtoMarshaller _marshaller;
     Bricks::Listener<ResponsesListener*> _listener;
