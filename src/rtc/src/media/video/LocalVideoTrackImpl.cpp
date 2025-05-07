@@ -145,6 +145,21 @@ void LocalVideoTrackImpl::setMaxFramerate(const std::optional<int>& fps)
     }
 }
 
+VideoScalabilityMode LocalVideoTrackImpl::scalabilityMode() const
+{
+    return _scalabilityMode;
+}
+
+void LocalVideoTrackImpl::setScalabilityMode(VideoScalabilityMode mode)
+{
+    if (exchangeVal(mode, _scalabilityMode)) {
+        auto parameters = rtpParameters();
+        if (setScalabilityMode(mode, parameters)) {
+            setRtpParameters(parameters);
+        }
+    }
+}
+
 bool LocalVideoTrackImpl::updateSenderInitialParameters(webrtc::RtpParameters& parameters) const
 {
     const auto b1 = Base::updateSenderInitialParameters(parameters);
@@ -152,7 +167,8 @@ bool LocalVideoTrackImpl::updateSenderInitialParameters(webrtc::RtpParameters& p
     const auto b3 = setMaxBitrateBps(maxBitrateBps(), parameters);
     const auto b4 = setMinBitrateBps(minBitrateBps(), parameters);
     const auto b5 = setMaxFramerate(maxFramerate(), parameters);
-    return b1 || b2 || b3 || b4 || b5;
+    const auto b6 = setScalabilityMode(scalabilityMode(), parameters);
+    return b1 || b2 || b3 || b4 || b5 || b6;
 }
 
 std::optional<int> LocalVideoTrackImpl::optionalValue(int v)
@@ -220,7 +236,7 @@ bool LocalVideoTrackImpl::setMinBitrateBps(const std::optional<int>& bps,
 }
 
 bool LocalVideoTrackImpl::setMaxFramerate(const std::optional<int>& fps,
-                                           webrtc::RtpParameters& parameters)
+                                          webrtc::RtpParameters& parameters)
 {
     bool changed = false;
     if (!parameters.encodings.empty()) {
@@ -234,10 +250,40 @@ bool LocalVideoTrackImpl::setMaxFramerate(const std::optional<int>& fps,
 }
 
 bool LocalVideoTrackImpl::setMaxFramerate(const std::optional<int>& fps,
-                                           webrtc::RtpEncodingParameters& parameters)
+                                          webrtc::RtpEncodingParameters& parameters)
 {
     if (fps != parameters.max_framerate) {
         parameters.max_framerate = fps;
+        return true;
+    }
+    return false;
+}
+
+bool LocalVideoTrackImpl::setScalabilityMode(VideoScalabilityMode mode,
+                                             webrtc::RtpParameters& parameters)
+{
+    bool changed = false;
+    if (!parameters.encodings.empty()) {
+        for (auto& encoding : parameters.encodings) {
+            if (setScalabilityMode(mode, encoding)) {
+                changed = true;
+            }
+        }
+    }
+    return changed;
+}
+
+bool LocalVideoTrackImpl::setScalabilityMode(VideoScalabilityMode mode,
+                                             webrtc::RtpEncodingParameters& parameters)
+{
+    auto modeStr = toString(mode);
+    if (parameters.scalability_mode != modeStr) {
+        if (modeStr.empty()) {
+            parameters.scalability_mode = std::nullopt;
+        }
+        else {
+            parameters.scalability_mode = std::move(modeStr);
+        }
         return true;
     }
     return false;

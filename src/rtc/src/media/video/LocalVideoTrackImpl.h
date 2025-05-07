@@ -45,6 +45,8 @@ public:
     void setMinBitrateBps(const std::optional<int>& bps) final;
     std::optional<int> maxFramerate() const final;
     void setMaxFramerate(const std::optional<int>& fps) final;
+    VideoScalabilityMode scalabilityMode() const final;
+    void setScalabilityMode(VideoScalabilityMode mode) final;
 protected:
     // overrides of VideoTrackImpl<>
     bool updateSenderInitialParameters(webrtc::RtpParameters& parameters) const final;
@@ -57,14 +59,16 @@ private:
     static bool setMinBitrateBps(const std::optional<int>& bps, webrtc::RtpEncodingParameters& parameters);
     static bool setMaxFramerate(const std::optional<int>& fps, webrtc::RtpParameters& parameters);
     static bool setMaxFramerate(const std::optional<int>& fps, webrtc::RtpEncodingParameters& parameters);
-    static bool setDegradationPreference(DegradationPreference preference,
-                                         webrtc::RtpParameters& parameters);
+    static bool setScalabilityMode(VideoScalabilityMode mode, webrtc::RtpParameters& parameters);
+    static bool setScalabilityMode(VideoScalabilityMode mode, webrtc::RtpEncodingParameters& parameters);
+    static bool setDegradationPreference(DegradationPreference preference, webrtc::RtpParameters& parameters);
 private:
     static constexpr int _noValue = std::numeric_limits<int>::min();
     std::atomic<DegradationPreference> _degradationPreference = DegradationPreference::Default;
     std::atomic<int> _maxBitrateBps = _noValue;
     std::atomic<int> _minBitrateBps = _noValue;
     std::atomic<int> _maxFramerate = _noValue;
+    std::atomic<VideoScalabilityMode> _scalabilityMode = VideoScalabilityMode::Auto;
 };
 	
 } // namespace LiveKitCpp

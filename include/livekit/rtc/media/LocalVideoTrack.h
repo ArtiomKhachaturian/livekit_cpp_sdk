@@ -17,6 +17,7 @@
 #include "livekit/rtc/media/VideoOptions.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include "livekit/rtc/media/DegradationPreference.h"
+#include "livekit/rtc/media/VideoScalabilityMode.h"
 #include <optional>
 
 namespace LiveKitCpp
@@ -49,6 +50,8 @@ public:
     // Specifies the maximum framerate in fps for video.
     virtual std::optional<int> maxFramerate() const = 0;
     virtual void setMaxFramerate(const std::optional<int>& fps) = 0;
+    virtual VideoScalabilityMode scalabilityMode() const = 0;
+    virtual void setScalabilityMode(VideoScalabilityMode mode) = 0;
 };
 
 } // namespace LiveKitCpp
