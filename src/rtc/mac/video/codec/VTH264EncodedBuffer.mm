@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTH264EncodedBuffer.h"
+#ifndef USE_OPEN_H264_ENCODER
 #include "MacH264BitstreamParser.h"
 #include "CFMemoryBlock.h"
 #include "CFMemoryPool.h"
@@ -59,3 +60,4 @@ CompletionStatus VTH264EncodedBuffer::storeAnnexBFrame(MemoryBlock* annexbBuffer
 }
 
 } // namespace LiveKitCpp
+#endif

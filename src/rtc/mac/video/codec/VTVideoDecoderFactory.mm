@@ -13,8 +13,10 @@
 // limitations under the License.
 #include "VTVideoDecoderFactory.h"
 #include "VideoUtils.h"
+#ifndef USE_OPEN_H264_DECODER
 #include "H264Utils.h"
 #include "VTH264Decoder.h"
+#endif
 #import <CoreMedia/CoreMedia.h>
 
 namespace LiveKitCpp
@@ -22,15 +24,21 @@ namespace LiveKitCpp
 
 std::vector<webrtc::SdpVideoFormat> VTVideoDecoderFactory::customFormats() const
 {
+#ifdef USE_OPEN_H264_DECODER
+    return VideoDecoderFactory::customFormats();
+#else
     return H264Utils::supportedFormats(false);
+#endif
 }
 
 std::unique_ptr<webrtc::VideoDecoder> VTVideoDecoderFactory::
     customDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
+#ifndef USE_OPEN_H264_DECODER
     if (auto decoder = VTH264Decoder::create(format)) {
         return decoder;
     }
+#endif
     return VideoDecoderFactory::customDecoder(env, format);
 }
 
@@ -57,11 +65,13 @@ CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::Cod
                     return CodecStatus::SupportedMixed;
                 }
                 break;*/
+#ifndef USE_OPEN_H264_DECODER
             case webrtc::kVideoCodecH264:
                 if (VTIsHardwareDecodeSupported(codecTypeH264())) {
                     return CodecStatus::SupportedMixed;
                 }
                 break;
+#endif
             default:
                 break;
         }

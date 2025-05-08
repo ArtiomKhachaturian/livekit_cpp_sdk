@@ -56,7 +56,7 @@ else
 fi
 
 echo "Generate config for WebRTC build"
-gn gen ${output_dir} --args="is_debug=$is_debug enable_dsyms=true rtc_include_tests=false rtc_build_tools=false rtc_libvpx_build_vp9=true rtc_include_builtin_audio_codecs=true is_clang=true use_custom_libcxx=false is_component_build=false target_os=\"mac\" target_cpu=\"$arch\" use_rtti=true use_lld=false rtc_use_h264=true rtc_use_h265=true rtc_enable_protobuf=false"
+gn gen ${output_dir} --args="is_debug=$is_debug enable_dsyms=true rtc_include_tests=false rtc_build_tools=false rtc_libvpx_build_vp9=true rtc_include_builtin_audio_codecs=true is_clang=true use_custom_libcxx=false is_component_build=false target_os=\"mac\" target_cpu=\"$arch\" ffmpeg_branding=\"Chrome\" use_rtti=true use_lld=false rtc_use_h264=true rtc_use_h265=true rtc_enable_protobuf=false"
 
 echo "Build of WebRTC started"
 ninja -C ${output_dir}

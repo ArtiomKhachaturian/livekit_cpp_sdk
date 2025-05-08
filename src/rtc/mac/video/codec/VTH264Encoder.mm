@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTH264Encoder.h"
+#ifndef USE_OPEN_H264_ENCODER
 #include "VTH264EncodedBuffer.h"
 #include "VTEncoderSession.h"
 #include "VideoUtils.h"
@@ -244,3 +245,4 @@ MaybeEncodedImageBuffer VTH264Encoder::createEncodedImageFromSampleBuffer(CMSamp
 }
 
 } // namespace LiveKitCpp
+#endif

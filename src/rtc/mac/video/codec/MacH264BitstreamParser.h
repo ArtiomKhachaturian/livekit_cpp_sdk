@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MacH264BitstreamParser.h
+#ifndef USE_OPEN_H264_ENCODER
 #include "H264BitstreamParser.h"
 #include <CoreMedia/CoreMedia.h>
 #include <CoreMedia/CMSampleBuffer.h> // for CMSampleBufferRef
@@ -36,3 +37,4 @@ public:
 };
 
 } // namespace LiveKitCpp
+#endif

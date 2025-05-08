@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTH264Encoder.h
+#ifndef USE_OPEN_H264_ENCODER
 #include "MacH264BitstreamParser.h"
 #include "VTEncoder.h"
 #include <api/video_codecs/h264_profile_level_id.h>
@@ -54,3 +55,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

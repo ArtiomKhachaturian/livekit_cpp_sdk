@@ -326,6 +326,8 @@ if (WEBRTC_AVAILABLE)
     set(OPENSSL_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/boringssl/src/include CACHE PATH "Path to folder with OpenSSL C++ headers")
     set(LIBYUV_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/libyuv/include CACHE PATH "Path to folder with LibYUV C++ headers")
     set(ABSEIL_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp CACHE PATH "Path to folder with Abseil C++ headers")
+    option(USE_OPEN_H264_ENCODER "Use OpenH264 encoder instead of platform specific" OFF)
+    option(USE_OPEN_H264_DECODER "Use OpenH264 decoder instead of platform specific (Required already installed FFMpeg in the target OS)" OFF)
 
     if (WIN32)
         preprocessAndAddResource(${RTC_LIB})
@@ -438,10 +440,15 @@ if (WEBRTC_AVAILABLE)
                                                  dxgi.lib 
                                                  iphlpapi.lib)
     endif()
-
     target_link_libraries(${RTC_LIB} PRIVATE ${WEBRTC_LIB_FILES})
     target_link_libraries(${RTC_LIB} PUBLIC ${SIGNALING_LIB})
     target_compile_definitions(${RTC_LIB} PRIVATE -DLIVEKIT_RTC_EXPORTS -DPROJECT_VERSION="${PROJECT_VERSION}" -DWEBRTC_USE_H264)
+    if (USE_OPEN_H264_ENCODER)
+        target_compile_definitions(${RTC_LIB} PRIVATE -DUSE_OPEN_H264_ENCODER)
+    endif(USE_OPEN_H264_ENCODER)
+    if (USE_OPEN_H264_DECODER)
+        target_compile_definitions(${RTC_LIB} PRIVATE -DUSE_OPEN_H264_DECODER)
+    endif(USE_OPEN_H264_DECODER)
 endif()
 
 # install steps

@@ -12,9 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTVideoEncoderFactory.h"
+#ifdef USE_OPEN_H264_ENCODER
+#include "VTEncoderSession.h"
+#else
 #include "VTH264Encoder.h"
 #include "H264Utils.h"
 #include "VideoUtils.h"
+#endif
 
 namespace
 {
@@ -33,15 +37,21 @@ namespace LiveKitCpp
 std::unique_ptr<webrtc::VideoEncoder> VTVideoEncoderFactory::
     customEncoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
+#ifndef USE_OPEN_H264_ENCODER
     if (auto encoder = VTH264Encoder::create(format)) {
         return encoder;
     }
+#endif
     return VideoEncoderFactory::customEncoder(env, format);
 }
 
 std::vector<webrtc::SdpVideoFormat> VTVideoEncoderFactory::customFormats() const
 {
+#ifdef USE_OPEN_H264_ENCODER
+    return VideoEncoderFactory::customFormats();
+#else
     return H264Utils::supportedFormats(true);
+#endif
 }
 
 CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
@@ -61,6 +71,9 @@ CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::Cod
             std::call_once(registerProfessionalVideoWorkflowVideoEncoders, VTRegisterProfessionalVideoWorkflowVideoEncoders);
         }
         if (webrtc::kVideoCodecH264 == type) {
+#ifdef USE_OPEN_H264_ENCODER
+            status = CodecStatus::SupportedSoftware;
+#else
             CFStringRef profile = nullptr;
             if (const auto profileLevelId = webrtc::ParseSdpForH264ProfileLevelId(parameters)) {
                 profile = VTH264Encoder::extractProfile(profileLevelId.value());
@@ -73,6 +86,7 @@ CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::Cod
                     }
                 }
             }
+#endif
         }
     }
     return status;

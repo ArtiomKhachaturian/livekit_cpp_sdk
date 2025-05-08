@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTH264Decoder.h
+#ifndef USE_OPEN_H264_DECODER
 #include "VTDecoder.h"
 #include <CoreMedia/CMMemoryPool.h>
 #include <memory>
@@ -26,7 +27,6 @@ namespace LiveKitCpp
 class VTH264Decoder : public VTDecoder
 {
 public:
-    ~VTH264Decoder() override;
     static std::unique_ptr<webrtc::VideoDecoder> create(const webrtc::SdpVideoFormat& format);
 protected:
     VTH264Decoder(const webrtc::SdpVideoFormat& format);
@@ -39,3 +39,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

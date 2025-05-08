@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTH264Decoder.h"
+#ifndef USE_OPEN_H264_DECODER
 #include "H264Utils.h"
 #include "VideoUtils.h"
 #include "CFMemoryPool.h"
@@ -22,10 +23,6 @@ namespace LiveKitCpp
 
 VTH264Decoder::VTH264Decoder(const webrtc::SdpVideoFormat& format)
     : VTDecoder(format)
-{
-}
-
-VTH264Decoder::~VTH264Decoder()
 {
 }
 
@@ -71,3 +68,4 @@ CMMemoryPoolRef VTH264Decoder::memoryPoolRef() const
 }
 
 } // namespace LiveKitCpp
+#endif

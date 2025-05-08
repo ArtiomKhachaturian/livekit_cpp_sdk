@@ -17,13 +17,17 @@
 #include <api/video_codecs/video_encoder_factory_template_libaom_av1_adapter.h>  // nogncheck
 #include <api/video_codecs/video_encoder_factory_template_libvpx_vp8_adapter.h>
 #include <api/video_codecs/video_encoder_factory_template_libvpx_vp9_adapter.h>
+#ifdef USE_OPEN_H264_ENCODER
 #include <api/video_codecs/video_encoder_factory_template_open_h264_adapter.h>  // nogncheck
+#endif
 #include <rtc_base/logging.h>
 
 namespace {
 
 using Factory = webrtc::VideoEncoderFactoryTemplate<webrtc::LibvpxVp8EncoderTemplateAdapter,
-                                                    //webrtc::OpenH264EncoderTemplateAdapter,
+#ifdef USE_OPEN_H264_ENCODER
+                                                    webrtc::OpenH264EncoderTemplateAdapter,
+#endif
                                                     webrtc::LibaomAv1EncoderTemplateAdapter,
                                                     webrtc::LibvpxVp9EncoderTemplateAdapter>;
 }
