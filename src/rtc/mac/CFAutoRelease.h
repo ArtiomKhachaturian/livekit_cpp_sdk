@@ -14,6 +14,7 @@
 #pragma once // CFAutoRelease.h
 #include "CFAutoReleaseTraits.h"
 #include <CoreFoundation/CFArray.h>
+#include <CoreFoundation/CFData.h>
 #include <CoreFoundation/CFDictionary.h>
 #include <cstddef>
 
@@ -51,6 +52,7 @@ using CFDictionaryRefAutoRelease = CFAutoRelease<CFDictionaryRef>;
 using CFMutableDictionaryRefAutoRelease = CFAutoRelease<CFMutableDictionaryRef>;
 using CFArrayRefAutoRelease = CFAutoRelease<CFArrayRef>;
 using CFStringRefAutoRelease = CFAutoRelease<CFStringRef>;
+using CFDataRefAutoRelease = CFAutoRelease<CFDataRef>;
 
 
 template <typename TCFRef, typename Traits>

@@ -164,7 +164,8 @@ bool VTEncoderSourceFrame::Planes::set(const NativeVideoFrameBuffer* native)
             if (numPlanes > 0U && numPlanes <= _maxPlanes) {
                 _format = format;
                 _numPlanes = numPlanes;
-                _dataSize = native->dataSize();
+                _dataSize = webrtc::CalcBufferSize(map(native->nativeType()),
+                                                   native->width(), native->height());
                 for (size_t i = 0U; i < numPlanes; ++i) {
                     _ptrs[i] = cast(native->data(i));
                     _bytesPerRow[i] = native->stride(i);

@@ -52,6 +52,11 @@ NSString* toNSString(std::string_view string)
     return [NSString string]; // empty
 }
 
+NSString* toNSString(CFStringRef string)
+{
+    return (__bridge NSString*)string;
+}
+
 std::string toString(NSError* error)
 {
     if (error) {

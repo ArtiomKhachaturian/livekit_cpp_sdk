@@ -45,6 +45,7 @@ namespace LiveKitCpp
 #ifdef __APPLE__
 std::string fromNSString(NSString* nsString);
 NSString* toNSString(std::string_view string);
+NSString* toNSString(CFStringRef string);
 std::string toString(NSError* error);
 // timestamps
 // return zero if failed

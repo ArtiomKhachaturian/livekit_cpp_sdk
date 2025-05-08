@@ -16,6 +16,7 @@
 #include "DesktopCapturerUtils.h"
 #include "CapturerProxySink.h"
 #include "VideoUtils.h"
+#include <rtc_base/time_utils.h>
 
 namespace LiveKitCpp
 {
@@ -143,7 +144,7 @@ void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> fram
     if (frame) {
         const auto timestamp = frame->capture_time_ms();
         const auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame), _framesPool);
-        deliverCaptured(buffer, timestamp * 1000);
+        deliverCaptured(buffer, timestamp * rtc::kNumMicrosecsPerMillisec);
     }
 }
 

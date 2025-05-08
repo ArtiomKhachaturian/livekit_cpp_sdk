@@ -40,9 +40,11 @@ protected:
               const std::shared_ptr<CFMemoryPool>& memoryPool = {},
               OSType outputPixelFormat = formatNV12Full());
     const auto& memoryPool() const noexcept { return _memoryPool; }
-    CMVideoFormatDescriptionRef createInitialVideoFormat(const webrtc::RenderResolution& resolution) const;
-    virtual CMVideoFormatDescriptionRef createInitialVideoFormat(uint32_t encodedWidth, uint32_t encodedHeight) const;
-    virtual CMVideoFormatDescriptionRef createVideoFormat(const webrtc::EncodedImage& inputImage) const = 0;
+    CMVideoFormatDescriptionRef createVideoFormat(const webrtc::RenderResolution& resolution,
+                                                  const webrtc::ColorSpace* colorSpace = nullptr) const;
+    virtual CMVideoFormatDescriptionRef createVideoFormat(uint32_t encodedWidth, uint32_t encodedHeight,
+                                                          const webrtc::ColorSpace* colorSpace = nullptr) const;
+    virtual CMVideoFormatDescriptionRef createVideoFormat(const webrtc::EncodedImage& inputImage) const;
     virtual CMSampleBufferRef createSampleBuffer(const webrtc::EncodedImage& inputImage, CMVideoFormatDescriptionRef format) const = 0;
     // impl. of VideoDecoder
     void destroySession() override;

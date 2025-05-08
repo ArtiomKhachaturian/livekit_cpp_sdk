@@ -146,7 +146,7 @@ std::unique_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::
             capturer = webrtc::WgcCapturerWin::CreateRawScreenCapturer(options);
         }
     }
-    if (capturer && options.prefer_cursor_embedded()) {
+    if (capturer) {
         options.set_prefer_cursor_embedded(false);
     }
 #endif
