@@ -26,7 +26,7 @@ class NV12VideoFrameBuffer : public VideoFrameBuffer<webrtc::NV12BufferInterface
     using Base = VideoFrameBuffer<webrtc::NV12BufferInterface>;
 public:
     static const uint8_t* nv12DataY(const uint8_t* buffer) { return buffer; }
-    static const uint8_t* nv12DataUV(const uint8_t* buffer, int width, int height);
+    static const uint8_t* nv12DataUV(const uint8_t* buffer, int strideY, int height);
     static int strideY(int width) { return width; }
     static int strideUV(int width) { return width + width % 2; }
     static webrtc::scoped_refptr<webrtc::NV12BufferInterface>

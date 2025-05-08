@@ -173,6 +173,11 @@ CompletionStatusOr<DWORD> MFNV12VideoPipeline::uncompressedStatus() const
     return hr;
 }
 
+CompletionStatusOr<INT32> MFNV12VideoPipeline::defaultStride() const
+{
+    return _impl.defaultStride();
+}
+
 CompletionStatus MFNV12VideoPipeline::processInput(const CComPtr<IMFSample>& sample, DWORD flags)
 {
     return _impl.processInput(sample, flags);

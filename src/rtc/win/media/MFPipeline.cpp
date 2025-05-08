@@ -344,6 +344,23 @@ CompletionStatusOr<DWORD> MFPipeline::outputStatus() const
     return hr;
 }
 
+CompletionStatusOr<INT32> MFPipeline::defaultStride() const
+{
+    auto mt = uncompressedMediaType();
+    if (mt) {
+        // https://learn.microsoft.com/en-us/windows/win32/medfound/mf-mt-default-stride-attribute
+        UINT32 stride;
+        auto hr = COMPLETION_STATUS(mt.value()->GetUINT32(MF_MT_DEFAULT_STRIDE, &stride));
+        if (hr) {
+            // The attribute value is stored as a UINT32, but should be cast to a 32-bit signed integer value. 
+            // Stride can be negative.
+            return static_cast<INT32>(stride);
+        }
+        return hr;
+    }
+    return mt.moveStatus();
+}
+
 CompletionStatusOrComPtr<IMFSample> MFPipeline::createSampleWitMemoryBuffer(bool input) const
 {
     DWORD maxLength = 0UL, aligment = 0UL;

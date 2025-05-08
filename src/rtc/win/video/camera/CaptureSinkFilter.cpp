@@ -68,11 +68,11 @@ bool CaptureSinkFilter::isStopped() const
 }
 
 void CaptureSinkFilter::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
-                                     DWORD totalBufferLen, const CComPtr<IMediaSample>& sample,
+                                     const CComPtr<IMediaSample>& sample,
                                      const webrtc::VideoCaptureCapability& frameInfo)
 {
     if (_receiver) {
-        _receiver->deliverFrame(buffer, actualBufferLen, totalBufferLen, sample, frameInfo);
+        _receiver->deliverFrame(buffer, actualBufferLen, sample, frameInfo);
     }
 }
 

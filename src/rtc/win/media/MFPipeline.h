@@ -68,6 +68,7 @@ public:
     CompletionStatusOr<DWORD> uncompressedStatus() const;
     CompletionStatusOr<DWORD> inputStatus() const;
     CompletionStatusOr<DWORD> outputStatus() const;
+    CompletionStatusOr<INT32> defaultStride() const;
     CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(bool input) const;
     CompletionStatus processInput(const CComPtr<IMFSample>& sample, DWORD flags = 0UL);
     CompletionStatusOrComPtr<IMFSample> processOutput(const CComPtr<IMFSample>& sample,

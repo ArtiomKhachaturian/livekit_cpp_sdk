@@ -87,7 +87,7 @@ CompletionStatusOrScopedRefPtr<webrtc::VideoFrameBuffer> MFVideoDecoderPipeline:
     if (!inputBuffer) {
         return COMPLETION_STATUS_INVALID_ARG;
     }
-    MFMediaBufferLocker locker(std::move(inputBuffer));
+    MFMediaBufferLocker locker(std::move(inputBuffer), false);
     if (locker) {
         if (0U == width && 0U == height) {
             auto fs = uncompressedFrameSize();

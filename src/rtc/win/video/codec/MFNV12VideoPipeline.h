@@ -58,6 +58,7 @@ public:
     CompletionStatus drain() { return _impl.drain(); }
     CompletionStatusOr<DWORD> compressedStatus() const { return _impl.compressedStatus(); }
     CompletionStatusOr<DWORD> uncompressedStatus() const;
+    CompletionStatusOr<INT32> defaultStride() const;
     CompletionStatus processInput(const CComPtr<IMFSample>& sample, DWORD flags = 0UL);
     CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(bool input) const;
     CompletionStatusOrComPtr<IMFSample> processOutput(const CComPtr<IMFSample>& sample,

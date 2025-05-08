@@ -41,7 +41,7 @@ public:
     bool isStopped() const;
     // impl. of CapturedFrameReceiver
     void deliverFrame(BYTE* buffer, DWORD actualBufferLen,
-                      DWORD totalBufferLen, const CComPtr<IMediaSample>& sample,
+                      const CComPtr<IMediaSample>& sample,
                       const webrtc::VideoCaptureCapability& frameInfo) final;
     // impl. of IUnknown
     __declspec(nothrow) HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) final;

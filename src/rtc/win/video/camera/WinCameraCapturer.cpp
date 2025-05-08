@@ -174,21 +174,19 @@ int32_t WinCameraCapturer::CaptureSettings(webrtc::VideoCaptureCapability& setti
 }
 
 void WinCameraCapturer::deliverFrame(BYTE* buffer, DWORD actualBufferLen,
-                                     DWORD totalBufferLen, const CComPtr<IMediaSample>& sample,
+                                     const CComPtr<IMediaSample>& sample,
                                      const webrtc::VideoCaptureCapability& frameInfo)
 {
     if (!buffer || !actualBufferLen || !hasSink()) {
         return;
     }
-    assert(totalBufferLen >= actualBufferLen);
     const auto type = map(frameInfo.videoType);
     if (!type) {
         logWarning("failed to map video buffer type, fourcc " + std::to_string(fourcc(frameInfo.videoType)));
     }
     const auto sampleBuffer = MFMediaSampleBuffer::create(frameInfo.width, frameInfo.height,
                                                           type.value(), buffer, 
-                                                          actualBufferLen, totalBufferLen,
-                                                          sample, captureRotation(),
+                                                          actualBufferLen, sample, captureRotation(),
                                                           _framesPool);
     if (!sampleBuffer) {
         logWarning("failed to create captured video buffer from type " + toString(type.value()));

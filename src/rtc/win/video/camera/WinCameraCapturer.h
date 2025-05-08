@@ -76,7 +76,7 @@ private:
     void disconnect();
     // impl. of CapturedFrameReceiver
     void deliverFrame(BYTE* buffer, DWORD actualBufferLen,
-                      DWORD totalBufferLen, const CComPtr<IMediaSample>& sample,
+                      const CComPtr<IMediaSample>& sample,
                       const webrtc::VideoCaptureCapability& frameInfo) final;
 private:
     const CComPtr<CaptureSinkFilter> _sinkFilter;

@@ -27,7 +27,6 @@ class MFVideoBuffer
 public:
     virtual const BYTE* buffer() const = 0;
     virtual DWORD actualBufferLen() const = 0;
-    virtual DWORD totalBufferLen() const { return actualBufferLen(); }
 protected:
     virtual ~MFVideoBuffer() = default;
 };
@@ -39,7 +38,6 @@ public:
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> 
         create(int width, int height, VideoFrameType bufferType,
                BYTE* buffer, DWORD actualBufferLen, 
-               DWORD totalBufferLen,
                const CComPtr<IMediaSample>& sample,
                webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                const VideoFrameBufferPool& framesPool = {});

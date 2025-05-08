@@ -92,13 +92,4 @@ webrtc::scoped_refptr<TBuffer> VideoFrameBufferPool::create(TMethod method,
     return buffer;
 }
 
-int NativeVideoFrameBuffer::dataSize() const
-{
-    int sum = 0;
-    for (size_t i = 0U, end = planesCount(nativeType()); i < end; ++i) {
-        sum += dataSize(i);
-    }
-    return sum;
-}
-
 } // namespace LiveKitCpp

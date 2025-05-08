@@ -351,8 +351,7 @@ HRESULT CaptureInputPin::Receive(IMediaSample* sample)
             }
             if (S_OK == hr) {
                 filter()->deliverFrame(sampleProps.pbBuffer, sampleProps.lActual,
-                                       sampleProps.cbBuffer, sample,
-                                       _resultingCapability());
+                                       sample, _resultingCapability());
             }
         }
     }

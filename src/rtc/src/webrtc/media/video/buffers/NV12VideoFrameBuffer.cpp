@@ -87,9 +87,9 @@ webrtc::scoped_refptr<webrtc::NV12BufferInterface> NV12VideoFrameBuffer::
     return target;
 }
 
-const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int width, int height)
+const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int strideY, int height)
 {
-    return buffer + (width * height);
+    return buffer + (strideY * height);
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer> NV12VideoFrameBuffer::
