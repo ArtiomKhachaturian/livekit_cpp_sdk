@@ -29,7 +29,7 @@ public:
     explicit operator bool() const { return valid(); }
     bool valid() const { return _impl.valid();  }
     bool encoder() const noexcept { return _impl.encoder(); }
-    bool hardwareAccellerated() const noexcept { return _impl.hardwareAccellerated(); }
+    virtual bool hardwareAccellerated() const noexcept { return _impl.hardwareAccellerated(); }
     bool directXAccelerationSupported() const;
     bool direct3D11Supported() const;
     bool sync() const { return _impl.sync(); }

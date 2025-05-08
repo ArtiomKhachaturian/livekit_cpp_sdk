@@ -29,6 +29,14 @@ RgbGenericVideoFrameBuffer::RgbGenericVideoFrameBuffer(VideoFrameType rgbFormat,
     assert(bytesPerPixel() > 0);
 }
 
+int RgbGenericVideoFrameBuffer::stride(size_t planeIndex) const
+{
+    if (0U == planeIndex) {
+        return bytesPerPixel() * width();
+    }
+    return 0;
+}
+
 int RgbGenericVideoFrameBuffer::bytesPerPixel(VideoFrameType rgbFormat)
 {
     switch (rgbFormat) {

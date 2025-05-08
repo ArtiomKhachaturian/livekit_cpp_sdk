@@ -76,6 +76,11 @@ CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(bool h
     return impl.moveStatus();
 }
 
+bool MFVideoDecoderPipeline::hardwareAccellerated() const noexcept
+{
+    return MFNV12VideoPipeline::hardwareAccellerated() || _dxvaAccelerated;
+}
+
 CompletionStatusOrScopedRefPtr<webrtc::VideoFrameBuffer> MFVideoDecoderPipeline::
     createBuffer(CComPtr<IMFMediaBuffer> inputBuffer, UINT32 width, UINT32 height) const
 {

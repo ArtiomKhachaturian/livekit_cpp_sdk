@@ -27,13 +27,11 @@ namespace
 using namespace LiveKitCpp;
 
 libyuv::RotationMode fromVideoFrameRotation(webrtc::VideoRotation rotation);
-bool contains(webrtc::VideoFrameBuffer::Type type, const rtc::ArrayView<webrtc::VideoFrameBuffer::Type>& types);
 
 template <class TBaseBuffer, class TMediaData, class TBaseAccessor>
 class MFVideoBufferImpl : public TBaseBuffer, public TBaseAccessor
 {
 public:
-    ~MFVideoBufferImpl() override;
     // impl. of VideoFrameBuffer
     int width() const final { return _width; }
     int height() const final { return _height; }
@@ -47,6 +45,7 @@ protected:
                       DWORD actualBufferLen, DWORD totalBufferLen,
                       TMediaData data,
                       Types&&... args);
+    const auto& dataRef() const { return _data;  }
 private:
     const int _width;
     const int _height;
@@ -157,7 +156,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaSampleBuffer::
             }
             return webrtc::make_ref_counted<MFSampleNativeBuffer>(width, absHeight,
                                                                   buffer, actualBufferLen,
-                                                                  totalBufferLen, sample, bufferType, 
+                                                                  totalBufferLen, sample, bufferType,
                                                                   rotation, framesPool);
         }
     }
@@ -197,6 +196,16 @@ const MFMediaBuffer* MFMediaBuffer::mediaBuffer(const rtc::scoped_refptr<webrtc:
 namespace
 {
 
+template <class TMediaData>
+inline DWORD nonPlanarStride(const TMediaData& /*data*/) {
+    return 0U;
+}
+
+template<>
+inline DWORD nonPlanarStride<MFMediaBufferLocker>(const MFMediaBufferLocker& data) {
+    return static_cast<DWORD>(data.pitch2D());
+}
+
 libyuv::RotationMode fromVideoFrameRotation(webrtc::VideoRotation rotation)
 {
     switch (rotation) {
@@ -212,11 +221,6 @@ libyuv::RotationMode fromVideoFrameRotation(webrtc::VideoRotation rotation)
             break;
     }
     return libyuv::RotationMode::kRotate0;
-}
-
-bool contains(webrtc::VideoFrameBuffer::Type type, const rtc::ArrayView<webrtc::VideoFrameBuffer::Type>& types)
-{
-    return types.end() != std::find(types.begin(), types.end(), type);
 }
 
 template <class TBaseBuffer, class TMediaData, class TBaseAccessor>
@@ -238,14 +242,6 @@ inline MFVideoBufferImpl<TBaseBuffer, TMediaData, TBaseAccessor>::
     assert(_buffer);
     assert(_actualBufferLen > 0UL);
     assert(_totalBufferLen >= _actualBufferLen);
-}
-
-template <class TBaseBuffer, class TMediaData, class TBaseAccessor>
-inline MFVideoBufferImpl<TBaseBuffer, TMediaData, TBaseAccessor>::~MFVideoBufferImpl()
-{
-    if constexpr (std::is_same<IMFMediaBuffer, TMediaData>::value) {
-        _data->Unlock();
-    }
 }
 
 template <class TMediaData, class TBaseAccessor>
@@ -296,26 +292,31 @@ inline const uint8_t* MFNV12VideoBuffer<TMediaData, TBaseAccessor>::DataUV() con
 
 template <class TMediaData, class TBaseAccessor>
 inline MFNativeBuffer<TMediaData, TBaseAccessor>::
-    MFNativeBuffer(int width, int height, BYTE* buffer,
-                   DWORD actualBufferLen, DWORD totalBufferLen,
-                   TMediaData data,
-                   VideoFrameType bufferType,
-                   webrtc::VideoRotation rotation,
-                   VideoFrameBufferPool framesPool)
-    : Base(targetWidth(width, std::abs(height), rotation), 
-          targetHeight(width, std::abs(height), rotation), 
-          buffer, actualBufferLen, totalBufferLen, std::move(data), std::move(framesPool))
+MFNativeBuffer(int width, int height, BYTE* buffer,
+               DWORD actualBufferLen, DWORD totalBufferLen,
+               TMediaData data,
+               VideoFrameType bufferType,
+               webrtc::VideoRotation rotation,
+               VideoFrameBufferPool framesPool)
+    : Base(targetWidth(width, std::abs(height), rotation),
+           targetHeight(width, std::abs(height), rotation),
+           buffer, actualBufferLen, totalBufferLen, 
+           std::move(data), std::move(framesPool))
     , _originalWidth(width)
     , _originalHeight(height)
     , _rotation(rotation)
     , _bufferType(bufferType)
-{    
+{
 }
 
 template <class TMediaData, class TBaseAccessor>
 inline int MFNativeBuffer<TMediaData, TBaseAccessor>::stride(size_t planeIndex) const
 {
     if (0U == planeIndex) {
+        const auto val = nonPlanarStride(Base::dataRef());
+        if (val) {
+            return val;
+        }
         return Base::actualBufferLen();
     }
     return 0;
@@ -337,26 +338,24 @@ inline int MFNativeBuffer<TMediaData, TBaseAccessor>::dataSize() const
 }
 
 template <class TMediaData, class TBaseAccessor>
-inline int MFNativeBuffer<TMediaData, TBaseAccessor>::targetWidth(int width, 
-                                                                  int height, 
-                                                                  webrtc::VideoRotation rotation)
+inline int MFNativeBuffer<TMediaData, TBaseAccessor>::
+    targetWidth(int width, int height, webrtc::VideoRotation rotation)
 {
     swapIfRotated(rotation, width, height);
     return width;
 }
 
 template <class TMediaData, class TBaseAccessor>
-inline int MFNativeBuffer<TMediaData, TBaseAccessor>::targetHeight(int width, 
-                                                                   int height, 
-                                                                   webrtc::VideoRotation rotation)
+inline int MFNativeBuffer<TMediaData, TBaseAccessor>::
+    targetHeight(int width, int height, webrtc::VideoRotation rotation)
 {
     swapIfRotated(rotation, width, height);
     return std::abs(height);
 }
 
 template <class TMediaData, class TBaseAccessor>
-inline void MFNativeBuffer<TMediaData, TBaseAccessor>::swapIfRotated(webrtc::VideoRotation rotation, 
-                                                                    int& width, int& height)
+inline void MFNativeBuffer<TMediaData, TBaseAccessor>::
+    swapIfRotated(webrtc::VideoRotation rotation, int& width, int& height)
 {
     switch (rotation) {
         case webrtc::VideoRotation::kVideoRotation_90:
@@ -369,22 +368,23 @@ inline void MFNativeBuffer<TMediaData, TBaseAccessor>::swapIfRotated(webrtc::Vid
 }
 
 template <class TMediaData, class TBaseAccessor>
-inline rtc::scoped_refptr<webrtc::I420BufferInterface> 
-    MFNativeBuffer<TMediaData, TBaseAccessor>::convertToI420() const
+inline rtc::scoped_refptr<webrtc::I420BufferInterface>
+MFNativeBuffer<TMediaData, TBaseAccessor>::convertToI420() const
 {
     const auto i420 = Base::createI420(Base::width(), Base::height());
     if (i420 && 0 == libyuv::ConvertToI420(Base::buffer(), Base::actualBufferLen(),
-                                          i420->MutableDataY(),
-                                          i420->StrideY(), i420->MutableDataU(),
-                                          i420->StrideU(), i420->MutableDataV(),
-                                          i420->StrideV(), 0, 0, // no cropping
-                                          _originalWidth, _originalHeight,
-                                          i420->width(), i420->height(),
-                                          fromVideoFrameRotation(_rotation),
-                                          fourcc(_bufferType))) {
+                                           i420->MutableDataY(),
+                                           i420->StrideY(), i420->MutableDataU(),
+                                           i420->StrideU(), i420->MutableDataV(),
+                                           i420->StrideV(), 0, 0, // no cropping
+                                           _originalWidth, _originalHeight,
+                                           i420->width(), i420->height(),
+                                           fromVideoFrameRotation(_rotation),
+                                           fourcc(_bufferType))) {
         return i420;
     }
     return {};
 }
+
 
 }

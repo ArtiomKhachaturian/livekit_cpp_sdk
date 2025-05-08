@@ -25,6 +25,7 @@ public:
     static int bytesPerPixel(VideoFrameType rgbFormat);
     int bytesPerPixel() const { return bytesPerPixel(nativeType()); }
     // impl. of NativeVideoFrameBuffer
+    int stride(size_t planeIndex) const override;
     VideoFrameType nativeType() const final { return _rgbFormat; }
     // overrides of webrtc::VideoFrameBuffer
     rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,

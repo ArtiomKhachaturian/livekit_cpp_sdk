@@ -39,7 +39,7 @@ public:
     ~MFVideoDecoderPipeline() override;
     MFVideoDecoderPipeline& operator = (MFVideoDecoderPipeline&&) = default;
     MFVideoDecoderPipeline& operator = (const MFVideoDecoderPipeline&) = default;
-    bool dxvaAccelerated() const { return _dxvaAccelerated; }
+    bool hardwareAccellerated() const noexcept final;
     CompletionStatusOrScopedRefPtr<webrtc::VideoFrameBuffer> createBuffer(CComPtr<IMFMediaBuffer> inputBuffer,
                                                                           UINT32 width = 0U, UINT32 height = 0U) const;
     CompletionStatus setMaxCodedWidth(UINT32 maxCodedWidth);

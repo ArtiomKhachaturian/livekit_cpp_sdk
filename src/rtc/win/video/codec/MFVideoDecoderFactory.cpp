@@ -71,7 +71,7 @@ CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 
 {
     const auto pipeline = MFVideoDecoderPipeline::create(true, codecType, width, height);
     if (pipeline) {
-        if (pipeline->hardwareAccellerated() || pipeline->dxvaAccelerated()) {
+        if (pipeline->hardwareAccellerated()) {
             return CodecStatus::SupportedMixed;
         }
         return CodecStatus::SupportedSoftware;

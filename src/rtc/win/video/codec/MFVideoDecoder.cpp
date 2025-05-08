@@ -35,7 +35,7 @@ MFVideoDecoder::~MFVideoDecoder()
 bool MFVideoDecoder::hardwareAccelerated() const
 {
     if (_pipeline) {
-        return _pipeline.hardwareAccellerated() || _pipeline.dxvaAccelerated();
+        return _pipeline.hardwareAccellerated();
     }
     return VideoDecoder::hardwareAccelerated();
 }
