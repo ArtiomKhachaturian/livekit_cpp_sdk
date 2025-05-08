@@ -26,7 +26,7 @@ class MFMediaBufferLocker
     class ImplInterface;
     template <class TMediaBuffer> class Impl;
 public:
-    MFMediaBufferLocker(const CComPtr<IMFMediaBuffer>& data, bool acquire2DBuffer = false);
+    MFMediaBufferLocker(CComPtr<IMFMediaBuffer> data, bool acquire2DBuffer = true);
     MFMediaBufferLocker(MFMediaBufferLocker&& tmp) noexcept;
     MFMediaBufferLocker(const MFMediaBufferLocker&) = delete;
     ~MFMediaBufferLocker();
@@ -40,10 +40,9 @@ public:
     BYTE* dataBuffer() const;
     DWORD maxLen() const;
     DWORD currentLen() const;
-    void reset(bool andUnlock);
 private:
     static CompletionStatusOrUniquePtr<ImplInterface> 
-        createImpl(const CComPtr<IMFMediaBuffer>& data, bool acquire2DBuffer);
+        createImpl(CComPtr<IMFMediaBuffer> data, bool acquire2DBuffer);
 private:
     CompletionStatusOrUniquePtr<ImplInterface> _impl;
 };

@@ -13,7 +13,6 @@
 // limitations under the License.
 #include "MFVideoDecoderPipeline.h"
 #include "MFCommon.h"
-#include "MFMediaBufferLocker.h"
 #include "MFVideoBuffer.h"
 #include "Utils.h"
 #include <Mferror.h>
@@ -77,14 +76,14 @@ CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(bool h
     return impl.moveStatus();
 }
 
-CompletionStatusOrScopedRefPtr<webrtc::NV12BufferInterface> MFVideoDecoderPipeline::
-    createBuffer(const CComPtr<IMFMediaBuffer>& inputBuffer, UINT32 width, UINT32 height) const
+CompletionStatusOrScopedRefPtr<webrtc::VideoFrameBuffer> MFVideoDecoderPipeline::
+    createBuffer(CComPtr<IMFMediaBuffer> inputBuffer, UINT32 width, UINT32 height) const
 {
     if (!inputBuffer) {
         return COMPLETION_STATUS_INVALID_ARG;
     }
     CompletionStatus status;
-    MFMediaBufferLocker locker(inputBuffer, false);
+    MFMediaBufferLocker locker(std::move(inputBuffer));
     if (locker) {
         if (0U == width && 0U == height) {
             auto fs = uncompressedFrameSize();
@@ -97,9 +96,7 @@ CompletionStatusOrScopedRefPtr<webrtc::NV12BufferInterface> MFVideoDecoderPipeli
             }
         }
         if (status) {
-            auto outputBuffer = createNV12Buffer(width, height, inputBuffer, locker);
-            locker.reset(false); // [inputBuffer] will unlocked in destructor of MFNV12VideoBuffer
-            return outputBuffer;
+            return MFMediaBuffer::create(width, height, std::move(locker), framesPool());
         }
     }
     else {
@@ -160,18 +157,6 @@ CompletionStatusOr<MFVideoArea> MFVideoDecoderPipeline::minimumDisplayAperture()
         return status;
     }
     return mt.moveStatus();
-}
-
-rtc::scoped_refptr<webrtc::NV12BufferInterface> MFVideoDecoderPipeline::
-    createNV12Buffer(UINT32 width, UINT32 height,
-                     const CComPtr<IMFMediaBuffer>& mediaBuffer,
-                     const MFMediaBufferLocker& mediaBufferLocker) const
-{
-    return MFMediaBuffer::create(width, height, 
-                                 mediaBufferLocker.dataBuffer(),
-                                 mediaBufferLocker./*currentLen()*/ maxLen(),
-                                 mediaBufferLocker.maxLen(), 
-                                 mediaBuffer, framesPool());
 }
 
 } // namespace LiveKitCpp

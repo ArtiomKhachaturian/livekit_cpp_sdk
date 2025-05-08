@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MFVideoDecoderPipeline.h
 #include "MFNV12VideoPipeline.h"
+#include "MFMediaBufferLocker.h"
 #include <api/scoped_refptr.h>
 
 namespace webrtc {
@@ -21,8 +22,6 @@ class NV12BufferInterface;
 
 namespace LiveKitCpp 
 {
-
-class MFMediaBufferLocker;
 
 class MFVideoDecoderPipeline : public MFNV12VideoPipeline
 {
@@ -41,8 +40,8 @@ public:
     MFVideoDecoderPipeline& operator = (MFVideoDecoderPipeline&&) = default;
     MFVideoDecoderPipeline& operator = (const MFVideoDecoderPipeline&) = default;
     bool dxvaAccelerated() const { return _dxvaAccelerated; }
-    CompletionStatusOrScopedRefPtr<webrtc::NV12BufferInterface> createBuffer(const CComPtr<IMFMediaBuffer>& inputBuffer,
-                                                                             UINT32 width = 0U, UINT32 height = 0U) const;
+    CompletionStatusOrScopedRefPtr<webrtc::VideoFrameBuffer> createBuffer(CComPtr<IMFMediaBuffer> inputBuffer,
+                                                                          UINT32 width = 0U, UINT32 height = 0U) const;
     CompletionStatus setMaxCodedWidth(UINT32 maxCodedWidth);
     CompletionStatus setMaxCodedHeight(UINT32 maxCodedHeight);
     CompletionStatus setSoftwareDynamicFormatChange(bool set);
@@ -51,10 +50,6 @@ public:
     CompletionStatusOr<MFVideoArea> minimumDisplayAperture() const;
 protected:
     MFVideoDecoderPipeline(MFPipeline impl, webrtc::VideoCodecType codecType, bool dxvaAccelerated);
-private:
-    rtc::scoped_refptr<webrtc::NV12BufferInterface> createNV12Buffer(UINT32 width, UINT32 height,
-                                                                    const CComPtr<IMFMediaBuffer>& mediaBuffer,
-                                                                    const MFMediaBufferLocker& mediaBufferLocker) const;
 private:
     bool _dxvaAccelerated = false;
 };

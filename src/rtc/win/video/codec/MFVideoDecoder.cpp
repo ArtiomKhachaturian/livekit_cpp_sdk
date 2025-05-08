@@ -235,7 +235,11 @@ CompletionStatus MFVideoDecoder::sendDecodedSample(const webrtc::EncodedImage& i
                     width = aperture->Area.cx;
                     height = aperture->Area.cy;
                 }
-                auto nv12buff = _pipeline.createBuffer(srcBuffer, width, height);
+                if (0U == width && 0U == height && webrtc::VideoCodecType::kVideoCodecH264 == type()) {
+                    width = _currentWidth;
+                    height = _currentHeight;
+                }
+                auto nv12buff = _pipeline.createBuffer(std::move(srcBuffer), width, height);
                 if (nv12buff) {
                     auto frame = createVideoFrame(nv12buff.value(), 
                                                   webrtc::VideoRotation::kVideoRotation_0, 

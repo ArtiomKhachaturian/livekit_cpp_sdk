@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MFMediaSampleBuffer.h
 #include "VideoFrameBufferPool.h"
+#include "MFMediaBufferLocker.h"
 #include <atlbase.h> //CComPtr support
 #include <mfobjects.h>
 #include <strmif.h>
@@ -46,7 +47,6 @@ public:
                webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                const VideoFrameBufferPool& framesPool = {});
     static const MFMediaSampleBuffer* sampleBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
-    virtual CComPtr<IMediaSample> data() const = 0;
 protected:
     virtual ~MFMediaSampleBuffer() = default;
 };
@@ -54,12 +54,11 @@ protected:
 class MFMediaBuffer : public MFVideoBuffer
 {
 public:
-    static rtc::scoped_refptr<webrtc::NV12BufferInterface>
-        create(int width, int height, BYTE* buffer, DWORD actualBufferLen,
-               DWORD totalBufferLen, const CComPtr<IMFMediaBuffer>& mediaBuffer,
+    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+        create(int width, int height, 
+               MFMediaBufferLocker mediaBufferLocker,
                const VideoFrameBufferPool& framesPool = {});
     static const MFMediaBuffer* mediaBuffer(const rtc::scoped_refptr<webrtc::NV12BufferInterface>& buffer);
-    virtual CComPtr<IMFMediaBuffer> data() const = 0;
 protected:
     virtual ~MFMediaBuffer() = default;
 };

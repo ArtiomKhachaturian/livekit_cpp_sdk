@@ -41,17 +41,16 @@ public:
     const BYTE* buffer() const final { return _buffer; }
     DWORD actualBufferLen() const final { return _actualBufferLen; }
     DWORD totalBufferLen() const final { return _totalBufferLen; }
-    CComPtr<TMediaData> data() const final { return _data;  }
 protected:
     template <class... Types>
     MFVideoBufferImpl(int width, int height, BYTE* buffer,
                       DWORD actualBufferLen, DWORD totalBufferLen,
-                      const CComPtr<TMediaData>& data,
+                      TMediaData data,
                       Types&&... args);
 private:
     const int _width;
     const int _height;
-    const CComPtr<TMediaData> _data;
+    const TMediaData _data;
     BYTE* const _buffer;
     const DWORD _actualBufferLen;
     const DWORD _totalBufferLen;
@@ -64,7 +63,7 @@ class MFI420VideoBuffer : public MFVideoBufferImpl<webrtc::I420BufferInterface, 
 public:
     MFI420VideoBuffer(int width, int height, BYTE* buffer,
                       DWORD actualBufferLen, DWORD totalBufferLen,
-                      const CComPtr<TMediaData>& data,
+                      TMediaData data,
                       VideoFrameBufferPool framesPool);
     // impl. of webrtc::I420BufferInterface
     int StrideY() const final { return Base::width(); }
@@ -84,7 +83,7 @@ class MFNV12VideoBuffer : public MFVideoBufferImpl<NV12VideoFrameBuffer, TMediaD
 public:
     MFNV12VideoBuffer(int width, int height, BYTE* buffer,
                       DWORD actualBufferLen, DWORD totalBufferLen,
-                      const CComPtr<TMediaData>& data,
+                      TMediaData data,
                       VideoFrameBufferPool framesPool);
     // impl. of NV12VideoFrameBuffer
     const uint8_t* DataY() const final;
@@ -98,7 +97,7 @@ class MFNativeBuffer : public MFVideoBufferImpl<VideoFrameBuffer<NativeVideoFram
 public:
     MFNativeBuffer(int width, int height, BYTE* buffer,
                    DWORD actualBufferLen, DWORD totalBufferLen,
-                   const CComPtr<TMediaData>& data,
+                   TMediaData data,
                    VideoFrameType bufferType,
                    webrtc::VideoRotation rotation,
                    VideoFrameBufferPool framesPool);
@@ -106,6 +105,7 @@ public:
     VideoFrameType nativeType() const final { return _bufferType; }
     int stride(size_t planeIndex) const final;
     const std::byte* data(size_t planeIndex) const final;
+    int dataSize() const final;
 private:
     static int targetWidth(int width, int height, webrtc::VideoRotation rotation);
     static int targetHeight(int width, int height, webrtc::VideoRotation rotation);
@@ -119,9 +119,9 @@ private:
     const VideoFrameType _bufferType;
 };
 
-using MFSampleI420Buffer = MFI420VideoBuffer<IMediaSample, MFMediaSampleBuffer>;
-using MFSampleN12Buffer = MFNV12VideoBuffer<IMediaSample, MFMediaSampleBuffer>;
-using MFSampleNativeBuffer = MFNativeBuffer<IMediaSample, MFMediaSampleBuffer>;
+using MFSampleI420Buffer = MFI420VideoBuffer<CComPtr<IMediaSample>, MFMediaSampleBuffer>;
+using MFSampleN12Buffer = MFNV12VideoBuffer<CComPtr<IMediaSample>, MFMediaSampleBuffer>;
+using MFSampleNativeBuffer = MFNativeBuffer<CComPtr<IMediaSample>, MFMediaSampleBuffer>;
 
 } // namespace
 
@@ -169,16 +169,19 @@ const MFMediaSampleBuffer* MFMediaSampleBuffer::sampleBuffer(const rtc::scoped_r
     return dynamic_cast<const MFMediaSampleBuffer*>(buffer.get());
 }
 
-rtc::scoped_refptr<webrtc::NV12BufferInterface> MFMediaBuffer::
-    create(int width, int height, BYTE* buffer, DWORD actualBufferLen,
-           DWORD totalBufferLen, const CComPtr<IMFMediaBuffer>& mediaBuffer,
+rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaBuffer::
+    create(int width, int height, MFMediaBufferLocker mediaBufferLocker,
            const VideoFrameBufferPool& framesPool)
 {
-    if (width > 0 && height > 0 && buffer && mediaBuffer) {
-        using MFMediaN12Buffer = MFNV12VideoBuffer<IMFMediaBuffer, MFMediaBuffer>;
+    if (width > 0 && height > 0 && mediaBufferLocker) {
+        using MFMediaN12Buffer = MFNV12VideoBuffer<MFMediaBufferLocker, MFMediaBuffer>;
+        const auto buffer = mediaBufferLocker.dataBuffer();
+        const auto actualBufferLen = mediaBufferLocker.currentLen();
+        const auto totalBufferLen = mediaBufferLocker.maxLen();
         return webrtc::make_ref_counted<MFMediaN12Buffer>(width, height,
                                                           buffer, actualBufferLen,
-                                                          totalBufferLen, mediaBuffer, 
+                                                          totalBufferLen, 
+                                                          std::move(mediaBufferLocker),
                                                           framesPool);
     }
     return {};
@@ -220,11 +223,11 @@ template <class TBaseBuffer, class TMediaData, class TBaseAccessor>
 template <class... Types>
 inline MFVideoBufferImpl<TBaseBuffer, TMediaData, TBaseAccessor>::
     MFVideoBufferImpl(int width, int height, BYTE* buffer, DWORD actualBufferLen,
-                      DWORD totalBufferLen, const CComPtr<TMediaData>& data, Types&&... args)
+                      DWORD totalBufferLen, TMediaData data, Types&&... args)
     : TBaseBuffer(std::forward<Types>(args)...)
     , _width(width)
     , _height(height)
-    , _data(data)
+    , _data(std::move(data))
     , _buffer(buffer)
     , _actualBufferLen(actualBufferLen)
     , _totalBufferLen(totalBufferLen)
@@ -249,9 +252,9 @@ template <class TMediaData, class TBaseAccessor>
 inline MFI420VideoBuffer<TMediaData, TBaseAccessor>::
     MFI420VideoBuffer(int width, int height, BYTE* buffer,
                       DWORD actualBufferLen, DWORD totalBufferLen,
-                      const CComPtr<TMediaData>& data,
+                      TMediaData data,
                       VideoFrameBufferPool framesPool)
-    : Base(width, height, buffer, actualBufferLen, totalBufferLen, data)
+    : Base(width, height, buffer, actualBufferLen, totalBufferLen, std::move(data))
     , _framesPool(std::move(framesPool))
 {
 }
@@ -273,9 +276,9 @@ template <class TMediaData, class TBaseAccessor>
 inline MFNV12VideoBuffer<TMediaData, TBaseAccessor>::
     MFNV12VideoBuffer(int width, int height, BYTE* buffer,
                       DWORD actualBufferLen, DWORD totalBufferLen,
-                      const CComPtr<TMediaData>& data,
+                      TMediaData data,
                       VideoFrameBufferPool framesPool)
-    : Base(width, height, buffer, actualBufferLen, totalBufferLen, data, std::move(framesPool))
+    : Base(width, height, buffer, actualBufferLen, totalBufferLen, std::move(data), std::move(framesPool))
 {
 }
 
@@ -295,13 +298,13 @@ template <class TMediaData, class TBaseAccessor>
 inline MFNativeBuffer<TMediaData, TBaseAccessor>::
     MFNativeBuffer(int width, int height, BYTE* buffer,
                    DWORD actualBufferLen, DWORD totalBufferLen,
-                   const CComPtr<TMediaData>& data,
+                   TMediaData data,
                    VideoFrameType bufferType,
                    webrtc::VideoRotation rotation,
                    VideoFrameBufferPool framesPool)
     : Base(targetWidth(width, std::abs(height), rotation), 
           targetHeight(width, std::abs(height), rotation), 
-          buffer, actualBufferLen, totalBufferLen, data, std::move(framesPool))
+          buffer, actualBufferLen, totalBufferLen, std::move(data), std::move(framesPool))
     , _originalWidth(width)
     , _originalHeight(height)
     , _rotation(rotation)
@@ -325,6 +328,12 @@ inline const std::byte* MFNativeBuffer<TMediaData, TBaseAccessor>::data(size_t p
         return reinterpret_cast<const std::byte*>(Base::buffer());
     }
     return nullptr;
+}
+
+template <class TMediaData, class TBaseAccessor>
+inline int MFNativeBuffer<TMediaData, TBaseAccessor>::dataSize() const
+{
+    return Base::actualBufferLen();
 }
 
 template <class TMediaData, class TBaseAccessor>

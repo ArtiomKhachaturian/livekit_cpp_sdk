@@ -21,7 +21,6 @@ class MFMediaBufferLocker::ImplInterface
 {
 public:
     virtual ~ImplInterface() = default;
-    virtual void drop() = 0;
     virtual BYTE* dataBuffer() const = 0;
     virtual bool is2DBuffer() const = 0;
     virtual LONG pitch2D() const { return 0L; }
@@ -37,23 +36,22 @@ public:
          LONG pitch2D = 0L, DWORD maxLen = 0UL, DWORD currentLen = 0UL);
     ~Impl() final;
     // impl. of ImplInterface
-    void drop() final;
     BYTE* dataBuffer() const final { return _dataBuffer; }
     bool is2DBuffer() const final { return std::is_same<IMF2DBuffer, TMediaBuffer>::value; }
     LONG pitch2D() const final { return _pitch2D; }
     DWORD maxLen() const final { return _maxLen; }
     DWORD currentLen() const final { return _currentLen; }
 private:
-    CComPtr<TMediaBuffer> _mediaBuffer;
-    BYTE* _dataBuffer;
-    LONG _pitch2D;
-    DWORD _maxLen;
-    DWORD _currentLen;
+    const CComPtr<TMediaBuffer> _mediaBuffer;
+    BYTE* const _dataBuffer;
+    const LONG _pitch2D;
+    const DWORD _maxLen;
+    const DWORD _currentLen;
 };
 
-MFMediaBufferLocker::MFMediaBufferLocker(const CComPtr<IMFMediaBuffer>& data, 
+MFMediaBufferLocker::MFMediaBufferLocker(CComPtr<IMFMediaBuffer> data,
                                          bool acquire2DBuffer)
-    : _impl(createImpl(data, acquire2DBuffer))
+    : _impl(createImpl(std::move(data), acquire2DBuffer))
 {
 }
 
@@ -109,18 +107,8 @@ DWORD MFMediaBufferLocker::currentLen() const
     return impl ? impl->currentLen() : 0UL;
 }
 
-void MFMediaBufferLocker::reset(bool andUnlock)
-{
-    if (auto& impl = _impl.value()) {
-        if (!andUnlock) {
-            impl->drop();
-        }
-        impl.reset();
-    }
-}
-
 CompletionStatusOrUniquePtr<MFMediaBufferLocker::ImplInterface> MFMediaBufferLocker::
-    createImpl(const CComPtr<IMFMediaBuffer>& data, bool acquire2DBuffer)
+    createImpl(CComPtr<IMFMediaBuffer> data, bool acquire2DBuffer)
 {
     if (!data) {
         return COMPLETION_STATUS_INVALID_ARG;
@@ -132,23 +120,22 @@ CompletionStatusOrUniquePtr<MFMediaBufferLocker::ImplInterface> MFMediaBufferLoc
         // locks a video buffer that might or might not support IMF2DBuffer,
         // query for the 2-D buffer interface - OK if this fails
         auto status = COMPLETION_STATUS(data->QueryInterface(IID_IMF2DBuffer, (void**)&buffer2d));
-        if (!status) {
-            return status;
+        if (status) {
+            LONG pitch2D = 0L;
+            status = COMPLETION_STATUS(buffer2d->Lock2D(&dataBuffer, &pitch2D));
+            if (!status) {
+                return status;
+            }
+            impl.reset(new Impl<IMF2DBuffer>(std::move(buffer2d), dataBuffer, pitch2D));
         }
-        LONG pitch2D = 0L;
-        status = COMPLETION_STATUS(buffer2d->Lock2D(&dataBuffer, &pitch2D));
-        if (!status) {
-            return status;
-        }
-        impl.reset(new Impl<IMF2DBuffer>(buffer2d, dataBuffer, pitch2D));
     }
-    else {
+    if (!impl) {
         DWORD maxLen = 0UL, currentLen = 0UL;
         auto status = COMPLETION_STATUS(data->Lock(&dataBuffer, &maxLen, &currentLen));
         if (!status) {
             return status;
         }
-        impl.reset(new Impl<IMFMediaBuffer>(data, dataBuffer, 0L, maxLen, currentLen));
+        impl.reset(new Impl<IMFMediaBuffer>(std::move(data), dataBuffer, 0L, maxLen, currentLen));
     }
     return impl;
 }
@@ -177,17 +164,6 @@ inline MFMediaBufferLocker::Impl<TMediaBuffer>::~Impl()
         } else {
             static_assert(false);
         }
-    }
-}
-
-template <class TMediaBuffer>
-inline void MFMediaBufferLocker::Impl<TMediaBuffer>::drop()
-{
-    if (_mediaBuffer) {
-        _mediaBuffer = {};
-        _dataBuffer = NULL;
-        _pitch2D = 0L;
-        _maxLen = _currentLen = 0UL;
     }
 }
 
