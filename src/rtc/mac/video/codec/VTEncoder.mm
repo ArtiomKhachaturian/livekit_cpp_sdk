@@ -78,7 +78,7 @@ int32_t VTEncoder::Encode(const webrtc::VideoFrame& frame,
         case kVTVideoEncoderMalfunctionErr:
         case kVTInvalidSessionErr:
             sessionIsOutdate = true;
-            logError(std::move(status), false);
+            logWarning(std::move(status));
             break;
         case noErr:
             sessionIsOutdate = !_session.isCompatible(sourceFrame)
@@ -106,7 +106,7 @@ int32_t VTEncoder::Encode(const webrtc::VideoFrame& frame,
     if (kVTInvalidSessionErr == status.code() || kVTVideoEncoderMalfunctionErr == status.code()) {
         // this error occurs when entering foreground after backgrounding the app
         // sometimes the encoder malfunctions and needs to be restarted
-        logError(std::move(status), false);
+        logWarning(std::move(status));
         // re-create compression session
         auto sessionResult = createSession(_session.width(), _session.height());
         if (sessionResult) {
@@ -152,7 +152,7 @@ CompletionStatus VTEncoder::configureCompressionSession(VTEncoderSession* sessio
 void VTEncoder::destroySession()
 {
     if (_session) {
-        logError(_session.completeFrames(), false);
+        logWarning(_session.completeFrames());
         _session = {};
     }
     if (_framesPool) {
@@ -236,7 +236,7 @@ void VTEncoder::onEncodedImage(VTEncoderSourceFrame frame,
                 sendEncodedImage(keyFrame, std::move(encodedImage));
             }
             else {
-                logError(result.moveStatus(), false);
+                logWarning(result.moveStatus());
             }
         }
     }
@@ -244,7 +244,12 @@ void VTEncoder::onEncodedImage(VTEncoderSourceFrame frame,
 
 void VTEncoder::onError(CompletionStatus error, bool fatal)
 {
-    logError(std::move(error), fatal);
+    if (fatal) {
+        logError(std::move(error));
+    }
+    else {
+        logWarning(std::move(error));
+    }
 }
 
 } // namespace LiveKitCpp

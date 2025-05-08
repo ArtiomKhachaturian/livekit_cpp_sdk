@@ -69,7 +69,7 @@ int32_t VTDecoder::Decode(const webrtc::EncodedImage& inputImage, bool missingFr
     }
     const auto encodeBuffer = inputImage.GetEncodedData();
     if (!encodeBuffer) {
-        logError(COMPLETION_STATUS(kVTVideoDecoderUnsupportedDataFormatErr), false);
+        logWarning(COMPLETION_STATUS(kVTVideoDecoderUnsupportedDataFormatErr));
         return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
     }
     if (webrtc::VideoFrameType::kVideoFrameKey == inputImage._frameType) {
@@ -92,7 +92,7 @@ int32_t VTDecoder::Decode(const webrtc::EncodedImage& inputImage, bool missingFr
     }
     const auto sampleBuffer = createSampleBuffer(inputImage, _session.format());
     if (!sampleBuffer) {
-        logError(COMPLETION_STATUS(kCMBlockBufferEmptyBBufErr), false);
+        logWarning(COMPLETION_STATUS(kCMBlockBufferEmptyBBufErr));
         return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
     }
     VTDecodeInfoFlags infoFlags;
@@ -124,7 +124,7 @@ CMVideoFormatDescriptionRef VTDecoder::createInitialVideoFormat(uint32_t encoded
 void VTDecoder::destroySession()
 {
     if (_session) {
-        logError(_session.waitForAsynchronousFrames(), false);
+        logWarning(_session.waitForAsynchronousFrames());
         _session = {};
     }
     VideoDecoder::destroySession();
@@ -148,8 +148,8 @@ CompletionStatus VTDecoder::createSession(CFAutoRelease<CMVideoFormatDescription
                 if (poolSize > 0) {
                     if (_framesPool) {
                         _framesPool->resize(poolSize);
-                        logError(_session.setOutputPoolRequestedMinimumBufferCount(poolSize), false);
                     }
+                    logWarning(_session.setOutputPoolRequestedMinimumBufferCount(poolSize));
                 }
             }
         }
@@ -175,14 +175,19 @@ void VTDecoder::onDecodedImage(CMTime timestamp, CMTime duration,
             sendDecodedImage(frame.value(), cmTimeToMilli(duration), std::move(qp));
         }
         else {
-            logError(COMPLETION_STATUS(kVTVideoDecoderMalfunctionErr), false);
+            logWarning(COMPLETION_STATUS(kVTVideoDecoderMalfunctionErr));
         }
     }
 }
 
 void VTDecoder::onError(CompletionStatus error, bool fatal)
 {
-    logError(std::move(error), fatal);
+    if (fatal) {
+        logError(std::move(error));
+    }
+    else {
+        logWarning(std::move(error));
+    }
 }
 
 } // namespace LiveKitCpp
