@@ -64,7 +64,9 @@ std::string DesktopWebRTCCapturer::selectedSource() const
 
 void DesktopWebRTCCapturer::stop()
 {
-    execute([capturer = webRtcCapturer(true)]() mutable { capturer.reset(); });
+    if (auto capturer = webRtcCapturer(true)) { 
+        execute([capturer = std::move(capturer)]() mutable { capturer.reset(); });
+    }
     Base::stop();
 }
 
