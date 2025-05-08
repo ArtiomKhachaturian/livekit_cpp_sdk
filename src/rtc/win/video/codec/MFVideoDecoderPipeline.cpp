@@ -87,27 +87,23 @@ CompletionStatusOrScopedRefPtr<webrtc::VideoFrameBuffer> MFVideoDecoderPipeline:
     if (!inputBuffer) {
         return COMPLETION_STATUS_INVALID_ARG;
     }
-    CompletionStatus status;
     MFMediaBufferLocker locker(std::move(inputBuffer));
     if (locker) {
         if (0U == width && 0U == height) {
             auto fs = uncompressedFrameSize();
-            if (fs) {
-                width = fs->first;
-                height = fs->second;
+            if (!fs) {
+                return fs.moveStatus();
             }
-            else {
-                status = fs.moveStatus();
-            }
+            width = fs->first;
+            height = fs->second;
         }
-        if (status) {
-            return MFMediaBuffer::create(width, height, std::move(locker), framesPool());
-        }
+        return MFMediaBuffer::create(width, height,
+                                    VideoFrameType::NV12,
+                                    std::move(locker),
+                                    webrtc::VideoRotation::kVideoRotation_0,
+                                    framesPool());
     }
-    else {
-        status = locker.status();
-    }
-    return status;
+    return locker.status();
 }
 
 CompletionStatus MFVideoDecoderPipeline::setMaxCodedWidth(UINT32 maxCodedWidth)

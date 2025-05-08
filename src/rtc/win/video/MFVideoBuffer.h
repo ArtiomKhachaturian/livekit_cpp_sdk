@@ -14,14 +14,10 @@
 #pragma once // MFMediaSampleBuffer.h
 #include "VideoFrameBufferPool.h"
 #include "MFMediaBufferLocker.h"
+#include "livekit/rtc/media/VideoFrameType.h"
 #include <atlbase.h> //CComPtr support
 #include <mfobjects.h>
 #include <strmif.h>
-
-namespace webrtc {
-enum class VideoType;
-struct VideoCaptureCapability;
-} // namespace webrtc
 
 namespace LiveKitCpp 
 {
@@ -39,6 +35,7 @@ protected:
 class MFMediaSampleBuffer : public MFVideoBuffer
 {
 public:
+    // I420 + NV12 + all non-planar types are supported
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer> 
         create(int width, int height, VideoFrameType bufferType,
                BYTE* buffer, DWORD actualBufferLen, 
@@ -54,9 +51,12 @@ protected:
 class MFMediaBuffer : public MFVideoBuffer
 {
 public:
+    // I420 + NV12 + all non-planar types are supported
     static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
         create(int width, int height, 
+               VideoFrameType bufferType,
                MFMediaBufferLocker mediaBufferLocker,
+               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                const VideoFrameBufferPool& framesPool = {});
     static const MFMediaBuffer* mediaBuffer(const rtc::scoped_refptr<webrtc::NV12BufferInterface>& buffer);
 protected:

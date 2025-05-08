@@ -74,9 +74,6 @@ bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                 std::byte* dstARGB, int dstStrideARGB,
                 int dstWidth, int dstHeight,
                 VideoContentHint hint = VideoContentHint::None);
-
-size_t planesCount(VideoFrameType type);
-
 // VPX
 bool isVP8VideoFormat(const webrtc::SdpVideoFormat& format);
 bool isVP8CodecName(const std::string& codecName);

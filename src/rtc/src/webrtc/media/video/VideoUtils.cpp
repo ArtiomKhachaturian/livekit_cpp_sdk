@@ -210,38 +210,6 @@ bool scaleRGB32(const std::byte* srcARGB, int srcStrideARGB,
                          hint);
 }
 
-size_t planesCount(VideoFrameType type)
-{
-    switch (type) {
-        case VideoFrameType::RGB24:
-        case VideoFrameType::BGR24:
-        case VideoFrameType::BGRA32:
-        case VideoFrameType::ARGB32:
-        case VideoFrameType::RGBA32:
-        case VideoFrameType::ABGR32:
-        case VideoFrameType::RGB565:
-        case VideoFrameType::MJPEG:
-        case VideoFrameType::UYVY:
-        case VideoFrameType::YUY2:
-            return 1U;
-        case VideoFrameType::NV12:
-            return 2U;
-        case VideoFrameType::I420:
-        case VideoFrameType::I422:
-        case VideoFrameType::I444:
-        case VideoFrameType::I010:
-        case VideoFrameType::I210:
-        case VideoFrameType::I410:
-        case VideoFrameType::YV12:
-        case VideoFrameType::IYUV:
-            return 3U;
-        default:
-            assert(false);
-            break;
-    }
-    return 0U;
-}
-
 bool isVP8VideoFormat(const webrtc::SdpVideoFormat& format)
 {
     return isVP8CodecName(format.name);

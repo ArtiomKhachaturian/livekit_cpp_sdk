@@ -45,5 +45,7 @@ enum class VideoFrameType
 
 LIVEKIT_RTC_API std::string toString(VideoFrameType type);
 LIVEKIT_RTC_API bool isRGB(VideoFrameType type);
+LIVEKIT_RTC_API size_t planesCount(VideoFrameType type);
+inline bool isPlanar(VideoFrameType type) { return planesCount(type) > 1U; }
 
 } // namespace LiveKitCpp
