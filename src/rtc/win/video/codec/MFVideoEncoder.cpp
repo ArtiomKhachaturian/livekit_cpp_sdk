@@ -130,9 +130,6 @@ webrtc::VideoEncoder::EncoderInfo MFVideoEncoder::GetEncoderInfo() const
 {
     auto encoderInfo = VideoEncoder::GetEncoderInfo();
     addVideoFrameBufferType(webrtc::VideoFrameBuffer::Type::kNV12, encoderInfo);
-    if (!_pipeline.friendlyName().empty()) {
-        encoderInfo.implementation_name = _pipeline.friendlyName();
-    }
     return encoderInfo;
 }
 
@@ -157,15 +154,15 @@ CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoder::createPipeline(UINT32
     if (pipeline) {
         auto hr = fillMpegHeaderData(pipeline.value());
         if (hr) {
-            logError(pipeline->setVideoMaxQP(qpMax()), false);
-            logError(pipeline->setLowLatencyMode(true), false);
-            logError(pipeline->setRealtimeContent(true), false);
-            logError(pipeline->setVideoContentType(realtimeMode()), false);
-            logError(pipeline->setCompressedFramerate(currentFramerate()), false);
-            logError(pipeline->setCommonMinBitRate(minBitrateBps()), false);
-            logError(pipeline->setCommonMaxBitRate(maxBitrateBps()), false);
-            logError(pipeline->setCommonMeanBitRate(currentBitrate()), false);
-            //logError(pipeline->setAdaptiveMode(realtimeMode(), true), false);
+            logWarning(pipeline->setVideoMaxQP(qpMax()));
+            logWarning(pipeline->setLowLatencyMode(true));
+            logWarning(pipeline->setRealtimeContent(true));
+            logWarning(pipeline->setVideoContentType(realtimeMode()));
+            logWarning(pipeline->setCompressedFramerate(currentFramerate()));
+            logWarning(pipeline->setCommonMinBitRate(minBitrateBps()));
+            logWarning(pipeline->setCommonMaxBitRate(maxBitrateBps()));
+            logWarning(pipeline->setCommonMeanBitRate(currentBitrate()));
+            //logWarning(pipeline->setAdaptiveMode(realtimeMode(), true));
             return pipeline;
         }
         return hr;
@@ -176,7 +173,7 @@ CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoder::createPipeline(UINT32
 void MFVideoEncoder::destroySession()
 {
     if (_pipeline) {
-        logError(_pipeline.stop(), false);
+        logWarning(_pipeline.stop());
         _pipeline = {};
         _currentWidth = _currentHeight = 0U;
         while (!_attributeQueue.empty()) {

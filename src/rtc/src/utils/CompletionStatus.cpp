@@ -20,6 +20,8 @@
 #endif
 #include "RtcUtils.h"
 #endif
+//#include <absl/strings/str_cat.h>
+#include <rtc_base/logging.h>
 
 namespace
 {
@@ -69,6 +71,18 @@ std::string CompletionStatus::what() const
 #else
     return osStatusToString(code());
 #endif
+}
+
+void CompletionStatus::toWebRtcLog(bool warning) const
+{
+    if (!ok()) {
+        if (warning) {
+            RTC_LOG(LS_WARNING) << *this;
+        }
+        else {
+            RTC_LOG(LS_ERROR) << *this;
+        }
+    }
 }
 
 CompletionStatus::Code CompletionStatus::invalidState()

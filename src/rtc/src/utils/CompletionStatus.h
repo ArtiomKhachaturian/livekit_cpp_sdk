@@ -41,6 +41,7 @@ public:
     CompletionStatus& operator=(const CompletionStatus&) = default;
     CompletionStatus& operator=(CompletionStatus&&) = default;
     std::string what() const;
+    void toWebRtcLog(bool warning) const;
     auto code() const noexcept { return _code; }
     const auto& function() const noexcept { return _function; }
     int line() const noexcept { return _line; }

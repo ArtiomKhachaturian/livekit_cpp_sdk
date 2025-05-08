@@ -30,8 +30,6 @@ public:
     // overrides of VideoDecoder
     bool Configure(const Settings& settings) final;
     int32_t Decode(const webrtc::EncodedImage& inputImage, bool missingFrames, int64_t renderTimeMs) override;
-    DecoderInfo GetDecoderInfo() const final;
-    const char* ImplementationName() const final;
 protected:
     MFVideoDecoder(const webrtc::SdpVideoFormat& format);
     virtual std::optional<uint8_t> lastSliceQp(const webrtc::EncodedImage& /*inputImage*/) { return std::nullopt; }

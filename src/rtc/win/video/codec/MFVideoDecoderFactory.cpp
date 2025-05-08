@@ -40,7 +40,7 @@ std::unique_ptr<webrtc::VideoDecoder> MFVideoDecoderFactory::
     if (H264Utils::formatMatched(format)) {
         return std::make_unique<MFH264Decoder>(format);
     }
-    return MFVideoDecoderFactory::customDecoder(env, format);
+    return VideoDecoderFactory::customDecoder(env, format);
 }
 
 CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)

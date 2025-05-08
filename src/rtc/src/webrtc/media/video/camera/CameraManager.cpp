@@ -45,6 +45,8 @@ webrtc::VideoCaptureCapability CameraManager::defaultCapability()
     capability.maxFPS = webrtc::videocapturemodule::kDefaultFrameRate;
 #ifdef __APPLE__
     capability.videoType = webrtc::VideoType::kNV12;
+#elif defined(WIN32)
+    capability.videoType = webrtc::VideoType::kMJPEG;
 #else
     capability.videoType = webrtc::VideoType::kI420;
 #endif

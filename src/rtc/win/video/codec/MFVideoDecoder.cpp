@@ -57,11 +57,11 @@ bool MFVideoDecoder::Configure(const Settings& settings)
         if (pipeline) {
             _currentWidth = maxCodedWidth;
             _currentHeight = maxCodedHeight;
-            logError(pipeline->setLowLatencyMode(true), false);
+            logWarning(pipeline->setLowLatencyMode(true));
             if (!pipeline->hardwareAccellerated()) {
                 const auto threads = maxDecodingThreads(maxCodedWidth, maxCodedHeight,
                                                         settings.number_of_cores());
-                logError(pipeline->setNumWorkerThreads(threads), false);
+                logWarning(pipeline->setNumWorkerThreads(threads));
             }
             status = logError(pipeline->selectUncompressedMediaType());
             if (status) {
@@ -94,7 +94,8 @@ int32_t MFVideoDecoder::Decode(const webrtc::EncodedImage& inputImage, bool miss
             if (WEBRTC_VIDEO_CODEC_OK == result) {
                 CompletionStatus status;
                 if (webrtc::VideoFrameType::kVideoFrameKey == inputImage._frameType) {
-                    logError(_pipeline.setRealtimeContent(webrtc::VideoContentType::UNSPECIFIED == inputImage.content_type_), false);
+                    const auto realtime = webrtc::VideoContentType::UNSPECIFIED == inputImage.content_type_;
+                    logWarning(_pipeline.setRealtimeContent(realtime));
                     status = setCompressedFrameSize(inputImage._encodedWidth, inputImage._encodedHeight);
                 }
                 if (WEBRTC_VIDEO_CODEC_OK == result && status) {
@@ -132,23 +133,6 @@ int32_t MFVideoDecoder::Decode(const webrtc::EncodedImage& inputImage, bool miss
         }
     }
     return result;
-}
-
-MFVideoDecoder::DecoderInfo MFVideoDecoder::GetDecoderInfo() const
-{
-    auto decoderInfo = VideoDecoder::GetDecoderInfo();
-    if (!_pipeline.friendlyName().empty()) {
-        decoderInfo.implementation_name = _pipeline.friendlyName();
-    }
-    return decoderInfo;
-}
-
-const char* MFVideoDecoder::ImplementationName() const
-{
-    if (_pipeline && !_pipeline.friendlyName().empty()) {
-        return _pipeline.friendlyName().c_str();
-    }
-    return VideoDecoder::ImplementationName();
 }
 
 CompletionStatus MFVideoDecoder::setCompressedFrameSize(UINT32 width, UINT32 height)

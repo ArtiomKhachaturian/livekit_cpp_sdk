@@ -127,23 +127,23 @@ CompletionStatusOr<MFVideoEncoderPipeline> MFH264Encoder::createPipeline(UINT32 
         if (_profileLevelId.has_value()) {
             bool allowCabac = false;
             if (const auto profile = toMFH264(_profileLevelId->profile)) {
-                logError(pipeline->setH264Profile(profile.value()), false);
+                logWarning(pipeline->setH264Profile(profile.value()));
                 // https://en.wikipedia.org/wiki/Context-adaptive_binary_arithmetic_coding
                 // only supported in the Main and higher profiles (but not the extended profile)
                 allowCabac = H264Utils::cabacIsSupported(_profileLevelId->profile) &&
                              eAVEncH264VProfile::eAVEncH264VProfile_Extended != profile.value();
             }
             if (const auto level = toMFH264(_profileLevelId->level)) {
-                logError(pipeline->setH264Level(level.value()), false);
+                logWarning(pipeline->setH264Level(level.value()));
             }
             // CABAC generally gives better compression at the expense of higher computational overhead,
             // for avoiding of bitrate overshoot
-            logError(pipeline->setH264CABACEnable(allowCabac), false);
+            logWarning(pipeline->setH264CABACEnable(allowCabac));
         }
         if (_h264params.keyFrameInterval > 0) {
-            logError(pipeline->setMPVGOPSize(_h264params.keyFrameInterval), false);
+            logWarning(pipeline->setMPVGOPSize(_h264params.keyFrameInterval));
         }
-        logError(pipeline->setTemporalLayerCount(_h264params.numberOfTemporalLayers), false);
+        logWarning(pipeline->setTemporalLayerCount(_h264params.numberOfTemporalLayers));
     }
     return pipeline;
 }

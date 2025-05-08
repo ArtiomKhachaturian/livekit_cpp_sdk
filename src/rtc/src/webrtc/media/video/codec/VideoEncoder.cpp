@@ -225,7 +225,7 @@ void VideoEncoder::setCurrentBitrate(uint32_t bps)
             if (result) {
                 _currentBitrate = bps;
             } else {
-                logError(std::move(result), false);
+                logWarning(std::move(result));
             }
         }
     }
@@ -240,7 +240,7 @@ void VideoEncoder::setCurrentFramerate(double framerateFps)
             if (result) {
                 _currentFramerate = framerate;
             } else {
-                logError(std::move(result), false);
+                logWarning(std::move(result));
             }
         }
     }
