@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MFH264Decoder.h
+#ifndef USE_OPEN_H264_DECODER
 #include "MFVideoDecoder.h"
 #include <common_video/h264/h264_bitstream_parser.h>
 
@@ -29,3 +30,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

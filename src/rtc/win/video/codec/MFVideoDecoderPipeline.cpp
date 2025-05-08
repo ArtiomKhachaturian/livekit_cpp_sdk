@@ -85,7 +85,7 @@ CompletionStatusOrScopedRefPtr<webrtc::NV12BufferInterface> MFVideoDecoderPipeli
     }
     CompletionStatus status;
     MFMediaBufferLocker locker(inputBuffer, false);
-    if (locker.ok()) {
+    if (locker) {
         if (0U == width && 0U == height) {
             auto fs = uncompressedFrameSize();
             if (fs) {
@@ -103,7 +103,7 @@ CompletionStatusOrScopedRefPtr<webrtc::NV12BufferInterface> MFVideoDecoderPipeli
         }
     }
     else {
-        status = COMPLETION_STATUS(locker.status());
+        status = locker.status();
     }
     return status;
 }

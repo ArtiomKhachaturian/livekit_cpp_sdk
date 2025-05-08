@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFH264Decoder.h"
-
+#ifndef USE_OPEN_H264_DECODER
 namespace LiveKitCpp 
 {
 
@@ -28,3 +28,4 @@ std::optional<uint8_t> MFH264Decoder::lastSliceQp(const webrtc::EncodedImage& in
 }
 
 } // namespace LiveKitCpp
+#endif

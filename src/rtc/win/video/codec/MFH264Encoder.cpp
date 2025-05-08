@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFH264Encoder.h"
+#ifndef USE_OPEN_H264_ENCODER
 #include "EncodedImageBuffer.h"
 #include "MFMediaBufferLocker.h"
 #include "MFVideoEncoderPipeline.h"
@@ -283,3 +284,4 @@ uint8_t* SimpleMemoryBlock::reallocate(uint8_t* data, size_t newSize)
 }
 
 } // namespace
+#endif

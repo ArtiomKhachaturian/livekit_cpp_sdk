@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFVideoDecoderFactory.h"
-#include "MFH264Decoder.h"
 #include "CodecStatus.h"
+#include "MFVideoDecoderPipeline.h"
+#ifndef USE_OPEN_H264_DECODER
+#include "MFH264Decoder.h"
 #include "VideoUtils.h"
 #include "H264Utils.h"
+#endif
 
 namespace
 {
@@ -31,23 +34,31 @@ namespace LiveKitCpp
 
 std::vector<webrtc::SdpVideoFormat> MFVideoDecoderFactory::customFormats() const
 {
+#ifdef USE_OPEN_H264_DECODER
+    return VideoDecoderFactory::customFormats();
+#else
     return H264Utils::supportedFormats(false);
+#endif
 }
 
 std::unique_ptr<webrtc::VideoDecoder> MFVideoDecoderFactory::
     customDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
+#ifndef USE_OPEN_H264_DECODER
     if (H264Utils::formatMatched(format)) {
         return std::make_unique<MFH264Decoder>(format);
     }
+#endif
     return VideoDecoderFactory::customDecoder(env, format);
 }
 
 CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
 {
+#ifndef USE_OPEN_H264_DECODER
     if (webrtc::VideoCodecType::kVideoCodecH264 == type) {
         return checkDecoder(type);
     }
+#endif
     return CodecStatus::SupportedSoftware;
 }
 

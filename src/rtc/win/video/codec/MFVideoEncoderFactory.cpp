@@ -13,8 +13,11 @@
 // limitations under the License.
 #include "MFVideoEncoderFactory.h"
 #include "CodecStatus.h"
+#include "MFVideoEncoderPipeline.h"
+#ifndef USE_OPEN_H264_ENCODER
 #include "H264Utils.h"
 #include "MFH264Encoder.h"
+#endif
 #include <api/transport/bitrate_settings.h>
 
 namespace
@@ -34,22 +37,30 @@ namespace LiveKitCpp
 std::unique_ptr<webrtc::VideoEncoder> MFVideoEncoderFactory::
     customEncoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
+#ifndef USE_OPEN_H264_ENCODER
     if (auto h264 = MFH264Encoder::create(format)) {
         return h264;
     }
+#endif
     return VideoEncoderFactory::customEncoder(env, format);
 }
 
 std::vector<webrtc::SdpVideoFormat> MFVideoEncoderFactory::customFormats() const
 {
+#ifdef USE_OPEN_H264_ENCODER
+    return VideoEncoderFactory::customFormats();
+#else
     return H264Utils::supportedFormats(true);
+#endif
 }
 
 CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
 {
+#ifndef USE_OPEN_H264_ENCODER
     if (webrtc::VideoCodecType::kVideoCodecH264 == type) {
         return checkEncoder(type);
     }
+#endif
     return CodecStatus::SupportedSoftware;
 }
 

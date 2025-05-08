@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MFMediaBufferLocker.h
-#include "ComStatus.h"
+#include "CompletionStatusOr.h"
 #include <atlbase.h> //CComPtr support
 #include <memory>
 #include <mfobjects.h>
@@ -21,7 +21,7 @@
 namespace LiveKitCpp 
 {
 
-class MFMediaBufferLocker : public ComStatus
+class MFMediaBufferLocker
 {
     class ImplInterface;
     template <class TMediaBuffer> class Impl;
@@ -32,6 +32,9 @@ public:
     ~MFMediaBufferLocker();
     MFMediaBufferLocker& operator=(MFMediaBufferLocker&& tmp) noexcept;
     MFMediaBufferLocker& operator=(const MFMediaBufferLocker&) = delete;
+    explicit operator bool() const { return ok(); }
+    const auto& status() const noexcept { return _impl.status(); }
+    bool ok() const;
     bool is2DBuffer() const;
     LONG pitch2D() const; // zero for non-2D buffers
     BYTE* dataBuffer() const;
@@ -39,10 +42,10 @@ public:
     DWORD currentLen() const;
     void reset(bool andUnlock);
 private:
-    static std::unique_ptr<ImplInterface> createImpl(const CComPtr<IMFMediaBuffer>& data,
-                                                     bool acquire2DBuffer, HRESULT& error);
+    static CompletionStatusOrUniquePtr<ImplInterface> 
+        createImpl(const CComPtr<IMFMediaBuffer>& data, bool acquire2DBuffer);
 private:
-    std::unique_ptr<ImplInterface> _impl;
+    CompletionStatusOrUniquePtr<ImplInterface> _impl;
 };
 
 } // namespace LiveKitCpp

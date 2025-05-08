@@ -33,7 +33,7 @@ template <class TMediaBuffer>
 class MFMediaBufferLocker::Impl : public MFMediaBufferLocker::ImplInterface
 {
 public:
-    Impl(const CComPtr<TMediaBuffer>& mediaBuffer, BYTE* dataBuffer,
+    Impl(CComPtr<TMediaBuffer> mediaBuffer, BYTE* dataBuffer,
          LONG pitch2D = 0L, DWORD maxLen = 0UL, DWORD currentLen = 0UL);
     ~Impl() final;
     // impl. of ImplInterface
@@ -43,7 +43,6 @@ public:
     LONG pitch2D() const final { return _pitch2D; }
     DWORD maxLen() const final { return _maxLen; }
     DWORD currentLen() const final { return _currentLen; }
-
 private:
     CComPtr<TMediaBuffer> _mediaBuffer;
     BYTE* _dataBuffer;
@@ -52,18 +51,15 @@ private:
     DWORD _currentLen;
 };
 
-MFMediaBufferLocker::MFMediaBufferLocker(const CComPtr<IMFMediaBuffer>& data, bool acquire2DBuffer)
+MFMediaBufferLocker::MFMediaBufferLocker(const CComPtr<IMFMediaBuffer>& data, 
+                                         bool acquire2DBuffer)
+    : _impl(createImpl(data, acquire2DBuffer))
 {
-    HRESULT error = S_OK;
-    _impl = createImpl(data, acquire2DBuffer, error);
-    setStatus(error);
 }
 
 MFMediaBufferLocker::MFMediaBufferLocker(MFMediaBufferLocker&& tmp) noexcept
-    : ComStatus(tmp.status())
-    , _impl(std::move(tmp._impl))
+    : _impl(std::move(tmp._impl))
 {
-    tmp.setStatus(E_POINTER);
 }
 
 MFMediaBufferLocker::~MFMediaBufferLocker()
@@ -73,83 +69,96 @@ MFMediaBufferLocker::~MFMediaBufferLocker()
 MFMediaBufferLocker& MFMediaBufferLocker::operator=(MFMediaBufferLocker&& tmp) noexcept
 {
     if (&tmp != this) {
-        setStatus(tmp.status());
         _impl = std::move(tmp._impl);
-        tmp.setStatus(E_POINTER);
     }
     return *this;
 }
 
+bool MFMediaBufferLocker::ok() const
+{
+    return _impl && nullptr != _impl->get();
+}
+
 bool MFMediaBufferLocker::is2DBuffer() const
 {
-    return _impl && _impl->is2DBuffer();
+    const auto& impl = _impl.value();
+    return impl && impl->is2DBuffer();
 }
 
 LONG MFMediaBufferLocker::pitch2D() const
 {
-    return _impl ? _impl->pitch2D() : 0L;
+    const auto& impl = _impl.value();
+    return impl ? impl->pitch2D() : 0L;
 }
 
 BYTE* MFMediaBufferLocker::dataBuffer() const
 {
-    return _impl ? _impl->dataBuffer() : NULL;
+    const auto& impl = _impl.value();
+    return impl ? impl->dataBuffer() : NULL;
 }
 
 DWORD MFMediaBufferLocker::maxLen() const
 {
-    return _impl ? _impl->maxLen() : 0UL;
+    const auto& impl = _impl.value();
+    return impl ? impl->maxLen() : 0UL;
 }
 
 DWORD MFMediaBufferLocker::currentLen() const
 {
-    return _impl ? _impl->currentLen() : 0UL;
+    const auto& impl = _impl.value();
+    return impl ? impl->currentLen() : 0UL;
 }
 
 void MFMediaBufferLocker::reset(bool andUnlock)
 {
-    if (_impl) {
+    if (auto& impl = _impl.value()) {
         if (!andUnlock) {
-            _impl->drop();
+            impl->drop();
         }
-        _impl.reset();
+        impl.reset();
     }
 }
 
-std::unique_ptr<MFMediaBufferLocker::ImplInterface> MFMediaBufferLocker::createImpl(const CComPtr<IMFMediaBuffer>& data,
-                                                                                    bool acquire2DBuffer, HRESULT& error)
+CompletionStatusOrUniquePtr<MFMediaBufferLocker::ImplInterface> MFMediaBufferLocker::
+    createImpl(const CComPtr<IMFMediaBuffer>& data, bool acquire2DBuffer)
 {
+    if (!data) {
+        return COMPLETION_STATUS_INVALID_ARG;
+    }
     std::unique_ptr<ImplInterface> impl;
-    if (data) {
+    BYTE* dataBuffer = NULL;
+    if (acquire2DBuffer) {
         CComPtr<IMF2DBuffer> buffer2d;
-        BYTE* dataBuffer = NULL;
-        if (acquire2DBuffer) {
-            // locks a video buffer that might or might not support IMF2DBuffer,
-            // query for the 2-D buffer interface - OK if this fails
-            if (SUCCEEDED(data->QueryInterface(IID_IMF2DBuffer, (void**)&buffer2d))) {
-                LONG pitch2D = 0L;
-                error = buffer2d->Lock2D(&dataBuffer, &pitch2D);
-                if (SUCCEEDED(error)) {
-                    impl = std::make_unique<Impl<IMF2DBuffer>>(buffer2d, dataBuffer, pitch2D);
-                }
-            }
+        // locks a video buffer that might or might not support IMF2DBuffer,
+        // query for the 2-D buffer interface - OK if this fails
+        auto status = COMPLETION_STATUS(data->QueryInterface(IID_IMF2DBuffer, (void**)&buffer2d));
+        if (!status) {
+            return status;
         }
-        if (!buffer2d) {
-            DWORD maxLen = 0UL, currentLen = 0UL;
-            error = data->Lock(&dataBuffer, &maxLen, &currentLen);
-            if (SUCCEEDED(error)) {
-                impl = std::make_unique<Impl<IMFMediaBuffer>>(data, dataBuffer, 0L, maxLen, currentLen);
-            }
+        LONG pitch2D = 0L;
+        status = COMPLETION_STATUS(buffer2d->Lock2D(&dataBuffer, &pitch2D));
+        if (!status) {
+            return status;
         }
-    } else {
-        error = E_POINTER;
+        impl.reset(new Impl<IMF2DBuffer>(buffer2d, dataBuffer, pitch2D));
+    }
+    else {
+        DWORD maxLen = 0UL, currentLen = 0UL;
+        auto status = COMPLETION_STATUS(data->Lock(&dataBuffer, &maxLen, &currentLen));
+        if (!status) {
+            return status;
+        }
+        impl.reset(new Impl<IMFMediaBuffer>(data, dataBuffer, 0L, maxLen, currentLen));
     }
     return impl;
 }
 
 template <class TMediaBuffer>
-MFMediaBufferLocker::Impl<TMediaBuffer>::Impl(const CComPtr<TMediaBuffer>& mediaBuffer, BYTE* dataBuffer,
-                                              LONG pitch2D, DWORD maxLen, DWORD currentLen)
-    : _mediaBuffer(mediaBuffer)
+inline MFMediaBufferLocker::Impl<TMediaBuffer>::Impl(CComPtr<TMediaBuffer> mediaBuffer, 
+                                                     BYTE* dataBuffer,
+                                                     LONG pitch2D, DWORD maxLen, 
+                                                     DWORD currentLen)
+    : _mediaBuffer(std::move(mediaBuffer))
     , _dataBuffer(dataBuffer)
     , _pitch2D(pitch2D)
     , _maxLen(maxLen)
@@ -158,7 +167,7 @@ MFMediaBufferLocker::Impl<TMediaBuffer>::Impl(const CComPtr<TMediaBuffer>& media
 }
 
 template <class TMediaBuffer>
-MFMediaBufferLocker::Impl<TMediaBuffer>::~Impl()
+inline MFMediaBufferLocker::Impl<TMediaBuffer>::~Impl()
 {
     if (_mediaBuffer) {
         if constexpr (std::is_same<IMF2DBuffer, TMediaBuffer>::value) {
@@ -172,10 +181,10 @@ MFMediaBufferLocker::Impl<TMediaBuffer>::~Impl()
 }
 
 template <class TMediaBuffer>
-void MFMediaBufferLocker::Impl<TMediaBuffer>::drop()
+inline void MFMediaBufferLocker::Impl<TMediaBuffer>::drop()
 {
     if (_mediaBuffer) {
-        _mediaBuffer = CComPtr<TMediaBuffer>();
+        _mediaBuffer = {};
         _dataBuffer = NULL;
         _pitch2D = 0L;
         _maxLen = _currentLen = 0UL;
