@@ -107,6 +107,9 @@ bool DesktopCapturer::changeState(CapturerState state)
         }
     }
     if (changed) {
+        if (CapturerState::Stopped == state) {
+            _lastTimestamp(0LL);
+        }
         _sink.invoke(&CapturerProxySink::onStateChanged, state);
     }
     return changed;
@@ -134,8 +137,9 @@ void DesktopCapturer::deliverCaptured(const rtc::scoped_refptr<webrtc::VideoFram
                                       webrtc::VideoRotation rotation,
                                       const std::optional<webrtc::ColorSpace>& colorSpace)
 {
-    if (auto frame = createVideoFrame(buff, rotation, timeStampMicro, 0U, colorSpace)) {
+    if (auto frame = createVideoFrame(buff, rotation, adjustTimestamp(timeStampMicro), 0U, colorSpace)) {
         deliverCaptured(frame.value());
+        _lastTimestamp(frame->timestamp_us());
     }
 }
 
@@ -151,6 +155,17 @@ void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> fram
 void DesktopCapturer::processConstraints(const webrtc::VideoTrackSourceConstraints& c)
 {
     _sink.invoke(&CapturerProxySink::OnConstraintsChanged, c);
+}
+
+int64_t DesktopCapturer::adjustTimestamp(int64_t timeStampMicro) const
+{
+    if (timeStampMicro > 0LL) {
+        LOCK_READ_SAFE_OBJ(_lastTimestamp);
+        if (timeStampMicro <= _lastTimestamp.constRef()) {
+            timeStampMicro = 0LL;
+        }
+    }
+    return std::max<int64_t>(0LL, timeStampMicro);
 }
 
 } // namespace LiveKitCpp

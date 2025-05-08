@@ -94,12 +94,15 @@ protected:
     void deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> frame);
     void processConstraints(const webrtc::VideoTrackSourceConstraints& c);
 private:
+    int64_t adjustTimestamp(int64_t timeStampMicro) const;
+private:
     const bool _window;
     const bool _previewMode;
     const webrtc::DesktopCaptureOptions _options;
     const VideoFrameBufferPool _framesPool;
     Bricks::Listener<CapturerProxySink*> _sink;
     Bricks::SafeObj<CapturerState> _state = CapturerState::Stopped;
+    Bricks::SafeObj<int64_t> _lastTimestamp = 0LL;
 };
 	
 } // namespace LiveKitCpp
