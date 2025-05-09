@@ -59,9 +59,9 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> getBuffer(RTCVideoFrame* frame,
 - (instancetype) initWithFrameBufferPool:(LiveKitCpp::VideoFrameBufferPool) framesPool NS_DESIGNATED_INITIALIZER;
 - (void) reportAboutError:(NSError* _Nullable) error;
 - (void) reportAboutErrorMessage:(NSString* _Nonnull) error;
+- (void) setSink:(rtc::VideoSinkInterface<webrtc::VideoFrame>*) sink;
+- (void) setObserver:(LiveKitCpp::CapturerObserver*) sink;
 - (BOOL) changeState:(LiveKitCpp::CapturerState) state;
-@property (nullable, nonatomic) rtc::VideoSinkInterface<webrtc::VideoFrame>* sink;
-@property (nullable, nonatomic) LiveKitCpp::CapturerObserver* observer;
 @property (nonatomic) LiveKitCpp::CapturerState state;
 @property (readonly, nonatomic) LiveKitCpp::VideoContentHint contentHint;
 @property (weak) RTCCameraVideoCapturer* capturerRef;
@@ -80,8 +80,8 @@ public:
     void updateQualityToContentHint();
     bool startCapture(AVCaptureDeviceFormat* format, NSInteger fps);
     void stopCapture();
-    void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) { _delegate.sink = sink; }
-    void setObserver(CapturerObserver* observer) { _delegate.observer = observer; }
+    void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
+    void setObserver(CapturerObserver* observer);
     CapturerState state() const { return _delegate.state; }
     bool changeState(CapturerState state) { return [_delegate changeState:state]; }
     void reportAboutError(const std::string& error);
@@ -440,6 +440,16 @@ void MacCameraCapturer::Impl::stopCapture()
     }
 }
 
+void MacCameraCapturer::Impl::setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+{
+    [_delegate setSink:sink];
+}
+
+void MacCameraCapturer::Impl::setObserver(CapturerObserver* observer)
+{
+    [_delegate setObserver:observer];
+}
+
 void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
 {
     if (!error.empty()) {
@@ -502,19 +512,9 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
     return NO;
 }
 
-- (rtc::VideoSinkInterface<webrtc::VideoFrame>*) sink
-{
-    return _sink.listener();
-}
-
 - (void) setSink:(rtc::VideoSinkInterface<webrtc::VideoFrame>*) sink
 {
     _sink = sink;
-}
-
-- (LiveKitCpp::CapturerObserver*) observer
-{
-    return _observer.listener();
 }
 
 - (void) setObserver:(LiveKitCpp::CapturerObserver*) observer
