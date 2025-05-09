@@ -17,6 +17,8 @@
 #include "RtcUtils.h"
 #include <Mferror.h>
 #include <mfapi.h>
+#include <mfidl.h>
+#include <Wmcodecdsp.h>
 
 namespace 
 {
@@ -88,7 +90,8 @@ CompletionStatusOrComPtr<IMFTransform> createTransform(const GUID& compressedTyp
         if (auto& activate = activateRaw[i]) {
             if (!selectedTransform) {
                 const auto flags = ::MFGetAttributeUINT32(activate,
-                    MF_TRANSFORM_FLAGS_Attribute, 0U);
+                                                          MF_TRANSFORM_FLAGS_Attribute, 
+                                                          0U);
                 if (!acceptFlags(desiredFlags, flags)) {
                     continue;
                 }
@@ -315,6 +318,42 @@ bool acceptFlags(DWORD desired, DWORD actual)
         return hardwareTest && asyncTest;
     }
     return false;
+}
+
+const GUID& predefinedCodecType(bool encoder, const GUID& compressedType)
+{
+    if (encoder) {
+        if (MFVideoFormat_H264 == compressedType) {
+            return CLSID_MSH264EncoderMFT;
+        }
+        if (MFAudioFormat_MP3 == compressedType) {
+            return CLSID_MP3ACMCodecWrapper;
+        }
+    }
+    else {
+        if (MFVideoFormat_VP80 == compressedType || MFVideoFormat_VP90 == compressedType) {
+            return CLSID_MSVPxDecoder;
+        }
+        if (MFVideoFormat_H264 == compressedType) {
+            return CLSID_MSH264DecoderMFT;
+        }
+        if (MFVideoFormat_H265 == compressedType) {
+            return CLSID_MSH265DecoderMFT;
+        }
+        if (MFAudioFormat_MP3 == compressedType) {
+            return CLSID_CMP3DecMediaObject;
+        }
+        if (MFAudioFormat_AAC == compressedType) {
+            return CLSID_MSAACDecMFT;
+        }
+        if (MFAudioFormat_MPEG == compressedType) {
+            return CLSID_MSMPEGAudDecMFT;
+        }
+        if (MFAudioFormat_Opus == compressedType) {
+            return CLSID_MSOpusDecoder;
+        }
+    }
+    return GUID_NULL;
 }
 
 } // namespace LiveKitCpp

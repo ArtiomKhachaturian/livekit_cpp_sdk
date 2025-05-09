@@ -20,15 +20,16 @@ namespace LiveKitCpp
 class MFVideoEncoderPipeline : public MFNV12VideoPipeline
 {
 public:
-    // sync MFT by default
-    static constexpr bool syncMFT() { return true; }
-    static CompletionStatusOr<MFVideoEncoderPipeline> create(bool hardwareAccellerated,
-                                                             webrtc::VideoCodecType codecType,
+    // for real HWA choose MFT_ENUM_FLAG_HARDWARE instead of MFT_ENUM_FLAG_SYNCMFT
+    static CompletionStatusOr<MFVideoEncoderPipeline> create(webrtc::VideoCodecType codecType,
                                                              UINT32 width,
                                                              UINT32 height,
                                                              UINT32 frameRate,
                                                              UINT32 avgBitsPerSecond,
-                                                             bool sync = syncMFT());
+                                                             UINT32 desiredFlags = MFT_ENUM_FLAG_SYNCMFT);
+    static CompletionStatusOr<MFVideoEncoderPipeline>
+        create(webrtc::VideoCodecType codecType, const GUID& encoder, UINT32 width,
+               UINT32 height, UINT32 frameRate, UINT32 avgBitsPerSecond);
     MFVideoEncoderPipeline() = default;
     MFVideoEncoderPipeline(const MFVideoEncoderPipeline&) = default;
     MFVideoEncoderPipeline(MFVideoEncoderPipeline&&) = default;
@@ -84,6 +85,10 @@ public:
     CompletionStatus setVideoTemporalLayerCount(UINT32 count);
 protected:
     MFVideoEncoderPipeline(MFPipeline impl, webrtc::VideoCodecType codecType);
+private:
+    static CompletionStatusOr<MFVideoEncoderPipeline> 
+        init(MFPipeline impl, webrtc::VideoCodecType codecType,
+             UINT32 width, UINT32 height, UINT32 frameRate, UINT32 avgBitsPerSecond);
 };
 
 } // namespace LiveKitCpp

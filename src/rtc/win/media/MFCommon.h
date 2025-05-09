@@ -57,5 +57,6 @@ CompletionStatusOrComPtr<IMFSample> createSample(const CComPtr<IMFMediaBuffer>& 
 CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(DWORD maxLength, DWORD aligment = 0UL);
 // flags tester
 bool acceptFlags(DWORD desired, DWORD actual);
+const GUID& predefinedCodecType(bool encoder, const GUID& compressedType);
 
 } // namespace LiveKitCpp

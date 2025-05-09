@@ -69,7 +69,7 @@ namespace
 
 CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 height)
 {
-    const auto pipeline = MFVideoDecoderPipeline::create(true, codecType, width, height);
+    const auto pipeline = MFVideoDecoderPipeline::create(codecType, width, height);
     if (pipeline) {
         if (pipeline->hardwareAccellerated()) {
             return CodecStatus::SupportedMixed;

@@ -88,7 +88,7 @@ void CompletionStatus::toWebRtcLog(bool warning) const
 CompletionStatus::Code CompletionStatus::invalidState()
 {
 #ifdef WEBRTC_WIN
-    return ERROR_INVALID_STATE;
+    return E_NOTIMPL;
 #elif defined(WEBRTC_MAC)
     return badReqErr;
 #else

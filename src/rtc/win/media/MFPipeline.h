@@ -17,6 +17,7 @@
 #include <atlbase.h> //CComPtr support
 #include <codecapi.h>
 #include <mftransform.h>
+#include <mfapi.h>
 
 namespace LiveKitCpp 
 {
@@ -32,11 +33,11 @@ public:
     ~MFPipeline() { stop(); }
     static CompletionStatusOr<MFPipeline> create(bool video,
                                                  bool encoder,
-                                                 bool sync,
-                                                 bool hardwareAccellerated,
-                                                 bool allowTranscoders,
                                                  const GUID& compressedType,
                                                  const GUID& uncompressedType = GUID_NULL,
+                                                 UINT32 desiredFlags = MFT_ENUM_FLAG_SYNCMFT,
+                                                 MFTransformConfigurator* configurator = nullptr);
+    static CompletionStatusOr<MFPipeline> create(bool encoder, const GUID& codec,
                                                  MFTransformConfigurator* configurator = nullptr);
     explicit operator bool() const { return valid(); }
     MFPipeline& operator = (const MFPipeline&) = delete;
@@ -85,12 +86,17 @@ private:
                CComPtr<IMFTransform> transform,
                CComPtr<IMFAttributes> attributes,
                CComPtr<IMFMediaEventGenerator> eventGenerator = {});
-    static const GUID& predefinedCodecType(bool encoder, const GUID& compressedType);
     static CompletionStatusOrComPtr<IMFTransform>
-        createPredefinedTransform(const GUID& codecType, bool encoder,
+        createPredefinedTransform(const GUID& codecType,
                                   MFTransformConfigurator* configurator, // opt
                                   DWORD& inputStreamID, DWORD& outputStreamID,
                                   UINT32& actualFlags, std::string& friendlyName);
+    static CompletionStatusOr<MFPipeline> create(bool encoder, UINT32 actualFlags, 
+                                                 DWORD inputStreamID, 
+                                                 DWORD outputStreamID,
+                                                 std::string friendlyName,
+                                                 MFInitializer mftInitializer,
+                                                 CComPtr<IMFTransform> transform);
 private:
     bool _encoder = false;
     bool _hardwareAccellerated = false;

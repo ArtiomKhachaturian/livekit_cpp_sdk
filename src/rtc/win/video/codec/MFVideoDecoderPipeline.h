@@ -26,13 +26,12 @@ namespace LiveKitCpp
 class MFVideoDecoderPipeline : public MFNV12VideoPipeline
 {
 public:
-    // sync MFT by default
-    static constexpr bool syncMFT() { return true; }
-    static CompletionStatusOr<MFVideoDecoderPipeline> create(bool hardwareAccellerated,
-                                                             webrtc::VideoCodecType codecType,
-                                                             UINT32 width = 0U,
-                                                             UINT32 height = 0U,
-                                                             bool sync = syncMFT());
+    // for real HWA choose MFT_ENUM_FLAG_HARDWARE instead of MFT_ENUM_FLAG_SYNCMFT
+    static CompletionStatusOr<MFVideoDecoderPipeline> 
+        create(webrtc::VideoCodecType codecType, UINT32 width = 0U,
+               UINT32 height = 0U, UINT32 desiredFlags = MFT_ENUM_FLAG_SYNCMFT);
+    static CompletionStatusOr<MFVideoDecoderPipeline>
+        create(webrtc::VideoCodecType codecType, const GUID& decoder, UINT32 width = 0U, UINT32 height = 0U);
     MFVideoDecoderPipeline() = default;
     MFVideoDecoderPipeline(const MFVideoDecoderPipeline&) = default;
     MFVideoDecoderPipeline(MFVideoDecoderPipeline&&) = default;
@@ -50,6 +49,10 @@ public:
     CompletionStatusOr<MFVideoArea> minimumDisplayAperture() const;
 protected:
     MFVideoDecoderPipeline(MFPipeline impl, webrtc::VideoCodecType codecType, bool dxvaAccelerated);
+private:
+    static CompletionStatusOr<MFVideoDecoderPipeline> init(MFPipeline impl,
+                                                           webrtc::VideoCodecType codecType,
+                                                           UINT32 width, UINT32 height);
 private:
     bool _dxvaAccelerated = false;
 };

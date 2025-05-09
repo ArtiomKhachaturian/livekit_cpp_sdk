@@ -150,7 +150,7 @@ std::optional<UINT32> MFVideoEncoder::encoderQp(const CComPtr<IMFSample>& sample
 
 CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoder::createPipeline(UINT32 width, UINT32 height)
 {
-    auto pipeline = MFVideoEncoderPipeline::create(true, type(), width, height, currentFramerate(), currentBitrate());
+    auto pipeline = MFVideoEncoderPipeline::create(type(), width, height, currentFramerate(), currentBitrate());
     if (pipeline) {
         auto hr = fillMpegHeaderData(pipeline.value());
         if (hr) {

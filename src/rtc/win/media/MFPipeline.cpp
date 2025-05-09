@@ -17,9 +17,7 @@
 #include "RtcUtils.h"
 #include "Utils.h"
 #include <Mferror.h>
-#include <Wmcodecdsp.h>
 #include <mfapi.h>
-#include <mfidl.h>
 
 namespace LiveKitCpp 
 {
@@ -43,11 +41,10 @@ MFPipeline::MFPipeline(bool encoder, bool hardwareAccellerated,
 }
 
 CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
-                                                  bool encoder, bool sync,
-                                                  bool hardwareAccellerated,
-                                                  bool allowTranscoders,
+                                                  bool encoder,
                                                   const GUID& compressedType,
                                                   const GUID& uncompressedType,
+                                                  UINT32 desiredFlags,
                                                   MFTransformConfigurator* configurator)
 {
     MFInitializer mftInitializer(true);
@@ -55,43 +52,33 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
     if (!status) {
         return status;
     }
-    UINT32 desiredFlags = MFT_ENUM_FLAG_ALL, actualFlags = 0U;
-    if (!hardwareAccellerated) {
-        desiredFlags &= ~MFT_ENUM_FLAG_HARDWARE;
-    }
-    if (sync) {
-        desiredFlags &= ~MFT_ENUM_FLAG_ASYNCMFT;
-    }
-    else {
-        desiredFlags &= ~MFT_ENUM_FLAG_SYNCMFT;
-    }
-    if (!allowTranscoders) {
+    UINT32 actualFlags = 0U;
+    DWORD inputStreamID = 0U, outputStreamID = 0U;
+    std::string friendlyName;
+    // transcoders are not required, skip them
+    if (testFlag<MFT_ENUM_FLAG_TRANSCODE_ONLY>(desiredFlags)) {
         desiredFlags &= ~MFT_ENUM_FLAG_TRANSCODE_ONLY;
     }
-    DWORD inputStreamID, outputStreamID;
-    std::string friendlyName;
     auto transform = createTransform(compressedType, video, encoder,
                                      desiredFlags, uncompressedType,
                                      &inputStreamID, &outputStreamID,
                                      &actualFlags, &friendlyName,
                                      configurator);
+    if (!transform && testFlag<MFT_ENUM_FLAG_HARDWARE>(desiredFlags)) {
+        desiredFlags &= ~MFT_ENUM_FLAG_HARDWARE; // disable HWA
+        transform = createTransform(compressedType, video, encoder,
+                                    desiredFlags, uncompressedType,
+                                    &inputStreamID, &outputStreamID,
+                                    &actualFlags, &friendlyName,
+                                    configurator);
+    }
     if (!transform) {
-        if (testFlag<MFT_ENUM_FLAG_HARDWARE>(desiredFlags)) {
-            desiredFlags &= ~MFT_ENUM_FLAG_HARDWARE; // disable HWA
-            transform = createTransform(compressedType, video, encoder,
-                                        desiredFlags, uncompressedType,
-                                        &inputStreamID, &outputStreamID,
-                                        &actualFlags, &friendlyName,
-                                        configurator);
-        }
-        if (!transform) {
-            const auto& predefinedCodec = predefinedCodecType(encoder, compressedType);
-            if (GUID_NULL != predefinedCodec) {
-                transform = createPredefinedTransform(predefinedCodec, encoder,
-                                                      configurator, inputStreamID,
-                                                      outputStreamID, actualFlags,
-                                                      friendlyName);
-            }
+        const auto& predefinedCodec = predefinedCodecType(encoder, compressedType);
+        if (GUID_NULL != predefinedCodec) {
+            transform = createPredefinedTransform(predefinedCodec,
+                                                  configurator, inputStreamID,
+                                                  outputStreamID, actualFlags,
+                                                  friendlyName);
         }
     }
     if (!transform) {
@@ -100,30 +87,34 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
     if (!acceptFlags(desiredFlags, actualFlags)) {
         return COMPLETION_STATUS(MF_E_NOT_FOUND);
     }
-    CComPtr<IMFAttributes> attributes;
-    status = COMPLETION_STATUS(transform.value()->GetAttributes(&attributes));
+    return create(encoder, actualFlags, 
+                  inputStreamID, outputStreamID, 
+                  std::move(friendlyName), 
+                  std::move(mftInitializer), 
+                  transform.moveValue());
+}
+
+CompletionStatusOr<MFPipeline> MFPipeline::create(bool encoder, const GUID& codec,
+                                                  MFTransformConfigurator* configurator)
+{
+    if (GUID_NULL == codec) {
+        return COMPLETION_STATUS_INVALID_ARG;
+    }
+    MFInitializer mftInitializer(true);
+    auto status = COMPLETION_STATUS(mftInitializer);
     if (!status) {
         return status;
     }
-    CComPtr<IMFMediaEventGenerator> eventGenerator;
-    if (::MFGetAttributeUINT32(attributes, MF_TRANSFORM_ASYNC, FALSE)) {
-        status = COMPLETION_STATUS(transform.value()->QueryInterface(&eventGenerator));
-        if (!status) {
-            return status;
-        }
-        if (eventGenerator) {
-            // unlock the transform for async use if get event generator
-            status = COMPLETION_STATUS(attributes->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE));
-            if (!status) {
-                return status;
-            }
-        }
+    UINT32 actualFlags = 0U;
+    DWORD inputStreamID = 0U, outputStreamID = 0U;
+    std::string friendlyName;
+    auto transform = createPredefinedTransform(codec, configurator, inputStreamID,
+                                               outputStreamID, actualFlags, friendlyName);
+    if (!transform) {
+        return transform.moveStatus();
     }
-    const auto hardware = testFlag<MFT_ENUM_FLAG_HARDWARE>(actualFlags);
-    return MFPipeline(encoder, hardware, inputStreamID, outputStreamID,
-                      std::move(friendlyName), std::move(mftInitializer),
-                      transform.moveValue(), std::move(attributes), 
-                      std::move(eventGenerator));
+    return create(encoder, actualFlags, inputStreamID, outputStreamID,
+                  std::move(friendlyName), std::move(mftInitializer), transform.moveValue());
 }
 
 CompletionStatus MFPipeline::beginGetEvent(IMFAsyncCallback* callback, IUnknown* punkState)
@@ -455,43 +446,8 @@ CompletionStatus MFPipeline::processMessage(MFT_MESSAGE_TYPE message, ULONG_PTR 
     return COMPLETION_STATUS(_transform->ProcessMessage(message, param));
 }
 
-const GUID& MFPipeline::predefinedCodecType(bool encoder, const GUID& compressedType)
-{
-    if (encoder) {
-        if (MFVideoFormat_H264 == compressedType) {
-            return CLSID_MSH264EncoderMFT;
-        }
-        if (MFAudioFormat_MP3 == compressedType) {
-            return CLSID_MP3ACMCodecWrapper;
-        }
-    } else {
-        if (MFVideoFormat_VP80 == compressedType || MFVideoFormat_VP90 == compressedType) {
-            return CLSID_MSVPxDecoder;
-        }
-        if (MFVideoFormat_H264 == compressedType) {
-            return CLSID_MSH264DecoderMFT;
-        }
-        if (MFVideoFormat_H265 == compressedType) {
-            return CLSID_MSH265DecoderMFT;
-        }
-        if (MFAudioFormat_MP3 == compressedType) {
-            return CLSID_CMP3DecMediaObject;
-        }
-        if (MFAudioFormat_AAC == compressedType) {
-            return CLSID_MSAACDecMFT;
-        }
-        if (MFAudioFormat_MPEG == compressedType) {
-            return CLSID_MSMPEGAudDecMFT;
-        }
-        if (MFAudioFormat_Opus == compressedType) {
-            return CLSID_MSOpusDecoder;
-        }
-    }
-    return GUID_NULL;
-}
-
 CompletionStatusOrComPtr<IMFTransform> MFPipeline::
-    createPredefinedTransform(const GUID& codecType, bool encoder,
+    createPredefinedTransform(const GUID& codecType,
                               MFTransformConfigurator* configurator,
                               DWORD& inputStreamID, DWORD& outputStreamID,
                               UINT32& actualFlags, std::string& friendlyName)
@@ -526,6 +482,41 @@ CompletionStatusOrComPtr<IMFTransform> MFPipeline::
         friendlyName = transformFriendlyName(attributes).moveValue();
     }
     return transform;
+}
+
+CompletionStatusOr<MFPipeline> MFPipeline::create(bool encoder, UINT32 actualFlags,
+                                                  DWORD inputStreamID,
+                                                  DWORD outputStreamID,
+                                                  std::string friendlyName,
+                                                  MFInitializer mftInitializer,
+                                                  CComPtr<IMFTransform> transform)
+{
+    if (!transform) {
+        return COMPLETION_STATUS_INVALID_ARG;
+    }
+    CComPtr<IMFAttributes> attributes;
+    auto status = COMPLETION_STATUS(transform->GetAttributes(&attributes));
+    if (!status) {
+        return status;
+    }
+    CComPtr<IMFMediaEventGenerator> eventGenerator;
+    if (::MFGetAttributeUINT32(attributes, MF_TRANSFORM_ASYNC, FALSE)) {
+        status = COMPLETION_STATUS(transform->QueryInterface(&eventGenerator));
+        if (!status) {
+            return status;
+        }
+        if (eventGenerator) {
+            // unlock the transform for async use if get event generator
+            status = COMPLETION_STATUS(attributes->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE));
+            if (!status) {
+                return status;
+            }
+        }
+    }
+    const auto hardware = testFlag<MFT_ENUM_FLAG_HARDWARE>(actualFlags);
+    return MFPipeline(encoder, hardware, inputStreamID, outputStreamID,
+                      std::move(friendlyName), std::move(mftInitializer),
+                      transform, std::move(attributes), std::move(eventGenerator));
 }
 
 } // namespace LiveKitCpp

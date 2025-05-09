@@ -62,7 +62,7 @@ public:
     CompletionStatus processInput(const CComPtr<IMFSample>& sample, DWORD flags = 0UL);
     CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(bool input) const;
     CompletionStatusOrComPtr<IMFSample> processOutput(const CComPtr<IMFSample>& sample,
-                                                         const CComPtr<IMFCollection>& events = {});
+                                                      const CComPtr<IMFCollection>& events = {});
     CompletionStatusOr<MFT_INPUT_STREAM_INFO> inputStreamInfo() const { return _impl.inputStreamInfo(); }
     CompletionStatusOr<MFT_OUTPUT_STREAM_INFO> outputStreamInfo() const { return _impl.outputStreamInfo(); }
     CompletionStatus processMessage(MFT_MESSAGE_TYPE message, ULONG_PTR param = NULL);
@@ -92,7 +92,7 @@ protected:
     VideoFrameBufferPool framesPool() const;
     HRESULT setUINT32Attr(const GUID& attribute, UINT32 value);
     static CompletionStatusOr<MFPipeline> createImpl(webrtc::VideoCodecType codecType,
-                                                     bool encoder, bool sync, bool hardwareAccellerated,
+                                                     bool encoder, UINT32 desiredFlags,
                                                      MFTransformConfigurator* configurator = nullptr);
 private:
     static bool isWin32LockedDown();

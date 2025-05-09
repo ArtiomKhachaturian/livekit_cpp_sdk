@@ -19,6 +19,7 @@
 #include <rtc_base/time_utils.h>
 #include <Mferror.h>
 #include <mfapi.h>
+#include <mfidl.h>
 
 namespace LiveKitCpp 
 {
@@ -44,36 +45,37 @@ bool MFVideoDecoder::Configure(const Settings& settings)
 {
     if (VideoDecoder::Configure(settings)) {
         UINT32 maxCodedWidth = 0U, maxCodedHeight = 0U;
-        bool hwa = true;
         if (settings.max_render_resolution().Valid()) {
             maxCodedWidth = settings.max_render_resolution().Width();
             maxCodedHeight = settings.max_render_resolution().Height();
-            if (hwa && webrtc::VideoCodecType::kVideoCodecH264 == settings.codec_type()) {
+            /*if (hwa && webrtc::VideoCodecType::kVideoCodecH264 == settings.codec_type()) {
                 hwa = maxCodedWidth > 132U && maxCodedHeight >= 132;
-            }
+            }*/
         }
-        CompletionStatus status;
-        auto pipeline = MFVideoDecoderPipeline::create(hwa, settings.codec_type(), maxCodedWidth, maxCodedHeight);
-        if (pipeline) {
-            _currentWidth = maxCodedWidth;
-            _currentHeight = maxCodedHeight;
-            logWarning(pipeline->setLowLatencyMode(true));
-            if (!pipeline->hardwareAccellerated()) {
-                const auto threads = maxDecodingThreads(maxCodedWidth, maxCodedHeight,
-                                                        settings.number_of_cores());
-                logWarning(pipeline->setNumWorkerThreads(threads));
-            }
-            status = logError(pipeline->selectUncompressedMediaType());
-            if (status) {
-                status = logError(pipeline->start());
-                if (status) {
-                    _pipeline = pipeline.moveValue();
-                }
-            }
-        } else {
-            status = logError(pipeline.moveStatus());
+        auto pipeline = MFVideoDecoderPipeline::create(settings.codec_type(),
+                                                       maxCodedWidth, maxCodedHeight);
+        if (!pipeline) {
+            logError(pipeline.moveStatus());
+            return false;
         }
-        return status.ok();
+        _currentWidth = maxCodedWidth;
+        _currentHeight = maxCodedHeight;
+        logWarning(pipeline->setLowLatencyMode(true));
+        if (!pipeline->hardwareAccellerated()) {
+            const auto threads = maxDecodingThreads(maxCodedWidth, maxCodedHeight,
+                                                    settings.number_of_cores());
+            logWarning(pipeline->setNumWorkerThreads(threads));
+        }
+        auto status = logError(pipeline->selectUncompressedMediaType());
+        if (!status) {
+            return false;
+        }
+        status = logError(pipeline->start());
+        if (!status) {
+            return false;
+        }
+        _pipeline = pipeline.moveValue();
+        return true;
     }
     return false;
 }

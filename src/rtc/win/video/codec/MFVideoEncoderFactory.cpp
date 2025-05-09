@@ -18,6 +18,7 @@
 #include "H264Utils.h"
 #include "MFH264Encoder.h"
 #endif
+#include <modules/video_capture/video_capture_config.h>
 #include <api/transport/bitrate_settings.h>
 
 namespace
@@ -72,9 +73,11 @@ namespace
 CodecStatus checkEncoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 height)
 {
     const auto bitrate = webrtc::BitrateConstraints{}.start_bitrate_bps;
-    auto pipeline = MFVideoEncoderPipeline::create(true, codecType, width, height, 30, bitrate);
+    auto pipeline = MFVideoEncoderPipeline::create(codecType, width, height, 
+                                                   webrtc::videocapturemodule::kDefaultFrameRate, 
+                                                   bitrate);
     if (pipeline) {
-        if (pipeline->hardwareAccellerated() || pipeline->directXAccelerationSupported()) {
+        if (pipeline->hardwareAccellerated()) {
             return CodecStatus::SupportedMixed;
         }
         return CodecStatus::SupportedSoftware;

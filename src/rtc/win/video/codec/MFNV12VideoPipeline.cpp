@@ -15,6 +15,7 @@
 #include "MFCommon.h"
 #include "RtcUtils.h"
 #include "VideoFrameBufferPoolSource.h"
+#include "Utils.h"
 #include <mfapi.h>
 #include <processthreadsapi.h>
 #include <cassert>
@@ -291,19 +292,17 @@ VideoFrameBufferPool MFNV12VideoPipeline::framesPool() const
 }
 
 CompletionStatusOr<MFPipeline> MFNV12VideoPipeline::createImpl(webrtc::VideoCodecType codecType,
-                                                               bool encoder,
-                                                               bool sync,
-                                                               bool hardwareAccellerated,
+                                                               bool encoder, UINT32 desiredFlags,
                                                                MFTransformConfigurator* configurator)
 {
     const auto& codecFormat = compressedFormat(codecType);
     if (GUID_NULL != codecFormat) {
         // some HW encoders use DXGI API and crash when locked down
-        if (encoder && hardwareAccellerated && isWin32LockedDown()) {
-            hardwareAccellerated = false;
+        if (encoder && testFlag<MFT_ENUM_FLAG_HARDWARE>(desiredFlags) && isWin32LockedDown()) {
+            desiredFlags &= ~MFT_ENUM_FLAG_HARDWARE; // disable HWA
         }
-        return MFPipeline::create(true, encoder, sync, hardwareAccellerated, false,
-                                  codecFormat, uncompressedType(), configurator);
+        return MFPipeline::create(true, encoder, codecFormat, uncompressedType(), 
+                                  desiredFlags, configurator);
     }
     return COMPLETION_STATUS_INVALID_ARG;
 }

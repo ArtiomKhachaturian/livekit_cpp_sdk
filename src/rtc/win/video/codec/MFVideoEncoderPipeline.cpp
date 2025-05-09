@@ -24,50 +24,26 @@ MFVideoEncoderPipeline::MFVideoEncoderPipeline(MFPipeline impl,
 {
 }
 
-CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::create(bool hardwareAccellerated,
-                                                                          webrtc::VideoCodecType codecType,
-                                                                          UINT32 width,
-                                                                          UINT32 height,
-                                                                          UINT32 frameRate,
-                                                                          UINT32 avgBitsPerSecond,
-                                                                          bool sync)
+CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::
+    create(webrtc::VideoCodecType codecType, UINT32 width, UINT32 height,
+           UINT32 frameRate, UINT32 avgBitsPerSecond, UINT32 desiredFlags)
 {
-    auto impl = createImpl(codecType, true, sync, hardwareAccellerated);
-    if (impl) {
-        auto output = createCompressedMediaType(codecType);
-        if (output) {
-            auto hr = setFrameParameters(output.value(), width, height, frameRate,
-                                         MFVideoInterlace_Progressive, true);
-            if (hr) {
-                // [setAvgBitrate] is mandatory, otherwise E_FAIL on [setCompressedMediaType]
-                hr = setAvgBitrate(output.value(), avgBitsPerSecond);
-                if (hr) {
-                    // always set encoder output (compressed) type before input
-                    hr = impl->setCompressedMediaType(output.value());
-                    if (hr) {
-                        auto input = createUncompressedMediaType();
-                        if (!input) {
-                            hr = input.moveStatus();
-                        } else {
-                            hr = setFrameParameters(input.value(),
-                                                    width, height,
-                                                    frameRate,
-                                                    MFVideoInterlace_Progressive, true);
-                            if (hr) {
-                                hr = impl->setUncompressedMediaType(input.value());
-                                if (hr) {
-                                    return MFVideoEncoderPipeline(impl.moveValue(), codecType);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return hr;
-        }
-        return output.moveStatus();
+    auto impl = createImpl(codecType, true, desiredFlags);
+    if (!impl) {
+        return impl.moveStatus();
     }
-    return impl.moveStatus();
+    return init(impl.moveValue(), codecType, width, height, frameRate, avgBitsPerSecond);
+}
+
+CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::
+    create(webrtc::VideoCodecType codecType, const GUID& encoder, UINT32 width,
+           UINT32 height, UINT32 frameRate, UINT32 avgBitsPerSecond)
+{
+    auto impl = MFPipeline::create(true, encoder);
+    if (!impl) {
+        return impl.moveStatus();
+    }
+    return init(impl.moveValue(), codecType, width, height, frameRate, avgBitsPerSecond);
 }
 
 CComPtr<IMFMediaBuffer> MFVideoEncoderPipeline::createMediaBuffer(const webrtc::VideoFrame& frame) const
@@ -270,6 +246,48 @@ CompletionStatus MFVideoEncoderPipeline::setVideoSelectLayer(UINT32 layer)
 CompletionStatus MFVideoEncoderPipeline::setVideoTemporalLayerCount(UINT32 count)
 {
     return COMPLETION_STATUS(setUINT32Attr(CODECAPI_AVEncVideoTemporalLayerCount, count));
+}
+
+CompletionStatusOr<MFVideoEncoderPipeline> MFVideoEncoderPipeline::
+    init(MFPipeline impl, webrtc::VideoCodecType codecType, UINT32 width, UINT32 height, 
+         UINT32 frameRate, UINT32 avgBitsPerSecond)
+{
+    if (!impl) {
+        return COMPLETION_STATUS_INVALID_ARG;
+    }
+    auto output = createCompressedMediaType(codecType);
+    if (!output) {
+        return output.moveStatus();
+    }
+    auto hr = setFrameParameters(output.value(), width, height, frameRate,
+                                 MFVideoInterlace_Progressive, true);
+    if (!hr) {
+        return hr;
+    }
+    // [setAvgBitrate] is mandatory, otherwise E_FAIL on [setCompressedMediaType]
+    hr = setAvgBitrate(output.value(), avgBitsPerSecond);
+    if (!hr) {
+        return hr;
+    }
+    // always set encoder output (compressed) type before input
+    hr = impl.setCompressedMediaType(output.value());
+    if (!hr) {
+        return hr;
+    }
+    auto input = createUncompressedMediaType();
+    if (!input) {
+        return input.moveStatus();
+    }
+    hr = setFrameParameters(input.value(), width, height, frameRate, 
+                            MFVideoInterlace_Progressive, true);
+    if (!hr) {
+        return hr;
+    }
+    hr = impl.setUncompressedMediaType(input.value());
+    if (!hr) {
+        return hr;
+    }
+    return MFVideoEncoderPipeline(std::move(impl), codecType);
 }
 
 } // namespace LiveKitCpp

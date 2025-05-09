@@ -34,46 +34,25 @@ MFVideoDecoderPipeline::~MFVideoDecoderPipeline()
 {
 }
 
-CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(bool hardwareAccellerated,
-                                                                          webrtc::VideoCodecType codecType,
+CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::create(webrtc::VideoCodecType codecType,
                                                                           UINT32 width, UINT32 height,
-                                                                          bool sync)
+                                                                          UINT32 desiredFlags)
 {
-    auto impl = createImpl(codecType, false, sync, hardwareAccellerated);
-    if (impl) {
-        bool dxvaAccelerated = false;
-        if (hardwareAccellerated) {
-            if (webrtc::VideoCodecType::kVideoCodecH264 == codecType) {
-                dxvaAccelerated = SUCCEEDED(impl->attributes()->SetUINT32(CODECAPI_AVDecVideoAcceleration_H264, TRUE));
-            }
-        }
-        auto compressedType = createCompressedMediaType(codecType);
-        if (compressedType) {
-            auto hr = setVideoInterlaceMode(compressedType.value(), MFVideoInterlace_MixedInterlaceOrProgressive);
-            if (hr && width > 0U && height > 0U) {
-                hr = setFrameSize(compressedType.value(), width, height);
-            }
-            if (hr) {
-                hr = setAllSamplesIndependent(compressedType.value(), false);
-                if (hr) {
-                    hr = impl->setCompressedMediaType(compressedType.value());
-                    if (hr) {
-                        auto status = impl->compressedStatus();
-                        if (!status) {
-                            hr = status.moveStatus();
-                        } else if (MFT_INPUT_STATUS_ACCEPT_DATA != status.value()) {
-                            hr = COMPLETION_STATUS(MF_E_TRANSFORM_NOT_POSSIBLE_FOR_CURRENT_INPUT_MEDIATYPE);
-                        } else {
-                            return MFVideoDecoderPipeline(impl.moveValue(), codecType, dxvaAccelerated);
-                        }
-                    }
-                }
-            }
-            return hr;
-        }
-        return compressedType.moveStatus();
+    auto impl = createImpl(codecType, false, desiredFlags);
+    if (!impl) {
+        return impl.moveStatus();
     }
-    return impl.moveStatus();
+    return init(impl.moveValue(), codecType, width, height);
+}
+
+CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::
+    create(webrtc::VideoCodecType codecType, const GUID& decoder, UINT32 width, UINT32 height)
+{
+    auto impl = MFPipeline::create(false, decoder);
+    if (!impl) {
+        return impl.moveStatus();
+    }
+    return init(impl.moveValue(), codecType, width, height);
 }
 
 bool MFVideoDecoderPipeline::hardwareAccellerated() const noexcept
@@ -97,11 +76,15 @@ CompletionStatusOrScopedRefPtr<webrtc::VideoFrameBuffer> MFVideoDecoderPipeline:
             width = fs->first;
             height = fs->second;
         }
-        return MFMediaBuffer::create(width, height,
-                                    VideoFrameType::NV12,
-                                    std::move(locker),
-                                    webrtc::VideoRotation::kVideoRotation_0,
-                                    framesPool());
+        auto buffer = MFMediaBuffer::create(width, height,
+                                           VideoFrameType::NV12,
+                                           std::move(locker),
+                                           webrtc::VideoRotation::kVideoRotation_0,
+                                           framesPool());
+        if (buffer) {
+            return buffer;
+        }
+        return COMPLETION_STATUS(MF_E_BUFFERTOOSMALL);
     }
     return locker.status();
 }
@@ -158,6 +141,48 @@ CompletionStatusOr<MFVideoArea> MFVideoDecoderPipeline::minimumDisplayAperture()
         return status;
     }
     return mt.moveStatus();
+}
+
+CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::
+    init(MFPipeline impl, webrtc::VideoCodecType codecType, UINT32 width, UINT32 height)
+{
+    if (!impl) {
+        return COMPLETION_STATUS_INVALID_ARG;
+    }
+    bool dxvaAccelerated = false;
+    if (webrtc::VideoCodecType::kVideoCodecH264 == codecType) {
+        dxvaAccelerated = SUCCEEDED(impl.attributes()->SetUINT32(CODECAPI_AVDecVideoAcceleration_H264, TRUE));
+    }
+    auto compressedType = createCompressedMediaType(codecType);
+    if (!compressedType) {
+        return compressedType.moveStatus();
+    }
+    auto hr = setVideoInterlaceMode(compressedType.value(), MFVideoInterlace_MixedInterlaceOrProgressive);
+    if (!hr) {
+        return hr;
+    }
+    if (width > 0U && height > 0U) {
+        hr = setFrameSize(compressedType.value(), width, height);
+        if (!hr) {
+            return hr;
+        }
+    }
+    hr = setAllSamplesIndependent(compressedType.value(), false);
+    if (!hr) {
+        return hr;
+    }
+    hr = impl.setCompressedMediaType(compressedType.value());
+    if (!hr) {
+        return hr;
+    }
+    auto status = impl.compressedStatus();
+    if (!status) {
+        return status.moveStatus();
+    }
+    if (MFT_INPUT_STATUS_ACCEPT_DATA != status.value()) {
+        return COMPLETION_STATUS(MF_E_TRANSFORM_NOT_POSSIBLE_FOR_CURRENT_INPUT_MEDIATYPE);
+    }
+    return MFVideoDecoderPipeline(std::move(impl), codecType, dxvaAccelerated);
 }
 
 } // namespace LiveKitCpp
