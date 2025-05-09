@@ -83,6 +83,7 @@ protected:
     const auto& options() const noexcept { return _options; }
     bool hasOutputSink() const { return !_sink.empty(); }
     VideoFrameBufferPool framesPool() const noexcept { return _framesPool; }
+    CapturerState state() const { return _state; }
     bool changeState(CapturerState state);
     void notifyAboutError(std::string details = {}, bool fatal = true) const;
     void discardFrame();

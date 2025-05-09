@@ -71,6 +71,7 @@ bool CGScreenCapturer::selectSource(const std::string& source)
 
 void CGScreenCapturer::captureNextFrame()
 {
+    changeState(CapturerState::Started);
     deliverCaptured(processFrame(captureDisplay(static_cast<webrtc::ScreenId>(_source))));
 }
 

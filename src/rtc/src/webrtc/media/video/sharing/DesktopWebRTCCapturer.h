@@ -47,9 +47,20 @@ protected:
     bool canStart() const final;
 private:
     static intptr_t defaultSource(bool window);
-    static std::unique_ptr<webrtc::DesktopCapturer> createCapturer(bool window,
-                                                                   webrtc::DesktopCaptureOptions& options);
-    std::shared_ptr<webrtc::DesktopCapturer> webRtcCapturer(bool take = false);
+    static std::unique_ptr<webrtc::DesktopCapturer>
+        createCapturer(bool window, webrtc::DesktopCaptureOptions& options);
+    static std::unique_ptr<webrtc::DesktopCapturer>
+        startCapturer(std::unique_ptr<webrtc::DesktopCapturer> capturer,
+                      std::unique_ptr<webrtc::SharedMemoryFactory> smf,
+                      const webrtc::DesktopCaptureOptions& options,
+                      webrtc::DesktopCapturer::Callback* callback,
+                      int32_t maxFramerate,
+                      intptr_t source,
+                      webrtc::WindowId excludeWindowId,
+                      bool focusOnSelectedSource);
+    std::unique_ptr<webrtc::SharedMemoryFactory> takeSmf();
+    std::shared_ptr<webrtc::DesktopCapturer> takeRtcCapturer();
+    std::shared_ptr<webrtc::DesktopCapturer> webRtcCapturer();
     std::optional<intptr_t> parse(const std::string& source) const;
     bool hasValidSource() const;
     // impl. of webrtc::DesktopCapturer::Callback

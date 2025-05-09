@@ -26,8 +26,12 @@ class AsyncListener
 {
     using Listener = Bricks::Listener<T>;
 public:
-    AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue);
-    AsyncListener(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf);
+    template <typename... ConstructionArgs>
+    AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue,
+                  ConstructionArgs&&... args);
+    template <typename... ConstructionArgs>
+    AsyncListener(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                  ConstructionArgs&&... args);
     AsyncListener(AsyncListener&&) = delete;
     AsyncListener(const AsyncListener&) = delete;
     ~AsyncListener() { reset(); }
@@ -53,17 +57,22 @@ private:
 };
 
 template <class T, bool forcePost>
+template <typename... ConstructionArgs>
 inline AsyncListener<T, forcePost>::
-    AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue)
+    AsyncListener(std::weak_ptr<webrtc::TaskQueueBase> queue,
+                  ConstructionArgs&&... args)
         : _queue(std::move(queue))
-        , _listener(std::make_shared<Listener>())
+        , _listener(std::make_shared<Listener>(std::forward<ConstructionArgs>(args)...))
 {
 }
 
 template <class T, bool forcePost>
+template <typename... ConstructionArgs>
 inline AsyncListener<T, forcePost>::
-    AsyncListener(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf)
-        : AsyncListener(pcf ? pcf->eventsQueue() : std::weak_ptr<webrtc::TaskQueueBase>())
+    AsyncListener(const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
+                  ConstructionArgs&&... args)
+        : AsyncListener(pcf ? pcf->eventsQueue() : std::weak_ptr<webrtc::TaskQueueBase>(),
+                        std::forward<ConstructionArgs>(args)...)
 {
 }
 

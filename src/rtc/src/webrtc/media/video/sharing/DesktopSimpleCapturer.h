@@ -54,6 +54,7 @@ protected:
                           VideoFrameBufferPool framesPool,
                           Args&&... args);
     void execute(absl::AnyInvocable<void()&&> task, uint64_t delayMs = 0ULL);
+    const auto& timerQueue() const noexcept { return _timerQueue; }
     virtual void captureNextFrame() = 0;
     virtual bool canStart() const { return _fps > 0; }
 private:
@@ -109,6 +110,9 @@ inline void DesktopSimpleCapturer<TCapturer>::setTargetFramerate(int32_t fps)
             if (canStart()) {
                 _timer.startWithFramerate(fps);
             }
+            else {
+                TCapturer::changeState(CapturerState::Stopped);
+            }
         }
     }
 }
@@ -116,7 +120,7 @@ inline void DesktopSimpleCapturer<TCapturer>::setTargetFramerate(int32_t fps)
 template <class TCapturer>
 inline bool DesktopSimpleCapturer<TCapturer>::start()
 {
-    if (!started() && canStart()) {
+    if (!started() && canStart() && TCapturer::changeState(CapturerState::Starting)) {
         _timer.setCallback(this);
         _timer.startWithFramerate(_fps);
         return true;
@@ -127,8 +131,10 @@ inline bool DesktopSimpleCapturer<TCapturer>::start()
 template <class TCapturer>
 inline void DesktopSimpleCapturer<TCapturer>::stop()
 {
-    _timer.setCallback(nullptr);
-    _timer.stop();
+    if (TCapturer::changeState(CapturerState::Stopped)) {
+        _timer.setCallback(nullptr);
+        _timer.stop();
+    }
 }
 
 template <class TCapturer>

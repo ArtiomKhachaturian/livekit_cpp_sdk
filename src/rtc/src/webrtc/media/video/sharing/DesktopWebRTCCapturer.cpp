@@ -64,7 +64,7 @@ std::string DesktopWebRTCCapturer::selectedSource() const
 
 void DesktopWebRTCCapturer::stop()
 {
-    if (auto capturer = webRtcCapturer(true)) { 
+    if (auto capturer = takeRtcCapturer()) {
         execute([capturer = std::move(capturer)]() mutable { capturer.reset(); });
     }
     Base::stop();
@@ -115,7 +115,7 @@ void DesktopWebRTCCapturer::setSharedMemoryFactory(std::unique_ptr<webrtc::Share
 
 void DesktopWebRTCCapturer::captureNextFrame()
 {
-    if (const auto capturer = webRtcCapturer(false)) {
+    if (const auto capturer = webRtcCapturer()) {
         capturer->CaptureFrame();
     }
 }
@@ -166,45 +166,83 @@ std::unique_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::
     return capturer;
 }
 
-std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer(bool take)
+std::unique_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::
+    startCapturer(std::unique_ptr<webrtc::DesktopCapturer> capturer,
+                  std::unique_ptr<webrtc::SharedMemoryFactory> smf,
+                  const webrtc::DesktopCaptureOptions& options,
+                  webrtc::DesktopCapturer::Callback* callback,
+                  int32_t maxFramerate,
+                  intptr_t source,
+                  webrtc::WindowId excludeWindowId,
+                  bool focusOnSelectedSource)
 {
-    if (take) {
-        LOCK_WRITE_SAFE_OBJ(_capturer);
-        return _capturer.take();
+    if (capturer) {
+        if (options.prefer_cursor_embedded()) {
+            capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(std::move(capturer), options);
+        }
+        if (capturer->SelectSource(source)) {
+            capturer->SetExcludedWindow(excludeWindowId);
+            capturer->SetMaxFrameRate(maxFramerate);
+            capturer->SetSharedMemoryFactory(std::move(smf));
+            capturer->Start(callback);
+            if (focusOnSelectedSource) {
+                capturer->FocusOnSelectedSource();
+            }
+            return capturer;
+        }
     }
+    return {};
+}
+
+std::unique_ptr<webrtc::SharedMemoryFactory> DesktopWebRTCCapturer::takeSmf()
+{
+    LOCK_WRITE_SAFE_OBJ(_smf);
+    return _smf.take();
+}
+
+std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::takeRtcCapturer()
+{
+    LOCK_WRITE_SAFE_OBJ(_capturer);
+    return _capturer.take();
+}
+
+std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer()
+{
+    std::shared_ptr<webrtc::DesktopCapturer> output;
     if (hasValidSource()) {
-        LOCK_WRITE_SAFE_OBJ(_capturer);
-        if (!_capturer->get()) {
-            auto capturerOptions = options();
-            auto capturer = createCapturer(window(), capturerOptions);
-            if (capturer) {
-                if (capturerOptions.prefer_cursor_embedded()) {
-                    capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(std::move(capturer), options());
-                }
-                if (capturer->SelectSource(_source)) {
-                    capturer->SetExcludedWindow(_excludeWindowId);
-                    capturer->SetMaxFrameRate(targetFramerate());
-                    {
-                        LOCK_WRITE_SAFE_OBJ(_smf);
-                        capturer->SetSharedMemoryFactory(_smf.take());
+        std::string fatalError;
+        {
+            LOCK_WRITE_SAFE_OBJ(_capturer);
+            if (!_capturer->get() && started() && CapturerState::Starting == state()) {
+                auto capturerOptions = options();
+                auto capturer = createCapturer(window(), capturerOptions);
+                if (capturer) {
+                    capturer = startCapturer(std::move(capturer), takeSmf(),
+                                             capturerOptions, this,
+                                             targetFramerate(), _source,
+                                             _excludeWindowId,
+                                             _focusOnSelectedSource);
+                    if (!capturer) {
+                        fatalError = "failed to select capturer source";
                     }
-                    capturer->Start(this);
-                    if (_focusOnSelectedSource) {
-                        capturer->FocusOnSelectedSource();
+                    else {
+                        _capturer->reset(capturer.release());
+                        changeState(CapturerState::Started);
                     }
-                    _capturer->reset(capturer.release());
                 }
                 else {
-                    notifyAboutError("failed to select capturer source");
+                    fatalError = "failed to create platform capturer";
                 }
             }
             else {
-                notifyAboutError("failed to create platform capturer");
+                output = _capturer.constRef();
             }
         }
-        return _capturer.constRef();
+        if (!fatalError.empty()) {
+            notifyAboutError(std::move(fatalError));
+        }
     }
-    return nullptr;
+    return output;
 }
 
 std::optional<intptr_t> DesktopWebRTCCapturer::parse(const std::string& source) const
