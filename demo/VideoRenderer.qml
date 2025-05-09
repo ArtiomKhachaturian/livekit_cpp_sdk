@@ -57,6 +57,13 @@ Item {
         }
     }
 
+    Component.onDestruction: {
+        if (renderer.source !== null) {
+            renderer.source.removeOutput(renderer.videoSink)
+            renderer.source = null
+        }
+    }
+
     Connections {
         target: renderer.source
         function onActiveChanged() {
