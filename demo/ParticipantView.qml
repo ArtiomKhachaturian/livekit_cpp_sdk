@@ -46,15 +46,39 @@ Item {
                             }
                             return false
                         }
+                        readonly property bool firstPacketSent: {
+                            return source !== null && source.firstPacketSent
+                        }
                         Image {
-                           source: "qrc:/resources/images/secure.png"
-                           width: 12
-                           height: 12
-                           anchors.left: parent.left
-                           anchors.top: parent.top
-                           anchors.margins: 2
-                           z: 1
-                           visible: model.track && model.track.secure
+                            id: secure
+                            source: "qrc:/resources/images/secure.png"
+                            width: 12
+                            height: width
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.margins: 2
+                            z: 1
+                            visible: model.track && model.track.secure
+                        }
+
+                        Image {
+                            id: mediaSentState
+                            readonly property bool firstPacketSent : renderer.firstPacketSent
+                            source: firstPacketSent ? "qrc:/resources/images/greenCircle128.png" : "qrc:/resources/images/yellowCircle128.png"
+                            width: secure.width
+                            height: width
+                            anchors.left: secure.right
+                            anchors.top: secure.top
+                            anchors.margins: 2
+                            z: secure.z
+                            visible: local
+                            OpacityAnimator {
+                                target: mediaSentState
+                                from: 1
+                                to: 0
+                                duration: 1000
+                                running: firstPacketSent
+                            }
                         }
 
                         MouseArea {

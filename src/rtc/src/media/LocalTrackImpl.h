@@ -33,11 +33,13 @@ class LocalAudioTrack;
 class LocalVideoTrack;
 
 template <class TBaseImpl>
-class LocalTrackImpl : public TBaseImpl, public LocalTrackAccessor
+class LocalTrackImpl : public TBaseImpl,
+                       public LocalTrackAccessor,
+                       private webrtc::RtpSenderObserverInterface
 {
     static_assert(std::is_base_of_v<LocalAudioTrack, TBaseImpl> || std::is_base_of_v<LocalVideoTrack, TBaseImpl>);
 public:
-    ~LocalTrackImpl() override = default;
+    ~LocalTrackImpl() override;
     void setFrameTransformer(rtc::scoped_refptr<webrtc::FrameTransformerInterface> transformer);
     // impl. of LocalTrack
     std::string cid() const final { return TBaseImpl::id(); }
@@ -54,7 +56,8 @@ public:
     std::string sid() const final { return _sid(); }
     EncryptionType encryption() const final { return _encryption; }
     std::string name() const final { return _name; }
-    bool remote() const noexcept final { return false; }
+    // impl. of LocalMediaTrack
+    bool firstPacketSent() const final { return _firstPacketSent; }
     NetworkPriority networkPriority() const final { return _networkPriority; }
     void setNetworkPriority(NetworkPriority priority) final;
     double bitratePriority() const final { return _bitratePriority; }
@@ -73,6 +76,8 @@ protected:
     void onMuteChanged(bool mute) const final;
 private:
     rtc::scoped_refptr<webrtc::RtpSenderInterface> sender() const;
+    // impl. of webrtc::RtpSenderObserverInterface
+    void OnFirstPacketSent(webrtc::MediaType) final;
     static bool setBitratePriority(double priority, std::vector<webrtc::RtpEncodingParameters>& encodings);
     static bool setBitratePriority(double priority, webrtc::RtpParameters& parameters);
     static bool setNetworkPriority(NetworkPriority priority, std::vector<webrtc::RtpEncodingParameters>& encodings);
@@ -85,6 +90,7 @@ private:
     Bricks::SafeObj<std::string> _sid;
     std::atomic<NetworkPriority> _networkPriority = NetworkPriority::Low;
     std::atomic<double> _bitratePriority = webrtc::kDefaultBitratePriority;
+    std::atomic_bool _firstPacketSent = false;
 };
 
 template <class TBaseImpl>
@@ -99,6 +105,17 @@ inline LocalTrackImpl<TBaseImpl>::LocalTrackImpl(std::string name,
     , _encryption(encryption)
     , _transceiver(std::move(transceiver))
 {
+    if (const auto sender = this->sender()) {
+        sender->SetObserver(this);
+    }
+}
+
+template <class TBaseImpl>
+inline LocalTrackImpl<TBaseImpl>::~LocalTrackImpl()
+{
+    if (const auto sender = this->sender()) {
+        sender->SetObserver(nullptr);
+    }
 }
 
 template <class TBaseImpl>
@@ -235,6 +252,14 @@ inline rtc::scoped_refptr<webrtc::RtpSenderInterface> LocalTrackImpl<TBaseImpl>:
         return _transceiver->sender();
     }
     return {};
+}
+
+template <class TBaseImpl>
+inline void LocalTrackImpl<TBaseImpl>::OnFirstPacketSent(webrtc::MediaType)
+{
+    if (exchangeVal(true, _firstPacketSent)) {
+        TBaseImpl::notify(&MediaEventsListener::onFirstFrameSent, TBaseImpl::id());
+    }
 }
 
 template <class TBaseImpl>

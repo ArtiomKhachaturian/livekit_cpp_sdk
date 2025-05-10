@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // Utils.h
-#ifdef WEBRTC_MAC
+#ifdef __APPLE__
 #include "CFAutoRelease.h"
 #include <CoreMedia/CMTime.h>
 #endif // WEBRTC_MAC
@@ -24,6 +24,18 @@
 #include <optional>
 #include <string>
 
+#ifdef __APPLE__
+#ifdef __OBJC__
+@class NSString;
+@class NSMutableDictionary;
+@class NSNumber;
+#else
+typedef struct objc_object NSString;
+typedef struct objc_object NSMutableDictionary;
+typedef struct objc_object NSNumber;
+#endif
+#endif // __APPLE__
+
 namespace LiveKitCpp
 {
 
@@ -31,12 +43,16 @@ enum class DisconnectReason;
 enum class LiveKitError;
 enum class TrackType;
 
-#ifdef WEBRTC_MAC
+#ifdef __APPLE__
 // return zero if failed
 int64_t cmTimeToMicro(const CMTime& time);
 int32_t cmTimeToMilli(const CMTime& time);
 CFStringRefAutoRelease stringToCFString(std::string_view str);
 std::string osStatusToString(OSStatus status);
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, NSString* value);
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, NSNumber* value);
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, Boolean value);
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, CFStringRef value);
 #endif // __APPLE__
 
 std::optional<LiveKitError> toLiveKitError(DisconnectReason reason);

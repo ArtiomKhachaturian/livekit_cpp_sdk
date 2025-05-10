@@ -224,4 +224,30 @@ std::string osStatusToString(OSStatus status)
     return {};
 }
 
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, NSString* value)
+{
+    if (dict && value) {
+        dict[toNSString(key)] = value;
+    }
+}
+
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, NSNumber* value)
+{
+    if (dict && value) {
+        dict[toNSString(key)] = value;
+    }
+}
+
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, Boolean value)
+{
+    if (dict) {
+        dict[toNSString(key)] = @(value);
+    }
+}
+
+void setDictionaryValue(NSMutableDictionary* dict, CFStringRef key, CFStringRef value)
+{
+    setDictionaryValue(dict, key, toNSString(value));
+}
+
 } // namespace LiveKitCpp

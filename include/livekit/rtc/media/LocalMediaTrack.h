@@ -21,6 +21,8 @@ template <class TBaseTrack>
 class LocalMediaTrack : public TBaseTrack
 {
 public:
+    bool remote() const noexcept final { return false; }
+    virtual bool firstPacketSent() const = 0;
     // RTP
     // The relative DiffServ Code Point priority for this encoding, allowing
     // packets to be marked relatively higher or lower without affecting

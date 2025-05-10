@@ -100,6 +100,12 @@ bool VideoTrack::isSecure() const
     return _sdkTrack && LiveKitCpp::EncryptionType::None != _sdkTrack->encryption();
 }
 
+bool VideoTrack::isFirstPacketSent() const
+{
+    const auto sdkTrack = localTrack();
+    return sdkTrack && sdkTrack->firstPacketSent();
+}
+
 VideoTrack::NetworkPriority VideoTrack::networkPriority() const
 {
     if (const auto sdkTrack = localTrack()) {

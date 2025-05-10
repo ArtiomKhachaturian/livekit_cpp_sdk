@@ -21,6 +21,9 @@ class MediaEventsListener
 {
 public:
     virtual void onMuteChanged(const std::string& /*id*/, bool /*mute*/) {}
+    // only for local tracks, called when the first media packet is sent for the observed
+    // sender, it is called immediately if the first packet was already sent
+    virtual void onFirstFrameSent(const std::string& /*id*/) {}
     // below events related only to Track interface
     // notify that remote user was muted own track (for remote tracks)
     // or your track (for local tracks)
