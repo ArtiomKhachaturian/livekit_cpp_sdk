@@ -15,7 +15,6 @@
 #include "Listener.h"
 #include "Loggable.h"
 #include "TrackManager.h"
-#include "SafeScopedRefPtr.h"
 #include "TransportManagerListener.h"
 #include "RemoteParticipants.h"
 #include "RemoteParticipantsListener.h"
@@ -102,10 +101,9 @@ public:
     void setListener(SessionListener* listener);
     const auto& localParticipant() const noexcept { return _localParticipant; }
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
-    void addLocalAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption);
-    void addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption);
-    bool removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track);
-    bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
+    std::string addTrackDevice(std::unique_ptr<AudioDevice> device, EncryptionType encryption);
+    std::string addTrackDevice(std::unique_ptr<LocalVideoDevice> device, EncryptionType encryption);
+    void removeTrackDevice(const std::string& deviceId);
     void setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider = {});
     void setAudioPlayout(bool playout);
     bool audioPlayoutEnabled() const { return _playout; }
@@ -125,7 +123,7 @@ public:
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     void cleanup(const std::optional<LiveKitError>& error = {}, const std::string& errorDetails = {});
 private:
-    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
+   // webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     SendResult sendAddTrack(AddTrackRequest request) const;
     SendResult sendMuteTrack(MuteTrackRequest request) const;
     SendResult sendUpdateLocalAudioTrack(UpdateLocalAudioTrack request) const;
@@ -136,7 +134,8 @@ private:
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     void notifyAboutLocalParticipantJoinLeave(bool join) const;
     // search by cid or sid
-    bool sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track);
+    template <class TTrack>
+    bool sendAddTrack(const std::shared_ptr<TTrack>& track);
     void sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
     template <class ReqMethod, class TReq>
@@ -189,8 +188,8 @@ private:
     void onTrackUnpublished(TrackUnpublishedResponse unpublished) final;
     void onRefreshToken(std::string authToken) final;
     // impl. of TransportManagerListener
-    void onLocalAudioTrackAdded(std::shared_ptr<LocalAudioTrackImpl> track) final;
-    void onLocalVideoTrackAdded(std::shared_ptr<LocalVideoTrackImpl> track) final;
+    void onLocalAudioTrackAdded(const std::shared_ptr<LocalAudioTrackImpl>& track) final;
+    void onLocalVideoTrackAdded(const std::shared_ptr<LocalVideoTrackImpl>& track) final;
     void onLocalTrackAddFailure(std::string id, webrtc::MediaType type, webrtc::RTCError error) final;
     void onLocalTrackRemoved(std::string id, webrtc::MediaType) final;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,

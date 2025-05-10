@@ -89,9 +89,9 @@ public:
     ~Impl();
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
-    std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options) const;
-    std::shared_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info, VideoOptions options) const;
-    std::shared_ptr<LocalVideoDevice> createSharing(bool previewMode, MediaDeviceInfo info,
+    std::unique_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options) const;
+    std::unique_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info, VideoOptions options) const;
+    std::unique_ptr<LocalVideoDevice> createSharing(bool previewMode, MediaDeviceInfo info,
                                                     VideoOptions options) const;
     MediaDeviceInfo defaultAudioRecordingDevice() const;
     MediaDeviceInfo defaultAudioPlayoutDevice() const;
@@ -201,7 +201,7 @@ std::unique_ptr<Session> Service::createSession(Options options) const
     return {};
 }
 
-std::shared_ptr<AudioDevice> Service::createMicrophone(const AudioRecordingOptions& options) const
+std::unique_ptr<AudioDevice> Service::createMicrophone(const AudioRecordingOptions& options) const
 {
     if (_impl) {
         return _impl->createMicrophone(options);
@@ -209,7 +209,7 @@ std::shared_ptr<AudioDevice> Service::createMicrophone(const AudioRecordingOptio
     return {};
 }
 
-std::shared_ptr<LocalVideoDevice> Service::createCamera(MediaDeviceInfo info, VideoOptions options) const
+std::unique_ptr<LocalVideoDevice> Service::createCamera(MediaDeviceInfo info, VideoOptions options) const
 {
     if (_impl) {
         return _impl->createCamera(std::move(info), std::move(options));
@@ -217,7 +217,7 @@ std::shared_ptr<LocalVideoDevice> Service::createCamera(MediaDeviceInfo info, Vi
     return {};
 }
 
-std::shared_ptr<LocalVideoDevice> Service::createSharing(bool previewMode,
+std::unique_ptr<LocalVideoDevice> Service::createSharing(bool previewMode,
                                                          MediaDeviceInfo info,
                                                          VideoOptions options) const
 {
@@ -484,7 +484,7 @@ Service::Impl::~Impl()
     }
 }
 
-std::shared_ptr<AudioDevice> Service::Impl::createMicrophone(const AudioRecordingOptions& options) const
+std::unique_ptr<AudioDevice> Service::Impl::createMicrophone(const AudioRecordingOptions& options) const
 {
     if (_pcf) {
         return MicAudioDevice::create(_pcf.get(), options, logger());
@@ -492,24 +492,24 @@ std::shared_ptr<AudioDevice> Service::Impl::createMicrophone(const AudioRecordin
     return {};
 }
 
-std::shared_ptr<LocalVideoDevice> Service::Impl::createCamera(MediaDeviceInfo info, VideoOptions options) const
+std::unique_ptr<LocalVideoDevice> Service::Impl::createCamera(MediaDeviceInfo info, VideoOptions options) const
 {
     if (auto track = createCameraTrack()) {
         track->setOptions(std::move(options));
         track->setDeviceInfo(std::move(info));
-        return std::make_shared<LocalVideoDeviceImpl>(std::move(track));
+        return std::make_unique<LocalVideoDeviceImpl>(std::move(track));
     }
     return {};
 }
 
-std::shared_ptr<LocalVideoDevice> Service::Impl::createSharing(bool previewMode,
+std::unique_ptr<LocalVideoDevice> Service::Impl::createSharing(bool previewMode,
                                                                MediaDeviceInfo info,
                                                                VideoOptions options) const
 {
     if (auto track = createSharingTrack(previewMode)) {
         track->setOptions(std::move(options));
         track->setDeviceInfo(std::move(info));
-        return std::make_shared<LocalVideoDeviceImpl>(std::move(track));
+        return std::make_unique<LocalVideoDeviceImpl>(std::move(track));
     }
     return {};
 }

@@ -34,11 +34,11 @@ struct AudioRecordingOptions;
 class MicAudioDevice : public AudioDeviceImpl
 {
 public:
-    static std::shared_ptr<MicAudioDevice> create(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
+    static std::unique_ptr<MicAudioDevice> create(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                                   const AudioRecordingOptions& options,
                                                   std::weak_ptr<AdmProxyFacade> admProxy,
                                                   const std::shared_ptr<Bricks::Logger>& logger = {});
-    static std::shared_ptr<MicAudioDevice> create(const PeerConnectionFactory* pcf,
+    static std::unique_ptr<MicAudioDevice> create(const PeerConnectionFactory* pcf,
                                                   const AudioRecordingOptions& options,
                                                   const std::shared_ptr<Bricks::Logger>& logger = {});
     ~MicAudioDevice() final;

@@ -35,14 +35,13 @@ public:
     Q_INVOKABLE AudioTrack* audioTrack(qsizetype index) const;
     Q_INVOKABLE VideoTrack* videoTrack(const QString& id) const;
     Q_INVOKABLE VideoTrack* videoTrack(qsizetype index) const;
-    QList<std::shared_ptr<LiveKitCpp::AudioTrack>> clearAudioTracks();
-    QList<std::shared_ptr<LiveKitCpp::VideoTrack>> clearVideoTracks();
+    void clearAudioTracks();
+    void clearVideoTracks();
     // return ID of SDK track
     QString addAudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack);
     QString addVideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& sdkTrack);
-    // return SDK track
-    std::shared_ptr<LiveKitCpp::AudioTrack> removeAudioTrack(const QString& id);
-    std::shared_ptr<LiveKitCpp::VideoTrack> removeVideoTrack(const QString& id);
+    bool removeAudioTrack(const QString& id);
+    bool removeVideoTrack(const QString& id);
 public slots:
     void muteAudioTrack(const QString& id, bool mute = true);
     void muteVideoTrack(const QString& id, bool mute = true);
@@ -68,12 +67,12 @@ protected:
 private:
     template <class TTrack, class TSdkTrack, class TContainerTrack = TTrack>
     TTrack* add(const std::shared_ptr<TSdkTrack>& sdkTrack, Tracks<TContainerTrack>& tracks);
-    template <class TSdkTrack, class TTrack>
-    std::shared_ptr<TSdkTrack> remove(const QString& id, Tracks<TTrack>& tracks);
-    template <class TSdkTrack, class TTrack>
-    QList<std::shared_ptr<TSdkTrack>> clearTracks(Tracks<TTrack>& tracks);
-    template <class TSdkTrack, class TTrack>
-    std::shared_ptr<TSdkTrack> takeSdkTrackAndDestroy(TTrack* track);
+    template <class TTrack>
+    bool remove(const QString& id, Tracks<TTrack>& tracks);
+    template <class TTrack>
+    void clearTracks(Tracks<TTrack>& tracks);
+    template <class TTrack>
+    void destroy(TTrack* track);
     template <class TTrack>
     static TTrack* track(const QString& id, const Tracks<TTrack>& tracks);
     template <class TTrack>

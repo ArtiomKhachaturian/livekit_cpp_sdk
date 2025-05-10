@@ -28,8 +28,6 @@ public:
     virtual std::string name() const = 0;
     virtual std::string metadata() const = 0;
     virtual ParticipantKind kind() const = 0;
-    virtual size_t audioTracksCount() const = 0;
-    virtual size_t videoTracksCount() const = 0;
 };
 
 } // namespace LiveKitCpp

@@ -36,7 +36,7 @@ public:
     Q_INVOKABLE QList<MediaDeviceInfo> screens() const;
     Q_INVOKABLE QList<MediaDeviceInfo> windows() const;
 private:
-    qsizetype addDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice> device);
+    qsizetype addDevice(std::unique_ptr<LiveKitCpp::LocalVideoDevice> device);
 private:
     const std::weak_ptr<LiveKitCpp::Service> _service;
 };

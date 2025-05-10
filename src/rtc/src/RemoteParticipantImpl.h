@@ -59,6 +59,7 @@ public:
     bool removeVideo(const std::string& trackSid);
     ParticipantInfo info() const { return _info(); }
     void setInfo(const std::weak_ptr<TrackManager>& trackManager, const ParticipantInfo& info);
+    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute);
     // impl. of Participant
     std::string sid() const final;
     std::string identity() const final;
@@ -77,7 +78,6 @@ public:
     std::shared_ptr<RemoteVideoTrack> videoTrack(size_t index) const final;
     std::shared_ptr<RemoteVideoTrack> videoTrack(const std::string& sid) const final;
     // impl. of ParticipantImpl
-    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute) final;
     void setSpeakerChanges(float level, bool active) const final;
     void setConnectionQuality(ConnectionQuality quality, float score) final;
 protected:

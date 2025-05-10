@@ -7,7 +7,7 @@ LocalVideoDevice::LocalVideoDevice(QObject *parent)
 {
 }
 
-LocalVideoDevice::LocalVideoDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice> device,
+LocalVideoDevice::LocalVideoDevice(std::unique_ptr<LiveKitCpp::LocalVideoDevice> device,
                                    QObject *parent)
     : VideoSource(parent)
     , _device(std::move(device))

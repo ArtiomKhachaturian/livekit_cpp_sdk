@@ -19,7 +19,6 @@ public:
     AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack,
                QObject* parent = nullptr);
     ~AudioTrack() override;
-    std::shared_ptr<LiveKitCpp::AudioTrack> takeSdkTrack();
     QString id() const;
     bool isMuted() const;
 public slots:
@@ -31,7 +30,7 @@ private:
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool) final { emit muteChanged(); }
 private:
-    std::shared_ptr<LiveKitCpp::AudioTrack> _sdkTrack;
+    const std::shared_ptr<LiveKitCpp::AudioTrack> _sdkTrack;
 };
 
 #endif // AUDIOTRACK_H

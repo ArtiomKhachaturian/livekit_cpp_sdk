@@ -52,6 +52,15 @@ Frame {
             addParticipant(localParticipant, false)
         }
 
+        onLocalMediaTrackAddFailure: (audio, id, details) => {
+            if (audio) {
+                error(qsTr("Failed to add audio track to session"), details)
+            }
+            else {
+                error(qsTr("Failed to add video track to session"), details)
+            }
+        }
+
         Component.onDestruction: {
             removeParticipant(localParticipant, false)
         }

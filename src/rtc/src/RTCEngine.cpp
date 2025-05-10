@@ -15,7 +15,20 @@
 #include "RTCEngineImpl.h"
 #include "RemoteParticipantImpl.h"
 #include "WebsocketEndPoint.h"
+#include "Seq.h"
+#include "TrackInfoSeq.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
+#include "livekit/rtc/media/AudioDevice.h"
+#include "livekit/rtc/media/LocalVideoDevice.h"
+
+namespace
+{
+
+inline bool compareTrackInfo(const LiveKitCpp::TrackInfo& l, const LiveKitCpp::TrackInfo& r) {
+    return l._sid == r._sid;
+}
+
+}
 
 namespace LiveKitCpp
 {
@@ -127,42 +140,33 @@ void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCal
     }
 }
 
-void RTCEngine::addLocalAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption)
+std::string RTCEngine::addTrackDevice(std::unique_ptr<AudioDevice> device, EncryptionType encryption)
 {
     if (device) {
         if (const auto impl = loadImpl()) {
-            impl->addLocalAudioTrack(std::move(device), encryption);
-        }
-    }
-}
-
-void RTCEngine::addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption)
-{
-    if (device) {
-        if (const auto impl = loadImpl()) {
-            impl->addLocalVideoTrack(std::move(device), encryption);
-        }
-    }
-}
-
-bool RTCEngine::removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track)
-{
-    if (track) {
-        if (const auto impl = loadImpl()) {
-            return impl->removeLocalAudioTrack(std::move(track));
-        }
-    }
-    return false;
-}
-
-bool RTCEngine::removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track)
-{
-    if (track) {
-        if (const auto impl = loadImpl()) {
-            return impl->removeLocalVideoTrack(std::move(track));
+            return impl->addTrackDevice(std::move(device), encryption);
         }
     }
     return {};
+}
+
+std::string RTCEngine::addTrackDevice(std::unique_ptr<LocalVideoDevice> device, EncryptionType encryption)
+{
+    if (device) {
+        if (const auto impl = loadImpl()) {
+            return impl->addTrackDevice(std::move(device), encryption);
+        }
+    }
+    return {};
+}
+
+void RTCEngine::removeTrackDevice(const std::string& deviceId)
+{
+    if (!deviceId.empty()) {
+        if (const auto impl = loadImpl()) {
+            impl->removeTrackDevice(deviceId);
+        }
+    }
 }
 
 std::shared_ptr<const LocalParticipant> RTCEngine::localParticipant() const
@@ -179,6 +183,24 @@ std::shared_ptr<const RemoteParticipants> RTCEngine::remoteParticipants() const
         return impl->remoteParticipants();
     }
     return {};
+}
+
+void findDifference(const std::vector<TrackInfo>& currentTracksInfo,
+                    const std::vector<TrackInfo>& newTracksInfo,
+                    std::vector<TrackInfo>* added,
+                    std::vector<TrackInfo>* removed,
+                    std::vector<TrackInfo>* updated)
+{
+    using SeqType = Seq<TrackInfo>;
+    if (added) {
+        *added = SeqType::difference<std::vector>(newTracksInfo, currentTracksInfo, compareTrackInfo);
+    }
+    if (removed) {
+        *removed = SeqType::difference<std::vector>(currentTracksInfo, newTracksInfo, compareTrackInfo);
+    }
+    if (updated) {
+        *updated = SeqType::intersection<std::vector>(currentTracksInfo, newTracksInfo, compareTrackInfo);
+    }
 }
 
 } // namespace LiveKitCpp

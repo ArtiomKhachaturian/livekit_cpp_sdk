@@ -36,8 +36,8 @@ public:
     virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> /*channel*/) {}
     virtual void onIceCandidateGathered(SignalTarget /*target*/, std::string /*sdpMid*/,
                                         int /*sdpMlineIndex*/, cricket::Candidate /*candidate*/) {}
-    virtual void onLocalAudioTrackAdded(std::shared_ptr<LocalAudioTrackImpl> /*track*/) {}
-    virtual void onLocalVideoTrackAdded(std::shared_ptr<LocalVideoTrackImpl> /*track*/) {}
+    virtual void onLocalAudioTrackAdded(const std::shared_ptr<LocalAudioTrackImpl>& /*track*/) {}
+    virtual void onLocalVideoTrackAdded(const std::shared_ptr<LocalVideoTrackImpl>& /*track*/) {}
     virtual void onLocalTrackAddFailure(std::string /*id*/,
                                         webrtc::MediaType /*type*/,
                                         webrtc::RTCError /*error*/) {}

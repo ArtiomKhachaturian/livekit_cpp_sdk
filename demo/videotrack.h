@@ -1,6 +1,8 @@
 #ifndef VIDEOTRACK_H
 #define VIDEOTRACK_H
 #include "videosource.h"
+#include "mediadeviceinfo.h"
+#include "videooptions.h"
 #include "safeobj.h"
 #include "successivedifferenceestimator.h"
 #include <livekit/rtc/stats/StatsListener.h>
@@ -9,6 +11,7 @@
 #include <memory>
 
 namespace LiveKitCpp {
+class LocalVideoTrack;
 class VideoTrack;
 }
 
@@ -109,12 +112,13 @@ public:
     Q_PROPERTY(DegradationPreference degradationPreference READ degradationPreference WRITE setDegradationPreference NOTIFY degradationPreferenceChanged)
     Q_PROPERTY(ScalabilityMode scalabilityMode READ scalabilityMode WRITE setScalabilityMode NOTIFY scalabilityModeChanged)
     Q_PROPERTY(bool secure READ isSecure CONSTANT)
+    Q_PROPERTY(MediaDeviceInfo deviceInfo READ deviceInfo WRITE setDeviceInfo NOTIFY deviceInfoChanged FINAL)
+    Q_PROPERTY(VideoOptions options READ options WRITE setOptions NOTIFY optionsChanged FINAL)
 public:
     explicit VideoTrack(QObject* parent = nullptr);
     VideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>& sdkTrack,
                QObject* parent = nullptr);
     ~VideoTrack() override;
-    std::shared_ptr<LiveKitCpp::VideoTrack> takeSdkTrack();
     QString id() const;
     bool isScreencast() const;
     bool isRemote() const { return _remote; }
@@ -123,23 +127,31 @@ public:
     ContentHint contentHint() const;
     DegradationPreference degradationPreference() const;
     ScalabilityMode scalabilityMode() const;
+    MediaDeviceInfo deviceInfo() const;
+    VideoOptions options() const;
     // overrides of VideoSource
     bool isMuted() const final;
     QString stats() const final;
+    QString name() const final;
 public slots:
     void setMuted(bool muted) override;
     void setNetworkPriority(NetworkPriority priority);
     void setContentHint(ContentHint hint);
     void setDegradationPreference(DegradationPreference preference);
     void setScalabilityMode(ScalabilityMode mode);
+    void setDeviceInfo(const MediaDeviceInfo& info = {});
+    void setOptions(const VideoOptions& options);
     Q_INVOKABLE void queryStats();
 signals:
     void networkPriorityChanged();
     void contentHintChanged();
     void degradationPreferenceChanged();
     void scalabilityModeChanged();
+    void deviceInfoChanged();
+    void optionsChanged();
 protected:
     // overrides of VideoSource
+    void applyFilter(VideoFilter* filter) final;
     bool metricsAllowed() const final;
     void subsribe(bool subscribe) final;
 private:
@@ -154,14 +166,19 @@ private:
     static LiveKitCpp::Stats lookup(LiveKitCpp::StatsType type, const LiveKitCpp::StatsReport& report);
     void resetStats();
     void applyMute(bool mute);
+    std::shared_ptr<const LiveKitCpp::LocalVideoTrack> localTrack() const;
+    std::shared_ptr<LiveKitCpp::LocalVideoTrack> localTrack();
     // impl. of LiveKitCpp::StatsListener
     void onStats(const LiveKitCpp::StatsReport& report) final;
     // impl. of LiveKitCpp::MediaEventsListener
     void onMuteChanged(const std::string&, bool muted) final { applyMute(muted); }
     void onRemoteSideMuteChanged(const std::string&, bool muted) final { applyMute(muted); }
+    // impl. of LiveKitCpp::CameraEventsListener
+    void onMediaChanged(const std::string&) final;
+    void onMediaOptionsChanged(const std::string&) final;
 private:
     const bool _remote = false;
-    std::shared_ptr<LiveKitCpp::VideoTrack> _sdkTrack;
+    const std::shared_ptr<LiveKitCpp::VideoTrack> _sdkTrack;
     SafeObj<LiveKitCpp::Stats> _rtpStats;
     SafeObj<LiveKitCpp::Stats> _codecStats;
     BitrateEstimator _bitrate;

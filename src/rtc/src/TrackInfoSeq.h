@@ -11,19 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ParticipantImpl.h
-#include "livekit/signaling/sfu/ConnectionQuality.h"
-#include <string>
+#pragma once // TrackInfoSeq.h
+#include "livekit/signaling/sfu/TrackInfo.h"
+#include <vector>
 
 namespace LiveKitCpp
 {
 
-class ParticipantAccessor
-{
-public:
-    virtual ~ParticipantAccessor() = default;
-    virtual void setSpeakerChanges(float level, bool active) const = 0;
-    virtual void setConnectionQuality(ConnectionQuality quality, float score) = 0;
-};
-	
+void findDifference(const std::vector<TrackInfo>& currentTracksInfo,
+                    const std::vector<TrackInfo>& newTracksInfo,
+                    std::vector<TrackInfo>* added = nullptr,
+                    std::vector<TrackInfo>* removed = nullptr,
+                    std::vector<TrackInfo>* updated = nullptr);
+
 } // namespace LiveKitCpp

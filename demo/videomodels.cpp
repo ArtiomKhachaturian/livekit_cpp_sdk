@@ -62,7 +62,7 @@ QList<MediaDeviceInfo> LocalVideoSourcesModel::windows() const
     return {};
 }
 
-qsizetype LocalVideoSourcesModel::addDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice> sdkDevice)
+qsizetype LocalVideoSourcesModel::addDevice(std::unique_ptr<LiveKitCpp::LocalVideoDevice> sdkDevice)
 {
     if (sdkDevice) {
         return append(new LocalVideoDevice(std::move(sdkDevice), this));

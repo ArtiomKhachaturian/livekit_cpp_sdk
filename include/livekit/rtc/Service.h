@@ -49,9 +49,9 @@ public:
     ServiceState state() const;
     std::unique_ptr<Session> createSession(Options options = {}) const;
     // local media
-    std::shared_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options = {}) const;
-    std::shared_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info = {}, VideoOptions options = {}) const;
-    std::shared_ptr<LocalVideoDevice> createSharing(bool previewMode,
+    std::unique_ptr<AudioDevice> createMicrophone(const AudioRecordingOptions& options = {}) const;
+    std::unique_ptr<LocalVideoDevice> createCamera(MediaDeviceInfo info = {}, VideoOptions options = {}) const;
+    std::unique_ptr<LocalVideoDevice> createSharing(bool previewMode,
                                                     MediaDeviceInfo info = {}, VideoOptions options = {}) const;
     // global media
     MediaDeviceInfo defaultAudioRecordingDevice() const;

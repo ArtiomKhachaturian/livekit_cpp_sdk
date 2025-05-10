@@ -25,18 +25,12 @@ struct AddTrackRequest;
 class LocalTrackAccessor
 {
 public:
-    std::string cid() const;
-    webrtc::MediaType mediaType() const;
-    std::string kind() const;
+    virtual std::string cid() const = 0;
+    virtual webrtc::MediaType mediaType() const = 0;
     virtual void setRemoteSideMute(bool mute) = 0;
-    // Terminates all media, closes the capturers, and in general releases any
-    // resources used by the local track. This is an irreversible operation.
-    virtual void close() {}
     // for publishing
     virtual void setSid(const std::string& sid) = 0;
     virtual bool fillRequest(AddTrackRequest* request) const = 0;
-    // transport layer
-    virtual webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const = 0;
     // state
     virtual bool muted() const = 0;
 protected:

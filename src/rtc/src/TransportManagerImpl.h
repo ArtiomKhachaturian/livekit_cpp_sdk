@@ -19,20 +19,28 @@
 #include "SafeObj.h"
 #include "Transport.h"
 #include "TransportListener.h"
+#include "livekit/signaling/sfu/TrackInfo.h"
 #include <api/peer_connection_interface.h>
+#include <vector>
+#include <unordered_map>
 
 namespace LiveKitCpp
 {
 
+class LocalTrackAccessor;
+class LocalAudioTrackImpl;
+class LocalVideoTrackImpl;
 class TransportManagerListener;
 class TrackManager;
 
 class TransportManagerImpl : private Bricks::LoggableS<TransportListener, PingPongKitListener>
 {
+    template <class T> using Tracks = std::unordered_map<std::string, std::shared_ptr<T>>;
 public:
     TransportManagerImpl(bool subscriberPrimary, bool fastPublish,
                          int32_t pingTimeout, int32_t pingInterval,
                          uint64_t negotiationDelay, // ms
+                         std::vector<TrackInfo> tracksInfo,
                          const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                          const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                          const std::weak_ptr<TrackManager>& trackManager,
@@ -53,7 +61,7 @@ public:
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     void addTrack(std::shared_ptr<AudioDeviceImpl> device, EncryptionType encryption);
     void addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption);
-    bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    bool removeTrack(const std::string& id, bool cid = true);
     void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     void queryReceiverStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
@@ -64,7 +72,17 @@ public:
     void setAudioRecording(bool recording);
     void close();
     void setListener(TransportManagerListener* listener);
+    void updateTracksInfo(std::vector<TrackInfo> tracksInfo);
+    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute);
+    std::shared_ptr<LocalTrackAccessor> track(const std::string& id, bool cid,
+                                              const std::optional<webrtc::MediaType>& hint = std::nullopt) const;
 private:
+    template <class TTracks>
+    static std::shared_ptr<LocalTrackAccessor> lookup(const std::string& id, bool cid, const TTracks& tracks);
+    template <webrtc::MediaType type, class TTracks>
+    void remove(const std::string& id, TTracks& tracks) const;
+    template <webrtc::MediaType type, class TTracks>
+    void remove(TTracks& tracks) const;
     void createPublisherOffer();
     bool canNegotiate() const noexcept;
     bool localDataChannelsAreCreated() const noexcept { return _embeddedDCMaxCount == _embeddedDCCount; }
@@ -122,6 +140,9 @@ private:
     std::atomic<uint8_t> _embeddedDCCount = 0U;
     std::atomic_bool _pendingNegotiation = false;
     std::atomic_bool _embeddedDCRequested = false;
+    Bricks::SafeObj<std::vector<TrackInfo>> _tracksInfo;
+    Bricks::SafeObj<Tracks<LocalAudioTrackImpl>> _audioTracks;
+    Bricks::SafeObj<Tracks<LocalVideoTrackImpl>> _videoTracks;
 };
 	
 } // namespace LiveKitCpp

@@ -16,6 +16,7 @@
 #include "PeerConnectionFactory.h"
 #include "LocalAudioTrackImpl.h"
 #include "LocalVideoTrackImpl.h"
+#include "TrackInfoSeq.h"
 #include "DataChannel.h"
 #include "RoomUtils.h"
 #include "RtcUtils.h"
@@ -53,6 +54,7 @@ namespace LiveKitCpp
 TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPublish,
                                            int32_t pingTimeout, int32_t pingInterval,
                                            uint64_t negotiationDelay,
+                                           std::vector<TrackInfo> tracksInfo,
                                            const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                            const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                            const std::weak_ptr<TrackManager>& trackManager,
@@ -73,6 +75,7 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, identity, {}, {}, logger)
     , _pingPongKit(positiveOrZero(pingInterval), positiveOrZero(pingTimeout), pcf)
     , _state(webrtc::PeerConnectionInterface::PeerConnectionState::kNew)
+    , _tracksInfo(std::move(tracksInfo))
 {
 }
 
@@ -166,9 +169,17 @@ void TransportManagerImpl::addTrack(std::shared_ptr<LocalVideoDeviceImpl> device
     }
 }
 
-bool TransportManagerImpl::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+bool TransportManagerImpl::removeTrack(const std::string& id, bool cid)
 {
-    return _publisher.removeTrack(track);
+    if (!id.empty()) {
+        if (cid) {
+            return _publisher.removeTrack(id);
+        }
+        if (const auto t = track(id, false)) {
+            return _publisher.removeTrack(t->cid());
+        }
+    }
+    return false;
 }
 
 void TransportManagerImpl::addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate)
@@ -224,6 +235,8 @@ void TransportManagerImpl::close()
     _publisher.close();
     _subscriber.close();
     stopPing();
+    remove<webrtc::MediaType::AUDIO>(_audioTracks);
+    remove<webrtc::MediaType::VIDEO>(_videoTracks);
     updateState();
 }
 
@@ -241,6 +254,107 @@ void TransportManagerImpl::setListener(TransportManagerListener* listener)
     }
     else {
         _listener.reset();
+    }
+}
+
+void TransportManagerImpl::updateTracksInfo(std::vector<TrackInfo> tracksInfo)
+{
+    std::vector<TrackInfo> removed;
+    {
+        LOCK_WRITE_SAFE_OBJ(_tracksInfo);
+        findDifference(_tracksInfo.constRef(), tracksInfo, nullptr, &removed);
+        _tracksInfo = std::move(tracksInfo);
+    }
+    for (const auto& info : removed) {
+        removeTrack(info._sid, false);
+    }
+}
+
+bool TransportManagerImpl::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
+{
+    if (const auto t = track(trackSid, false)) {
+        t->setRemoteSideMute(mute);
+        return true;
+    }
+    return false;
+}
+
+std::shared_ptr<LocalTrackAccessor> TransportManagerImpl::
+    track(const std::string& id, bool cid, const std::optional<webrtc::MediaType>& hint) const
+{
+    std::shared_ptr<LocalTrackAccessor> result;
+    if (!id.empty()) {
+        if (hint.has_value()) {
+            switch (hint.value()) {
+                case webrtc::MediaType::AUDIO:
+                    result = lookup(id, cid, _audioTracks);
+                    break;
+                case webrtc::MediaType::VIDEO:
+                    result = lookup(id, cid, _videoTracks);
+                    break;
+                default:
+                    break;
+            }
+        }
+        else {
+            result = lookup(id, cid, _audioTracks);
+            if (!result) {
+                result = lookup(id, cid, _videoTracks);
+            }
+        }
+    }
+    return result;
+}
+
+template <class TTracks>
+std::shared_ptr<LocalTrackAccessor> TransportManagerImpl::lookup(const std::string& id,
+                                                                 bool cid,
+                                                                 const TTracks& tracks)
+{
+    if (!id.empty()) {
+        const std::lock_guard guard(tracks.mutex());
+        if (cid) {
+            const auto it = tracks->find(id);
+            if (it != tracks->end()) {
+                return it->second;
+            }
+        }
+        else {
+            for (auto it = tracks->begin(); it != tracks->end(); ++it) {
+                if (it->second->sid() == id) {
+                    return it->second;
+                }
+            }
+        }
+    }
+    return {};
+}
+
+template <webrtc::MediaType type, class TTracks>
+void TransportManagerImpl::remove(const std::string& id, TTracks& tracks) const
+{
+    bool removed = false;
+    if (!id.empty()) {
+        const std::lock_guard guard(tracks.mutex());
+        removed = tracks->erase(id) > 0U;
+    }
+    if (removed) {
+        _listener.invoke(&TransportManagerListener::onLocalTrackRemoved, id, type);
+    }
+}
+
+template <webrtc::MediaType type, class TTracks>
+void TransportManagerImpl::remove(TTracks& tracks) const
+{
+    std::list<std::string> ids;
+    {
+        const std::lock_guard guard(tracks.mutex());
+        for (auto it = tracks->begin(); it != tracks->end(); ++it) {
+            ids.push_back(std::move(it->first));
+        }
+    }
+    for (auto& id : ids) {
+        _listener.invoke(&TransportManagerListener::onLocalTrackRemoved, std::move(id), type);
     }
 }
 
@@ -385,7 +499,11 @@ void TransportManagerImpl::onLocalAudioTrackAdded(SignalTarget target,
         auto track = std::make_shared<LocalAudioTrackImpl>(std::move(device), encryption,
                                                            std::move(transceiver),
                                                            _trackManager);
-        _listener.invoke(&TransportManagerListener::onLocalAudioTrackAdded, std::move(track));
+        {
+            LOCK_WRITE_SAFE_OBJ(_audioTracks);
+            _audioTracks->insert(std::make_pair(track->id(), track));
+        }
+        _listener.invoke(&TransportManagerListener::onLocalAudioTrackAdded, track);
     }
 }
 
@@ -398,7 +516,11 @@ void TransportManagerImpl::onLocalVideoTrackAdded(SignalTarget target,
         auto track = std::make_shared<LocalVideoTrackImpl>(std::move(device), encryption,
                                                            std::move(transceiver),
                                                            _trackManager);
-        _listener.invoke(&TransportManagerListener::onLocalVideoTrackAdded, std::move(track));
+        {
+            LOCK_WRITE_SAFE_OBJ(_videoTracks);
+            _videoTracks->insert(std::make_pair(track->id(), track));
+        }
+        _listener.invoke(&TransportManagerListener::onLocalVideoTrackAdded, track);
     }
 }
 
@@ -418,7 +540,16 @@ void TransportManagerImpl::onLocalTrackRemoved(SignalTarget target,
                                                const std::vector<std::string>&)
 {
     if (SignalTarget::Publisher == target) {
-        _listener.invoke(&TransportManagerListener::onLocalTrackRemoved, id, type);
+        switch (type) {
+            case webrtc::MediaType::AUDIO:
+                remove<webrtc::MediaType::AUDIO>(id, _audioTracks);
+                break;
+            case webrtc::MediaType::VIDEO:
+                remove<webrtc::MediaType::VIDEO>(id, _videoTracks);
+                break;
+            default:
+                break;
+        }
     }
 }
 

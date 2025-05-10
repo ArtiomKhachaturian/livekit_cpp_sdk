@@ -27,7 +27,8 @@
 #include "Utils.h"
 #include <type_traits>
 
-namespace {
+namespace
+{
 
 template <typename T>
 inline auto weak(const std::shared_ptr<T>& strong) {
@@ -49,7 +50,7 @@ inline webrtc::MediaType fromString(const std::string& type) {
 
 rtc::scoped_refptr<webrtc::RtpSenderInterface>
     findSender(const webrtc::scoped_refptr<webrtc::PeerConnectionInterface>& pc,
-               const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+               const std::string& id);
 
 }
 
@@ -160,38 +161,16 @@ void Transport::addTrack(std::shared_ptr<LocalVideoDeviceImpl> device,
     addTransceiver(std::move(device), encryption, init);
 }
 
-bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+bool Transport::removeTrack(const std::string& id)
 {
-    if (sender) {
+    if (!id.empty()) {
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
-                const auto id = sender->id();
-                const auto kind = webrtc::MediaTypeToString(sender->media_type());
-                impl->logInfo("request to removal '" + id + "' local " + kind + " track");
-                thread->PostTask([sender = std::move(sender), implRef = weak(impl)]() {
-                    if (const auto impl = implRef.lock()) {
-                        impl->removeTrackBySender(sender);
-                    }
-                });
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool Transport::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
-{
-    if (track) {
-        if (const auto impl = loadImpl()) {
-            if (const auto thread = impl->signalingThread()) {
-                const auto id = track->id();
-                const auto kind = track->kind();
-                impl->logInfo("request to removal '" + id + "' local " + kind + " track");
-                thread->PostTask([id, kind, track, implRef = weak(impl)]() {
+                impl->logInfo("request to removal '" + id + "' local track");
+                thread->PostTask([id, implRef = weak(impl)]() {
                     if (const auto impl = implRef.lock()) {
                         if (const auto pc = impl->peerConnection()) {
-                            impl->removeTrackBySender(findSender(pc, track));
+                            impl->removeTrackBySender(findSender(pc, id));
                         }
                     }
                 });
@@ -603,15 +582,16 @@ void Transport::onFailure(bool local, webrtc::RTCError error)
 } // namespace LiveKitCpp
 
 
-namespace {
+namespace
+{
 
 rtc::scoped_refptr<webrtc::RtpSenderInterface>
     findSender(const webrtc::scoped_refptr<webrtc::PeerConnectionInterface>& pc,
-               const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+               const std::string& id)
 {
-    if (pc && track) {
+    if (pc && !id.empty()) {
         for (const auto& sender : pc->GetSenders()) {
-            if (sender->track() == track) {
+            if (sender->id() == id) {
                 return sender;
             }
         }

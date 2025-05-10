@@ -7,7 +7,7 @@ AudioTrack::AudioTrack(QObject* parent)
 }
 
 AudioTrack::AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack,
-                      QObject *parent)
+                       QObject *parent)
     : QObject(parent)
     , _sdkTrack(sdkTrack)
 {
@@ -18,16 +18,9 @@ AudioTrack::AudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack,
 
 AudioTrack::~AudioTrack()
 {
-    takeSdkTrack();
-}
-
-std::shared_ptr<LiveKitCpp::AudioTrack> AudioTrack::takeSdkTrack()
-{
     if (_sdkTrack) {
         _sdkTrack->removeListener(this);
-        return std::move(_sdkTrack);
     }
-    return {};
 }
 
 void AudioTrack::setVolume(qreal volume)

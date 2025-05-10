@@ -63,16 +63,12 @@ public:
     // the appropriate SDP is also applied.
     void setAudioRecording(bool recording);
     bool audioRecordingEnabled() const;
-    size_t localAudioTracksCount() const;
-    size_t localVideoTracksCount() const;
-    void addAudioTrack(std::shared_ptr<AudioDevice> device,
-                       EncryptionType encryption = EncryptionType::None);
-    void addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                       EncryptionType encryption = EncryptionType::None);
-    void removeAudioTrack(std::shared_ptr<LocalAudioTrack> track);
-    void removeVideoTrack(std::shared_ptr<LocalVideoTrack> track);
-    std::shared_ptr<LocalAudioTrack> audioTrack(size_t index) const;
-    std::shared_ptr<LocalVideoTrack> videoTrack(size_t index) const;
+    std::string addTrackDevice(std::unique_ptr<AudioDevice> device,
+                               EncryptionType encryption = EncryptionType::None);
+    std::string addTrackDevice(std::unique_ptr<LocalVideoDevice> device,
+                               EncryptionType encryption = EncryptionType::None);
+    void removeTrackDevice(const std::string& deviceId);
+    size_t trackDevicesCount();
     // remote
     size_t remoteParticipantsCount() const;
     // given participant by index or server ID
@@ -125,8 +121,6 @@ public:
     std::string name() const final;
     std::string metadata() const final;
     ParticipantKind kind() const final;
-    size_t audioTracksCount() const final;
-    size_t videoTracksCount() const final;
     // impl. of StatsSource
     void addStatsListener(StatsListener* listener) final;
     void removeStatsListener(StatsListener* listener) final;

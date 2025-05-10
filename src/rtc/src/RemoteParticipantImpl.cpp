@@ -17,7 +17,7 @@
 #include "RtpReceiversStorage.h"
 #include "AesCgmCryptor.h"
 #include "Listeners.h"
-#include "Seq.h"
+#include "TrackInfoSeq.h"
 #include "RtcUtils.h"
 #include "e2e/AesCgmCryptorObserver.h"
 #include "livekit/rtc/e2e/E2ECryptoError.h"
@@ -30,9 +30,6 @@ namespace {
 
 using namespace LiveKitCpp;
 
-inline bool compareTrackInfo(const TrackInfo& l, const TrackInfo& r) {
-    return l._sid == r._sid;
-}
 
 template <class TTrack>
 struct MediaInterfaceType {};
@@ -82,10 +79,6 @@ inline auto makeDevice(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& r
         return std::make_shared<Device>(std::move(track));
     }
     return std::shared_ptr<Device>{};
-}
-
-inline bool compareTrackInfoInfo(const TrackInfo& l, const TrackInfo& r) {
-    return l._sid == r._sid;
 }
 
 }
@@ -180,10 +173,7 @@ void RemoteParticipantImpl::setInfo(const std::weak_ptr<TrackManager>& trackMana
     std::vector<TrackInfo> added, removed, updated;
     {
         LOCK_WRITE_SAFE_OBJ(_info);
-        using SeqType = Seq<TrackInfo>;
-        added = SeqType::difference<std::vector>(info._tracks, _info->_tracks, compareTrackInfo);
-        removed = SeqType::difference<std::vector>(_info->_tracks, info._tracks, compareTrackInfo);
-        updated = SeqType::intersection<std::vector>(_info->_tracks, info._tracks, compareTrackInfo);
+        findDifference(_info->_tracks, info._tracks, &added, &removed, &updated);
         sidChanged = info._sid != _info->_sid;
         identityChanged = info._identity != _info->_identity;
         nameChanged = info._name != _info->_name;
@@ -249,6 +239,34 @@ void RemoteParticipantImpl::setInfo(const std::weak_ptr<TrackManager>& trackMana
     if (kindChanged) {
         _listener->notify(&RemoteParticipantListener::onKindChanged);
     }
+}
+
+bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
+{
+    if (!trackSid.empty()) {
+        LOCK_WRITE_SAFE_OBJ(_info);
+        if (auto trackInfo = findBySid(trackSid)) {
+            if (trackInfo->_muted == mute) {
+                return true;
+            }
+            trackInfo->_muted = mute;
+            if (TrackType::Audio == trackInfo->_type) {
+                LOCK_READ_SAFE_OBJ(_audioTracks);
+                if (const auto ndx = findBySid(trackSid, _audioTracks.constRef())) {
+                    _audioTracks->at(ndx.value())->setInfo(*trackInfo);
+                    return true;
+                }
+            }
+            if (TrackType::Video == trackInfo->_type) {
+                LOCK_READ_SAFE_OBJ(_videoTracks);
+                if (const auto ndx = findBySid(trackSid, _videoTracks.constRef())) {
+                    _videoTracks->at(ndx.value())->setInfo(*trackInfo);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 std::string RemoteParticipantImpl::sid() const
@@ -353,34 +371,6 @@ std::shared_ptr<RemoteVideoTrack> RemoteParticipantImpl::videoTrack(const std::s
         }
     }
     return {};
-}
-
-bool RemoteParticipantImpl::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
-{
-    if (!trackSid.empty()) {
-        LOCK_WRITE_SAFE_OBJ(_info);
-        if (auto trackInfo = findBySid(trackSid)) {
-            if (trackInfo->_muted == mute) {
-                return true;
-            }
-            trackInfo->_muted = mute;
-            if (TrackType::Audio == trackInfo->_type) {
-                LOCK_READ_SAFE_OBJ(_audioTracks);
-                if (const auto ndx = findBySid(trackSid, _audioTracks.constRef())) {
-                    _audioTracks->at(ndx.value())->setInfo(*trackInfo);
-                    return true;
-                }
-            }
-            if (TrackType::Video == trackInfo->_type) {
-                LOCK_READ_SAFE_OBJ(_videoTracks);
-                if (const auto ndx = findBySid(trackSid, _videoTracks.constRef())) {
-                    _videoTracks->at(ndx.value())->setInfo(*trackInfo);
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
 }
 
 void RemoteParticipantImpl::setSpeakerChanges(float level, bool active) const

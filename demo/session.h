@@ -113,6 +113,7 @@ signals:
     void identityChanged();
     void remoteParticipantAdded(RemoteParticipant* participant);
     void remoteParticipantRemoved(RemoteParticipant* participant);
+    void localMediaTrackAddFailure(bool audio, const QString& id, const QString& details = {});
 private slots:
     void addRemoteParticipant(const QString& sid);
     void removeRemoteParticipant(const QString& sid);
@@ -127,6 +128,12 @@ private:
     void removeMicrophoneTrack();
     void removeSharingTrack();
     // impl. of SessionListener
+    void onLocalAudioTrackAdded(const std::shared_ptr<LiveKitCpp::LocalAudioTrack>& track) final;
+    void onLocalVideoTrackAdded(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& track) final;
+    void onLocalAudioTrackAddFailure(std::string id, std::string_view details) final;
+    void onLocalVideoTrackAddFailure(std::string id, std::string_view details) final;
+    void onLocalAudioTrackRemoved(std::string id) final;
+    void onLocalVideoTrackRemoved(std::string id) final;
     void onError(LiveKitCpp::LiveKitError error, const std::string& what) final;
     void onSidChanged(const LiveKitCpp::Participant* participant) final;
     void onIdentityChanged(const LiveKitCpp::Participant* participant) final;

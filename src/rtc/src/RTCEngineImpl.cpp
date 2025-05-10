@@ -14,6 +14,10 @@
 #include "RTCEngineImpl.h"
 #include "AesCgmCryptor.h"
 #include "LocalParticipant.h"
+#include "AudioDeviceImpl.h"
+#include "LocalVideoDeviceImpl.h"
+#include "LocalAudioTrackImpl.h"
+#include "LocalVideoTrackImpl.h"
 #include "PeerConnectionFactory.h"
 #include "RemoteParticipantImpl.h"
 #include "RoomUtils.h"
@@ -86,50 +90,41 @@ void RTCEngineImpl::setListener(SessionListener* listener)
     _localParticipant->setListener(listener);
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCEngineImpl::addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                                       EncryptionType encryption)
+std::string RTCEngineImpl::addTrackDevice(std::unique_ptr<AudioDevice> device, EncryptionType encryption)
 {
-    auto track = _localParticipant->addAudioTrack(std::move(device), encryption, weak_from_this());
-    if (track) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->addTrack(track->media());
+    if (device) {
+        const auto id = device->id();
+        if (auto impl = _localParticipant->addDevice(std::move(device), encryption)) {
+            if (const auto pcManager = std::atomic_load(&_pcManager)) {
+                pcManager->addTrack(std::move(impl), encryption);
+            }
+            return id;
         }
     }
-    return track;
+    return {};
 }
 
-std::shared_ptr<LocalVideoTrackImpl> RTCEngineImpl::addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                                                                       EncryptionType encryption)
+std::string RTCEngineImpl::addTrackDevice(std::unique_ptr<LocalVideoDevice> device, EncryptionType encryption)
 {
-    auto track = _localParticipant->addVideoTrack(std::move(device), encryption, weak_from_this());
-    if (track) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->addTrack(track->media());
+    if (device) {
+        const auto id = device->id();
+        if (auto impl = _localParticipant->addDevice(std::move(device), encryption)) {
+            if (const auto pcManager = std::atomic_load(&_pcManager)) {
+                pcManager->addTrack(std::move(impl), encryption);
+            }
+            return id;
         }
     }
-    return track;
+    return {};
 }
 
-bool RTCEngineImpl::removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track)
+void RTCEngineImpl::removeTrackDevice(const std::string& deviceId)
 {
-    if (auto rtcTrack = _localParticipant->removeAudioTrack(track)) {
+    if (_localParticipant->removeDevice(deviceId)) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->removeTrack(rtcTrack);
+            pcManager->removeTrack(deviceId);
         }
-        return true;
     }
-    return false;
-}
-
-bool RTCEngineImpl::removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track)
-{
-    if (auto rtcTrack = _localParticipant->removeVideoTrack(track)) {
-        if (const auto pcManager = std::atomic_load(&_pcManager)) {
-            pcManager->removeTrack(rtcTrack);
-        }
-        return true;
-    }
-    return false;
 }
 
 void RTCEngineImpl::setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider)
@@ -213,9 +208,6 @@ void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollecto
 
 void RTCEngineImpl::cleanup(const std::optional<LiveKitError>& error, const std::string& errorDetails)
 {
-    for (const auto& track : _localParticipant->tracks()) {
-        track->notifyThatMediaRemovedFromTransport();
-    }
     _remoteParicipants->reset();
     notifyAboutLocalParticipantJoinLeave(false);
     if (auto pcManager = std::atomic_exchange(&_pcManager, std::shared_ptr<TransportManager>())) {
@@ -232,14 +224,14 @@ void RTCEngineImpl::cleanup(const std::optional<LiveKitError>& error, const std:
     }
 }
 
-webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngineImpl::localTrack(const std::string& id,
+/*webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> RTCEngineImpl::localTrack(const std::string& id,
                                                                                    bool cid) const
 {
     if (const auto t = _localParticipant->track(id, cid)) {
         return t->media();
     }
     return {};
-}
+}*/
 
 RTCEngineImpl::SendResult RTCEngineImpl::sendAddTrack(AddTrackRequest request) const
 {
@@ -300,7 +292,8 @@ void RTCEngineImpl::notifyAboutLocalParticipantJoinLeave(bool join) const
     }
 }
 
-bool RTCEngineImpl::sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track)
+template <class TTrack>
+bool RTCEngineImpl::sendAddTrack(const std::shared_ptr<TTrack>& track)
 {
     if (track && !closed()) {
         AddTrackRequest request;
@@ -440,7 +433,9 @@ void RTCEngineImpl::createTransportManager(const JoinResponse& response,
                                                         response._pingTimeout,
                                                         response._pingInterval,
                                                         negotiationDelay,
+                                                        response._participant._tracks,
                                                         _pcf, conf,
+                                                        weak_from_this(),
                                                         response._participant._identity,
                                                         _options._prefferedAudioEncoder,
                                                         _options._prefferedVideoEncoder,
@@ -455,9 +450,7 @@ void RTCEngineImpl::createTransportManager(const JoinResponse& response,
     }
     _reconnectAttempts = 0U;
     std::atomic_store(&_pcManager, pcManager);
-    for (auto track : _localParticipant->media()) {
-        pcManager->addTrack(std::move(track));
-    }
+    _localParticipant->addDevicesToTransportManager(pcManager.get());
     pcManager->negotiate(false);
     pcManager->startPing();
 }
@@ -573,11 +566,14 @@ void RTCEngineImpl::onUpdate(ParticipantUpdate update)
     if (const auto s = infos.size()) {
         DisconnectReason disconnectReason = DisconnectReason::UnknownReason;
         for (size_t i = 0U; i < s; ++i) {
-            const auto& info = infos.at(i);
+            auto& info = infos.at(i);
             if (info._sid == _localParticipant->sid()) {
                 disconnectReason = info._disconnectReason;
                 if (DisconnectReason::UnknownReason == disconnectReason) {
                     _localParticipant->setInfo(info);
+                    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+                        pcManager->updateTracksInfo(std::move(info._tracks));
+                    }
                     infos.erase(infos.begin() + i);
                 }
                 break;
@@ -594,32 +590,44 @@ void RTCEngineImpl::onUpdate(ParticipantUpdate update)
 
 void RTCEngineImpl::onTrackPublished(TrackPublishedResponse published)
 {
-    if (const auto t = _localParticipant->track(published._cid, true)) {
-        const auto& sid = published._track._sid;
-        t->setSid(sid);
-        // reconcile track mute status.
-        // if server's track mute status doesn't match actual, we'll have to update
-        // the server's copy
-        const auto muted = t->muted();
-        if (muted != published._track._muted) {
-            notifyAboutMuteChanges(sid, muted);
-        }
-        switch (t->mediaType()) {
-            case webrtc::MediaType::AUDIO:
-                if (const auto audio = std::dynamic_pointer_cast<AudioTrack>(t)) {
-                    auto features = audio->features();
-                    if (!features.empty()) {
-                        UpdateLocalAudioTrack request;
-                        request._trackSid = sid;
-                        request._features = std::move(features);
-                        sendUpdateLocalAudioTrack(std::move(request));
-                    }
-                }
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        std::optional<webrtc::MediaType> hint;
+        switch (published._track._type) {
+            case TrackType::Audio:
+                hint = webrtc::MediaType::AUDIO;
                 break;
-            case webrtc::MediaType::VIDEO:
+            case TrackType::Video:
+                hint = webrtc::MediaType::VIDEO;
                 break;
             default:
                 break;
+        }
+        if (const auto t = pcManager->track(published._cid, true, hint)) {
+            t->setSid(published._track._sid);
+            // reconcile track mute status.
+            // if server's track mute status doesn't match actual, we'll have to update
+            // the server's copy
+            const auto muted = t->muted();
+            if (muted != published._track._muted) {
+                notifyAboutMuteChanges(published._track._sid, muted);
+            }
+            switch (published._track._type) {
+                case TrackType::Audio:
+                    if (const auto audio = std::dynamic_pointer_cast<AudioTrack>(t)) {
+                        auto features = audio->features();
+                        if (!features.empty()) {
+                            UpdateLocalAudioTrack request;
+                            request._trackSid = published._track._sid;
+                            request._features = std::move(features);
+                            sendUpdateLocalAudioTrack(std::move(request));
+                        }
+                    }
+                    break;
+                case TrackType::Video:
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
@@ -632,7 +640,11 @@ void RTCEngineImpl::onReconnect(ReconnectResponse response)
 
 void RTCEngineImpl::onMute(MuteTrackRequest mute)
 {
-    if (!_localParticipant->setRemoteSideTrackMute(mute._sid, mute._muted)) {
+    bool accepted = false;
+    if (const auto pcManager = std::atomic_load(&_pcManager)) {
+        accepted = pcManager->setRemoteSideTrackMute(mute._sid, mute._muted);
+    }
+    if (!accepted) {
         _remoteParicipants->setRemoteSideTrackMute(mute._sid, mute._muted);
     }
 }
@@ -734,7 +746,7 @@ void RTCEngineImpl::onLeave(LeaveRequest leave)
 void RTCEngineImpl::onTrackUnpublished(TrackUnpublishedResponse unpublished)
 {
     if (const auto pcManager = std::atomic_load(&_pcManager)) {
-        pcManager->removeTrack(localTrack(unpublished._trackSid, false));
+        pcManager->removeTrack(unpublished._trackSid, false);
     }
 }
 
@@ -743,7 +755,7 @@ void RTCEngineImpl::onRefreshToken(std::string authToken)
     notify(&SessionListener::onRefreshToken, std::move(authToken));
 }
 
-void RTCEngineImpl::onLocalAudioTrackAdded(std::shared_ptr<LocalAudioTrackImpl> track)
+void RTCEngineImpl::onLocalAudioTrackAdded(const std::shared_ptr<LocalAudioTrackImpl>& track)
 {
     if (track) {
         if (EncryptionType::None != track->encryption()) {
@@ -756,14 +768,12 @@ void RTCEngineImpl::onLocalAudioTrackAdded(std::shared_ptr<LocalAudioTrackImpl> 
                 logError("failed to create " + toString(track->encryption()) + " encryptor for track " + track->cid());
             }
         }
-        if (sendAddTrack(track)) {
-            track->updateInitialParameters();
-        }
+        sendAddTrack(track);
         _listener.invoke(&SessionListener::onLocalAudioTrackAdded, track);
     }
 }
 
-void RTCEngineImpl::onLocalVideoTrackAdded(std::shared_ptr<LocalVideoTrackImpl> track)
+void RTCEngineImpl::onLocalVideoTrackAdded(const std::shared_ptr<LocalVideoTrackImpl>& track)
 {
     if (track) {
         if (EncryptionType::None != track->encryption()) {
@@ -776,9 +786,7 @@ void RTCEngineImpl::onLocalVideoTrackAdded(std::shared_ptr<LocalVideoTrackImpl> 
                 logError("failed to create " + toString(track->encryption()) + " encryptor for track " + track->cid());
             }
         }
-        if (sendAddTrack(track)) {
-            track->updateInitialParameters();
-        }
+        sendAddTrack(track);
         _listener.invoke(&SessionListener::onLocalVideoTrackAdded, track);
     }
 }
@@ -815,21 +823,6 @@ void RTCEngineImpl::onStateChange(webrtc::PeerConnectionInterface::PeerConnectio
                                   webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                                   webrtc::PeerConnectionInterface::PeerConnectionState subscriberState)
 {
-    switch (publisherState) {
-        case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
-            // publish local tracks
-            /*for (const auto& track : _localParticipant->tracks()) {
-                sendAddTrack(track);
-            }*/
-            break;
-        case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
-            /*for (const auto& track : _localParticipant->tracks()) {
-                track->notifyThatMediaRemovedFromTransport();
-            }*/
-            break;
-        default:
-            break;
-    }
     switch (subscriberState) {
         case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
             _remoteParicipants->reset();

@@ -44,14 +44,14 @@ VideoTrack* Participant::videoTrack(qsizetype index) const
     return nullptr;
 }
 
-QList<std::shared_ptr<LiveKitCpp::AudioTrack>> Participant::clearAudioTracks()
+void Participant::clearAudioTracks()
 {
-    return clearTracks<LiveKitCpp::AudioTrack>(_audioTracks);
+    clearTracks(_audioTracks);
 }
 
-QList<std::shared_ptr<LiveKitCpp::VideoTrack>> Participant::clearVideoTracks()
+void Participant::clearVideoTracks()
 {
-    return clearTracks<LiveKitCpp::VideoTrack>(_videoTracks);
+    clearTracks(_videoTracks);
 }
 
 QString Participant::addAudioTrack(const std::shared_ptr<LiveKitCpp::AudioTrack>& sdkTrack)
@@ -70,14 +70,14 @@ QString Participant::addVideoTrack(const std::shared_ptr<LiveKitCpp::VideoTrack>
     return {};
 }
 
-std::shared_ptr<LiveKitCpp::AudioTrack> Participant::removeAudioTrack(const QString& id)
+bool Participant::removeAudioTrack(const QString& id)
 {
-    return remove<LiveKitCpp::AudioTrack>(id, _audioTracks);
+    return remove(id, _audioTracks);
 }
 
-std::shared_ptr<LiveKitCpp::VideoTrack> Participant::removeVideoTrack(const QString& id)
+bool Participant::removeVideoTrack(const QString& id)
 {
-    return remove<LiveKitCpp::VideoTrack>(id, _videoTracks);
+    return remove(id, _videoTracks);
 }
 
 void Participant::muteAudioTrack(const QString& id, bool mute)
@@ -97,44 +97,40 @@ void Participant::queryVideoStats()
     }
 }
 
-template <class TSdkTrack, class TTrack>
-std::shared_ptr<TSdkTrack> Participant::remove(const QString& id, Tracks<TTrack>& tracks)
+template <class TTrack>
+bool Participant::remove(const QString& id, Tracks<TTrack>& tracks)
 {
-    std::shared_ptr<TSdkTrack> track;
     if (!id.isEmpty()) {
         for (qsizetype i = 0; i < tracks.count(); ++i) {
             if (tracks.at(i)->id() == id) {
-                track = takeSdkTrackAndDestroy<TSdkTrack>(tracks.at(i));
+                destroy(tracks.at(i));
                 tracks.removeAt(i);
+                return true;
             }
         }
     }
-    return track;
+    return false;
 }
 
-template <class TSdkTrack, class TTrack>
-QList<std::shared_ptr<TSdkTrack>> Participant::clearTracks(Tracks<TTrack>& tracks)
+template <class TTrack>
+void Participant::clearTracks(Tracks<TTrack>& tracks)
 {
-    QList<std::shared_ptr<TSdkTrack>> sdkTracks;
-    sdkTracks.reserve(tracks.size());
     for (qsizetype i = 0; i < tracks.count(); ++i) {
-        sdkTracks.push_back(takeSdkTrackAndDestroy<TSdkTrack>(tracks.at(i)));
+        destroy(tracks.at(i));
     }
-    return sdkTracks;
+    tracks.clear();
 }
 
-template <class TSdkTrack, class TTrack>
-std::shared_ptr<TSdkTrack> Participant::takeSdkTrackAndDestroy(TTrack* track)
+template <class TTrack>
+void Participant::destroy(TTrack* track)
 {
-    std::shared_ptr<TSdkTrack> sdkTrack;
     if (track) {
-        sdkTrack = track->takeSdkTrack();
         if constexpr (std::is_base_of_v<VideoTrack, TTrack>) {
-            emit videoTrackRemoved(QString::fromStdString(sdkTrack->id()));
+            emit videoTrackRemoved(track->id());
             emit videoTracksCountChanged();
         }
         else if constexpr (std::is_base_of_v<AudioTrack, TTrack>) {
-            emit audioTrackRemoved(QString::fromStdString(sdkTrack->id()));
+            emit audioTrackRemoved(track->id());
             emit audioTracksCountChanged();
         }
         else {
@@ -142,7 +138,6 @@ std::shared_ptr<TSdkTrack> Participant::takeSdkTrackAndDestroy(TTrack* track)
         }
         delete track;
     }
-    return sdkTrack;
 }
 
 template <class TTrack>

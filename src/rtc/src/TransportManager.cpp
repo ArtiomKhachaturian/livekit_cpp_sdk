@@ -21,6 +21,7 @@ namespace LiveKitCpp
 TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
                                    int32_t pingTimeout, int32_t pingInterval,
                                    uint64_t negotiationDelay,
+                                   std::vector<TrackInfo> tracksInfo,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                                    const std::weak_ptr<TrackManager>& trackManager,
@@ -28,8 +29,8 @@ TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
                                    const std::string& prefferedAudioEncoder,
                                    const std::string& prefferedVideoEncoder,
                                    const std::shared_ptr<Bricks::Logger>& logger)
-    : RtcObject<TransportManagerImpl>(subscriberPrimary, fastPublish, pingTimeout,
-                                      pingInterval, negotiationDelay, pcf, conf, trackManager,
+    : RtcObject<TransportManagerImpl>(subscriberPrimary, fastPublish, pingTimeout, pingInterval,
+                                      negotiationDelay, std::move(tracksInfo), pcf, conf, trackManager,
                                       identity, prefferedAudioEncoder, prefferedVideoEncoder, logger)
 {
 }
@@ -128,11 +129,11 @@ void TransportManager::addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, En
     }
 }
 
-bool TransportManager::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
+bool TransportManager::removeTrack(const std::string& id, bool cid)
 {
-    if (track) {
+    if (!id.empty()) {
         const auto impl = loadImpl();
-        return impl && impl->removeTrack(track);
+        return impl && impl->removeTrack(id, cid);
     }
     return false;
 }
@@ -201,6 +202,31 @@ void TransportManager::setListener(TransportManagerListener* listener)
     if (const auto impl = loadImpl()) {
         impl->setListener(listener);
     }
+}
+
+void TransportManager::updateTracksInfo(std::vector<TrackInfo> tracks)
+{
+    if (const auto impl = loadImpl()) {
+        impl->updateTracksInfo(std::move(tracks));
+    }
+}
+
+bool TransportManager::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
+{
+    if (!trackSid.empty()) {
+        const auto impl = loadImpl();
+        return impl && impl->setRemoteSideTrackMute(trackSid, mute);
+    }
+    return false;
+}
+
+std::shared_ptr<LocalTrackAccessor> TransportManager::
+    track(const std::string& id, bool cid, const std::optional<webrtc::MediaType>& hint) const
+{
+    if (const auto impl = loadImpl()) {
+        return impl->track(id, cid, hint);
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp

@@ -4,7 +4,8 @@
 #include "participant.h"
 #include "mediadeviceinfo.h"
 #include "audiorecordingoptions.h"
-#include "localvideotrack.h"
+#include "audiotrack.h"
+#include "videotrack.h"
 #include "videooptions.h"
 #include <QPointer>
 #include <QQmlEngine>
@@ -14,8 +15,6 @@ class LocalAudioTrack;
 class LocalVideoTrack;
 }
 
-class AudioTrack;
-class LocalVideoTrack;
 
 class LocalParticipant : public Participant
 {
@@ -24,9 +23,9 @@ class LocalParticipant : public Participant
     Q_PROPERTY(bool activeCamera READ activeCamera NOTIFY activeCameraChanged FINAL)
     Q_PROPERTY(bool activeSharing READ activeSharing NOTIFY activeSharingChanged FINAL)
     Q_PROPERTY(bool activeMicrophone READ activeMicrophone NOTIFY activeMicrophoneChanged FINAL)
-    Q_PROPERTY(QString cameraTrackId READ cameraTrackId NOTIFY activeCameraChanged FINAL)
-    Q_PROPERTY(QString sharingTrackId READ sharingTrackId NOTIFY activeSharingChanged FINAL)
-    Q_PROPERTY(QString microphoneTrackId READ microphoneTrackId NOTIFY activeMicrophoneChanged FINAL)
+    Q_PROPERTY(QString cameraTrackId READ cameraTrackId WRITE activateCamera NOTIFY activeCameraChanged FINAL)
+    Q_PROPERTY(QString sharingTrackId READ sharingTrackId WRITE activateSharing NOTIFY activeSharingChanged FINAL)
+    Q_PROPERTY(QString microphoneTrackId READ microphoneTrackId WRITE activateMicrophone NOTIFY activeMicrophoneChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo cameraDeviceInfo READ cameraDeviceInfo WRITE setCameraDeviceInfo NOTIFY cameraDeviceInfoChanged FINAL)
     Q_PROPERTY(MediaDeviceInfo sharingDeviceInfo READ sharingDeviceInfo WRITE setSharingDeviceInfo NOTIFY sharingDeviceInfoChanged FINAL)
     Q_PROPERTY(VideoOptions cameraOptions READ cameraOptions WRITE setCameraOptions NOTIFY cameraOptionsChanged FINAL)
@@ -42,6 +41,7 @@ private:
         MediaDeviceInfo _deviceinfo;
         TOptions _options;
         bool _muted = false;
+        QString _id;
         QPointer<TTrack> _track;
         // getters
         bool trackIsMuted() const { return _track ? _track->isMuted() : _muted; }
@@ -49,41 +49,30 @@ private:
             return _track ? _track->deviceInfo() : _deviceinfo;
         }
         TOptions trackOptions() const {
-            if (auto options = getLocalTrackOptions(_track)) {
+            if (auto options = getTrackOptions(_track)) {
                 return options.value();
             }
             return _options;
         }
-        QString trackId() const {
-            if (_track) {
-                return _track->id();
-            }
-            return {};
-        }
-        bool activeTrack() const {
-            return nullptr != _track;
-        }
+        bool active() const { return !_id.isEmpty(); }
     };
     using AudioElement = Element<AudioRecordingOptions, AudioTrack>;
-    using VideoElement = Element<VideoOptions, LocalVideoTrack>;
+    using VideoElement = Element<VideoOptions, VideoTrack>;
 public:
     explicit LocalParticipant(QObject *parent = nullptr);
     ~LocalParticipant() override;
     void setSid(const QString& sid);
     void setIdentity(const QString& identity);
     void setName(const QString& name);
-    void activateCamera(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack);
-    std::shared_ptr<LiveKitCpp::LocalVideoTrack> deactivateCamera();
-    void activateSharing(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack);
-    std::shared_ptr<LiveKitCpp::LocalVideoTrack> deactivateSharing();
-    void activateMicrophone(const std::shared_ptr<LiveKitCpp::LocalAudioTrack>& sdkTrack);
-    std::shared_ptr<LiveKitCpp::LocalAudioTrack> deactivateMicrophone();
-    bool activeCamera() const { return _sharing.activeTrack(); }
-    bool activeSharing() const { return _sharing.activeTrack(); }
-    bool activeMicrophone() const { return _microphone.activeTrack(); }
-    QString cameraTrackId() const { return _camera.trackId(); }
-    QString sharingTrackId() const { return _sharing.trackId(); }
-    QString microphoneTrackId() const { return _microphone.trackId(); }
+    void setCameraTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack);
+    void setSharingTrack(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& sdkTrack);
+    void setMicrophoneTrack(const std::shared_ptr<LiveKitCpp::LocalAudioTrack>& sdkTrack);
+    bool activeCamera() const { return _sharing.active(); }
+    bool activeSharing() const { return _sharing.active(); }
+    bool activeMicrophone() const { return _microphone.active(); }
+    QString cameraTrackId() const { return _camera._id; }
+    QString sharingTrackId() const { return _sharing._id; }
+    QString microphoneTrackId() const { return _microphone._id; }
     MediaDeviceInfo cameraDeviceInfo() const { return _camera.trackDeviceInfo(); }
     MediaDeviceInfo sharingDeviceInfo() const { return _sharing.trackDeviceInfo(); }
     VideoOptions cameraOptions() const { return _camera.trackOptions(); }
@@ -98,6 +87,12 @@ public:
     QString identity() const final { return _identity; }
     QString name() const final { return _name; }
 public slots:
+    void activateCamera(const QString& id);
+    void activateSharing(const QString& id);
+    void activateMicrophone(const QString& id);
+    void deactivateCamera() { activateCamera({}); }
+    void deactivateSharing() { activateSharing({}); }
+    void deactivateMicrophone() { activateMicrophone({}); }
     void setCameraDeviceInfo(const MediaDeviceInfo& info = {});
     void setSharingDeviceInfo(const MediaDeviceInfo& info);
     void setCameraOptions(const VideoOptions& options);
@@ -128,17 +123,20 @@ private slots:
     void onSharingMuted();
     void onMicrophoneMuted();
 private:
+    void disposeCamera();
+    void disposeSharing();
+    void disposeMicrpohone();
     template <class TElement, typename TSignal>
     void setMuted(TElement* element, bool muted, TSignal signal);
     template <class TElement, typename TSignal>
     void setDeviceInfo(TElement* element, const MediaDeviceInfo& info, TSignal signal);
     template <class TElement, class TOptions, typename TSignal>
     void setOptions(TElement* element, const TOptions& options, TSignal signal);
-    static void setLocalTrackOptions(const QPointer<LocalVideoTrack>& track, const VideoOptions& options);
-    static std::optional<VideoOptions> getLocalTrackOptions(const QPointer<LocalVideoTrack>& track);
+    static void setTrackOptions(const QPointer<VideoTrack>& track, const VideoOptions& options);
+    static std::optional<VideoOptions> getTrackOptions(const QPointer<VideoTrack>& track);
     // not yet implemented
-    static void setLocalTrackOptions(const QPointer<AudioTrack>& /*track*/, const AudioRecordingOptions& /*options*/) {}
-    static std::optional<AudioRecordingOptions> getLocalTrackOptions(const QPointer<AudioTrack>& /*track*/) { return std::nullopt; }
+    static void setTrackOptions(const QPointer<AudioTrack>& /*track*/, const AudioRecordingOptions& /*options*/) {}
+    static std::optional<AudioRecordingOptions> getTrackOptions(const QPointer<AudioTrack>& /*track*/) { return std::nullopt; }
 private:
     AudioElement _microphone;
     VideoElement _camera;

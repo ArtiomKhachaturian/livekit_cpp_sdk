@@ -14,9 +14,10 @@
 #include "LocalParticipant.h"
 #include "AdmProxyFacade.h"
 #include "AudioDeviceImpl.h"
-#include "Blob.h"
+//#include "Blob.h"
 #include "LocalVideoDeviceImpl.h"
-#include "DataChannel.h"
+#include "TransportManager.h"
+//#include "DataChannel.h"
 #include "RtcUtils.h"
 #include "PeerConnectionFactory.h"
 #include "livekit/signaling/sfu/ParticipantInfo.h"
@@ -38,8 +39,58 @@ LocalParticipant::LocalParticipant(PeerConnectionFactory* pcf,
 void LocalParticipant::reset()
 {
     _session(nullptr);
-    clear(_audioTracks);
-    clear(_videoTracks);
+}
+
+std::shared_ptr<AudioDeviceImpl> LocalParticipant::addDevice(std::unique_ptr<AudioDevice> device,
+                                                             EncryptionType encryption)
+{
+    if (auto impl = dynamic_cast<AudioDeviceImpl*>(device.release())) {
+        auto id = impl->id();
+        if (!id.empty()) {
+            LOCK_WRITE_SAFE_OBJ(_audioDevices);
+            if (!_audioDevices->count(id)) {
+                std::shared_ptr<AudioDeviceImpl> wrapper(impl);
+                _audioDevices->insert(std::make_pair(std::move(id), std::make_pair(wrapper, encryption)));
+                return wrapper;
+            }
+        }
+    }
+    return {};
+}
+
+std::shared_ptr<LocalVideoDeviceImpl> LocalParticipant::addDevice(std::unique_ptr<LocalVideoDevice> device,
+                                                                  EncryptionType encryption)
+{
+    if (auto impl = dynamic_cast<LocalVideoDeviceImpl*>(device.release())) {
+        auto id = impl->id();
+        if (!id.empty()) {
+            LOCK_WRITE_SAFE_OBJ(_videoDevices);
+            if (!_videoDevices->count(id)) {
+                std::shared_ptr<LocalVideoDeviceImpl> wrapper(impl);
+                _videoDevices->insert(std::make_pair(std::move(id), std::make_pair(wrapper, encryption)));
+                return wrapper;
+            }
+        }
+    }
+    return {};
+}
+
+bool LocalParticipant::removeDevice(const std::string& id)
+{
+    return removeAudioDevice(id) || removeVideoDevice(id);
+}
+
+size_t LocalParticipant::devicesCount() const
+{
+    LOCK_READ_SAFE_OBJ(_audioDevices);
+    LOCK_READ_SAFE_OBJ(_videoDevices);
+    return _audioDevices->size() + _videoDevices->size();
+}
+
+void LocalParticipant::addDevicesToTransportManager(TransportManager* manager) const
+{
+    addAudioDevicesToTransportManager(manager);
+    addVideoDevicesToTransportManager(manager);
 }
 
 std::optional<bool> LocalParticipant::stereoRecording() const
@@ -50,18 +101,6 @@ std::optional<bool> LocalParticipant::stereoRecording() const
         }
     }
     return std::nullopt;
-}
-
-size_t LocalParticipant::audioTracksCount() const
-{
-    LOCK_READ_SAFE_OBJ(_audioTracks);
-    return _audioTracks->size();
-}
-
-size_t LocalParticipant::videoTracksCount() const
-{
-    LOCK_READ_SAFE_OBJ(_videoTracks);
-    return _videoTracks->size();
 }
 
 /*std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addAudioTrack(std::shared_ptr<AudioDevice> device,
@@ -88,139 +127,8 @@ std::shared_ptr<LocalVideoTrackImpl> LocalParticipant::addVideoTrack(std::shared
     return {};
 }*/
 
-webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
-    removeAudioTrack(std::shared_ptr<LocalAudioTrack> track)
-{
-    if (auto local = std::dynamic_pointer_cast<LocalAudioTrackImpl>(track)) {
-        LOCK_WRITE_SAFE_OBJ(_audioTracks);
-        for (auto it = _audioTracks->begin(); it != _audioTracks->end(); ++it) {
-            if (*it == local) {
-                _audioTracks->erase(it);
-                return local->media();
-            }
-        }
-    }
-    return {};
-}
-
-webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
-    removeVideoTrack(std::shared_ptr<LocalVideoTrack> track)
-{
-    if (const auto local = std::dynamic_pointer_cast<LocalVideoTrackImpl>(track)) {
-        LOCK_WRITE_SAFE_OBJ(_videoTracks);
-        for (auto it = _videoTracks->begin(); it != _videoTracks->end(); ++it) {
-            if (*it == track) {
-                _videoTracks->erase(it);
-                return local->media();
-            }
-        }
-    }
-    return {};
-}
-
-std::shared_ptr<LocalAudioTrack> LocalParticipant::audioTrack(size_t index) const
-{
-    LOCK_READ_SAFE_OBJ(_audioTracks);
-    if (index < _audioTracks->size()) {
-        return _audioTracks->at(index);
-    }
-    return {};
-}
-
-std::shared_ptr<LocalVideoTrack> LocalParticipant::videoTrack(size_t index) const
-{
-    LOCK_READ_SAFE_OBJ(_videoTracks);
-    if (index < _videoTracks->size()) {
-        return _videoTracks->at(index);
-    }
-    return {};
-}
-
-std::vector<std::shared_ptr<LocalTrackAccessor>> LocalParticipant::tracks() const
-{
-    std::vector<std::shared_ptr<LocalTrackAccessor>> tracks;
-    LOCK_READ_SAFE_OBJ(_audioTracks);
-    LOCK_READ_SAFE_OBJ(_videoTracks);
-    tracks.reserve(_audioTracks->size() + _videoTracks->size());
-    for (const auto& track : _audioTracks.constRef()) {
-        if (auto localTrack = std::dynamic_pointer_cast<LocalTrackAccessor>(track)) {
-            tracks.push_back(std::move(localTrack));
-        }
-    }
-    for (const auto& track : _videoTracks.constRef()) {
-        if (auto localTrack = std::dynamic_pointer_cast<LocalTrackAccessor>(track)) {
-            tracks.push_back(std::move(localTrack));
-        }
-    }
-    return tracks;
-}
-
-std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> LocalParticipant::media() const
-{
-    const auto tracks = this->tracks();
-    if (const auto size = tracks.size()) {
-        std::vector<webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>> medias;
-        for (const auto& track : tracks) {
-            medias.push_back(track->media());
-        }
-        return medias;
-    }
-    return {};
-}
-
-std::shared_ptr<LocalTrackAccessor> LocalParticipant::track(const std::string& id, bool cid,
-                                                            const std::optional<webrtc::MediaType>& hint) const
-{
-    std::shared_ptr<LocalTrackAccessor> result;
-    if (!id.empty()) {
-        if (hint.has_value()) {
-            switch (hint.value()) {
-                case webrtc::MediaType::AUDIO:
-                    result = lookup(id, cid, _audioTracks);
-                    break;
-                case webrtc::MediaType::VIDEO:
-                    result = lookup(id, cid, _videoTracks);
-                    break;
-                default:
-                    break;
-            }
-        }
-        else {
-            result = lookup(id, cid, _audioTracks);
-            if (!result) {
-                result = lookup(id, cid, _videoTracks);
-            }
-        }
-    }
-    return result;
-}
-
-std::shared_ptr<LocalTrackAccessor> LocalParticipant::
-    track(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
-{
-    if (sender) {
-        return track(sender->id(), true, sender->media_type());
-    }
-    return {};
-}
-
 void LocalParticipant::setInfo(const ParticipantInfo& info)
 {
-    // update
-    for (const auto& track : info._tracks) {
-        if (TrackType::Audio == track._type) {
-            if (const auto t = lookup(track._sid, false, _audioTracks)) {
-                t->setSid(track._sid);
-                t->setRemoteSideMute(track._muted);
-            }
-        }
-        else if (TrackType::Video == track._type) {
-            if (const auto t = lookup(track._sid, false, _videoTracks)) {
-                t->setSid(track._sid);
-                t->setRemoteSideMute(track._muted);
-            }
-        }
-    }
     if (exchangeVal(info._sid, _sid)) {
         notify(&ParticipantListener::onSidChanged);
     }
@@ -238,21 +146,6 @@ void LocalParticipant::setInfo(const ParticipantInfo& info)
     }
 }
 
-bool LocalParticipant::setRemoteSideTrackMute(const std::string& trackSid, bool mute)
-{
-    if (!trackSid.empty()) {
-        if (const auto track = lookup(trackSid, false, _audioTracks)) {
-            track->setRemoteSideMute(mute);
-            return true;
-        }
-        if (const auto track = lookup(trackSid, false, _videoTracks)) {
-            track->setRemoteSideMute(mute);
-            return true;
-        }
-    }
-    return false;
-}
-
 void LocalParticipant::setSpeakerChanges(float level, bool active) const
 {
     notify(&ParticipantListener::onSpeakerInfoChanged, level, active);
@@ -264,42 +157,42 @@ void LocalParticipant::setConnectionQuality(ConnectionQuality quality,
     notify(&ParticipantListener::onConnectionQualityChanged, quality, score);
 }
 
-template <class TTracks>
-std::shared_ptr<LocalTrackAccessor> LocalParticipant::lookup(const std::string& id,
-                                                             bool cid,
-                                                             const TTracks& tracks)
+bool LocalParticipant::removeAudioDevice(const std::string& id)
 {
     if (!id.empty()) {
-        const std::lock_guard guard(tracks.mutex());
-        for (const auto& track : tracks.constRef()) {
-            const auto local = std::dynamic_pointer_cast<LocalTrackAccessor>(track);
-            if (local && id == (cid ? local->cid() : track->sid())) {
-                return local;
-            }
-        }
+        LOCK_WRITE_SAFE_OBJ(_audioDevices);
+        return _audioDevices->erase(id);
     }
-    return {};
+    return false;
 }
 
-template <class TTrack, class TTracks>
-void LocalParticipant::addTrack(const std::shared_ptr<TTrack>& track, TTracks& tracks)
+bool LocalParticipant::removeVideoDevice(const std::string& id)
 {
-    if (track) {
-        const std::lock_guard guard(tracks.mutex());
-        tracks->push_back(track);
+    if (!id.empty()) {
+        LOCK_WRITE_SAFE_OBJ(_videoDevices);
+        return _videoDevices->erase(id);
+    }
+    return false;
+}
+
+void LocalParticipant::addAudioDevicesToTransportManager(TransportManager* manager) const
+{
+    if (manager) {
+        LOCK_READ_SAFE_OBJ(_audioDevices);
+        for (auto it = _audioDevices->begin(); it != _audioDevices->end(); ++it) {
+            manager->addTrack(it->second.first, it->second.second);
+        }
     }
 }
 
-template <class TTracks>
-void LocalParticipant::clear(TTracks& tracks)
+void LocalParticipant::addVideoDevicesToTransportManager(TransportManager* manager) const
 {
-    const std::lock_guard guard(tracks.mutex());
-    for (const auto& track : tracks.constRef()) {
-        if (const auto local = std::dynamic_pointer_cast<LocalTrackAccessor>(track)) {
-            local->close();
+    if (manager) {
+        LOCK_READ_SAFE_OBJ(_videoDevices);
+        for (auto it = _videoDevices->begin(); it != _videoDevices->end(); ++it) {
+            manager->addTrack(it->second.first, it->second.second);
         }
     }
-    tracks->clear();
 }
 
 template <class Method, typename... Args>

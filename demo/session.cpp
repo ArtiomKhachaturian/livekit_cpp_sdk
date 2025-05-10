@@ -243,8 +243,8 @@ void Session::addCameraTrack()
     if (_impl) {
         if (const auto service = getService()) {
             auto device = service->createCamera(cameraDeviceInfo(), cameraOptions());
-            const auto track = _impl->addVideoTrack(std::move(device), _encryption);
-            _localParticipant->activateCamera(track);
+            const auto id = _impl->addTrackDevice(std::move(device), _encryption);
+            _localParticipant->activateCamera(QString::fromStdString(id));
         }
     }
 }
@@ -254,8 +254,8 @@ void Session::addMicrophoneTrack()
     if (_impl) {
         if (const auto service = getService()) {
             auto device = service->createMicrophone(microphoneOptions());
-            const auto track = _impl->addAudioTrack(std::move(device), _encryption);
-            _localParticipant->activateMicrophone(track);
+            const auto id = _impl->addTrackDevice(std::move(device), _encryption);
+            _localParticipant->activateMicrophone(QString::fromStdString(id));
         }
     }
 }
@@ -265,33 +265,42 @@ void Session::addSharingTrack()
     if (_impl) {
         if (const auto service = getService()) {
             auto device = service->createSharing(false, sharingDeviceInfo(), sharingOptions());
-            const auto track = _impl->addVideoTrack(std::move(device), _encryption);
-            _localParticipant->activateSharing(track);
+            const auto id = _impl->addTrackDevice(std::move(device), _encryption);
+            _localParticipant->activateSharing(QString::fromStdString(id));
         }
     }
 }
 
 void Session::removeCameraTrack()
 {
-    auto track = _localParticipant->deactivateCamera();
-    if (track && _impl) {
-        _impl->removeVideoTrack(std::move(track));
+    const auto id = _localParticipant->cameraTrackId();
+    if (!id.isEmpty()) {
+        _localParticipant->deactivateCamera();
+        if (_impl) {
+            _impl->removeTrackDevice(id.toStdString());
+        }
     }
 }
 
 void Session::removeMicrophoneTrack()
 {
-    auto track = _localParticipant->deactivateMicrophone();
-    if (track && _impl) {
-        _impl->removeAudioTrack(std::move(track));
+    const auto id = _localParticipant->microphoneTrackId();
+    if (!id.isEmpty()) {
+        _localParticipant->deactivateMicrophone();
+        if (_impl) {
+            _impl->removeTrackDevice(id.toStdString());
+        }
     }
 }
 
 void Session::removeSharingTrack()
 {
-    auto track = _localParticipant->deactivateSharing();
-    if (track && _impl) {
-        _impl->removeVideoTrack(std::move(track));
+    const auto id = _localParticipant->sharingTrackId();
+    if (!id.isEmpty()) {
+        _localParticipant->deactivateSharing();
+        if (_impl) {
+            _impl->removeTrackDevice(id.toStdString());
+        }
     }
 }
 
@@ -324,6 +333,67 @@ void Session::setSessionImpl(std::unique_ptr<LiveKitCpp::Session> impl)
 void Session::onError(LiveKitCpp::LiveKitError liveKitError, const std::string& what)
 {
     emit error(QString::fromStdString(LiveKitCpp::toString(liveKitError)), QString::fromStdString(what));
+}
+
+void Session::onLocalAudioTrackAdded(const std::shared_ptr<LiveKitCpp::LocalAudioTrack>& track)
+{
+    if (track) {
+        switch (track->source()) {
+        case LiveKitCpp::TrackSource::Microphone:
+            _localParticipant->setMicrophoneTrack(track);
+            break;
+        default:
+            Q_ASSERT(false);
+            break;
+        }
+    }
+}
+
+void Session::onLocalVideoTrackAdded(const std::shared_ptr<LiveKitCpp::LocalVideoTrack>& track)
+{
+    if (track) {
+        switch (track->source()) {
+        case LiveKitCpp::TrackSource::Camera:
+            _localParticipant->setCameraTrack(track);
+            break;
+        case LiveKitCpp::TrackSource::ScreenShare:
+            _localParticipant->setSharingTrack(track);
+            break;
+        default:
+            Q_ASSERT(false);
+            break;
+        }
+    }
+
+}
+
+void Session::onLocalAudioTrackAddFailure(std::string id, std::string_view details)
+{
+    emit localMediaTrackAddFailure(true, QString::fromStdString(id),
+                                   QString::fromUtf8(details.data(), details.size()));
+}
+
+void Session::onLocalVideoTrackAddFailure(std::string id, std::string_view details)
+{
+    emit localMediaTrackAddFailure(false, QString::fromStdString(id),
+                                   QString::fromUtf8(details.data(), details.size()));
+}
+
+void Session::onLocalAudioTrackRemoved(std::string id)
+{
+    if (_localParticipant->microphoneTrackId().toStdString() == id) {
+        _localParticipant->deactivateMicrophone();
+    }
+}
+
+void Session::onLocalVideoTrackRemoved(std::string id)
+{
+    if (_localParticipant->cameraTrackId().toStdString() == id) {
+        _localParticipant->deactivateCamera();
+    }
+    else if (_localParticipant->sharingTrackId().toStdString() == id) {
+        _localParticipant->deactivateSharing();
+    }
 }
 
 void Session::onSidChanged(const LiveKitCpp::Participant* participant)

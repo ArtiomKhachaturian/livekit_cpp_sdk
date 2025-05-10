@@ -13,7 +13,9 @@
 // limitations under the License.
 #pragma once // TransportManager.h
 #include "RtcObject.h"
+#include "livekit/signaling/sfu/TrackInfo.h"
 #include <api/peer_connection_interface.h>
+#include <vector>
 
 namespace Bricks {
 class Logger;
@@ -29,6 +31,7 @@ class PeerConnectionFactory;
 class DataChannelObserver;
 class AudioDeviceImpl;
 class LocalVideoDeviceImpl;
+class LocalTrackAccessor;
 enum class SignalTarget;
 enum class EncryptionType;
 
@@ -38,6 +41,7 @@ public:
     TransportManager(bool subscriberPrimary, bool fastPublish,
                      int32_t pingTimeout, int32_t pingInterval,
                      uint64_t negotiationDelay, // ms
+                     std::vector<TrackInfo> tracksInfo,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
                      const std::weak_ptr<TrackManager>& trackManager,
@@ -58,7 +62,7 @@ public:
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     void addTrack(std::shared_ptr<AudioDeviceImpl> device, EncryptionType encryption);
     void addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption);
-    bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    bool removeTrack(const std::string& id, bool cid = true);
     void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
@@ -69,6 +73,10 @@ public:
     void setAudioRecording(bool recording);
     void close();
     void setListener(TransportManagerListener* listener);
+    void updateTracksInfo(std::vector<TrackInfo> tracks);
+    bool setRemoteSideTrackMute(const std::string& trackSid, bool mute);
+    std::shared_ptr<LocalTrackAccessor> track(const std::string& id, bool cid,
+                                              const std::optional<webrtc::MediaType>& hint = std::nullopt) const;
 };
 
 } // namespace LiveKitCpp

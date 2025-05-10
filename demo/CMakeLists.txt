@@ -49,7 +49,6 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             mediadevicesmodel.cpp
             session.cpp
             audiotrack.cpp
-            localvideotrack.cpp
             cameraoptionsmodel.cpp
             videooptions.cpp
             itemmodel.h
@@ -66,7 +65,6 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             mediadeviceinfo.h
             mediadevicesmodel.h
             session.h
-            localvideotrack.h
             audiotrack.h
             videooptions.h
             cameraoptionsmodel.h

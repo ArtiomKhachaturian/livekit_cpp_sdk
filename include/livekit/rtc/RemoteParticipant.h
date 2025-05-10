@@ -29,6 +29,8 @@ public:
     virtual void removeListener(RemoteParticipantListener* listener) = 0;
     virtual bool hasActivePublisher() const = 0;
     virtual ParticipantState state() const = 0;
+    virtual size_t audioTracksCount() const = 0;
+    virtual size_t videoTracksCount() const = 0;
     // given track by index or server ID
     virtual std::shared_ptr<RemoteAudioTrack> audioTrack(size_t index) const = 0;
     virtual std::shared_ptr<RemoteAudioTrack> audioTrack(const std::string& trackSid) const = 0;

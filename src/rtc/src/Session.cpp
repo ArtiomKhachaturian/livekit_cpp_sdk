@@ -71,56 +71,27 @@ bool Session::audioRecordingEnabled() const
     return _impl->_engine.audioRecordingEnabled();
 }
 
-size_t Session::localAudioTracksCount() const
+std::string Session::addTrackDevice(std::unique_ptr<AudioDevice> device, EncryptionType encryption)
 {
-    if (const auto participant = _impl->_engine.localParticipant()) {
-        return participant->audioTracksCount();
+    return _impl->_engine.addTrackDevice(std::move(device), encryption);
+}
+
+std::string Session::addTrackDevice(std::unique_ptr<LocalVideoDevice> device, EncryptionType encryption)
+{
+    return _impl->_engine.addTrackDevice(std::move(device), encryption);
+}
+
+void Session::removeTrackDevice(const std::string& deviceId)
+{
+    return _impl->_engine.removeTrackDevice(deviceId);
+}
+
+size_t Session::trackDevicesCount()
+{
+    if (const auto lp = _impl->_engine.localParticipant()) {
+        return lp->devicesCount();
     }
     return 0U;
-}
-
-size_t Session::localVideoTracksCount() const
-{
-    if (const auto participant = _impl->_engine.localParticipant()) {
-        return participant->videoTracksCount();
-    }
-    return 0U;
-}
-
-void Session::addAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption)
-{
-    _impl->_engine.addLocalAudioTrack(std::move(device), encryption);
-}
-
-void Session::addVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption)
-{
-    _impl->_engine.addLocalVideoTrack(std::move(device), encryption);
-}
-
-void Session::removeAudioTrack(std::shared_ptr<LocalAudioTrack> track)
-{
-    _impl->_engine.removeLocalAudioTrack(std::move(track));
-}
-
-void Session::removeVideoTrack(std::shared_ptr<LocalVideoTrack> track)
-{
-    _impl->_engine.removeLocalVideoTrack(std::move(track));
-}
-
-std::shared_ptr<LocalAudioTrack> Session::audioTrack(size_t index) const
-{
-    if (const auto participant = _impl->_engine.localParticipant()) {
-        return participant->audioTrack(index);
-    }
-    return {};
-}
-
-std::shared_ptr<LocalVideoTrack> Session::videoTrack(size_t index) const
-{
-    if (const auto participant = _impl->_engine.localParticipant()) {
-        return participant->videoTrack(index);
-    }
-    return {};
 }
 
 size_t Session::remoteParticipantsCount() const
@@ -258,22 +229,6 @@ ParticipantKind Session::kind() const
         return participant->kind();
     }
     return ParticipantKind::Standard;
-}
-
-size_t Session::audioTracksCount() const
-{
-    if (const auto participant = _impl->_engine.localParticipant()) {
-        return participant->audioTracksCount();
-    }
-    return 0U;
-}
-
-size_t Session::videoTracksCount() const
-{
-    if (const auto participant = _impl->_engine.localParticipant()) {
-        return participant->videoTracksCount();
-    }
-    return 0U;
 }
 
 void Session::addStatsListener(StatsListener* listener)

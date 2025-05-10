@@ -55,13 +55,13 @@ MicAudioDevice::~MicAudioDevice()
     }
 }
 
-std::shared_ptr<MicAudioDevice> MicAudioDevice::
+std::unique_ptr<MicAudioDevice> MicAudioDevice::
     create(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
            const AudioRecordingOptions& options,
            std::weak_ptr<AdmProxyFacade> admProxy,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
-    std::shared_ptr<MicAudioDevice> device;
+    std::unique_ptr<MicAudioDevice> device;
     if (!admProxy.expired()) {
         using TrackType = LocalAudioRecorder<AsyncMicSourceImpl>;
         auto track = TrackType::create(std::move(signalingQueue),
@@ -75,7 +75,7 @@ std::shared_ptr<MicAudioDevice> MicAudioDevice::
     return device;
 }
 
-std::shared_ptr<MicAudioDevice> MicAudioDevice::create(const PeerConnectionFactory* pcf,
+std::unique_ptr<MicAudioDevice> MicAudioDevice::create(const PeerConnectionFactory* pcf,
                                                        const AudioRecordingOptions& options,
                                                        const std::shared_ptr<Bricks::Logger>& logger)
 {

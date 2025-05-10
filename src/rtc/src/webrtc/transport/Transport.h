@@ -65,8 +65,7 @@ public:
     void addTrack(std::shared_ptr<LocalVideoDeviceImpl> device,
                   EncryptionType encryption,
                   const webrtc::RtpTransceiverInit& init = {});
-    bool removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender);
-    bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
+    bool removeTrack(const std::string& id);
     void addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     // stats
     void queryReceiverStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,

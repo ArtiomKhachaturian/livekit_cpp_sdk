@@ -38,13 +38,13 @@ class LocalTrackImpl : public TBaseImpl, public LocalTrackAccessor
     static_assert(std::is_base_of_v<LocalAudioTrack, TBaseImpl> || std::is_base_of_v<LocalVideoTrack, TBaseImpl>);
 public:
     ~LocalTrackImpl() override = default;
-    void updateInitialParameters() { onMuteChanged(muted()); } // called after construction
     void setFrameTransformer(rtc::scoped_refptr<webrtc::FrameTransformerInterface> transformer);
     // impl. of LocalTrack
+    std::string cid() const final { return TBaseImpl::id(); }
+    webrtc::MediaType mediaType() const final;
     void setRemoteSideMute(bool mute) override;
-    void close() override;
     void setSid(const std::string& sid) final;
-    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const final;
+    webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> media() const;
     bool fillRequest(AddTrackRequest* request) const override;
     bool remoteMuted() const final { return _remoteMuted; }
     bool muted() const override { return TBaseImpl::muted(); }
@@ -110,17 +110,17 @@ inline void LocalTrackImpl<TBaseImpl>::setFrameTransformer(rtc::scoped_refptr<we
 }
 
 template <class TBaseImpl>
+inline webrtc::MediaType LocalTrackImpl<TBaseImpl>::mediaType() const
+{
+    return _transceiver ? _transceiver->media_type() : webrtc::MediaType::UNSUPPORTED;
+}
+
+template <class TBaseImpl>
 inline void LocalTrackImpl<TBaseImpl>::setRemoteSideMute(bool mute)
 {
     if (exchangeVal(mute, _remoteMuted)) {
         TBaseImpl::notify(&MediaEventsListener::onRemoteSideMuteChanged, TBaseImpl::id(), mute);
     }
-}
-
-template <class TBaseImpl>
-inline void LocalTrackImpl<TBaseImpl>::close()
-{
-    LocalTrackAccessor::close();
 }
 
 template <class TBaseImpl>

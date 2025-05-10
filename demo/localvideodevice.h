@@ -20,7 +20,7 @@ class LocalVideoDevice : public VideoSource
     Q_PROPERTY(VideoOptions options READ options WRITE setOptions NOTIFY optionsChanged FINAL)
 public:
     explicit LocalVideoDevice(QObject *parent = nullptr);
-    LocalVideoDevice(std::shared_ptr<LiveKitCpp::LocalVideoDevice> device, QObject *parent = nullptr);
+    LocalVideoDevice(std::unique_ptr<LiveKitCpp::LocalVideoDevice> device, QObject *parent = nullptr);
     ~LocalVideoDevice() override;
     bool isValid() const { return nullptr != _device; }
     const auto& device() const noexcept { return _device; }
@@ -44,7 +44,7 @@ protected:
     void subsribe(bool subscribe) final;
     void applyFilter(VideoFilter* filter) final;
 private:
-    const std::shared_ptr<LiveKitCpp::LocalVideoDevice> _device;
+    const std::unique_ptr<LiveKitCpp::LocalVideoDevice> _device;
 };
 
 #endif // LOCALVIDEODEVICE_H
