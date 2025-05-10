@@ -23,13 +23,14 @@ TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
                                    uint64_t negotiationDelay,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                    const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                                   const std::weak_ptr<TrackManager>& trackManager,
                                    const std::string& identity,
                                    const std::string& prefferedAudioEncoder,
                                    const std::string& prefferedVideoEncoder,
                                    const std::shared_ptr<Bricks::Logger>& logger)
     : RtcObject<TransportManagerImpl>(subscriberPrimary, fastPublish, pingTimeout,
-                                      pingInterval, negotiationDelay, pcf, conf, identity,
-                                      prefferedAudioEncoder, prefferedVideoEncoder, logger)
+                                      pingInterval, negotiationDelay, pcf, conf, trackManager,
+                                      identity, prefferedAudioEncoder, prefferedVideoEncoder, logger)
 {
 }
 
@@ -109,13 +110,22 @@ bool TransportManager::setConfiguration(const webrtc::PeerConnectionInterface::R
     return impl && impl->setConfiguration(config);
 }
 
-bool TransportManager::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
+void TransportManager::addTrack(std::shared_ptr<AudioDeviceImpl> device, EncryptionType encryption)
 {
-    if (track) {
-        const auto impl = loadImpl();
-        return impl && impl->addTrack(track);
+    if (device) {
+        if (const auto impl = loadImpl()) {
+            impl->addTrack(std::move(device), encryption);
+        }
     }
-    return false;
+}
+
+void TransportManager::addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption)
+{
+    if (device) {
+        if (const auto impl = loadImpl()) {
+            impl->addTrack(std::move(device), encryption);
+        }
+    }
 }
 
 bool TransportManager::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)

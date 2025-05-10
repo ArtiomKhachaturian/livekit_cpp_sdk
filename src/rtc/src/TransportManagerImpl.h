@@ -13,17 +13,19 @@
 // limitations under the License.
 #pragma once // TransportManagerImpl.h
 #include "Loggable.h"
-#include "Transport.h"
 #include "AsyncListener.h"
 #include "PingPongKit.h"
-#include "TransportListener.h"
 #include "PingPongKitListener.h"
+#include "SafeObj.h"
+#include "Transport.h"
+#include "TransportListener.h"
 #include <api/peer_connection_interface.h>
 
 namespace LiveKitCpp
 {
 
 class TransportManagerListener;
+class TrackManager;
 
 class TransportManagerImpl : private Bricks::LoggableS<TransportListener, PingPongKitListener>
 {
@@ -33,6 +35,7 @@ public:
                          uint64_t negotiationDelay, // ms
                          const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                          const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                         const std::weak_ptr<TrackManager>& trackManager,
                          const std::string& identity,
                          const std::string& prefferedAudioEncoder = {},
                          const std::string& prefferedVideoEncoder = {},
@@ -48,7 +51,8 @@ public:
     void notifyThatPongReceived() { _pingPongKit.notifyThatPongReceived(); }
     bool setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
-    bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
+    void addTrack(std::shared_ptr<AudioDeviceImpl> device, EncryptionType encryption);
+    void addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption);
     bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
@@ -73,13 +77,14 @@ private:
     void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
     void onSdpSet(SignalTarget target, bool local, const webrtc::SessionDescriptionInterface* desc) final;
     void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
-    void onTransceiverAdded(SignalTarget target,
-                            rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
-    void onTransceiverAddFailure(SignalTarget target,
-                                 const std::string& id,
-                                 webrtc::MediaType type,
-                                 const webrtc::RtpTransceiverInit& init,
-                                 webrtc::RTCError error) final;
+    void onLocalAudioTrackAdded(SignalTarget target, std::shared_ptr<AudioDeviceImpl> device,
+                                EncryptionType encryption,
+                                rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void onLocalVideoTrackAdded(SignalTarget target, std::shared_ptr<LocalVideoDeviceImpl> device,
+                                EncryptionType encryption,
+                                rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void onLocalTrackAddFailure(SignalTarget target, const std::string& id, webrtc::MediaType type,
+                                const webrtc::RtpTransceiverInit&, webrtc::RTCError error) final;
     void onLocalTrackRemoved(SignalTarget target, const std::string& id, webrtc::MediaType type,
                              const std::vector<std::string>&) final;
     void onLocalDataChannelCreated(SignalTarget target,
@@ -108,6 +113,7 @@ private:
     const bool _fastPublish;
     const std::string _logCategory;
     const std::unique_ptr<MediaTimer> _negotiationTimer;
+    const std::weak_ptr<TrackManager> _trackManager;
     AsyncListener<TransportManagerListener*> _listener;
     Transport _publisher;
     Transport _subscriber;

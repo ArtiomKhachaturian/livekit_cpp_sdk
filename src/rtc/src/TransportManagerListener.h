@@ -15,10 +15,13 @@
 #include "PingPongKitListener.h"
 #include "DataChannel.h"
 #include <api/peer_connection_interface.h>
+#include <memory>
 
 namespace LiveKitCpp
 {
 
+class LocalAudioTrackImpl;
+class LocalVideoTrackImpl;
 enum class SignalTarget;
 
 class TransportManagerListener : public PingPongKitListener
@@ -33,10 +36,10 @@ public:
     virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> /*channel*/) {}
     virtual void onIceCandidateGathered(SignalTarget /*target*/, std::string /*sdpMid*/,
                                         int /*sdpMlineIndex*/, cricket::Candidate /*candidate*/) {}
-    virtual void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
+    virtual void onLocalAudioTrackAdded(std::shared_ptr<LocalAudioTrackImpl> /*track*/) {}
+    virtual void onLocalVideoTrackAdded(std::shared_ptr<LocalVideoTrackImpl> /*track*/) {}
     virtual void onLocalTrackAddFailure(std::string /*id*/,
                                         webrtc::MediaType /*type*/,
-                                        std::vector<std::string> /*streamIds*/,
                                         webrtc::RTCError /*error*/) {}
     virtual void onLocalTrackRemoved(std::string /*id*/, webrtc::MediaType /*type*/) {}
     virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,

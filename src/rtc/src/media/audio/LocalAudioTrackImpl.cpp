@@ -25,11 +25,12 @@ inline std::string audioLabel(bool microphone) {
 namespace LiveKitCpp
 {
 
-LocalAudioTrackImpl::LocalAudioTrackImpl(EncryptionType encryption,
-                                         std::shared_ptr<AudioDeviceImpl> audioDevice,
+LocalAudioTrackImpl::LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
+                                         EncryptionType encryption,
+                                         rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                                          const std::weak_ptr<TrackManager>& trackManager,
                                          bool microphone)
-    : Base(audioLabel(microphone), encryption, std::move(audioDevice), trackManager)
+    : Base(audioLabel(microphone), std::move(audioDevice), encryption, std::move(transceiver), trackManager)
     , _microphone(microphone)
 {
 }

@@ -22,11 +22,15 @@ class Logger;
 namespace LiveKitCpp
 {
 
+class TrackManager;
 class TransportManagerImpl;
 class TransportManagerListener;
 class PeerConnectionFactory;
 class DataChannelObserver;
+class AudioDeviceImpl;
+class LocalVideoDeviceImpl;
 enum class SignalTarget;
+enum class EncryptionType;
 
 class TransportManager : private RtcObject<TransportManagerImpl>
 {
@@ -36,6 +40,7 @@ public:
                      uint64_t negotiationDelay, // ms
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                      const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                     const std::weak_ptr<TrackManager>& trackManager,
                      const std::string& identity,
                      const std::string& prefferedAudioEncoder = {},
                      const std::string& prefferedVideoEncoder = {},
@@ -51,7 +56,8 @@ public:
     void notifyThatPongReceived();
     bool setRemoteOffer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
     bool setRemoteAnswer(std::unique_ptr<webrtc::SessionDescriptionInterface> desc);
-    bool addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track);
+    void addTrack(std::shared_ptr<AudioDeviceImpl> device, EncryptionType encryption);
+    void addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption);
     bool removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track);
     void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;

@@ -22,6 +22,9 @@
 namespace LiveKitCpp
 {
 
+class LocalAudioTrack;
+class LocalVideoTrack;
+
 class SessionListener : public ParticipantListener
 {
 public:
@@ -30,6 +33,12 @@ public:
     virtual void onError(LiveKitError /*error*/, const std::string& /*what*/ = {}) {}
     virtual void onLocalParticipantJoined() {}
     virtual void onLocalParticipantLeaved() {}
+    virtual void onLocalAudioTrackAdded(const std::shared_ptr<LocalAudioTrack>& /*track*/) {}
+    virtual void onLocalVideoTrackAdded(const std::shared_ptr<LocalVideoTrack>& /*track*/) {}
+    virtual void onLocalAudioTrackAddFailure(std::string /*id*/, std::string_view /*details*/ = {}) {}
+    virtual void onLocalVideoTrackAddFailure(std::string /*id*/, std::string_view /*details*/ = {}) {}
+    virtual void onLocalAudioTrackRemoved(std::string /*id*/) {}
+    virtual void onLocalVideoTrackRemoved(std::string /*id*/) {}
     virtual void onRemoteParticipantAdded(const std::string& /*remoteParticipantSid*/) {}
     virtual void onRemoteParticipantRemoved(const std::string& /*remoteParticipantSid*/) {}
     // chat

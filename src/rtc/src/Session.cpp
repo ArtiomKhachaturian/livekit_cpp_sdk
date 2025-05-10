@@ -87,16 +87,14 @@ size_t Session::localVideoTracksCount() const
     return 0U;
 }
 
-std::shared_ptr<LocalAudioTrack> Session::addAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                        EncryptionType encryption)
+void Session::addAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption)
 {
-    return _impl->_engine.addLocalAudioTrack(std::move(device), encryption);
+    _impl->_engine.addLocalAudioTrack(std::move(device), encryption);
 }
 
-std::shared_ptr<LocalVideoTrack> Session::addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                                                        EncryptionType encryption)
+void Session::addVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption)
 {
-    return _impl->_engine.addLocalVideoTrack(std::move(device), encryption);
+    _impl->_engine.addLocalVideoTrack(std::move(device), encryption);
 }
 
 void Session::removeAudioTrack(std::shared_ptr<LocalAudioTrack> track)

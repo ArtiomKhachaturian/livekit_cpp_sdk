@@ -33,10 +33,11 @@ inline std::optional<std::string> scalabilityModeToString(LiveKitCpp::VideoScala
 namespace LiveKitCpp
 {
 
-LocalVideoTrackImpl::LocalVideoTrackImpl(EncryptionType encryption,
-                                         std::shared_ptr<LocalVideoDeviceImpl> device,
+LocalVideoTrackImpl::LocalVideoTrackImpl(std::shared_ptr<LocalVideoDeviceImpl> device,
+                                         EncryptionType encryption,
+                                         rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                                          const std::weak_ptr<TrackManager>& trackManager)
-    : Base(videoLabel(device && device->screencast()), encryption, device, trackManager)
+    : Base(videoLabel(device && device->screencast()), device, encryption, std::move(transceiver), trackManager)
 {
 }
 

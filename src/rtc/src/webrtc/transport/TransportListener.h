@@ -20,8 +20,11 @@
 namespace LiveKitCpp
 {
 
+class AudioDeviceImpl;
+class LocalVideoDeviceImpl;
 class Transport;
 enum class SignalTarget;
+enum class EncryptionType;
 
 /**
  * @class WebRtcObserver
@@ -140,8 +143,15 @@ public:
      * @param target The target of the signal.
      * @param sender The sender of the track that was added.
      */
-    virtual void onLocalTrackAdded(SignalTarget /*target*/,
-                                   rtc::scoped_refptr<webrtc::RtpSenderInterface> /*sender*/) {}
+    virtual void onLocalAudioTrackAdded(SignalTarget /*target*/,
+                                        std::shared_ptr<AudioDeviceImpl> /*device*/,
+                                        EncryptionType /*encryption*/,
+                                        rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+    
+    virtual void onLocalVideoTrackAdded(SignalTarget /*target*/,
+                                        std::shared_ptr<LocalVideoDeviceImpl> /*device*/,
+                                        EncryptionType /*encryption*/,
+                                        rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
 
     /**
      * @brief Called when adding a local track fails.
@@ -155,7 +165,7 @@ public:
     virtual void onLocalTrackAddFailure(SignalTarget /*target*/,
                                         const std::string& /*id*/,
                                         webrtc::MediaType /*type*/,
-                                        const std::vector<std::string>& /*streamIds*/,
+                                        const webrtc::RtpTransceiverInit& /*init*/,
                                         webrtc::RTCError /*error*/) {}
 
     /**
@@ -185,31 +195,6 @@ public:
                                            webrtc::MediaType /*type*/,
                                            const std::vector<std::string>& /*streamIds*/,
                                            webrtc::RTCError /*error*/) {}
-
-    /**
-     * @brief Called when an RTP transceiver is successfully added.
-     *
-     * @param target The target of the signal.
-     * @param transceiver The RTP transceiver that was added.
-     */
-    virtual void onTransceiverAdded(SignalTarget /*target*/,
-                                    rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
-
-    /**
-     * @brief Called when adding an RTP transceiver fails.
-     *
-     * @param target The target of the signal.
-     * @param id The ID of the transceiver.
-     * @param type The kind of the transceiver (e.g., audio, video).
-     * @param init The initialization parameters of the transceiver.
-     * @param error The error that occurred while adding the transceiver.
-     */
-    virtual void onTransceiverAddFailure(SignalTarget /*target*/,
-                                         const std::string& /*id*/,
-                                         webrtc::MediaType /*type*/,
-                                         const webrtc::RtpTransceiverInit& /*init*/,
-                                         webrtc::RTCError /*error*/) {}
-
     /**
      * @brief Triggered when the SignalingState changes.
      *

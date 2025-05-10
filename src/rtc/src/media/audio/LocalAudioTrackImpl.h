@@ -25,8 +25,9 @@ class LocalAudioTrackImpl : public LocalTrackImpl<AudioTrackImpl<LocalAudioTrack
 {
     using Base = LocalTrackImpl<AudioTrackImpl<LocalAudioTrack>>;
 public:
-    LocalAudioTrackImpl(EncryptionType encryption,
-                        std::shared_ptr<AudioDeviceImpl> audioDevice,
+    LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
+                        EncryptionType encryption,
+                        rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                         const std::weak_ptr<TrackManager>& trackManager,
                         bool microphone = true);
     // impl. of AudioTrack

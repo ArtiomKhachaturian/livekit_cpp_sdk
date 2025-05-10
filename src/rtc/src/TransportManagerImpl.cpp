@@ -14,6 +14,8 @@
 #include "TransportManagerImpl.h"
 #include "TransportManagerListener.h"
 #include "PeerConnectionFactory.h"
+#include "LocalAudioTrackImpl.h"
+#include "LocalVideoTrackImpl.h"
 #include "DataChannel.h"
 #include "RoomUtils.h"
 #include "RtcUtils.h"
@@ -53,6 +55,7 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
                                            uint64_t negotiationDelay,
                                            const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                                            const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
+                                           const std::weak_ptr<TrackManager>& trackManager,
                                            const std::string& identity,
                                            const std::string& prefferedAudioEncoder,
                                            const std::string& prefferedVideoEncoder,
@@ -65,6 +68,7 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
     , _fastPublish(fastPublish)
     , _logCategory("transport_manager_" + identity)
     , _negotiationTimer(_negotiationDelay ? new MediaTimer(pcf) : nullptr)
+    , _trackManager(trackManager)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, identity, prefferedAudioEncoder, prefferedVideoEncoder, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, identity, {}, {}, logger)
     , _pingPongKit(positiveOrZero(pingInterval), positiveOrZero(pingTimeout), pcf)
@@ -144,14 +148,22 @@ bool TransportManagerImpl::setConfiguration(const webrtc::PeerConnectionInterfac
     return _subscriber.setConfiguration(config) && _publisher.setConfiguration(config);
 }
 
-bool TransportManagerImpl::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track)
+void TransportManagerImpl::addTrack(std::shared_ptr<AudioDeviceImpl> device, EncryptionType encryption)
 {
-    if (track) {
+    if (device) {
         webrtc::RtpTransceiverInit init;
         init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
-        return _publisher.addTransceiver(std::move(track), init);
+        _publisher.addTrack(std::move(device), encryption, init);
     }
-    return false;
+}
+
+void TransportManagerImpl::addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption)
+{
+    if (device) {
+        webrtc::RtpTransceiverInit init;
+        init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
+        _publisher.addTrack(std::move(device), encryption, init);
+    }
 }
 
 bool TransportManagerImpl::removeTrack(const rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>& track)
@@ -364,23 +376,39 @@ void TransportManagerImpl::onSdpSetFailure(SignalTarget target, bool local, webr
     _listener.invoke(&TransportManagerListener::onSdpOperationFailed, target, std::move(error));
 }
 
-void TransportManagerImpl::onTransceiverAdded(SignalTarget target,
-                                              rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+void TransportManagerImpl::onLocalAudioTrackAdded(SignalTarget target,
+                                                  std::shared_ptr<AudioDeviceImpl> device,
+                                                  EncryptionType encryption,
+                                                  rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
-    if (SignalTarget::Publisher == target && transceiver) {
-        _listener.invoke(&TransportManagerListener::onLocalTrackAdded, transceiver->sender());
+    if (SignalTarget::Publisher == target && device && transceiver) {
+        auto track = std::make_shared<LocalAudioTrackImpl>(std::move(device), encryption,
+                                                           std::move(transceiver),
+                                                           _trackManager);
+        _listener.invoke(&TransportManagerListener::onLocalAudioTrackAdded, std::move(track));
     }
 }
 
-void TransportManagerImpl::onTransceiverAddFailure(SignalTarget target,
-                                                   const std::string& id,
-                                                   webrtc::MediaType type,
-                                                   const webrtc::RtpTransceiverInit& init,
-                                                   webrtc::RTCError error)
+void TransportManagerImpl::onLocalVideoTrackAdded(SignalTarget target,
+                                                  std::shared_ptr<LocalVideoDeviceImpl> device,
+                                                  EncryptionType encryption,
+                                                  rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+{
+    if (SignalTarget::Publisher == target && device && transceiver) {
+        auto track = std::make_shared<LocalVideoTrackImpl>(std::move(device), encryption,
+                                                           std::move(transceiver),
+                                                           _trackManager);
+        _listener.invoke(&TransportManagerListener::onLocalVideoTrackAdded, std::move(track));
+    }
+}
+
+void TransportManagerImpl::onLocalTrackAddFailure(SignalTarget target, const std::string& id,
+                                                  webrtc::MediaType type,
+                                                  const webrtc::RtpTransceiverInit&,
+                                                  webrtc::RTCError error)
 {
     if (SignalTarget::Publisher == target) {
-        _listener.invoke(&TransportManagerListener::onLocalTrackAddFailure, id, type,
-                         init.stream_ids, std::move(error));
+        _listener.invoke(&TransportManagerListener::onLocalTrackAddFailure, id, type, std::move(error));
     }
 }
 

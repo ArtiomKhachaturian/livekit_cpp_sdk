@@ -102,10 +102,8 @@ public:
     void setListener(SessionListener* listener);
     const auto& localParticipant() const noexcept { return _localParticipant; }
     const auto& remoteParticipants() const noexcept { return _remoteParicipants; }
-    std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                            EncryptionType encryption);
-    std::shared_ptr<LocalVideoTrackImpl> addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                                                            EncryptionType encryption);
+    void addLocalAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption);
+    void addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption);
     bool removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     void setAesCgmKeyProvider(std::unique_ptr<KeyProvider> provider = {});
@@ -138,7 +136,7 @@ private:
     void handleLocalParticipantDisconnection(DisconnectReason reason);
     void notifyAboutLocalParticipantJoinLeave(bool join) const;
     // search by cid or sid
-    void sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track);
+    bool sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track);
     void sendLeave(DisconnectReason reason = DisconnectReason::ClientInitiated,
                    LeaveRequestAction action = LeaveRequestAction::Disconnect) const;
     template <class ReqMethod, class TReq>
@@ -191,7 +189,9 @@ private:
     void onTrackUnpublished(TrackUnpublishedResponse unpublished) final;
     void onRefreshToken(std::string authToken) final;
     // impl. of TransportManagerListener
-    void onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender) final;
+    void onLocalAudioTrackAdded(std::shared_ptr<LocalAudioTrackImpl> track) final;
+    void onLocalVideoTrackAdded(std::shared_ptr<LocalVideoTrackImpl> track) final;
+    void onLocalTrackAddFailure(std::string id, webrtc::MediaType type, webrtc::RTCError error) final;
     void onLocalTrackRemoved(std::string id, webrtc::MediaType) final;
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
                        webrtc::PeerConnectionInterface::PeerConnectionState publisherState,

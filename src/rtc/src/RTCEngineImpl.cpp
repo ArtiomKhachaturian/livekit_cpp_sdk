@@ -300,25 +300,24 @@ void RTCEngineImpl::notifyAboutLocalParticipantJoinLeave(bool join) const
     }
 }
 
-void RTCEngineImpl::sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track)
+bool RTCEngineImpl::sendAddTrack(const std::shared_ptr<LocalTrackAccessor>& track)
 {
     if (track && !closed()) {
         AddTrackRequest request;
         if (track->fillRequest(&request)) {
             switch (sendAddTrack(std::move(request))) {
                 case SendResult::Ok:
-                    logVerbose("add local track '" + track->cid() +
-                               "' request has been sent to server");
-                    break;
+                    logVerbose("add local track '" + track->cid() + "' request has been sent to server");
+                    return true;
                 case SendResult::TransportError:
-                    logError("failed to send add local track '" +
-                             track->cid() + "' request to server");
+                    logError("failed to send add local track '" + track->cid() + "' request to server");
                     break;
                 default:
                     break;
             }
         }
     }
+    return false;
 }
 
 void RTCEngineImpl::sendLeave(DisconnectReason reason, LeaveRequestAction action) const
@@ -744,28 +743,71 @@ void RTCEngineImpl::onRefreshToken(std::string authToken)
     notify(&SessionListener::onRefreshToken, std::move(authToken));
 }
 
-void RTCEngineImpl::onLocalTrackAdded(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
+void RTCEngineImpl::onLocalAudioTrackAdded(std::shared_ptr<LocalAudioTrackImpl> track)
 {
-    if (const auto track = _localParticipant->track(sender)) {
-        const auto encryption = track->notifyThatMediaAddedToTransport(sender);
-        if (EncryptionType::None != encryption) {
-            if (auto cryptor = createCryptor(encryption, track->mediaType(),
+    if (track) {
+        if (EncryptionType::None != track->encryption()) {
+            if (auto cryptor = createCryptor(track->encryption(), track->mediaType(),
                                              _localParticipant->identity(),
-                                             sender->id(), _localParticipant)) {
-                sender->SetFrameTransformer(std::move(cryptor));
+                                             track->id(), _localParticipant)) {
+                track->setFrameTransformer(std::move(cryptor));
             }
             else {
-                logError("failed to create " + toString(encryption) + " encryptor for track " + track->cid());
+                logError("failed to create " + toString(track->encryption()) + " encryptor for track " + track->cid());
             }
         }
-        sendAddTrack(track);
+        if (sendAddTrack(track)) {
+            track->updateInitialParameters();
+        }
+        _listener.invoke(&SessionListener::onLocalAudioTrackAdded, track);
     }
 }
 
-void RTCEngineImpl::onLocalTrackRemoved(std::string id, webrtc::MediaType)
+void RTCEngineImpl::onLocalVideoTrackAdded(std::shared_ptr<LocalVideoTrackImpl> track)
 {
-    if (const auto track = _localParticipant->track(id, true)) {
-        track->notifyThatMediaRemovedFromTransport();
+    if (track) {
+        if (EncryptionType::None != track->encryption()) {
+            if (auto cryptor = createCryptor(track->encryption(), track->mediaType(),
+                                             _localParticipant->identity(),
+                                             track->id(), _localParticipant)) {
+                track->setFrameTransformer(std::move(cryptor));
+            }
+            else {
+                logError("failed to create " + toString(track->encryption()) + " encryptor for track " + track->cid());
+            }
+        }
+        if (sendAddTrack(track)) {
+            track->updateInitialParameters();
+        }
+        _listener.invoke(&SessionListener::onLocalVideoTrackAdded, track);
+    }
+}
+
+void RTCEngineImpl::onLocalTrackAddFailure(std::string id, webrtc::MediaType type, webrtc::RTCError error)
+{
+    switch (type) {
+        case webrtc::MediaType::AUDIO:
+            _listener.invoke(&SessionListener::onLocalAudioTrackAddFailure, std::move(id), error.message());
+            break;
+        case webrtc::MediaType::VIDEO:
+            _listener.invoke(&SessionListener::onLocalVideoTrackAddFailure, std::move(id), error.message());
+            break;
+        default:
+            break;
+    }
+}
+
+void RTCEngineImpl::onLocalTrackRemoved(std::string id, webrtc::MediaType type)
+{
+    switch (type) {
+        case webrtc::MediaType::AUDIO:
+            _listener.invoke(&SessionListener::onLocalAudioTrackRemoved, std::move(id));
+            break;
+        case webrtc::MediaType::VIDEO:
+            _listener.invoke(&SessionListener::onLocalVideoTrackRemoved, std::move(id));
+            break;
+        default:
+            break;
     }
 }
 
@@ -776,14 +818,14 @@ void RTCEngineImpl::onStateChange(webrtc::PeerConnectionInterface::PeerConnectio
     switch (publisherState) {
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
             // publish local tracks
-            for (const auto& track : _localParticipant->tracks()) {
+            /*for (const auto& track : _localParticipant->tracks()) {
                 sendAddTrack(track);
-            }
+            }*/
             break;
         case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
-            for (const auto& track : _localParticipant->tracks()) {
+            /*for (const auto& track : _localParticipant->tracks()) {
                 track->notifyThatMediaRemovedFromTransport();
-            }
+            }*/
             break;
         default:
             break;

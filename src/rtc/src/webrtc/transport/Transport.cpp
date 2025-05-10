@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Transport.h"
+#include "AudioDeviceImpl.h"
 #include "CreateSdpObserver.h"
 #include "DataChannel.h"
 #include "Logger.h"
@@ -22,7 +23,9 @@
 #include "SetSdpObservers.h"
 #include "PeerConnectionFactory.h"
 #include "RoomUtils.h"
+#include "LocalVideoDeviceImpl.h"
 #include "Utils.h"
+#include <type_traits>
 
 namespace {
 
@@ -143,48 +146,18 @@ bool Transport::createDataChannel(const std::string& label, const webrtc::DataCh
     return false;
 }
 
-bool Transport::addTrack(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                         const std::vector<std::string>& streamIds,
-                         const std::vector<webrtc::RtpEncodingParameters>& initSendEncodings)
+void Transport::addTrack(std::shared_ptr<AudioDeviceImpl> device,
+                         EncryptionType encryption,
+                         const webrtc::RtpTransceiverInit& init)
 {
-    if (track) {
-        if (const auto impl = loadImpl()) {
-            if (const auto thread = impl->signalingThread()) {
-                const auto id = track->id();
-                const auto kind = track->kind();
-                impl->logInfo("request to adding local '" + id + "' " + kind + " track");
-                thread->PostTask([id, kind, track = std::move(track), streamIds,
-                                  initSendEncodings, implRef = weak(impl)]() {
-                    if (const auto impl = implRef.lock()) {
-                        const auto pc = impl->peerConnection();
-                        if (!pc) {
-                            return;
-                        }
-                        webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpSenderInterface>> result;
-                        if (initSendEncodings.empty()) {
-                            result = pc->AddTrack(std::move(track), streamIds);
-                        }
-                        else {
-                            result = pc->AddTrack(std::move(track), streamIds,
-                                                  initSendEncodings);
-                        }
-                        if (result.ok()) {
-                            impl->logVerbose("local " + kind + " track '" + id + "' was added");
-                            impl->notify(&TransportListener::onLocalTrackAdded, result.MoveValue());
-                        }
-                        else {
-                            impl->logWebRTCError(result.error(), "failed to add '" +
-                                                 id + "' local " + kind + " track");
-                            impl->notify(&TransportListener::onLocalTrackAddFailure,
-                                         id, fromString(kind), streamIds, result.MoveError());
-                        }
-                    }
-                });
-                return true;
-            }
-        }
-    }
-    return false;
+    addTransceiver(std::move(device), encryption, init);
+}
+
+void Transport::addTrack(std::shared_ptr<LocalVideoDeviceImpl> device,
+                         EncryptionType encryption,
+                         const webrtc::RtpTransceiverInit& init)
+{
+    addTransceiver(std::move(device), encryption, init);
 }
 
 bool Transport::removeTrack(rtc::scoped_refptr<webrtc::RtpSenderInterface> sender)
@@ -264,41 +237,6 @@ void Transport::addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> c
             }
         }
     }
-}
-
-bool Transport::addTransceiver(rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track,
-                               const webrtc::RtpTransceiverInit& init)
-{
-    if (track) {
-        if (const auto impl = loadImpl()) {
-            if (const auto thread = impl->signalingThread()) {
-                const auto id = track->id();
-                const auto kind = track->kind();
-                impl->logInfo("request to adding '" + id + "' " + kind + " transceiver");
-                thread->PostTask([id, kind, track = std::move(track), init, implRef = weak(impl)]() {
-                    if (const auto impl = implRef.lock()) {
-                        const auto pc = impl->peerConnection();
-                        if (!pc) {
-                            return;
-                        }
-                        auto result = pc->AddTransceiver(std::move(track), init);
-                        if (result.ok()) {
-                            impl->logVerbose(kind + " transceiver '" + id + "' was added");
-                            impl->notify(&TransportListener::onTransceiverAdded, result.MoveValue());
-                        }
-                        else {
-                            impl->logWebRTCError(result.error(), "failed to add '" +
-                                                 id + "' " + kind + " transceiver");
-                            impl->notify(&TransportListener::onTransceiverAddFailure,
-                                         id, fromString(kind), init, result.MoveError());
-                        }
-                    }
-                });
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 void Transport::queryReceiverStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
@@ -569,6 +507,58 @@ std::unique_ptr<webrtc::SessionDescriptionInterface> Transport::patch(std::uniqu
         patch.setCodec(_prefferedVideoCodec, webrtc::MediaType::VIDEO);
     }
     return desc;
+}
+
+template <class TMediaDevice>
+void Transport::addTransceiver(std::shared_ptr<TMediaDevice> device,
+                               EncryptionType encryption,
+                               const webrtc::RtpTransceiverInit& init)
+{
+    if (device) {
+        const auto impl = loadImpl();
+        if (!impl) {
+            return; // instance is almost die
+        }
+        const auto thread = impl->signalingThread();
+        if (!thread) {
+            return; // app is almost die
+        }
+        const auto mediaType = device->audio() ? webrtc::MediaType::AUDIO : webrtc::MediaType::VIDEO;
+        std::string id = device->id();
+        impl->logInfo("request to adding local '" + id + "' " +
+                      webrtc::MediaTypeToString(mediaType) + " track");
+        thread->PostTask([id = std::move(id), mediaType, encryption, device = std::move(device),
+                          init, implRef = weak(impl)]() {
+            if (const auto impl = implRef.lock()) {
+                const auto pc = impl->peerConnection();
+                if (!pc) {
+                    impl->notify(&TransportListener::onLocalTrackAddFailure, id, mediaType, init,
+                                 webrtc::RTCError(webrtc::RTCErrorType::INVALID_STATE,
+                                                  "peer connection already closed"));
+                    return;
+                }
+                auto result = pc->AddTransceiver(device->track(), init);
+                if (result.ok()) {
+                    impl->logVerbose("local " + webrtc::MediaTypeToString(mediaType) +
+                                     " track '" + id + "' was added");
+                    if constexpr (std::is_same<AudioDeviceImpl, TMediaDevice>::value) {
+                        impl->notify(&TransportListener::onLocalAudioTrackAdded,
+                                     std::move(device), encryption, result.MoveValue());
+                    }
+                    else if constexpr (std::is_same<LocalVideoDeviceImpl, TMediaDevice>::value) {
+                        impl->notify(&TransportListener::onLocalVideoTrackAdded,
+                                     std::move(device), encryption, result.MoveValue());
+                    }
+                }
+                else {
+                    impl->logWebRTCError(result.error(), "failed to add '" + id + "' local " +
+                                         webrtc::MediaTypeToString(mediaType) + " track");
+                    impl->notify(&TransportListener::onLocalTrackAddFailure,
+                                 id, mediaType, init, result.MoveError());
+                }
+            }
+        });
+    }
 }
 
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)

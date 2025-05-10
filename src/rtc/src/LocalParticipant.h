@@ -63,12 +63,9 @@ public:
     std::optional<bool> stereoRecording() const;
     size_t audioTracksCount() const;
     size_t videoTracksCount() const;
-    std::shared_ptr<LocalAudioTrackImpl> addAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                       EncryptionType encryption,
-                                                       const std::weak_ptr<TrackManager>& trackManager);
-    std::shared_ptr<LocalVideoTrackImpl> addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                                                       EncryptionType encryption,
-                                                       const std::weak_ptr<TrackManager>& trackManager);
+    void beginAddAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption);
+    void beginAddVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption);
+    
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>
         removeAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface>

@@ -85,10 +85,8 @@ public:
                          bool generated,
                          const std::vector<std::string>& destinationIdentities = {}) const;
     void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
-    std::shared_ptr<LocalAudioTrackImpl> addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                            EncryptionType encryption);
-    std::shared_ptr<LocalVideoTrackImpl> addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                                                            EncryptionType encryption);
+    void addLocalAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption);
+    void addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption);
     bool removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     bool removeLocalVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<const LocalParticipant> localParticipant() const;

@@ -25,8 +25,9 @@ class LocalVideoTrackImpl : public LocalTrackImpl<VideoTrackImpl<LocalVideoDevic
 {
     using Base = LocalTrackImpl<VideoTrackImpl<LocalVideoDeviceImpl, LocalVideoTrack>>;
 public:
-    LocalVideoTrackImpl(EncryptionType encryption,
-                        std::shared_ptr<LocalVideoDeviceImpl> device,
+    LocalVideoTrackImpl(std::shared_ptr<LocalVideoDeviceImpl> device,
+                        EncryptionType encryption,
+                        rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                         const std::weak_ptr<TrackManager>& trackManager);
     // impl. of LocalTrack
     TrackSource source() const final;

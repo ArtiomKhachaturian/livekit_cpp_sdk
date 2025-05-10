@@ -65,10 +65,10 @@ public:
     bool audioRecordingEnabled() const;
     size_t localAudioTracksCount() const;
     size_t localVideoTracksCount() const;
-    std::shared_ptr<LocalAudioTrack> addAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                   EncryptionType encryption = EncryptionType::None);
-    std::shared_ptr<LocalVideoTrack> addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                                                   EncryptionType encryption = EncryptionType::None);
+    void addAudioTrack(std::shared_ptr<AudioDevice> device,
+                       EncryptionType encryption = EncryptionType::None);
+    void addVideoTrack(std::shared_ptr<LocalVideoDevice> device,
+                       EncryptionType encryption = EncryptionType::None);
     void removeAudioTrack(std::shared_ptr<LocalAudioTrack> track);
     void removeVideoTrack(std::shared_ptr<LocalVideoTrack> track);
     std::shared_ptr<LocalAudioTrack> audioTrack(size_t index) const;

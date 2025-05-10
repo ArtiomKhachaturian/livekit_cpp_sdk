@@ -127,26 +127,22 @@ void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCal
     }
 }
 
-std::shared_ptr<LocalAudioTrackImpl> RTCEngine::addLocalAudioTrack(std::shared_ptr<AudioDevice> device,
-                                                                   EncryptionType encryption)
+void RTCEngine::addLocalAudioTrack(std::shared_ptr<AudioDevice> device, EncryptionType encryption)
 {
     if (device) {
         if (const auto impl = loadImpl()) {
-            return impl->addLocalAudioTrack(std::move(device), encryption);
+            impl->addLocalAudioTrack(std::move(device), encryption);
         }
     }
-    return {};
 }
 
-std::shared_ptr<LocalVideoTrackImpl> RTCEngine::addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device,
-                                                                   EncryptionType encryption)
+void RTCEngine::addLocalVideoTrack(std::shared_ptr<LocalVideoDevice> device, EncryptionType encryption)
 {
     if (device) {
         if (const auto impl = loadImpl()) {
-            return impl->addLocalVideoTrack(std::move(device), encryption);
+            impl->addLocalVideoTrack(std::move(device), encryption);
         }
     }
-    return {};
 }
 
 bool RTCEngine::removeLocalAudioTrack(std::shared_ptr<LocalAudioTrack> track)

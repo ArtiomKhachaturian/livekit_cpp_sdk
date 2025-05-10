@@ -64,7 +64,7 @@ size_t LocalParticipant::videoTracksCount() const
     return _videoTracks->size();
 }
 
-std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addAudioTrack(std::shared_ptr<AudioDevice> device,
+/*std::shared_ptr<LocalAudioTrackImpl> LocalParticipant::addAudioTrack(std::shared_ptr<AudioDevice> device,
                                                                      EncryptionType encryption,
                                                                      const std::weak_ptr<TrackManager>& trackManager)
 {
@@ -86,7 +86,7 @@ std::shared_ptr<LocalVideoTrackImpl> LocalParticipant::addVideoTrack(std::shared
         return track;
     }
     return {};
-}
+}*/
 
 webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> LocalParticipant::
     removeAudioTrack(std::shared_ptr<LocalAudioTrack> track)
