@@ -398,7 +398,9 @@ void TransportManagerImpl::updateState()
     const auto newState = primaryTransport().state();
     const auto oldState = _state.exchange(newState);
     if (oldState != newState) {
-        logInfo(makeStateChangesString(oldState, newState));
+        if (canLogInfo()) {
+            logInfo(makeStateChangesString(oldState, newState));
+        }
         switch (newState) {
             case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
                 _embeddedDCCount = 0U;

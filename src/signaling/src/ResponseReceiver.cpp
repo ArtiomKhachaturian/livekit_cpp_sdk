@@ -114,7 +114,9 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
                     break;
                 case livekit::SignalResponse::kRefreshToken:
                     if (response->has_refresh_token()) {
-                        logVerbose(formatVerboseMsg("RefreshToken"));
+                        if (canLogVerbose()) {
+                            logVerbose(formatVerboseMsg("RefreshToken"));
+                        }
                         notify(&ResponsesListener::onRefreshToken, response->refresh_token());
                     }
                     break;
@@ -123,7 +125,9 @@ void ResponseReceiver::parseBinary(const void* data, size_t dataLen)
                     break;
                 case livekit::SignalResponse::kPong: // deprecated
                     if (response->has_pong()) {
-                        logVerbose(formatVerboseMsg<livekit::Pong>());
+                        if (canLogVerbose()) {
+                            logVerbose(formatVerboseMsg<livekit::Pong>());
+                        }
                         Pong pong;
                         pong._timestamp = response->pong();
                         notify(&ResponsesListener::onPong, pong);
@@ -168,7 +172,7 @@ void ResponseReceiver::notifyAboutError(std::string details)
 
 std::string_view ResponseReceiver::logCategory() const
 {
-    static const std::string_view category("response_interceptor");
+    static const std::string_view category("response_receiver");
     return category;
 }
 
@@ -194,10 +198,12 @@ template <class Method, class TLiveKitType>
 void ResponseReceiver::signal(const Method& method, TLiveKitType sig,
                               std::string typeName) const
 {
-    if (typeName.empty()) {
-        typeName = marshalledTypeName<TLiveKitType>();
+    if (canLogVerbose()) {
+        if (typeName.empty()) {
+            typeName = marshalledTypeName<TLiveKitType>();
+        }
+        logVerbose(formatVerboseMsg(typeName));
     }
-    logVerbose(formatVerboseMsg(typeName));
     notify(method, _marshaller.map(std::move(sig)));
 }
 

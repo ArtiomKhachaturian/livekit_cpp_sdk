@@ -166,7 +166,7 @@ bool RequestSender::canSend() const
 
 std::string_view RequestSender::logCategory() const
 {
-    static const std::string_view category("request_interceptor");
+    static const std::string_view category("request_sender");
     return category;
 }
 
@@ -181,7 +181,7 @@ bool RequestSender::send(const TSetMethod& setMethod, TObject object,
             *target = _marshaller.map(std::move(object));
             ok = send(request, detectTypename<TObject>(typeName));
         }
-        else {
+        else if (canLogError()) {
             logError("proto method not available for set of '" +
                      detectTypename<TObject>(typeName) + "'");
         }
@@ -197,13 +197,15 @@ bool RequestSender::send(const TProtoObject& object, const std::string& typeName
     if (!bytes.empty()) {
         ok = _commandSender->sendBinary(VectorBlob(bytes));
         if (ok) {
-            logVerbose("sending '" + typeName + "' to server");
+            if (canLogVerbose()) {
+                logVerbose("sending '" + typeName + "' to server");
+            }
         }
-        else {
+        else if (canLogError()) {
             logError("send of '" + typeName + "' signal has been failed");
         }
     }
-    else {
+    else if (canLogError()) {
         logError("failed to serialize of '" + typeName + "' into a bytes array");
     }
     return ok;
