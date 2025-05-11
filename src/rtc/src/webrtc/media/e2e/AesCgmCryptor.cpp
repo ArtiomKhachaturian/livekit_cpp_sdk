@@ -138,7 +138,9 @@ void AesCgmCryptor::Transform(std::unique_ptr<webrtc::TransformableFrameInterfac
 {
     if (frame) {
         if (!hasSink() && !hasSinks()) {
-            logWarning("no transformation callbacks");
+            if (canLogWarning()) {
+                logWarning("no transformation callbacks");
+            }
             return;
         }
         switch (frame->GetDirection()) {
@@ -208,7 +210,9 @@ void AesCgmCryptor::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
             return;
         }
         if (!_enabledCryption) {
-            logWarning("encryption disabled");
+            if (canLogWarning()) {
+                logWarning("encryption disabled");
+            }
             if (_keyProvider->options()._discardFrameWhenCryptorNotReady) {
                 return;
             }
@@ -310,7 +314,9 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
         
         const auto dataIn = frame->GetData();
         if (dataIn.empty() || !_enabledCryption) {
-            logWarning("no input data for decrypt or decryption disabled");
+            if (canLogWarning()) {
+                logWarning("no input data for decrypt or decryption disabled");
+            }
             if (_keyProvider->options()._discardFrameWhenCryptorNotReady) {
                 return;
             }
@@ -416,16 +422,20 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
                                                   iv, frameHeader,
                                                   encryptedPayload, buffer);
         if (!decryptionSuccess) {
-            logWarning("decrypt frame failed");
+            if (canLogWarning()) {
+                logWarning("decrypt frame failed");
+            }
             std::shared_ptr<KeySet> ratchetedKeySet;
             size_t ratchetCount = 0U;
             auto currentKeyMaterial = keySet->_material;
             if (_keyProvider->options()._ratchetWindowSize > 0U) {
                 while (ratchetCount < _keyProvider->options()._ratchetWindowSize) {
                     ratchetCount++;
-                    logVerbose("ratcheting key attempt " +
-                               std::to_string(ratchetCount) + " of " +
-                               std::to_string(_keyProvider->options()._ratchetWindowSize));
+                    if (canLogVerbose()) {
+                        logVerbose("ratcheting key attempt " +
+                                   std::to_string(ratchetCount) + " of " +
+                                   std::to_string(_keyProvider->options()._ratchetWindowSize));
+                    }
                     auto newMaterial = keyHandler->ratchetKeyMaterial(currentKeyMaterial);
                     ratchetedKeySet = keyHandler->deriveKeys(newMaterial,
                                                              _keyProvider->options()._ratchetSalt,
@@ -517,7 +527,9 @@ bool AesCgmCryptor::encryptOrDecrypt(bool encrypt,
 {
     const EVP_AEAD* aeadAlg = aesGcmAlgorithmFromKeySize(rawKey.size());
     if (!aeadAlg) {
-        logError("invalid AES-GCM key size");
+        if (canLogError()) {
+            logError("invalid AES-GCM key size");
+        }
         return false;
     }
     static constexpr unsigned tagLengthBytes = 128U / 8U;
@@ -526,7 +538,9 @@ bool AesCgmCryptor::encryptOrDecrypt(bool encrypt,
     if (!EVP_AEAD_CTX_init(ctx.get(), aeadAlg,
                            rawKey.data(), rawKey.size(),
                            tagLengthBytes, nullptr)) {
-        logError("failed to initialize AES-GCM context");
+        if (canLogError()) {
+            logError("failed to initialize AES-GCM context");
+        }
         return false;
     }
     size_t len = {};
@@ -539,7 +553,9 @@ bool AesCgmCryptor::encryptOrDecrypt(bool encrypt,
     }
     else {
         if (data.size() < tagLengthBytes) {
-            logError("data too small for AES-GCM tag");
+            if (canLogError()) {
+                logError("data too small for AES-GCM tag");
+            }
             return false;
         }
         buffer.resize(data.size() - tagLengthBytes);
@@ -548,10 +564,11 @@ bool AesCgmCryptor::encryptOrDecrypt(bool encrypt,
                                additionalData.data(), additionalData.size());
     }
     if (!ok) {
-        logWarning("failed to perform AES-GCM operation");
+        if (canLogWarning()) {
+            logWarning("failed to perform AES-GCM operation");
+        }
         return false;
     }
-
     buffer.resize(len);
     return true;
 }

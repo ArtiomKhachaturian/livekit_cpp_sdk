@@ -366,7 +366,9 @@ void TransportManagerImpl::createPublisherOffer()
             _publisher.createOffer();
         }
         else {
-            logVerbose("publisher's offer creation is postponed until all DCs aren't created");
+            if (canLogVerbose()) {
+                logVerbose("publisher's offer creation is postponed until all DCs aren't created");
+            }
             // wait until DC are not created, and make offer ASAP in [onDataChannel] handler
             _pendingNegotiation = true;
         }
@@ -462,7 +464,7 @@ void TransportManagerImpl::onSdpSet(SignalTarget target, bool local,
                         break;
                 }
             }
-            else {
+            else if (canLogError()) {
                 logError("Failed to serialize " + desc->type() + std::string(" SDP for ") + toString(target));
             }
         }
@@ -563,7 +565,9 @@ void TransportManagerImpl::onLocalDataChannelCreated(SignalTarget target,
         if (DataChannel::lossyLabel() == label || DataChannel::reliableLabel() == label) {
             _embeddedDCCount.fetch_add(1U);
             if (localDataChannelsAreCreated() && _pendingNegotiation.exchange(false)) {
-                logVerbose("all DCs have been create, we have a pending offer - let's try to create it");
+                if (canLogVerbose()) {
+                    logVerbose("all DCs have been create, we have a pending offer - let's try to create it");
+                }
                 createPublisherOffer();
             }
         }

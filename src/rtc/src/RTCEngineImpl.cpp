@@ -158,11 +158,15 @@ void RTCEngineImpl::setAudioRecording(bool recording)
 bool RTCEngineImpl::connect(std::string url, std::string authToken)
 {
     if (url.empty()) {
-        logError("server URL is empty");
+        if (canLogError()) {
+            logError("server URL is empty");
+        }
         return false;
     }
     if (authToken.empty()) {
-        logError("authentification token is empty");
+        if (canLogError()) {
+            logError("authentification token is empty");
+        }
         return false;
     }
     _client.setHost(std::move(url));
@@ -300,10 +304,14 @@ bool RTCEngineImpl::sendAddTrack(const std::shared_ptr<TTrack>& track)
         if (track->fillRequest(&request)) {
             switch (sendAddTrack(std::move(request))) {
                 case SendResult::Ok:
-                    logVerbose("add local track '" + track->cid() + "' request has been sent to server");
+                    if (canLogVerbose()) {
+                        logVerbose("add local track '" + track->cid() + "' request has been sent to server");
+                    }
                     return true;
                 case SendResult::TransportError:
-                    logError("failed to send add local track '" + track->cid() + "' request to server");
+                    if (canLogError()) {
+                        logError("failed to send add local track '" + track->cid() + "' request to server");
+                    }
                     break;
                 default:
                     break;
@@ -675,7 +683,7 @@ void RTCEngineImpl::onOffer(SessionDescription sdp)
             pcManager->setRemoteOffer(std::move(desc));
         }
     }
-    else  {
+    else if (canLogError()) {
         logError("failed to parse remote offer SDP: " + error.description);
     }
 }
@@ -688,7 +696,7 @@ void RTCEngineImpl::onAnswer(SessionDescription sdp)
             pcManager->setRemoteAnswer(std::move(desc));
         }
     }
-    else {
+    else if (canLogError()) {
         logError("failed to parse remote answer SDP: " + error.description);
     }
 }
@@ -708,7 +716,7 @@ void RTCEngineImpl::onTrickle(TrickleRequest request)
         if (auto candidate = RoomUtils::map(request._candidate, &error)) {
             pcManager->addIceCandidate(request._target, std::move(candidate));
         }
-        else {
+        else if (canLogError()) {
             logError("failed to parse ICE candidate SDP for " +
                      toString(request._target) + ": " + error.description);
         }
@@ -764,7 +772,7 @@ void RTCEngineImpl::onLocalAudioTrackAdded(const std::shared_ptr<LocalAudioTrack
                                              track->id(), _localParticipant)) {
                 track->setFrameTransformer(std::move(cryptor));
             }
-            else {
+            else if (canLogError())  {
                 logError("failed to create " + toString(track->encryption()) + " encryptor for track " + track->cid());
             }
         }
@@ -782,7 +790,7 @@ void RTCEngineImpl::onLocalVideoTrackAdded(const std::shared_ptr<LocalVideoTrack
                                              track->id(), _localParticipant)) {
                 track->setFrameTransformer(std::move(cryptor));
             }
-            else {
+            else if (canLogError())  {
                 logError("failed to create " + toString(track->encryption()) + " encryptor for track " + track->cid());
             }
         }
@@ -867,17 +875,23 @@ void RTCEngineImpl::onPublisherOffer(std::string type, std::string sdp)
     if (auto offer = RoomUtils::map(std::move(type), std::move(sdp))) {
         switch (sendRequestToServer(&SignalClient::sendOffer, std::move(offer.value()))) {
             case SendResult::Ok:
-                logInfo("publisher offer has been sent to server");
+                if (canLogInfo()) {
+                    logInfo("publisher offer has been sent to server");
+                }
                 break;
             case SendResult::TransportError:
-                logError("failed to send publisher offer to the server - transport error");
+                if (canLogError()) {
+                    logError("failed to send publisher offer to the server - transport error");
+                }
                 break;
             case SendResult::TransportClosed:
-                logWarning("failed to send publisher offer to the server - transport is already closed");
+                if (canLogWarning()) {
+                    logWarning("failed to send publisher offer to the server - transport is already closed");
+                }
                 break;
         }
     }
-    else {
+    else if (canLogError()) {
         logError("failed to serialize publisher offer into a string");
     }
 }
@@ -887,17 +901,23 @@ void RTCEngineImpl::onSubscriberAnswer(std::string type, std::string sdp)
     if (auto answer = RoomUtils::map(std::move(type), std::move(sdp))) {
         switch (sendRequestToServer(&SignalClient::sendAnswer, std::move(answer.value()))) {
             case SendResult::Ok:
-                logInfo("publisher answer has been sent to server");
+                if (canLogInfo()) {
+                    logInfo("publisher answer has been sent to server");
+                }
                 break;
             case SendResult::TransportError:
-                logError("failed to send publisher answer to the server - transport error");
+                if (canLogError()) {
+                    logError("failed to send publisher answer to the server - transport error");
+                }
                 break;
             case SendResult::TransportClosed:
-                logWarning("failed to send publisher answer to the server - transport is already closed");
+                if (canLogWarning()) {
+                    logWarning("failed to send publisher answer to the server - transport is already closed");
+                }
                 break;
         }
     }
-    else {
+    else if (canLogError()) {
         logError("failed to serialize publisher answer into a string");
     }
 }
@@ -910,12 +930,12 @@ void RTCEngineImpl::onIceCandidateGathered(SignalTarget target, std::string sdpM
     if (request._candidate) {
         request._target = target;
         request._final = false;
-        if (!_client.sendTrickle(std::move(request))) {
+        if (!_client.sendTrickle(std::move(request)) && canLogError()) {
             logError("failed to send " + candidate.url() +
                      " " + toString(target) + " local ICE candidate");
         }
     }
-    else {
+    else if (canLogError()) {
         logError("failed to serialize " + candidate.url() +
                  " " + toString(target) + " local ICE candidate");
     }
@@ -954,7 +974,9 @@ void RTCEngineImpl::onTransportStateChanged(TransportState state)
 
 void RTCEngineImpl::onTransportError(std::string error)
 {
-    logError(error);
+    if (canLogError()) {
+        logError(error);
+    }
     cleanup(LiveKitError::Transport, error);
 }
 
@@ -968,7 +990,9 @@ bool RTCEngineImpl::onPingRequested()
 
 void RTCEngineImpl::onPongTimeout()
 {
-    logError("ping/pong timed out");
+    if (canLogError()) {
+        logError("ping/pong timed out");
+    }
     cleanup(LiveKitError::ServerPingTimedOut);
 }
 

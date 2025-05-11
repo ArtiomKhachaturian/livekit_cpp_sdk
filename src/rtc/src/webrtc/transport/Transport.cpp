@@ -92,7 +92,9 @@ bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfi
 {
     if (const auto impl = loadImpl()) {
         if (const auto thread = impl->signalingThread()) {
-            impl->logInfo("request to set peer connection configuration");
+            if (impl->canLogInfo()) {
+                impl->logInfo("request to set peer connection configuration");
+            }
             thread->PostTask([config, implRef = weak(impl)]() {
                 if (const auto impl = implRef.lock()) {
                     const auto pc = impl->peerConnection();
@@ -101,11 +103,15 @@ bool Transport::setConfiguration(const webrtc::PeerConnectionInterface::RTCConfi
                     }
                     auto res = pc->SetConfiguration(config);
                     if (res.ok()) {
-                        impl->logVerbose("set of peer connection configuration successfully completed");
+                        if (impl->canLogVerbose()) {
+                            impl->logVerbose("set of peer connection configuration successfully completed");
+                        }
                         impl->notify(&TransportListener::onConfigurationSet, config);
                     }
                     else {
-                        impl->logWebRTCError(res, "failed to set connection configuration configuration");
+                        if (impl->canLogError()) {
+                            impl->logWebRTCError(res, "failed to set connection configuration configuration");
+                        }
                         impl->notify(&TransportListener::onConfigurationSetFailure, std::move(res));
                     }
                 }
@@ -120,7 +126,9 @@ bool Transport::createDataChannel(const std::string& label, const webrtc::DataCh
 {
     if (const auto impl = loadImpl()) {
         if (const auto thread = impl->signalingThread()) {
-            impl->logInfo("request to create '" + label + "' data channel");
+            if (impl->canLogInfo()) {
+                impl->logInfo("request to create '" + label + "' data channel");
+            }
             thread->PostTask([label, init, implRef = weak(impl)]() {
                 if (const auto impl = implRef.lock()) {
                     const auto pc = impl->peerConnection();
@@ -129,13 +137,17 @@ bool Transport::createDataChannel(const std::string& label, const webrtc::DataCh
                     }
                     auto result = pc->CreateDataChannelOrError(label, &init);
                     if (result.ok()) {
-                        impl->logVerbose("data channel '" + label + "' has been created");
+                        if (impl->canLogVerbose()) {
+                            impl->logVerbose("data channel '" + label + "' has been created");
+                        }
                         impl->notify(&TransportListener::onLocalDataChannelCreated,
                                      DataChannel::create(true, result.MoveValue()));
                     }
                     else {
-                        impl->logWebRTCError(result.error(), "unable to create data channel '"
-                                             + label + "'");
+                        if (impl->canLogError()) {
+                            impl->logWebRTCError(result.error(), "unable to create data channel '"
+                                                 + label + "'");
+                        }
                         impl->notify(&TransportListener::onLocalDataChannelCreationFailure,
                                      label, init, result.MoveError());
                     }
@@ -166,7 +178,9 @@ bool Transport::removeTrack(const std::string& id)
     if (!id.empty()) {
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
-                impl->logInfo("request to removal '" + id + "' local track");
+                if (impl->canLogInfo()) {
+                    impl->logInfo("request to removal '" + id + "' local track");
+                }
                 thread->PostTask([id, implRef = weak(impl)]() {
                     if (const auto impl = implRef.lock()) {
                         if (const auto pc = impl->peerConnection()) {
@@ -187,7 +201,9 @@ void Transport::addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> c
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
                 const auto info = candidate->candidate().ToSensitiveString();
-                impl->logInfo("request to add (" + info + ") ICE candidate");
+                if (impl->canLogInfo()) {
+                    impl->logInfo("request to add (" + info + ") ICE candidate");
+                }
                 thread->PostTask([info, candidate = std::move(candidate),
                                   implRef = weak(impl)]() mutable {
                     if (const auto impl = implRef.lock()) {
@@ -198,13 +214,17 @@ void Transport::addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> c
                         auto handler = [info, implRef = std::move(implRef)](webrtc::RTCError error) {
                             if (const auto impl = implRef.lock()) {
                                 if (error.ok()) {
-                                    impl->logVerbose("ICE candidate (" + info +
-                                                     ") has been added successfully");
+                                    if (impl->canLogVerbose()) {
+                                        impl->logVerbose("ICE candidate (" + info +
+                                                         ") has been added successfully");
+                                    }
                                     impl->notify(&TransportListener::onIceCandidateAdded);
                                 }
                                 else {
-                                    impl->logWebRTCError(error, "failed to add ICE candidate (" +
-                                                         info + ")");
+                                    if (impl->canLogError()) {
+                                        impl->logWebRTCError(error, "failed to add ICE candidate (" +
+                                                             info + ")");
+                                    }
                                     impl->notify(&TransportListener::onIceCandidateAddFailure,
                                                  std::move(error));
                                 }
@@ -258,7 +278,9 @@ void Transport::createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswe
 {
     if (const auto impl = loadImpl()) {
         if (const auto thread = impl->signalingThread()) {
-            impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kOffer));
+            if (impl->canLogInfo()) {
+                impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kOffer));
+            }
             thread->PostTask([options, observer = _offerCreationObserver, implRef = weak(impl)]() {
                 if (const auto impl = implRef.lock()) {
                     if (const auto pc = impl->peerConnection()) {
@@ -274,7 +296,9 @@ void Transport::createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnsw
 {
     if (const auto impl = loadImpl()) {
         if (const auto thread = impl->signalingThread()) {
-            impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
+            if (impl->canLogInfo()) {
+                impl->logInfo("request to create " + sdpTypeToString(webrtc::SdpType::kAnswer));
+            }
             thread->PostTask([options, observer = _answerCreationObserver, implRef = weak(impl)]() {
                 if (const auto impl = implRef.lock()) {
                     if (const auto pc = impl->peerConnection()) {
@@ -291,7 +315,9 @@ void Transport::setLocalDescription(std::unique_ptr<webrtc::SessionDescriptionIn
     if (desc) {
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
-                impl->logInfo("request to set local " + desc->type());
+                if (impl->canLogInfo()) {
+                    impl->logInfo("request to set local " + desc->type());
+                }
                 thread->PostTask([desc = patch(std::move(desc)),
                                   observer = _setLocalSdpObserver,
                                   implRef = weak(impl)]() mutable {
@@ -311,7 +337,9 @@ void Transport::setRemoteDescription(std::unique_ptr<webrtc::SessionDescriptionI
     if (desc) {
         if (const auto impl = loadImpl()) {
             if (const auto thread = impl->signalingThread()) {
-                impl->logInfo("request to set remote " + desc->type());
+                if (impl->canLogInfo()) {
+                    impl->logInfo("request to set remote " + desc->type());
+                }
                 thread->PostTask([desc = std::move(desc),
                                   observer = _setRemoteSdpObserver,
                                   implRef = weak(impl)]() mutable {
@@ -429,8 +457,10 @@ void Transport::setAudioPlayout(bool playout)
 {
     if (const auto impl = loadImpl()) {
         if (const auto thread = impl->signalingThread()) {
-            impl->logVerbose(std::string(playout ? "enable" : "disable") +
-                             " playout of received audio streams");
+            if (impl->canLogVerbose()) {
+                impl->logVerbose(std::string(playout ? "enable" : "disable") +
+                                 " playout of received audio streams");
+            }
             thread->PostTask([playout, implRef = weak(impl)]() {
                 if (const auto impl = implRef.lock()) {
                     if (const auto pc = impl->peerConnection()) {
@@ -446,8 +476,10 @@ void Transport::setAudioRecording(bool recording)
 {
     if (const auto impl = loadImpl()) {
         if (const auto thread = impl->signalingThread()) {
-            impl->logVerbose(std::string(recording ? "enable" : "disable") +
-                             " recording of transmitted audio streams");
+            if (impl->canLogVerbose()) {
+                impl->logVerbose(std::string(recording ? "enable" : "disable") +
+                                 " recording of transmitted audio streams");
+            }
             thread->PostTask([recording, implRef = weak(impl)]() {
                 if (const auto impl = implRef.lock()) {
                     if (const auto pc = impl->peerConnection()) {
@@ -504,8 +536,10 @@ void Transport::addTransceiver(std::shared_ptr<TMediaDevice> device,
         }
         const auto mediaType = device->audio() ? webrtc::MediaType::AUDIO : webrtc::MediaType::VIDEO;
         std::string id = device->id();
-        impl->logInfo("request to adding local '" + id + "' " +
-                      webrtc::MediaTypeToString(mediaType) + " track");
+        if (impl->canLogInfo()) {
+            impl->logInfo("request to adding local '" + id + "' " +
+                          webrtc::MediaTypeToString(mediaType) + " track");
+        }
         thread->PostTask([id = std::move(id), mediaType, encryption, device = std::move(device),
                           init, implRef = weak(impl)]() {
             if (const auto impl = implRef.lock()) {
@@ -518,8 +552,10 @@ void Transport::addTransceiver(std::shared_ptr<TMediaDevice> device,
                 }
                 auto result = pc->AddTransceiver(device->track(), init);
                 if (result.ok()) {
-                    impl->logVerbose("local " + webrtc::MediaTypeToString(mediaType) +
-                                     " track '" + id + "' was added");
+                    if (impl->canLogVerbose()) {
+                        impl->logVerbose("local " + webrtc::MediaTypeToString(mediaType) +
+                                         " track '" + id + "' was added");
+                    }
                     if constexpr (std::is_same<AudioDeviceImpl, TMediaDevice>::value) {
                         impl->notify(&TransportListener::onLocalAudioTrackAdded,
                                      std::move(device), encryption, result.MoveValue());
@@ -530,8 +566,10 @@ void Transport::addTransceiver(std::shared_ptr<TMediaDevice> device,
                     }
                 }
                 else {
-                    impl->logWebRTCError(result.error(), "failed to add '" + id + "' local " +
-                                         webrtc::MediaTypeToString(mediaType) + " track");
+                    if (impl->canLogError()) {
+                        impl->logWebRTCError(result.error(), "failed to add '" + id + "' local " +
+                                             webrtc::MediaTypeToString(mediaType) + " track");
+                    }
                     impl->notify(&TransportListener::onLocalTrackAddFailure,
                                  id, mediaType, init, result.MoveError());
                 }
@@ -543,7 +581,7 @@ void Transport::addTransceiver(std::shared_ptr<TMediaDevice> device,
 void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> desc)
 {
     if (const auto impl = loadImpl()) {
-        if (desc) {
+        if (desc && impl->canLogVerbose()) {
             impl->logVerbose(desc->type() + " created successfully");
         }
         impl->notify(&TransportListener::onSdpCreated, patch(std::move(desc)));
@@ -553,7 +591,9 @@ void Transport::onSuccess(std::unique_ptr<webrtc::SessionDescriptionInterface> d
 void Transport::onFailure(webrtc::SdpType type, webrtc::RTCError error)
 {
     if (const auto impl = loadImpl()) {
-        impl->logWebRTCError(error, "failed to create " + sdpTypeToString(type));
+        if (impl->canLogError()) {
+            impl->logWebRTCError(error, "failed to create " + sdpTypeToString(type));
+        }
         impl->notify(&TransportListener::onSdpCreationFailure, type, std::move(error));
     }
 }
@@ -563,8 +603,10 @@ void Transport::onCompleted(bool local)
     if (const auto impl = loadImpl()) {
         if (const auto pc = impl->peerConnection()) {
             if (const auto desc = local ? pc->local_description() : pc->remote_description()) {
-                impl->logVerbose(std::string(local ? "local " : "remote ") +
-                                 desc->type() + " has been set successfully");
+                if (desc && impl->canLogVerbose()) {
+                    impl->logVerbose(std::string(local ? "local " : "remote ") +
+                                     desc->type() + " has been set successfully");
+                }
                 impl->notify(&TransportListener::onSdpSet, local, desc);
             }
         }
@@ -574,7 +616,9 @@ void Transport::onCompleted(bool local)
 void Transport::onFailure(bool local, webrtc::RTCError error)
 {
     if (const auto impl = loadImpl()) {
-        impl->logWebRTCError(error, "failed to set " + std::string(local ? "local SDP" : "remote SDP"));
+        if (impl->canLogError()) {
+            impl->logWebRTCError(error, "failed to set " + std::string(local ? "local SDP" : "remote SDP"));
+        }
         impl->notify(&TransportListener::onSdpSetFailure, local, std::move(error));
     }
 }

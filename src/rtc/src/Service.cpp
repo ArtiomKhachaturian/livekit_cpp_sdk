@@ -446,30 +446,32 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
 {
     _recordingMuted = _playoutMuted = nullptr == _pcf;
     if (!_pcf) {
-        logError("failed to create of peer connection factory");
+        if (canLogError()) {
+            logError("failed to create of peer connection factory");
+        }
     }
     else {
         _pcf->registerAdmRecordingListener(this, true);
         _pcf->registerAdmPlayoutListener(this, true);
-        if (!_pcf->eventsQueue()) {
+        if (!_pcf->eventsQueue() && canLogError()) {
             logError("failed to create of events queue");
         }
-        if (!_cameraManager) {
+        if (!_cameraManager && canLogError()) {
             logError("camera devices are not available");
         }
         auto dev = _pcf->recordingAudioDevice();
-        if (!dev.empty()) {
+        if (!dev.empty() && canLogInfo()) {
             logInfo("recording audio device is '" + dev._name + "'");
         }
         dev = _pcf->playoutAudioDevice();
-        if (!dev.empty()) {
+        if (!dev.empty() && canLogInfo()) {
             logInfo("playout audio device is '" + dev._name + "'");
         }
         if (_desktopConfiguration) {
-            if (!_desktopConfiguration->screensEnumerationIsAvailable()) {
+            if (!_desktopConfiguration->screensEnumerationIsAvailable() && canLogWarning()) {
                 logWarning("screens enumeration is not available");
             }
-            if (!_desktopConfiguration->windowsEnumerationIsAvailable()) {
+            if (!_desktopConfiguration->windowsEnumerationIsAvailable() && canLogWarning()) {
                 logWarning("windows enumeration is not available");
             }
         }
@@ -759,7 +761,7 @@ bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger
     }
     if (logger && logger->canLogVerbose()) {
         const auto& wsaVersion = initializer.GetSelectedVersion();
-        if (wsaVersion.has_value()) {
+        if (wsaVersion.has_value() && logger->canLogVerbose()) {
             logger->logVerbose("WINSOCK initialization is done, library version: " +
                               WSAInitializer::ToString(wsaVersion.value()), g_logCategory);
         }
@@ -870,11 +872,15 @@ void Service::Impl::onDeviceChanged(bool recording, const MediaDeviceInfo& info)
 {
     if (!info.empty()) {
         if (recording) {
-            logInfo("recording audio device has been changed to '" + info._name + "'");
+            if (canLogInfo()) {
+                logInfo("recording audio device has been changed to '" + info._name + "'");
+            }
             _listeners.invoke(&ServiceListener::onAudioRecordingDeviceChanged, info);
         }
         else {
-            logInfo("playoud audio device has been changed to '" + info._name + "'");
+            if (canLogInfo()) {
+                logInfo("playoud audio device has been changed to '" + info._name + "'");
+            }
             _listeners.invoke(&ServiceListener::onAudioPlayoutDeviceChanged, info);
         }
     }

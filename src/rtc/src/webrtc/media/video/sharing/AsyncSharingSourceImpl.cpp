@@ -141,17 +141,23 @@ void AsyncSharingSourceImpl::startCapturer(const std::unique_ptr<DesktopCapturer
         if (capturer->selectSource(deviceInfo()._guid)) {
             auto optionsText = toString(options());
             if (capturer->start()) {
-                logVerbose(capturer, "has been started with caps [" + optionsText + "]");
+                if (canLogVerbose()) {
+                    logVerbose(capturer, "has been started with caps [" + optionsText + "]");
+                }
                 notify(&MediaDeviceListener::onMediaStarted);
                 capturer->focusOnSelectedSource();
             }
             else {
-                logError(capturer, "failed to start with caps [" + optionsText + "]");
+                if (canLogError()) {
+                    logError(capturer, "failed to start with caps [" + optionsText + "]");
+                }
                 notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
             }
         }
         else {
-            logError(capturer, "failed to select source '" + name + "'");
+            if (canLogError()) {
+                logError(capturer, "failed to select source '" + name + "'");
+            }
             notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
         }
     }

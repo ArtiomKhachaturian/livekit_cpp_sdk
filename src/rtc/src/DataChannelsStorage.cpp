@@ -88,7 +88,9 @@ bool DataChannelsStorage::add(rtc::scoped_refptr<DataChannel> channel)
         const auto label = channel->label();
         const auto local = channel->local();
         if (label.empty()) {
-            logWarning("unnamed " + dcType(local) + " data channel, processing denied");
+            if (canLogWarning()) {
+                logWarning("unnamed " + dcType(local) + " data channel, processing denied");
+            }
         }
         else {
             ResponsesListener* const listener = this;
@@ -100,11 +102,15 @@ bool DataChannelsStorage::add(rtc::scoped_refptr<DataChannel> channel)
             const auto it = _dataChannels->find(label);
             if (it == _dataChannels->end()) {
                 _dataChannels->insert(std::make_pair(label, std::move(wrapper)));
-                logVerbose(dcType(local) + " data channel '" + label + "' was added for observation");
+                if (canLogVerbose()) {
+                    logVerbose(dcType(local) + " data channel '" + label + "' was added for observation");
+                }
             }
             else {
-                logWarning(dcType(local) + " data channel '" + label +
-                           "' is already present but will be overwritten");
+                if (canLogWarning()) {
+                    logWarning(dcType(local) + " data channel '" + label +
+                               "' is already present but will be overwritten");
+                }
                 it->second = std::move(wrapper);
             }
             return true;
@@ -154,12 +160,16 @@ bool DataChannelsStorage::sendUserPacket(std::string payload, bool reliable, std
                                          std::vector<std::string> destinationIdentities) const
 {
     if (payload.empty()) {
-        logError("failed to send user packet - empty payload");
+        if (canLogError()) {
+            logError("failed to send user packet - empty payload");
+        }
         return false;
     }
     auto sid = _sid();
     if (sid.empty()) {
-        logError("failed to send user packet - unknown user sid");
+        if (canLogError()) {
+            logError("failed to send user packet - unknown user sid");
+        }
         return {};
     }
     if (const auto dc = getChannelForSend(reliable)) {
@@ -181,7 +191,9 @@ bool DataChannelsStorage::sendChatMessage(std::string message, bool deleted, boo
                                           std::vector<std::string> destinationIdentities) const
 {
     if (message.empty()) {
-        logError("failed to send chat message - message text is empty");
+        if (canLogError()) {
+            logError("failed to send chat message - message text is empty");
+        }
         return false;
     }
     if (const auto dc = getChannelForSend(true)) {
@@ -202,7 +214,9 @@ std::shared_ptr<DataChannelsStorage::Wrapper> DataChannelsStorage::
     {
         LOCK_READ_SAFE_OBJ(_identity);
         if (_identity->empty()) {
-            logError("failed to send data - unknown user identity");
+            if (canLogError()) {
+                logError("failed to send data - unknown user identity");
+            }
             return {};
         }
     }
@@ -218,11 +232,15 @@ std::shared_ptr<DataChannelsStorage::Wrapper> DataChannelsStorage::
     }
 
     if (!dc) {
-        logError("failed to send data - data channel '" + label + "' was not found");
+        if (canLogError()) {
+            logError("failed to send data - data channel '" + label + "' was not found");
+        }
         return {};
     }
     if (!dc->isOpen()) {
-        logError("failed to send data - data channel '" + label + "' is not opened");
+        if (canLogError()) {
+            logError("failed to send data - data channel '" + label + "' is not opened");
+        }
         return {};
     }
     return dc;
@@ -346,12 +364,10 @@ void DataChannelsStorage::Wrapper::onMessage(DataChannel* channel,
 void DataChannelsStorage::Wrapper::onBufferedAmountChange(DataChannel* channel,
                                                           uint64_t sentDataSize)
 {
-    if (channel) {
-        if (canLogVerbose()) {
-            logVerbose(dcType(channel->local()) + " data channel '" +
-                       channel->label() + "' buffer amout has been changed to " +
-                       std::to_string(sentDataSize) + " bytes");
-        }
+    if (channel && canLogVerbose()) {
+        logVerbose(dcType(channel->local()) + " data channel '" +
+                   channel->label() + "' buffer amout has been changed to " +
+                   std::to_string(sentDataSize) + " bytes");
     }
 }
 

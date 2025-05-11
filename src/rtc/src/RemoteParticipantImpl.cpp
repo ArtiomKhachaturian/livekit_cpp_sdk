@@ -459,7 +459,7 @@ bool RemoteParticipantImpl::addTrack(const std::string& trackSid,
                                                             _listener)) {
                             receiver->SetFrameTransformer(std::move(cryptor));
                         }
-                        else {
+                        else if (canLogError()) {
                             logError("failed to create " + toString(track->encryption()) +
                                      " decryptor for remote track " + trackSid);
                         }

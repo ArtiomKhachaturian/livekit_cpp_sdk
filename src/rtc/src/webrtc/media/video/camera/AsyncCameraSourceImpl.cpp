@@ -99,7 +99,9 @@ std::string_view AsyncCameraSourceImpl::logCategory() const
 
 void AsyncCameraSourceImpl::onCapturingError(std::string details, bool fatal)
 {
-    logError(_capturer(), details);
+    if (canLogError()) {
+        logError(_capturer(), details);
+    }
     AsyncVideoSourceImpl::onCapturingError(std::move(details), fatal);
 }
 
@@ -179,12 +181,16 @@ bool AsyncCameraSourceImpl::startCapturer(const rtc::scoped_refptr<CameraCapture
     if (capturer && enabled() && active() && frameWanted()) {
         code = capturer->StartCapture(capability);
         if (0 != code) {
-            logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
+            if (canLogError()) {
+                logError(capturer, "failed to start capturer with caps [" + toString(capability) + "]", code);
+            }
             // TODO: add error details
             notify(&MediaDeviceListener::onMediaStartFailed, std::string{});
         }
         else {
-            logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
+            if (canLogVerbose()) {
+                logVerbose(capturer, "capturer with caps [" + toString(capability) + "] has been started");
+            }
             notify(&MediaDeviceListener::onMediaStarted);
         }
     }
@@ -197,12 +203,16 @@ bool AsyncCameraSourceImpl::stopCapturer(const rtc::scoped_refptr<CameraCapturer
     if (capturer && capturer->CaptureStarted()) {
         code = capturer->StopCapture();
         if (0 != code) {
-            logError(capturer, "failed to stop capturer",  code);
+            if (canLogError()) {
+                logError(capturer, "failed to stop capturer",  code);
+            }
             // TODO: add error details
             notify(&MediaDeviceListener::onMediaStopFailed, std::string{});
         }
         else {
-            logVerbose(capturer, "capturer has been stopped");
+            if (canLogVerbose()) {
+                logVerbose(capturer, "capturer has been stopped");
+            }
             notify(&MediaDeviceListener::onMediaStopped);
         }
     }

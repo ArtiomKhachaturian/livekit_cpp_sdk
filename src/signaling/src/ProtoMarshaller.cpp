@@ -94,7 +94,9 @@ TrickleRequest ProtoMarshaller::map(livekit::TrickleRequest in) const
             }
         }
         catch (const std::exception& e) {
-            logError(e.what());
+            if (canLogError()) {
+                logError(e.what());
+            }
         }
     }
     out._target = map(in.target());
@@ -1636,7 +1638,9 @@ DataPacket ProtoMarshaller::map(livekit::DataPacket in) const
             out._value = map(in.stream_trailer());
             break;
         default:
-            logWarning("unsupported data packet value: " + std::to_string(in.value_case()));
+            if (canLogWarning()) {
+                logWarning("unsupported data packet value: " + std::to_string(in.value_case()));
+            }
             break;
     }
     return out;
@@ -1887,7 +1891,9 @@ DataStreamHeader ProtoMarshaller::map(livekit::DataStream::Header in) const
             out._contentHeader = map(in.byte_header());
             break;
         default:
-            logWarning("unsupported data stream header: " + std::to_string(in.content_header_case()));
+            if (canLogWarning()) {
+                logWarning("unsupported data stream header: " + std::to_string(in.content_header_case()));
+            }
             break;
     }
     return out;

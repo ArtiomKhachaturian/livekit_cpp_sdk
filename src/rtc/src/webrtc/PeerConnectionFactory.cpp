@@ -61,12 +61,12 @@ inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer
         if (thread->Start()) {
             return std::shared_ptr<webrtc::Thread>(thread.release());
         }
-        if (logger) {
+        if (logger && logger->canLogError()) {
             logger->logError("failed to start of '" + std::string(threadName)
                              + "' thread", g_pcfInit);
         }
     }
-    else if (logger) {
+    else if (logger && logger->canLogError()) {
         logger->logError("failed to create of '" + std::string(threadName)
                          + "' thread", g_pcfInit);
     }

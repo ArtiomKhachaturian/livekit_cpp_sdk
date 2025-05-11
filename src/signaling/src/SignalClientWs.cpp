@@ -161,14 +161,14 @@ bool SignalClientWs::adaptiveStream() const noexcept
 
 void SignalClientWs::setAutoSubscribe(bool autoSubscribe)
 {
-    if (exchange(autoSubscribe, _urlData->_autoSubscribe)) {
+    if (exchange(autoSubscribe, _urlData->_autoSubscribe) && canLogVerbose()) {
         logVerbose("auto subscribe policy has been changed");
     }
 }
 
 void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
 {
-    if (exchange(adaptiveStream, _urlData->_adaptiveStream)) {
+    if (exchange(adaptiveStream, _urlData->_adaptiveStream) && canLogVerbose()) {
         logVerbose("adaptive stream policy has been changed");
     }
 }
@@ -176,7 +176,7 @@ void SignalClientWs::setAdaptiveStream(bool adaptiveStream)
 void SignalClientWs::setClientInfo(const std::optional<ClientInfo>& clientInfo)
 {
     _urlData->_clientInfo(clientInfo);
-    if (clientInfo && LIVEKIT_PROTOCOL_VERSION != clientInfo->_protocol) {
+    if (clientInfo && LIVEKIT_PROTOCOL_VERSION != clientInfo->_protocol && canLogWarning()) {
         logWarning("protocol version is not matched to default");
     }
 }

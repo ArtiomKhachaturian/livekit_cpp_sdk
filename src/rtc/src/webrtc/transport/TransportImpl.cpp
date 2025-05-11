@@ -61,7 +61,9 @@ std::shared_ptr<webrtc::Thread> TransportImpl::signalingThread() const
 void TransportImpl::close()
 {
     if (!_closed.exchange(true)) {
-        logInfo("close peer connection");
+        if (canLogInfo()) {
+            logInfo("close peer connection");
+        }
         auto self = shared_from_this();
         // force
         OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState::kClosed);
@@ -97,11 +99,15 @@ void TransportImpl::removeTrackBySender(const rtc::scoped_refptr<webrtc::RtpSend
         const auto streamIds = sender->stream_ids();
         const auto res = _pc->RemoveTrackOrError(std::move(sender));
         if (res.ok()) {
-            logVerbose("local " + kind + " track '" + id + "' track was removed");
+            if (canLogVerbose()) {
+                logVerbose("local " + kind + " track '" + id + "' track was removed");
+            }
             notify(&TransportListener::onLocalTrackRemoved, id, type, streamIds);
         }
         else {
-            logWebRTCError(res, "failed to remove '" + id + "' local " + kind + " track");
+            if (canLogError()) {
+                logWebRTCError(res, "failed to remove '" + id + "' local " + kind + " track");
+            }
             notify(&TransportListener::onLocalTrackRemoveFailure, id, type, streamIds, std::move(res));
         }
     }
@@ -188,7 +194,9 @@ void TransportImpl::OnIceCandidateError(const std::string& address, int port,
                                           const std::string& url,
                                           int errorCode, const std::string& errorText)
 {
-    logError("a failure occured when gathering ICE candidates: " + errorText);
+    if (canLogError()) {
+        logError("a failure occured when gathering ICE candidates: " + errorText);
+    }
     notify(&TransportListener::onIceCandidateGatheringError, address, port,
            url, errorCode, errorText);
 }
@@ -243,7 +251,9 @@ webrtc::scoped_refptr<webrtc::PeerConnectionInterface> TransportImpl::
     if (pc.ok()) {
         return pc.MoveValue();
     }
-    logWebRTCError(pc.error(), "unable to create RTC peer connection");
+    if (canLogError()) {
+        logWebRTCError(pc.error(), "unable to create RTC peer connection");
+    }
     return {};
 }
 
@@ -252,7 +262,9 @@ bool TransportImpl::changeAndLogState(TState newState, std::atomic<TState>& val)
 {
     const TState oldState = val.exchange(newState);
     if (oldState != newState) {
-        logVerbose(makeStateChangesString(oldState, newState));
+        if (canLogVerbose()) {
+            logVerbose(makeStateChangesString(oldState, newState));
+        }
         return true;
     }
     return false;
