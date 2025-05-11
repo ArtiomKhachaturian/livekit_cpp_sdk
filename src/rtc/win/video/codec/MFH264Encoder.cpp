@@ -181,7 +181,7 @@ CompletionStatusOr<webrtc::EncodedImage> MFH264Encoder::
                 return image;
             }
         }
-        return COMPLETION_STATUS(locker.status());
+        return locker.status();
     }
     return COMPLETION_STATUS_INVALID_ARG;
 }

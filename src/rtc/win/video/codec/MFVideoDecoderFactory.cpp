@@ -32,25 +32,26 @@ CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width = 1280U,
 namespace LiveKitCpp
 {
 
+#ifndef USE_OPEN_H264_DECODER
+MFVideoDecoderFactory::MFVideoDecoderFactory()
+    : _h264Formats(H264Utils::supportedFormats(false))
+{
+}
+
 std::vector<webrtc::SdpVideoFormat> MFVideoDecoderFactory::customFormats() const
 {
-#ifdef USE_OPEN_H264_DECODER
-    return VideoDecoderFactory::customFormats();
-#else
-    return H264Utils::supportedFormats(false);
-#endif
+    return _h264Formats;
 }
 
 std::unique_ptr<webrtc::VideoDecoder> MFVideoDecoderFactory::
     customDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
-#ifndef USE_OPEN_H264_DECODER
     if (H264Utils::formatMatched(format)) {
         return std::make_unique<MFH264Decoder>(format);
     }
-#endif
     return VideoDecoderFactory::customDecoder(env, format);
 }
+#endif
 
 CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
 {

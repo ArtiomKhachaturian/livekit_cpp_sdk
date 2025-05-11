@@ -20,12 +20,18 @@ namespace LiveKitCpp
 class MFVideoEncoderFactory : public VideoEncoderFactory
 {
 public:
+#ifdef USE_OPEN_H264_ENCODER
     MFVideoEncoderFactory() = default;
+#else
+    MFVideoEncoderFactory();
 protected:
     // override of VideoDecoderFactory
     std::unique_ptr<webrtc::VideoEncoder> customEncoder(const webrtc::Environment& env,
                                                                 const webrtc::SdpVideoFormat& format) final;
     std::vector<webrtc::SdpVideoFormat> customFormats() const final;
+private:
+    const std::vector<webrtc::SdpVideoFormat> _h264Formats;
+#endif
 };
 
 } // namespace LiveKitCpp
