@@ -21,9 +21,11 @@
 #include "PeerConnectionFactory.h"
 #include "RemoteParticipantImpl.h"
 #include "RoomUtils.h"
+#include "RtcUtils.h"
+#include "SignalTransportListenerAsync.h"
 #include "TransportManager.h"
 #include "WebsocketEndPoint.h"
-#include "RtcUtils.h"
+#include "Utils.h"
 #include "livekit/rtc/SessionListener.h"
 #include "livekit/rtc/SessionListener.h"
 #include "livekit/rtc/LiveKitError.h"
@@ -54,6 +56,13 @@ inline constexpr bool failed(webrtc::PeerConnectionInterface::PeerConnectionStat
 namespace LiveKitCpp
 {
 
+enum class RTCEngineImpl::SendResult
+{
+    Ok,
+    TransportError,
+    TransportClosed
+};
+
 RTCEngineImpl::RTCEngineImpl(Options options,
                              PeerConnectionFactory* pcf,
                              const Participant* session,
@@ -62,6 +71,7 @@ RTCEngineImpl::RTCEngineImpl(Options options,
     :  Bricks::LoggableS<ResponsesListener>(logger)
     , _localParticipant(new LocalParticipant(pcf, session, logger))
     , _remoteParicipants(new RemoteParticipants(options._autoSubscribe, this, logger))
+    , _transportListener(std::make_unique<SignalTransportListenerAsync>(pcf))
     , _options(std::move(options))
     , _pcf(pcf)
     , _localDcs(logger)
@@ -73,12 +83,14 @@ RTCEngineImpl::RTCEngineImpl(Options options,
     _client.setPublish(_options._publish);
     _client.setClientInfo(_options._clientsInfo);
     _client.setServerListener(this);
-    _client.setTransportListener(this);
+    _client.setTransportListener(_transportListener.get());
+    _transportListener->set(this);
 }
 
 RTCEngineImpl::~RTCEngineImpl()
 {
     _localParticipant->reset();
+    _transportListener->set(nullptr);
     _client.setServerListener(nullptr);
     _client.setTransportListener(nullptr);
     cleanup();
@@ -281,9 +293,9 @@ void RTCEngineImpl::handleLocalParticipantDisconnection(DisconnectReason reason)
     }
 }
 
-void RTCEngineImpl::notifyAboutLocalParticipantJoinLeave(bool join) const
+void RTCEngineImpl::notifyAboutLocalParticipantJoinLeave(bool join)
 {
-    if (!_localParticipant->sid().empty()) {
+    if (!_localParticipant->sid().empty() && exchangeVal(join, _joined)) {
         if (join) {
             notify(&SessionListener::onLocalParticipantJoined);
         }
@@ -556,9 +568,9 @@ void RTCEngineImpl::onJoin(JoinResponse response)
         _remoteParicipants->setInfo(weak_from_this(), response._otherParticipants);
         _localDcs.setSid(response._participant._sid);
         _localDcs.setIdentity(response._participant._identity);
-        notifyAboutLocalParticipantJoinLeave(true);
         createTransportManager(response, makeConfiguration(response));
         _lastJoinResponse(std::move(response));
+        notifyAboutLocalParticipantJoinLeave(true);
     }
     else {
         handleLocalParticipantDisconnection(disconnectReason);

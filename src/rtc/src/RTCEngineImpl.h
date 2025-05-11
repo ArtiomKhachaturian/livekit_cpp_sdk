@@ -68,6 +68,7 @@ class Participant;
 class PeerConnectionFactory;
 class ParticipantAccessor;
 class SessionListener;
+class SignalTransportListenerAsync;
 class TransportManager;
 class VideoDevice;
 class VideoTrack;
@@ -85,12 +86,7 @@ class RTCEngineImpl : public std::enable_shared_from_this<RTCEngineImpl>,
                       private SignalTransportListener,
                       private DataExchangeListener
 {
-    enum class SendResult
-    {
-        Ok,
-        TransportError,
-        TransportClosed
-    };
+    enum class SendResult;
 public:
     RTCEngineImpl(Options options,
                   PeerConnectionFactory* pcf,
@@ -132,7 +128,7 @@ private:
     void notify(const Method& method, Args&&... args) const;
     std::shared_ptr<ParticipantAccessor> participant(const std::string& sid) const;
     void handleLocalParticipantDisconnection(DisconnectReason reason);
-    void notifyAboutLocalParticipantJoinLeave(bool join) const;
+    void notifyAboutLocalParticipantJoinLeave(bool join);
     // search by cid or sid
     template <class TTrack>
     bool sendAddTrack(const std::shared_ptr<TTrack>& track);
@@ -224,6 +220,7 @@ private:
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     const std::shared_ptr<LocalParticipant> _localParticipant;
     const std::shared_ptr<RemoteParticipants> _remoteParicipants;
+    const std::unique_ptr<SignalTransportListenerAsync> _transportListener;
     Bricks::Listener<SessionListener*> _listener;
     Bricks::SafeObj<std::string> _sifTrailer;
     std::shared_ptr<KeyProvider> _aesCgmKeyProvider;
@@ -237,6 +234,7 @@ private:
     std::atomic_uint _reconnectAttempts = 0U;
     std::atomic<SessionState> _state = SessionState::TransportDisconnected;
     Bricks::SafeObj<JoinResponse> _lastJoinResponse;
+    std::atomic_bool _joined = false;
 };
 	
 } // namespace LiveKitCpp
