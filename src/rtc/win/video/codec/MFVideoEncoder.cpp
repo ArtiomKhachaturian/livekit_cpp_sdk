@@ -87,7 +87,7 @@ int32_t MFVideoEncoder::Encode(const webrtc::VideoFrame& frame, const std::vecto
                         const auto startTimeMs = webrtc::TimeMillis();
                         hr = enqueueInput(keyFrame, frame, startTimeMs, inputBuffer);
                         if (hr) {
-                        output:
+output:
                             auto framesCount = processOutput();
                             if (framesCount) {
                                 outputFramesCount = framesCount.value();
@@ -234,15 +234,7 @@ CompletionStatus MFVideoEncoder::enqueueInput(bool keyFrame, const webrtc::Video
                     }
                     hr = _pipeline.processInput(inputSample.value());
                     if (hr) {
-                        FrameInfo frameInfo;
-                        frameInfo._startTimestampMs = startTimeMs;
-                        frameInfo._renderTimeMs = frame.render_time_ms();
-                        frameInfo._timestampUs = frame.timestamp_us();
-                        frameInfo._timestampRtp = frame.rtp_timestamp();
-                        frameInfo._width = frame.width();
-                        frameInfo._height = frame.height();
-                        frameInfo._rotation = frame.rotation();
-                        _attributeQueue.push(std::make_pair(_pipeline.lastTimestampHns(), std::move(frameInfo)));
+                        _attributeQueue.push(std::make_pair(_pipeline.lastTimestampHns(), VideoFrameInfo(frame)));
                     }
                 }
                 return hr;
@@ -270,7 +262,7 @@ CompletionStatus MFVideoEncoder::acceptInputResolution(const webrtc::VideoFrame&
     return COMPLETION_STATUS_INVALID_STATE;
 }
 
-std::optional<MFVideoEncoder::FrameInfo> MFVideoEncoder::popVideoFrameInfo(LONGLONG timestampNhs)
+std::optional<VideoFrameInfo> MFVideoEncoder::popVideoFrameInfo(LONGLONG timestampNhs)
 {
     while (!_attributeQueue.empty()) {
         auto& entry = _attributeQueue.front();
@@ -316,7 +308,7 @@ CompletionStatusOr<UINT64> MFVideoEncoder::processOutput()
                                             const bool keyFrame = TRUE == ::MFGetAttributeUINT32(sample.value(),
                                                                                                  MFSampleExtension_CleanPoint,
                                                                                                  FALSE);
-                                            info->_finishTimestampMs = webrtc::TimeMillis();
+                                            info->markFinishTimestamp();
                                             hr = sendEncoded(data, keyFrame, info.value(), encoderQp(sample.value()));
                                             if (hr) {
                                                 ++sentFramesCount;
@@ -349,17 +341,17 @@ CompletionStatusOr<UINT64> MFVideoEncoder::processOutput()
 }
 
 CompletionStatus MFVideoEncoder::sendEncoded(const CComPtr<IMFMediaBuffer>& data, bool keyFrame,
-                                             const FrameInfo& frameInfo,
+                                             const VideoFrameInfo& frameInfo,
                                              const std::optional<UINT32>& encodedQp)
 {
     auto encodedImage = createEncodedImage(keyFrame, data, encodedQp);
     if (encodedImage) {
-        encodedImage->capture_time_ms_ = frameInfo._renderTimeMs;
-        encodedImage->_encodedWidth = frameInfo._width;
-        encodedImage->_encodedHeight = frameInfo._height;
-        encodedImage->rotation_ = frameInfo._rotation;
-        encodedImage->SetRtpTimestamp(frameInfo._timestampRtp);
-        encodedImage->SetEncodeTime(frameInfo._startTimestampMs, frameInfo._finishTimestampMs);
+        encodedImage->capture_time_ms_ = frameInfo.renderTimeMs();
+        encodedImage->_encodedWidth = frameInfo.width();
+        encodedImage->_encodedHeight = frameInfo.height();
+        encodedImage->rotation_ = frameInfo.rotation();
+        encodedImage->SetRtpTimestamp(frameInfo.timestampRtpMs());
+        encodedImage->SetEncodeTime(frameInfo.startTimestampMs(), frameInfo.finishTimestampMs());
         sendEncodedImage(keyFrame, encodedImage.moveValue());
         return {};
     }

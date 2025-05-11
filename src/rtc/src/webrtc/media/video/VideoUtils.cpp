@@ -93,7 +93,7 @@ std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webr
         if (timeStampMicro > 0LL) {
             builder.set_timestamp_us(timeStampMicro);
         } else {
-            builder.set_timestamp_us(rtc::TimeMicros());
+            builder.set_timestamp_us(webrtc::TimeMicros());
         }
         auto frame = builder.build();
         frame.set_color_space(colorSpace);

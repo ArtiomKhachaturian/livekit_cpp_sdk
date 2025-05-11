@@ -15,6 +15,7 @@
 #ifdef USE_PLATFORM_ENCODERS
 #include "VideoEncoder.h"
 #include "MFVideoEncoderPipeline.h"
+#include "VideoFrameInfo.h"
 #include <codecapi.h>
 #include <mfobjects.h>
 #include <queue>
@@ -24,17 +25,6 @@ namespace LiveKitCpp
 
 class MFVideoEncoder : public VideoEncoder
 {
-    struct FrameInfo
-    {
-        int64_t _renderTimeMs = 0ULL;
-        int64_t _timestampUs = 0LL;
-        uint32_t _timestampRtp = 0U; // ms
-        int _width = 0;
-        int _height = 0;
-        webrtc::VideoRotation _rotation = webrtc::VideoRotation::kVideoRotation_0;
-        int64_t _startTimestampMs = 0LL;
-        int64_t _finishTimestampMs = 0LL;
-    };
 public:
     ~MFVideoEncoder() override;
     // overrides of GenericCodec<>
@@ -61,10 +51,10 @@ private:
                                   int64_t startTimeMs, const CComPtr<IMFMediaBuffer>& inputBuffer);
     CompletionStatus acceptInputResolution(const webrtc::VideoFrame& frame);
     // return count of processed output frames
-    std::optional<FrameInfo> popVideoFrameInfo(LONGLONG timestampNhs);
+    std::optional<VideoFrameInfo> popVideoFrameInfo(LONGLONG timestampNhs);
     CompletionStatusOr<UINT64> processOutput();
     CompletionStatus sendEncoded(const CComPtr<IMFMediaBuffer>& data, bool keyFrame,
-                                 const FrameInfo& frameInfo,
+                                 const VideoFrameInfo& frameInfo,
                                  const std::optional<UINT32>& encodedQp = std::nullopt);
 private:
     MFVideoEncoderPipeline _pipeline;
@@ -72,7 +62,7 @@ private:
     UINT32 _currentHeight = 0U;
     bool _lastFrameDropped = false;
     // key - timestamp NHS
-    std::queue<std::pair<LONGLONG, FrameInfo>> _attributeQueue;
+    std::queue<std::pair<LONGLONG, VideoFrameInfo>> _attributeQueue;
 };
 
 } // namespace LiveKitCpp
