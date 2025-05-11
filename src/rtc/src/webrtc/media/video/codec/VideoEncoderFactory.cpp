@@ -76,4 +76,16 @@ webrtc::VideoEncoderFactory::CodecSupport VideoEncoderFactory::
     return support;
 }
 
+std::unique_ptr<webrtc::VideoEncoderFactory::EncoderSelectorInterface> VideoEncoderFactory::GetEncoderSelector() const
+{
+    std::unique_ptr<EncoderSelectorInterface> selector;
+    if (_platform) {
+        selector = _platform->GetEncoderSelector();
+    }
+    if (!selector) {
+        selector = _defaultFallback->GetEncoderSelector();
+    }
+    return selector;
+}
+
 } // namespace LiveKitCpp

@@ -28,6 +28,7 @@ public:
                                                  const webrtc::SdpVideoFormat& format) final;
     CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
                                    std::optional<std::string> scalabilityMode) const final;
+    std::unique_ptr<EncoderSelectorInterface> GetEncoderSelector() const final;
 private:
     const std::unique_ptr<webrtc::VideoEncoderFactory> _defaultFallback;
     const std::unique_ptr<webrtc::VideoEncoderFactory> _platform;
