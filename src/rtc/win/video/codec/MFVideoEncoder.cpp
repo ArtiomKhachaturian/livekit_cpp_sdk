@@ -84,7 +84,7 @@ int32_t MFVideoEncoder::Encode(const webrtc::VideoFrame& frame, const std::vecto
                 }
                 if (hr) {
                     if (_pipeline.sync()) {
-                        const auto startTimeMs = rtc::TimeMillis();
+                        const auto startTimeMs = webrtc::TimeMillis();
                         hr = enqueueInput(keyFrame, frame, startTimeMs, inputBuffer);
                         if (hr) {
                         output:
@@ -316,7 +316,7 @@ CompletionStatusOr<UINT64> MFVideoEncoder::processOutput()
                                             const bool keyFrame = TRUE == ::MFGetAttributeUINT32(sample.value(),
                                                                                                  MFSampleExtension_CleanPoint,
                                                                                                  FALSE);
-                                            info->_finishTimestampMs = rtc::TimeMillis();
+                                            info->_finishTimestampMs = webrtc::TimeMillis();
                                             hr = sendEncoded(data, keyFrame, info.value(), encoderQp(sample.value()));
                                             if (hr) {
                                                 ++sentFramesCount;
@@ -361,6 +361,7 @@ CompletionStatus MFVideoEncoder::sendEncoded(const CComPtr<IMFMediaBuffer>& data
         encodedImage->SetRtpTimestamp(frameInfo._timestampRtp);
         encodedImage->SetEncodeTime(frameInfo._startTimestampMs, frameInfo._finishTimestampMs);
         sendEncodedImage(keyFrame, encodedImage.moveValue());
+        return {};
     }
     return encodedImage.moveStatus();
 }
