@@ -69,8 +69,8 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
     , _subscriberPrimary(subscriberPrimary)
     , _fastPublish(fastPublish)
     , _logCategory("transport_manager_" + identity)
-    , _negotiationTimer(_negotiationDelay ? new MediaTimer(pcf) : nullptr)
     , _trackManager(trackManager)
+    , _negotiationTimer(pcf)
     , _publisher(SignalTarget::Publisher, this, pcf, conf, identity, prefferedAudioEncoder, prefferedVideoEncoder, logger)
     , _subscriber(SignalTarget::Subscriber, this, pcf, conf, identity, {}, {}, logger)
     , _pingPongKit(positiveOrZero(pingInterval), positiveOrZero(pingTimeout), pcf)
@@ -234,6 +234,7 @@ void TransportManagerImpl::close()
 {
     _publisher.close();
     _subscriber.close();
+    cancelNegotiationTimer();
     stopPing();
     remove<webrtc::MediaType::AUDIO>(_audioTracks);
     remove<webrtc::MediaType::VIDEO>(_videoTracks);
@@ -407,9 +408,7 @@ void TransportManagerImpl::updateState()
             case webrtc::PeerConnectionInterface::PeerConnectionState::kClosed:
                 _embeddedDCCount = 0U;
             case webrtc::PeerConnectionInterface::PeerConnectionState::kDisconnected:
-                if (_negotiationTimer) {
-                    _negotiationTimer->cancelSingleShot(_negotiationTimerId);
-                }
+                cancelNegotiationTimer();
                 break;
             default:
                 break;
@@ -417,6 +416,11 @@ void TransportManagerImpl::updateState()
         _listener.invoke(&TransportManagerListener::onStateChange, newState,
                          _publisher.state(), _subscriber.state());
     }
+}
+
+void TransportManagerImpl::cancelNegotiationTimer()
+{
+    _negotiationTimer.cancelSingleShot(_negotiationTimerId);
 }
 
 void TransportManagerImpl::onSdpCreated(SignalTarget target,
@@ -602,9 +606,9 @@ void TransportManagerImpl::onSignalingChange(SignalTarget target,
 void TransportManagerImpl::onNegotiationNeededEvent(SignalTarget target, uint32_t /*eventId*/)
 {
     if (SignalTarget::Publisher == target && localDataChannelsAreCreated() && !closed()) {
-        if (_negotiationTimer) {
-            _negotiationTimer->cancelSingleShot(_negotiationTimerId);
-            _negotiationTimer->singleShot([this](){
+        if (_negotiationDelay) {
+            cancelNegotiationTimer();
+            _negotiationTimer.singleShot([this](){
                 _listener.invoke(&TransportManagerListener::onNegotiationNeeded);
             }, _negotiationDelay, _negotiationTimerId);
         }

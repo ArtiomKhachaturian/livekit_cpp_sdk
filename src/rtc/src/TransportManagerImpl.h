@@ -90,6 +90,7 @@ private:
     const Transport& primaryTransport() const noexcept;
     bool isPrimary(SignalTarget target) const noexcept;
     void updateState();
+    void cancelNegotiationTimer();
     // impl. of TransportListener
     void onSdpCreated(SignalTarget target, std::unique_ptr<webrtc::SessionDescriptionInterface> desc) final;
     void onSdpCreationFailure(SignalTarget target, webrtc::SdpType type, webrtc::RTCError error) final;
@@ -130,9 +131,9 @@ private:
     const bool _subscriberPrimary;
     const bool _fastPublish;
     const std::string _logCategory;
-    const std::unique_ptr<MediaTimer> _negotiationTimer;
     const std::weak_ptr<TrackManager> _trackManager;
     AsyncListener<TransportManagerListener*> _listener;
+    MediaTimer _negotiationTimer;
     Transport _publisher;
     Transport _subscriber;
     PingPongKit _pingPongKit;

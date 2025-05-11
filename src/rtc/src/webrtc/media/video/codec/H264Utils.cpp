@@ -35,18 +35,6 @@ inline float maxAllowedFrameRate(webrtc::H264Level level, const TCodecSource* so
     return 0.f;
 }
 
-inline std::optional<webrtc::SdpVideoFormat> createH264Format(bool encoder,
-                                                              webrtc::H264Profile profile,
-                                                              const std::string& packetizationMode = "1",
-                                                              bool addScalabilityModes = true) {
-    auto format = webrtc::CreateH264Format(profile, webrtc::H264Level::kLevel3_1,
-                                           packetizationMode, addScalabilityModes);
-    if (!encoder || LiveKitCpp::CodecStatus::NotSupported != LiveKitCpp::encoderStatus(format)) {
-        return format;
-    }
-    return std::nullopt;
-}
-
 } // namespace
 
 namespace LiveKitCpp
@@ -54,20 +42,18 @@ namespace LiveKitCpp
 
 std::vector<webrtc::SdpVideoFormat> H264Utils::supportedFormats(bool encoder)
 {
-    std::vector<webrtc::SdpVideoFormat> formats;
-    formats.reserve(6UL);
-    for (auto profile : {webrtc::H264Profile::kProfileBaseline,
-                         webrtc::H264Profile::kProfileConstrainedBaseline,
-                         webrtc::H264Profile::kProfileConstrainedHigh}) {
-        auto format = createH264Format(encoder, profile, "1");
-        if (format.has_value()) {
-            formats.push_back(std::move(format.value()));
+    auto formats = encoder ? webrtc::SupportedH264Codecs(true) : webrtc::SupportedH264DecoderCodecs();
+    auto it = std::remove_if(formats.begin(), formats.end(), [encoder](const webrtc::SdpVideoFormat& format) {
+        CodecStatus status = CodecStatus::NotSupported;
+        if (encoder) {
+            status = encoderStatus(format);
         }
-        format = createH264Format(encoder, profile, "0");
-        if (format.has_value()) {
-            formats.push_back(std::move(format.value()));
+        else {
+            status = decoderStatus(format);
         }
-    }
+        return CodecStatus::NotSupported == status;
+    });
+    formats.erase(it, formats.end());
     return formats;
 }
 
