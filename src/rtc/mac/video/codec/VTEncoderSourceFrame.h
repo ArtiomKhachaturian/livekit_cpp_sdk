@@ -16,6 +16,7 @@
 #include "CompletionStatusOr.h"
 #include "CVPixelBufferAutoRelease.h"
 #include "VideoFrameBufferPool.h"
+#include "VideoFrameInfo.h"
 #include <api/video/video_frame.h>
 #include <optional>
 #include <memory>
@@ -28,7 +29,7 @@ class VideoFrameBuffer;
 namespace LiveKitCpp
 {
 
-class VTEncoderSourceFrame
+class VTEncoderSourceFrame : public VideoFrameInfo
 {
     using PixelBuffer = CompletionStatusOr<CVPixelBufferAutoRelease>;
     class Planes;
@@ -39,19 +40,6 @@ public:
     const auto& mappedBuffer() const noexcept { return _mappedBuffer; } // no retain
     bool valid() const { return _mappedBuffer.valid(); }
     explicit operator bool() const { return valid(); }
-    webrtc::VideoRotation rotation() const { return _frame ? _frame->rotation() : webrtc::VideoRotation::kVideoRotation_0; }
-    // Get frame width.
-    int width() const { return _frame ? _frame->width() : 0; }
-    // Get frame height.
-    int height() const { return _frame ? _frame->height() : 0; }
-    uint32_t timestampRtp() const { return _frame ? _frame->rtp_timestamp() : 0U; }
-    int64_t timestampUs() const { return _frame ? _frame->timestamp_us() : 0LL; }
-    int64_t renderTimeMs() const { return _frame ? _frame->render_time_ms() : 0LL; }
-    int64_t startTimestampMs() const { return _startTimestampMs; }
-    int64_t finishTimestampMs() const { return _finishTimestampMs; }
-    void setStartTimestamp(int64_t timestampMs = currentTimestampMs());
-    void setFinishTimestamp(int64_t timestampMs = currentTimestampMs());
-    static int64_t currentTimestampMs();
     static CompletionStatusOr<VTEncoderSourceFrame> create(const webrtc::VideoFrame& frame,
                                                            const VideoFrameBufferPool& framesPool = {});
 protected:
@@ -62,10 +50,7 @@ private:
 private:
     // maximum number of planes supported by this implementation
     static inline const size_t _maxPlanes = 2U; // 1 - RGB32, 2 - NV12
-    std::optional<webrtc::VideoFrame> _frame;
     CVPixelBufferAutoRelease _mappedBuffer;
-    int64_t _startTimestampMs = 0LL;
-    int64_t _finishTimestampMs = 0LL;
 };
 
 } // namespace LiveKitCpp

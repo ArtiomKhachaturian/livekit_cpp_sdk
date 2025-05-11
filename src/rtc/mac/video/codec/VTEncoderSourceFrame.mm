@@ -84,7 +84,7 @@ private:
 
 VTEncoderSourceFrame::VTEncoderSourceFrame(const webrtc::VideoFrame& frame,
                                            CVPixelBufferAutoRelease mappedBuffer)
-    : _frame(frame)
+    : VideoFrameInfo(frame)
     , _mappedBuffer(std::move(mappedBuffer))
 {
 }
@@ -106,21 +106,6 @@ CompletionStatusOr<VTEncoderSourceFrame> VTEncoderSourceFrame::create(const webr
         return VTEncoderSourceFrame(frame, pixelBuffer.moveValue());
     }
     return pixelBuffer.moveStatus();
-}
-
-void VTEncoderSourceFrame::setStartTimestamp(int64_t timestampMs)
-{
-    _startTimestampMs = timestampMs;
-}
-
-void VTEncoderSourceFrame::setFinishTimestamp(int64_t timestampMs)
-{
-    _finishTimestampMs = timestampMs;
-}
-
-int64_t VTEncoderSourceFrame::currentTimestampMs()
-{
-    return webrtc::TimeMillis();
 }
 
 VTEncoderSourceFrame::PixelBuffer VTEncoderSourceFrame::

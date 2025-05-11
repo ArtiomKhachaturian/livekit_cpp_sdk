@@ -248,7 +248,6 @@ CompletionStatus VTEncoderSession::EncodePipeline::input(VTCompressionSessionRef
             frameProperties.set(CreateCFTypeDictionary(keys, values, 1), false);
         }
         const auto& buffer = sourceFrame.mappedBuffer();
-        sourceFrame.setStartTimestamp();
         beginInput();
         return COMPLETION_STATUS(endInput(VTCompressionSessionEncodeFrame(session, buffer,
                                                                           presentationTimeStamp,
@@ -269,7 +268,7 @@ void VTEncoderSession::EncodePipeline::output(void* pipeline, void* params,
     if (auto selfRef = reinterpret_cast<EncodePipeline*>(pipeline)) {
         const auto statusChanged = selfRef->endOutput(status);
         if (noErr == status) {
-            sourceFrame->setFinishTimestamp();
+            sourceFrame->markFinishTimestamp();
             selfRef->callback(&VTEncoderSessionCallback::onEncodedImage,
                               VTEncoderSourceFrame(std::move(*sourceFrame)),
                               infoFlags, sampleBuffer);

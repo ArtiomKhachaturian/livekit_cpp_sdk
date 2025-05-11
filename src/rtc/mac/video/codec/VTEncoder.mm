@@ -232,7 +232,7 @@ void VTEncoder::onEncodedImage(VTEncoderSourceFrame frame,
                 encodedImage._encodedHeight = frame.height();
                 encodedImage.qp_ = lastQp();
                 encodedImage.rotation_ = frame.rotation();
-                encodedImage.SetRtpTimestamp(frame.timestampRtp());
+                encodedImage.SetRtpTimestamp(frame.timestampRtpMs());
                 encodedImage.SetEncodeTime(frame.startTimestampMs(), frame.finishTimestampMs());
                 sendEncodedImage(keyFrame, std::move(encodedImage));
             }
