@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFVideoDecoderPipeline.h"
+#ifdef USE_PLATFORM_DECODERS
 #include "MFCommon.h"
 #include "MFVideoBuffer.h"
 #include "Utils.h"
@@ -186,3 +187,4 @@ CompletionStatusOr<MFVideoDecoderPipeline> MFVideoDecoderPipeline::
 }
 
 } // namespace LiveKitCpp
+#endif

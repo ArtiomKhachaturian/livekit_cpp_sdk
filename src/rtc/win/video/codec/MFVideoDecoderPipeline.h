@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MFVideoDecoderPipeline.h
+#ifdef USE_PLATFORM_DECODERS
 #include "MFNV12VideoPipeline.h"
 #include "MFMediaBufferLocker.h"
 #include <api/scoped_refptr.h>
@@ -58,3 +59,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

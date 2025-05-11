@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MFVideoEncoder.h
+#ifdef USE_PLATFORM_ENCODERS
 #include "VideoEncoder.h"
 #include "MFVideoEncoderPipeline.h"
 #include <codecapi.h>
@@ -75,3 +76,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MFEncoderInputMediaBuffer.h
+#ifdef USE_PLATFORM_ENCODERS
 #include "VideoFrameBufferPool.h"
 #include "MFMediaBuffer.h"
 #include <api/video/video_frame.h>
@@ -44,3 +45,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

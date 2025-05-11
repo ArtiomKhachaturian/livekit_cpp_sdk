@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFDecoderInputMediaBuffer.h"
+#ifdef USE_PLATFORM_DECODERS
 
 namespace LiveKitCpp 
 {
@@ -65,3 +66,4 @@ HRESULT MFDecoderInputMediaBuffer::Lock(BYTE** ppbBuffer, DWORD* pcbMaxLength, D
 }
 
 } // namespace LiveKitCpp
+#endif

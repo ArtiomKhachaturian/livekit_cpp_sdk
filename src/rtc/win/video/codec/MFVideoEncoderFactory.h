@@ -12,26 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // MFVideoEncoderFactory.h
-#include "VideoEncoderFactory.h"
+#ifdef USE_PLATFORM_ENCODERS
+#include <api/video_codecs/video_encoder_factory.h>
 
 namespace LiveKitCpp
 {
 
-class MFVideoEncoderFactory : public VideoEncoderFactory
+class MFVideoEncoderFactory : public webrtc::VideoEncoderFactory
 {
 public:
-#ifdef USE_OPEN_H264_ENCODER
-    MFVideoEncoderFactory() = default;
-#else
     MFVideoEncoderFactory();
-protected:
-    // override of VideoDecoderFactory
-    std::unique_ptr<webrtc::VideoEncoder> customEncoder(const webrtc::Environment& env,
-                                                                const webrtc::SdpVideoFormat& format) final;
-    std::vector<webrtc::SdpVideoFormat> customFormats() const final;
+    // impl. of webrtc::VideoEncoderFactory
+    std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const final { return _h264Formats; }
+    std::unique_ptr<webrtc::VideoEncoder> Create(const webrtc::Environment& env,
+        const webrtc::SdpVideoFormat& format) final;
+    CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
+        std::optional<std::string> scalabilityMode) const final;
 private:
     const std::vector<webrtc::SdpVideoFormat> _h264Formats;
-#endif
 };
 
 } // namespace LiveKitCpp
+#endif

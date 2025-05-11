@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFVideoEncoderFactory.h"
+#ifdef USE_PLATFORM_ENCODERS
 #include "CodecStatus.h"
 #include "MFVideoEncoderPipeline.h"
-#ifndef USE_OPEN_H264_ENCODER
 #include "H264Utils.h"
 #include "MFH264Encoder.h"
-#endif
 #include <modules/video_capture/video_capture_config.h>
 #include <api/transport/bitrate_settings.h>
 
@@ -34,36 +33,36 @@ CodecStatus checkEncoder(webrtc::VideoCodecType codecType,
 
 namespace LiveKitCpp
 {
-
-#ifndef USE_OPEN_H264_ENCODER
 MFVideoEncoderFactory::MFVideoEncoderFactory()
-    : _h264Formats(H264Utils::supportedFormats(true))
+    : _h264Formats(H264Utils::platformEncoderFormats())
 {
 }
 
 std::unique_ptr<webrtc::VideoEncoder> MFVideoEncoderFactory::
-    customEncoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
+    Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
     if (auto h264 = MFH264Encoder::create(format)) {
         return h264;
     }
-    return VideoEncoderFactory::customEncoder(env, format);
+    return {};
 }
 
-std::vector<webrtc::SdpVideoFormat> MFVideoEncoderFactory::customFormats() const
+webrtc::VideoEncoderFactory::CodecSupport MFVideoEncoderFactory::
+    QueryCodecSupport(const webrtc::SdpVideoFormat& format, std::optional<std::string> scalabilityMode) const
 {
-    return _h264Formats;
+    auto support = webrtc::VideoEncoderFactory::QueryCodecSupport(format, scalabilityMode);
+    if (support.is_supported) {
+        support.is_power_efficient = maybeHardwareAccelerated(encoderStatus(format));
+    }
+    return support;
 }
-#endif
 
 CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
 {
-#ifndef USE_OPEN_H264_ENCODER
     if (webrtc::VideoCodecType::kVideoCodecH264 == type) {
         return checkEncoder(type);
     }
-#endif
-    return CodecStatus::SupportedSoftware;
+    return CodecStatus::NotSupported;
 }
 
 } // namespace LiveKitCpp
@@ -87,3 +86,4 @@ CodecStatus checkEncoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 
 }
 
 }
+#endif

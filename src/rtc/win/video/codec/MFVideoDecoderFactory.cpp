@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFVideoDecoderFactory.h"
+#ifdef USE_PLATFORM_DECODERS
 #include "CodecStatus.h"
 #include "MFVideoDecoderPipeline.h"
-#ifndef USE_OPEN_H264_DECODER
 #include "MFH264Decoder.h"
 #include "VideoUtils.h"
 #include "H264Utils.h"
-#endif
 
 namespace
 {
@@ -32,35 +31,36 @@ CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width = 1280U,
 namespace LiveKitCpp
 {
 
-#ifndef USE_OPEN_H264_DECODER
 MFVideoDecoderFactory::MFVideoDecoderFactory()
-    : _h264Formats(H264Utils::supportedFormats(false))
+    : _h264Formats(H264Utils::platformDecoderFormats())
 {
-}
-
-std::vector<webrtc::SdpVideoFormat> MFVideoDecoderFactory::customFormats() const
-{
-    return _h264Formats;
 }
 
 std::unique_ptr<webrtc::VideoDecoder> MFVideoDecoderFactory::
-    customDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
+    Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
     if (H264Utils::formatMatched(format)) {
         return std::make_unique<MFH264Decoder>(format);
     }
-    return VideoDecoderFactory::customDecoder(env, format);
+    return {};
 }
-#endif
+
+webrtc::VideoDecoderFactory::CodecSupport MFVideoDecoderFactory::
+    QueryCodecSupport(const webrtc::SdpVideoFormat& format, bool referenceScaling) const
+{
+    auto support = webrtc::VideoDecoderFactory::QueryCodecSupport(format, referenceScaling);
+    if (support.is_supported) {
+        support.is_power_efficient = maybeHardwareAccelerated(decoderStatus(format));
+    }
+    return support;
+}
 
 CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
 {
-#ifndef USE_OPEN_H264_DECODER
     if (webrtc::VideoCodecType::kVideoCodecH264 == type) {
         return checkDecoder(type);
     }
-#endif
-    return CodecStatus::SupportedSoftware;
+    return CodecStatus::NotSupported;
 }
 
 } // namespace LiveKitCpp
@@ -81,3 +81,4 @@ CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 
 }
 
 }
+#endif

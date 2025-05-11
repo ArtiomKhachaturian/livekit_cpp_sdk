@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFH264Decoder.h"
-#ifndef USE_OPEN_H264_DECODER
+#ifdef USE_PLATFORM_ENCODERS
 namespace LiveKitCpp 
 {
 

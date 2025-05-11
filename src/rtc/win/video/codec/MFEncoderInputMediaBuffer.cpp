@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MFEncoderInputMediaBuffer.h"
+#ifdef USE_PLATFORM_ENCODERS
 #include "NV12VideoFrameBuffer.h"
 #include "LibyuvImport.h"
 #include <absl/container/inlined_vector.h>
@@ -80,3 +81,4 @@ HRESULT MFEncoderInputMediaBuffer::Lock(BYTE** ppbBuffer, DWORD* pcbMaxLength, D
 }
 
 } // namespace LiveKitCpp
+#endif
