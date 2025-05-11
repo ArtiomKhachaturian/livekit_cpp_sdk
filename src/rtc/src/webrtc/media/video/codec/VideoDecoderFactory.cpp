@@ -17,17 +17,13 @@
 #include <api/video_codecs/video_decoder_factory_template_dav1d_adapter.h>  // nogncheck
 #include <api/video_codecs/video_decoder_factory_template_libvpx_vp8_adapter.h>
 #include <api/video_codecs/video_decoder_factory_template_libvpx_vp9_adapter.h>
-#ifdef USE_OPEN_H264_DECODER
 #include <api/video_codecs/video_decoder_factory_template_open_h264_adapter.h>  // nogncheck
-#endif
 #include <rtc_base/logging.h>
 
 namespace {
 
 using Factory = webrtc::VideoDecoderFactoryTemplate<webrtc::LibvpxVp8DecoderTemplateAdapter,
-#ifdef USE_OPEN_H264_DECODER
                                                     webrtc::OpenH264DecoderTemplateAdapter,
-#endif
                                                     webrtc::Dav1dDecoderTemplateAdapter,
                                                     webrtc::LibvpxVp9DecoderTemplateAdapter>;
 }
@@ -35,14 +31,15 @@ using Factory = webrtc::VideoDecoderFactoryTemplate<webrtc::LibvpxVp8DecoderTemp
 namespace LiveKitCpp
 {
 
-VideoDecoderFactory::VideoDecoderFactory()
+VideoDecoderFactory::VideoDecoderFactory(std::unique_ptr<webrtc::VideoDecoderFactory> platform)
     : _defaultFallback(std::make_unique<Factory>())
+    , _platform(std::move(platform))
 {
 }
 
 std::vector<webrtc::SdpVideoFormat> VideoDecoderFactory::GetSupportedFormats() const
 {
-    return mergeFormats(_defaultFallback.get(), customFormats());
+    return mergeFormats(_defaultFallback.get(), _platform.get());
 }
 
 std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
@@ -50,9 +47,11 @@ std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
 {
     std::unique_ptr<webrtc::VideoDecoder> decoder;
     if (const auto originalFormat = webrtc::FuzzyMatchSdpVideoFormat(GetSupportedFormats(), format)) {
-        decoder = customDecoder(env, originalFormat.value());
+        if (_platform) {
+            decoder = _platform->Create(env, originalFormat.value());
+        }
         if (!decoder) {
-            decoder = defaultDecoder(env, originalFormat.value());
+            decoder = _defaultFallback->Create(env, format);
         }
         if (!decoder) {
             RTC_LOG(LS_ERROR) << "Decoder for video format [" << originalFormat.value() << "] was not found";
@@ -67,28 +66,14 @@ std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
 webrtc::VideoDecoderFactory::CodecSupport VideoDecoderFactory::
     QueryCodecSupport(const webrtc::SdpVideoFormat& format, bool referenceScaling) const
 {
-    auto support = webrtc::VideoDecoderFactory::QueryCodecSupport(format, referenceScaling);
-    if (support.is_supported) {
-        support.is_power_efficient = powerEfficient(format);
+    CodecSupport support = {};
+    if (_platform) {
+        support = _platform->QueryCodecSupport(format, referenceScaling);
+    }
+    if (!support.is_supported) {
+        support = _defaultFallback->QueryCodecSupport(format, referenceScaling);
     }
     return support;
-}
-
-std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
-    defaultDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format) const
-{
-    return _defaultFallback->Create(env, format);
-}
-
-std::unique_ptr<webrtc::VideoDecoder> VideoDecoderFactory::
-    customDecoder(const webrtc::Environment& /*env*/, const webrtc::SdpVideoFormat& /*format*/)
-{
-    return nullptr;
-}
-
-bool VideoDecoderFactory::powerEfficient(const webrtc::SdpVideoFormat& format) const
-{
-    return maybeHardwareAccelerated(decoderStatus(format));
 }
 
 } // namespace LiveKitCpp

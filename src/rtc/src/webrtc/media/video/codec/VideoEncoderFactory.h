@@ -21,22 +21,16 @@ namespace LiveKitCpp
 class VideoEncoderFactory : public webrtc::VideoEncoderFactory
 {
 public:
-    VideoEncoderFactory();
+    VideoEncoderFactory(std::unique_ptr<webrtc::VideoEncoderFactory> platform = {});
     // impl. of webrtc::VideoEncoderFactory
     std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const final;
     std::unique_ptr<webrtc::VideoEncoder> Create(const webrtc::Environment& env,
                                                  const webrtc::SdpVideoFormat& format) final;
     CodecSupport QueryCodecSupport(const webrtc::SdpVideoFormat& format,
                                    std::optional<std::string> scalabilityMode) const final;
-protected:
-    std::unique_ptr<webrtc::VideoEncoder> defaultEncoder(const webrtc::Environment& env,
-                                                         const webrtc::SdpVideoFormat& format) const;
-    virtual std::vector<webrtc::SdpVideoFormat> customFormats() const { return {}; }
-    virtual std::unique_ptr<webrtc::VideoEncoder> customEncoder(const webrtc::Environment& env,
-                                                                const webrtc::SdpVideoFormat& format);
-    virtual bool powerEfficient(const webrtc::SdpVideoFormat& format) const;
 private:
     const std::unique_ptr<webrtc::VideoEncoderFactory> _defaultFallback;
+    const std::unique_ptr<webrtc::VideoEncoderFactory> _platform;
 };
 
 } // namespace LiveKitCpp

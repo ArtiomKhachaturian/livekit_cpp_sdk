@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTEncoderSourceFrame.h
+#ifdef USE_PLATFORM_ENCODERS
 #include "CompletionStatusOr.h"
 #include "CVPixelBufferAutoRelease.h"
 #include "VideoFrameBufferPool.h"
@@ -68,3 +69,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

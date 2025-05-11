@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTDecoderSession.h"
+#ifdef USE_PLATFORM_DECODERS
 #include "VTSessionPipeline.h"
 #include "VTDecoderSessionCallback.h"
 #include "VideoDecoder.h"
@@ -262,3 +263,4 @@ EncodedData::EncodedData(const webrtc::scoped_refptr<webrtc::EncodedImageBufferI
 }
 
 }
+#endif

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTH264Decoder.h"
-#ifndef USE_OPEN_H264_DECODER
+#ifdef USE_PLATFORM_DECODERS
 #include "H264Utils.h"
 #include "VideoUtils.h"
 #include "CFMemoryPool.h"

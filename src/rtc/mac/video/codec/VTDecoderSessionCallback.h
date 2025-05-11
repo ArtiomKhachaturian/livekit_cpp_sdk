@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTDecoderSessionCallback.h
+#ifdef USE_PLATFORM_DECODERS
 #include "CompletionStatus.h"
 #include <CoreMedia/CMTime.h>
 #include <api/scoped_refptr.h>
@@ -43,3 +44,4 @@ protected:
 };
 
 } // namespace LiveKitCpp
+#endif

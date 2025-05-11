@@ -74,8 +74,12 @@ using StatusMap = std::unordered_map<webrtc::SdpVideoFormat, CodecStatus>;
 namespace LiveKitCpp
 {
 
+#ifdef USE_PLATFORM_ENCODERS
 extern CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters);
+#endif
+#ifdef USE_PLATFORM_DECODERS
 extern CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters);
+#endif
 
 std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                                                    webrtc::VideoRotation rotation,
@@ -233,6 +237,7 @@ bool isVP9CodecName(const std::string& codecName)
 CodecStatus encoderStatus(const webrtc::SdpVideoFormat& format)
 {
     CodecStatus status = CodecStatus::NotSupported;
+#ifdef USE_PLATFORM_ENCODERS
     const auto codecType = webrtc::PayloadStringToCodecType(format.name);
     if (webrtc::VideoCodecType::kVideoCodecGeneric != codecType) {
         static Bricks::SafeObj<StatusMap> supported;
@@ -245,12 +250,14 @@ CodecStatus encoderStatus(const webrtc::SdpVideoFormat& format)
             status = it->second;
         }
     }
+#endif
     return status;
 }
 
 CodecStatus decoderStatus(const webrtc::SdpVideoFormat& format)
 {
     CodecStatus status = CodecStatus::NotSupported;
+#ifdef USE_PLATFORM_DECODERS
     const auto codecType = webrtc::PayloadStringToCodecType(format.name);
     if (webrtc::VideoCodecType::kVideoCodecGeneric != codecType) {
         static Bricks::SafeObj<StatusMap> supported;
@@ -263,6 +270,7 @@ CodecStatus decoderStatus(const webrtc::SdpVideoFormat& format)
             status = it->second;
         }
     }
+#endif
     return status;
 }
 

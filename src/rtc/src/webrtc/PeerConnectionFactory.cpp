@@ -26,9 +26,6 @@
 #elif defined (WEBRTC_WIN)
 #include "MFVideoDecoderFactory.h"
 #include "MFVideoEncoderFactory.h"
-#else
-#include "VideoDecoderFactory.h"
-#include "VideoEncoderFactory.h"
 #endif
 #include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
@@ -71,6 +68,28 @@ inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer
                          + "' thread", g_pcfInit);
     }
     return nullptr;
+}
+
+inline std::unique_ptr<webrtc::VideoDecoderFactory> createPlatformDecoderFactory() {
+#ifdef USE_PLATFORM_DECODERS
+#ifdef WEBRTC_MAC
+    return std::make_unique<LiveKitCpp::VTVideoDecoderFactory>();
+#elif defined (WEBRTC_WIN)
+    return std::make_unique<LiveKitCpp::MFVideoDecoderFactory>();
+#endif
+#endif
+    return {};
+}
+
+inline std::unique_ptr<webrtc::VideoEncoderFactory> createPlatformEncoderFactory() {
+#ifdef USE_PLATFORM_ENCODERS
+#ifdef WEBRTC_MAC
+    return std::make_unique<LiveKitCpp::VTVideoEncoderFactory>();
+#elif defined (WEBRTC_WIN)
+    return std::make_unique<LiveKitCpp::MFVideoEncoderFactory>();
+#endif
+#endif
+    return {};
 }
 
 }
@@ -168,16 +187,8 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     dependencies.worker_thread = workingThread.get();
     dependencies.signaling_thread = signalingThread.get();
     dependencies.task_queue_factory = createTaskQueueFactory();
-#ifdef WEBRTC_MAC
-    dependencies.video_decoder_factory = std::make_unique<VTVideoDecoderFactory>();
-    dependencies.video_encoder_factory = std::make_unique<VTVideoEncoderFactory>();
-#elif defined (WEBRTC_WIN)
-    dependencies.video_decoder_factory = std::make_unique<MFVideoDecoderFactory>();
-    dependencies.video_encoder_factory = std::make_unique<MFVideoEncoderFactory>();
-#else
-    dependencies.video_decoder_factory = std::make_unique<VideoDecoderFactory>();
-    dependencies.video_encoder_factory = std::make_unique<VideoEncoderFactory>();
-#endif
+    dependencies.video_decoder_factory = std::make_unique<VideoDecoderFactory>(createPlatformDecoderFactory());
+    dependencies.video_encoder_factory = std::make_unique<VideoEncoderFactory>(createPlatformEncoderFactory());
     dependencies.audio_decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
     dependencies.audio_encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
     

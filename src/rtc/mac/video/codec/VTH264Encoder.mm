@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTH264Encoder.h"
-#ifndef USE_OPEN_H264_ENCODER
+#ifdef USE_PLATFORM_ENCODERS
 #include "VTH264EncodedBuffer.h"
 #include "VTEncoderSession.h"
 #include "VideoUtils.h"

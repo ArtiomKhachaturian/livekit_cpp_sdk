@@ -22,6 +22,8 @@
 namespace
 {
 
+using namespace LiveKitCpp;
+
 float maxAllowedFrameRateH264(webrtc::H264Level level, uint16_t width, uint16_t height, float maxFrameRate);
 
 template <class TCodecSource>
@@ -35,26 +37,41 @@ inline float maxAllowedFrameRate(webrtc::H264Level level, const TCodecSource* so
     return 0.f;
 }
 
+#ifdef USE_PLATFORM_ENCODERS
+//inline bool
+#endif
+
 } // namespace
 
 namespace LiveKitCpp
 {
 
-std::vector<webrtc::SdpVideoFormat> H264Utils::supportedFormats(bool encoder)
+std::vector<webrtc::SdpVideoFormat> H264Utils::platformEncoderFormats()
 {
-    auto formats = encoder ? webrtc::SupportedH264Codecs(true) : webrtc::SupportedH264DecoderCodecs();
-    auto it = std::remove_if(formats.begin(), formats.end(), [encoder](const webrtc::SdpVideoFormat& format) {
-        CodecStatus status = CodecStatus::NotSupported;
-        if (encoder) {
-            status = encoderStatus(format);
-        }
-        else {
-            status = decoderStatus(format);
-        }
-        return CodecStatus::NotSupported == status;
+#ifdef USE_PLATFORM_ENCODERS
+    auto formats = webrtc::SupportedH264Codecs(true);
+    auto it = std::remove_if(formats.begin(), formats.end(), [](const webrtc::SdpVideoFormat& format) {
+        return CodecStatus::NotSupported == encoderStatus(format);
     });
     formats.erase(it, formats.end());
     return formats;
+#else
+    return {};
+#endif
+}
+
+std::vector<webrtc::SdpVideoFormat> H264Utils::platformDecoderFormats()
+{
+#ifdef USE_PLATFORM_DECODERS
+    auto formats = webrtc::SupportedH264DecoderCodecs();
+    auto it = std::remove_if(formats.begin(), formats.end(), [](const webrtc::SdpVideoFormat& format) {
+        return CodecStatus::NotSupported == decoderStatus(format);
+    });
+    formats.erase(it, formats.end());
+    return formats;
+#else
+    return {};
+#endif
 }
 
 bool H264Utils::formatMatched(const webrtc::SdpVideoFormat& format)

@@ -31,7 +31,8 @@ public:
     // have been found to work better on devices that support VideoToolbox (APPLE)
     static constexpr int lowQpThreshold() { return 28; }
     static constexpr int highQpThreshold() { return 56; }
-    static std::vector<webrtc::SdpVideoFormat> supportedFormats(bool encoder);
+    static std::vector<webrtc::SdpVideoFormat> platformEncoderFormats();
+    static std::vector<webrtc::SdpVideoFormat> platformDecoderFormats();
     // https://en.wikipedia.org/wiki/Context-adaptive_binary_arithmetic_coding
     static bool formatMatched(const webrtc::SdpVideoFormat& format);
     static bool codecNameMatched(const std::string& codecName);

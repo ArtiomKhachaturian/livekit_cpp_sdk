@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTEncoderSessionCallback.h
+#ifdef USE_PLATFORM_ENCODERS
 #include "VTEncoderSourceFrame.h"
 #include <VideoToolbox/VTErrors.h>
 
@@ -30,3 +31,4 @@ protected:
 };
 
 } // namespace LiveKitCpp
+#endif

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTEncoder.h"
+#ifdef USE_PLATFORM_ENCODERS
 #include "VideoFrameBufferPoolSource.h"
 #include "VideoUtils.h"
 #include "VTEncoderSourceFrame.h"
@@ -253,3 +254,4 @@ void VTEncoder::onError(CompletionStatus error, bool fatal)
 }
 
 } // namespace LiveKitCpp
+#endif

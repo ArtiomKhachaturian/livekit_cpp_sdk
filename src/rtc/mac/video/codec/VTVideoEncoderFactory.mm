@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTVideoEncoderFactory.h"
-#ifdef USE_OPEN_H264_ENCODER
+#ifdef USE_PLATFORM_ENCODERS
 #include "VTEncoderSession.h"
-#else
 #include "VTH264Encoder.h"
 #include "H264Utils.h"
 #include "VideoUtils.h"
-#endif
 
 namespace
 {
@@ -34,24 +32,28 @@ VTEncoderSession createCompressor(CMVideoCodecType codecType,
 namespace LiveKitCpp
 {
 
-std::unique_ptr<webrtc::VideoEncoder> VTVideoEncoderFactory::
-    customEncoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
+VTVideoEncoderFactory::VTVideoEncoderFactory()
+    : _h264Formats(H264Utils::platformEncoderFormats())
 {
-#ifndef USE_OPEN_H264_ENCODER
+}
+
+std::unique_ptr<webrtc::VideoEncoder> VTVideoEncoderFactory::
+    Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
+{
     if (auto encoder = VTH264Encoder::create(format)) {
         return encoder;
     }
-#endif
-    return VideoEncoderFactory::customEncoder(env, format);
+    return {};
 }
 
-std::vector<webrtc::SdpVideoFormat> VTVideoEncoderFactory::customFormats() const
+webrtc::VideoEncoderFactory::CodecSupport VTVideoEncoderFactory::
+    QueryCodecSupport(const webrtc::SdpVideoFormat& format, std::optional<std::string> scalabilityMode) const
 {
-#ifdef USE_OPEN_H264_ENCODER
-    return VideoEncoderFactory::customFormats();
-#else
-    return H264Utils::supportedFormats(true);
-#endif
+    auto support = webrtc::VideoEncoderFactory::QueryCodecSupport(format, scalabilityMode);
+    if (support.is_supported) {
+        support.is_power_efficient = maybeHardwareAccelerated(encoderStatus(format));
+    }
+    return support;
 }
 
 CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
@@ -62,7 +64,7 @@ CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::Cod
             case webrtc::kVideoCodecVP8:
             case webrtc::kVideoCodecVP9:
             case webrtc::kVideoCodecAV1:
-                status = CodecStatus::SupportedSoftware;
+                break;
             default:
                 break;
         }
@@ -71,9 +73,6 @@ CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::Cod
             std::call_once(registerProfessionalVideoWorkflowVideoEncoders, VTRegisterProfessionalVideoWorkflowVideoEncoders);
         }
         if (webrtc::kVideoCodecH264 == type) {
-#ifdef USE_OPEN_H264_ENCODER
-            status = CodecStatus::SupportedSoftware;
-#else
             CFStringRef profile = nullptr;
             if (const auto profileLevelId = webrtc::ParseSdpForH264ProfileLevelId(parameters)) {
                 profile = VTH264Encoder::extractProfile(profileLevelId.value());
@@ -86,7 +85,6 @@ CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::Cod
                     }
                 }
             }
-#endif
         }
     }
     return status;
@@ -112,3 +110,4 @@ VTEncoderSession createCompressor(CMVideoCodecType codecType,
 }
 
 }
+#endif

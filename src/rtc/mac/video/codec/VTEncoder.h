@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#ifdef USE_PLATFORM_ENCODERS
 #include "CFAutoRelease.h"
 #include "EncodedImageBuffer.h"
 #include "VTEncoderSession.h"
@@ -65,3 +66,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

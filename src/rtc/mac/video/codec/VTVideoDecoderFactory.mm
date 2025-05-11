@@ -12,34 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTVideoDecoderFactory.h"
+#ifdef USE_PLATFORM_DECODERS
 #include "VideoUtils.h"
-#ifndef USE_OPEN_H264_DECODER
 #include "H264Utils.h"
 #include "VTH264Decoder.h"
-#endif
 #import <CoreMedia/CoreMedia.h>
 
 namespace LiveKitCpp
 {
 
-std::vector<webrtc::SdpVideoFormat> VTVideoDecoderFactory::customFormats() const
+VTVideoDecoderFactory::VTVideoDecoderFactory()
+    : _h264Formats(H264Utils::platformEncoderFormats())
 {
-#ifdef USE_OPEN_H264_DECODER
-    return VideoDecoderFactory::customFormats();
-#else
-    return H264Utils::supportedFormats(false);
-#endif
 }
 
 std::unique_ptr<webrtc::VideoDecoder> VTVideoDecoderFactory::
-    customDecoder(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
+    Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
-#ifndef USE_OPEN_H264_DECODER
     if (auto decoder = VTH264Decoder::create(format)) {
         return decoder;
     }
-#endif
-    return VideoDecoderFactory::customDecoder(env, format);
+    return {};
+}
+
+webrtc::VideoDecoderFactory::CodecSupport VTVideoDecoderFactory::
+    QueryCodecSupport(const webrtc::SdpVideoFormat& format, bool referenceScaling) const
+{
+    auto support = webrtc::VideoDecoderFactory::QueryCodecSupport(format, referenceScaling);
+    if (support.is_supported) {
+        support.is_power_efficient = maybeHardwareAccelerated(decoderStatus(format));
+    }
+    return support;
 }
 
 CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
@@ -65,19 +68,17 @@ CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::Cod
                     return CodecStatus::SupportedMixed;
                 }
                 break;*/
-#ifndef USE_OPEN_H264_DECODER
             case webrtc::kVideoCodecH264:
                 if (VTIsHardwareDecodeSupported(codecTypeH264())) {
                     return CodecStatus::SupportedMixed;
                 }
-                break;
-#endif
+                return CodecStatus::SupportedSoftware;
             default:
                 break;
         }
-        return CodecStatus::SupportedSoftware;
     }
     return CodecStatus::NotSupported;
 }
 
 } // namespace LiveKitCpp
+#endif

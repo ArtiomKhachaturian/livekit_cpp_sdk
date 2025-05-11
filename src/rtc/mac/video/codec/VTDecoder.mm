@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTDecoder.h"
+#ifdef USE_PLATFORM_DECODERS
 #include "CFMemoryPool.h"
 #include "RtcUtils.h"
 #include "VideoFrameBufferPoolSource.h"
@@ -198,3 +199,4 @@ void VTDecoder::onError(CompletionStatus error, bool fatal)
 }
 
 } // namespace LiveKitCpp
+#endif

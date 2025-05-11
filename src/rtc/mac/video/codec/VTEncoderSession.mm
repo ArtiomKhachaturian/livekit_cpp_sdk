@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTEncoderSession.h"
+#ifdef USE_PLATFORM_ENCODERS
 #include "VTSessionPipeline.h"
 #include "VTEncoderSourceFrame.h"
 #include "VTEncoderSessionCallback.h"
@@ -280,3 +281,4 @@ void VTEncoderSession::EncodePipeline::output(void* pipeline, void* params,
 }
 
 } // namespace LiveKitCpp
+#endif

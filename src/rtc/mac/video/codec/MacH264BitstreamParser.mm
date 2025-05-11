@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "MacH264BitstreamParser.h"
-#ifndef USE_OPEN_H264_ENCODER
+#ifdef USE_PLATFORM_ENCODERS
 #include "CFAutoRelease.h"
 #include "RtcUtils.h"
 #include <components/video_codec/nalu_rewriter.h>

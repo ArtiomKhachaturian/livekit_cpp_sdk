@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // VTEncoderSession.h
+#ifdef USE_PLATFORM_ENCODERS
 #include "VTSession.h"
 #include "VTEncoderSourceFrame.h"
 
@@ -73,3 +74,4 @@ private:
 };
 
 } // namespace LiveKitCpp
+#endif

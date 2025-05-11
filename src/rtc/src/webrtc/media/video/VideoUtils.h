@@ -85,12 +85,25 @@ std::vector<webrtc::SdpVideoFormat> mergeFormats(std::vector<webrtc::SdpVideoFor
                                                  std::vector<webrtc::SdpVideoFormat> f2);
 template <class TCodecFactory>
 inline std::vector<webrtc::SdpVideoFormat> mergeFormats(const TCodecFactory* factory,
-                                                        std::vector<webrtc::SdpVideoFormat> f2)
+                                                        std::vector<webrtc::SdpVideoFormat> otherFormats)
 {
     if (factory) {
-        return mergeFormats(factory->GetSupportedFormats(), std::move(f2));
+        return mergeFormats(factory->GetSupportedFormats(), std::move(otherFormats));
     }
-    return f2;
+    return otherFormats;
+}
+template <class TCodecFactory>
+inline std::vector<webrtc::SdpVideoFormat> mergeFormats(const TCodecFactory* factory1,
+                                                        const TCodecFactory* factory2)
+{
+    std::vector<webrtc::SdpVideoFormat> formats1, formats2;
+    if (factory1) {
+        formats1 = factory1->GetSupportedFormats();
+    }
+    if (factory2) {
+        formats2 = factory2->GetSupportedFormats();
+    }
+    return mergeFormats(std::move(formats1), std::move(formats2));
 }
 #ifdef WEBRTC_MAC
 // constants

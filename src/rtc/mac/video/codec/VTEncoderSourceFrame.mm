@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VTEncoderSourceFrame.h"
+#ifdef USE_PLATFORM_ENCODERS
 #include "CoreVideoPixelBuffer.h"
 #include "LibyuvImport.h"
 #include "NativeVideoFrameBuffer.h"
@@ -251,3 +252,4 @@ void VTEncoderSourceFrame::Planes::releaseCallback(void* frameRef,
 }
 
 } // namespace LiveKitCpp
+#endif
