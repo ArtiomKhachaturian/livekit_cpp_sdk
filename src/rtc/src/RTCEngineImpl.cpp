@@ -182,6 +182,9 @@ void RTCEngineImpl::disconnect()
         _client.disconnect();
         pcManager->close();
         pcManager->setListener(nullptr);
+        _localDcs.setListener(nullptr);
+        _remoteDcs.setListener(nullptr);
+        notifyAboutLocalParticipantJoinLeave(false);
     }
 }
 
@@ -213,13 +216,7 @@ void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollecto
 void RTCEngineImpl::cleanup(const std::optional<LiveKitError>& error, const std::string& errorDetails)
 {
     _remoteParicipants->reset();
-    notifyAboutLocalParticipantJoinLeave(false);
-    if (auto pcManager = std::atomic_exchange(&_pcManager, std::shared_ptr<TransportManager>())) {
-        pcManager->setListener(nullptr);
-    }
-    _client.disconnect();
-    _localDcs.setListener(nullptr);
-    _remoteDcs.setListener(nullptr);
+    disconnect();
     if (error) {
         if (canLogError()) {
             logError(formatErrorMsg(error.value(), errorDetails));
