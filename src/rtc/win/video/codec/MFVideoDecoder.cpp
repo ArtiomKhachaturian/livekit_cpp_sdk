@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#include <rtc_base/logging.h>
 #include "MFVideoDecoder.h"
 #include "MFCommon.h"
 #include "MFDecoderInputMediaBuffer.h"
@@ -99,6 +100,13 @@ int32_t MFVideoDecoder::Decode(const webrtc::EncodedImage& inputImage, bool miss
                     const auto realtime = webrtc::VideoContentType::UNSPECIFIED == inputImage.content_type_;
                     logWarning(_pipeline.setRealtimeContent(realtime));
                     status = setCompressedFrameSize(inputImage._encodedWidth, inputImage._encodedHeight);
+                    static thread_local int w = 0;
+                    static thread_local int h = 0;
+                    if (w != inputImage._encodedWidth || h != inputImage._encodedHeight) {
+                        RTC_LOG(LS_ERROR) << "decoder frame: " << inputImage._encodedWidth << "x" << inputImage._encodedHeight;
+                        w = inputImage._encodedWidth;
+                        h = inputImage._encodedHeight;
+                    }
                 }
                 if (WEBRTC_VIDEO_CODEC_OK == result && status) {
                     status = enqueueFrame(inputImage, missingFrames);
