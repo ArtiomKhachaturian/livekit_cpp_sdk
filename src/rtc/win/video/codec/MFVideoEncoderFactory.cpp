@@ -14,27 +14,12 @@
 #include "MFVideoEncoderFactory.h"
 #ifdef USE_PLATFORM_ENCODERS
 #include "CodecStatus.h"
-#include "MFVideoEncoderPipeline.h"
 #include "H264Utils.h"
 #include "MFH264Encoder.h"
-#include <modules/video_capture/video_capture_config.h>
-#include <api/transport/bitrate_settings.h>
-
-#include "h264_encoder_mf_impl.h"
-
-namespace
-{
-
-using namespace LiveKitCpp;
-
-CodecStatus checkEncoder(webrtc::VideoCodecType codecType, 
-                         UINT32 width = 1280U, UINT32 height = 1024U);
-
-}
-
 
 namespace LiveKitCpp
 {
+
 MFVideoEncoderFactory::MFVideoEncoderFactory()
     : _h264Formats(H264Utils::platformEncoderFormats())
 {
@@ -43,15 +28,9 @@ MFVideoEncoderFactory::MFVideoEncoderFactory()
 std::unique_ptr<webrtc::VideoEncoder> MFVideoEncoderFactory::
     Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
-    if (auto h264 = MFH264Encoder2::create(format)) {
+    if (auto h264 = MFH264Encoder::create(format)) {
         return h264;
     }
-    /*if (auto h264 = MFH264Encoder::create(format)) {
-        return h264;
-    }*/
-    /*if (H264Utils::formatMatched(format)) {
-        return std::make_unique<webrtc::H264EncoderMFImpl>();
-    }*/
     return {};
 }
 
@@ -65,33 +44,13 @@ webrtc::VideoEncoderFactory::CodecSupport MFVideoEncoderFactory::
     return support;
 }
 
-CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
+CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& /*parameters*/)
 {
     if (webrtc::VideoCodecType::kVideoCodecH264 == type) {
-        return checkEncoder(type);
+        return CodecStatus::SupportedHardware;
     }
     return CodecStatus::NotSupported;
 }
 
 } // namespace LiveKitCpp
-
-namespace
-{
-
-CodecStatus checkEncoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 height)
-{
-    const auto bitrate = webrtc::BitrateConstraints{}.start_bitrate_bps;
-    auto pipeline = MFVideoEncoderPipeline::create(codecType, width, height, 
-                                                   webrtc::videocapturemodule::kDefaultFrameRate, 
-                                                   bitrate);
-    if (pipeline) {
-        if (pipeline->hardwareAccellerated()) {
-            return CodecStatus::SupportedMixed;
-        }
-        return CodecStatus::SupportedSoftware;
-    }
-    return CodecStatus::NotSupported;
-}
-
-}
 #endif

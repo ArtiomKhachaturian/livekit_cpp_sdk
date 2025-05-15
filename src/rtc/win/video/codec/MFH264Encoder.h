@@ -16,47 +16,11 @@
 #include "H264BitstreamParser.h"
 #include "MFVideoEncoder.h"
 #include <api/video_codecs/h264_profile_level_id.h>
-#include <modules/video_coding/codecs/h264/include/h264_globals.h>
-
-namespace webrtc {
-struct SdpVideoFormat;
-}
 
 namespace LiveKitCpp 
 {
 
 class MFH264Encoder : public MFVideoEncoder
-{
-    class NaluHeader;
-    class H264EncoderBuffer;
-public:
-    ~MFH264Encoder() override;
-    static std::unique_ptr<webrtc::VideoEncoder> create(const webrtc::SdpVideoFormat& format);
-    // overrides of MFVideoEncoder
-    int32_t InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings) final;
-protected:
-    MFH264Encoder(const webrtc::SdpVideoFormat& format,
-                  std::optional<webrtc::H264ProfileLevelId> profileLevelId,
-                  webrtc::H264PacketizationMode packetizationMode);
-    // overrides of MFVideoEncoder
-    CompletionStatus processMpegHeaderData(std::vector<BYTE> naluHeaderData) final;
-    CompletionStatusOr<MFVideoEncoderPipeline> createPipeline(UINT32 width, UINT32 height) final;
-    CompletionStatusOr<webrtc::EncodedImage> createEncodedImage(bool keyFrame, 
-                                                                const CComPtr<IMFMediaBuffer>& data,
-                                                                const std::optional<UINT32>& encodedQp) final;
-
-private:
-    static std::optional<eAVEncH264VProfile> toMFH264(webrtc::H264Profile profile);
-    static std::optional<eAVEncH264VLevel> toMFH264(webrtc::H264Level level);
-
-private:
-    const std::optional<webrtc::H264ProfileLevelId> _profileLevelId;
-    std::unique_ptr<NaluHeader> _naluHeader;
-    H264BitstreamParser _h264BitstreamParser;
-    webrtc::VideoCodecH264 _h264params = {};
-};
-
-class MFH264Encoder2 : public MFVideoEncoder2
 {
 public:
     static std::unique_ptr<webrtc::VideoEncoder> create(const webrtc::SdpVideoFormat& format);
@@ -66,9 +30,9 @@ protected:
     CompletionStatusOr<webrtc::EncodedImage> createEncodedImage(bool keyFrame, IMFMediaBuffer* data,
                                                                 const std::optional<UINT32>& encodedQp) final;
 private:
-    MFH264Encoder2(const webrtc::SdpVideoFormat& format, 
-                   webrtc::H264PacketizationMode packetizationMode,
-                   std::optional<webrtc::H264ProfileLevelId> profileLevelId);
+    MFH264Encoder(const webrtc::SdpVideoFormat& format,
+                  webrtc::H264PacketizationMode packetizationMode,
+                  std::optional<webrtc::H264ProfileLevelId> profileLevelId);
 private:
     const std::optional<webrtc::H264ProfileLevelId> _profileLevelId;
     H264BitstreamParser _h264BitstreamParser;

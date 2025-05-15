@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // VideoDecoder.h
 #include "GenericCodec.h"
+#include "CompletionStatus.h"
 #include "CodecStatus.h"
 #include "Listener.h"
 #include <atomic>

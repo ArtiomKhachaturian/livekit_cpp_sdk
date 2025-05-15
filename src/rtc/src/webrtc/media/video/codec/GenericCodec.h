@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // GenericCodec.h
-#include "CompletionStatus.h"
 #include "VideoUtils.h"
 #include <api/video_codecs/sdp_video_format.h>
 #include <api/video_codecs/video_codec.h>
@@ -33,8 +32,6 @@ public:
     static constexpr const char* mediaBackendName();
 protected:
     GenericCodec(const webrtc::SdpVideoFormat& format);
-    static CompletionStatus logError(CompletionStatus status);
-    static CompletionStatus logWarning(CompletionStatus status);
     static constexpr bool isEncoder() { return std::is_same<webrtc::VideoEncoder, TCodecInterface>::value; }
 private:
     const webrtc::SdpVideoFormat _format;
@@ -86,20 +83,6 @@ inline constexpr const char* GenericCodec<TCodecInterface>::mediaBackendName()
 #else
     static_assert(false, "not yet implemented");
 #endif
-}
-
-template <class TCodecInterface>
-inline CompletionStatus GenericCodec<TCodecInterface>::logError(CompletionStatus status)
-{
-    status.toWebRtcLog(false);
-    return status;
-}
-
-template <class TCodecInterface>
-inline CompletionStatus GenericCodec<TCodecInterface>::logWarning(CompletionStatus status)
-{
-    status.toWebRtcLog(true);
-    return status;
 }
 
 } // namespace LiveKitCpp

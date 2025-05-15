@@ -14,6 +14,7 @@
 #pragma once // VideoEncoder.h
 #include "GenericCodec.h"
 #include "CodecStatus.h"
+#include "CompletionStatus.h"
 #include "SafeObj.h"
 #include <atomic>
 #include <modules/video_coding/include/video_codec_interface.h>

@@ -17,6 +17,7 @@
 #include "Utils.h"
 #include <common_video/include/bitrate_adjuster.h>
 #include <modules/video_coding/utility/simulcast_utility.h>
+#include <rtc_base/logging.h>
 
 namespace LiveKitCpp
 {
@@ -89,13 +90,13 @@ int32_t VideoEncoder::Release()
     // Need to destroy so that the session is invalidated and won't use the
     // callback anymore. Do not remove callback until the session is invalidated
     // since async encoder callbacks can occur until invalidation.
-    auto status = destroySession();
+    const auto status = destroySession();
     if (status) {
         _currentBitrate = _minBitrate = _maxBitrate = 0U;
         _currentFramerate = _maxFramerate = 0U;
         return RegisterEncodeCompleteCallback(nullptr); // nullptr is acceptable
     }
-    logError(std::move(status));
+    RTC_LOG(LS_ERROR) << status;
     return WEBRTC_VIDEO_CODEC_ERROR;
 }
 
@@ -226,11 +227,11 @@ void VideoEncoder::setCurrentBitrate(uint32_t bps)
         bps = bound(_minBitrate.load(), bps, _maxBitrate.load());
         if (bps != _currentBitrate) {
             // update the bitrate if needed
-            auto result = setEncoderBitrate(bps);
+            const auto result = setEncoderBitrate(bps);
             if (result) {
                 _currentBitrate = bps;
             } else {
-                logWarning(std::move(result));
+                RTC_LOG(LS_WARNING) << result;
             }
         }
     }
@@ -241,11 +242,11 @@ void VideoEncoder::setCurrentFramerate(double framerateFps)
     if (_maxFramerate) {
         const auto framerate = static_cast<uint32_t>(bound<double>(0., framerateFps + 0.5, _maxFramerate));
         if (framerate != _currentFramerate) {
-            auto result = setEncoderFrameRate(framerate);
+            const auto result = setEncoderFrameRate(framerate);
             if (result) {
                 _currentFramerate = framerate;
             } else {
-                logWarning(std::move(result));
+                RTC_LOG(LS_WARNING) << result;
             }
         }
     }
