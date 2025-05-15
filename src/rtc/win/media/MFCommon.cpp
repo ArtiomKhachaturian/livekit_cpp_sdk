@@ -20,6 +20,10 @@
 #include <mfidl.h>
 #include <Wmcodecdsp.h>
 
+#pragma comment(lib, "mfreadwrite")
+#pragma comment(lib, "mfplat")
+#pragma comment(lib, "mfuuid")
+
 namespace 
 {
 
@@ -275,7 +279,7 @@ CompletionStatusOr<UINT32> framerate(const CComPtr<IMFMediaType>& mediaType)
     return hr;
 }
 
-CompletionStatusOrComPtr<IMFSample> createSample(const CComPtr<IMFMediaBuffer>& attachedBuffer)
+CompletionStatusOrComPtr<IMFSample> createSample(IMFMediaBuffer* attachedBuffer)
 {
     CComPtr<IMFSample> sample;
     auto hr = COMPLETION_STATUS(::MFCreateSample(&sample));

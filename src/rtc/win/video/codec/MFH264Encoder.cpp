@@ -61,7 +61,6 @@ public:
     const uint8_t* data() const final { return _locker.dataBuffer(); }
     uint8_t* data() final { return _locker.dataBuffer(); }
     size_t size() const final { return _locker.currentLen(); }
-
 private:
     const MFMediaBufferLocker _locker;
 };
@@ -262,6 +261,53 @@ MFH264Encoder::NaluHeader::NaluHeader(std::vector<BYTE> data, std::vector<webrtc
 MFH264Encoder::H264EncoderBuffer::H264EncoderBuffer(MFMediaBufferLocker locker)
     : _locker(std::move(locker))
 {
+}
+
+MFH264Encoder2::MFH264Encoder2(const webrtc::SdpVideoFormat& format, 
+                               webrtc::H264PacketizationMode packetizationMode,
+                               std::optional<webrtc::H264ProfileLevelId> profileLevelId)
+    : MFVideoEncoder2(format, H264Utils::createCodecInfo(packetizationMode))
+    , _profileLevelId(std::move(profileLevelId))
+{
+}
+
+std::unique_ptr<webrtc::VideoEncoder> MFH264Encoder2::create(const webrtc::SdpVideoFormat& format)
+{
+    std::unique_ptr<webrtc::VideoEncoder> encoder;
+    if (H264Utils::formatMatched(format)) {
+        const auto status = encoderStatus(format);
+        if (CodecStatus::NotSupported != status) {
+            auto profileLevelId = webrtc::ParseSdpForH264ProfileLevelId(format.parameters);
+            const auto packetizationMode = H264Utils::packetizationMode(format);
+            encoder.reset(new MFH264Encoder2(format, packetizationMode, std::move(profileLevelId)));
+        }
+    }
+    return encoder;
+}
+
+int32_t MFH264Encoder2::InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings)
+{
+    int32_t result = WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
+    if (codecSettings) {
+        if (_profileLevelId.has_value()) {
+            auto h264settings = H264Utils::map(*codecSettings, _profileLevelId->level);
+            return MFVideoEncoder2::InitEncode(&h264settings, encoderSettings);
+        }
+        return MFVideoEncoder2::InitEncode(codecSettings, encoderSettings);
+    }
+    return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
+}
+
+CompletionStatusOr<webrtc::EncodedImage> MFH264Encoder2::createEncodedImage(bool keyFrame, 
+                                                                            IMFMediaBuffer* data,
+                                                                            const std::optional<UINT32>& encodedQp)
+{
+    auto result = MFVideoEncoder2::createEncodedImage(keyFrame, data, encodedQp);
+    if (result && !encodedQp) {
+        _h264BitstreamParser.parseForSliceQp(result->GetEncodedData());
+        result->qp_ = _h264BitstreamParser.lastSliceQp();
+    }
+    return result;
 }
 
 } // namespace LiveKitCpp

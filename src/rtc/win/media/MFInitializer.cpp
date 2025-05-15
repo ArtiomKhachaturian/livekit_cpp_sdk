@@ -22,30 +22,29 @@
 namespace LiveKitCpp 
 {
 
-MFInitializer::MFInitializer(bool multiThreadedModel, bool liteMode)
-    : ComStatus(initializeComForThisThread(multiThreadedModel))
+class MFInitializer::Impl : public ComStatus
 {
-    if (ok()) {
-        setStatus(::MFStartup(MF_VERSION, liteMode ? MFSTARTUP_LITE : MFSTARTUP_FULL));
-    }
+public:
+    Impl();
+    ~Impl();
+};
+
+ComStatus MFInitializer::initializeForThisThread()
+{
+    static thread_local const Impl impl;
+    return impl;
 }
 
-MFInitializer::MFInitializer(MFInitializer&& tmp) noexcept
-    : ComStatus(std::move(tmp))
+MFInitializer::Impl::Impl()
+    : ComStatus(::MFStartup(MF_VERSION, MFSTARTUP_LITE))
 {
 }
 
-MFInitializer::~MFInitializer()
+MFInitializer::Impl::~Impl()
 {
     if (ok()) {
         ::MFShutdown();
     }
-}
-
-MFInitializer& MFInitializer::operator=(MFInitializer&& tmp) noexcept
-{
-    assign(std::move(tmp));
-    return *this;
 }
 
 } // namespace LiveKitCpp

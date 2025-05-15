@@ -21,6 +21,9 @@ namespace LiveKitCpp
 class ComStatus
 {
 public:
+    explicit ComStatus(HRESULT status) noexcept;
+    ComStatus(const ComStatus& other) noexcept;
+    ComStatus(ComStatus&& tmp) noexcept;
     virtual ~ComStatus() = default;
     ComStatus& operator=(const ComStatus& other) noexcept;
     ComStatus& operator=(ComStatus&& tmp) noexcept;
@@ -30,9 +33,6 @@ public:
     explicit operator bool() const noexcept { return ok(); }
 protected:
     ComStatus() = default;
-    explicit ComStatus(HRESULT status) noexcept;
-    ComStatus(const ComStatus& other) noexcept;
-    ComStatus(ComStatus&& tmp) noexcept;
     void assign(ComStatus&& tmp) noexcept;
     void setStatus(HRESULT status) noexcept;
 private:

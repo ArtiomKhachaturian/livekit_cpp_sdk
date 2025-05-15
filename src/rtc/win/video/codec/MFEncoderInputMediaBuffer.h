@@ -17,6 +17,7 @@
 #include "MFMediaBuffer.h"
 #include <api/video/video_frame.h>
 #include <api/video/video_frame_buffer.h>
+#include <atlbase.h> //CComPtr support
 
 namespace LiveKitCpp 
 {
@@ -25,10 +26,10 @@ namespace LiveKitCpp
 class MFEncoderInputMediaBuffer : public MFMediaBuffer
 {
 public:
-    static IMFMediaBuffer* create(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
-                                  const VideoFrameBufferPool& pool = {});
-    static IMFMediaBuffer* create(const webrtc::VideoFrame& frame,
-                                  const VideoFrameBufferPool& pool = {});
+    static CComPtr<IMFMediaBuffer> create(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+                                          const VideoFrameBufferPool& pool = {});
+    static CComPtr<IMFMediaBuffer> create(const webrtc::VideoFrame& frame,
+                                          const VideoFrameBufferPool& pool = {});
     ~MFEncoderInputMediaBuffer();
     // impl. of IMFMediaBuffer
     HRESULT STDMETHODCALLTYPE GetCurrentLength(DWORD* pcbCurrentLength) final;

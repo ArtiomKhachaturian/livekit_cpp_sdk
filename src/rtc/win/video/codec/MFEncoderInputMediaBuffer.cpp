@@ -30,16 +30,16 @@ MFEncoderInputMediaBuffer::~MFEncoderInputMediaBuffer()
 {
 }
 
-IMFMediaBuffer* MFEncoderInputMediaBuffer::create(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
-                                                  const VideoFrameBufferPool& pool)
+CComPtr<IMFMediaBuffer> MFEncoderInputMediaBuffer::create(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer,
+                                                          const VideoFrameBufferPool& pool)
 {
     if (auto nv12 = NV12VideoFrameBuffer::toNV12(buffer, pool)) {
         return new MFEncoderInputMediaBuffer(std::move(nv12));
     }
-    return nullptr;
+    return {};
 }
 
-IMFMediaBuffer* MFEncoderInputMediaBuffer::create(const webrtc::VideoFrame& frame, const VideoFrameBufferPool& pool)
+CComPtr<IMFMediaBuffer> MFEncoderInputMediaBuffer::create(const webrtc::VideoFrame& frame, const VideoFrameBufferPool& pool)
 {
     return create(frame.video_frame_buffer(), pool);
 }

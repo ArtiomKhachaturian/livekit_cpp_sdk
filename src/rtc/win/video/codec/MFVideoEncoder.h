@@ -13,7 +13,14 @@
 // limitations under the License.
 #pragma once // MFVideoEncoder.h
 #ifdef USE_PLATFORM_ENCODERS
+#include "MFSortedQueue.h"
+#include "MFTEncodingCallback.h"
+#include "MFMediaSink.h"
+#include "MFSampleTimeLine.h"
 #include "VideoEncoder.h"
+
+#include <mfreadwrite.h>
+
 #include "MFVideoEncoderPipeline.h"
 #include "VideoFrameInfo.h"
 #include <codecapi.h>
@@ -42,7 +49,7 @@ protected:
                                                                         const CComPtr<IMFMediaBuffer>& data,
                                                                         const std::optional<UINT32>& encodedQp = std::nullopt) = 0;
     // impl. of VideoEncoder
-    void destroySession() override;
+    CompletionStatus destroySession() override;
     CompletionStatus setEncoderBitrate(uint32_t bitrateBps) final;
     CompletionStatus setEncoderFrameRate(uint32_t frameRate) final;
 private:
@@ -63,6 +70,52 @@ private:
     bool _lastFrameDropped = false;
     // key - timestamp NHS
     std::queue<std::pair<LONGLONG, VideoFrameInfo>> _attributeQueue;
+};
+
+
+class VideoFrameBufferPoolSource;
+
+class MFVideoEncoder2 : public VideoEncoder, private MFTEncodingCallback
+{
+    class EncodedBuffer;
+public:
+    MFVideoEncoder2(const webrtc::SdpVideoFormat& format, webrtc::CodecSpecificInfo codecSpecificInfo);
+    bool hardwareAccelerated() const final { return true; }
+    // overrides of VideoEncoder
+    int32_t InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings) override;
+    int32_t Encode(const webrtc::VideoFrame& frame, const std::vector<webrtc::VideoFrameType>* frameTypes) override;
+    EncoderInfo GetEncoderInfo() const override;
+protected:
+    CompletionStatus destroySession() override;
+    CompletionStatus setEncoderBitrate(uint32_t bitrateBps) override;
+    CompletionStatus setEncoderFrameRate(uint32_t frameRate) override;
+    virtual CompletionStatusOr<webrtc::EncodedImage> createEncodedImage(bool keyFrame,
+                                                                        IMFMediaBuffer* data,
+                                                                        const std::optional<UINT32>& encodedQp = std::nullopt);
+private:
+    static std::optional<UINT32> encoderQp(IMFSample* sample);
+    CComPtr<IMFSample> fromVideoFrame(const webrtc::VideoFrame& frame);
+    CompletionStatus initWriter(UINT32 width, UINT32 height, UINT32 targetBps, UINT32 framerate, UINT32 maxQP);
+    CompletionStatus releaseWriter();
+    CompletionStatus reconfigureWriter(UINT32 newWidth, UINT32 newHeight,
+                                       UINT32 newTargetBps, UINT32 newFrameRate);
+    const GUID& compressedFormat() const;
+    // impl. of MFTEncodingCallback
+    void onEncoded(CComPtr<IMFSample> sample) final;
+private:
+    static constexpr int _minIntervalBetweenRateChangesMs = 5000;
+    std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
+    Microsoft::WRL::ComPtr<IMFSinkWriter> _sinkWriter;
+    Microsoft::WRL::ComPtr<MFMediaSink> _mediaSink;
+    UINT32 _width = 0U;
+    UINT32 _height = 0U;
+    DWORD _streamIndex = {};
+    int64_t _lastRateChangeTimeMs = 0LL;
+    bool _rateChangeRequested = false;
+    bool _lastInputFrameDropped = false;
+    uint64_t _framesCount = 0ULL;
+    MFSortedQueue<VideoFrameInfo> _sampleAttributeQueue;
+    MFSampleTimeLine _inputFramesTimeline;
 };
 
 } // namespace LiveKitCpp

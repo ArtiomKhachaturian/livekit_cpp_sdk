@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once // MFSampleTimeLine.h
 #include "CompletionStatus.h"
-#include <atlbase.h> //CComPtr support
 #include <mfobjects.h>
 
 namespace webrtc {
@@ -28,13 +27,14 @@ class MFSampleTimeLine
 {
 public:
     MFSampleTimeLine(bool roundTo90kHz = true);
-    void reset() { _startTimeMicro = _lastTimestampHns = 0LL; }
+    void reset() { _startTimeMicro = _lastDurationHns = _lastTimestampHns = 0LL; }
     void setSetupDuration(bool set) { _setupDuration = set; }
     bool setupDuration() const { return _setupDuration; }
-    LONGLONG lastTimestampHns() const { return _lastTimestampHns; }
-    CompletionStatus setSampleTimeMetrics(const CComPtr<IMFSample>& sample, LONGLONG timestampMicro);
-    CompletionStatus setSampleTimeMetrics(const CComPtr<IMFSample>& sample, const webrtc::EncodedImage& from);
-    CompletionStatus setSampleTimeMetrics(const CComPtr<IMFSample>& sample, const webrtc::VideoFrame& from);
+    LONGLONG lastTimestampHns() const noexcept { return _lastTimestampHns; }
+    LONGLONG lastDurationHns() const noexcept { return _lastDurationHns; }
+    CompletionStatus setTimeMetrics(LONGLONG timestampMicro, IMFSample* sample = nullptr);
+    CompletionStatus setTimeMetrics(const webrtc::EncodedImage& from, IMFSample* sample = nullptr);
+    CompletionStatus setTimeMetrics(const webrtc::VideoFrame& from, IMFSample* sample = nullptr);
 private:
     template <typename T>
     static T rounded90kHz(T value) { return 100 * (value / 90.0 + 0.5f); }
@@ -48,6 +48,7 @@ private:
     bool _roundTo90kHz;
     LONGLONG _startTimeMicro = 0LL;
     LONGLONG _lastTimestampHns = 0LL;
+    LONGLONG _lastDurationHns = 0LL;
     bool _setupDuration = true;
 };
 

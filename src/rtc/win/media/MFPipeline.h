@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once
 #include "CompletionStatusOr.h"
-#include "MFInitializer.h"
 #include <atlbase.h> //CComPtr support
 #include <codecapi.h>
 #include <mftransform.h>
@@ -82,7 +81,6 @@ private:
     MFPipeline(bool encoder, bool hardwareAccellerated,
                DWORD inputStreamID, DWORD outputStreamID,
                std::string friendlyName,
-               MFInitializer mftInitializer,
                CComPtr<IMFTransform> transform,
                CComPtr<IMFAttributes> attributes,
                CComPtr<IMFMediaEventGenerator> eventGenerator = {});
@@ -95,7 +93,6 @@ private:
                                                  DWORD inputStreamID, 
                                                  DWORD outputStreamID,
                                                  std::string friendlyName,
-                                                 MFInitializer mftInitializer,
                                                  CComPtr<IMFTransform> transform);
 private:
     bool _encoder = false;
@@ -103,7 +100,6 @@ private:
     DWORD _inputStreamID = {};
     DWORD _outputStreamID = {};
     std::string _friendlyName;
-    MFInitializer _mftInitializer;
     CComPtr<IMFTransform> _transform;
     CComPtr<IMFAttributes> _attributes;
     CComPtr<IMFMediaEventGenerator> _eventGenerator;

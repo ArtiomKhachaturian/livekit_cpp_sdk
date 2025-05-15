@@ -11,21 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // ScopedComInitializer.h
-#ifdef _WIN32
-#include "ComStatus.h"
+#pragma once // MFTEncodingCallback.h
+#include <atlbase.h> //CComPtr support
+#include <mfobjects.h>
 
-namespace LiveKitCpp
+namespace LiveKitCpp 
 {
 
-class ScopedComInitializer : public ComStatus
+interface MFTEncodingCallback
 {
-public:
-    ScopedComInitializer(bool multiThreadedModel = true);
-    ~ScopedComInitializer() final;
-private:
-    const bool _differentApartment;
+    virtual void onEncoded(CComPtr<IMFSample> sample) = 0;
 };
 
-} // namespace LiveKitCpp
-#endif
+}  // namespace LiveKitCpp
+

@@ -44,6 +44,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+
 namespace {
 
 static const std::string_view g_pcfInit("PeerConnectionFactory_Init");
@@ -68,29 +69,10 @@ inline std::shared_ptr<webrtc::Thread> CreateRunningThread(bool withSocketServer
                          + "' thread", g_pcfInit);
     }
     return nullptr;
-}
+} 
 
-inline std::unique_ptr<webrtc::VideoDecoderFactory> createPlatformDecoderFactory() {
-#ifdef USE_PLATFORM_DECODERS
-#ifdef WEBRTC_MAC
-    return std::make_unique<LiveKitCpp::VTVideoDecoderFactory>();
-#elif defined (WEBRTC_WIN)
-    return std::make_unique<LiveKitCpp::MFVideoDecoderFactory>();
-#endif
-#endif
-    return {};
-}
-
-inline std::unique_ptr<webrtc::VideoEncoderFactory> createPlatformEncoderFactory() {
-#ifdef USE_PLATFORM_ENCODERS
-#ifdef WEBRTC_MAC
-    return std::make_unique<LiveKitCpp::VTVideoEncoderFactory>();
-#elif defined (WEBRTC_WIN)
-    return std::make_unique<LiveKitCpp::MFVideoEncoderFactory>();
-#endif
-#endif
-    return {};
-}
+std::unique_ptr<webrtc::VideoDecoderFactory> createPlatformDecoderFactory();
+std::unique_ptr<webrtc::VideoEncoderFactory> createPlatformEncoderFactory();
 
 }
 
@@ -485,3 +467,34 @@ void PeerConnectionFactory::AdmFacade::registerPlayoutListener(AdmProxyListener*
 #ifdef __clang__
 #pragma GCC diagnostic pop
 #endif
+
+namespace
+{
+
+using namespace LiveKitCpp;
+
+std::unique_ptr<webrtc::VideoDecoderFactory> createPlatformDecoderFactory()
+{
+#ifdef USE_PLATFORM_DECODERS
+#ifdef WEBRTC_MAC
+    return std::make_unique<VTVideoDecoderFactory>();
+#elif defined (WEBRTC_WIN)
+    return std::make_unique<MFVideoDecoderFactory>();
+#endif
+#endif
+    return {};
+}
+
+std::unique_ptr<webrtc::VideoEncoderFactory> createPlatformEncoderFactory()
+{
+#ifdef USE_PLATFORM_ENCODERS
+#ifdef WEBRTC_MAC
+    return std::make_unique<VTVideoEncoderFactory>();
+#elif defined (WEBRTC_WIN)
+    return std::make_unique<MFVideoEncoderFactory>();
+#endif
+#endif
+    return {};
+}
+
+}

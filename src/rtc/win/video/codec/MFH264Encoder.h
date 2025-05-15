@@ -56,5 +56,23 @@ private:
     webrtc::VideoCodecH264 _h264params = {};
 };
 
+class MFH264Encoder2 : public MFVideoEncoder2
+{
+public:
+    static std::unique_ptr<webrtc::VideoEncoder> create(const webrtc::SdpVideoFormat& format);
+    // overrides of MFVideoEncoder
+    int32_t InitEncode(const webrtc::VideoCodec* codecSettings, const Settings& encoderSettings) final;
+protected:
+    CompletionStatusOr<webrtc::EncodedImage> createEncodedImage(bool keyFrame, IMFMediaBuffer* data,
+                                                                const std::optional<UINT32>& encodedQp) final;
+private:
+    MFH264Encoder2(const webrtc::SdpVideoFormat& format, 
+                   webrtc::H264PacketizationMode packetizationMode,
+                   std::optional<webrtc::H264ProfileLevelId> profileLevelId);
+private:
+    const std::optional<webrtc::H264ProfileLevelId> _profileLevelId;
+    H264BitstreamParser _h264BitstreamParser;
+};
+
 } // namespace LiveKitCpp
 #endif

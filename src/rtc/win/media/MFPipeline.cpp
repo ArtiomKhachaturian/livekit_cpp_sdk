@@ -25,7 +25,6 @@ namespace LiveKitCpp
 MFPipeline::MFPipeline(bool encoder, bool hardwareAccellerated,
                        DWORD inputStreamID, DWORD outputStreamID,
                        std::string friendlyName,
-                       MFInitializer mftInitializer,
                        CComPtr<IMFTransform> transform,
                        CComPtr<IMFAttributes> attributes,
                        CComPtr<IMFMediaEventGenerator> eventGenerator)
@@ -47,11 +46,6 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
                                                   UINT32 desiredFlags,
                                                   MFTransformConfigurator* configurator)
 {
-    MFInitializer mftInitializer(true);
-    auto status = COMPLETION_STATUS(mftInitializer);
-    if (!status) {
-        return status;
-    }
     UINT32 actualFlags = 0U;
     DWORD inputStreamID = 0U, outputStreamID = 0U;
     std::string friendlyName;
@@ -90,7 +84,6 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool video,
     return create(encoder, actualFlags, 
                   inputStreamID, outputStreamID, 
                   std::move(friendlyName), 
-                  std::move(mftInitializer), 
                   transform.moveValue());
 }
 
@@ -99,11 +92,6 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool encoder, const GUID& code
 {
     if (GUID_NULL == codec) {
         return COMPLETION_STATUS_INVALID_ARG;
-    }
-    MFInitializer mftInitializer(true);
-    auto status = COMPLETION_STATUS(mftInitializer);
-    if (!status) {
-        return status;
     }
     UINT32 actualFlags = 0U;
     DWORD inputStreamID = 0U, outputStreamID = 0U;
@@ -114,7 +102,7 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool encoder, const GUID& code
         return transform.moveStatus();
     }
     return create(encoder, actualFlags, inputStreamID, outputStreamID,
-                  std::move(friendlyName), std::move(mftInitializer), transform.moveValue());
+                  std::move(friendlyName), transform.moveValue());
 }
 
 CompletionStatus MFPipeline::beginGetEvent(IMFAsyncCallback* callback, IUnknown* punkState)
@@ -488,7 +476,6 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool encoder, UINT32 actualFla
                                                   DWORD inputStreamID,
                                                   DWORD outputStreamID,
                                                   std::string friendlyName,
-                                                  MFInitializer mftInitializer,
                                                   CComPtr<IMFTransform> transform)
 {
     if (!transform) {
@@ -515,8 +502,8 @@ CompletionStatusOr<MFPipeline> MFPipeline::create(bool encoder, UINT32 actualFla
     }
     const auto hardware = testFlag<MFT_ENUM_FLAG_HARDWARE>(actualFlags);
     return MFPipeline(encoder, hardware, inputStreamID, outputStreamID,
-                      std::move(friendlyName), std::move(mftInitializer),
-                      transform, std::move(attributes), std::move(eventGenerator));
+                      std::move(friendlyName), transform, std::move(attributes), 
+                      std::move(eventGenerator));
 }
 
 } // namespace LiveKitCpp

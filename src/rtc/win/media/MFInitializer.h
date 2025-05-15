@@ -19,14 +19,10 @@ namespace LiveKitCpp
 
 class MFInitializer : public ComStatus
 {
+    class Impl;
 public:
     MFInitializer() = default;
-    MFInitializer(bool multiThreadedModel, bool liteMode = true);
-    MFInitializer(const MFInitializer&) = delete;
-    MFInitializer(MFInitializer&& tmp) noexcept;
-    ~MFInitializer() final;
-    MFInitializer& operator=(const MFInitializer&) = delete;
-    MFInitializer& operator=(MFInitializer&& tmp) noexcept;
+    static ComStatus initializeForThisThread();
 };
 
 } // namespace LiveKitCpp

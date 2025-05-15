@@ -89,10 +89,14 @@ int32_t VideoEncoder::Release()
     // Need to destroy so that the session is invalidated and won't use the
     // callback anymore. Do not remove callback until the session is invalidated
     // since async encoder callbacks can occur until invalidation.
-    destroySession();
-    _currentBitrate = _minBitrate = _maxBitrate = 0U;
-    _currentFramerate = _maxFramerate = 0U;
-    return RegisterEncodeCompleteCallback(nullptr); // nullptr is acceptable
+    auto status = destroySession();
+    if (status) {
+        _currentBitrate = _minBitrate = _maxBitrate = 0U;
+        _currentFramerate = _maxFramerate = 0U;
+        return RegisterEncodeCompleteCallback(nullptr); // nullptr is acceptable
+    }
+    logError(std::move(status));
+    return WEBRTC_VIDEO_CODEC_ERROR;
 }
 
 int32_t VideoEncoder::RegisterEncodeCompleteCallback(webrtc::EncodedImageCallback* callback)
@@ -127,12 +131,13 @@ webrtc::VideoEncoder::EncoderInfo VideoEncoder::GetEncoderInfo() const
     return encoderInfo;
 }
 
-void VideoEncoder::destroySession()
+CompletionStatus VideoEncoder::destroySession()
 {
     _dropNextFrame = false;
     if (_bitrateAdjuster) {
         _bitrateAdjuster->reset();
     }
+    return {};
 }
 
 bool VideoEncoder::hasEncodeCompleteCallback() const

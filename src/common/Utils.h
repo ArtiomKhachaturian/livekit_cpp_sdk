@@ -19,6 +19,7 @@
 #include <CoreGraphics/CGDirectDisplay.h>
 #elif defined(_WIN32)
 #include <Windows.h>
+#include "ComStatus.h"
 #endif // __APPLE__
 #include <algorithm>
 #include <atomic>
@@ -54,7 +55,7 @@ std::string stringFromCFString(CFStringRef str);
 #elif defined(_WIN32)
 // https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types
 std::vector<BYTE> queryRegistryValue(HKEY root, LPCSTR lpSubKey, LPCSTR lpValueName = NULL, LPDWORD lpType = NULL);
-HRESULT initializeComForThisThread(bool multiThreadedModel = true);
+ComStatus initializeComForThisThread(DWORD coInit = COINIT_APARTMENTTHREADED);
 #endif // __APPLE__
 
 // major version / major version / patch version

@@ -53,7 +53,7 @@ CompletionStatus setPixelAspectRatio1x1(const CComPtr<IMFMediaType>& mediaType);
 CompletionStatusOr<std::pair<UINT32, UINT32>> frameSize(const CComPtr<IMFMediaType>& mediaType);
 CompletionStatusOr<UINT32> framerate(const CComPtr<IMFMediaType>& mediaType);
 // sample
-CompletionStatusOrComPtr<IMFSample> createSample(const CComPtr<IMFMediaBuffer>& attachedBuffer = {});
+CompletionStatusOrComPtr<IMFSample> createSample(IMFMediaBuffer* attachedBuffer = {});
 CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(DWORD maxLength, DWORD aligment = 0UL);
 // flags tester
 bool acceptFlags(DWORD desired, DWORD actual);

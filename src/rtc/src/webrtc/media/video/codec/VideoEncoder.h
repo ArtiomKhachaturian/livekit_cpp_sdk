@@ -53,7 +53,7 @@ protected:
     void dropEncodedImage(webrtc::EncodedImageCallback::DropReason reason) const;
     void sendEncodedImage(bool keyFrame, webrtc::EncodedImage encodedImage);
     bool dropNextFrame();
-    virtual void destroySession();
+    virtual CompletionStatus destroySession();
     virtual CompletionStatus setEncoderBitrate(uint32_t bitrateBps) = 0;
     virtual CompletionStatus setEncoderFrameRate(uint32_t frameRate) = 0;
     static bool keyFrameRequested(const std::vector<webrtc::VideoFrameType>* frameTypes);

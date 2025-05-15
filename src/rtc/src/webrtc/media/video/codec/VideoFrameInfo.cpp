@@ -18,12 +18,14 @@ namespace LiveKitCpp
 {
 
 VideoFrameInfo::VideoFrameInfo(int64_t renderTimeMs, int64_t timestampUs,
-                               uint32_t timestampRtpMs, int width, int height,
+                               uint32_t timestampRtpMs, int64_t ntpTimeMs,
+                               int width, int height,
                                webrtc::VideoRotation rotation,
                                int64_t startTimestampMs)
     : _renderTimeMs(renderTimeMs)
     , _timestampUs(timestampUs)
     , _timestampRtpMs(timestampRtpMs)
+    , _ntpTimeMs(ntpTimeMs)
     , _width(width)
     , _height(height)
     , _rotation(rotation)
@@ -33,7 +35,7 @@ VideoFrameInfo::VideoFrameInfo(int64_t renderTimeMs, int64_t timestampUs,
 
 VideoFrameInfo::VideoFrameInfo(const webrtc::VideoFrame& frame, int64_t startTimestampMs)
     : VideoFrameInfo(frame.render_time_ms(), frame.timestamp_us(),
-                     frame.rtp_timestamp(), frame.width(),
+                     frame.rtp_timestamp(), frame.ntp_time_ms(), frame.width(),
                      frame.height(), frame.rotation(), startTimestampMs)
 {
 }

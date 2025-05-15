@@ -16,6 +16,7 @@
 #include "CapturerProxySink.h"
 #include "CameraManager.h"
 #include "Listeners.h"
+#include "RtcObject.h"
 #include "SafeObjAliases.h"
 #include "WinCameraCapturer.h"
 #include <rtc_base/ref_counted_object.h>
@@ -52,7 +53,8 @@ private:
     Bricks::SafeObj<CacheMap> _cache;
 };
 
-class WinCameraPool::CameraWrapper : public CameraCapturer, private CapturerProxySink
+class WinCameraPool::CameraWrapper : public CameraCapturer, 
+                                     private RtcObject<CameraCapturerProxy, CapturerProxySink>
 {
 public:
     CameraWrapper(const MediaDeviceInfo& device,
@@ -74,7 +76,6 @@ private:
 private:
     const std::weak_ptr<ReleaseManager> _releaseManagerRef;
     Bricks::Listener<CapturerObserver*> _observer;
-    Bricks::SafeSharedPtr<CameraCapturerProxy> _proxyImpl;
     std::atomic_bool _captureStarted = false;
 };
 
@@ -143,25 +144,23 @@ WinCameraPool::CameraWrapper::CameraWrapper(const MediaDeviceInfo& device,
                                             const std::weak_ptr<ReleaseManager>& releaseManagerRef,
                                             std::shared_ptr<CameraCapturerProxy> proxyImpl)
     : CameraCapturer(device)
+    , RtcObject<CameraCapturerProxy, CapturerProxySink>(std::move(proxyImpl))
     , _releaseManagerRef(releaseManagerRef)
-    , _proxyImpl(std::move(proxyImpl))
 {
 }
 
 WinCameraPool::CameraWrapper::~CameraWrapper()
 {
     if (const auto releaseManager = _releaseManagerRef.lock()) {
-        LOCK_WRITE_SAFE_OBJ(_proxyImpl);
-        releaseManager->release(guid(), _proxyImpl.take());
+        releaseManager->release(guid(), dispose());
     }
 }
 
 int32_t WinCameraPool::CameraWrapper::StartCapture(const webrtc::VideoCaptureCapability& capability)
 {
     int result = -1;
-    LOCK_READ_SAFE_OBJ(_proxyImpl);
-    if (const auto& proxyImpl = _proxyImpl.constRef()) {
-        result = proxyImpl->startCapture(capability, this);
+    if (const auto proxy = loadImpl()) {
+        result = proxy->startCapture(capability, this);
         _captureStarted = 0 == result;
     }
     return result;
@@ -170,9 +169,8 @@ int32_t WinCameraPool::CameraWrapper::StartCapture(const webrtc::VideoCaptureCap
 int32_t WinCameraPool::CameraWrapper::StopCapture()
 {
     int result = -1;
-    LOCK_READ_SAFE_OBJ(_proxyImpl);
-    if (const auto& proxyImpl = _proxyImpl.constRef()) {
-        result = proxyImpl->stopCapture(this);
+    if (const auto proxy = loadImpl()) {
+        result = proxy->stopCapture(this);
         if (0 == result) {
             _captureStarted = false;
         }
@@ -182,24 +180,19 @@ int32_t WinCameraPool::CameraWrapper::StopCapture()
 
 bool WinCameraPool::CameraWrapper::CaptureStarted()
 {
-    auto started = _captureStarted.load(std::memory_order_relaxed);
-    if (started) {
-        LOCK_READ_SAFE_OBJ(_proxyImpl);
-        if (const auto& proxyImpl = _proxyImpl.constRef()) {
-            started = proxyImpl->started();
-        }
+    if (_captureStarted.load()) {
+        const auto proxy = loadImpl();
+        return proxy && proxy->started();
     }
-    return started;
+    return false;
 }
 
 int32_t WinCameraPool::CameraWrapper::CaptureSettings(webrtc::VideoCaptureCapability& settings)
 {
     if (CaptureStarted()) {
-        LOCK_READ_SAFE_OBJ(_proxyImpl);
-        if (const auto& proxyImpl = _proxyImpl.constRef()) {
-            if (proxyImpl->captureCapability(settings)) {
-                return 0;
-            }
+        const auto proxy = loadImpl();
+        if (proxy && proxy->captureCapability(settings)) {
+            return 0;
         }
     }
     return -1;

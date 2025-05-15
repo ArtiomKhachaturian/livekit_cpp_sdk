@@ -83,9 +83,9 @@ CompletionStatusOr<std::vector<BYTE>> MFVideoEncoderPipeline::mpegSequenceHeader
 }
 
 CompletionStatus MFVideoEncoderPipeline::setSampleTimeMetrics(const CComPtr<IMFSample>& sample,
-                                                            const webrtc::VideoFrame& from)
+                                                              const webrtc::VideoFrame& from)
 {
-    return inputFramesTimeline().setSampleTimeMetrics(sample, from);
+    return inputFramesTimeline().setTimeMetrics(from, sample);
 }
 
 CompletionStatus MFVideoEncoderPipeline::setCompressedAvgBitrate(UINT32 bitsPerSecond)

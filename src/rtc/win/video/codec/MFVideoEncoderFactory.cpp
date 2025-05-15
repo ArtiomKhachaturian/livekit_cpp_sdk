@@ -20,6 +20,8 @@
 #include <modules/video_capture/video_capture_config.h>
 #include <api/transport/bitrate_settings.h>
 
+#include "h264_encoder_mf_impl.h"
+
 namespace
 {
 
@@ -41,9 +43,15 @@ MFVideoEncoderFactory::MFVideoEncoderFactory()
 std::unique_ptr<webrtc::VideoEncoder> MFVideoEncoderFactory::
     Create(const webrtc::Environment& env, const webrtc::SdpVideoFormat& format)
 {
-    if (auto h264 = MFH264Encoder::create(format)) {
+    if (auto h264 = MFH264Encoder2::create(format)) {
         return h264;
     }
+    /*if (auto h264 = MFH264Encoder::create(format)) {
+        return h264;
+    }*/
+    /*if (H264Utils::formatMatched(format)) {
+        return std::make_unique<webrtc::H264EncoderMFImpl>();
+    }*/
     return {};
 }
 

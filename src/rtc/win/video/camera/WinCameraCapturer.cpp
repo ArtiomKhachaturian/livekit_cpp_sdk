@@ -153,11 +153,9 @@ int32_t WinCameraCapturer::StartCapture(const webrtc::VideoCaptureCapability& ca
 
 int32_t WinCameraCapturer::StopCapture()
 {
-    if (LOGGABLE_COM_IS_OK(_mediaControl->Pause())) {
-        setCameraState(CapturerState::Stopped);
-        return 0;
-    }
-    return -1;
+    LOGGABLE_COM_IS_OK(_mediaControl->Pause());
+    setCameraState(CapturerState::Stopped);
+    return 0;
 }
 
 bool WinCameraCapturer::CaptureStarted()

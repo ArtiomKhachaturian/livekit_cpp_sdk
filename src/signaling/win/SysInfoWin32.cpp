@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "SysInfo.h"
-#include "ScopedComInitializer.h"
 #include "Utils.h"
 #include "livekit/signaling/NetworkType.h"
 #include <atlbase.h> //CComPtr support
@@ -36,8 +35,8 @@ namespace LiveKitCpp
 // defined in NetworkType.h
 NetworkType activeNetworkType()
 {
-    const ScopedComInitializer com(false);
-    if (!com) {
+    const auto status = initializeComForThisThread();
+    if (!status) {
         return NetworkType::Unknown;
     }
     // MSDN recommends a 15KB buffer for the first try at GetAdaptersAddresses.
@@ -77,8 +76,8 @@ NetworkType activeNetworkType()
 std::string modelIdentifier()
 {
     // Initialize COM
-    const ScopedComInitializer com(false);
-    if (!com) {
+    const auto status = initializeComForThisThread();
+    if (!status) {
         return {};
     }
     // Initialize security

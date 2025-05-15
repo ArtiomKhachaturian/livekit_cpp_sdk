@@ -31,6 +31,17 @@ constexpr uint16_t g_crcTable[16] = {
     0xc60c, 0xd68d, 0xe70e, 0xf78f
 };
 
+#ifdef _WIN32
+class ScopedComInitializer : public LiveKitCpp::ComStatus
+{
+public:
+    ScopedComInitializer(DWORD coInit);
+    ~ScopedComInitializer() final;
+private:
+    const bool _differentApartment;
+};
+#endif
+
 }
 
 namespace LiveKitCpp
@@ -54,6 +65,12 @@ std::tuple<int, int, int> operatingSystemVersion()
         }
     }
     return std::make_tuple(osv.dwMajorVersion, osv.dwMinorVersion, osv.dwBuildNumber);
+}
+
+ComStatus initializeComForThisThread(DWORD coInit)
+{
+    static thread_local const ScopedComInitializer init(coInit);
+    return init;
 }
 #endif
 
@@ -188,3 +205,26 @@ uint16_t checksumISO3309(const uint8_t* data, size_t len)
 }
 
 } // namespace LiveKitCpp
+
+#ifdef _WIN32
+namespace
+{
+
+ScopedComInitializer::ScopedComInitializer(DWORD coInit)
+    : LiveKitCpp::ComStatus(::CoInitializeEx(NULL, coInit))
+    , _differentApartment(RPC_E_CHANGED_MODE == status())
+{
+    if (_differentApartment) {
+        setStatus(S_OK);
+    }
+}
+
+ScopedComInitializer::~ScopedComInitializer()
+{
+    if (ok() && !_differentApartment) {
+        ::CoUninitialize();
+    }
+}
+
+}
+#endif

@@ -26,39 +26,38 @@ MFSampleTimeLine::MFSampleTimeLine(bool roundTo90kHz)
 {
 }
 
-CompletionStatus MFSampleTimeLine::setSampleTimeMetrics(const CComPtr<IMFSample>& sample,
-                                                        LONGLONG timestampMicro)
+CompletionStatus MFSampleTimeLine::setTimeMetrics(LONGLONG timestampMicro, IMFSample* sample)
 {
+    LONGLONG timestampHns = 0LL;
+    if (0LL == _startTimeMicro) {
+        _startTimeMicro = timestampMicro;
+    }
+    else {
+        timestampHns = (timestampMicro - _startTimeMicro) * _oneMicrosecondInMFSampleTimeUnits;
+    }
+    CompletionStatus hr;
     if (sample) {
-        LONGLONG timestampHns = 0LL;
-        if (0LL == _startTimeMicro) {
-            _startTimeMicro = timestampMicro;
-        } else {
-            timestampHns = (timestampMicro - _startTimeMicro) * _oneMicrosecondInMFSampleTimeUnits;
-        }
-        auto hr = COMPLETION_STATUS(sample->SetSampleTime(timestampHns));
+        hr = COMPLETION_STATUS(sample->SetSampleTime(timestampHns));
         if (setupDuration() && hr) {
             const auto duration = timestampHns - _lastTimestampHns;
             hr = COMPLETION_STATUS(sample->SetSampleDuration(duration));
         }
-        if (hr.ok()) {
-            _lastTimestampHns = timestampHns;
-        }
-        return hr;
     }
-    return COMPLETION_STATUS_INVALID_ARG;
+    if (hr.ok()) {
+        _lastDurationHns = timestampHns - _lastTimestampHns;
+        _lastTimestampHns = timestampHns;
+    }
+    return hr;
 }
 
-CompletionStatus MFSampleTimeLine::setSampleTimeMetrics(const CComPtr<IMFSample>& sample,
-                                                        const webrtc::EncodedImage& from)
+CompletionStatus MFSampleTimeLine::setTimeMetrics(const webrtc::EncodedImage& from, IMFSample* sample)
 {
-    return setSampleTimeMetrics(sample, timestampMicro(from));
+    return setTimeMetrics(timestampMicro(from), sample);
 }
 
-CompletionStatus MFSampleTimeLine::setSampleTimeMetrics(const CComPtr<IMFSample>& sample,
-                                                        const webrtc::VideoFrame& from)
+CompletionStatus MFSampleTimeLine::setTimeMetrics(const webrtc::VideoFrame& from, IMFSample* sample)
 {
-    return setSampleTimeMetrics(sample, timestampMicro(from));
+    return setTimeMetrics(timestampMicro(from), sample);
 }
 
 LONGLONG MFSampleTimeLine::timestampMicro(const webrtc::EncodedImage& from) const
