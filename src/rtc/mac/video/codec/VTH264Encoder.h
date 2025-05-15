@@ -40,7 +40,7 @@ public:
 protected:
     VTH264Encoder(const webrtc::SdpVideoFormat& format, webrtc::H264PacketizationMode mode);
     // overrides of VTEncoder
-    void destroySession() final;
+    CompletionStatus destroySession() final;
     CompletionStatus configureCompressionSession(VTEncoderSession* session) final;
     MaybeEncodedImageBuffer createEncodedImageFromSampleBuffer(CMSampleBufferRef sampleBuffer,
                                                                bool isKeyFrame,

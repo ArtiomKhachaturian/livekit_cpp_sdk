@@ -19,6 +19,7 @@
 #include "VTEncoderSession.h"
 #include "CFMemoryPool.h"
 #include "Utils.h"
+#include <rtc_base/logging.h>
 #include <Foundation/Foundation.h>
 
 namespace LiveKitCpp
@@ -50,8 +51,9 @@ int32_t VTEncoder::InitEncode(const webrtc::VideoCodec* codecSettings, const Set
 {
     int32_t r = VideoEncoder::InitEncode(codecSettings, encoderSettings);
     if (WEBRTC_VIDEO_CODEC_OK == r) {
-        const auto status = logError(createSession(codecSettings->width, codecSettings->height));
+        const auto status = createSession(codecSettings->width, codecSettings->height);
         if (!status) {
+            RTC_LOG(LS_ERROR) << status;
             r = WEBRTC_VIDEO_CODEC_ERROR;
         }
     }
@@ -69,7 +71,7 @@ int32_t VTEncoder::Encode(const webrtc::VideoFrame& frame,
     }
     auto frameResult = createSourceFrame(frame);
     if (!frameResult) {
-        logError(frameResult.moveStatus());
+        RTC_LOG(LS_ERROR) << frameResult.status();
         return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
     }
     bool keyFrameRequired = false, sessionIsOutdate = false;
@@ -79,24 +81,24 @@ int32_t VTEncoder::Encode(const webrtc::VideoFrame& frame,
         case kVTVideoEncoderMalfunctionErr:
         case kVTInvalidSessionErr:
             sessionIsOutdate = true;
-            logWarning(std::move(status));
+            RTC_LOG(LS_WARNING) << status;
             break;
         case noErr:
             sessionIsOutdate = !_session.isCompatible(sourceFrame)
                 || _session.pendingFramesCount() >= maxFramerate();
             break;
         default:
-            logError(std::move(status));
+            RTC_LOG(LS_ERROR) << status;
             return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
     }
     if (sessionIsOutdate) {
         // re-create compression session
-        auto sessionResult = createSession(sourceFrame.width(), sourceFrame.height());
-        if (sessionResult) {
+        status = createSession(sourceFrame.width(), sourceFrame.height());
+        if (status) {
             keyFrameRequired = true;
         }
         else {
-            logError(std::move(sessionResult));
+            RTC_LOG(LS_ERROR) << status;
             return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
         }
     }
@@ -107,17 +109,17 @@ int32_t VTEncoder::Encode(const webrtc::VideoFrame& frame,
     if (kVTInvalidSessionErr == status.code() || kVTVideoEncoderMalfunctionErr == status.code()) {
         // this error occurs when entering foreground after backgrounding the app
         // sometimes the encoder malfunctions and needs to be restarted
-        logWarning(std::move(status));
+        RTC_LOG(LS_WARNING) << status;
         // re-create compression session
-        auto sessionResult = createSession(_session.width(), _session.height());
-        if (sessionResult) {
+        status = createSession(_session.width(), _session.height());
+        if (status) {
             return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
         }
-        logError(std::move(sessionResult));
+        RTC_LOG(LS_ERROR) << status;
         return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
     }
     if (!status) {
-        logError(std::move(status));
+        RTC_LOG(LS_ERROR) << status;
         return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
     }
     return WEBRTC_VIDEO_CODEC_OK;
@@ -150,16 +152,19 @@ CompletionStatus VTEncoder::configureCompressionSession(VTEncoderSession* sessio
     return COMPLETION_STATUS(kVTParameterErr);
 }
 
-void VTEncoder::destroySession()
+CompletionStatus VTEncoder::destroySession()
 {
     if (_session) {
-        logWarning(_session.completeFrames());
+        const auto status = _session.completeFrames();
+        if (!status) {
+            RTC_LOG(LS_WARNING) << status;
+        }
         _session = {};
     }
     if (_framesPool) {
         _framesPool->release();
     }
-    VideoEncoder::destroySession();
+    return VideoEncoder::destroySession();
 }
 
 CompletionStatus VTEncoder::setEncoderBitrate(uint32_t bitrateBps)
@@ -237,7 +242,7 @@ void VTEncoder::onEncodedImage(VTEncoderSourceFrame frame,
                 sendEncodedImage(keyFrame, std::move(encodedImage));
             }
             else {
-                logWarning(result.moveStatus());
+                RTC_LOG(LS_WARNING) << result.status();
             }
         }
     }
@@ -246,10 +251,10 @@ void VTEncoder::onEncodedImage(VTEncoderSourceFrame frame,
 void VTEncoder::onError(CompletionStatus error, bool fatal)
 {
     if (fatal) {
-        logError(std::move(error));
+        RTC_LOG(LS_ERROR) << error;
     }
     else {
-        logWarning(std::move(error));
+        RTC_LOG(LS_WARNING) << error;
     }
 }
 
