@@ -797,7 +797,7 @@ std::optional<uint16_t> AdmProxy::get(bool recording, const MediaDeviceInfo& inf
 
 AdmPtr AdmProxy::defaultAdm(webrtc::TaskQueueFactory* taskQueueFactory)
 {
-    return webrtc::AudioDeviceModule::Create(_layer, taskQueueFactory);
+    return webrtc::AudioDeviceModule::Create(AudioLayer::kPlatformDefaultAudio, taskQueueFactory);
 }
 
 std::shared_ptr<webrtc::Thread> AdmProxy::workingThread() const

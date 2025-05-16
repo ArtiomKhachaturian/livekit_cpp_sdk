@@ -181,7 +181,6 @@ private:
     template <typename Handler>
     int32_t threadInvokeI32(Handler handler, int32_t defaultVal = -1) const;
 private:
-    static constexpr AudioLayer _layer = AudioLayer::kPlatformDefaultAudio;
     const std::weak_ptr<webrtc::Thread> _workingThread;
     SafeScopedRefPtr<webrtc::AudioDeviceModule> _impl;
     Bricks::SafeUniquePtr<AdmProxyTransport> _transport;
