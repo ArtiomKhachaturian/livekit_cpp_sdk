@@ -33,7 +33,7 @@ class DesktopCapturer;
 class DesktopConfiguration
 {
 public:
-    DesktopConfiguration();
+    DesktopConfiguration(std::weak_ptr<webrtc::TaskQueueBase> releaseQueue);
     ~DesktopConfiguration();
     bool screensEnumerationIsAvailable() const { return nullptr != _screensEnumerator; }
     bool windowsEnumerationIsAvailable() const { return nullptr != _windowsEnumerator; }
@@ -60,10 +60,12 @@ private:
     static webrtc::DesktopCaptureOptions makeOptions(bool embeddedCursor);
     std::unique_ptr<DesktopCapturer> createRawCapturer(bool window,
                                                        bool previewMode,
+                                                       bool enumerationOnly = false,
                                                        VideoFrameBufferPool framesPool = {});
-    std::shared_ptr<webrtc::TaskQueueBase> commonSharedQueue();
+    std::shared_ptr<webrtc::TaskQueueBase> commonSharedQueue(bool enumerationOnly);
 private:
-    Bricks::SafeSharedPtr<webrtc::TaskQueueBase> _timerQueue;
+    const std::weak_ptr<webrtc::TaskQueueBase> _releaseQueue;
+    Bricks::SafeWeakPtr<webrtc::TaskQueueBase> _timerQueue;
     std::unique_ptr<DesktopCapturer> _screensEnumerator;
     std::unique_ptr<DesktopCapturer> _windowsEnumerator;
 };

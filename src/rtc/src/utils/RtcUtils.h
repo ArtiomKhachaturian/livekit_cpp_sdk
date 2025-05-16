@@ -76,6 +76,7 @@ std::unique_ptr<webrtc::TaskQueueFactory> createTaskQueueFactory(const webrtc::F
 std::shared_ptr<webrtc::TaskQueueBase>
     createTaskQueueS(absl::string_view queueName = {},
                      webrtc::TaskQueueFactory::Priority priority = webrtc::TaskQueueFactory::Priority::LOW,
+                     std::weak_ptr<webrtc::TaskQueueBase> releaseQueue = {},
                      const webrtc::FieldTrialsView* fieldTrials = nullptr);
 std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
     createTaskQueueU(absl::string_view queueName = {},

@@ -184,15 +184,21 @@ std::unique_ptr<webrtc::TaskQueueFactory> createTaskQueueFactory(const webrtc::F
 std::shared_ptr<webrtc::TaskQueueBase>
     createTaskQueueS(absl::string_view queueName,
                      webrtc::TaskQueueFactory::Priority priority,
+                     std::weak_ptr<webrtc::TaskQueueBase> releaseQueue,
                      const webrtc::FieldTrialsView* fieldTrials)
 {
     if (auto queue = createTaskQueueU(queueName, priority, fieldTrials)) {
-        return std::shared_ptr<webrtc::TaskQueueBase>(queue.release(), [](webrtc::TaskQueueBase* q) {
+        return std::shared_ptr<webrtc::TaskQueueBase>(queue.release(), [releaseQueue = std::move(releaseQueue)](webrtc::TaskQueueBase* q) {
             if (q) {
                 std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter> owned(q);
                 if (owned->IsCurrent()) {
-                    std::thread([owned = std::move(owned)]() mutable {
-                        owned.reset(); }).detach();
+                    auto destroyer = [owned = std::move(owned)]() mutable { owned.reset(); };
+                    if (const auto rq = releaseQueue.lock()) {
+                        rq->PostTask(std::move(destroyer));
+                    }
+                    else {
+                        std::thread(std::move(destroyer)).detach();
+                    }
                 }
                 else {
                     owned.reset();

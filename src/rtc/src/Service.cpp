@@ -440,7 +440,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     , _websocketsFactory(websocketsFactory)
     , _cameraManager(CameraManager::create())
     , _pcf(PeerConnectionFactory::create(true, logWebrtcEvents ? logger : nullptr))
-    , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>() : std::shared_ptr<DesktopConfiguration>{})
+    , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>(_pcf->eventsQueue()) : std::shared_ptr<DesktopConfiguration>{})
     , _recordingVolume(_defaultRecording)
     , _playoutVolume(_defaultPlayout)
 {

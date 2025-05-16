@@ -23,9 +23,10 @@
 namespace LiveKitCpp
 {
 
-DesktopConfiguration::DesktopConfiguration()
-    : _screensEnumerator(createRawCapturer(false, true))
-    , _windowsEnumerator(createRawCapturer(true, true))
+DesktopConfiguration::DesktopConfiguration(std::weak_ptr<webrtc::TaskQueueBase> releaseQueue)
+    : _releaseQueue(releaseQueue)
+    , _screensEnumerator(createRawCapturer(false, true, true))
+    , _windowsEnumerator(createRawCapturer(true, true, true))
 {
 }
 
@@ -116,10 +117,10 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createCapturer(const std:
 {
     std::unique_ptr<DesktopCapturer> capturer;
     if (deviceIsScreen(guid)) {
-        capturer = createRawCapturer(false, previewMode, std::move(framesPool));
+        capturer = createRawCapturer(false, previewMode, false, std::move(framesPool));
     }
     else if (deviceIsWindow(guid)) {
-        capturer = createRawCapturer(true, previewMode, std::move(framesPool));
+        capturer = createRawCapturer(true, previewMode, false, std::move(framesPool));
     }
     if (capturer && (!selectSource || capturer->selectSource(guid))) {
         return capturer;
@@ -169,6 +170,7 @@ webrtc::DesktopCaptureOptions DesktopConfiguration::makeOptions(bool embeddedCur
 
 std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool window,
                                                                          bool previewMode,
+                                                                         bool enumerationOnly,
                                                                          VideoFrameBufferPool framesPool)
 {
     std::unique_ptr<DesktopCapturer> impl;
@@ -181,7 +183,7 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
     if (!window) {
         return std::make_unique<CGScreenCapturer>(previewMode,
                                                   makeOptions(!previewMode),
-                                                  commonSharedQueue(),
+                                                  commonSharedQueue(enumerationOnly),
                                                   std::move(framesPool));
     }
 #endif
@@ -195,18 +197,26 @@ std::unique_ptr<DesktopCapturer> DesktopConfiguration::createRawCapturer(bool wi
 #endif
         impl = std::make_unique<DesktopWebRTCCapturer>(window, previewMode,
                                                        std::move(options),
-                                                       commonSharedQueue(), std::move(framesPool));
+                                                       commonSharedQueue(enumerationOnly),
+                                                       std::move(framesPool));
     }
     return impl;
 }
 
-std::shared_ptr<webrtc::TaskQueueBase> DesktopConfiguration::commonSharedQueue()
+std::shared_ptr<webrtc::TaskQueueBase> DesktopConfiguration::commonSharedQueue(bool enumerationOnly)
 {
-    LOCK_WRITE_SAFE_OBJ(_timerQueue);
-    if (!_timerQueue.constRef()) {
-        _timerQueue = createTaskQueueS("common_sharing_queue", webrtc::TaskQueueFactory::Priority::HIGH);
+    std::shared_ptr<webrtc::TaskQueueBase> timerQueue;
+    if (!enumerationOnly) {
+        LOCK_WRITE_SAFE_OBJ(_timerQueue);
+        timerQueue = _timerQueue->lock();
+        if (!timerQueue) {
+            timerQueue = createTaskQueueS("common_sharing_queue",
+                                          webrtc::TaskQueueFactory::Priority::HIGH,
+                                          _releaseQueue);
+            _timerQueue = timerQueue;
+        }
     }
-    return _timerQueue.constRef();
+    return timerQueue;
 }
 
 } // namespace LiveKitCpp
