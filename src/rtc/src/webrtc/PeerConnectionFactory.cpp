@@ -115,7 +115,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              webrtc::AudioEncoderFactory* audioEncoderFactory,
                                              webrtc::AudioDecoderFactory* audioDecoderFactory,
                                              webrtc::scoped_refptr<AdmProxy> admProxy)
-    : _eventsQueue(createTaskQueueS("events_queue"))
+    : _eventsQueue(createTaskQueueS("events_queue", webrtc::TaskQueueFactory::Priority::LOW, signalingThread))
     , _webrtcLogSink(std::move(webrtcLogSink))
     , _networkThread(std::move(networkThread))
     , _workingThread(std::move(workingThread))
