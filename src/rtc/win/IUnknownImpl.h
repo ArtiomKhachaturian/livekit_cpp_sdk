@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // IUnknownImpl.h
-#include <mutex>
 #include <type_traits>
 #include <unknwn.h>
 
@@ -22,8 +21,6 @@ namespace LiveKitCpp
 template <class... TBaseComInterfaces>
 class IUnknownImpl : public TBaseComInterfaces...
 {
-    using Mutex = std::recursive_mutex;
-    using MutexLock = std::lock_guard<Mutex>;
     static_assert((std::is_base_of_v<IUnknown, TBaseComInterfaces> && ...), 
                   "TBaseComInterfaces must be derived from IUnknown");
 public:
@@ -35,60 +32,45 @@ protected:
     // IUnknown has no virtual destructor
     virtual void releaseThis() = 0;
 private:
-    ULONG decrementRef();
     template <class TComInterface>
     static bool isUuidOf(REFIID riid, TComInterface*);
     template <class TComInterface, class... TRestComInterfaces>
     static bool isUuidOf(REFIID riid, TComInterface* comInterface,
                          TRestComInterfaces... restComInterfaces);
 private:
-    Mutex _refMutex;
-    LONG _ref = 0LL;
+    volatile LONG _refCount = 0;
 };
 
 template <class... TBaseComInterfaces>
 inline ULONG IUnknownImpl<TBaseComInterfaces...>::AddRef()
 {
-    const MutexLock lock(_refMutex);
-    return ++_ref;
+    return static_cast<ULONG>(::InterlockedIncrement(&_refCount));
 }
 
 template <class... TBaseComInterfaces>
 inline ULONG IUnknownImpl<TBaseComInterfaces...>::Release()
 {
-    const ULONG refCount = decrementRef();
-    if (0UL == refCount) {
+    const auto refCount = ::InterlockedDecrement(&_refCount);
+    if (refCount <= 0) {
         releaseThis();
+        return 0U;
     }
-    return refCount;
+    return static_cast<ULONG>(refCount);
 }
 
 template <class... TBaseComInterfaces>
 inline HRESULT IUnknownImpl<TBaseComInterfaces...>::QueryInterface(REFIID riid, VOID** ppvInterface)
 {
-    HRESULT hr = E_INVALIDARG;
     if (ppvInterface) {
         *ppvInterface = nullptr;
         if (IID_IUnknown == riid || isUuidOf(riid, static_cast<TBaseComInterfaces*>(this)...)) {
             *ppvInterface = (void*)this;
             AddRef();
-            hr = NOERROR;
+            return NOERROR;
         }
-        else {
-            hr = E_NOINTERFACE;
-        }
+        return E_NOINTERFACE;
     }
-    return hr;
-}
-
-template <class... TBaseComInterfaces>
-inline ULONG IUnknownImpl<TBaseComInterfaces...>::decrementRef()
-{
-    const MutexLock lock(_refMutex);
-    if (_ref > 0UL) {
-        --_ref;
-    }
-    return _ref;
+    return E_INVALIDARG;
 }
 
 template <class... TBaseComInterfaces>
