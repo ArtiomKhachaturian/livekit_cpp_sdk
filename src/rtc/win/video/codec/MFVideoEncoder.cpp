@@ -74,7 +74,7 @@ int32_t MFVideoEncoder::InitEncode(const webrtc::VideoCodec* codecSettings, cons
 
 int32_t MFVideoEncoder::Encode(const webrtc::VideoFrame& frame, const std::vector<webrtc::VideoFrameType>* frameTypes)
 {
-    if (!_sinkWriter) {
+    if (!_sinkWriter || !hasEncodeCompleteCallback()) {
         return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
     }
     const auto now = webrtc::TimeMillis();
@@ -289,7 +289,7 @@ CompletionStatus MFVideoEncoder::initWriter(UINT32 width, UINT32 height, UINT32 
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(mediaTypeOut->SetGUID(MF_MT_SUBTYPE, compressedFormat()));
+    status = COMPLETION_STATUS(mediaTypeOut->SetGUID(MF_MT_SUBTYPE, compressedType(type())));
     if (!status) {
         return status;
     }
@@ -436,25 +436,6 @@ CompletionStatus MFVideoEncoder::reconfigureWriter(UINT32 newWidth, UINT32 newHe
         return status;
     }
     return initWriter(newWidth, newHeight, newTargetBps, newFrameRate, qpMax());
-}
-
-const GUID& MFVideoEncoder::compressedFormat() const
-{
-    switch (type()) {
-        case webrtc::VideoCodecType::kVideoCodecVP8:
-            return MFVideoFormat_VP80;
-        case webrtc::VideoCodecType::kVideoCodecVP9:
-            return MFVideoFormat_VP90;
-        case webrtc::VideoCodecType::kVideoCodecAV1:
-            return MFVideoFormat_AV1;
-        case webrtc::VideoCodecType::kVideoCodecH264:
-            return MFVideoFormat_H264;
-        case webrtc::VideoCodecType::kVideoCodecH265:
-            return MFVideoFormat_H265;
-        default:
-            break;
-    }
-    return GUID_NULL;
 }
 
 void MFVideoEncoder::onEncoded(CComPtr<IMFSample> sample)

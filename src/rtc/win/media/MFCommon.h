@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once // MFCommon.h
 #include "CompletionStatusOr.h"
+#include <api/video/video_codec_type.h>
 #include <atlbase.h> //CComPtr support
 #include <mfobjects.h>
 #include <mftransform.h>
@@ -58,5 +59,6 @@ CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(DWORD maxLength,
 // flags tester
 bool acceptFlags(DWORD desired, DWORD actual);
 const GUID& predefinedCodecType(bool encoder, const GUID& compressedType);
+const GUID& compressedType(webrtc::VideoCodecType type);
 
 } // namespace LiveKitCpp

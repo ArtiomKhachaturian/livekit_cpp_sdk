@@ -51,12 +51,11 @@ private:
     CompletionStatus releaseWriter();
     CompletionStatus reconfigureWriter(UINT32 newWidth, UINT32 newHeight,
                                        UINT32 newTargetBps, UINT32 newFrameRate);
-    const GUID& compressedFormat() const;
     // impl. of MFTEncodingCallback
     void onEncoded(CComPtr<IMFSample> sample) final;
 private:
     static constexpr int _minIntervalBetweenRateChangesMs = 5000;
-    std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
+    const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
     Microsoft::WRL::ComPtr<IMFSinkWriter> _sinkWriter;
     Microsoft::WRL::ComPtr<MFMediaSink> _mediaSink;
     UINT32 _width = 0U;

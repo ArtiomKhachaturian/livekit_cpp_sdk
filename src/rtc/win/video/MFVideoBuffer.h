@@ -42,11 +42,9 @@ public:
                webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                const VideoFrameBufferPool& framesPool = {});
     static const MFMediaSampleBuffer* sampleBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
-protected:
-    virtual ~MFMediaSampleBuffer() = default;
 };
 
-class MFMediaBuffer : public MFVideoBuffer
+class MFMediaRawBuffer : public MFVideoBuffer
 {
 public:
     // I420 + NV12 + all non-planar types are supported
@@ -56,9 +54,7 @@ public:
                MFMediaBufferLocker mediaBufferLocker,
                webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                const VideoFrameBufferPool& framesPool = {});
-    static const MFMediaBuffer* mediaBuffer(const rtc::scoped_refptr<webrtc::NV12BufferInterface>& buffer);
-protected:
-    virtual ~MFMediaBuffer() = default;
+    static const MFMediaRawBuffer* mediaBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
 };
 
 } // namespace LiveKitCpp

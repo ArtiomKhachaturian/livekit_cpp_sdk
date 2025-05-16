@@ -360,4 +360,23 @@ const GUID& predefinedCodecType(bool encoder, const GUID& compressedType)
     return GUID_NULL;
 }
 
+const GUID& compressedType(webrtc::VideoCodecType type)
+{
+    switch (type) {
+        case webrtc::VideoCodecType::kVideoCodecVP8:
+            return MFVideoFormat_VP80;
+        case webrtc::VideoCodecType::kVideoCodecVP9:
+            return MFVideoFormat_VP90;
+        case webrtc::VideoCodecType::kVideoCodecAV1:
+            return MFVideoFormat_AV1;
+        case webrtc::VideoCodecType::kVideoCodecH264:
+            return MFVideoFormat_H264;
+        case webrtc::VideoCodecType::kVideoCodecH265:
+            return MFVideoFormat_H265;
+        default:
+            break;
+    }
+    return GUID_NULL;
+}
+
 } // namespace LiveKitCpp

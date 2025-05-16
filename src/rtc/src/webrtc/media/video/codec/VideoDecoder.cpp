@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "VideoDecoder.h"
+#include <rtc_base/logging.h>
 #include <algorithm>
 
 namespace LiveKitCpp
@@ -59,8 +60,12 @@ int32_t VideoDecoder::RegisterDecodeCompleteCallback(webrtc::DecodedImageCallbac
 
 int32_t VideoDecoder::Release()
 {
-    destroySession();
-    return RegisterDecodeCompleteCallback(nullptr);
+    const auto status = destroySession();
+    if (status) {
+        return RegisterDecodeCompleteCallback(nullptr);
+    }
+    RTC_LOG(LS_ERROR) << status;
+    return WEBRTC_VIDEO_CODEC_ERROR;
 }
 
 webrtc::VideoDecoder::DecoderInfo VideoDecoder::GetDecoderInfo() const

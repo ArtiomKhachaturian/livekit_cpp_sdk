@@ -123,7 +123,7 @@ using MFSampleI420Buffer = MFI420VideoBuffer<CComPtr<IMediaSample>, MFMediaSampl
 using MFSampleN12Buffer = MFNV12VideoBuffer<CComPtr<IMediaSample>, MFMediaSampleBuffer>;
 using MFSampleNonPlanarBuffer = MFNonPlanarBuffer<CComPtr<IMediaSample>, MFMediaSampleBuffer>;
 using MFMediaI420Buffer = MFI420VideoBuffer<MFMediaBufferLocker, MFMediaSampleBuffer>;
-using MFMediaN12Buffer = MFNV12VideoBuffer<MFMediaBufferLocker, MFMediaBuffer>;
+using MFMediaN12Buffer = MFNV12VideoBuffer<MFMediaBufferLocker, MFMediaRawBuffer>;
 using MFMediaNonPlanarBuffer = MFNonPlanarBuffer<MFMediaBufferLocker, MFMediaSampleBuffer>;
 
 } // namespace
@@ -186,7 +186,7 @@ const MFMediaSampleBuffer* MFMediaSampleBuffer::sampleBuffer(const rtc::scoped_r
     return dynamic_cast<const MFMediaSampleBuffer*>(buffer.get());
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaBuffer::
+rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaRawBuffer::
     create(int width, int height, VideoFrameType bufferType,
            MFMediaBufferLocker mediaBufferLocker,
            webrtc::VideoRotation rotation,
@@ -249,9 +249,9 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> MFMediaBuffer::
     return {};
 }
 
-const MFMediaBuffer* MFMediaBuffer::mediaBuffer(const rtc::scoped_refptr<webrtc::NV12BufferInterface>& buffer)
+const MFMediaRawBuffer* MFMediaRawBuffer::mediaBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer)
 {
-    return dynamic_cast<const MFMediaBuffer*>(buffer.get());
+    return dynamic_cast<const MFMediaRawBuffer*>(buffer.get());
 }
 
 } // namespace LiveKitCpp

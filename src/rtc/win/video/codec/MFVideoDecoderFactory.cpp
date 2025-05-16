@@ -14,19 +14,9 @@
 #include "MFVideoDecoderFactory.h"
 #ifdef USE_PLATFORM_DECODERS
 #include "CodecStatus.h"
-#include "MFVideoDecoderPipeline.h"
 #include "MFH264Decoder.h"
 #include "VideoUtils.h"
 #include "H264Utils.h"
-
-namespace
-{
-
-using namespace LiveKitCpp;
-
-CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width = 1280U, UINT32 height = 1024U);
-
-}
 
 namespace LiveKitCpp
 {
@@ -55,30 +45,22 @@ webrtc::VideoDecoderFactory::CodecSupport MFVideoDecoderFactory::
     return support;
 }
 
-CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap&)
+CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters)
 {
     if (webrtc::VideoCodecType::kVideoCodecH264 == type) {
-        return checkDecoder(type);
+        MFH264Decoder decoder{webrtc::SdpVideoFormat{webrtc::CodecTypeToPayloadString(type), parameters}};
+        webrtc::VideoDecoder::Settings settings;
+        settings.set_codec_type(type);
+        settings.set_max_render_resolution({1920, 1080});
+        if (decoder.Configure(settings)) {
+            if (decoder.hardwareAccelerated()) {
+                return CodecStatus::SupportedMixed;
+            }
+            return CodecStatus::SupportedSoftware;
+        }
     }
     return CodecStatus::NotSupported;
 }
 
 } // namespace LiveKitCpp
-
-namespace
-{
-
-CodecStatus checkDecoder(webrtc::VideoCodecType codecType, UINT32 width, UINT32 height)
-{
-    const auto pipeline = MFVideoDecoderPipeline::create(codecType, width, height);
-    if (pipeline) {
-        if (pipeline->hardwareAccellerated()) {
-            return CodecStatus::SupportedMixed;
-        }
-        return CodecStatus::SupportedSoftware;
-    }
-    return CodecStatus::NotSupported;
-}
-
-}
 #endif

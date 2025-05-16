@@ -14,17 +14,22 @@
 #pragma once // MFVideoDecoder.h
 #ifdef USE_PLATFORM_DECODERS
 #include "VideoDecoder.h"
-#include "MFVideoDecoderPipeline.h"
-#include <guiddef.h>
-#include <mfobjects.h>
+#include "CompletionStatusOr.h"
+#include "MFSampleTimeLine.h"
+#include <atlbase.h> //CComPtr support
+#include <mftransform.h>
 #include <optional>
 
 namespace LiveKitCpp 
 {
 
+class VideoFrameBufferPoolSource;
+
 class MFVideoDecoder : public VideoDecoder
 {
+    class NV12MisalignedBuffer;
 public:
+    MFVideoDecoder(const webrtc::SdpVideoFormat& format);
     ~MFVideoDecoder() override;
     // overrides of GenericCodec<>
     bool hardwareAccelerated() const override;
@@ -32,19 +37,25 @@ public:
     bool Configure(const Settings& settings) final;
     int32_t Decode(const webrtc::EncodedImage& inputImage, bool missingFrames, int64_t renderTimeMs) override;
 protected:
-    MFVideoDecoder(const webrtc::SdpVideoFormat& format);
-    virtual std::optional<uint8_t> lastSliceQp(const webrtc::EncodedImage& /*inputImage*/) { return std::nullopt; }
-    virtual CompletionStatus setCompressedFrameSize(UINT32 width, UINT32 height);
-    void destroySession() override;
+    CompletionStatus destroySession() override;
+    virtual std::optional<uint8_t> lastSliceQp(const webrtc::EncodedImage&) { return std::nullopt; }
 private:
+    static CompletionStatusOrComPtr<IMFMediaType> createInputMedia(const GUID& format,
+                                                                   UINT32 width = 0U, UINT32 height = 0U,
+                                                                   UINT32 fps = 0U);
+    static CompletionStatus configureOutputMedia(const CComPtr<IMFTransform>& decoder,
+                                                 const GUID& format, bool& typeFound);
     CompletionStatus enqueueFrame(const webrtc::EncodedImage& inputImage, bool missingFrames);
     CompletionStatus flushFrames(const webrtc::EncodedImage& inputImage);
     CompletionStatus sendDecodedSample(const webrtc::EncodedImage& inputImage, const CComPtr<IMFSample>& sample);
+    CompletionStatusOr<DWORD> outputStatus() const;
 private:
-    MFVideoDecoderPipeline _pipeline;
+    const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
+    CComPtr<IMFTransform> _decoder;
     bool _requestKeyFrame = false;
     UINT32 _currentWidth = 0U;
     UINT32 _currentHeight = 0U;
+    MFSampleTimeLine _inputFramesTimeline;
 };
 
 } // namespace LiveKitCpp

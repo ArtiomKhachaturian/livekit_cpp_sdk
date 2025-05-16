@@ -41,7 +41,7 @@ protected:
                           std::optional<uint8_t> qp = std::nullopt) const;
     bool hasDecodeCompleteCallback() const { return !_callback.empty(); }
     int bufferPoolSize() const { return _bufferPoolSize; }
-    virtual void destroySession() {}
+    virtual CompletionStatus destroySession() { return {}; }
 private:
     Bricks::Listener<webrtc::DecodedImageCallback*> _callback;
     std::atomic<int> _bufferPoolSize = 0;
