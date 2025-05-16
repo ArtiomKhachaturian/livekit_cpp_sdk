@@ -149,7 +149,7 @@ CompletionStatusOrComPtr<IMFTransform> createTransform(const GUID& compressedTyp
     return hr;
 }
 
-CompletionStatusOr<std::pair<DWORD, DWORD>> transformStreamIDs(const CComPtr<IMFTransform>& transform)
+CompletionStatusOr<std::pair<DWORD, DWORD>> transformStreamIDs(IMFTransform* transform)
 {
     if (!transform) {
         return COMPLETION_STATUS_INVALID_ARG;
@@ -190,6 +190,19 @@ CompletionStatusOr<std::string> transformFriendlyName(IMFAttributes* attributes)
     return hr;
 }
 
+CompletionStatusOr<std::string> transformFriendlyName(IMFTransform* transform)
+{
+    if (!transform) {
+        return COMPLETION_STATUS_INVALID_ARG;
+    }
+    CComPtr<IMFAttributes> attributes;
+    auto status = COMPLETION_STATUS(transform->GetAttributes(&attributes));
+    if (!status) {
+        return status;
+    }
+    return transformFriendlyName(attributes);
+}
+
 CompletionStatusOrComPtr<IMFMediaType> createMediaType(bool video, const GUID& subtype)
 {
     if (GUID_NULL == subtype) {
@@ -211,7 +224,7 @@ CompletionStatusOrComPtr<IMFMediaType> createMediaType(bool video, const GUID& s
     return mediaType;
 }
 
-CompletionStatus setAllSamplesIndependent(const CComPtr<IMFMediaType>& mediaType, bool set)
+CompletionStatus setAllSamplesIndependent(IMFMediaType* mediaType, bool set)
 {
     if (!mediaType) {
         return COMPLETION_STATUS_INVALID_ARG;
@@ -219,7 +232,7 @@ CompletionStatus setAllSamplesIndependent(const CComPtr<IMFMediaType>& mediaType
     return COMPLETION_STATUS(mediaType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, set ? TRUE : FALSE));
 }
 
-CompletionStatus setFrameSize(const CComPtr<IMFMediaType>& mediaType, UINT32 width, UINT32 height)
+CompletionStatus setFrameSize(IMFMediaType* mediaType, UINT32 width, UINT32 height)
 {
     if (!mediaType) {
         return COMPLETION_STATUS_INVALID_ARG;
@@ -227,7 +240,7 @@ CompletionStatus setFrameSize(const CComPtr<IMFMediaType>& mediaType, UINT32 wid
     return COMPLETION_STATUS(::MFSetAttributeSize(mediaType, MF_MT_FRAME_SIZE, width, height));
 }
 
-CompletionStatus setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum)
+CompletionStatus setFramerate(IMFMediaType* mediaType, UINT32 num, UINT32 denum)
 {
     if (!mediaType) {
         return COMPLETION_STATUS_INVALID_ARG;
@@ -235,12 +248,12 @@ CompletionStatus setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 num
     return COMPLETION_STATUS(::MFSetAttributeRatio(mediaType, MF_MT_FRAME_RATE, num, denum));
 }
 
-CompletionStatus setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 frameRate)
+CompletionStatus setFramerate(IMFMediaType* mediaType, UINT32 frameRate)
 {
     return setFramerate(mediaType, frameRate, 1U);
 }
 
-CompletionStatus setPixelAspectRatio(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum)
+CompletionStatus setPixelAspectRatio(IMFMediaType* mediaType, UINT32 num, UINT32 denum)
 {
     if (!mediaType) {
         return COMPLETION_STATUS_INVALID_ARG;
@@ -248,12 +261,20 @@ CompletionStatus setPixelAspectRatio(const CComPtr<IMFMediaType>& mediaType, UIN
     return COMPLETION_STATUS(::MFSetAttributeRatio(mediaType, MF_MT_PIXEL_ASPECT_RATIO, num, denum));
 }
 
-CompletionStatus setPixelAspectRatio1x1(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatus setPixelAspectRatio1x1(IMFMediaType* mediaType)
 {
     return setPixelAspectRatio(mediaType, 1U, 1U);
 }
 
-CompletionStatusOr<std::pair<UINT32, UINT32>> frameSize(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatus setInterlaceMode(IMFMediaType* mediaType, MFVideoInterlaceMode mode)
+{
+    if (!mediaType) {
+        return COMPLETION_STATUS_INVALID_ARG;
+    }
+    return COMPLETION_STATUS(mediaType->SetUINT32(MF_MT_INTERLACE_MODE, mode));
+}
+
+CompletionStatusOr<std::pair<UINT32, UINT32>> frameSize(IMFMediaType* mediaType)
 {
     if (!mediaType) {
         return COMPLETION_STATUS_INVALID_ARG;
@@ -266,7 +287,7 @@ CompletionStatusOr<std::pair<UINT32, UINT32>> frameSize(const CComPtr<IMFMediaTy
     return hr;
 }
 
-CompletionStatusOr<UINT32> framerate(const CComPtr<IMFMediaType>& mediaType)
+CompletionStatusOr<UINT32> framerate(IMFMediaType* mediaType)
 {
     if (!mediaType) {
         return COMPLETION_STATUS_INVALID_ARG;

@@ -18,6 +18,7 @@
 #include "MFSampleTimeLine.h"
 #include <atlbase.h> //CComPtr support
 #include <mftransform.h>
+#include <mfobjects.h>
 #include <optional>
 
 namespace LiveKitCpp 
@@ -36,6 +37,7 @@ public:
     // overrides of VideoDecoder
     bool Configure(const Settings& settings) final;
     int32_t Decode(const webrtc::EncodedImage& inputImage, bool missingFrames, int64_t renderTimeMs) override;
+    webrtc::VideoDecoder::DecoderInfo GetDecoderInfo() const override;
 protected:
     CompletionStatus destroySession() override;
     virtual std::optional<uint8_t> lastSliceQp(const webrtc::EncodedImage&) { return std::nullopt; }
@@ -45,6 +47,7 @@ private:
                                                                    UINT32 fps = 0U);
     static CompletionStatus configureOutputMedia(const CComPtr<IMFTransform>& decoder,
                                                  const GUID& format, bool& typeFound);
+    static bool videoAccelerated(webrtc::VideoCodecType type, const CComPtr<IMFAttributes>& attributes);
     CompletionStatus enqueueFrame(const webrtc::EncodedImage& inputImage, bool missingFrames);
     CompletionStatus flushFrames(const webrtc::EncodedImage& inputImage);
     CompletionStatus sendDecodedSample(const webrtc::EncodedImage& inputImage, const CComPtr<IMFSample>& sample);
@@ -53,8 +56,6 @@ private:
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
     CComPtr<IMFTransform> _decoder;
     bool _requestKeyFrame = false;
-    UINT32 _currentWidth = 0U;
-    UINT32 _currentHeight = 0U;
     MFSampleTimeLine _inputFramesTimeline;
 };
 

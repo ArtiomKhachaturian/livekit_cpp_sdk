@@ -67,21 +67,13 @@ MFVideoDecoder::~MFVideoDecoder()
 
 bool MFVideoDecoder::hardwareAccelerated() const
 {
-    bool hwa = false;
     if (_decoder) {
         CComPtr<IMFAttributes> attributes;
         if (SUCCEEDED(_decoder->GetAttributes(&attributes))) {
-            const auto flags = ::MFGetAttributeUINT32(attributes, MF_TRANSFORM_FLAGS_Attribute, 0U);
-            hwa = testFlag<MFT_ENUM_FLAG_HARDWARE>(flags);
-            if (!hwa && webrtc::VideoCodecType::kVideoCodecH264 == type()) {
-                UINT32 h264Accel = FALSE;
-                if (SUCCEEDED(attributes->GetUINT32(CODECAPI_AVDecVideoAcceleration_H264, &h264Accel))) {
-                    hwa = TRUE == h264Accel;
-                }
-            }
+            return videoAccelerated(type(), attributes);
         }
     }
-    return hwa;
+    return false;
 }
 
 bool MFVideoDecoder::Configure(const Settings& settings)
@@ -126,6 +118,13 @@ bool MFVideoDecoder::Configure(const Settings& settings)
         if (settings.max_render_resolution().Valid()) {
             width = static_cast<UINT32>(settings.max_render_resolution().Width());
             height = static_cast<UINT32>(settings.max_render_resolution().Height());
+        }
+        if (width && height && !videoAccelerated(type(), decoderAttrs)) {
+            const auto threads = maxDecodingThreads(width, height, settings.number_of_cores());
+            status = COMPLETION_STATUS(decoderAttrs->SetUINT32(CODECAPI_AVDecNumWorkerThreads, TRUE));
+            if (!status) {
+                RTC_LOG(LS_WARNING) << status;
+            }
         }
         const auto inputMedia = createInputMedia(format, width, height);
         if (!inputMedia) {
@@ -174,8 +173,6 @@ bool MFVideoDecoder::Configure(const Settings& settings)
             return false;
         }
         _decoder = std::move(decoder);
-        _currentWidth = width;
-        _currentHeight = height;
         if (_framesPool) {
             _framesPool->resize(static_cast<size_t>(bufferPoolSize()));
         }
@@ -233,16 +230,24 @@ int32_t MFVideoDecoder::Decode(const webrtc::EncodedImage& inputImage, bool miss
             }
             return WEBRTC_VIDEO_CODEC_ERROR;
         }
-        // Reset width and height in case output media size has changed (though it
-        // seems that would be unexpected, given that the input media would need to
-        // be manually changed too).
-        _currentWidth = _currentHeight = 0U;
         status = flushFrames(inputImage);
     }
     if (status || MF_E_TRANSFORM_NEED_MORE_INPUT == status.code()) {
         return WEBRTC_VIDEO_CODEC_OK;
     }
     return WEBRTC_VIDEO_CODEC_ERROR;
+}
+
+webrtc::VideoDecoder::DecoderInfo MFVideoDecoder::GetDecoderInfo() const
+{
+    auto info = VideoDecoder::GetDecoderInfo();
+    if (_decoder) {
+        auto name = transformFriendlyName(_decoder);
+        if (name) {
+            info.implementation_name = name.moveValue();
+        }
+    }
+    return info;
 }
 
 CompletionStatus MFVideoDecoder::destroySession()
@@ -262,12 +267,12 @@ CompletionStatus MFVideoDecoder::destroySession()
             RTC_LOG(LS_WARNING) << status;
         }
         _decoder.Release();
-        _currentWidth = _currentHeight = 0U;
         _requestKeyFrame = false;
         if (_framesPool) {
             _framesPool->release();
         }
     }
+    _inputFramesTimeline.reset();
     return VideoDecoder::destroySession();
 }
 
@@ -276,40 +281,31 @@ CompletionStatusOrComPtr<IMFMediaType> MFVideoDecoder::createInputMedia(const GU
                                                                         UINT32 fps)
 {
     // output media type
-    CComPtr<IMFMediaType> mediaTypeIn;
-    auto status = COMPLETION_STATUS(::MFCreateMediaType(&mediaTypeIn));
+    auto mediaType = createMediaType(true, format);
+    if (!mediaType) {
+        return mediaType.moveStatus();
+    }
+    auto status = setPixelAspectRatio1x1(mediaType.value());
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(mediaTypeIn->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(mediaTypeIn->SetGUID(MF_MT_SUBTYPE, format));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(::MFSetAttributeRatio(mediaTypeIn, MF_MT_PIXEL_ASPECT_RATIO, 1, 1));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(mediaTypeIn->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_MixedInterlaceOrProgressive));
+    status = setInterlaceMode(mediaType.value(), MFVideoInterlace_MixedInterlaceOrProgressive);
     if (!status) {
         return status;
     }
     if (width && height) {
-        status = COMPLETION_STATUS(::MFSetAttributeSize(mediaTypeIn, MF_MT_FRAME_SIZE, width, height));
+        status = setFrameSize(mediaType.value(), width, height);
         if (!status) {
             return status;
         }
     }
     if (fps) {
-        status = COMPLETION_STATUS(::MFSetAttributeRatio(mediaTypeIn, MF_MT_FRAME_RATE, fps, 1));
+        status = setFramerate(mediaType.value(), fps);
         if (!status) {
             return status;
         }
     }
-    return mediaTypeIn;
+    return mediaType;
 }
 
 CompletionStatus MFVideoDecoder::configureOutputMedia(const CComPtr<IMFTransform>& decoder,
@@ -338,11 +334,28 @@ CompletionStatus MFVideoDecoder::configureOutputMedia(const CComPtr<IMFTransform
             if (!status) {
                 return status;
             }
+            outputMedia->SetUINT32(MF_MT_REALTIME_CONTENT, TRUE); // ignore errors
             typeFound = true;
             break;
         }
     }
     return {};
+}
+
+bool MFVideoDecoder::videoAccelerated(webrtc::VideoCodecType type, const CComPtr<IMFAttributes>& attributes)
+{
+    bool hwa = false;
+    if (attributes) {
+        const auto flags = ::MFGetAttributeUINT32(attributes, MF_TRANSFORM_FLAGS_Attribute, 0U);
+        hwa = testFlag<MFT_ENUM_FLAG_HARDWARE>(flags);
+        if (!hwa && webrtc::VideoCodecType::kVideoCodecH264 == type) {
+            UINT32 h264Accel = FALSE;
+            if (SUCCEEDED(attributes->GetUINT32(CODECAPI_AVDecVideoAcceleration_H264, &h264Accel))) {
+                hwa = TRUE == h264Accel;
+            }
+        }
+    }
+    return hwa;
 }
 
 CompletionStatus MFVideoDecoder::enqueueFrame(const webrtc::EncodedImage& inputImage, bool missingFrames)
@@ -378,6 +391,8 @@ CompletionStatus MFVideoDecoder::enqueueFrame(const webrtc::EncodedImage& inputI
             if (!status) {
                 RTC_LOG(LS_WARNING) << status;
             }
+            const auto realtime = webrtc::VideoContentType::UNSPECIFIED == inputImage.contentType();
+
         }
         if (missingFrames) {
             status = COMPLETION_STATUS(attributes->SetUINT32(MFSampleExtension_Discontinuity, TRUE));
@@ -504,8 +519,6 @@ CompletionStatus MFVideoDecoder::sendDecodedSample(const webrtc::EncodedImage& i
     }
     frame->set_rtp_timestamp(inputImage.RtpTimestamp());
     sendDecodedImage(frame.value(), std::nullopt, lastSliceQp(inputImage));
-    _currentWidth = width;
-    _currentHeight = height;
     return {};
 }
 

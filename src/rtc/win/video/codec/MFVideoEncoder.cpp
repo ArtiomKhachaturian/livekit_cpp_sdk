@@ -280,66 +280,49 @@ CompletionStatus MFVideoEncoder::initWriter(UINT32 width, UINT32 height, UINT32 
         return status;
     }
     // output media type
-    CComPtr<IMFMediaType> mediaTypeOut;
-    status = COMPLETION_STATUS(::MFCreateMediaType(&mediaTypeOut));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(mediaTypeOut->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(mediaTypeOut->SetGUID(MF_MT_SUBTYPE, compressedType(type())));
-    if (!status) {
-        return status;
+    auto mediaTypeOut = createMediaType(true, compressedType(type()));
+    if (!mediaTypeOut) {
+        return mediaTypeOut.moveStatus();
     }
     // Lumia 635 and Lumia 1520 Windows phones don't work well
     // with constrained baseline profile.
     // ON_SUCCEEDED(mediaTypeOut->SetUINT32(MF_MT_MPEG2_PROFILE,
     // eAVEncH264VProfile_ConstrainedBase));
-    status = COMPLETION_STATUS(mediaTypeOut->SetUINT32(MF_MT_AVG_BITRATE, targetBps));
+    status = COMPLETION_STATUS(mediaTypeOut.value()->SetUINT32(MF_MT_AVG_BITRATE, targetBps));
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(mediaTypeOut->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive));
+    status = setInterlaceMode(mediaTypeOut.value(), MFVideoInterlace_Progressive);
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(MFSetAttributeSize(mediaTypeOut, MF_MT_FRAME_SIZE, width, height));
+    status = setFrameSize(mediaTypeOut.value(), width, height);
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(MFSetAttributeRatio(mediaTypeOut, MF_MT_FRAME_RATE, framerate, 1));
+    status = setFramerate(mediaTypeOut.value(), framerate);
     if (!status) {
         return status;
     }
-    // input media type (nv12)
-    CComPtr<IMFMediaType> mediaTypeIn;
-    status = COMPLETION_STATUS(::MFCreateMediaType(&mediaTypeIn));
+    mediaTypeOut.value()->SetUINT32(MF_MT_REALTIME_CONTENT, TRUE); // ignore errors
+    // input media type (NV12)
+    auto mediaTypeIn = createMediaType(true, MFVideoFormat_NV12);
+    if (!mediaTypeIn) {
+        return mediaTypeIn.moveStatus();
+    }
+    status = setInterlaceMode(mediaTypeIn.value(), MFVideoInterlace_Progressive);
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(mediaTypeIn->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
+    status = setAllSamplesIndependent(mediaTypeIn.value(), true);
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(mediaTypeIn->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12));
+    status = setFrameSize(mediaTypeIn.value(), width, height);
     if (!status) {
         return status;
     }
-    status = COMPLETION_STATUS(mediaTypeIn->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(mediaTypeIn->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(::MFSetAttributeSize(mediaTypeIn, MF_MT_FRAME_SIZE, width, height));
-    if (!status) {
-        return status;
-    }
-    status = COMPLETION_STATUS(::MFSetAttributeRatio(mediaTypeIn, MF_MT_FRAME_RATE, framerate, 1));
+    status = setFramerate(mediaTypeIn.value(), framerate);
     if (!status) {
         return status;
     }
@@ -375,7 +358,7 @@ CompletionStatus MFVideoEncoder::initWriter(UINT32 width, UINT32 height, UINT32 
     }
     DWORD streamIndex = {};
     // Add the h264 output stream to the writer
-    status = COMPLETION_STATUS(sinkWriter->AddStream(mediaTypeOut, &streamIndex));
+    status = COMPLETION_STATUS(sinkWriter->AddStream(mediaTypeOut.value(), &streamIndex));
     if (!status) {
         return status;
     }
@@ -391,7 +374,7 @@ CompletionStatus MFVideoEncoder::initWriter(UINT32 width, UINT32 height, UINT32 
             return status;
         }
     }
-    status = COMPLETION_STATUS(sinkWriter->SetInputMediaType(streamIndex,  mediaTypeIn, encodingAttributes));
+    status = COMPLETION_STATUS(sinkWriter->SetInputMediaType(streamIndex,  mediaTypeIn.value(), encodingAttributes));
     if (!status) {
         return status;
     }

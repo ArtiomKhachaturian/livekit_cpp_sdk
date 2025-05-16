@@ -40,19 +40,21 @@ CompletionStatusOrComPtr<IMFTransform> createTransform(const GUID& compressedTyp
                                                        std::string* friendlyName = nullptr,
                                                        MFTransformConfigurator* configurator = nullptr);
 // 1st - input ID, 2nd - output
-CompletionStatusOr<std::pair<DWORD, DWORD>> transformStreamIDs(const CComPtr<IMFTransform>& transform);
+CompletionStatusOr<std::pair<DWORD, DWORD>> transformStreamIDs(IMFTransform* transform);
 CompletionStatusOr<std::string> transformFriendlyName(IMFAttributes* attributes);
+CompletionStatusOr<std::string> transformFriendlyName(IMFTransform* transform);
 // media type
 CompletionStatusOrComPtr<IMFMediaType> createMediaType(bool video, const GUID& subType);
-CompletionStatus setAllSamplesIndependent(const CComPtr<IMFMediaType>& mediaType, bool set);
-CompletionStatus setFrameSize(const CComPtr<IMFMediaType>& mediaType, UINT32 width, UINT32 height);
-CompletionStatus setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum);
-CompletionStatus setFramerate(const CComPtr<IMFMediaType>& mediaType, UINT32 frameRate);
-CompletionStatus setPixelAspectRatio(const CComPtr<IMFMediaType>& mediaType, UINT32 num, UINT32 denum);
-CompletionStatus setPixelAspectRatio1x1(const CComPtr<IMFMediaType>& mediaType);
+CompletionStatus setAllSamplesIndependent(IMFMediaType* mediaType, bool set);
+CompletionStatus setFrameSize(IMFMediaType* mediaType, UINT32 width, UINT32 height);
+CompletionStatus setFramerate(IMFMediaType* mediaType, UINT32 num, UINT32 denum);
+CompletionStatus setFramerate(IMFMediaType* mediaType, UINT32 frameRate);
+CompletionStatus setPixelAspectRatio(IMFMediaType* mediaType, UINT32 num, UINT32 denum);
+CompletionStatus setPixelAspectRatio1x1(IMFMediaType* mediaType);
+CompletionStatus setInterlaceMode(IMFMediaType* mediaType, MFVideoInterlaceMode mode);
 // 1st - width, 2nd - height
-CompletionStatusOr<std::pair<UINT32, UINT32>> frameSize(const CComPtr<IMFMediaType>& mediaType);
-CompletionStatusOr<UINT32> framerate(const CComPtr<IMFMediaType>& mediaType);
+CompletionStatusOr<std::pair<UINT32, UINT32>> frameSize(IMFMediaType* mediaType);
+CompletionStatusOr<UINT32> framerate(IMFMediaType* mediaType);
 // sample
 CompletionStatusOrComPtr<IMFSample> createSample(IMFMediaBuffer* attachedBuffer = {});
 CompletionStatusOrComPtr<IMFSample> createSampleWitMemoryBuffer(DWORD maxLength, DWORD aligment = 0UL);
