@@ -17,6 +17,7 @@
 #include "RtcUtils.h"
 #include "VideoFrameBufferPoolSource.h"
 #include "Utils.h"
+#include <rtc_base/logging.h>
 
 namespace LiveKitCpp
 {
@@ -49,7 +50,11 @@ bool VTDecoder::Configure(const Settings& settings)
     if (VideoDecoder::Configure(settings)) {
         _numberOfCores = std::max(0, settings.number_of_cores());
         if (const auto imageFormat = createVideoFormat(settings.max_render_resolution())) {
-            return logError(createSession(imageFormat, true)).ok();
+            const auto status = createSession(imageFormat, true);
+            if (!status) {
+                RTC_LOG(LS_ERROR) << status;
+                return false;
+            }
         }
         return true; // no wait of acceptable video format, maybe in VTDecoder::Decode
     }
@@ -62,28 +67,29 @@ int32_t VTDecoder::Decode(const webrtc::EncodedImage& inputImage, bool missingFr
         return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
     }
     if (_session) {
-        auto status = _session.lastOutputStatus();
+        const auto status = _session.lastOutputStatus();
         if (!status) {
-            logError(std::move(status));
+            RTC_LOG(LS_ERROR) << status;
             return WEBRTC_VIDEO_CODEC_ERROR;
         }
     }
     const auto encodeBuffer = inputImage.GetEncodedData();
     if (!encodeBuffer) {
-        logWarning(COMPLETION_STATUS(kVTVideoDecoderUnsupportedDataFormatErr));
+        RTC_LOG(LS_WARNING) << COMPLETION_STATUS(kVTVideoDecoderUnsupportedDataFormatErr);
         return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
     }
     if (webrtc::VideoFrameType::kVideoFrameKey == inputImage._frameType) {
         const auto imageFormat = createVideoFormat(inputImage);
         if (!imageFormat) {
-            logError(COMPLETION_STATUS(kVTVideoDecoderUnsupportedDataFormatErr));
+            RTC_LOG(LS_ERROR) << COMPLETION_STATUS(kVTVideoDecoderUnsupportedDataFormatErr);
             return WEBRTC_VIDEO_CODEC_ERROR;
         }
         // check if the video format has changed, and reinitialize decoder if needed
         if (!_session || !CMFormatDescriptionEqual(imageFormat, _session.format())) {
             const bool realtime = webrtc::VideoContentType::UNSPECIFIED == inputImage.content_type_;
-            const auto sessionStatus = logError(createSession(imageFormat, realtime)); // retain
-            if (!sessionStatus) {
+            const auto status = createSession(imageFormat, realtime);
+            if (!status) {
+                RTC_LOG(LS_ERROR) << status;
                 return WEBRTC_VIDEO_CODEC_ERROR;
             }
         }
@@ -93,13 +99,13 @@ int32_t VTDecoder::Decode(const webrtc::EncodedImage& inputImage, bool missingFr
     }
     const auto sampleBuffer = createSampleBuffer(inputImage, _session.format());
     if (!sampleBuffer) {
-        logWarning(COMPLETION_STATUS(kCMBlockBufferEmptyBBufErr));
+        RTC_LOG(LS_WARNING) << COMPLETION_STATUS(kCMBlockBufferEmptyBBufErr);
         return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
     }
     VTDecodeInfoFlags infoFlags;
-    auto status = _session.decompress(sampleBuffer, inputImage, &infoFlags);
+    const auto status = _session.decompress(sampleBuffer, inputImage, &infoFlags);
     if (!status) {
-        logError(std::move(status));
+        RTC_LOG(LS_ERROR) << status;
         return WEBRTC_VIDEO_CODEC_ERROR;
     }
     if (testFlag<kVTDecodeInfo_FrameDropped>(infoFlags)) {
@@ -129,13 +135,16 @@ CMVideoFormatDescriptionRef VTDecoder::createVideoFormat(const webrtc::EncodedIm
     return createVideoFormat(inputImage._encodedWidth, inputImage._encodedHeight, inputImage.ColorSpace());
 }
 
-void VTDecoder::destroySession()
+CompletionStatus VTDecoder::destroySession()
 {
     if (_session) {
-        logWarning(_session.waitForAsynchronousFrames());
+        const auto status = _session.waitForAsynchronousFrames();
+        if (!status) {
+            RTC_LOG(LS_WARNING) << status;
+        }
         _session = {};
     }
-    VideoDecoder::destroySession();
+    return VideoDecoder::destroySession();
 }
 
 CompletionStatus VTDecoder::createSession(CFAutoRelease<CMVideoFormatDescriptionRef> format, bool realtime)
@@ -157,7 +166,10 @@ CompletionStatus VTDecoder::createSession(CFAutoRelease<CMVideoFormatDescription
                     if (_framesPool) {
                         _framesPool->resize(poolSize);
                     }
-                    logWarning(_session.setOutputPoolRequestedMinimumBufferCount(poolSize));
+                    const auto status = _session.setOutputPoolRequestedMinimumBufferCount(poolSize);
+                    if (!status) {
+                        RTC_LOG(LS_WARNING) << status;
+                    }
                 }
             }
         }
@@ -183,7 +195,7 @@ void VTDecoder::onDecodedImage(CMTime timestamp, CMTime duration,
             sendDecodedImage(frame.value(), cmTimeToMilli(duration), std::move(qp));
         }
         else {
-            logWarning(COMPLETION_STATUS(kVTVideoDecoderMalfunctionErr));
+            RTC_LOG(LS_WARNING) << COMPLETION_STATUS(kVTVideoDecoderMalfunctionErr);
         }
     }
 }
@@ -191,10 +203,10 @@ void VTDecoder::onDecodedImage(CMTime timestamp, CMTime duration,
 void VTDecoder::onError(CompletionStatus error, bool fatal)
 {
     if (fatal) {
-        logError(std::move(error));
+        RTC_LOG(LS_ERROR) << error;
     }
     else {
-        logWarning(std::move(error));
+        RTC_LOG(LS_WARNING) << error;
     }
 }
 

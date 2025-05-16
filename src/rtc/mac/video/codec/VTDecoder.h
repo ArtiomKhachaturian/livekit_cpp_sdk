@@ -48,7 +48,7 @@ protected:
     virtual CMVideoFormatDescriptionRef createVideoFormat(const webrtc::EncodedImage& inputImage) const;
     virtual CMSampleBufferRef createSampleBuffer(const webrtc::EncodedImage& inputImage, CMVideoFormatDescriptionRef format) const = 0;
     // impl. of VideoDecoder
-    void destroySession() override;
+    CompletionStatus destroySession() override;
 private:
     // takes ownership to format
     CompletionStatus createSession(CFAutoRelease<CMVideoFormatDescriptionRef> format, bool realtime = true);

@@ -122,6 +122,9 @@ std::ostream& operator << (std::ostream& os, const LiveKitCpp::CompletionStatus&
         if (!what.empty()) {
             os << ": " << what;
         }
+        if (!status.function().empty()) {
+            os << ", " << status.function() << "/line #" << status.line();
+        }
     }
     return os;
 }
