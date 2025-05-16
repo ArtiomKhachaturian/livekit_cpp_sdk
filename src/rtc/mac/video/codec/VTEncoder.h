@@ -50,7 +50,7 @@ protected:
                                                                        const CFMemoryPool* memoryPool = nullptr) = 0;
     virtual int lastQp() const { return -1; }
     // overrides of VideoEncoder
-    void destroySession() override;
+    CompletionStatus destroySession() override;
     CompletionStatus setEncoderBitrate(uint32_t bitrateBps) override;
     CompletionStatus setEncoderFrameRate(uint32_t frameRate) override;
 private:

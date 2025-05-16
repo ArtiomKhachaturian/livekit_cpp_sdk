@@ -188,10 +188,11 @@ webrtc::VideoEncoder::EncoderInfo VTH264Encoder::GetEncoderInfo() const
     return encoderInfo;
 }
 
-void VTH264Encoder::destroySession()
+CompletionStatus VTH264Encoder::destroySession()
 {
-    VTEncoder::destroySession();
+    auto status = VTEncoder::destroySession();
     _h264BitstreamParser.reset();
+    return status;
 }
 
 CompletionStatus VTH264Encoder::configureCompressionSession(VTEncoderSession* session)
