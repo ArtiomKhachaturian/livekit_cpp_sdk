@@ -25,7 +25,6 @@ class DesktopWebRTCCapturer : public DesktopSimpleCapturer<DesktopCapturer>,
                               private webrtc::DesktopCapturer::Callback
 {
     using Base = DesktopSimpleCapturer<DesktopCapturer>;
-    using CapturerWeak = std::weak_ptr<webrtc::DesktopCapturer>;
 public:
     DesktopWebRTCCapturer(bool window, bool previewMode,
                           webrtc::DesktopCaptureOptions options,
@@ -59,8 +58,9 @@ private:
                       webrtc::WindowId excludeWindowId,
                       bool focusOnSelectedSource);
     std::unique_ptr<webrtc::SharedMemoryFactory> takeSmf();
-    std::shared_ptr<webrtc::DesktopCapturer> takeRtcCapturer();
-    std::shared_ptr<webrtc::DesktopCapturer> webRtcCapturer();
+    std::shared_ptr<webrtc::DesktopCapturer> takeCapturer();
+    std::shared_ptr<webrtc::DesktopCapturer> ensureCapturer();
+    std::weak_ptr<webrtc::DesktopCapturer> capturer() const;
     std::optional<intptr_t> parse(const std::string& source) const;
     bool hasValidSource() const;
     // impl. of webrtc::DesktopCapturer::Callback

@@ -64,7 +64,7 @@ std::string DesktopWebRTCCapturer::selectedSource() const
 
 void DesktopWebRTCCapturer::stop()
 {
-    if (auto capturer = takeRtcCapturer()) {
+    if (auto capturer = takeCapturer()) {
         execute([capturer = std::move(capturer)]() mutable { capturer.reset(); });
     }
     Base::stop();
@@ -73,9 +73,9 @@ void DesktopWebRTCCapturer::stop()
 void DesktopWebRTCCapturer::focusOnSelectedSource()
 {
     if (!previewMode() && !_focusOnSelectedSource.exchange(true)) {
-        LOCK_READ_SAFE_OBJ(_capturer);
-        if (const auto& capturer = _capturer.constRef()) {
-            execute([capturerRef = CapturerWeak(capturer)]() {
+        auto capturerRef = capturer();
+        if (!capturerRef.expired()) {
+            execute([capturerRef = std::move(capturerRef)]() {
                 if (const auto capturer = capturerRef.lock()) {
                     capturer->FocusOnSelectedSource();
                 }
@@ -87,9 +87,9 @@ void DesktopWebRTCCapturer::focusOnSelectedSource()
 void DesktopWebRTCCapturer::setExcludedWindow(webrtc::WindowId window)
 {
     if (exchangeVal(window, _excludeWindowId)) {
-        LOCK_READ_SAFE_OBJ(_capturer);
-        if (const auto& capturer = _capturer.constRef()) {
-            execute([window, capturerRef = CapturerWeak(capturer)]() {
+        auto capturerRef = capturer();
+        if (!capturerRef.expired()) {
+            execute([window, capturerRef = std::move(capturerRef)]() {
                 if (const auto capturer = capturerRef.lock()) {
                     capturer->SetExcludedWindow(window);
                 }
@@ -100,9 +100,9 @@ void DesktopWebRTCCapturer::setExcludedWindow(webrtc::WindowId window)
 
 void DesktopWebRTCCapturer::setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> smf)
 {
-    LOCK_READ_SAFE_OBJ(_capturer);
-    if (const auto& capturer = _capturer.constRef()) {
-        execute([smf = std::move(smf), capturerRef = CapturerWeak(capturer)]() mutable {
+    auto capturerRef = capturer();
+    if (!capturerRef.expired()) {
+        execute([smf = std::move(smf), capturerRef = std::move(capturerRef)]() mutable {
             if (const auto capturer = capturerRef.lock()) {
                 capturer->SetSharedMemoryFactory(std::move(smf));
             }
@@ -115,7 +115,7 @@ void DesktopWebRTCCapturer::setSharedMemoryFactory(std::unique_ptr<webrtc::Share
 
 void DesktopWebRTCCapturer::captureNextFrame()
 {
-    if (const auto capturer = webRtcCapturer()) {
+    if (const auto capturer = ensureCapturer()) {
         capturer->CaptureFrame();
     }
 }
@@ -200,13 +200,13 @@ std::unique_ptr<webrtc::SharedMemoryFactory> DesktopWebRTCCapturer::takeSmf()
     return _smf.take();
 }
 
-std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::takeRtcCapturer()
+std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::takeCapturer()
 {
     LOCK_WRITE_SAFE_OBJ(_capturer);
     return _capturer.take();
 }
 
-std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer()
+std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::ensureCapturer()
 {
     std::shared_ptr<webrtc::DesktopCapturer> output;
     if (hasValidSource()) {
@@ -243,6 +243,12 @@ std::shared_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::webRtcCapturer()
         }
     }
     return output;
+}
+
+std::weak_ptr<webrtc::DesktopCapturer> DesktopWebRTCCapturer::capturer() const
+{
+    LOCK_READ_SAFE_OBJ(_capturer);
+    return _capturer.constRef();
 }
 
 std::optional<intptr_t> DesktopWebRTCCapturer::parse(const std::string& source) const
