@@ -14,6 +14,7 @@
 #include "DesktopWebRTCCapturerImpl.h"
 #include <modules/desktop_capture/desktop_and_cursor_composer.h>
 #ifdef RTC_ENABLE_WIN_WGC
+#include "DesktopCapturerUtils.h"
 #include <modules/desktop_capture/win/wgc_capturer_win.h>
 #endif
 #include <algorithm>
