@@ -30,7 +30,10 @@ void AsyncVideoSource::setDeviceInfo(MediaDeviceInfo info)
 
 MediaDeviceInfo AsyncVideoSource::deviceInfo() const
 {
-    return _impl ? _impl->deviceInfo() : MediaDeviceInfo{};
+    if (const auto impl = loadImpl()) {
+        return impl->deviceInfo();
+    }
+    return {};
 }
 
 void AsyncVideoSource::setOptions(VideoOptions options)
@@ -42,45 +45,57 @@ void AsyncVideoSource::setOptions(VideoOptions options)
 
 VideoOptions AsyncVideoSource::options() const
 {
-    return _impl ? _impl->options() : VideoOptions{};
+    if (const auto impl = loadImpl()) {
+        return impl->options();
+    }
+    return {};
 }
 
 void AsyncVideoSource::addListener(MediaDeviceListener* listener)
 {
-    if (_impl) {
-        _impl->addListener(listener);
+    if (const auto impl = loadImpl()) {
+        impl->addListener(listener);
     }
 }
 
 void AsyncVideoSource::removeListener(MediaDeviceListener* listener)
 {
-    if (_impl) {
-        _impl->removeListener(listener);
+    if (const auto impl = loadImpl()) {
+        impl->removeListener(listener);
     }
 }
 
 void AsyncVideoSource::setFilter(LocalVideoFilterPin* inputPin)
 {
-    if (_impl) {
-        _impl->setFilter(inputPin);
+    if (const auto impl = loadImpl()) {
+        impl->setFilter(inputPin);
     }
 }
 
 VideoContentHint AsyncVideoSource::contentHint() const
 {
-    return _impl ? _impl->contentHint() : VideoContentHint::None;
+    if (const auto impl = loadImpl()) {
+        return impl->contentHint();
+    }
+    return VideoContentHint::None;
 }
 
 void AsyncVideoSource::setContentHint(VideoContentHint hint)
 {
-    if (active() && _impl->changeContentHint(hint)) {
+    const auto impl = loadImpl();
+    if (impl && impl->active() && impl->changeContentHint(hint)) {
         postToImpl(&AsyncVideoSourceImpl::updateAfterContentHintChanges, hint);
     }
 }
 
 bool AsyncVideoSource::GetStats(webrtc::VideoTrackSourceInterface::Stats* stats)
 {
-    return stats && _impl && _impl->stats(*stats);
+    if (stats) {
+        if (const auto impl = loadImpl()) {
+            return impl->stats(*stats);
+        }
+    }
+    return false;
 }
 
 void AsyncVideoSource::ProcessConstraints(const webrtc::VideoTrackSourceConstraints& c)
@@ -91,17 +106,23 @@ void AsyncVideoSource::ProcessConstraints(const webrtc::VideoTrackSourceConstrai
 }
 
 void AsyncVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                                                          const rtc::VideoSinkWants& wants)
+                                       const rtc::VideoSinkWants& wants)
 {
-    if (_impl && _impl->addOrUpdateSink(sink, wants)) {
-        postToImpl(&AsyncVideoSourceImpl::requestCapturer);
+    if (sink) {
+        const auto impl = loadImpl();
+        if (impl && impl->addOrUpdateSink(sink, wants)) {
+            postToImpl(&AsyncVideoSourceImpl::requestCapturer);
+        }
     }
 }
 
 void AsyncVideoSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
-    if (_impl && _impl->removeSink(sink)) {
-        postToImpl(&AsyncVideoSourceImpl::resetCapturer);
+    if (sink) {
+        const auto impl = loadImpl();
+        if (impl && impl->removeSink(sink)) {
+            postToImpl(&AsyncVideoSourceImpl::resetCapturer);
+        }
     }
 }
 

@@ -284,8 +284,8 @@ void AsyncVideoSourceImpl::onStateChanged(CapturerState state)
 
 void AsyncVideoSourceImpl::onCapturingError(std::string details, bool fatal)
 {
-    changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
     if (fatal) {
+        changeState(webrtc::MediaSourceInterface::SourceState::kEnded);
         notify(&MediaDeviceListener::onMediaFatalError, details);
     }
 }

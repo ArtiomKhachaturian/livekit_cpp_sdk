@@ -54,19 +54,26 @@ inline AsyncAudioSource<TAsyncImpl>::AsyncAudioSource(std::weak_ptr<webrtc::Task
 template <class TAsyncImpl>
 inline bool AsyncAudioSource<TAsyncImpl>::signalLevel(int& level) const
 {
-    return Base::_impl->signalLevel(level);
+    if (const auto impl = Base::loadImpl()) {
+        return impl->signalLevel(level);
+    }
+    return false;
 }
 
 template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::addListener(MediaDeviceListener* listener)
 {
-    Base::_impl->addListener(listener);
+    if (const auto impl = Base::loadImpl()) {
+        impl->addListener(listener);
+    }
 }
 
 template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::removeListener(MediaDeviceListener* listener)
 {
-    Base::_impl->removeListener(listener);
+    if (const auto impl = Base::loadImpl()) {
+        impl->removeListener(listener);
+    }
 }
 
 template <class TAsyncImpl>
@@ -79,32 +86,43 @@ template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::
     RegisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer)
 {
-    Base::_impl->addAudioObserver(observer);
+    if (const auto impl = Base::loadImpl()) {
+        impl->addAudioObserver(observer);
+    }
 }
 
 template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::
     UnregisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer)
 {
-    Base::_impl->removeAudioObserver(observer);
+    if (const auto impl = Base::loadImpl()) {
+        impl->removeAudioObserver(observer);
+    }
 }
 
 template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::AddSink(webrtc::AudioTrackSinkInterface*  sink)
 {
-    Base::_impl->addSink(sink);
+    if (const auto impl = Base::loadImpl()) {
+        impl->addSink(sink);
+    }
 }
 
 template <class TAsyncImpl>
 inline void AsyncAudioSource<TAsyncImpl>::RemoveSink(webrtc::AudioTrackSinkInterface* sink)
 {
-    Base::_impl->removeSink(sink);
+    if (const auto impl = Base::loadImpl()) {
+        impl->removeSink(sink);
+    }
 }
 
 template <class TAsyncImpl>
 inline const cricket::AudioOptions AsyncAudioSource<TAsyncImpl>::options() const
 {
-    return Base::_impl->options();
+    if (const auto impl = Base::loadImpl()) {
+        return impl->options();
+    }
+    return {};
 }
 
 } // namespace LiveKitCpp

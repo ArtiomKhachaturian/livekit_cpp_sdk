@@ -66,8 +66,6 @@ public:
     // sets the window to be excluded from the captured image in the future Capture calls,
     // used to exclude the screenshare notification window (indicator) for screen capturing
     virtual void setExcludedWindow(webrtc::WindowId /*window*/) {}
-    // sets SharedMemoryFactory that will be used to create buffers for the captured frames
-    virtual void setSharedMemoryFactory(std::unique_ptr<webrtc::SharedMemoryFactory> /*smf*/) {}
     void setOutputSink(CapturerProxySink* sink);
     // window or screen capturer
     bool window() const noexcept { return _window; }

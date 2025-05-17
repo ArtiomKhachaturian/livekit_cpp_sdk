@@ -403,9 +403,8 @@ template <class Method, typename... Args>
 void PeerConnectionFactory::postAdmTask(Method method, Args&&... args) const
 {
     if (_admProxy) {
-        postOrInvokeS(_workingThread, _admProxy, true,
-                      std::move(method),
-                      std::forward<Args>(args)...);
+        postOrInvokeS<true>(_workingThread, _admProxy, std::move(method),
+                            std::forward<Args>(args)...);
     }
 }
 
