@@ -37,6 +37,7 @@
 #include "livekit/signaling/NetworkType.h"
 #include "livekit/rtc/e2e/KeyProviderOptions.h"
 #include "livekit/rtc/e2e/KeyProvider.h"
+#include "livekit/rtc/media/AudioRecordingOptions.h"
 #include "livekit/rtc/media/VideoOptions.h"
 #include "livekit/rtc/media/VideoFrame.h"
 #include "livekit/rtc/ServiceListener.h"
@@ -1019,6 +1020,15 @@ KeyProviderOptions KeyProviderOptions::defaultOptions()
     options._keyRingSize = 16;
     options._failureTolerance = 10;
     return options;
+}
+
+AudioRecordingOptions::AudioRecordingOptions()
+{
+    // https://webrtc.googlesource.com/src/+/refs/heads/main/media/engine/webrtc_voice_engine.cc#557
+    _echoCancellation = true;
+    _autoGainControl = true;
+    _noiseSuppression = true;
+    _highpassFilter = true;
 }
 
 } // namespace LiveKitCpp

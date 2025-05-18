@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // AudioRecordingOptions.h
+#include "livekit/rtc/LiveKitRtcExport.h"
 #include <optional>
 #include <tuple>
 
@@ -31,6 +32,7 @@ struct AudioRecordingOptions
     std::optional<bool> _highpassFilter;
     // audio processing to swap the left and right channels.
     std::optional<bool> _stereoSwapping;
+    LIVEKIT_RTC_API AudioRecordingOptions();
 };
 
 } // namespace LiveKitCpp
