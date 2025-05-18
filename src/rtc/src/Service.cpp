@@ -982,12 +982,18 @@ void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& lo
 
 std::unique_ptr<webrtc::FieldTrialsView> Service::Impl::createTrials(const ServiceInitInfo& initInfo)
 {
-    if (initInfo._disableAudioRed && initInfo._disableAudioRed.value()) {
-        auto trials = std::make_unique<FieldTrials>();
+    auto trials = std::make_unique<FieldTrials>();
+    if (initInfo._disableAudioRed.value_or(false)) {
         trials->add("WebRTC-Audio-Red-For-Opus", "Enabled-0");
-        return trials;
     }
-    return {};
+    if (initInfo._enableFlexFec) {
+        trials->setEnabled("WebRTC-FlexFEC-03", true);
+        trials->setEnabled("WebRTC-FlexFEC-03-Advertised", true);
+    }
+    if (trials->empty()) {
+        trials.reset();
+    }
+    return trials;
 }
 
 bool KeyProvider::setSharedKey(std::string_view key, const std::optional<uint8_t>& keyIndex)

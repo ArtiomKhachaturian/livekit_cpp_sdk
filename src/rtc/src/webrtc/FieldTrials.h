@@ -26,6 +26,7 @@ public:
     void add(absl::string_view key, std::string value);
     void setEnabled(absl::string_view key, bool enabled);
     void remove(absl::string_view key);
+    bool empty() const { return _values.empty(); }
     // impl. of webrtc::FieldTrialsView
     std::string Lookup(absl::string_view key) const final;
 private:

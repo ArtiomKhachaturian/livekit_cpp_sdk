@@ -26,6 +26,8 @@ struct ServiceInitInfo
 {
     std::shared_ptr<Bricks::Logger> _logger;
     bool _logWebrtcEvents = false;
+    // https://datatracker.ietf.org/doc/html/draft-ietf-payload-flexible-fec-scheme-03#section-7
+    bool _enableFlexFec = false; // WebRTC-FlexFEC-03 + WebRTC-FlexFEC-03-Advertised
     // true if RED (Redundant Encoding) is disabled for audio
     std::optional<bool> _disableAudioRed;
 };
