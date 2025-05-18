@@ -186,6 +186,9 @@ private:
     Bricks::SafeUniquePtr<AdmProxyTransport> _transport;
     AdmProxyState _recState;
     AdmProxyState _playState;
+#ifdef WEBRTC_WIN
+    bool _builtInAecEnabled = false;
+#endif
 };
 
 } // namespace LiveKitCpp

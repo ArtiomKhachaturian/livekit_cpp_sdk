@@ -330,6 +330,18 @@ int32_t AdmProxy::StartRecording()
 {
     const auto res = threadInvokeI32([this](const auto& pm) {
         requestRecordingAuthorizationStatus();
+#ifdef WEBRTC_WIN
+        if (_builtInAecEnabled) {
+            auto res = pm->InitPlayout();
+            if (0 != res) {
+                return res;
+            }
+            res = pm->StartPlayout();
+            if (0 != res) {
+                return res;
+            }
+        }
+#endif
         return pm->StartRecording();
     });
     if (0 == res) {
@@ -621,8 +633,15 @@ bool AdmProxy::BuiltInNSIsAvailable() const
 
 int32_t AdmProxy::EnableBuiltInAEC(bool enable)
 {
-    return threadInvokeI32([enable](const auto& pm) {
-        return pm->EnableBuiltInAEC(enable); });
+    return threadInvokeI32([this, enable](const auto& pm) {
+        const auto res = pm->EnableBuiltInAEC(enable);
+#ifdef WEBRTC_WIN
+        if (0 == res) {
+            _builtInAecEnabled = enable;
+        }
+#endif
+        return res;
+    });
 }
 
 int32_t AdmProxy::EnableBuiltInAGC(bool enable)
