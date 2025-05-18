@@ -18,8 +18,11 @@
 namespace LiveKitCpp
 {
 
-TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
-                                   int32_t pingTimeout, int32_t pingInterval,
+TransportManager::TransportManager(bool subscriberPrimary,
+                                   bool fastPublish,
+                                   bool disableAudioRed,
+                                   int32_t pingTimeout,
+                                   int32_t pingInterval,
                                    uint64_t negotiationDelay,
                                    std::vector<TrackInfo> tracksInfo,
                                    const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
@@ -29,8 +32,9 @@ TransportManager::TransportManager(bool subscriberPrimary, bool fastPublish,
                                    const std::string& prefferedAudioEncoder,
                                    const std::string& prefferedVideoEncoder,
                                    const std::shared_ptr<Bricks::Logger>& logger)
-    : RtcObject<TransportManagerImpl>(subscriberPrimary, fastPublish, pingTimeout, pingInterval,
-                                      negotiationDelay, std::move(tracksInfo), pcf, conf, trackManager,
+    : RtcObject<TransportManagerImpl>(subscriberPrimary, fastPublish, disableAudioRed,
+                                      pingTimeout, pingInterval, negotiationDelay,
+                                      std::move(tracksInfo), pcf, conf, trackManager,
                                       identity, prefferedAudioEncoder, prefferedVideoEncoder, logger)
 {
 }

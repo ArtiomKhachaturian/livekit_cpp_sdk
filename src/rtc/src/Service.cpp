@@ -20,6 +20,7 @@
 #include "DefaultKeyProvider.h"
 #include "DesktopConfiguration.h"
 #include "DesktopCapturer.h"
+#include "FieldTrials.h"
 #include "Listeners.h"
 #include "LocalVideoDeviceImpl.h"
 #include "LocalWebRtcTrack.h"
@@ -83,9 +84,7 @@ namespace LiveKitCpp
 class Service::Impl : public Bricks::LoggableS<AdmProxyListener>
 {
 public:
-    Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-         const std::shared_ptr<Bricks::Logger>& logger,
-         bool logWebrtcEvents);
+    Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory, ServiceInitInfo initInfo);
     ~Impl();
     const auto& websocketsFactory() const noexcept { return _websocketsFactory; }
     const auto& peerConnectionFactory() const noexcept { return _pcf; }
@@ -127,8 +126,7 @@ public:
     static bool sslInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static bool wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger = {});
     static std::unique_ptr<Impl> create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                                        const std::shared_ptr<Bricks::Logger>& logger,
-                                        bool logWebrtcEvents);
+                                        ServiceInitInfo initInfo);
     // overrides of AdmProxyListener
     void onStarted(bool recording) final;
     void onStopped(bool recording) final;
@@ -151,6 +149,7 @@ private:
     void updatePlayoutVolume(uint32_t volume) const { updateAdmVolume(false, volume); }
     void updatePlayoutMute(bool mute) const { updateAdmMute(false, mute); }
     static void logPlatformDefects(const std::shared_ptr<Bricks::Logger>& logger = {});
+    static std::unique_ptr<webrtc::FieldTrialsView> createTrials(const ServiceInitInfo& initInfo);
 private:
     static inline const VolumeControl _defaultRecording = {70U, 0U, 255U};
     static inline const VolumeControl _defaultPlayout = {51U, 0U, 255U};
@@ -158,6 +157,7 @@ private:
     const std::shared_ptr<CameraManager> _cameraManager;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     const std::shared_ptr<DesktopConfiguration> _desktopConfiguration;
+    const bool _disableAudioRed;
     Bricks::SafeObj<VolumeControl> _recordingVolume;
     Bricks::SafeObj<VolumeControl> _playoutVolume;
     std::atomic_bool _recordingMuted;
@@ -166,9 +166,8 @@ private:
 };
 
 Service::Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                 const std::shared_ptr<Bricks::Logger>& logger,
-                 bool logWebrtcEvents)
-    : _impl(Impl::create(websocketsFactory, logger, logWebrtcEvents))
+                 ServiceInitInfo initInfo)
+    : _impl(Impl::create(websocketsFactory, std::move(initInfo)))
 {
 }
 
@@ -434,13 +433,13 @@ VideoOptions Service::defaultCameraOptions()
 }
 
 Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-                    const std::shared_ptr<Bricks::Logger>& logger,
-                    bool logWebrtcEvents)
-    : Bricks::LoggableS<AdmProxyListener>(logger)
+                    ServiceInitInfo initInfo)
+    : Bricks::LoggableS<AdmProxyListener>(initInfo._logger)
     , _websocketsFactory(websocketsFactory)
     , _cameraManager(CameraManager::create())
-    , _pcf(PeerConnectionFactory::create(true, logWebrtcEvents ? logger : nullptr))
+    , _pcf(PeerConnectionFactory::create(true, createTrials(initInfo), initInfo._logWebrtcEvents ? initInfo._logger : nullptr))
     , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>(_pcf->eventsQueue()) : std::shared_ptr<DesktopConfiguration>{})
+    , _disableAudioRed(initInfo._disableAudioRed.value_or(false))
     , _recordingVolume(_defaultRecording)
     , _playoutVolume(_defaultPlayout)
 {
@@ -723,8 +722,11 @@ std::unique_ptr<Session> Service::Impl::createSession(Options options) const
     std::unique_ptr<Session> session;
     if (_pcf) {
         if (auto socket = _websocketsFactory->create()) {
-            session.reset(new Session(std::move(socket), _pcf.get(),
-                                      std::move(options), logger()));
+            session.reset(new Session(std::move(socket),
+                                      _pcf.get(),
+                                      std::move(options),
+                                      _disableAudioRed,
+                                      logger()));
         }
     }
     return session;
@@ -772,12 +774,19 @@ bool Service::Impl::wsaInitialized(const std::shared_ptr<Bricks::Logger>& logger
 
 std::unique_ptr<Service::Impl> Service::Impl::
     create(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-           const std::shared_ptr<Bricks::Logger>& logger,
-           bool logWebrtcEvents)
+           ServiceInitInfo initInfo)
 {
-    if (wsaInitialized(logger) && sslInitialized(logger) && websocketsFactory) {
-        logPlatformDefects(logger);
-        return std::make_unique<Impl>(websocketsFactory, logger, logWebrtcEvents);
+    if (wsaInitialized(initInfo._logger) && sslInitialized(initInfo._logger) && websocketsFactory) {
+        logPlatformDefects(initInfo._logger);
+#ifdef WEBRTC_WIN
+        // incorrect postfix iterator decrement if it points to beginning:
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/modules/audio_coding/codecs/red/audio_encoder_copy_red.cc#157
+        // debug iterators check are failed under MSVC 2019
+        if (!initInfo._disableAudioRed.value_or(false)) {
+            initInfo._disableAudioRed = true;
+        }
+#endif
+        return std::make_unique<Impl>(websocketsFactory, std::move(initInfo));
     }
     return {};
 }
@@ -968,6 +977,16 @@ void Service::Impl::logPlatformDefects(const std::shared_ptr<Bricks::Logger>& lo
         }
 #endif
     }
+}
+
+std::unique_ptr<webrtc::FieldTrialsView> Service::Impl::createTrials(const ServiceInitInfo& initInfo)
+{
+    if (initInfo._disableAudioRed && initInfo._disableAudioRed.value()) {
+        auto trials = std::make_unique<FieldTrials>();
+        trials->add("WebRTC-Audio-Red-For-Opus", "Enabled-0");
+        return trials;
+    }
+    return {};
 }
 
 bool KeyProvider::setSharedKey(std::string_view key, const std::optional<uint8_t>& keyIndex)

@@ -146,7 +146,9 @@ PeerConnectionFactory::~PeerConnectionFactory()
 }
 
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
-    create(bool audioProcessing, const std::shared_ptr<Bricks::Logger>& logger)
+    create(bool audioProcessing,
+           std::unique_ptr<webrtc::FieldTrialsView> trials,
+           const std::shared_ptr<Bricks::Logger>& logger)
 {
     //create threads for peer connection factory
     //See also https://webrtc.org/native-code/native-apis/#threading-model
@@ -165,6 +167,7 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     // setup dependencies
     webrtc::PeerConnectionFactoryDependencies dependencies;
     // initialize
+    dependencies.trials = std::move(trials);
     dependencies.network_thread = networkThread.get();
     dependencies.worker_thread = workingThread.get();
     dependencies.signaling_thread = signalingThread.get();

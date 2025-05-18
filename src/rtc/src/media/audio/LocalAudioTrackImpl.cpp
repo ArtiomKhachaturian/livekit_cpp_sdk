@@ -29,8 +29,10 @@ LocalAudioTrackImpl::LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioD
                                          EncryptionType encryption,
                                          rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                                          const std::weak_ptr<TrackManager>& trackManager,
+                                         bool disableRed,
                                          bool microphone)
     : Base(audioLabel(microphone), std::move(audioDevice), encryption, std::move(transceiver), trackManager)
+    , _disableRed(disableRed)
     , _microphone(microphone)
 {
 }
@@ -68,6 +70,7 @@ bool LocalAudioTrackImpl::fillRequest(AddTrackRequest* request) const
         request->_type = type();
         request->_source = source();
         request->_stereo = stereoRecording().value_or(false);
+        request->_disableRed = _disableRed;
         if (EncryptionType::None != request->_encryption) {
             // https://github.com/livekit/client-sdk-js/blob/main/src/room/participant/LocalParticipant.ts#L964
             request->_disableRed = true;

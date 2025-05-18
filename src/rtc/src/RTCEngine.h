@@ -61,7 +61,7 @@ enum class EncryptionType;
 class RTCEngine : public RtcObject<RTCEngineImpl>
 {
 public:
-    RTCEngine(Options options,
+    RTCEngine(Options options, bool disableAudioRed,
               PeerConnectionFactory* pcf,
               const Participant* session,
               std::unique_ptr<Websocket::EndPoint> socket,

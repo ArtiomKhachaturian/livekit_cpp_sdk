@@ -63,7 +63,7 @@ enum class RTCEngineImpl::SendResult
     TransportClosed
 };
 
-RTCEngineImpl::RTCEngineImpl(Options options,
+RTCEngineImpl::RTCEngineImpl(Options options, bool disableAudioRed,
                              PeerConnectionFactory* pcf,
                              const Participant* session,
                              std::unique_ptr<Websocket::EndPoint> socket,
@@ -73,6 +73,7 @@ RTCEngineImpl::RTCEngineImpl(Options options,
     , _remoteParicipants(new RemoteParticipants(options._autoSubscribe, this, logger))
     , _transportListener(std::make_unique<SignalTransportListenerAsync>(pcf))
     , _options(std::move(options))
+    , _disableAudioRed(disableAudioRed)
     , _pcf(pcf)
     , _localDcs(logger)
     , _remoteDcs(logger)
@@ -447,6 +448,7 @@ void RTCEngineImpl::createTransportManager(const JoinResponse& response,
     const auto negotiationDelay = std::min<uint64_t>(_options._negotiationDelay.count(), 100ULL);
     auto pcManager = std::make_shared<TransportManager>(response._subscriberPrimary,
                                                         response._fastPublish,
+                                                        _disableAudioRed,
                                                         response._pingTimeout,
                                                         response._pingInterval,
                                                         negotiationDelay,

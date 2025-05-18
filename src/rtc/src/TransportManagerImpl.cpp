@@ -51,8 +51,11 @@ inline std::pair<std::string, std::string> unpackStreamId(std::string streamId) 
 namespace LiveKitCpp
 {
 
-TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPublish,
-                                           int32_t pingTimeout, int32_t pingInterval,
+TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary,
+                                           bool fastPublish,
+                                           bool disableAudioRed,
+                                           int32_t pingTimeout,
+                                           int32_t pingInterval,
                                            uint64_t negotiationDelay,
                                            std::vector<TrackInfo> tracksInfo,
                                            const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
@@ -68,6 +71,7 @@ TransportManagerImpl::TransportManagerImpl(bool subscriberPrimary, bool fastPubl
     , _negotiationDelay(negotiationDelay)
     , _subscriberPrimary(subscriberPrimary)
     , _fastPublish(fastPublish)
+    , _disableAudioRed(disableAudioRed)
     , _logCategory("transport_manager_" + identity)
     , _trackManager(trackManager)
     , _negotiationTimer(pcf)
@@ -506,7 +510,8 @@ void TransportManagerImpl::onLocalAudioTrackAdded(SignalTarget target,
     if (SignalTarget::Publisher == target && device && transceiver) {
         auto track = std::make_shared<LocalAudioTrackImpl>(std::move(device), encryption,
                                                            std::move(transceiver),
-                                                           _trackManager);
+                                                           _trackManager,
+                                                           _disableAudioRed);
         {
             LOCK_WRITE_SAFE_OBJ(_audioTracks);
             _audioTracks->insert(std::make_pair(track->id(), track));

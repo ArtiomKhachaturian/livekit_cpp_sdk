@@ -53,9 +53,9 @@ DemoApp::DemoApp(int &argc, char **argv)
     , _defaultIceTransportPolicy(toQString(LiveKitCpp::Options()._iceTransportPolicy))
     , _defaultIceTransportPolicyIndex(_iceTransportPolicies.indexOf(_defaultIceTransportPolicy))
 {
-    const auto logger = std::make_shared<Logger>();
-    const auto wsf = std::make_shared<ZaphoydTppFactory>();
-    auto service = std::make_shared<LiveKitCpp::Service>(wsf/*, logger*/);
+    LiveKitCpp::ServiceInitInfo initInfo;
+    //initInfo._logger = std::make_shared<Logger>();
+    auto service = std::make_shared<LiveKitCpp::Service>(std::make_shared<ZaphoydTppFactory>(), std::move(initInfo));
     const auto state = service->state();
     if (LiveKitCpp::ServiceState::OK == state) {
         _service = std::move(service);

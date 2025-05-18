@@ -29,6 +29,7 @@ public:
                         EncryptionType encryption,
                         rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                         const std::weak_ptr<TrackManager>& trackManager,
+                        bool disableRed,
                         bool microphone = true);
     // impl. of AudioTrack
     std::vector<AudioTrackFeature> features() const final;
@@ -38,6 +39,7 @@ public:
 private:
     std::optional<bool> stereoRecording() const;
 private:
+    const bool _disableRed;
     const bool _microphone;
 };
 

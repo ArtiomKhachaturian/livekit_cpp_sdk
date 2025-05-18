@@ -33,12 +33,13 @@ inline bool compareTrackInfo(const LiveKitCpp::TrackInfo& l, const LiveKitCpp::T
 namespace LiveKitCpp
 {
 
-RTCEngine::RTCEngine(Options options,
+RTCEngine::RTCEngine(Options options, bool disableAudioRed,
                      PeerConnectionFactory* pcf,
                      const Participant* session,
                      std::unique_ptr<Websocket::EndPoint> socket,
                      const std::shared_ptr<Bricks::Logger>& logger)
-    : RtcObject<RTCEngineImpl>(std::move(options), pcf, session, std::move(socket), logger)
+    : RtcObject<RTCEngineImpl>(std::move(options), disableAudioRed,
+                               pcf, session, std::move(socket), logger)
 {
 }
 

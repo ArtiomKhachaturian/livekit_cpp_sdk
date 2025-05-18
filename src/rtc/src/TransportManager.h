@@ -38,8 +38,11 @@ enum class EncryptionType;
 class TransportManager : private RtcObject<TransportManagerImpl>
 {
 public:
-    TransportManager(bool subscriberPrimary, bool fastPublish,
-                     int32_t pingTimeout, int32_t pingInterval,
+    TransportManager(bool subscriberPrimary,
+                     bool fastPublish,
+                     bool disableAudioRed,
+                     int32_t pingTimeout,
+                     int32_t pingInterval,
                      uint64_t negotiationDelay, // ms
                      std::vector<TrackInfo> tracksInfo,
                      const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,

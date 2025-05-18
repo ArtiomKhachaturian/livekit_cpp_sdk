@@ -37,8 +37,11 @@ class TransportManagerImpl : private Bricks::LoggableS<TransportListener, PingPo
 {
     template <class T> using Tracks = std::unordered_map<std::string, std::shared_ptr<T>>;
 public:
-    TransportManagerImpl(bool subscriberPrimary, bool fastPublish,
-                         int32_t pingTimeout, int32_t pingInterval,
+    TransportManagerImpl(bool subscriberPrimary,
+                         bool fastPublish,
+                         bool disableAudioRed,
+                         int32_t pingTimeout,
+                         int32_t pingInterval,
                          uint64_t negotiationDelay, // ms
                          std::vector<TrackInfo> tracksInfo,
                          const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
@@ -130,6 +133,7 @@ private:
     const uint64_t _negotiationDelay;
     const bool _subscriberPrimary;
     const bool _fastPublish;
+    const bool _disableAudioRed;
     const std::string _logCategory;
     const std::weak_ptr<TrackManager> _trackManager;
     AsyncListener<TransportManagerListener*> _listener;

@@ -13,9 +13,10 @@
 // limitations under the License.
 #pragma once // Service.h
 #include "livekit/rtc/LiveKitRtcExport.h"
+#include "livekit/rtc/Options.h"
 #include "livekit/rtc/Session.h"
 #include "livekit/rtc/ServiceState.h"
-#include "livekit/rtc/Options.h"
+#include "livekit/rtc/ServiceInitInfo.h"
 #include "livekit/rtc/media/AudioDevice.h"
 #include "livekit/rtc/media/LocalVideoDevice.h"
 #include "livekit/rtc/media/AudioRecordingOptions.h"
@@ -26,10 +27,6 @@
 
 namespace Websocket {
 class Factory;
-}
-
-namespace Bricks {
-class Logger;
 }
 
 namespace LiveKitCpp
@@ -43,8 +40,7 @@ class LIVEKIT_RTC_API Service
     class Impl;
 public:
     Service(const std::shared_ptr<Websocket::Factory>& websocketsFactory,
-            const std::shared_ptr<Bricks::Logger>& logger = {},
-            bool logWebrtcEvents = false);
+            ServiceInitInfo initInfo = {});
     ~Service();
     ServiceState state() const;
     std::unique_ptr<Session> createSession(Options options = {}) const;

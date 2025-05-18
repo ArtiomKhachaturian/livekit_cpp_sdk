@@ -30,7 +30,7 @@ struct Session::Impl : public Bricks::LoggableS<>
 {
     const webrtc::scoped_refptr<StatsSourceImpl> _statsCollector;
     RTCEngine _engine;
-    Impl(Options options,
+    Impl(Options options, bool disableAudioRed,
          PeerConnectionFactory* pcf,
          const Participant* session,
          std::unique_ptr<Websocket::EndPoint> socket,
@@ -39,10 +39,9 @@ struct Session::Impl : public Bricks::LoggableS<>
     void queryStats() const { _engine.queryStats(_statsCollector); }
 };
 
-Session::Session(std::unique_ptr<Websocket::EndPoint> socket,
-                 PeerConnectionFactory* pcf, Options options,
-                 const std::shared_ptr<Bricks::Logger>& logger)
-    : _impl(std::make_unique<Impl>(std::move(options), pcf, this, std::move(socket), logger))
+Session::Session(std::unique_ptr<Websocket::EndPoint> socket, PeerConnectionFactory* pcf,
+                 Options options, bool disableAudioRed, const std::shared_ptr<Bricks::Logger>& logger)
+    : _impl(std::make_unique<Impl>(std::move(options), disableAudioRed, pcf, this, std::move(socket), logger))
 {
 }
 
@@ -251,14 +250,14 @@ std::unique_ptr<KeyProvider> Session::createProvider(KeyProviderOptions options)
     return std::make_unique<DefaultKeyProvider>(std::move(options), _impl->logger());
 }
 
-Session::Impl::Impl(Options options,
+Session::Impl::Impl(Options options, bool disableAudioRed,
                     PeerConnectionFactory* pcf,
                     const Participant* session,
                     std::unique_ptr<Websocket::EndPoint> socket,
                     const std::shared_ptr<Bricks::Logger>& logger)
     : Bricks::LoggableS<>(logger)
     , _statsCollector(webrtc::make_ref_counted<StatsSourceImpl>())
-    , _engine(std::move(options), pcf, session, std::move(socket), logger)
+    , _engine(std::move(options), disableAudioRed, pcf, session, std::move(socket), logger)
 {
 }
 

@@ -128,7 +128,7 @@ public:
 private:
     Session(std::unique_ptr<Websocket::EndPoint> socket,
             PeerConnectionFactory* pcf, Options options,
-            const std::shared_ptr<Bricks::Logger>& logger = {});
+            bool disableAudioRed, const std::shared_ptr<Bricks::Logger>& logger = {});
     std::unique_ptr<KeyProvider> createProvider(KeyProviderOptions options) const;
 private:
     const std::unique_ptr<Impl> _impl;

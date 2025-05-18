@@ -88,7 +88,7 @@ class RTCEngineImpl : public std::enable_shared_from_this<RTCEngineImpl>,
 {
     enum class SendResult;
 public:
-    RTCEngineImpl(Options options,
+    RTCEngineImpl(Options options, bool disableAudioRed,
                   PeerConnectionFactory* pcf,
                   const Participant* session,
                   std::unique_ptr<Websocket::EndPoint> socket,
@@ -217,6 +217,7 @@ private:
     std::string_view logCategory() const final;
 private:
     const Options _options;
+    const bool _disableAudioRed;
     const webrtc::scoped_refptr<PeerConnectionFactory> _pcf;
     const std::shared_ptr<LocalParticipant> _localParticipant;
     const std::shared_ptr<RemoteParticipants> _remoteParicipants;
