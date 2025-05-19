@@ -7,6 +7,7 @@ Pane {
     id: root
     readonly property alias cameraDeviceInfo: cameraModelComboBox.deviceInfo
     readonly property alias cameraOptions: cameraOptionsComboBox.options
+    readonly property alias microphoneOptions: micGroup.options
     readonly property string videoFilter: {
         if (videoFilterChx.checked) {
             return videoFilterCombo.currentText
@@ -25,16 +26,6 @@ Pane {
             options.height = sharingResHeight.value
         }
         options.maxFPS = defaultFpsChx.checked ? 0 : sharingFps.value
-        return options
-    }
-
-    readonly property var microphoneOptions: {
-        var options = app.emptyAudioRecordingOptions()
-        options.echoCancellation = echoCancellationChx.checkState
-        options.autoGainControl = autoGainControlChx.checkState
-        options.noiseSuppression = noiseSuppressionChx.checkState
-        options.highpassFilter = highpassFilterChx.checkState
-        options.stereoSwapping = stereoSwappingChx.checkState
         return options
     }
 
@@ -165,6 +156,7 @@ Pane {
             id: micGroup
             Layout.fillWidth: true
             title: qsTr("Microphone")
+            property var options: undefined
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 0
@@ -172,32 +164,66 @@ Pane {
                     id: echoCancellationChx
                     text: qsTr("Echo cancellation")
                     tristate: true
-                    onCheckStateChanged: notifyAboutAccepted()
+                    onCheckStateChanged: {
+                        if (micGroup.options !== undefined) {
+                            micGroup.options.setEchoCancellation(checkState)
+                            notifyAboutAccepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: autoGainControlChx
                     text: qsTr("Auto gain control")
                     tristate: true
-                    onCheckStateChanged: notifyAboutAccepted()
+                    onCheckStateChanged: {
+                        if (micGroup.options !== undefined) {
+                            micGroup.options.setAutoGainControl(checkState)
+                            notifyAboutAccepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: noiseSuppressionChx
                     text: qsTr("Noise suppression")
                     tristate: true
-                    onCheckStateChanged: notifyAboutAccepted()
+                    onCheckStateChanged: {
+                        if (micGroup.options !== undefined) {
+                            micGroup.options.setNoiseSuppression(checkState)
+                            notifyAboutAccepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: highpassFilterChx
                     text: qsTr("Highpass filter")
                     tristate: true
-                    onCheckStateChanged: notifyAboutAccepted()
+                    onCheckStateChanged: {
+                        if (micGroup.options !== undefined) {
+                            micGroup.options.setHighpassFilter(checkState)
+                            notifyAboutAccepted()
+                        }
+                    }
                 }
                 CheckBox {
                     id: stereoSwappingChx
                     text: qsTr("Stereo swapping")
                     tristate: true
-                    onCheckStateChanged: notifyAboutAccepted()
+                    onCheckStateChanged: {
+                        if (micGroup.options !== undefined) {
+                            micGroup.options.setStereoSwapping(checkState)
+                            notifyAboutAccepted()
+                        }
+                    }
                 }
+            }
+            Component.onCompleted: {
+                var audioOptions = app.emptyAudioRecordingOptions()
+                echoCancellationChx.checkState = audioOptions.echoCancellation()
+                autoGainControlChx.checkState = audioOptions.autoGainControl()
+                noiseSuppressionChx.checkState = audioOptions.noiseSuppression()
+                highpassFilterChx.checkState = audioOptions.highpassFilter()
+                stereoSwappingChx.checkState = audioOptions.stereoSwapping()
+                options = audioOptions
             }
         }
 
