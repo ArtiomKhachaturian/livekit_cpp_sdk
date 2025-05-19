@@ -182,7 +182,7 @@ void LocalParticipant::setMicrophoneOptions(const AudioRecordingOptions& options
         QMetaObject::invokeMethod(this, &LocalParticipant::setMicrophoneOptions, options);
     }
     else {
-        setOptions(&_microphone, options, &LocalParticipant::microphoneMutedChanged);
+        setOptions(&_microphone, options, &LocalParticipant::microphoneOptionsChanged);
     }
 }
 
@@ -325,6 +325,7 @@ template <class TElement, class TOptions, typename TSignal>
 void LocalParticipant::setOptions(TElement* element, const TOptions& options, TSignal signal)
 {
     if (element && element->_options != options) {
+        element->_options = options;
         if (element->_track) {
             setTrackOptions(element->_track, options);
         }
