@@ -22,6 +22,12 @@
 #include "ThreadUtils.h"
 #include <api/make_ref_counted.h>
 #include <rtc_base/thread.h>
+#ifdef WEBRTC_WIN
+#include <modules/audio_device/win/core_audio_utility_win.h>
+#include <atlbase.h>     //CComPtr support
+#include <Functiondiscoverykeys_devpkey.h>
+#include <Mmdeviceapi.h> // MMDevice
+#endif
 
 namespace
 {
@@ -779,9 +785,9 @@ std::optional<MediaDeviceInfo> AdmProxy::
     get(bool recording, [[maybe_unused]] WindowsDeviceType type,
        [[maybe_unused]] const AdmPtr& adm)
 {
-    std::optional<MediaDeviceInfo> device;
 #ifdef WEBRTC_MAC
     if (adm) {
+        std::optional<MediaDeviceInfo> device;
         const AudioDevicesEnumerator enumerator(recording, adm);
         enumerator.enumerate([&device](uint16_t,
                                        std::string_view name,
@@ -791,9 +797,58 @@ std::optional<MediaDeviceInfo> AdmProxy::
             }
             return !device.has_value();
         });
+        return device;
     }
+#elif defined (WEBRTC_WIN)
+    if (initializeComForThisThread()) {
+        const EDataFlow flow = recording ? EDataFlow::eCapture : EDataFlow::eRender;
+        // https://webrtc.googlesource.com/src/+/refs/heads/main/modules/audio_device/win/audio_device_core_win.cc#1452
+        ERole role = ERole::eCommunications;
+        if (AudioDeviceModule::kDefaultDevice == type) {
+            role = ERole::eConsole;
+        }
+        CComPtr<IMMDeviceEnumerator> enumerator;
+        // get enumerator for audio endpoint devices
+        HRESULT hr = enumerator.CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL);
+        if (SUCCEEDED(hr)) {
+            CComPtr<IMMDevice> dev;
+            hr = enumerator->GetDefaultAudioEndpoint(flow, role, &dev);
+            if (SUCCEEDED(hr)) {
+                MediaDeviceInfo device;
+                LPWSTR pwstrDeviceId = NULL;
+                if (SUCCEEDED(dev->GetId(&pwstrDeviceId))) {
+                    device._guid = fromWideChar(pwstrDeviceId);
+                    ::CoTaskMemFree(pwstrDeviceId);
+                }
+                if (!device._guid.empty()) {
+                    CComPtr<IPropertyStore> props;
+                    if (SUCCEEDED(dev->OpenPropertyStore(STGM_READ, &props))) {
+                        // get the endpoint device's friendly-name property
+                        // https://stackoverflow.com/questions/41097521/how-to-get-whether-a-speaker-plugged-or-unplugged
+                        using namespace webrtc::webrtc_win;
+                        ScopedPropVariant name;
+                        if (SUCCEEDED(props->GetValue(PKEY_Device_FriendlyName, name.Receive()))) {
+                            switch (name.get().vt) {
+                                case VT_LPWSTR:
+                                    device._name = fromWideChar(name.get().pwszVal);
+                                    break;
+                                case VT_LPSTR:
+                                    device._name = std::string(name.get().pszVal);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (!device.empty()) {
+                    return device;
+                }
+            }
+        }
+    }    
 #endif
-    return device;
+    return {};
 }
 
 std::optional<uint16_t> AdmProxy::get(bool recording, const MediaDeviceInfo& info,
