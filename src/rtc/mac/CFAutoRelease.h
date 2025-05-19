@@ -28,7 +28,7 @@ public:
     CFAutoRelease();
     CFAutoRelease(std::nullptr_t);
     CFAutoRelease(TCFRef ref, bool retain = false);
-    CFAutoRelease(CFAutoRelease&& tmp);
+    CFAutoRelease(CFAutoRelease&& tmp) noexcept;
     CFAutoRelease(const CFAutoRelease& other);
     // This allows passing an object to a function that takes its superclass.
     template <typename RCFRef, typename RTraits>
@@ -38,8 +38,8 @@ public:
     TCFRef* pointer() { return &_ref; }
     operator TCFRef() const { return ref(); }
     explicit operator bool() const { return valid(); }
-    CFAutoRelease& operator=(const CFAutoRelease& other);
-    CFAutoRelease& operator=(CFAutoRelease&& tmp);
+    CFAutoRelease& operator = (const CFAutoRelease& other);
+    CFAutoRelease& operator = (CFAutoRelease&& tmp) noexcept;
     void set(TCFRef ref, bool retain);
     void release();
     void retain();
@@ -75,10 +75,9 @@ inline CFAutoRelease<TCFRef,Traits>::CFAutoRelease(TCFRef ref, bool retain)
 }
 
 template <typename TCFRef, typename Traits>
-inline CFAutoRelease<TCFRef,Traits>::CFAutoRelease(CFAutoRelease&& tmp)
-    : _ref(Traits::invalidValue())
+inline CFAutoRelease<TCFRef,Traits>::CFAutoRelease(CFAutoRelease&& tmp) noexcept
+    : _ref(tmp._ref)
 {
-    set(tmp._ref, false);
     tmp._ref = Traits::invalidValue();
 }
 
@@ -110,7 +109,7 @@ inline TCFRef CFAutoRelease<TCFRef,Traits>::ref(bool retain ) const
 
 template <typename TCFRef, typename Traits>
 inline CFAutoRelease<TCFRef,Traits>& CFAutoRelease<TCFRef,Traits>::
-    operator=(const CFAutoRelease& other)
+    operator = (const CFAutoRelease& other)
 {
     if (&other != this) {
         set(other._ref, true);
@@ -120,10 +119,10 @@ inline CFAutoRelease<TCFRef,Traits>& CFAutoRelease<TCFRef,Traits>::
 
 template <typename TCFRef, typename Traits>
 inline CFAutoRelease<TCFRef,Traits>& CFAutoRelease<TCFRef,Traits>::
-    operator=(CFAutoRelease&& tmp)
+    operator = (CFAutoRelease&& tmp) noexcept
 {
     if (&tmp != this) {
-        set(tmp._ref, false);
+        _ref = tmp._ref;
         tmp._ref = Traits::invalidValue();
     }
     return *this;

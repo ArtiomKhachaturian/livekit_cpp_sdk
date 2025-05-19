@@ -23,7 +23,7 @@ template <>
 class CFAutoReleaseTraits<CVPixelBufferRef>
 {
 public:
-    static constexpr CVPixelBufferRef invalidValue() { return nullptr; }
+    static constexpr CVPixelBufferRef invalidValue() noexcept { return nullptr; }
     static CVPixelBufferRef retain(CVPixelBufferRef ref) { return ref ? CVPixelBufferRetain(ref) : nullptr; }
     static void release(CVPixelBufferRef ref);
 };
@@ -36,7 +36,7 @@ public:
     CVPixelBufferAutoRelease(std::nullptr_t);
     CVPixelBufferAutoRelease(CVPixelBufferRef buffer, bool retain = false);
     explicit CVPixelBufferAutoRelease(CMSampleBufferRef buffer);
-    CVPixelBufferAutoRelease(CVPixelBufferAutoRelease&& tmp);
+    CVPixelBufferAutoRelease(CVPixelBufferAutoRelease&& tmp) noexcept;
     CVPixelBufferAutoRelease(const CVPixelBufferAutoRelease& other);
     static OSType pixelFormat(CVPixelBufferRef buffer);
     // the caller does not own the returned CVImageBufferRef, and must retain it explicitly

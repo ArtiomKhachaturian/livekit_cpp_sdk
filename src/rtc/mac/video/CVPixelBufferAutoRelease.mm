@@ -37,7 +37,7 @@ CVPixelBufferAutoRelease::CVPixelBufferAutoRelease(CMSampleBufferRef buffer)
 {
 }
 
-CVPixelBufferAutoRelease::CVPixelBufferAutoRelease(CVPixelBufferAutoRelease&& tmp)
+CVPixelBufferAutoRelease::CVPixelBufferAutoRelease(CVPixelBufferAutoRelease&& tmp) noexcept
     : BaseClass(std::move(tmp))
 {
 }

@@ -21,7 +21,7 @@ template <class TCFRef>
 class CFAutoReleaseTraits
 {
 public:
-    static constexpr TCFRef invalidValue() { return nullptr; }
+    static constexpr TCFRef invalidValue() noexcept { return nullptr; }
     static TCFRef retain(TCFRef ref);
     static void release(TCFRef ref);
 };
