@@ -1,5 +1,6 @@
 #include "audiotrack.h"
-#include <livekit/rtc/media/AudioTrack.h>
+#include <livekit/rtc/media/LocalAudioTrack.h>
+#include <livekit/rtc/media/RemoteAudioTrack.h>
 
 AudioTrack::AudioTrack(QObject* parent)
     : QObject(parent)
@@ -38,9 +39,30 @@ QString AudioTrack::id() const
     return {};
 }
 
+bool AudioTrack::isRemote() const
+{
+    return _sdkTrack && _sdkTrack->remote();
+}
+
 bool AudioTrack::isMuted() const
 {
     return _sdkTrack && _sdkTrack->muted();
+}
+
+bool AudioTrack::isSecure() const
+{
+    return _sdkTrack && LiveKitCpp::EncryptionType::None != _sdkTrack->encryption();
+}
+
+bool AudioTrack::isFirstPacketSentOrReceived() const
+{
+    if (const auto sdkTrack = std::dynamic_pointer_cast<LiveKitCpp::LocalAudioTrack>(_sdkTrack)) {
+        return sdkTrack->firstPacketSent();
+    }
+    if (const auto sdkTrack = std::dynamic_pointer_cast<LiveKitCpp::RemoteAudioTrack>(_sdkTrack)) {
+        return sdkTrack->firstPacketReceived();
+    }
+    return false;
 }
 
 void AudioTrack::setMuted(bool mute)

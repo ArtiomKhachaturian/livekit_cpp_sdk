@@ -13,19 +13,18 @@
 // limitations under the License.
 #pragma once // RemoteAudioTrack.h
 #include "livekit/rtc/media/AudioTrack.h"
+#include "livekit/rtc/media/RemoteMediaTrack.h"
 
 namespace LiveKitCpp
 {
 
-class RemoteAudioTrack : public AudioTrack
+class RemoteAudioTrack : public RemoteMediaTrack<AudioTrack>
 {
 public:
     // server track ID
     virtual bool dtx() const = 0;
     virtual bool stereo() const = 0;
     virtual bool red() const = 0;
-    virtual std::string mime() const = 0;
-    virtual std::string stream() const = 0;
 };
 
 } // namespace LiveKitCpp

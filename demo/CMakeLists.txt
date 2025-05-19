@@ -39,6 +39,7 @@ qt_add_qml_module(${PROJECT_NAME} URI LiveKitClient VERSION 1.0
             SharingSelectionForm.qml
             MediaOptionsForm.qml
             VideoTrackContextMenu.qml
+            TrackActivityIndicator.qml
    SOURCES
             main.cpp
             demoapp.cpp

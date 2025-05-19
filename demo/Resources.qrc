@@ -11,5 +11,8 @@
         <file>resources/sounds/Join.wav</file>
         <file>resources/sounds/Left.wav</file>
         <file>resources/images/close.png</file>
+        <file>resources/images/camera.png</file>
+        <file>resources/images/mic.png</file>
+        <file>resources/images/screen.png</file>
     </qresource>
 </RCC>

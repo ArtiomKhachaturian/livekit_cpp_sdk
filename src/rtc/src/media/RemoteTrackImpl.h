@@ -15,11 +15,13 @@
 #include "Logger.h"
 #include "TrackManager.h"
 #include "SafeObj.h"
+#include "Utils.h"
 #include "livekit/rtc/media/MediaEventsListener.h"
 #include "livekit/rtc/media/NetworkPriority.h"
 #include "livekit/signaling/sfu/TrackInfo.h"
 #include <api/scoped_refptr.h>
 #include <api/rtp_receiver_interface.h>
+#include <atomic>
 #include <type_traits>
 
 namespace LiveKitCpp
@@ -28,7 +30,7 @@ namespace LiveKitCpp
 class Track;
 
 template <class TBaseImpl>
-class RemoteTrackImpl : public TBaseImpl
+class RemoteTrackImpl : public TBaseImpl, private webrtc::RtpReceiverObserverInterface
 {
     static_assert(std::is_base_of_v<Track, TBaseImpl>);
 public:
@@ -42,9 +44,11 @@ public:
     BackupCodecPolicy backupCodecPolicy() const final;
     std::string id() const final;
     std::string name() const final;
-    bool remote() const noexcept final { return true; }
     TrackSource source() const final;
     bool remoteMuted() const final;
+    bool firstPacketReceived() const final { return _firstPacketReceived; }
+    std::string mime() const final { return _info()._mimeType; }
+    std::string stream() const final { return _info()._stream; }
 protected:
     template <class TMediaDevice>
     RemoteTrackImpl(const TrackInfo& initialInfo,
@@ -54,8 +58,12 @@ protected:
     const auto& info() const noexcept { return _info; }
     void onMuteChanged(bool mute) const final;
 private:
+    // impl. of webrtc::RtpReceiverObserverInterface
+    void OnFirstPacketReceived(webrtc::MediaType media_type) final;
+private:
     Bricks::SafeObj<TrackInfo> _info;
     const rtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;
+    std::atomic_bool _firstPacketReceived = false;
 };
 
 template <class TBaseImpl>
@@ -159,6 +167,14 @@ inline void RemoteTrackImpl<TBaseImpl>::onMuteChanged(bool mute) const
     TBaseImpl::onMuteChanged(mute);
     if (const auto m = TBaseImpl::trackManager()) {
         m->notifyAboutMuteChanges(sid(), mute);
+    }
+}
+
+template <class TBaseImpl>
+inline void RemoteTrackImpl<TBaseImpl>::OnFirstPacketReceived(webrtc::MediaType media_type)
+{
+    if (exchangeVal(true, _firstPacketReceived)) {
+        TBaseImpl::notify(&MediaEventsListener::onFirstFrameReceived, TBaseImpl::id());
     }
 }
 

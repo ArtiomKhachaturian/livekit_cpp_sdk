@@ -1,6 +1,7 @@
 #include "videotrack.h"
 #include "videofilter.h"
 #include <livekit/rtc/media/LocalVideoTrack.h>
+#include <livekit/rtc/media/RemoteVideoTrack.h>
 #include <QLocale>
 
 namespace
@@ -100,10 +101,15 @@ bool VideoTrack::isSecure() const
     return _sdkTrack && LiveKitCpp::EncryptionType::None != _sdkTrack->encryption();
 }
 
-bool VideoTrack::isFirstPacketSent() const
+bool VideoTrack::isFirstPacketSentOrReceived() const
 {
-    const auto sdkTrack = localTrack();
-    return sdkTrack && sdkTrack->firstPacketSent();
+    if (const auto sdkTrack = localTrack()) {
+        return sdkTrack->firstPacketSent();
+    }
+    if (const auto sdkTrack = std::dynamic_pointer_cast<LiveKitCpp::RemoteVideoTrack>(_sdkTrack)) {
+        return sdkTrack->firstPacketReceived();
+    }
+    return false;
 }
 
 VideoTrack::NetworkPriority VideoTrack::networkPriority() const

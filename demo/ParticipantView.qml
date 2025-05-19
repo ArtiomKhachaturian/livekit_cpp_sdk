@@ -12,6 +12,109 @@ Item {
 
     ListModel {
         id : videoTracks
+        property bool cameraTracksActive: false
+        property bool sharingTracksActive: false
+        property int camerasCount: 0
+        property int sharingsCount: 0
+        function addTrack(track) {
+            if (null !== track) {
+                append({id:track.id, track:track})
+                track.firstFrameSentOrReceived.connect(updateTracksState)
+                updateTracksState()
+                if (true === track.screencast) {
+                    videoViews.currentIndex = count - 1
+                    ++sharingsCount
+                }
+                else {
+                    ++camerasCount
+                }
+                return true
+            }
+            return false
+        }
+        function removeTrack(id) {
+            for (var i = 0; i < count; i++) {
+                if (get(i).id === id) {
+                    var track = get(i).track
+                    track.firstFrameSentOrReceived.disconnect(updateTracksState)
+                    if (i > 0 && i === videoViews.currentIndex) {
+                        videoViews.currentIndex = i -1
+                    }
+                    remove(i)
+                    if (true === track.screencast) {
+                        --sharingsCount
+                    }
+                    else {
+                        --camerasCount
+                    }
+                    updateTracksState()
+                    return true
+                }
+            }
+            return false
+        }
+        function updateTracksState() {
+            if (count > 0) {
+                var camerasActive = 0, sharingsActive = 0
+                for (var i = 0; i < count; i++) {
+                    var track = get(i).track
+                    if (track.firstPacketSentOrReceived) {
+                        if (track.screencast) {
+                            ++sharingsActive
+                        }
+                        else {
+                            ++camerasActive
+                        }
+                    }
+                }
+                cameraTracksActive = camerasCount === camerasActive
+                sharingTracksActive = sharingsCount === sharingsActive
+            }
+            else {
+                cameraTracksActive = sharingTracksActive = false
+            }
+        }
+    }
+
+    ListModel {
+        id: audioTracks
+        property bool tracksActive: false
+        function addTrack(track) {
+            if (null !== track) {
+                append({id:track.id, track:track})
+                track.firstFrameSentOrReceived.connect(updateTracksState)
+                updateTracksState()
+                return true
+            }
+            return false
+        }
+        function removeTrack(id) {
+            for (var i = 0; i < count; i++) {
+                if (get(i).id === id) {
+                    var track = get(i).track
+                    track.firstFrameSentOrReceived.disconnect(updateTracksState)
+                    remove(i)
+                    updateTracksState()
+                    return true
+                }
+            }
+            return false
+        }
+        function updateTracksState() {
+            if (count > 0) {
+                for (var i = 0; i < count; i++) {
+                    var track = get(i).track
+                    if (!track.firstPacketSentOrReceived) {
+                        tracksActive = false
+                        return
+                    }
+                }
+                tracksActive = true
+            }
+            else {
+                tracksActive = false
+            }
+        }
     }
 
     Rectangle {
@@ -46,8 +149,8 @@ Item {
                             }
                             return false
                         }
-                        readonly property bool firstPacketSent: {
-                            return source !== null && source.firstPacketSent
+                        readonly property bool firstPacketSentOrReceived: {
+                            return source !== null && source.firstPacketSentOrReceived
                         }
                         Image {
                             id: secure
@@ -59,26 +162,6 @@ Item {
                             anchors.margins: 2
                             z: 1
                             visible: model.track && model.track.secure
-                        }
-
-                        Image {
-                            id: mediaSentState
-                            readonly property bool firstPacketSent : renderer.firstPacketSent
-                            source: firstPacketSent ? "qrc:/resources/images/greenCircle128.png" : "qrc:/resources/images/yellowCircle128.png"
-                            width: secure.width
-                            height: width
-                            anchors.left: secure.right
-                            anchors.top: secure.top
-                            anchors.margins: 2
-                            z: secure.z
-                            visible: local
-                            OpacityAnimator {
-                                target: mediaSentState
-                                from: 1
-                                to: 0
-                                duration: 1000
-                                running: firstPacketSent
-                            }
                         }
 
                         MouseArea {
@@ -113,6 +196,35 @@ Item {
             TextPanel {
                 Layout.fillWidth: true
                 text: participant ? participant.identity : ""
+                RowLayout {
+                    anchors.fill: parent
+                    TrackActivityIndicator {
+                        id: cameraTracksActivity
+                        active: videoTracks.cameraTracksActive
+                        height: parent.height
+                        width: height
+                        kind: 0
+                        visible: videoTracks.camerasCount > 0
+                    }
+                    TrackActivityIndicator {
+                        id: audioTracksActivity
+                        active: audioTracks.tracksActive
+                        height: parent.height
+                        width: height
+                        kind: 1
+                        visible: audioTracks.count > 0
+                    }
+                    TrackActivityIndicator {
+                        active: videoTracks.sharingTracksActive
+                        height: parent.height
+                        width: height
+                        kind: 2
+                        visible: videoTracks.sharingsCount > 0
+                    }
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                }
             }
         }
     }
@@ -127,27 +239,14 @@ Item {
         }
     }
 
-    function addVideoTrackById(id) {
-        addVideoTrack(participant.videoTrack(id))
-    }
-
-    function removeVideoTrackById(id) {
-        for (var i = 0; i < videoTracks.count; i++) {
-            if (videoTracks.get(i).id === id) {
-                if (i > 0 && i === videoViews.currentIndex) {
-                    videoViews.currentIndex = i -1
-                }
-                videoTracks.remove(i)
-                //console.log("video track removed, ID: " + id)
-                break
-            }
-        }
-    }
 
     Connections {
         target: participant
-        function onVideoTrackAdded(id) { addVideoTrackById(id) }
-        function onVideoTrackRemoved(id) { removeVideoTrackById(id) }
+        function onVideoTrackAdded(id) { videoTracks.addTrack(participant.videoTrack(id)) }
+        function onVideoTrackRemoved(id) { videoTracks.removeTrack(id) }
+        function onAudioTrackAdded(id) { audioTracks.addTrack(participant.audioTrack(id)) }
+        function onAudioTrackRemoved(id) { audioTracks.removeTrack(id) }
+
         function onSpeakerInfoChanged(level, active) {
             //console.log("level = " + level + ", active = " + active)
             mediaRoot.audioLevel = level
@@ -157,9 +256,13 @@ Item {
 
     onParticipantChanged: {
         videoTracks.clear()
+        audioTracks.clear()
         if (participant !== null) {
-            for (var i = 0; i < participant.videoTracksCount; ++i) {
-                addVideoTrack(participant.videoTrack(i))
+            for (var v = 0; v < participant.videoTracksCount; ++v) {
+                videoTracks.addTrack(participant.videoTrack(v))
+            }
+            for (var a = 0; a < participant.audioTracksCount; ++a) {
+                audioTracks.addTrack(participant.audioTrack(a))
             }
         }
     }

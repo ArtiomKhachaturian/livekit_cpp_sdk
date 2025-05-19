@@ -107,7 +107,7 @@ public:
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(bool screencast READ isScreencast CONSTANT)
     Q_PROPERTY(bool remote READ isRemote CONSTANT)
-    Q_PROPERTY(bool firstPacketSent READ isFirstPacketSent NOTIFY firstFrameSentChanged)
+    Q_PROPERTY(bool firstPacketSentOrReceived READ isFirstPacketSentOrReceived NOTIFY firstFrameSentOrReceived)
     Q_PROPERTY(NetworkPriority networkPriority READ networkPriority WRITE setNetworkPriority NOTIFY networkPriorityChanged)
     Q_PROPERTY(ContentHint contentHint READ contentHint WRITE setContentHint NOTIFY contentHintChanged)
     Q_PROPERTY(DegradationPreference degradationPreference READ degradationPreference WRITE setDegradationPreference NOTIFY degradationPreferenceChanged)
@@ -124,7 +124,7 @@ public:
     bool isScreencast() const;
     bool isRemote() const { return _remote; }
     bool isSecure() const;
-    bool isFirstPacketSent() const;
+    bool isFirstPacketSentOrReceived() const;
     NetworkPriority networkPriority() const;
     ContentHint contentHint() const;
     DegradationPreference degradationPreference() const;
@@ -151,7 +151,7 @@ signals:
     void scalabilityModeChanged();
     void deviceInfoChanged();
     void optionsChanged();
-    void firstFrameSentChanged();
+    void firstFrameSentOrReceived();
 protected:
     // overrides of VideoSource
     void applyFilter(VideoFilter* filter) final;
@@ -174,7 +174,8 @@ private:
     // impl. of LiveKitCpp::StatsListener
     void onStats(const LiveKitCpp::StatsReport& report) final;
     // impl. of LiveKitCpp::MediaEventsListener
-    void onFirstFrameSent(const std::string&) final { emit firstFrameSentChanged(); }
+    void onFirstFrameSent(const std::string&) final { emit firstFrameSentOrReceived(); }
+    void onFirstFrameReceived(const std::string&) final { emit firstFrameSentOrReceived(); }
     void onMuteChanged(const std::string&, bool muted) final { applyMute(muted); }
     void onRemoteSideMuteChanged(const std::string&, bool muted) final { applyMute(muted); }
     // impl. of LiveKitCpp::CameraEventsListener

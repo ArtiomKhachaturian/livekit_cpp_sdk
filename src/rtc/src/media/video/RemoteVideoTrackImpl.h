@@ -32,8 +32,6 @@ public:
     uint32_t originalHeight() const final { return info()()._height; }
     std::vector<VideoLayer> layers() const final { return info()()._layers; }
     std::vector<SimulcastCodecInfo> codecs() const final { return info()()._codecs; }
-    std::string mime() const final { return info()()._mimeType; }
-    std::string stream() const final { return info()()._stream; }
 };
 
 } // namespace LiveKitCpp

@@ -31,8 +31,6 @@ public:
     bool dtx() const final { return !info()()._disableDtx; }
     bool stereo() const final { return info()()._stereo; }
     bool red() const final { return !info()()._disableRed; }
-    std::string mime() const final { return info()()._mimeType; }
-    std::string stream() const final { return info()()._stream; }
 };
 
 } // namespace LiveKitCpp
