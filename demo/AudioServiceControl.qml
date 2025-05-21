@@ -32,6 +32,21 @@ GroupBox {
                 }
             }
         }
+        ToolButton {
+            icon.source: "qrc:/resources/images/effect.png"
+            checkable: true
+            checked: recording ? app.audioRecordingProcessingEnabled : app.audioPlayoutProcessingEnabled
+            display: ToolButton.IconOnly
+            onCheckedChanged: {
+                if (recording) {
+                    app.audioRecordingProcessingEnabled = checked
+                }
+                else {
+                    app.audioPlayoutProcessingEnabled = checked
+                }
+            }
+        }
+
         ComboBox {
             Layout.fillWidth: true
             model: recording ? app.recordingAudioDevicesModel : app.playoutAudioDevicesModel

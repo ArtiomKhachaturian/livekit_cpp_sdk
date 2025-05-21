@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include "AudioProcessingController.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <api/peer_connection_interface.h>
 #include <rtc_base/thread.h>
@@ -39,6 +40,7 @@ namespace LiveKitCpp
 class AdmProxy;
 class AdmProxyFacade;
 class AdmProxyListener;
+class AudioProcessingBuilder;
 class MicAudioSource;
 class WebRtcLogSink;
 
@@ -48,8 +50,7 @@ class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
     using AdmFW = std::weak_ptr<AdmFacade>;
 public:
     ~PeerConnectionFactory() override;
-    static webrtc::scoped_refptr<PeerConnectionFactory> create(bool audioProcessing,
-                                                               std::unique_ptr<webrtc::FieldTrialsView> trials = {},
+    static webrtc::scoped_refptr<PeerConnectionFactory> create(std::unique_ptr<webrtc::FieldTrialsView> trials = {},
                                                                const std::shared_ptr<Bricks::Logger>& logger = {});
     const auto& eventsQueue() const noexcept { return _eventsQueue; }
     std::weak_ptr<webrtc::Thread> signalingThread() const noexcept { return _signalingThread; }
@@ -72,6 +73,10 @@ public:
     std::vector<webrtc::SdpVideoFormat> videoDecoderFormats() const;
     std::vector<webrtc::AudioCodecSpec> audioEncoderFormats() const;
     std::vector<webrtc::AudioCodecSpec> audioDecoderFormats() const;
+    void enableAudioRecordingProcessing(bool enable);
+    void enableAudioPlayoutProcessing(bool enable);
+    bool audioRecordingProcessingEnabled() const;
+    bool audioPlayoutProcessingEnabled() const;
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>
@@ -99,6 +104,7 @@ protected:
                           const webrtc::VideoDecoderFactory* videoDecoderFactory,
                           webrtc::AudioEncoderFactory* audioEncoderFactory,
                           webrtc::AudioDecoderFactory* audioDecoderFactory,
+                          AudioProcessingController apController,
                           webrtc::scoped_refptr<AdmProxy> admProxy);
 private:
     template <class Method, typename... Args>
@@ -114,6 +120,7 @@ private:
     const webrtc::VideoDecoderFactory* const _videoDecoderFactory;
     webrtc::AudioEncoderFactory* const _audioEncoderFactory;
     webrtc::AudioDecoderFactory* const _audioDecoderFactory;
+    AudioProcessingController _apController;
     std::shared_ptr<AdmFacade> _admProxy;
 };
 

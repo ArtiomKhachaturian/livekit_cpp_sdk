@@ -26,6 +26,8 @@ class DemoApp : public QGuiApplication, private LiveKitCpp::ServiceListener
 {
     Q_OBJECT
     Q_PROPERTY(bool valid READ isValid CONSTANT)
+    Q_PROPERTY(bool audioRecordingProcessingEnabled READ audioRecordingProcessingEnabled WRITE enableAudioRecordingProcessing NOTIFY audioRecordingProcessingChanged)
+    Q_PROPERTY(bool audioPlayoutProcessingEnabled READ audioPlayoutProcessingEnabled WRITE enableAudioPlayoutProcessing NOTIFY audioPlayoutProcessingChanged)
     Q_PROPERTY(bool audioRecordingEnabled READ audioRecordingEnabled WRITE setAudioRecordingEnabled NOTIFY audioRecordingEnabledChanged)
     Q_PROPERTY(bool audioPlayoutEnabled READ audioPlayoutEnabled WRITE setAudioPlayoutEnabled NOTIFY audioPlayoutEnabledChanged)
     Q_PROPERTY(int audioRecordingVolume READ audioRecordingVolume WRITE setAudioRecordingVolume NOTIFY audioRecordingVolumeChanged)
@@ -59,12 +61,16 @@ public slots:
     void setAudioPlayoutEnabled(bool enabled);
     void setAudioRecordingVolume(int volume);
     void setAudioPlayoutVolume(int volume);
+    void enableAudioRecordingProcessing(bool enable);
+    void enableAudioPlayoutProcessing(bool enable);
     void setRecordingAudioDevice(const MediaDeviceInfo& device);
     void setPlayoutAudioDevice(const MediaDeviceInfo& device);
 public:
     bool isValid() const;
     bool audioRecordingEnabled() const;
     bool audioPlayoutEnabled() const;
+    bool audioRecordingProcessingEnabled();
+    bool audioPlayoutProcessingEnabled();
     int audioRecordingVolume() const;
     int audioPlayoutVolume() const;
     MediaDeviceInfo recordingAudioDevice() const { return _recordingAudioDevice; }
@@ -78,6 +84,8 @@ signals:
     void audioPlayoutVolumeChanged();
     void recordingAudioDeviceChanged();
     void playoutAudioDeviceChanged();
+    void audioRecordingProcessingChanged();
+    void audioPlayoutProcessingChanged();
 private:
     // impl. of LiveKitCpp::ServiceListener
     void onAudioRecordingStarted() final;

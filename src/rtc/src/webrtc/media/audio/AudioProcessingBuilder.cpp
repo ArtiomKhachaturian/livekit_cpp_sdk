@@ -11,18 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once // RegionSettings.h
-#include "livekit/signaling/sfu/RegionInfo.h"
-//#include <string>
-#include <vector>
+#include "AudioProcessingBuilder.h"
+#include "AudioProcessingWrapper.h"
+#include "Utils.h"
+#include <api/make_ref_counted.h>
 
 namespace LiveKitCpp
 {
 
-struct RegionSettings
+AudioProcessingBuilder::AudioProcessingBuilder(const AudioProcessingController& controller)
+    : _controller(controller)
 {
-    std::vector<RegionInfo> _regions;
-    //std::string _clientIp;
-};
+}
+
+AudioProcessingBuilder::~AudioProcessingBuilder() = default;
+
+absl::Nullable<webrtc::scoped_refptr<webrtc::AudioProcessing>>
+    AudioProcessingBuilder::Build(const webrtc::Environment& env)
+{
+    auto processing = _default.Build(env);
+    if (processing) {
+        return webrtc::make_ref_counted<AudioProcessingWrapper>(std::move(processing), _controller);
+    }
+    return {};
+}
 
 } // namespace LiveKitCpp

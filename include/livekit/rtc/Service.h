@@ -85,6 +85,10 @@ public:
                                         std::string_view dialogTitleUTF8,
                                         void* parentWindow,
                                         uint32_t positionX, uint32_t positionY) const;
+    void enableAudioRecordingProcessing(bool enable);
+    void enableAudioPlayoutProcessing(bool enable);
+    bool audioRecordingProcessingEnabled() const;
+    bool audioPlayoutProcessingEnabled() const;
     // AEC
     // Starts AEC dump using existing file. Takes ownership of `file` and passes
     // it on to VoiceEngine (via other objects) immediately, which will take

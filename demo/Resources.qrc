@@ -14,5 +14,6 @@
         <file>resources/images/camera.png</file>
         <file>resources/images/mic.png</file>
         <file>resources/images/screen.png</file>
+        <file>resources/images/effect.png</file>
     </qresource>
 </RCC>

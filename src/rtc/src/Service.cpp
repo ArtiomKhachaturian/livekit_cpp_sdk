@@ -113,6 +113,10 @@ public:
                                         std::string_view dialogTitleUTF8,
                                         void* parentWindow,
                                         uint32_t positionX, uint32_t positionY) const;
+    void enableAudioRecordingProcessing(bool enable);
+    void enableAudioPlayoutProcessing(bool enable);
+    bool audioRecordingProcessingEnabled() const;
+    bool audioPlayoutProcessingEnabled() const;
     bool startAecDump(FILE* file, int64_t maxSizeBytes);
     void stopAecDump();
     double recordingAudioVolume() const noexcept;
@@ -415,6 +419,30 @@ bool Service::displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
                                                           positionY);
 }
 
+void Service::enableAudioRecordingProcessing(bool enable)
+{
+    if (_impl) {
+        _impl->enableAudioRecordingProcessing(enable);
+    }
+}
+
+void Service::enableAudioPlayoutProcessing(bool enable)
+{
+    if (_impl) {
+        _impl->enableAudioPlayoutProcessing(enable);
+    }
+}
+
+bool Service::audioRecordingProcessingEnabled() const
+{
+    return _impl && _impl->audioRecordingProcessingEnabled();
+}
+
+bool Service::audioPlayoutProcessingEnabled() const
+{
+    return _impl && _impl->audioPlayoutProcessingEnabled();
+}
+
 bool Service::startAecDump(FILE* file, int64_t maxSizeBytes)
 {
     return _impl && _impl->startAecDump(file, maxSizeBytes);
@@ -452,7 +480,7 @@ Service::Impl::Impl(const std::shared_ptr<Websocket::Factory>& websocketsFactory
     : Bricks::LoggableS<AdmProxyListener>(initInfo._logger)
     , _websocketsFactory(websocketsFactory)
     , _cameraManager(CameraManager::create())
-    , _pcf(PeerConnectionFactory::create(true, createTrials(initInfo), initInfo._logWebrtcEvents ? initInfo._logger : nullptr))
+    , _pcf(PeerConnectionFactory::create(createTrials(initInfo), initInfo._logWebrtcEvents ? initInfo._logger : nullptr))
     , _desktopConfiguration(_pcf ? std::make_shared<DesktopConfiguration>(_pcf->eventsQueue()) : std::shared_ptr<DesktopConfiguration>{})
     , _disableAudioRed(initInfo._disableAudioRed.value_or(false))
     , _recordingVolume(_defaultRecording)
@@ -672,6 +700,30 @@ bool Service::Impl::displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
                                                                       parentWindow,
                                                                       positionX,
                                                                       positionY);
+}
+
+void Service::Impl::enableAudioRecordingProcessing(bool enable)
+{
+    if (_pcf) {
+        _pcf->enableAudioRecordingProcessing(enable);
+    }
+}
+
+void Service::Impl::enableAudioPlayoutProcessing(bool enable)
+{
+    if (_pcf) {
+        _pcf->enableAudioPlayoutProcessing(enable);
+    }
+}
+
+bool Service::Impl::audioRecordingProcessingEnabled() const
+{
+    return _pcf && _pcf->audioRecordingProcessingEnabled();
+}
+
+bool Service::Impl::audioPlayoutProcessingEnabled() const
+{
+    return _pcf && _pcf->audioPlayoutProcessingEnabled();
 }
 
 bool Service::Impl::startAecDump(FILE* file, int64_t maxSizeBytes)

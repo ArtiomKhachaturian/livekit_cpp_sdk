@@ -131,6 +131,22 @@ void DemoApp::setAudioPlayoutVolume(int volume)
     }
 }
 
+void DemoApp::enableAudioRecordingProcessing(bool enable)
+{
+    if (_service && _service->audioRecordingProcessingEnabled() != enable) {
+        _service->enableAudioRecordingProcessing(enable);
+        emit audioRecordingProcessingChanged();
+    }
+}
+
+void DemoApp::enableAudioPlayoutProcessing(bool enable)
+{
+    if (_service && _service->audioPlayoutProcessingEnabled() != enable) {
+        _service->enableAudioPlayoutProcessing(enable);
+        emit audioPlayoutProcessingChanged();
+    }
+}
+
 void DemoApp::setRecordingAudioDevice(const MediaDeviceInfo& device)
 {
     if (_service) {
@@ -234,6 +250,16 @@ bool DemoApp::audioRecordingEnabled() const
 bool DemoApp::audioPlayoutEnabled() const
 {
     return _service && _service->audioPlayoutEnabled();
+}
+
+bool DemoApp::audioRecordingProcessingEnabled()
+{
+    return _service && _service->audioRecordingProcessingEnabled();
+}
+
+bool DemoApp::audioPlayoutProcessingEnabled()
+{
+    return _service && _service->audioPlayoutProcessingEnabled();
 }
 
 int DemoApp::audioRecordingVolume() const

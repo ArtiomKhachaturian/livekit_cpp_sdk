@@ -18,6 +18,7 @@
 #include "ThreadUtils.h"
 #include "AdmProxy.h"
 #include "AdmProxyFacade.h"
+#include "AudioProcessingBuilder.h"
 #include "VideoDecoderFactory.h"
 #include "VideoEncoderFactory.h"
 #ifdef WEBRTC_MAC
@@ -27,7 +28,6 @@
 #include "MFVideoDecoderFactory.h"
 #include "MFVideoEncoderFactory.h"
 #endif
-#include <api/audio/builtin_audio_processing_builder.h>
 #include <api/audio_codecs/builtin_audio_decoder_factory.h>
 #include <api/audio_codecs/builtin_audio_encoder_factory.h>
 #include <api/create_peerconnection_factory.h>
@@ -114,6 +114,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
                                              const webrtc::VideoDecoderFactory* videoDecoderFactory,
                                              webrtc::AudioEncoderFactory* audioEncoderFactory,
                                              webrtc::AudioDecoderFactory* audioDecoderFactory,
+                                             AudioProcessingController apController,
                                              webrtc::scoped_refptr<AdmProxy> admProxy)
     : _eventsQueue(createTaskQueueS("events_queue", webrtc::TaskQueueFactory::Priority::LOW, signalingThread))
     , _webrtcLogSink(std::move(webrtcLogSink))
@@ -125,6 +126,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     , _videoDecoderFactory(videoDecoderFactory)
     , _audioEncoderFactory(audioEncoderFactory)
     , _audioDecoderFactory(audioDecoderFactory)
+    , _apController(std::move(apController))
 {
     // check GCM suites for DTLS-SRTP are enabled
     webrtc::PeerConnectionFactoryInterface::Options peerConnectionFactoryOptions;
@@ -146,8 +148,7 @@ PeerConnectionFactory::~PeerConnectionFactory()
 }
 
 webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
-    create(bool audioProcessing,
-           std::unique_ptr<webrtc::FieldTrialsView> trials,
+    create(std::unique_ptr<webrtc::FieldTrialsView> trials,
            const std::shared_ptr<Bricks::Logger>& logger)
 {
     //create threads for peer connection factory
@@ -184,9 +185,8 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
     
     auto admProxy = AdmProxy::create(workingThread, signalingThread,
                                      dependencies.task_queue_factory.get());
-    if (audioProcessing) {
-        dependencies.audio_processing_builder = std::make_unique<webrtc::BuiltinAudioProcessingBuilder>();
-    }
+    AudioProcessingController apController;
+    dependencies.audio_processing_builder = std::make_unique<AudioProcessingBuilder>(apController);
     dependencies.adm = admProxy;
     dependencies.event_log_factory = nullptr; // should be NULL or customized and adapted to our log system
     webrtc::EnableMedia(dependencies);
@@ -205,6 +205,7 @@ webrtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::
                                                                videoDecoderFactory,
                                                                audioEncoderFactory,
                                                                audioDecoderFactory,
+                                                               std::move(apController),
                                                                std::move(admProxy));
     }
     return {};
@@ -337,6 +338,26 @@ std::vector<webrtc::AudioCodecSpec> PeerConnectionFactory::audioDecoderFormats()
         return _audioDecoderFactory->GetSupportedDecoders();
     }
     return {};
+}
+
+void PeerConnectionFactory::enableAudioRecordingProcessing(bool enable)
+{
+    _apController.setEnableRecProcessing(enable);
+}
+
+void PeerConnectionFactory::enableAudioPlayoutProcessing(bool enable)
+{
+    _apController.setEnablePlayProcessing(enable);
+}
+
+bool PeerConnectionFactory::audioRecordingProcessingEnabled() const
+{
+    return _apController.recProcessingEnabled();
+}
+
+bool PeerConnectionFactory::audioPlayoutProcessingEnabled() const
+{
+    return _apController.playProcessingEnabled();
 }
 
 void PeerConnectionFactory::SetOptions(const Options& options)
