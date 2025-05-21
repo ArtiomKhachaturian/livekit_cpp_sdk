@@ -113,6 +113,8 @@ public:
                                         std::string_view dialogTitleUTF8,
                                         void* parentWindow,
                                         uint32_t positionX, uint32_t positionY) const;
+    bool startAecDump(FILE* file, int64_t maxSizeBytes);
+    void stopAecDump();
     double recordingAudioVolume() const noexcept;
     double playoutAudioVolume() const noexcept;
     void setRecordingAudioVolume(double volume);
@@ -413,6 +415,18 @@ bool Service::displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
                                                           positionY);
 }
 
+bool Service::startAecDump(FILE* file, int64_t maxSizeBytes)
+{
+    return _impl && _impl->startAecDump(file, maxSizeBytes);
+}
+
+void Service::stopAecDump()
+{
+    if (_impl) {
+        _impl->stopAecDump();
+    }
+}
+
 void Service::addListener(ServiceListener* listener)
 {
     if (_impl) {
@@ -658,6 +672,18 @@ bool Service::Impl::displayCameraSettingsDialogBox(const MediaDeviceInfo& dev,
                                                                       parentWindow,
                                                                       positionX,
                                                                       positionY);
+}
+
+bool Service::Impl::startAecDump(FILE* file, int64_t maxSizeBytes)
+{
+    return _pcf && _pcf->StartAecDump(file, maxSizeBytes);
+}
+
+void Service::Impl::stopAecDump()
+{
+    if (_pcf) {
+        _pcf->StopAecDump();
+    }
 }
 
 double Service::Impl::recordingAudioVolume() const noexcept

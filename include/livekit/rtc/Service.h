@@ -24,6 +24,7 @@
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <memory>
 #include <vector>
+#include <stdio.h>
 
 namespace Websocket {
 class Factory;
@@ -84,6 +85,16 @@ public:
                                         std::string_view dialogTitleUTF8,
                                         void* parentWindow,
                                         uint32_t positionX, uint32_t positionY) const;
+    // AEC
+    // Starts AEC dump using existing file. Takes ownership of `file` and passes
+    // it on to VoiceEngine (via other objects) immediately, which will take
+    // the ownerhip. If the operation fails, the file will be closed.
+    // A maximum file size in bytes can be specified. When the file size limit is
+    // reached, logging is stopped automatically. If maxSizeBytes is set to a
+    // value <= 0, no limit will be used, and logging will continue until the
+    // stopAecDump function is called.
+    bool startAecDump(FILE* file, int64_t maxSizeBytes = 0);
+    void stopAecDump();
     // listeners
     void addListener(ServiceListener* listener);
     void removeListener(ServiceListener* listener);
