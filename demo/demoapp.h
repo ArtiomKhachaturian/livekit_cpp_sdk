@@ -19,6 +19,7 @@ QT_END_NAMESPACE
 
 namespace LiveKitCpp {
 class Service;
+class WavFramesWriter;
 enum class ServiceState;
 }
 
@@ -105,6 +106,8 @@ private:
     const QStringList _iceTransportPolicies;
     const QString _defaultIceTransportPolicy;
     const int _defaultIceTransportPolicyIndex;
+    QScopedPointer<LiveKitCpp::WavFramesWriter> _recordingAudioWriter;
+    QScopedPointer<LiveKitCpp::WavFramesWriter> _playoutAudioWriter;
     std::shared_ptr<LiveKitCpp::Service> _service;
     std::optional<LiveKitCpp::ServiceState> _serviceInitFailure;
     QPointer<QQuickWindow> _appWindow;

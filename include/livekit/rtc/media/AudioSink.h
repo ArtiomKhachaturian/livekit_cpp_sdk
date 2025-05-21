@@ -25,7 +25,8 @@ public:
     // supposed to deliver the timestamp when this audio frame was originally
     // captured. This timestamp MUST be based on the same clock as
     // rtc::TimeMillis().
-    virtual void onData(const void* audioData, int bitsPerSample,
+    // audio data format is Int16
+    virtual void onData(const int16_t* audioData, int bitsPerSample,
                         int sampleRate, size_t numberOfChannels,
                         size_t numberOfFrames,
                         const std::optional<int64_t>& absoluteCaptureTimestampMs) = 0;

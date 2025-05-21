@@ -77,6 +77,8 @@ public:
     void enableAudioPlayoutProcessing(bool enable);
     bool audioRecordingProcessingEnabled() const;
     bool audioPlayoutProcessingEnabled() const;
+    void setRecordingFramesWriter(AudioSink* writer = nullptr);
+    void setPlayoutFramesWriter(AudioSink* writer = nullptr);
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>

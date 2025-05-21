@@ -4,6 +4,7 @@
 #include <ZaphoydTppFactory.h>
 #include <livekit/rtc/Options.h>
 #include <livekit/rtc/Service.h>
+#include <livekit/rtc/media/WavFramesWriter.h>
 #include <livekit/signaling/sfu/ICETransportPolicy.h>
 #if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
 #include <livekit/rtc/media/qt/VideoFrameQtHelper.h>
@@ -11,6 +12,7 @@
 #include <QVideoSink>
 #include <private/qquickpalette_p.h>
 #endif
+#include <QStandardPaths>
 #include <memory>
 
 namespace
@@ -65,6 +67,16 @@ DemoApp::DemoApp(int &argc, char **argv)
         _playoutAudioDevicesModel->setItems(_service->playoutAudioDevices());
         _camerasModel->setItems(_service->cameraDevices());
         _service->addListener(this);
+        const auto musicFolder = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+        if (!musicFolder.isEmpty()) {
+            const QString filenameSuffix = QDateTime::currentDateTime().toString() + ".wav";
+            auto filename = musicFolder + "/" + "livekit_audio_rec_" + filenameSuffix;
+            _recordingAudioWriter.reset(new LiveKitCpp::WavFramesWriter(filename.toStdString()));
+            filename = musicFolder + "/" + "livekit_audio_play_" + filenameSuffix;
+            _playoutAudioWriter.reset(new LiveKitCpp::WavFramesWriter(filename.toStdString()));
+            _service->setRecordingFramesWriter(_recordingAudioWriter.data());
+            _service->setPlayoutFramesWriter(_playoutAudioWriter.data());
+        }
     }
     else {
         _serviceInitFailure = state;
@@ -75,7 +87,11 @@ DemoApp::~DemoApp()
 {
     if (_service) {
         _service->removeListener(this);
+        _service->setRecordingFramesWriter(nullptr);
+        _service->setPlayoutFramesWriter(nullptr);
     }
+    _recordingAudioWriter.reset();
+    _playoutAudioWriter.reset();
 }
 
 void DemoApp::setAppWindow(QObject* appWindow, const QUrl&)

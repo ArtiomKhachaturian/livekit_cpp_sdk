@@ -15,12 +15,20 @@
 #include <atomic>
 #include <memory>
 
+namespace webrtc {
+class StreamConfig;
+}
+
 namespace LiveKitCpp
 {
+
+class AudioSink;
 
 class AudioProcessingController
 {
     using Flag = std::atomic_bool;
+    class FramesWriter;
+    friend class AudioProcessingWrapper;
 public:
     AudioProcessingController();
     AudioProcessingController(const AudioProcessingController&) = default;
@@ -29,12 +37,20 @@ public:
     void setEnablePlayProcessing(bool enable);
     bool recProcessingEnabled() const;
     bool playProcessingEnabled() const;
+    void setRecWriter(AudioSink* writer = nullptr);
+    void setPlayWriter(AudioSink* writer = nullptr);
     bool processingEnabled() const { return recProcessingEnabled() || playProcessingEnabled(); }
     AudioProcessingController& operator = (const AudioProcessingController&) = default;
     AudioProcessingController& operator = (AudioProcessingController&&) noexcept = default;
 private:
+    void commitRecAudioFrame(const int16_t* data, const webrtc::StreamConfig& config) const;
+    void commitRecAudioFrame(const float* data, const webrtc::StreamConfig& config) const;
+    void commitPlayAudioFrame(const int16_t* data, const webrtc::StreamConfig& config) const;
+    void commitPlayAudioFrame(const float* data, const webrtc::StreamConfig& config) const;
+private:
     std::shared_ptr<Flag> _enableRecProcessing;
     std::shared_ptr<Flag> _enablePlayProcessing;
+    std::shared_ptr<FramesWriter> _writer;
 };
 
 } // namespace LiveKitCpp

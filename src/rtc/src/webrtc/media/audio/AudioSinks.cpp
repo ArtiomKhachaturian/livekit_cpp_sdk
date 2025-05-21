@@ -21,7 +21,7 @@ void AudioSinks::OnData(const void* audioData, int bitsPerSample, int sampleRate
                         std::optional<int64_t> absoluteCaptureTimestampMs)
 {
     if (audioData) {
-        invoke(&AudioSink::onData, audioData, bitsPerSample,
+        invoke(&AudioSink::onData, reinterpret_cast<const int16_t*>(audioData), bitsPerSample,
                sampleRate, numberOfChannels, numberOfFrames,
                absoluteCaptureTimestampMs);
     }

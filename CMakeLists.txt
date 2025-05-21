@@ -376,6 +376,7 @@ if (WEBRTC_AVAILABLE)
         ${RTC_SRC_DIR}/src/webrtc/media/e2e
         ${RTC_SRC_DIR}/src/webrtc/media/audio
         ${RTC_SRC_DIR}/src/webrtc/media/audio/adm
+        ${RTC_SRC_DIR}/src/webrtc/media/audio/processing
         ${RTC_SRC_DIR}/src/webrtc/media/data
         ${RTC_SRC_DIR}/src/webrtc/media/video
         ${RTC_SRC_DIR}/src/webrtc/media/video/buffers

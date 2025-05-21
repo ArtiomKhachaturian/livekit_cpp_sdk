@@ -142,6 +142,7 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
 
 PeerConnectionFactory::~PeerConnectionFactory()
 {
+    _apController.setRecWriter();
     if (_admProxy) {
         _admProxy->close();
     }
@@ -358,6 +359,16 @@ bool PeerConnectionFactory::audioRecordingProcessingEnabled() const
 bool PeerConnectionFactory::audioPlayoutProcessingEnabled() const
 {
     return _apController.playProcessingEnabled();
+}
+
+void PeerConnectionFactory::setRecordingFramesWriter(AudioSink* writer)
+{
+    _apController.setRecWriter(writer);
+}
+
+void PeerConnectionFactory::setPlayoutFramesWriter(AudioSink* writer)
+{
+    _apController.setPlayWriter(writer);
 }
 
 void PeerConnectionFactory::SetOptions(const Options& options)

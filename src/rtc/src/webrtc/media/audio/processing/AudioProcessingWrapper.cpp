@@ -84,13 +84,19 @@ int AudioProcessingWrapper::ProcessStream(const int16_t* const src,
                                           const webrtc::StreamConfig& outputConfig,
                                           int16_t* const dest)
 {
+    int result = kNullPointerError;
     if (_impl) {
         if (_controller.recProcessingEnabled()) {
-            return _impl->ProcessStream(src, inputConfig, outputConfig, dest);
+            result = _impl->ProcessStream(src, inputConfig, outputConfig, dest);
         }
-        return kNoError;
+        else {
+            result = kNoError;
+        }
+        if (kNoError == result) {
+            _controller.commitRecAudioFrame(dest, outputConfig);
+        }
     }
-    return kNullPointerError;
+    return result;
 }
 
 int AudioProcessingWrapper::ProcessStream(const float* const* src,
@@ -98,13 +104,19 @@ int AudioProcessingWrapper::ProcessStream(const float* const* src,
                                           const webrtc::StreamConfig& outputConfig,
                                           float* const* dest)
 {
+    int result = kNullPointerError;
     if (_impl) {
         if (_controller.recProcessingEnabled()) {
-            return _impl->ProcessStream(src, inputConfig, outputConfig, dest);
+            result = _impl->ProcessStream(src, inputConfig, outputConfig, dest);
         }
-        return kNoError;
+        else {
+            result = kNoError;
+        }
+        if (kNoError == result && dest) {
+            _controller.commitRecAudioFrame(*dest, outputConfig);
+        }
     }
-    return kNullPointerError;
+    return result;
 }
 
 bool AudioProcessingWrapper::GetLinearAecOutput(rtc::ArrayView<std::array<float, 160>> linearOutput) const
@@ -154,13 +166,19 @@ int AudioProcessingWrapper::ProcessReverseStream(const int16_t* const src,
                                                  const webrtc::StreamConfig& outputConfig,
                                                  int16_t* const dest)
 {
+    int result = kNullPointerError;
     if (_impl) {
         if (_controller.playProcessingEnabled()) {
-            return _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
+            result = _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
         }
-        return kNoError;
+        else {
+            result = kNoError;
+        }
+        if (kNoError == result) {
+            _controller.commitPlayAudioFrame(dest, outputConfig);
+        }
     }
-    return kNullPointerError;
+    return result;
 }
 
 int AudioProcessingWrapper::AnalyzeReverseStream(const float* const* data,
@@ -180,13 +198,19 @@ int AudioProcessingWrapper::ProcessReverseStream(const float* const* src,
                                                  const webrtc::StreamConfig& outputConfig,
                                                  float* const* dest)
 {
+    int result = kNullPointerError;
     if (_impl) {
         if (_controller.playProcessingEnabled()) {
-            return _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
+            result = _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
         }
-        return kNoError;
+        else {
+            result = kNoError;
+        }
+        if (kNoError == result && dest) {
+            _controller.commitPlayAudioFrame(*dest, outputConfig);
+        }
     }
-    return kNullPointerError;
+    return result;
 }
 
 int AudioProcessingWrapper::proc_sample_rate_hz() const
