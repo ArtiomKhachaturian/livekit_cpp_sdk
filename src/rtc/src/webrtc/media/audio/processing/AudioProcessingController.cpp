@@ -13,7 +13,7 @@
 // limitations under the License.
 #include "AudioProcessingController.h"
 #include "Listener.h"
-#include "livekit/rtc/media/AudioSink.h"
+#include "livekit/rtc/media/AudioFramesWriter.h"
 #include <api/audio/audio_processing.h>
 #include <common_audio/include/audio_util.h>
 
@@ -23,13 +23,15 @@ namespace LiveKitCpp
 class AudioProcessingController::FramesWriter
 {
 public:
-    void setRecWriter(AudioSink* writer) { _recWriter = writer; }
-    void setPlayWriter(AudioSink* writer) { _playWriter = writer; }
+    void setRecWriter(AudioFramesWriter* writer) { _recWriter = writer; }
+    void setPlayWriter(AudioFramesWriter* writer) { _playWriter = writer; }
     void writeRecAudioFrame(const int16_t* data, const webrtc::StreamConfig& config) const;
     void writePlayAudioFrame(const int16_t* data, const webrtc::StreamConfig& config) const;
+    void notifyThatRecStarted(bool started);
+    void notifyThatPlayStarted(bool started);
 private:
-    Bricks::Listener<AudioSink*> _recWriter;
-    Bricks::Listener<AudioSink*> _playWriter;
+    Bricks::Listener<AudioFramesWriter*> _recWriter;
+    Bricks::Listener<AudioFramesWriter*> _playWriter;
 };
 
 AudioProcessingController::AudioProcessingController()
@@ -63,17 +65,31 @@ bool AudioProcessingController::playProcessingEnabled() const
     return _enablePlayProcessing && _enablePlayProcessing->load();
 }
 
-void AudioProcessingController::setRecWriter(AudioSink* writer)
+void AudioProcessingController::setRecWriter(AudioFramesWriter* writer)
 {
     if (_writer) {
         _writer->setRecWriter(writer);
     }
 }
 
-void AudioProcessingController::setPlayWriter(AudioSink* writer)
+void AudioProcessingController::setPlayWriter(AudioFramesWriter* writer)
 {
     if (_writer) {
         _writer->setPlayWriter(writer);
+    }
+}
+
+void AudioProcessingController::notifyThatRecStarted(bool started)
+{
+    if (_writer) {
+        _writer->notifyThatRecStarted(started);
+    }
+}
+
+void AudioProcessingController::notifyThatPlayStarted(bool started)
+{
+    if (_writer) {
+        _writer->notifyThatPlayStarted(started);
     }
 }
 
@@ -118,7 +134,7 @@ void AudioProcessingController::FramesWriter::writeRecAudioFrame(const int16_t* 
 {
     if (data) {
         if (const auto frames = config.num_frames()) {
-            _recWriter.invoke(&AudioSink::onData, data, 16, config.sample_rate_hz(),
+            _recWriter.invoke(&AudioFramesWriter::onData, data, 16, config.sample_rate_hz(),
                               config.num_channels(), frames, std::nullopt);
         }
     }
@@ -129,9 +145,29 @@ void AudioProcessingController::FramesWriter::writePlayAudioFrame(const int16_t*
 {
     if (data) {
         if (const auto frames = config.num_frames()) {
-            _playWriter.invoke(&AudioSink::onData, data, 16, config.sample_rate_hz(),
+            _playWriter.invoke(&AudioFramesWriter::onData, data, 16, config.sample_rate_hz(),
                                config.num_channels(), frames, std::nullopt);
         }
+    }
+}
+
+void AudioProcessingController::FramesWriter::notifyThatRecStarted(bool started)
+{
+    if (started) {
+        _recWriter.invoke(&AudioFramesWriter::onStarted);
+    }
+    else {
+        _recWriter.invoke(&AudioFramesWriter::onStopped);
+    }
+}
+
+void AudioProcessingController::FramesWriter::notifyThatPlayStarted(bool started)
+{
+    if (started) {
+        _playWriter.invoke(&AudioFramesWriter::onStarted);
+    }
+    else {
+        _playWriter.invoke(&AudioFramesWriter::onStopped);
     }
 }
 

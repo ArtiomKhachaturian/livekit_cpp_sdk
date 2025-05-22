@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include "AudioProcessingController.h"
+#include "AdmProxyListener.h"
 #include "livekit/rtc/media/MediaDeviceInfo.h"
 #include <api/peer_connection_interface.h>
 #include <rtc_base/thread.h>
@@ -39,12 +40,13 @@ namespace LiveKitCpp
 
 class AdmProxy;
 class AdmProxyFacade;
-class AdmProxyListener;
 class AudioProcessingBuilder;
+class AudioFramesWriter;
 class MicAudioSource;
 class WebRtcLogSink;
 
-class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface
+class PeerConnectionFactory : public webrtc::PeerConnectionFactoryInterface,
+                              private AdmProxyListener
 {
     class AdmFacade;
     using AdmFW = std::weak_ptr<AdmFacade>;
@@ -77,8 +79,8 @@ public:
     void enableAudioPlayoutProcessing(bool enable);
     bool audioRecordingProcessingEnabled() const;
     bool audioPlayoutProcessingEnabled() const;
-    void setRecordingFramesWriter(AudioSink* writer = nullptr);
-    void setPlayoutFramesWriter(AudioSink* writer = nullptr);
+    void setRecordingFramesWriter(AudioFramesWriter* writer = nullptr);
+    void setPlayoutFramesWriter(AudioFramesWriter* writer = nullptr);
     // impl. of webrtc::PeerConnectionFactoryInterface
     void SetOptions(const Options& options) final;
     webrtc::RTCErrorOr<webrtc::scoped_refptr<webrtc::PeerConnectionInterface>>
@@ -111,6 +113,9 @@ protected:
 private:
     template <class Method, typename... Args>
     void postAdmTask(Method method, Args&&... args) const;
+    // impl. of AdmProxyListener
+    void onStarted(bool recording) final;
+    void onStopped(bool recording) final;
 private:
     const std::shared_ptr<webrtc::TaskQueueBase> _eventsQueue;
     const std::unique_ptr<WebRtcLogSink> _webrtcLogSink;

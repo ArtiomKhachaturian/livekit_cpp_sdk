@@ -13,13 +13,13 @@
 // limitations under the License.
 #pragma once // WavFramesWriter.h
 #include "livekit/rtc/LiveKitRtcExport.h"
-#include "livekit/rtc/media/AudioSink.h"
+#include "livekit/rtc/media/AudioFramesWriter.h"
 #include <memory>
 
 namespace LiveKitCpp
 {
 
-class LIVEKIT_RTC_API WavFramesWriter : public AudioSink
+class LIVEKIT_RTC_API WavFramesWriter : public AudioFramesWriter
 {
     struct Impl;
 public:
@@ -29,7 +29,8 @@ public:
     ~WavFramesWriter() final;
     WavFramesWriter& operator = (const WavFramesWriter&) = delete;
     WavFramesWriter& operator = (WavFramesWriter&&) noexcept = delete;
-    // impl. of AudioProcessingFramesWriter
+    // impl. of AudioFramesWriter
+    void onStopped() final;
     void onData(const int16_t* audioData, int bitsPerSample,
                 int sampleRate, size_t numberOfChannels,
                 size_t numberOfFrames,

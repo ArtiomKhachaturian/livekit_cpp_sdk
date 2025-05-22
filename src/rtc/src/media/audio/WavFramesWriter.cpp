@@ -35,6 +35,11 @@ WavFramesWriter::~WavFramesWriter()
 {
 }
 
+void WavFramesWriter::onStopped()
+{
+    _impl->_writer({});
+}
+
 void WavFramesWriter::onData(const int16_t* audioData, int /*bitsPerSample*/,
                              int sampleRate, size_t numberOfChannels,
                              size_t numberOfFrames,

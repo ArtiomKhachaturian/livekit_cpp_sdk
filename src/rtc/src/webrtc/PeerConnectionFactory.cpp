@@ -137,6 +137,8 @@ PeerConnectionFactory::PeerConnectionFactory(std::unique_ptr<WebRtcLogSink> webr
     _signalingThread->AllowInvokesToThread(_signalingThread.get());
     if (admProxy) {
         _admProxy.reset(new AdmFacade(std::move(admProxy)));
+        registerAdmRecordingListener(this, true);
+        registerAdmPlayoutListener(this, true);
     }
 }
 
@@ -145,6 +147,8 @@ PeerConnectionFactory::~PeerConnectionFactory()
     _apController.setRecWriter();
     if (_admProxy) {
         _admProxy->close();
+        registerAdmRecordingListener(this, false);
+        registerAdmPlayoutListener(this, false);
     }
 }
 
@@ -361,12 +365,12 @@ bool PeerConnectionFactory::audioPlayoutProcessingEnabled() const
     return _apController.playProcessingEnabled();
 }
 
-void PeerConnectionFactory::setRecordingFramesWriter(AudioSink* writer)
+void PeerConnectionFactory::setRecordingFramesWriter(AudioFramesWriter* writer)
 {
     _apController.setRecWriter(writer);
 }
 
-void PeerConnectionFactory::setPlayoutFramesWriter(AudioSink* writer)
+void PeerConnectionFactory::setPlayoutFramesWriter(AudioFramesWriter* writer)
 {
     _apController.setPlayWriter(writer);
 }
@@ -440,6 +444,26 @@ void PeerConnectionFactory::postAdmTask(Method method, Args&&... args) const
     if (_admProxy) {
         postOrInvokeS<true>(_workingThread, _admProxy, std::move(method),
                             std::forward<Args>(args)...);
+    }
+}
+
+void PeerConnectionFactory::onStarted(bool recording)
+{
+    if (recording) {
+        _apController.notifyThatRecStarted(true);
+    }
+    else {
+        _apController.notifyThatPlayStarted(true);
+    }
+}
+
+void PeerConnectionFactory::onStopped(bool recording)
+{
+    if (recording) {
+        _apController.notifyThatRecStarted(false);
+    }
+    else {
+        _apController.notifyThatPlayStarted(false);
     }
 }
 

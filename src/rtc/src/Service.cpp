@@ -119,8 +119,8 @@ public:
     bool audioPlayoutProcessingEnabled() const;
     bool startAecDump(FILE* file, int64_t maxSizeBytes);
     void stopAecDump();
-    void setRecordingFramesWriter(AudioSink* writer);
-    void setPlayoutFramesWriter(AudioSink* writer);
+    void setRecordingFramesWriter(AudioFramesWriter* writer);
+    void setPlayoutFramesWriter(AudioFramesWriter* writer);
     double recordingAudioVolume() const noexcept;
     double playoutAudioVolume() const noexcept;
     void setRecordingAudioVolume(double volume);
@@ -457,14 +457,14 @@ void Service::stopAecDump()
     }
 }
 
-void Service::setRecordingFramesWriter(AudioSink* writer)
+void Service::setRecordingFramesWriter(AudioFramesWriter* writer)
 {
     if (_impl) {
         _impl->setRecordingFramesWriter(writer);
     }
 }
 
-void Service::setPlayoutFramesWriter(AudioSink* writer)
+void Service::setPlayoutFramesWriter(AudioFramesWriter* writer)
 {
     if (_impl) {
         _impl->setPlayoutFramesWriter(writer);
@@ -754,14 +754,14 @@ void Service::Impl::stopAecDump()
     }
 }
 
-void Service::Impl::setRecordingFramesWriter(AudioSink* writer)
+void Service::Impl::setRecordingFramesWriter(AudioFramesWriter* writer)
 {
     if (_pcf) {
         _pcf->setRecordingFramesWriter(writer);
     }
 }
 
-void Service::Impl::setPlayoutFramesWriter(AudioSink* writer)
+void Service::Impl::setPlayoutFramesWriter(AudioFramesWriter* writer)
 {
     if (_pcf) {
         _pcf->setPlayoutFramesWriter(writer);

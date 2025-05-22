@@ -22,7 +22,7 @@ class StreamConfig;
 namespace LiveKitCpp
 {
 
-class AudioSink;
+class AudioFramesWriter;
 
 class AudioProcessingController
 {
@@ -37,9 +37,11 @@ public:
     void setEnablePlayProcessing(bool enable);
     bool recProcessingEnabled() const;
     bool playProcessingEnabled() const;
-    void setRecWriter(AudioSink* writer = nullptr);
-    void setPlayWriter(AudioSink* writer = nullptr);
+    void setRecWriter(AudioFramesWriter* writer = nullptr);
+    void setPlayWriter(AudioFramesWriter* writer = nullptr);
     bool processingEnabled() const { return recProcessingEnabled() || playProcessingEnabled(); }
+    void notifyThatRecStarted(bool started);
+    void notifyThatPlayStarted(bool started);
     AudioProcessingController& operator = (const AudioProcessingController&) = default;
     AudioProcessingController& operator = (AudioProcessingController&&) noexcept = default;
 private:

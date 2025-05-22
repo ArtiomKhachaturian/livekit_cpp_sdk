@@ -33,7 +33,7 @@ class Factory;
 namespace LiveKitCpp
 {
 
-class AudioSink;
+class AudioFramesWriter;
 class ServiceListener;
 enum class NetworkType;
 
@@ -100,8 +100,8 @@ public:
     // stopAecDump function is called.
     bool startAecDump(FILE* file, int64_t maxSizeBytes = 0);
     void stopAecDump();
-    void setRecordingFramesWriter(AudioSink* writer = nullptr);
-    void setPlayoutFramesWriter(AudioSink* writer = nullptr);
+    void setRecordingFramesWriter(AudioFramesWriter* writer = nullptr);
+    void setPlayoutFramesWriter(AudioFramesWriter* writer = nullptr);
     // listeners
     void addListener(ServiceListener* listener);
     void removeListener(ServiceListener* listener);
