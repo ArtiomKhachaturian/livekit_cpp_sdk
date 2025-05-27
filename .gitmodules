@@ -1,12 +1,16 @@
 [submodule "protocol"]
-	path = protocol
+	path = sub_projects/protocol
 	url = https://github.com/livekit/protocol.git
 [submodule "psrpc"]
-	path = psrpc
+	path = sub_projects/psrpc
 	url = https://github.com/livekit/psrpc.git
 [submodule "websockets_api"]
-	path = websockets_api
+	path = sub_projects/websockets_api
 	url = https://github.com/ArtiomKhachaturian/Websockets-API.git
 [submodule "bricks"]
-	path = bricks
+	path = sub_projects/bricks
 	url = https://github.com/ArtiomKhachaturian/Bricks.git
+[submodule "rnnoise"]
+	path = sub_projects/rnnoise
+	url = git@github.com:ArtiomKhachaturian/rnnoise.git
+	branch = main

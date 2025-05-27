@@ -328,10 +328,16 @@ if (WEBRTC_AVAILABLE)
     set(ABSEIL_INCLUDE_DIR ${WEBRTC_INCLUDE_DIR}/third_party/abseil-cpp CACHE PATH "Path to folder with Abseil C++ headers")
     option(USE_PLATFORM_ENCODERS "Use platform specific encoders if any" ON)
     option(USE_PLATFORM_DECODERS "Use platform specific decoders if any" ON)
+    option(USE_RN_NOISE_SUPPRESSOR "Enable or disable usage of RNNoise audio processing library" ON)
 
     if (WIN32)
         preprocessAndAddResource(${RTC_LIB})
-    endif()
+    endif(WIN32)
+    
+    if (USE_RN_NOISE_SUPPRESSOR)
+        file(GLOB_RECURSE RN_NOISE_HEADERS ${CMAKE_SOURCE_DIR}/rnnoise/include/*.${HEADER_FILE_EXT})
+        file(GLOB_RECURSE RN_NOISE_SOURCES ${CMAKE_SOURCE_DIR}/rnnoise/src/*.c)
+    endif(USE_RN_NOISE_SUPPRESSOR)
 
     # Create a shared library
     add_library(${RTC_LIB} SHARED
@@ -344,6 +350,8 @@ if (WEBRTC_AVAILABLE)
         ${RTC_COMMON_SOURCES}
         ${RTC_PLATFORM_HEADERS}
         ${RTC_PLATFORM_SOURCES}
+        ${RN_NOISE_HEADERS}
+        ${RN_NOISE_SOURCES}
         ${WEBSOCKETS_API_HEADERS}
         ${BRICKS_API_HEADERS})
 
@@ -352,6 +360,9 @@ if (WEBRTC_AVAILABLE)
                                                                          ${RTC_COMMON_SOURCES})
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER} PREFIX "Rtc/${PLATFORM_SRC_FOLDER}" FILES ${RTC_PLATFORM_HEADERS}
                                                                                                                    ${RTC_PLATFORM_SOURCES})
+    if (USE_RN_NOISE_SUPPRESSOR)
+        source_group(TREE ${CMAKE_SOURCE_DIR}/rnnoise PREFIX "RNNoise" FILES ${RN_NOISE_HEADERS} ${RN_NOISE_SOURCES})
+    endif(USE_RN_NOISE_SUPPRESSOR)
 
     set(RTC_SRC_DIR ${CMAKE_SOURCE_DIR}/src/rtc)
     # Add include directories
@@ -450,6 +461,9 @@ if (WEBRTC_AVAILABLE)
     if (USE_PLATFORM_DECODERS)
         target_compile_definitions(${RTC_LIB} PRIVATE -DUSE_PLATFORM_DECODERS)
     endif(USE_PLATFORM_DECODERS)
+    if (USE_RN_NOISE_SUPPRESSOR)
+        target_compile_definitions(${RTC_LIB} PRIVATE -DUSE_RN_NOISE_SUPPRESSOR)
+    endif(USE_RN_NOISE_SUPPRESSOR)
 endif()
 
 # install steps

@@ -28,7 +28,7 @@ class AudioProcessingController
 {
     using Flag = std::atomic_bool;
     class FramesWriter;
-    friend class AudioProcessingWrapper;
+    friend class ControlledAudioProcessor;
 public:
     AudioProcessingController();
     AudioProcessingController(const AudioProcessingController&) = default;

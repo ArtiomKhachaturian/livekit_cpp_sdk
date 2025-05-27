@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once // AudioProcessingWrapper.h
-#include "AudioProcessingController.h"
 #include <api/audio/audio_processing.h>
 #include <modules/audio_processing/include/aec_dump.h>
 #include <atomic>
@@ -23,8 +22,6 @@ namespace LiveKitCpp
 class AudioProcessingWrapper : public webrtc::AudioProcessing
 {
 public:
-    AudioProcessingWrapper(webrtc::scoped_refptr<webrtc::AudioProcessing> impl,
-                           const AudioProcessingController& controller);
     int Initialize() override;
     int Initialize(const webrtc::ProcessingConfig& processingConfig) override;
     void ApplyConfig(const webrtc::AudioProcessing::Config& config) override;
@@ -70,9 +67,10 @@ public:
     webrtc::AudioProcessingStats GetStatistics(bool hasRemoteTracks) override;
     webrtc::AudioProcessingStats GetStatistics() override;
     webrtc::AudioProcessing::Config GetConfig() const override;
+protected:
+    AudioProcessingWrapper(webrtc::scoped_refptr<webrtc::AudioProcessing> impl);
 private:
     const webrtc::scoped_refptr<webrtc::AudioProcessing> _impl;
-    const AudioProcessingController _controller;
 };
 
 } // namespace LiveKitCpp

@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "AudioProcessingBuilder.h"
-#include "AudioProcessingWrapper.h"
+#include "ControlledAudioProcessor.h"
+#ifdef USE_RN_NOISE_SUPPRESSOR
+#include "AudioProcessor.h"
+#endif
 #include "Utils.h"
 #include <api/make_ref_counted.h>
 
@@ -31,7 +34,10 @@ absl::Nullable<webrtc::scoped_refptr<webrtc::AudioProcessing>>
 {
     auto processing = _default.Build(env);
     if (processing) {
-        return webrtc::make_ref_counted<AudioProcessingWrapper>(std::move(processing), _controller);
+#ifdef USE_RN_NOISE_SUPPRESSOR
+        processing = webrtc::make_ref_counted<AudioProcessor>(std::move(processing));
+#endif
+        return webrtc::make_ref_counted<ControlledAudioProcessor>(std::move(processing), _controller);
     }
     return {};
 }

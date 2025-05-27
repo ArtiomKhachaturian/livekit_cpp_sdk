@@ -16,10 +16,8 @@
 namespace LiveKitCpp
 {
 
-AudioProcessingWrapper::AudioProcessingWrapper(webrtc::scoped_refptr<webrtc::AudioProcessing> impl,
-                                               const AudioProcessingController& controller)
+AudioProcessingWrapper::AudioProcessingWrapper(webrtc::scoped_refptr<webrtc::AudioProcessing> impl)
     : _impl(std::move(impl))
-    , _controller(controller)
 {
 }
 
@@ -86,17 +84,9 @@ int AudioProcessingWrapper::ProcessStream(const int16_t* const src,
 {
     int result = kNullPointerError;
     if (_impl) {
-        if (_controller.recProcessingEnabled()) {
-            result = _impl->ProcessStream(src, inputConfig, outputConfig, dest);
-        }
-        else {
-            result = kNoError;
-        }
-        if (kNoError == result) {
-            _controller.commitRecAudioFrame(dest, outputConfig);
-        }
+        return _impl->ProcessStream(src, inputConfig, outputConfig, dest);
     }
-    return result;
+    return kNullPointerError;
 }
 
 int AudioProcessingWrapper::ProcessStream(const float* const* src,
@@ -106,17 +96,9 @@ int AudioProcessingWrapper::ProcessStream(const float* const* src,
 {
     int result = kNullPointerError;
     if (_impl) {
-        if (_controller.recProcessingEnabled()) {
-            result = _impl->ProcessStream(src, inputConfig, outputConfig, dest);
-        }
-        else {
-            result = kNoError;
-        }
-        if (kNoError == result && dest) {
-            _controller.commitRecAudioFrame(*dest, outputConfig);
-        }
+        return _impl->ProcessStream(src, inputConfig, outputConfig, dest);
     }
-    return result;
+    return kNullPointerError;
 }
 
 bool AudioProcessingWrapper::GetLinearAecOutput(rtc::ArrayView<std::array<float, 160>> linearOutput) const
@@ -166,29 +148,17 @@ int AudioProcessingWrapper::ProcessReverseStream(const int16_t* const src,
                                                  const webrtc::StreamConfig& outputConfig,
                                                  int16_t* const dest)
 {
-    int result = kNullPointerError;
     if (_impl) {
-        if (_controller.playProcessingEnabled()) {
-            result = _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
-        }
-        else {
-            result = kNoError;
-        }
-        if (kNoError == result) {
-            _controller.commitPlayAudioFrame(dest, outputConfig);
-        }
+        return _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
     }
-    return result;
+    return kNullPointerError;
 }
 
 int AudioProcessingWrapper::AnalyzeReverseStream(const float* const* data,
                                                  const webrtc::StreamConfig& reverseConfig)
 {
     if (_impl) {
-        if (_controller.playProcessingEnabled()) {
-            return _impl->AnalyzeReverseStream(data, reverseConfig);
-        }
-        return kNoError;
+        return _impl->AnalyzeReverseStream(data, reverseConfig);
     }
     return kNullPointerError;
 }
@@ -198,19 +168,10 @@ int AudioProcessingWrapper::ProcessReverseStream(const float* const* src,
                                                  const webrtc::StreamConfig& outputConfig,
                                                  float* const* dest)
 {
-    int result = kNullPointerError;
     if (_impl) {
-        if (_controller.playProcessingEnabled()) {
-            result = _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
-        }
-        else {
-            result = kNoError;
-        }
-        if (kNoError == result && dest) {
-            _controller.commitPlayAudioFrame(*dest, outputConfig);
-        }
+        return _impl->ProcessReverseStream(src, inputConfig, outputConfig, dest);
     }
-    return result;
+    return kNullPointerError;
 }
 
 int AudioProcessingWrapper::proc_sample_rate_hz() const
@@ -250,7 +211,7 @@ int AudioProcessingWrapper::stream_delay_ms() const
 
 webrtc::AudioProcessingStats AudioProcessingWrapper::GetStatistics(bool hasRemoteTracks)
 {
-    if (_impl && _controller.processingEnabled()) {
+    if (_impl) {
         return _impl->GetStatistics(hasRemoteTracks);
     }
     return {};
@@ -258,7 +219,7 @@ webrtc::AudioProcessingStats AudioProcessingWrapper::GetStatistics(bool hasRemot
 
 webrtc::AudioProcessingStats AudioProcessingWrapper::GetStatistics()
 {
-    if (_impl && _controller.processingEnabled()) {
+    if (_impl) {
         return _impl->GetStatistics();
     }
     return {};

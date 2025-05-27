@@ -145,8 +145,8 @@ using CompletionStatusOrComPtr = CompletionStatusOr<CComPtr<TComInterface>>;
 
 
 template <typename T, typename U = T>
-inline inline bool operator == (const LiveKitCpp::CompletionStatusOr<T>& l,
-                                const LiveKitCpp::CompletionStatusOr<U>& r)
+inline bool operator == (const LiveKitCpp::CompletionStatusOr<T>& l,
+                         const LiveKitCpp::CompletionStatusOr<U>& r)
 {
     return l.value() == r.value() && l.errorInfo() == r.errorInfo();
 }
