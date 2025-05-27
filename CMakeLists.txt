@@ -335,6 +335,10 @@ if (WEBRTC_AVAILABLE)
     endif(WIN32)
     
     if (USE_RN_NOISE_SUPPRESSOR)
+        set(RN_NOISE_MODEL_URL "https://media.xiph.org/rnnoise/models/rnnoise_data-0a8755f8e2d834eff6a54714ecc7d75f9932e845df35f8b59bc52a7cfe6e8b37.tar.gz")
+        set(RN_NOISE_MODEL_DIR ${CMAKE_BINARY_DIR}/rnnoise_model)
+        set(RN_NOISE_MODEL_SRC_DIR ${RN_NOISE_MODEL_DIR}/src)
+        downloadAndExtract(${RN_NOISE_MODEL_URL} ${CMAKE_BINARY_DIR}/rnnoise_data.tar.gz ${RN_NOISE_MODEL_DIR})
         list(APPEND RN_NOISE_SOURCES ${CMAKE_SOURCE_DIR}/rnnoise/src/celt_lpc.c
                                      ${CMAKE_SOURCE_DIR}/rnnoise/src/denoise.c
                                      ${CMAKE_SOURCE_DIR}/rnnoise/src/kiss_fft.c
@@ -344,7 +348,7 @@ if (WEBRTC_AVAILABLE)
                                      ${CMAKE_SOURCE_DIR}/rnnoise/src/nnet.c
                                      ${CMAKE_SOURCE_DIR}/rnnoise/src/parse_lpcnet_weights.c 
                                      ${CMAKE_SOURCE_DIR}/rnnoise/src/rnnoise_tables.c
-                                     ${CMAKE_BINARY_DIR}/rnnoise_data/rnnoise_data.c
+                                     ${RN_NOISE_MODEL_SRC_DIR}/rnnoise_data.c
                                      ${CMAKE_SOURCE_DIR}/rnnoise/src/rnn.c)
         file(GLOB_RECURSE RN_NOISE_HEADERS ${CMAKE_SOURCE_DIR}/rnnoise/include/*.${HEADER_FILE_EXT})
     endif(USE_RN_NOISE_SUPPRESSOR)
@@ -474,7 +478,7 @@ if (WEBRTC_AVAILABLE)
     if (USE_RN_NOISE_SUPPRESSOR)
         target_include_directories(${RTC_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/rnnoise/include
                                                       ${CMAKE_SOURCE_DIR}/rnnoise/src
-                                                      ${CMAKE_BINARY_DIR}/rnnoise_data)
+                                                      ${RN_NOISE_MODEL_SRC_DIR})
         target_compile_definitions(${RTC_LIB} PRIVATE -DUSE_RN_NOISE_SUPPRESSOR)
     endif(USE_RN_NOISE_SUPPRESSOR)
 endif()
