@@ -14,11 +14,7 @@
 #pragma once // AudioProcessor.h
 #ifdef USE_RN_NOISE_SUPPRESSOR
 #include "AudioProcessingWrapper.h"
-#include "SafeObj.h"
-extern "C" {
-#include "rnnoise.h"
-#include "denoise.h"
-}
+#include "SafeObjAliases.h"
 
 namespace webrtc {
 class AudioBuffer;
@@ -29,6 +25,7 @@ namespace LiveKitCpp
 
 class AudioProcessor : public AudioProcessingWrapper
 {
+    class RnDenoiser;
 public:
     AudioProcessor(webrtc::scoped_refptr<webrtc::AudioProcessing> impl);
     ~AudioProcessor() override;
@@ -43,12 +40,10 @@ public:
                       const webrtc::StreamConfig& outputConfig,
                       float* const* dest) final;
 private:
-    void denoise(const float* data, const webrtc::StreamConfig& config) const;
-    bool hasDenoiser() const;
     void createDenoiser();
     void destroyDenoiser();
 private:
-    Bricks::SafeObj<DenoiseState*> _denoiser = nullptr;
+    Bricks::SafeUniquePtr<RnDenoiser> _denoiser;
 };
 
 } // namespace LiveKitCpp
