@@ -23,7 +23,7 @@ struct LIVEKIT_SIGNALING_API IceCandidate
     std::string _sdpMid;
     int _sdpMLineIndex = {};
     std::string _usernameFragment; // ufrag
-    bool valid() const { return !_sdp.empty() && !_sdpMid.empty(); }
+    bool valid() const { return !_sdp.empty(); }
     explicit operator bool () const { return valid(); }
     IceCandidate() = default;
     IceCandidate(std::string sdp, std::string sdpMid, int sdpMLineIndex,
