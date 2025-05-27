@@ -26,9 +26,9 @@ class VideoFrameBuffer : public TBaseBuffer
 public:
     const auto& framesPool() const noexcept { return _framesPool; }
     // impl. of webrtc::VideoFrameBuffer
-    rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+    webrtc::scoped_refptr<webrtc::VideoFrameBuffer>
         GetMappedFrameBuffer(webrtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes) override;
-    rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
 protected:
     template <class... Args>
     VideoFrameBuffer(VideoFrameBufferPool framesPool, Args... args);
@@ -36,7 +36,7 @@ protected:
     webrtc::scoped_refptr<webrtc::NV12Buffer> createNV12(int width, int height) const;
     virtual VideoContentHint contentHint() const { return _framesPool.contentHint(); }
 private:
-    virtual rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const = 0;
+    virtual webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const = 0;
 private:
     const VideoFrameBufferPool _framesPool;
     SafeScopedRefPtr<webrtc::I420BufferInterface> _i420;
@@ -52,7 +52,7 @@ inline VideoFrameBuffer<TBaseBuffer>::VideoFrameBuffer(VideoFrameBufferPool fram
 }
 
 template <class TBaseBuffer>
-inline rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBuffer<TBaseBuffer>::
+inline webrtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBuffer<TBaseBuffer>::
     GetMappedFrameBuffer(webrtc::ArrayView<webrtc::VideoFrameBuffer::Type> mappedTypes)
 {
     if (!mappedTypes.empty()) {
@@ -62,7 +62,7 @@ inline rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBuffer<TBaseBuffer
                     return ToI420();
                 default:
                     if (mappedType == this->type()) {
-                        return rtc::scoped_refptr<webrtc::VideoFrameBuffer>(this);
+                        return webrtc::scoped_refptr<webrtc::VideoFrameBuffer>(this);
                     }
                     break;
             }
@@ -72,7 +72,7 @@ inline rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameBuffer<TBaseBuffer
 }
 
 template <class TBaseBuffer>
-inline rtc::scoped_refptr<webrtc::I420BufferInterface> VideoFrameBuffer<TBaseBuffer>::ToI420()
+inline webrtc::scoped_refptr<webrtc::I420BufferInterface> VideoFrameBuffer<TBaseBuffer>::ToI420()
 {
     LOCK_WRITE_SAFE_OBJ(_i420);
     if (!_i420.constRef()) {

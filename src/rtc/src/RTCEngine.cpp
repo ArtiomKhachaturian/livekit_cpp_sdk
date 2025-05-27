@@ -132,7 +132,7 @@ bool RTCEngine::sendChatMessage(std::string message, bool deleted, bool generate
     return false;
 }
 
-void RTCEngine::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void RTCEngine::queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (callback) {
         if (const auto impl = loadImpl()) {

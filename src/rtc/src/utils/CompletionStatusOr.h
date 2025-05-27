@@ -135,7 +135,7 @@ using CompletionStatusOrUniquePtr = CompletionStatusOr<std::unique_ptr<T>>;
 template <class T>
 using CompletionStatusOrSharedPtr = CompletionStatusOr<std::shared_ptr<T>>;
 template <class T>
-using CompletionStatusOrScopedRefPtr = CompletionStatusOr<rtc::scoped_refptr<T>>;
+using CompletionStatusOrScopedRefPtr = CompletionStatusOr<webrtc::scoped_refptr<T>>;
 #ifdef WEBRTC_WIN
 template <class TComInterface>
 using CompletionStatusOrComPtr = CompletionStatusOr<CComPtr<TComInterface>>;

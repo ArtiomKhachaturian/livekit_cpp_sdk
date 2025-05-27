@@ -24,7 +24,7 @@ class RemoteVideoTrackImpl : public RemoteTrackImpl<VideoTrackImpl<VideoDeviceIm
     using Base = RemoteTrackImpl<VideoTrackImpl<VideoDeviceImpl, RemoteVideoTrack>>;
 public:
     RemoteVideoTrackImpl(const TrackInfo& info,
-                         const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                         const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                          std::shared_ptr<VideoDeviceImpl> videoDevice,
                          const std::weak_ptr<TrackManager>& trackManager);
     // impl. of RemoteVideoTrack

@@ -66,11 +66,11 @@ public:
     void addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption);
     bool removeTrack(const std::string& id, bool cid = true);
     void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
-    void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
-    void queryReceiverStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                            const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
-    void querySenderStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
-                          const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void queryReceiverStats(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                            const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void querySenderStats(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                          const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     void setAudioPlayout(bool playout);
     void setAudioRecording(bool recording);
     void close();
@@ -101,27 +101,27 @@ private:
     void onSdpSetFailure(SignalTarget target, bool local, webrtc::RTCError error) final;
     void onLocalAudioTrackAdded(SignalTarget target, std::shared_ptr<AudioDeviceImpl> device,
                                 EncryptionType encryption,
-                                rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+                                webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     void onLocalVideoTrackAdded(SignalTarget target, std::shared_ptr<LocalVideoDeviceImpl> device,
                                 EncryptionType encryption,
-                                rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+                                webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
     void onLocalTrackAddFailure(SignalTarget target, const std::string& id, webrtc::MediaType type,
                                 const webrtc::RtpTransceiverInit&, webrtc::RTCError error) final;
     void onLocalTrackRemoved(SignalTarget target, const std::string& id, webrtc::MediaType type,
                              const std::vector<std::string>&) final;
     void onLocalDataChannelCreated(SignalTarget target,
-                                   rtc::scoped_refptr<DataChannel> channel) final;
+                                   webrtc::scoped_refptr<DataChannel> channel) final;
     void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
     void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
     void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
     void onNegotiationNeededEvent(SignalTarget target, uint32_t eventId) final;
     void onRemoteDataChannelOpened(SignalTarget target,
-                                   rtc::scoped_refptr<DataChannel> channel) final;
+                                   webrtc::scoped_refptr<DataChannel> channel) final;
     void onIceCandidateGathered(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;
-    void onRemoteTrackAdded(SignalTarget target, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                            const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) final;
+    void onRemoteTrackAdded(SignalTarget target, webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                            const std::vector<webrtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) final;
     void onRemotedTrackRemoved(SignalTarget target,
-                               rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
+                               webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     // impl. of PingPongKitListener
     bool onPingRequested() final;
     void onPongTimeout() final;

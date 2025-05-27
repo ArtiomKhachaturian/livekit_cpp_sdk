@@ -43,15 +43,15 @@ protected:
     VideoOptions validate(VideoOptions options) const final;
 private:
     webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability,
-                                               const rtc::scoped_refptr<CameraCapturer>& capturer) const;
+                                               const webrtc::scoped_refptr<CameraCapturer>& capturer) const;
     webrtc::VideoCaptureCapability bestMatched(webrtc::VideoCaptureCapability capability) const;
-    rtc::scoped_refptr<CameraCapturer> create(const MediaDeviceInfo& dev) const;
-    bool startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
+    webrtc::scoped_refptr<CameraCapturer> create(const MediaDeviceInfo& dev) const;
+    bool startCapturer(const webrtc::scoped_refptr<CameraCapturer>& capturer,
                        const webrtc::VideoCaptureCapability& capability) const;
-    bool stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const;
-    void logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
+    bool stopCapturer(const webrtc::scoped_refptr<CameraCapturer>& capturer) const;
+    void logError(const webrtc::scoped_refptr<CameraCapturer>& capturer,
                   const std::string& message, int code = 0) const;
-    void logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
+    void logVerbose(const webrtc::scoped_refptr<CameraCapturer>& capturer, const std::string& message) const;
 private:
     const std::weak_ptr<CameraManager> _manager;
     SafeScopedRefPtr<CameraCapturer> _capturer;

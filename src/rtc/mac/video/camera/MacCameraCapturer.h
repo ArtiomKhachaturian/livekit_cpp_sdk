@@ -32,13 +32,13 @@ namespace LiveKitCpp
 {
 
 class MacCameraCapturer : public CameraCapturer,
-                          private rtc::VideoSinkInterface<webrtc::VideoFrame>
+                          private webrtc::VideoSinkInterface<webrtc::VideoFrame>
 {
     class Impl;
 public:
     ~MacCameraCapturer() override;
-    static rtc::scoped_refptr<MacCameraCapturer> create(const MediaDeviceInfo& deviceInfo,
-                                                        VideoFrameBufferPool framesPool = {});
+    static webrtc::scoped_refptr<MacCameraCapturer> create(const MediaDeviceInfo& deviceInfo,
+                                                           VideoFrameBufferPool framesPool = {});
     static AVCaptureDevice* deviceWithUniqueIDUTF8(const char* deviceUniqueIdUTF8);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(AVCaptureDevice* device);
     static std::vector<webrtc::VideoCaptureCapability> capabilities(const char* deviceUniqueIdUTF8);
@@ -61,7 +61,7 @@ private:
     template <typename Callback>
     static void enumerateFramerates(AVCaptureDeviceFormat* format, Callback callback);
     AVCaptureDeviceFormat* findClosestFormat(const webrtc::VideoCaptureCapability& capability) const;
-    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
+    // impl. of webrtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final { sendFrame(frame); }
     void OnDiscardedFrame() final { discardFrame(); }
 private:

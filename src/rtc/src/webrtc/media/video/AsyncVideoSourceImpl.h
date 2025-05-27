@@ -32,7 +32,7 @@ class AsyncVideoSourceImpl : public AsyncMediaSourceImpl,
                              protected CapturerProxySink,
                              private VideoSink
 {
-    using Broadcasters = std::unordered_map<rtc::VideoSinkInterface<webrtc::VideoFrame>*, std::unique_ptr<VideoSinkBroadcast>>;
+    using Broadcasters = std::unordered_map<webrtc::VideoSinkInterface<webrtc::VideoFrame>*, std::unique_ptr<VideoSinkBroadcast>>;
 public:
     ~AsyncVideoSourceImpl() override;
     void setFilter(LocalVideoFilterPin* inputPin);
@@ -46,10 +46,10 @@ public:
     void setOptions(VideoOptions options = {});
     VideoOptions options() const { return _options(); }
     // return true if need to request capturer
-    bool addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                         const rtc::VideoSinkWants& wants);
+    bool addOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                         const webrtc::VideoSinkWants& wants);
     // return true if need to reset capturer
-    bool removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
+    bool removeSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
     virtual void updateAfterContentHintChanges(VideoContentHint hint);
     virtual void requestCapturer() {}
     virtual void resetCapturer() {}

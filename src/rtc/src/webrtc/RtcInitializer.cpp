@@ -22,21 +22,21 @@ namespace LiveKitCpp
 {
 
 RtcInitializer::RtcInitializer()
-    : _sslInitialized(rtc::InitializeSSL())
+    : _sslInitialized(webrtc::InitializeSSL())
 {
     if (_sslInitialized) {
-        rtc::LogMessage::LogToDebug(rtc::LS_NONE);
-        rtc::LogMessage::LogTimestamps(false);
-        rtc::LogMessage::SetLogToStderr(false);
+        webrtc::LogMessage::LogToDebug(webrtc::LS_NONE);
+        webrtc::LogMessage::LogTimestamps(false);
+        webrtc::LogMessage::SetLogToStderr(false);
         libyuv::MaskCpuFlags(-1); // to enable all cpu specific optimizations
-        rtc::InitRandom(static_cast<int>(rtc::Time32()));
+        webrtc::InitRandom(static_cast<int>(webrtc::Time32()));
     }
 }
 
 RtcInitializer::~RtcInitializer()
 {
     if (_sslInitialized) {
-        rtc::CleanupSSL();
+        webrtc::CleanupSSL();
     }
 }
 

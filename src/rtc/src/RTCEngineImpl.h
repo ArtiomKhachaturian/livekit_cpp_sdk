@@ -116,7 +116,7 @@ public:
                          bool deleted,
                          bool generated,
                          const std::vector<std::string>& destinationIdentities = {}) const;
-    void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     void cleanup(const std::optional<LiveKitError>& error = {}, const std::string& errorDetails = {});
 private:
    // webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
@@ -149,10 +149,10 @@ private:
     void createTransportManager(const JoinResponse& response,
                                 const webrtc::PeerConnectionInterface::RTCConfiguration& conf);
     // impl. of TrackManager
-    void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                    const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
-    void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
-                    const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                    const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                    const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const final;
     webrtc::scoped_refptr<webrtc::FrameTransformerInterface> createCryptor(EncryptionType encryption,
                                                                            webrtc::MediaType mediaType,
                                                                            std::string identity, std::string trackId,
@@ -191,17 +191,17 @@ private:
     void onStateChange(webrtc::PeerConnectionInterface::PeerConnectionState,
                        webrtc::PeerConnectionInterface::PeerConnectionState publisherState,
                        webrtc::PeerConnectionInterface::PeerConnectionState subscriberState) final;
-    void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+    void onRemoteTrackAdded(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                             std::string trackId, std::string participantSid) final;
-    void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
+    void onRemotedTrackRemoved(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     void onSdpOperationFailed(SignalTarget, webrtc::RTCError error) final;
     void onNegotiationNeeded() final;
     void onPublisherOffer(std::string type, std::string sdp) final;
     void onSubscriberAnswer(std::string type, std::string sdp) final;
     void onIceCandidateGathered(SignalTarget target, std::string sdpMid,
-                                int sdpMlineIndex, cricket::Candidate candidate) final;
-    void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel) final;
-    void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel) final;
+                                int sdpMlineIndex, webrtc::Candidate candidate) final;
+    void onLocalDataChannelCreated(webrtc::scoped_refptr<DataChannel> channel) final;
+    void onRemoteDataChannelOpened(webrtc::scoped_refptr<DataChannel> channel) final;
     // impl. of SignalTransportListener
     void onTransportStateChanged(TransportState state) final;
     void onTransportError(std::string error) final;

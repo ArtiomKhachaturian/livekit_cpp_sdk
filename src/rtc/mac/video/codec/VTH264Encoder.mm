@@ -230,7 +230,7 @@ MaybeEncodedImageBuffer VTH264Encoder::createEncodedImageFromSampleBuffer(CMSamp
         }
         // non-cached version
         if (!encodedBuffer) {
-            rtc::Buffer buffer;
+            webrtc::Buffer buffer;
             if (!webrtc::H264CMSampleBufferToAnnexBBuffer(sampleBuffer, isKeyFrame, &buffer)) {
                 return COMPLETION_STATUS(kCMSampleBufferError_InvalidMediaTypeForOperation);
             }

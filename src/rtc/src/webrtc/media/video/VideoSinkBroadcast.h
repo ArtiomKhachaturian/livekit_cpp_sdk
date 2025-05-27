@@ -23,14 +23,14 @@ namespace LiveKitCpp
 
 class VideoFrameBufferPoolSource;
 
-class VideoSinkBroadcast : public rtc::VideoSinkInterface<webrtc::VideoFrame>
+class VideoSinkBroadcast : public webrtc::VideoSinkInterface<webrtc::VideoFrame>
 {
 public:
-    VideoSinkBroadcast(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                       const rtc::VideoSinkWants& wants = {});
-    void updateSinkWants(const rtc::VideoSinkWants& wants);
+    VideoSinkBroadcast(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                       const webrtc::VideoSinkWants& wants = {});
+    void updateSinkWants(const webrtc::VideoSinkWants& wants);
     void setContentHint(VideoContentHint hint);
-    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
+    // impl. of webrtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final;
     void OnDiscardedFrame() final;
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints) final;
@@ -44,10 +44,10 @@ private:
                     int& cropX, int& cropY);
     void broadcast(const webrtc::VideoFrame& frame);
 private:
-    rtc::VideoSinkInterface<webrtc::VideoFrame>* const _sink;
+    webrtc::VideoSinkInterface<webrtc::VideoFrame>* const _sink;
     const std::shared_ptr<VideoFrameBufferPoolSource> _framesPool;
-    cricket::VideoAdapter _adapter;
-    rtc::VideoBroadcaster _broadcaster;
+    webrtc::VideoAdapter _adapter;
+    webrtc::VideoBroadcaster _broadcaster;
     std::atomic_bool _rotationApplied = false;
 };
 

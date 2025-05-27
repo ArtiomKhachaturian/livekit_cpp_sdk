@@ -100,7 +100,7 @@ bool IOSurfaceBuffer::supported(IOSurfaceRef buffer)
     return buffer && isSupportedFormat(IOSurfaceGetPixelFormat(buffer));
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
     create(IOSurfaceRef buffer, VideoFrameBufferPool framesPool,
            std::optional<VideoContentHint> contentHint,
            bool retain)
@@ -110,9 +110,9 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
         if (isSupportedFormat(format)) {
             if (kIOReturnSuccess == IOSurfaceLock(buffer, kIOSurfaceLockReadOnly, nullptr)) {
                 if (isNV12Format(format)) {
-                    auto nv12 = rtc::make_ref_counted<NV12Buffer>(IOSurfaceAutoRelease(buffer, retain),
-                                                                  std::move(framesPool),
-                                                                  std::move(contentHint));
+                    auto nv12 = webrtc::make_ref_counted<NV12Buffer>(IOSurfaceAutoRelease(buffer, retain),
+                                                                     std::move(framesPool),
+                                                                     std::move(contentHint));
                      if (!nv12->consistent()) {
                          return nv12->ToI420();
                      }
@@ -131,17 +131,17 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
                             break;
                     }
                     if (rgbFormat.has_value()) {
-                        return rtc::make_ref_counted<RGBBuffer>(IOSurfaceAutoRelease(buffer, retain),
-                                                                rgbFormat.value(),
-                                                                std::move(framesPool),
-                                                                std::move(contentHint));
+                        return webrtc::make_ref_counted<RGBBuffer>(IOSurfaceAutoRelease(buffer, retain),
+                                                                   rgbFormat.value(),
+                                                                   std::move(framesPool),
+                                                                   std::move(contentHint));
                     }
                 }
                 if (format == formatBGRA32()) {
-                    return rtc::make_ref_counted<RGBBuffer>(IOSurfaceAutoRelease(buffer, retain),
-                                                            VideoFrameType::BGRA32,
-                                                            std::move(framesPool),
-                                                            std::move(contentHint));
+                    return webrtc::make_ref_counted<RGBBuffer>(IOSurfaceAutoRelease(buffer, retain),
+                                                               VideoFrameType::BGRA32,
+                                                               std::move(framesPool),
+                                                               std::move(contentHint));
                 }
                 IOSurfaceUnlock(buffer, kIOSurfaceLockReadOnly, nullptr);
             }
@@ -150,7 +150,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
     return nullptr;
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
     createFromSampleBuffer(CMSampleBufferRef buffer,
                            VideoFrameBufferPool framesPool,
                            std::optional<VideoContentHint> contentHint)
@@ -173,7 +173,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> IOSurfaceBuffer::
                   std::move(contentHint), true);
 }
 
-IOSurfaceRef IOSurfaceBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer, bool retain)
+IOSurfaceRef IOSurfaceBuffer::pixelBuffer(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer, bool retain)
 {
     if (const auto accessor = dynamic_cast<const IOSBufferAccessor*>(videoPixelBuffer.get())) {
         return accessor->buffer(retain);

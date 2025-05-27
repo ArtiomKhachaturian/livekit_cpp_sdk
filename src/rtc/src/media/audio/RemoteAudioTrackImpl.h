@@ -24,7 +24,7 @@ class RemoteAudioTrackImpl : public RemoteTrackImpl<AudioTrackImpl<RemoteAudioTr
     using Base = RemoteTrackImpl<AudioTrackImpl<RemoteAudioTrack>>;
 public:
     RemoteAudioTrackImpl(const TrackInfo& info,
-                         const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                         const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                          std::shared_ptr<AudioDeviceImpl> audioDevice,
                          const std::weak_ptr<TrackManager>& trackManager);
     // impl. of RemoteAudioTrack

@@ -41,7 +41,7 @@ public:
                       const webrtc::StreamConfig& inputConfig,
                       const webrtc::StreamConfig& outputConfig,
                       float* const* dest) override;
-    bool GetLinearAecOutput(rtc::ArrayView<std::array<float, 160>> linearOutput) const override;
+    bool GetLinearAecOutput(webrtc::ArrayView<std::array<float, 160>> linearOutput) const override;
     void set_output_will_be_muted(bool muted) override;
     int set_stream_delay_ms(int delay) override;
     void set_stream_key_pressed(bool keyPressed) override;

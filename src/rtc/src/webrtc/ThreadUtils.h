@@ -22,7 +22,7 @@ namespace LiveKitCpp
 {
 
 inline void invokeInThread(webrtc::Thread* to,
-                           rtc::FunctionView<void()> handler) {
+                           webrtc::FunctionView<void()> handler) {
     if (to && !to->IsQuitting()) {
         if (to->IsCurrent()) {
             std::move(handler)();

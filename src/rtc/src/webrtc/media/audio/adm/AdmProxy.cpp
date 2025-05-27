@@ -66,7 +66,7 @@ public:
              std::string_view message,
              std::string_view category) final;
 private:
-    static std::optional<rtc::LoggingSeverity> map(Bricks::LoggingSeverity sev);
+    static std::optional<webrtc::LoggingSeverity> map(Bricks::LoggingSeverity sev);
 };
 
 } // namespace
@@ -76,7 +76,7 @@ namespace LiveKitCpp
 
 AdmProxy::AdmProxy(const std::shared_ptr<webrtc::Thread>& workingThread,
                    const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
-                   rtc::scoped_refptr<webrtc::AudioDeviceModule> impl)
+                   webrtc::scoped_refptr<webrtc::AudioDeviceModule> impl)
     : _workingThread(workingThread)
     , _transport(std::make_unique<AdmProxyTransport>())
     , _impl(std::move(impl))
@@ -106,7 +106,7 @@ AdmProxy::~AdmProxy()
     close();
 }
 
-rtc::scoped_refptr<AdmProxy> AdmProxy::
+webrtc::scoped_refptr<AdmProxy> AdmProxy::
     create(const std::shared_ptr<webrtc::Thread>& workingThread,
            const std::shared_ptr<webrtc::TaskQueueBase>& signalingQueue,
            webrtc::TaskQueueFactory* taskQueueFactory)
@@ -116,7 +116,7 @@ rtc::scoped_refptr<AdmProxy> AdmProxy::
             return defaultAdm(taskQueueFactory);
         });
         if (impl) {
-            return rtc::make_ref_counted<AdmProxy>(workingThread,
+            return webrtc::make_ref_counted<AdmProxy>(workingThread,
                                                    signalingQueue,
                                                    std::move(impl));
         }
@@ -1036,17 +1036,17 @@ void RtcLogger::log(Bricks::LoggingSeverity severity,
     }
 }
 
-std::optional<rtc::LoggingSeverity> RtcLogger::map(Bricks::LoggingSeverity sev)
+std::optional<webrtc::LoggingSeverity> RtcLogger::map(Bricks::LoggingSeverity sev)
 {
     switch (sev) {
         case Bricks::LoggingSeverity::Verbose:
-            return rtc::LS_VERBOSE;
+            return webrtc::LS_VERBOSE;
         case Bricks::LoggingSeverity::Info:
-            return rtc::LS_INFO;
+            return webrtc::LS_INFO;
         case Bricks::LoggingSeverity::Warning:
-            return rtc::LS_WARNING;
+            return webrtc::LS_WARNING;
         case Bricks::LoggingSeverity::Error:
-            return rtc::LS_ERROR;
+            return webrtc::LS_ERROR;
         default:
             break;
     }

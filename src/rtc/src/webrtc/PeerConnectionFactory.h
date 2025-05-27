@@ -89,7 +89,7 @@ public:
     webrtc::RtpCapabilities GetRtpSenderCapabilities(webrtc::MediaType kind) const final;
     webrtc::RtpCapabilities GetRtpReceiverCapabilities(webrtc::MediaType kind) const final;
     webrtc::scoped_refptr<webrtc::MediaStreamInterface> CreateLocalMediaStream(const std::string& streamId) final;
-    webrtc::scoped_refptr<webrtc::AudioSourceInterface> CreateAudioSource(const cricket::AudioOptions& options) final;
+    webrtc::scoped_refptr<webrtc::AudioSourceInterface> CreateAudioSource(const webrtc::AudioOptions& options) final;
     webrtc::scoped_refptr<webrtc::VideoTrackInterface> CreateVideoTrack(const std::string& label,
                                                                         webrtc::VideoTrackSourceInterface* source) final;
     webrtc::scoped_refptr<webrtc::VideoTrackInterface> CreateVideoTrack(webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source,

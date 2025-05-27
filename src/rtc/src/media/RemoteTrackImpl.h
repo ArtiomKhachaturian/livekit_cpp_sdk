@@ -52,7 +52,7 @@ public:
 protected:
     template <class TMediaDevice>
     RemoteTrackImpl(const TrackInfo& initialInfo,
-                    const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                    const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                     std::shared_ptr<TMediaDevice> mediaDevice,
                     const std::weak_ptr<TrackManager>& trackManager);
     const auto& info() const noexcept { return _info; }
@@ -62,14 +62,14 @@ private:
     void OnFirstPacketReceived(webrtc::MediaType media_type) final;
 private:
     Bricks::SafeObj<TrackInfo> _info;
-    const rtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;
+    const webrtc::scoped_refptr<webrtc::RtpReceiverInterface> _receiver;
     std::atomic_bool _firstPacketReceived = false;
 };
 
 template <class TBaseImpl>
 template <class TMediaDevice>
 inline RemoteTrackImpl<TBaseImpl>::RemoteTrackImpl(const TrackInfo& initialInfo,
-                                                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                                   const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                                    std::shared_ptr<TMediaDevice> mediaDevice,
                                                    const std::weak_ptr<TrackManager>& trackManager)
     : TBaseImpl(std::move(mediaDevice), trackManager)

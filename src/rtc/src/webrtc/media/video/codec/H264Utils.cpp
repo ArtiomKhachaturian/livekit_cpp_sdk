@@ -149,7 +149,7 @@ webrtc::VideoCodec H264Utils::map(const webrtc::VideoCodec& settings, webrtc::H2
 
 webrtc::H264PacketizationMode H264Utils::packetizationMode(const webrtc::SdpVideoFormat& format)
 {
-    const auto it = format.parameters.find(cricket::kH264FmtpPacketizationMode);
+    const auto it = format.parameters.find(webrtc::kH264FmtpPacketizationMode);
     if (it != format.parameters.end()) {
         return packetizationMode(it->second);
     }

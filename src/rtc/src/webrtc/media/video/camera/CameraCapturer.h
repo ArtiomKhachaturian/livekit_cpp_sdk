@@ -33,7 +33,7 @@ public:
     virtual void setObserver(CapturerObserver* /*observer*/ = nullptr) {}
     const auto& guid() const noexcept { return _deviceInfo._guid; }
     // impl. of webrtc::VideoCaptureModule
-    void RegisterCaptureDataCallback(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
+    void RegisterCaptureDataCallback(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
     void RegisterCaptureDataCallback(webrtc::RawVideoSinkInterface* rawSink) final;
     void DeRegisterCaptureDataCallback() final;
     int32_t SetCaptureRotation(webrtc::VideoRotation rotation) final;
@@ -54,7 +54,7 @@ protected:
     webrtc::VideoRotation captureRotation() const;
 private:
     const MediaDeviceInfo _deviceInfo;
-    Bricks::SafeObj<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink = nullptr;
+    Bricks::SafeObj<webrtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink = nullptr;
     Bricks::SafeObj<webrtc::RawVideoSinkInterface*> _rawSink = nullptr;
     // set if the frame should be rotated by the capture module
     std::atomic<webrtc::VideoRotation> _rotateFrame = webrtc::kVideoRotation_0;

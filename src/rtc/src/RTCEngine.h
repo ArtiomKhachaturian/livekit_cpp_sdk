@@ -84,7 +84,7 @@ public:
                          bool deleted,
                          bool generated,
                          const std::vector<std::string>& destinationIdentities = {}) const;
-    void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     std::string addTrackDevice(std::unique_ptr<AudioDevice> device, EncryptionType encryption);
     std::string addTrackDevice(std::unique_ptr<LocalVideoDevice> device, EncryptionType encryption);
     void removeTrackDevice(const std::string& deviceId);

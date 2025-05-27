@@ -28,16 +28,16 @@ class CoreVideoPixelBuffer
 {
 public:
     static bool supported(CVPixelBufferRef buffer);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+    static webrtc::scoped_refptr<webrtc::VideoFrameBuffer>
         create(CVPixelBufferRef buffer, VideoFrameBufferPool framesPool = {},
                std::optional<VideoContentHint> contentHint = std::nullopt,
                bool retain = true);
     static bool canCreateFromSampleBuffer(CMSampleBufferRef buffer);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer>
+    static webrtc::scoped_refptr<webrtc::VideoFrameBuffer>
         createFromSampleBuffer(CMSampleBufferRef buffer,
                                VideoFrameBufferPool framesPool = {},
                                std::optional<VideoContentHint> contentHint = std::nullopt);
-    static CVPixelBufferRef pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
+    static CVPixelBufferRef pixelBuffer(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
                                         bool retain = true);
 };
 

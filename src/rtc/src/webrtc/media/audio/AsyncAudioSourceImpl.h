@@ -29,7 +29,7 @@ public:
     virtual void removeAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer);
     virtual void addSink(webrtc::AudioTrackSinkInterface* /*sink*/) {}
     virtual void removeSink(webrtc::AudioTrackSinkInterface* /*sink*/) {}
-    virtual cricket::AudioOptions options() const { return {}; }
+    virtual webrtc::AudioOptions options() const { return {}; }
     // override of AsyncMediaSourceImpl
     void updateAfterEnableChanges(bool enabled) override;
 protected:

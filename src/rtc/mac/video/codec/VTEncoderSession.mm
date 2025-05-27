@@ -240,7 +240,7 @@ CompletionStatus VTEncoderSession::EncodePipeline::input(VTCompressionSessionRef
                                                          bool forceKeyFrame, VTEncodeInfoFlags* infoFlagsOut)
 {
     if (session && sourceFrame) {
-        CMTime presentationTimeStamp = CMTimeMake(sourceFrame.timestampUs() / rtc::kNumMicrosecsPerMillisec, 1000);
+        CMTime presentationTimeStamp = CMTimeMake(sourceFrame.timestampUs() / webrtc::kNumMicrosecsPerMillisec, 1000);
         CFDictionaryRefAutoRelease frameProperties;
         if (forceKeyFrame) {
             CFTypeRef keys[] = {kVTEncodeFrameOptionKey_ForceKeyFrame};

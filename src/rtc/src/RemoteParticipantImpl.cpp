@@ -62,7 +62,7 @@ struct DeviceType<webrtc::VideoTrackInterface>
 };
 
 template <class TMediaInterface>
-inline webrtc::scoped_refptr<TMediaInterface> mediaTrack(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
+inline webrtc::scoped_refptr<TMediaInterface> mediaTrack(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
     if (receiver) {
         if (const auto media = dynamic_cast<TMediaInterface*>(receiver->track().get())) {
             return webrtc::scoped_refptr<TMediaInterface>(media);
@@ -72,7 +72,7 @@ inline webrtc::scoped_refptr<TMediaInterface> mediaTrack(const rtc::scoped_refpt
 }
 
 template <class TTrack>
-inline auto makeDevice(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
+inline auto makeDevice(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
     using Media = typename MediaInterfaceType<TTrack>::MediaInterface;
     using Device = typename DeviceType<Media>::Device;
     if (auto track = mediaTrack<Media>(receiver)) {
@@ -131,7 +131,7 @@ std::optional<TrackType> RemoteParticipantImpl::trackType(const std::string& tra
 
 bool RemoteParticipantImpl::addAudio(const std::string& trackSid,
                                      const std::weak_ptr<TrackManager>& trackManager,
-                                     rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+                                     webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     if (!receiver && _receiversStorage) {
         receiver = _receiversStorage->take(trackSid);
@@ -144,7 +144,7 @@ bool RemoteParticipantImpl::addAudio(const std::string& trackSid,
 
 bool RemoteParticipantImpl::addVideo(const std::string& trackSid,
                                      const std::weak_ptr<TrackManager>& trackManager,
-                                     rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+                                     webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     if (!receiver && _receiversStorage) {
         receiver = _receiversStorage->take(trackSid);
@@ -441,7 +441,7 @@ TrackInfo* RemoteParticipantImpl::findBySid(const std::string& trackSid)
 template <class TTrack>
 bool RemoteParticipantImpl::addTrack(const std::string& trackSid,
                                      const std::weak_ptr<TrackManager>& trackManager,
-                                     rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                                     webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                                      Bricks::SafeObj<Tracks<TTrack>>& collection) const
 {
     if (!trackManager.expired() && !trackSid.empty()) {

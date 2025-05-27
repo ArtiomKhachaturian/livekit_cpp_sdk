@@ -92,7 +92,7 @@ const uint8_t* NV12VideoFrameBuffer::nv12DataUV(const uint8_t* buffer, int strid
     return buffer + (strideY * height);
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> NV12VideoFrameBuffer::
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> NV12VideoFrameBuffer::
     CropAndScale(int offsetX, int offsetY, int cropWidth,
                  int cropHeight, int scaledWidth, int scaledHeight)
 {
@@ -126,7 +126,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> NV12VideoFrameBuffer::
     return Base::CropAndScale(offsetX, offsetY, cropWidth, cropHeight, scaledWidth, scaledHeight);
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> NV12VideoFrameBuffer::convertToI420() const
 {
     if (auto i420 = createI420(width(), height())) {
         static thread_local webrtc::NV12ToI420Scaler scaler;

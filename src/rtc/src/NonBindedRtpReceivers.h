@@ -22,12 +22,12 @@ namespace LiveKitCpp
 class NonBindedRtpReceivers : public RtpReceiversStorage
 {
     // key is webrtc::RtpReceiverInterface::id/sid
-    using ReceiversMap = std::unordered_map<std::string, rtc::scoped_refptr<webrtc::RtpReceiverInterface>>;
+    using ReceiversMap = std::unordered_map<std::string, webrtc::scoped_refptr<webrtc::RtpReceiverInterface>>;
 public:
-    bool add(std::string trackSid, rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver);
+    bool add(std::string trackSid, webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver);
     void clear() { _receivers({}); }
     // impl. of RtpReceiversStorage
-    rtc::scoped_refptr<webrtc::RtpReceiverInterface> take(const std::string& trackSid) final;
+    webrtc::scoped_refptr<webrtc::RtpReceiverInterface> take(const std::string& trackSid) final;
 private:
     Bricks::SafeObj<ReceiversMap> _receivers;
 };

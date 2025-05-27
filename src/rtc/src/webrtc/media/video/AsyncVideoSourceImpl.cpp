@@ -21,18 +21,18 @@
 
 namespace  {
 
-inline bool operator == (const std::optional<rtc::VideoSinkWants::Aggregates>& a,
-                         const std::optional<rtc::VideoSinkWants::Aggregates>& b) {
+inline bool operator == (const std::optional<webrtc::VideoSinkWants::Aggregates>& a,
+                         const std::optional<webrtc::VideoSinkWants::Aggregates>& b) {
     return (!a && !b) || a.value() == b.value();
 }
 
-inline bool operator != (const rtc::VideoSinkWants::Aggregates& a,
-                         const rtc::VideoSinkWants::Aggregates& b) {
+inline bool operator != (const webrtc::VideoSinkWants::Aggregates& a,
+                         const webrtc::VideoSinkWants::Aggregates& b) {
     return a.any_active_without_requested_resolution != b.any_active_without_requested_resolution;
 }
 
-inline bool isDefaultWants(const rtc::VideoSinkWants& wants) {
-    static const rtc::VideoSinkWants defaultWants;
+inline bool isDefaultWants(const webrtc::VideoSinkWants& wants) {
+    static const webrtc::VideoSinkWants defaultWants;
     return defaultWants.rotation_applied == wants.rotation_applied &&
            defaultWants.black_frames == wants.black_frames &&
            defaultWants.max_pixel_count == wants.max_pixel_count &&
@@ -57,7 +57,7 @@ AsyncVideoSourceImpl::AsyncVideoSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> 
     , _contentHint(initialContentHint)
 {
 #ifdef WEBRTC_MAC
-    static_assert(64U == sizeof(rtc::VideoSinkWants), "check changes in rtc::VideoSinkWants structure");
+    static_assert(64U == sizeof(webrtc::VideoSinkWants), "check changes in rtc::VideoSinkWants structure");
 #elif defined(WEBRTC_WIN)
     // TODO: add assertion
 #endif
@@ -126,8 +126,8 @@ bool AsyncVideoSourceImpl::changeContentHint(VideoContentHint hint)
     return false;
 }
 
-bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                                           const rtc::VideoSinkWants& wants)
+bool AsyncVideoSourceImpl::addOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                                           const webrtc::VideoSinkWants& wants)
 {
     if (sink && active()) {
         LOCK_WRITE_SAFE_OBJ(_broadcasters);
@@ -159,7 +159,7 @@ bool AsyncVideoSourceImpl::addOrUpdateSink(rtc::VideoSinkInterface<webrtc::Video
     return false;
 }
 
-bool AsyncVideoSourceImpl::removeSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+bool AsyncVideoSourceImpl::removeSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (sink) {
         LOCK_WRITE_SAFE_OBJ(_broadcasters);

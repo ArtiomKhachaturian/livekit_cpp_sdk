@@ -39,9 +39,9 @@ public:
     void setSid(const std::string& sid) { _sid(sid); }
     void setIdentity(const std::string& identity) { _identity(identity); }
     void setListener(DataExchangeListener* listener = nullptr);
-    bool add(rtc::scoped_refptr<DataChannel> channel);
+    bool add(webrtc::scoped_refptr<DataChannel> channel);
     bool remove(const std::string& label);
-    bool remove(const rtc::scoped_refptr<DataChannel>& channel);
+    bool remove(const webrtc::scoped_refptr<DataChannel>& channel);
     void clear();
     bool sendUserPacket(std::string payload, bool reliable, std::string topic = {},
                         std::vector<std::string> destinationSids = {},

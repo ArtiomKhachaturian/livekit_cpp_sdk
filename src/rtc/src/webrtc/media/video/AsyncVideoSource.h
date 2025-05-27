@@ -40,13 +40,13 @@ public:
     bool GetStats(webrtc::VideoTrackSourceInterface::Stats* stats) final;
     bool SupportsEncodedOutput() const final { return false; }
     void GenerateKeyFrame() final {}
-    void AddEncodedSink(rtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>*) final {}
-    void RemoveEncodedSink(rtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>*) final {}
+    void AddEncodedSink(webrtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>*) final {}
+    void RemoveEncodedSink(webrtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>*) final {}
     void ProcessConstraints(const webrtc::VideoTrackSourceConstraints& constraints) final;
     // impl. of rtc::VideoSourceInterface<VideoFrame>
-    void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                         const rtc::VideoSinkWants& wants) final;
-    void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
+    void AddOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                         const webrtc::VideoSinkWants& wants) final;
+    void RemoveSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
 };
 	
 } // namespace LiveKitCpp

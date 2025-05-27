@@ -35,7 +35,7 @@ namespace LiveKitCpp
 
 LocalVideoTrackImpl::LocalVideoTrackImpl(std::shared_ptr<LocalVideoDeviceImpl> device,
                                          EncryptionType encryption,
-                                         rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
+                                         webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                                          const std::weak_ptr<TrackManager>& trackManager)
     : Base(videoLabel(device && device->screencast()), device, encryption, std::move(transceiver), trackManager)
 {

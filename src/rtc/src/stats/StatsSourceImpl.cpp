@@ -28,7 +28,7 @@ void StatsSourceImpl::removeListener(StatsListener* listener)
     _listeners.remove(listener);
 }
 
-void StatsSourceImpl::OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& rtcReport)
+void StatsSourceImpl::OnStatsDelivered(const webrtc::scoped_refptr<const webrtc::RTCStatsReport>& rtcReport)
 {
     if (rtcReport && _listeners && rtcReport->size()) {
         const StatsReport report(new StatsReportData{rtcReport});

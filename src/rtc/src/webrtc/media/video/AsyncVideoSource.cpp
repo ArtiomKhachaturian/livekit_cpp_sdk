@@ -105,8 +105,8 @@ void AsyncVideoSource::ProcessConstraints(const webrtc::VideoTrackSourceConstrai
     }
 }
 
-void AsyncVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                                       const rtc::VideoSinkWants& wants)
+void AsyncVideoSource::AddOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                                       const webrtc::VideoSinkWants& wants)
 {
     if (sink) {
         const auto impl = loadImpl();
@@ -116,7 +116,7 @@ void AsyncVideoSource::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFram
     }
 }
 
-void AsyncVideoSource::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+void AsyncVideoSource::RemoveSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (sink) {
         const auto impl = loadImpl();

@@ -217,7 +217,7 @@ bool RTCEngineImpl::sendChatMessage(std::string message,
     return _localDcs.sendChatMessage(std::move(message), deleted, generated, destinationIdentities);
 }
 
-void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void RTCEngineImpl::queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (callback) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -474,8 +474,8 @@ void RTCEngineImpl::createTransportManager(const JoinResponse& response,
     pcManager->startPing();
 }
 
-void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                               const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void RTCEngineImpl::queryStats(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                               const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (receiver && callback) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -484,8 +484,8 @@ void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInter
     }
 }
 
-void RTCEngineImpl::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
-                               const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void RTCEngineImpl::queryStats(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                               const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (sender && callback) {
         if (const auto pcManager = std::atomic_load(&_pcManager)) {
@@ -857,13 +857,13 @@ void RTCEngineImpl::onStateChange(webrtc::PeerConnectionInterface::PeerConnectio
     }
 }
 
-void RTCEngineImpl::onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+void RTCEngineImpl::onRemoteTrackAdded(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                                        std::string trackId, std::string participantSid)
 {
     _remoteParicipants->addMedia(weak_from_this(), receiver, std::move(trackId), std::move(participantSid));
 }
 
-void RTCEngineImpl::onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+void RTCEngineImpl::onRemotedTrackRemoved(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     _remoteParicipants->removeMedia(receiver);
 }
@@ -934,7 +934,7 @@ void RTCEngineImpl::onSubscriberAnswer(std::string type, std::string sdp)
 }
 
 void RTCEngineImpl::onIceCandidateGathered(SignalTarget target, std::string sdpMid,
-                                           int sdpMlineIndex, cricket::Candidate candidate)
+                                           int sdpMlineIndex, webrtc::Candidate candidate)
 {
     TrickleRequest request;
     request._candidate = RoomUtils::map(std::move(sdpMid), sdpMlineIndex, candidate);
@@ -952,12 +952,12 @@ void RTCEngineImpl::onIceCandidateGathered(SignalTarget target, std::string sdpM
     }
 }
 
-void RTCEngineImpl::onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> channel)
+void RTCEngineImpl::onLocalDataChannelCreated(webrtc::scoped_refptr<DataChannel> channel)
 {
     _localDcs.add(std::move(channel));
 }
 
-void RTCEngineImpl::onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> channel)
+void RTCEngineImpl::onRemoteDataChannelOpened(webrtc::scoped_refptr<DataChannel> channel)
 {
     _remoteDcs.add(std::move(channel));
 }

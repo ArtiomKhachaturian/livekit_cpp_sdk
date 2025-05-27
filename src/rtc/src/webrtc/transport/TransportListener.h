@@ -122,7 +122,7 @@ public:
      * @param channel The data channel that was created.
      */
     virtual void onLocalDataChannelCreated(SignalTarget /*target*/,
-                                           rtc::scoped_refptr<DataChannel> /*channel*/) {}
+                                           webrtc::scoped_refptr<DataChannel> /*channel*/) {}
 
     /**
      * @brief Called when creating a local data channel fails.
@@ -146,12 +146,12 @@ public:
     virtual void onLocalAudioTrackAdded(SignalTarget /*target*/,
                                         std::shared_ptr<AudioDeviceImpl> /*device*/,
                                         EncryptionType /*encryption*/,
-                                        rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+                                        webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
     
     virtual void onLocalVideoTrackAdded(SignalTarget /*target*/,
                                         std::shared_ptr<LocalVideoDeviceImpl> /*device*/,
                                         EncryptionType /*encryption*/,
-                                        rtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
+                                        webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> /*transceiver*/) {}
 
     /**
      * @brief Called when adding a local track fails.
@@ -223,7 +223,7 @@ public:
      * @param stream The media stream that was added.
      */
     virtual void onRemoteStreamAdded(SignalTarget /*target*/,
-                                     rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
+                                     webrtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
 
     /**
      * @brief Triggered when a remote peer closes a stream.
@@ -232,7 +232,7 @@ public:
      * @param stream The media stream that was removed.
      */
     virtual void onRemoteStreamRemoved(SignalTarget /*target*/,
-                                       rtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
+                                       webrtc::scoped_refptr<webrtc::MediaStreamInterface> /*stream*/) {}
     /**
      * @brief Triggered when a remote peer opens a data channel.
      *
@@ -240,7 +240,7 @@ public:
      * @param channel The data channel interface.
      */
     virtual void onRemoteDataChannelOpened(SignalTarget /*target*/,
-                                           rtc::scoped_refptr<DataChannel> /*channel*/) {}
+                                           webrtc::scoped_refptr<DataChannel> /*channel*/) {}
 
     /**
      * @brief Called any time the standards-compliant IceConnectionState changes.
@@ -302,7 +302,7 @@ public:
      * @param candidates The removed ICE candidates.
      */
     virtual void onIceCandidatesRemoved(SignalTarget /*target*/,
-                                        const std::vector<cricket::Candidate>& /*candidates*/) {}
+                                        const std::vector<webrtc::Candidate>& /*candidates*/) {}
 
     /**
      * @brief Called when the ICE connection receiving status changes.
@@ -320,7 +320,7 @@ public:
      * @param event The candidate pair change event.
      */
     virtual void onIceSelectedCandidatePairChanged(SignalTarget /*target*/,
-                                                   const cricket::CandidatePairChangeEvent& /*event*/) {}
+                                                   const webrtc::CandidatePairChangeEvent& /*event*/) {}
 
     /**
      * @brief Called when a receiver and its track are created.
@@ -332,8 +332,8 @@ public:
      * @param streams The associated media streams.
      */
     virtual void onRemoteTrackAdded(SignalTarget /*target*/,
-                                    rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
-                                    const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& /*streams*/) {}
+                                    webrtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
+                                    const std::vector<webrtc::scoped_refptr<webrtc::MediaStreamInterface>>& /*streams*/) {}
 
     /**
      * @brief Called when signaling indicates that media will no longer be received on a track.
@@ -346,7 +346,7 @@ public:
      * @param receiver The RTP receiver interface.
      */
     virtual void onRemotedTrackRemoved(SignalTarget /*target*/,
-                                       rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
+                                       webrtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
 
     /**
      * @brief Called when an interesting usage is detected by WebRTC.

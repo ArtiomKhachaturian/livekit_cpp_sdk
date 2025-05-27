@@ -29,7 +29,7 @@ public:
     void removeListener(StatsListener* listener);
     void clearListeners() { _listeners.clear(); }
     // impl. of webrtc::RTCStatsCollectorCallback
-    void OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& rtcReport) final;
+    void OnStatsDelivered(const webrtc::scoped_refptr<const webrtc::RTCStatsReport>& rtcReport) final;
 private:
     Bricks::Listeners<StatsListener*> _listeners;
 };

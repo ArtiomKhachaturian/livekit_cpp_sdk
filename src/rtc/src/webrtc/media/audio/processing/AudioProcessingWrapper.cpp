@@ -101,7 +101,7 @@ int AudioProcessingWrapper::ProcessStream(const float* const* src,
     return kNullPointerError;
 }
 
-bool AudioProcessingWrapper::GetLinearAecOutput(rtc::ArrayView<std::array<float, 160>> linearOutput) const
+bool AudioProcessingWrapper::GetLinearAecOutput(webrtc::ArrayView<std::array<float, 160>> linearOutput) const
 {
     return _impl && _impl->GetLinearAecOutput(std::move(linearOutput));
 }

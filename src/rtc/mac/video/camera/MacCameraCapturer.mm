@@ -59,7 +59,7 @@ webrtc::scoped_refptr<webrtc::VideoFrameBuffer> getBuffer(RTCVideoFrame* frame,
 - (instancetype) initWithFrameBufferPool:(LiveKitCpp::VideoFrameBufferPool) framesPool NS_DESIGNATED_INITIALIZER;
 - (void) reportAboutError:(NSError* _Nullable) error;
 - (void) reportAboutErrorMessage:(NSString* _Nonnull) error;
-- (void) setSink:(rtc::VideoSinkInterface<webrtc::VideoFrame>*) sink;
+- (void) setSink:(webrtc::VideoSinkInterface<webrtc::VideoFrame>*) sink;
 - (void) setObserver:(LiveKitCpp::CapturerObserver*) sink;
 - (BOOL) changeState:(LiveKitCpp::CapturerState) state;
 @property (nonatomic) LiveKitCpp::CapturerState state;
@@ -80,7 +80,7 @@ public:
     void updateQualityToContentHint();
     bool startCapture(AVCaptureDeviceFormat* format, NSInteger fps);
     void stopCapture();
-    void setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
+    void setSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink);
     void setObserver(CapturerObserver* observer);
     CapturerState state() const { return _delegate.state; }
     bool changeState(CapturerState state) { return [_delegate changeState:state]; }
@@ -108,7 +108,7 @@ MacCameraCapturer::~MacCameraCapturer()
     _impl->setObserver(nullptr);
 }
 
-rtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::
+webrtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::
     create(const MediaDeviceInfo& deviceInfo, VideoFrameBufferPool framesPool)
 {
     if (!deviceInfo._guid.empty()) {
@@ -117,7 +117,7 @@ rtc::scoped_refptr<MacCameraCapturer> MacCameraCapturer::
             AVCaptureDevice* device = deviceWithUniqueIDUTF8(guid);
             if (device) {
                 auto impl = std::make_unique<Impl>(device, std::move(framesPool));
-                return rtc::make_ref_counted<MacCameraCapturer>(deviceInfo, std::move(impl));
+                return webrtc::make_ref_counted<MacCameraCapturer>(deviceInfo, std::move(impl));
             }
         }
     }
@@ -440,7 +440,7 @@ void MacCameraCapturer::Impl::stopCapture()
     }
 }
 
-void MacCameraCapturer::Impl::setSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+void MacCameraCapturer::Impl::setSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     [_delegate setSink:sink];
 }
@@ -460,7 +460,7 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
 } // namespace LiveKitCpp
 
 @implementation CapturerDelegate {
-    Bricks::Listener<rtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink;
+    Bricks::Listener<webrtc::VideoSinkInterface<webrtc::VideoFrame>*> _sink;
     Bricks::Listener<LiveKitCpp::CapturerObserver*> _observer;
     Bricks::SafeObj<LiveKitCpp::CapturerState> _state;
     LiveKitCpp::VideoFrameBufferPool _framesPool;
@@ -512,7 +512,7 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
     return NO;
 }
 
-- (void) setSink:(rtc::VideoSinkInterface<webrtc::VideoFrame>*) sink
+- (void) setSink:(webrtc::VideoSinkInterface<webrtc::VideoFrame>*) sink
 {
     _sink = sink;
 }
@@ -543,15 +543,15 @@ void MacCameraCapturer::Impl::reportAboutError(const std::string& error)
         if (frame) {
             if (const auto buffer = getBuffer(frame, _framesPool)) {
                 const auto rotation = webrtc::VideoRotation(frame.rotation);
-                const auto timeStampMicro = frame.timeStampNs / rtc::kNumNanosecsPerMicrosec;
+                const auto timeStampMicro = frame.timeStampNs / webrtc::kNumNanosecsPerMicrosec;
                 if (auto rtcFrame = LiveKitCpp::createVideoFrame(buffer, rotation, timeStampMicro)) {
                     rtcFrame->set_rtp_timestamp(frame.timeStamp);
-                    _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnFrame, rtcFrame.value());
+                    _sink.invoke(&webrtc::VideoSinkInterface<webrtc::VideoFrame>::OnFrame, rtcFrame.value());
                     return;
                 }
             }
         }
-        _sink.invoke(&rtc::VideoSinkInterface<webrtc::VideoFrame>::OnDiscardedFrame);
+        _sink.invoke(&webrtc::VideoSinkInterface<webrtc::VideoFrame>::OnDiscardedFrame);
     }
 }
 

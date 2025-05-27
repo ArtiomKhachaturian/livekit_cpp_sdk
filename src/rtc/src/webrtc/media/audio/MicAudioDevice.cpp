@@ -21,9 +21,9 @@
 namespace
 {
 
-inline cricket::AudioOptions toCricketOptions(const LiveKitCpp::AudioRecordingOptions& options)
+inline webrtc::AudioOptions toCricketOptions(const LiveKitCpp::AudioRecordingOptions& options)
 {
-    cricket::AudioOptions audioOptions;
+    webrtc::AudioOptions audioOptions;
     audioOptions.echo_cancellation = options._echoCancellation;
     audioOptions.auto_gain_control = options._autoGainControl;
     audioOptions.noise_suppression = options._noiseSuppression;

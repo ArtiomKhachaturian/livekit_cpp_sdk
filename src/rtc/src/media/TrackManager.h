@@ -41,10 +41,10 @@ public:
     virtual void notifyAboutMuteChanges(const std::string& trackSid, bool muted) = 0;
     virtual void notifyAboutSetRtpParametersFailure(const std::string& trackSid, std::string_view details = {}) = 0;
     virtual std::optional<bool> stereoRecording() const = 0;
-    virtual void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                            const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;
-    virtual void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
-                            const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;
+    virtual void queryStats(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                            const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;
+    virtual void queryStats(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                            const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const = 0;
 protected:
     virtual ~TrackManager() = default;
 };

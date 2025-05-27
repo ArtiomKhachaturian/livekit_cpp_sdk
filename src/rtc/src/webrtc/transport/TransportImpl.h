@@ -45,16 +45,16 @@ public:
     }
     void close();
     void logWebRTCError(const webrtc::RTCError& error, std::string_view prefix = {}) const;
-    void removeTrackBySender(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
+    void removeTrackBySender(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender);
     webrtc::PeerConnectionInterface::PeerConnectionState state() const noexcept;
     webrtc::PeerConnectionInterface::IceConnectionState iceConnectionState() const noexcept;
     webrtc::PeerConnectionInterface::SignalingState signalingState() const noexcept;
     webrtc::PeerConnectionInterface::IceGatheringState iceGatheringState() const noexcept;
     // impl. of webrtc::PeerConnectionObserver
     void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState newState) final;
-    void OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
-    void OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
-    void OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
+    void OnAddStream(webrtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
+    void OnRemoveStream(webrtc::scoped_refptr<webrtc::MediaStreamInterface> stream) final;
+    void OnDataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> channel) final;
     void OnNegotiationNeededEvent(uint32_t eventId) final;
     void OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState) final;
     void OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState newState) final;
@@ -62,13 +62,13 @@ public:
     void OnIceCandidate(const webrtc::IceCandidateInterface* candidate) final;
     void OnIceCandidateError(const std::string& address, int port, const std::string& url,
                              int errorCode, const std::string& errorText) final;
-    void OnIceCandidatesRemoved(const std::vector<cricket::Candidate>& candidates) final;
+    void OnIceCandidatesRemoved(const std::vector<webrtc::Candidate>& candidates) final;
     void OnIceConnectionReceivingChange(bool receiving) final;
-    void OnIceSelectedCandidatePairChanged(const cricket::CandidatePairChangeEvent& event) final;
-    void OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                    const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) final;
-    //void OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
-    void OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
+    void OnIceSelectedCandidatePairChanged(const webrtc::CandidatePairChangeEvent& event) final;
+    void OnAddTrack(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                    const std::vector<webrtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) final;
+    //void OnTrack(webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) final;
+    void OnRemoveTrack(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     void OnInterestingUsage(int usagePattern) final;
 protected:
     // overrides of Bricks::LoggableS

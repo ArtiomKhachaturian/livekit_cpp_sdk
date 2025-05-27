@@ -39,7 +39,7 @@ public:
     void UnregisterAudioObserver(webrtc::AudioSourceInterface::AudioObserver* observer) final;
     void AddSink(webrtc::AudioTrackSinkInterface*  sink) final;
     void RemoveSink(webrtc::AudioTrackSinkInterface* sink) final;
-    const cricket::AudioOptions options() const final;
+    const webrtc::AudioOptions options() const final;
 };
 
 template <class TAsyncImpl>
@@ -117,7 +117,7 @@ inline void AsyncAudioSource<TAsyncImpl>::RemoveSink(webrtc::AudioTrackSinkInter
 }
 
 template <class TAsyncImpl>
-inline const cricket::AudioOptions AsyncAudioSource<TAsyncImpl>::options() const
+inline const webrtc::AudioOptions AsyncAudioSource<TAsyncImpl>::options() const
 {
     if (const auto impl = Base::loadImpl()) {
         return impl->options();

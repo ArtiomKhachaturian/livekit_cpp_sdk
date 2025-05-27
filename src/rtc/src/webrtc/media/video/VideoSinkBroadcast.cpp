@@ -16,10 +16,10 @@
 
 namespace {
 
-inline rtc::scoped_refptr<const webrtc::I420BufferInterface> toI420(const webrtc::VideoFrame& frame) {
+inline webrtc::scoped_refptr<const webrtc::I420BufferInterface> toI420(const webrtc::VideoFrame& frame) {
     if (const auto buffer = frame.video_frame_buffer()) {
         if (webrtc::VideoFrameBuffer::Type::kI420 == buffer->type()) {
-            return rtc::scoped_refptr<const webrtc::I420BufferInterface>(buffer->GetI420());
+            return webrtc::scoped_refptr<const webrtc::I420BufferInterface>(buffer->GetI420());
         }
         return buffer->ToI420();
     }
@@ -31,8 +31,8 @@ inline rtc::scoped_refptr<const webrtc::I420BufferInterface> toI420(const webrtc
 namespace LiveKitCpp
 {
 
-VideoSinkBroadcast::VideoSinkBroadcast(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                                       const rtc::VideoSinkWants& wants)
+VideoSinkBroadcast::VideoSinkBroadcast(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                                       const webrtc::VideoSinkWants& wants)
     : _sink(sink)
     , _framesPool(VideoFrameBufferPoolSource::create())
     , _adapter(2)
@@ -41,7 +41,7 @@ VideoSinkBroadcast::VideoSinkBroadcast(rtc::VideoSinkInterface<webrtc::VideoFram
     updateSinkWants(wants);
 }
 
-void VideoSinkBroadcast::updateSinkWants(const rtc::VideoSinkWants& wants)
+void VideoSinkBroadcast::updateSinkWants(const webrtc::VideoSinkWants& wants)
 {
     _broadcaster.AddOrUpdateSink(_sink, wants);
     const auto mixedWants = _broadcaster.wants();
@@ -94,7 +94,7 @@ bool VideoSinkBroadcast::adaptFrame(int width, int height, int64_t timeUs,
                                    int& cropX, int& cropY)
 {
     if (!_adapter.AdaptFrameResolution(width, height,
-                                       timeUs * rtc::kNumNanosecsPerMicrosec,
+                                       timeUs * webrtc::kNumNanosecsPerMicrosec,
                                        &cropWidth, &cropHeight,
                                        &outWidth, &outHeight)) {
         _broadcaster.OnDiscardedFrame();

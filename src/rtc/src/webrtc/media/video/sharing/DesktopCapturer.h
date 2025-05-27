@@ -86,7 +86,7 @@ protected:
     void notifyAboutError(std::string details = {}, bool fatal = true) const;
     void discardFrame();
     void deliverCaptured(const webrtc::VideoFrame& frame);
-    void deliverCaptured(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
+    void deliverCaptured(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                          int64_t timeStampMicro = 0LL,
                          webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                          const std::optional<webrtc::ColorSpace>& colorSpace = {});

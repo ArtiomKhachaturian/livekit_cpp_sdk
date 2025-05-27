@@ -20,24 +20,24 @@
 namespace LiveKitCpp
 {
 
-class WebRtcLogSink : public Bricks::LoggableS<rtc::LogSink>
+class WebRtcLogSink : public Bricks::LoggableS<webrtc::LogSink>
 {
 public:
     WebRtcLogSink(const std::shared_ptr<Bricks::Logger>& logger = {});
     ~WebRtcLogSink() override;
 private:
-    // impl. of rtc::LogSink
+    // impl. of webrtc::LogSink
     void OnLogMessage(const std::string& message,
-                      rtc::LoggingSeverity severity)  final;
+                      webrtc::LoggingSeverity severity)  final;
     void OnLogMessage(const std::string& message) final;
     void OnLogMessage(absl::string_view message,
-                      rtc::LoggingSeverity severity) final;
+                      webrtc::LoggingSeverity severity) final;
     void OnLogMessage(absl::string_view message) final;
 private:
     static inline const std::string_view _logCategory = "WebRTC";
     template <class TString = std::string_view>
     std::optional<Bricks::LoggingSeverity>
-        allowToLog(const TString& string, rtc::LoggingSeverity severity) const;
+        allowToLog(const TString& string, webrtc::LoggingSeverity severity) const;
 };
 
 } // namespace LiveKitCpp

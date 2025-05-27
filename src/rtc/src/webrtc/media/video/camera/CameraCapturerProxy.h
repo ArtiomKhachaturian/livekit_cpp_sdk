@@ -28,27 +28,27 @@ class CameraCapturer;
 class CapturerProxySink;
 
 class CameraCapturerProxy : private CapturerObserver,
-                            private rtc::VideoSinkInterface<webrtc::VideoFrame>
+                            private webrtc::VideoSinkInterface<webrtc::VideoFrame>
 {
 public:
     ~CameraCapturerProxy() override;
-    static std::shared_ptr<CameraCapturerProxy> create(rtc::scoped_refptr<CameraCapturer> impl);
+    static std::shared_ptr<CameraCapturerProxy> create(webrtc::scoped_refptr<CameraCapturer> impl);
     bool started() const;
     bool captureCapability(webrtc::VideoCaptureCapability& capability) const;
     int32_t startCapture(const webrtc::VideoCaptureCapability& capability, CapturerProxySink* sink);
     int32_t stopCapture(CapturerProxySink* sink);
     const char* currentDeviceName() const;
 protected:
-    CameraCapturerProxy(rtc::scoped_refptr<CameraCapturer> impl);
+    CameraCapturerProxy(webrtc::scoped_refptr<CameraCapturer> impl);
 private:
     // impl. of CameraObserver
     void onStateChanged(CapturerState state) final;
-    // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>
+    // impl. of webrtc::VideoSinkInterface<webrtc::VideoFrame>
     void OnFrame(const webrtc::VideoFrame& frame) final;
     void OnDiscardedFrame() final;
     void OnConstraintsChanged(const webrtc::VideoTrackSourceConstraints& constraints) final;
 private:
-    const rtc::scoped_refptr<CameraCapturer> _impl;
+    const webrtc::scoped_refptr<CameraCapturer> _impl;
     Bricks::Listeners<CapturerProxySink*> _sinks;
     Bricks::SafeOptional<webrtc::VideoCaptureCapability> _activeCapability;
 };

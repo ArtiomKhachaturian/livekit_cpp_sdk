@@ -33,7 +33,7 @@ namespace LiveKitCpp
 class DataChannelsStorage::Wrapper : public Bricks::LoggableS<DataChannelListener>
 {
 public:
-    Wrapper(rtc::scoped_refptr<DataChannel> channel,
+    Wrapper(webrtc::scoped_refptr<DataChannel> channel,
             ResponsesListener* listener,
             const std::shared_ptr<Bricks::Logger>& logger,
             const std::string& logCategory);
@@ -60,7 +60,7 @@ private:
     DataPacket createDataPacket(std::string participantIdentity, TValue value,
                                 std::vector<std::string> destinationIdentities = {}) const;
 private:
-    const rtc::scoped_refptr<DataChannel> _channel;
+    const webrtc::scoped_refptr<DataChannel> _channel;
     const std::string _logCategory;
     SignalClient _client;
 };
@@ -82,7 +82,7 @@ void DataChannelsStorage::setListener(DataExchangeListener* listener)
     _listener = listener;
 }
 
-bool DataChannelsStorage::add(rtc::scoped_refptr<DataChannel> channel)
+bool DataChannelsStorage::add(webrtc::scoped_refptr<DataChannel> channel)
 {
     if (channel) {
         const auto label = channel->label();
@@ -141,7 +141,7 @@ bool DataChannelsStorage::remove(const std::string& label)
     return removed;
 }
 
-bool DataChannelsStorage::remove(const rtc::scoped_refptr<DataChannel>& channel)
+bool DataChannelsStorage::remove(const webrtc::scoped_refptr<DataChannel>& channel)
 {
     return channel && remove(channel->label());
 }
@@ -199,7 +199,7 @@ bool DataChannelsStorage::sendChatMessage(std::string message, bool deleted, boo
     if (const auto dc = getChannelForSend(true)) {
         ChatMessage chatMessage;
         chatMessage._message = std::move(message);
-        chatMessage._timestamp = rtc::TimeMillis();
+        chatMessage._timestamp = webrtc::TimeMillis();
         chatMessage._id = makeUuid();
         chatMessage._deleted = deleted;
         chatMessage._generated = generated;
@@ -285,7 +285,7 @@ void DataChannelsStorage::onResponseParseError(std::string details)
     _listener.invoke(&DataExchangeListener::onError, std::move(details));
 }
 
-DataChannelsStorage::Wrapper::Wrapper(rtc::scoped_refptr<DataChannel> channel,
+DataChannelsStorage::Wrapper::Wrapper(webrtc::scoped_refptr<DataChannel> channel,
                                       ResponsesListener* listener,
                                       const std::shared_ptr<Bricks::Logger>& logger,
                                       const std::string& logCategory)

@@ -28,18 +28,18 @@ public:
     int stride(size_t planeIndex) const override;
     VideoFrameType nativeType() const final { return _rgbFormat; }
     // overrides of webrtc::VideoFrameBuffer
-    rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
-                                                              int offsetY,
-                                                              int cropWidth,
-                                                              int cropHeight,
-                                                              int scaledWidth,
-                                                              int scaledHeight) override;
+    webrtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
+                                                                 int offsetY,
+                                                                 int cropWidth,
+                                                                 int cropHeight,
+                                                                 int scaledWidth,
+                                                                 int scaledHeight) override;
 protected:
     RgbGenericVideoFrameBuffer(VideoFrameType rgbFormat, VideoFrameBufferPool framesPool = {});
-    virtual rtc::scoped_refptr<RgbGenericVideoFrameBuffer> createRGB(int width, int height);
+    virtual webrtc::scoped_refptr<RgbGenericVideoFrameBuffer> createRGB(int width, int height);
 private:
     // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 private:
     const VideoFrameType _rgbFormat;
 };

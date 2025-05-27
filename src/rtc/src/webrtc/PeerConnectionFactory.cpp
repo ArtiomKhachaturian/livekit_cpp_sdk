@@ -404,7 +404,7 @@ webrtc::scoped_refptr<webrtc::MediaStreamInterface> PeerConnectionFactory::
 }
 
 webrtc::scoped_refptr<webrtc::AudioSourceInterface> PeerConnectionFactory::
-    CreateAudioSource(const cricket::AudioOptions& options)
+    CreateAudioSource(const webrtc::AudioOptions& options)
 {
     return _innerImpl->CreateAudioSource(options);
 }

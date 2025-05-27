@@ -55,7 +55,7 @@ void SdpPatch::setMediaBandwidth(int bps, webrtc::MediaType kind)
         if (bps > 0) {
             description->set_bandwidth(bps);
         } else {
-            description->set_bandwidth(cricket::kAutoBandwidth);
+            description->set_bandwidth(webrtc::kAutoBandwidth);
         }
     }
 }
@@ -71,7 +71,7 @@ void SdpPatch::moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, s
             }
         }
         if (!payloads.empty()) {
-            std::vector<cricket::Codec> input(desc->codecs()), output;
+            std::vector<webrtc::Codec> input(desc->codecs()), output;
             output.reserve(input.size());
             for (int payload : payloads) {
                 auto it = std::find_if(input.begin(), input.end(), [payload](const auto& codec) {
@@ -116,12 +116,12 @@ std::vector<webrtc::MediaContentDescription*> SdpPatch::descriptions(webrtc::Med
     return descriptions;
 }
 
-bool SdpPatch::isAssociatedCodec(int payload, const cricket::Codec& codec)
+bool SdpPatch::isAssociatedCodec(int payload, const webrtc::Codec& codec)
 {
-    if (cricket::Codec::ResiliencyType::kNone != codec.GetResiliencyType()) {
+    if (webrtc::Codec::ResiliencyType::kNone != codec.GetResiliencyType()) {
         int associatedPayloadType = 0;
-        if (codec.GetParam(cricket::kCodecParamAssociatedPayloadType, &associatedPayloadType) &&
-            cricket::IsValidRtpPayloadType(associatedPayloadType)) {
+        if (codec.GetParam(webrtc::kCodecParamAssociatedPayloadType, &associatedPayloadType) &&
+            webrtc::IsValidRtpPayloadType(associatedPayloadType)) {
                 return payload == associatedPayloadType;
         }
     }

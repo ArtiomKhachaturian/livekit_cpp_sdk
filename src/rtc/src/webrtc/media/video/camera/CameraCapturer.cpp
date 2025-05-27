@@ -26,7 +26,7 @@ CameraCapturer::~CameraCapturer()
     DeRegisterCaptureDataCallback();
 }
 
-void CameraCapturer::RegisterCaptureDataCallback(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+void CameraCapturer::RegisterCaptureDataCallback(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     _sink(sink);
 }

@@ -41,9 +41,9 @@ public:
     // impl. of webrtc::VideoTrackInterface
     webrtc::VideoTrackInterface::ContentHint content_hint() const final;
     void set_content_hint(webrtc::VideoTrackInterface::ContentHint hint) final;
-    void AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                         const rtc::VideoSinkWants& wants) final;
-    void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
+    void AddOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                         const webrtc::VideoSinkWants& wants) final;
+    void RemoveSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink) final;
     webrtc::VideoTrackSourceInterface* GetSource() const final;
     // impl. of MediaStreamTrackInterface
     std::string kind() const final { return webrtc::VideoTrackInterface::kVideoKind; }

@@ -32,20 +32,20 @@ public:
                                webrtc::PeerConnectionInterface::PeerConnectionState /*publisherState*/,
                                webrtc::PeerConnectionInterface::PeerConnectionState /*subscriberState*/) {}
     virtual void onNegotiationNeeded() {}
-    virtual void onLocalDataChannelCreated(rtc::scoped_refptr<DataChannel> /*channel*/) {}
-    virtual void onRemoteDataChannelOpened(rtc::scoped_refptr<DataChannel> /*channel*/) {}
+    virtual void onLocalDataChannelCreated(webrtc::scoped_refptr<DataChannel> /*channel*/) {}
+    virtual void onRemoteDataChannelOpened(webrtc::scoped_refptr<DataChannel> /*channel*/) {}
     virtual void onIceCandidateGathered(SignalTarget /*target*/, std::string /*sdpMid*/,
-                                        int /*sdpMlineIndex*/, cricket::Candidate /*candidate*/) {}
+                                        int /*sdpMlineIndex*/, webrtc::Candidate /*candidate*/) {}
     virtual void onLocalAudioTrackAdded(const std::shared_ptr<LocalAudioTrackImpl>& /*track*/) {}
     virtual void onLocalVideoTrackAdded(const std::shared_ptr<LocalVideoTrackImpl>& /*track*/) {}
     virtual void onLocalTrackAddFailure(std::string /*id*/,
                                         webrtc::MediaType /*type*/,
                                         webrtc::RTCError /*error*/) {}
     virtual void onLocalTrackRemoved(std::string /*id*/, webrtc::MediaType /*type*/) {}
-    virtual void onRemoteTrackAdded(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
+    virtual void onRemoteTrackAdded(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/,
                                     std::string /*trackId*/,
                                     std::string /*participantSid*/ = {}) {}
-    virtual void onRemotedTrackRemoved(rtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
+    virtual void onRemotedTrackRemoved(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> /*receiver*/) {}
     virtual void onPublisherOffer(std::string /*type*/, std::string /*sdp*/) {}
     virtual void onSubscriberAnswer(std::string /*type*/, std::string /*sdp*/) {}
 protected:

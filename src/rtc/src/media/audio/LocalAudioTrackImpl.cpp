@@ -27,7 +27,7 @@ namespace LiveKitCpp
 
 LocalAudioTrackImpl::LocalAudioTrackImpl(std::shared_ptr<AudioDeviceImpl> audioDevice,
                                          EncryptionType encryption,
-                                         rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
+                                         webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                                          const std::weak_ptr<TrackManager>& trackManager,
                                          bool disableRed,
                                          bool microphone)

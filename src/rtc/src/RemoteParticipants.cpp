@@ -30,7 +30,7 @@ inline bool compareParticipantInfo(const ParticipantInfo& l, const ParticipantIn
 inline bool addToParticipant(const std::shared_ptr<RemoteParticipantImpl>& participant,
                              const std::string& trackSid,
                              const std::weak_ptr<TrackManager>& trackManager,
-                             const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
+                             const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) {
     if (participant && receiver) {
         switch (receiver->media_type()) {
             case webrtc::MediaType::AUDIO:
@@ -134,7 +134,7 @@ void RemoteParticipants::updateInfo(const std::weak_ptr<TrackManager>& trackMana
 }
 
 bool RemoteParticipants::addMedia(const std::weak_ptr<TrackManager>& trackManager,
-                                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                  const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                                   std::string trackSid, std::string participantSid)
 {
     if (receiver && !trackSid.empty()) {
@@ -157,7 +157,7 @@ bool RemoteParticipants::addMedia(const std::weak_ptr<TrackManager>& trackManage
     return false;
 }
 
-bool RemoteParticipants::removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
+bool RemoteParticipants::removeMedia(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver)
 {
     if (receiver) {
         const auto sid = receiver->id();

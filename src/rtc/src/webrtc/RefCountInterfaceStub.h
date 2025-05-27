@@ -23,7 +23,7 @@ class RefCountInterfaceStub : public TRefCountInterface
 {
     static_assert(std::is_base_of<webrtc::RefCountInterface, TRefCountInterface>::value);
 public:
-    // impl. of rtc::RefCountInterface
+    // impl. of webrtc::RefCountInterface
     void AddRef() const final {}
     webrtc::RefCountReleaseStatus Release() const final { return webrtc::RefCountReleaseStatus::kOtherRefsRemained; }
 protected:

@@ -35,7 +35,7 @@ std::optional<webrtc::WindowId> windowIdFromString(const std::string& str);
 std::optional<webrtc::ScreenId> screenIdFromString(const std::string& str);
 #ifdef WEBRTC_WIN
 // unfortunately standard webrtc::IsWgcSupported doesn't work properly 
-// for applications without manifest, because rtc::rtc_win::GetVersion() returns incorrect OS version
+// for applications without manifest, because webrtc::rtc_win::GetVersion() returns incorrect OS version
 bool isWgcSupported(bool window);
 #endif
 	

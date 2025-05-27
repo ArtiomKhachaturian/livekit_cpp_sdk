@@ -103,7 +103,7 @@ bool CoreVideoPixelBuffer::supported(CVPixelBufferRef buffer)
     return buffer && isSupportedFormat(CVPixelBufferAutoRelease::pixelFormat(buffer));
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
     create(CVPixelBufferRef buffer, VideoFrameBufferPool framesPool,
            std::optional<VideoContentHint> contentHint,
            bool retain)
@@ -114,9 +114,9 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
             CVPixelBufferAutoRelease lockedBuffer(buffer, retain);
             if (lockedBuffer.lock()) {
                 if (isNV12Format(format)) {
-                    auto nv12 = rtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer),
-                                                                  std::move(framesPool),
-                                                                  std::move(contentHint));
+                    auto nv12 = webrtc::make_ref_counted<NV12Buffer>(std::move(lockedBuffer),
+                                                                     std::move(framesPool),
+                                                                     std::move(contentHint));
                     if (!nv12->consistent()) {
                         return nv12->ToI420();
                     }
@@ -144,10 +144,10 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
                             break;
                     }
                     if (rgbFormat.has_value()) {
-                        return rtc::make_ref_counted<RGBBuffer>(std::move(lockedBuffer),
-                                                                rgbFormat.value(),
-                                                                std::move(framesPool),
-                                                                std::move(contentHint));
+                        return webrtc::make_ref_counted<RGBBuffer>(std::move(lockedBuffer),
+                                                                   rgbFormat.value(),
+                                                                   std::move(framesPool),
+                                                                   std::move(contentHint));
                     }
                 }
                 lockedBuffer.unlock();
@@ -162,7 +162,7 @@ bool CoreVideoPixelBuffer::canCreateFromSampleBuffer(CMSampleBufferRef buffer)
     return CVPixelBufferAutoRelease::hasImageBuffer(buffer);
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
     createFromSampleBuffer(CMSampleBufferRef buffer,
                            VideoFrameBufferPool framesPool,
                            std::optional<VideoContentHint> contentHint)
@@ -171,7 +171,7 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> CoreVideoPixelBuffer::
                   std::move(framesPool), std::move(contentHint), true);
 }
 
-CVPixelBufferRef CoreVideoPixelBuffer::pixelBuffer(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
+CVPixelBufferRef CoreVideoPixelBuffer::pixelBuffer(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& videoPixelBuffer,
                                                    bool retain)
 {
     if (const auto accessor = dynamic_cast<const CVBufferAccessor*>(videoPixelBuffer.get())) {

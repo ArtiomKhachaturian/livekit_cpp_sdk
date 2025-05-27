@@ -71,15 +71,15 @@ inline const std::string& alignedLogString(const TString& string)
     return g_empty;
 }
 
-inline std::optional<Bricks::LoggingSeverity> map(rtc::LoggingSeverity severity) {
+inline std::optional<Bricks::LoggingSeverity> map(webrtc::LoggingSeverity severity) {
     switch (severity) {
-        case rtc::LS_VERBOSE:
+        case webrtc::LS_VERBOSE:
             return Bricks::LoggingSeverity::Verbose;
-        case rtc::LS_INFO:
+        case webrtc::LS_INFO:
             return Bricks::LoggingSeverity::Info;
-        case rtc::LS_WARNING:
+        case webrtc::LS_WARNING:
             return Bricks::LoggingSeverity::Warning;
-        case rtc::LS_ERROR:
+        case webrtc::LS_ERROR:
             return Bricks::LoggingSeverity::Error;
         default:
             break;
@@ -93,18 +93,18 @@ namespace LiveKitCpp
 {
 
 WebRtcLogSink::WebRtcLogSink(const std::shared_ptr<Bricks::Logger>& logger)
-    : Bricks::LoggableS<rtc::LogSink>(logger)
+    : Bricks::LoggableS<webrtc::LogSink>(logger)
 {
-    rtc::LogMessage::AddLogToStream(this, rtc::LoggingSeverity::LS_VERBOSE);
+    webrtc::LogMessage::AddLogToStream(this, webrtc::LoggingSeverity::LS_VERBOSE);
 }
 
 WebRtcLogSink::~WebRtcLogSink()
 {
-    rtc::LogMessage::RemoveLogToStream(this);
+    webrtc::LogMessage::RemoveLogToStream(this);
 }
 
 void WebRtcLogSink::OnLogMessage(const std::string& message,
-                                 rtc::LoggingSeverity severity)
+                                 webrtc::LoggingSeverity severity)
 {
     
     if (const auto sev = allowToLog(message, severity)) {
@@ -114,13 +114,13 @@ void WebRtcLogSink::OnLogMessage(const std::string& message,
 
 void WebRtcLogSink::OnLogMessage(const std::string& message)
 {
-    if (const auto sev = allowToLog(message, rtc::LoggingSeverity::LS_VERBOSE)) {
+    if (const auto sev = allowToLog(message, webrtc::LoggingSeverity::LS_VERBOSE)) {
         log(sev.value(), alignedLogString(message), _logCategory);
     }
 }
 
 void WebRtcLogSink::OnLogMessage(absl::string_view message,
-                                 rtc::LoggingSeverity severity)
+                                 webrtc::LoggingSeverity severity)
 {
     if (const auto sev = allowToLog(message, severity)) {
         log(sev.value(), alignedLogString(message), _logCategory);
@@ -129,14 +129,14 @@ void WebRtcLogSink::OnLogMessage(absl::string_view message,
 
 void WebRtcLogSink::OnLogMessage(absl::string_view message)
 {
-    if (const auto sev = allowToLog(message, rtc::LoggingSeverity::LS_VERBOSE)) {
+    if (const auto sev = allowToLog(message, webrtc::LoggingSeverity::LS_VERBOSE)) {
         log(sev.value(), alignedLogString(message), _logCategory);
     }
 }
 
 template <class TString>
 std::optional<Bricks::LoggingSeverity> WebRtcLogSink::
-    allowToLog(const TString& string, rtc::LoggingSeverity severity) const
+    allowToLog(const TString& string, webrtc::LoggingSeverity severity) const
 {
     const auto sev = map(severity);
     if (sev && canLog(sev.value()) && !ignoreWebRtcLogString(string)) {

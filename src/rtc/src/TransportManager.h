@@ -67,11 +67,11 @@ public:
     void addTrack(std::shared_ptr<LocalVideoDeviceImpl> device, EncryptionType encryption);
     bool removeTrack(const std::string& id, bool cid = true);
     void addIceCandidate(SignalTarget target, std::unique_ptr<webrtc::IceCandidateInterface> candidate);
-    void queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
-    void queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                    const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
-    void queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
-                    const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                    const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
+    void queryStats(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                    const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const;
     void setAudioPlayout(bool playout);
     void setAudioRecording(bool recording);
     void close();

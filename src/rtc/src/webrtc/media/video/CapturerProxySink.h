@@ -20,7 +20,7 @@ namespace LiveKitCpp
 {
 
 class CapturerProxySink : public CapturerObserver,
-                          public rtc::VideoSinkInterface<webrtc::VideoFrame>
+                          public webrtc::VideoSinkInterface<webrtc::VideoFrame>
 {
 protected:
     CapturerProxySink() = default;

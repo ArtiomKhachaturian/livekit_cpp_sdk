@@ -53,8 +53,8 @@ public:
     void setObserver(const std::weak_ptr<AesCgmCryptorObserver>& observer = {}) { _observer = observer; }
     // impl. of webrtc::FrameTransformerInterface
     void Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame) final;
-    void RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback) final;
-    void RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
+    void RegisterTransformedFrameCallback(webrtc::scoped_refptr<webrtc::TransformedFrameCallback> callback) final;
+    void RegisterTransformedFrameSinkCallback(webrtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
                                               uint32_t ssrc) final;
     void UnregisterTransformedFrameCallback() final;
     void UnregisterTransformedFrameSinkCallback(uint32_t ssrc) final;
@@ -86,7 +86,7 @@ private:
                           const webrtc::ArrayView<uint8_t>& additionalData,
                           const webrtc::ArrayView<uint8_t>& data,
                           std::vector<uint8_t>& buffer) const;
-    rtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
+    webrtc::Buffer makeIv(uint32_t ssrc, uint32_t timestamp);
 private:
     static thread_local inline std::map<uint32_t, uint32_t> _sendCounts;
     const webrtc::MediaType _mediaType;

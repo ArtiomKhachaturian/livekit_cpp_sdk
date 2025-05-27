@@ -22,10 +22,10 @@ class RgbVideoFrameBuffer : public RgbGenericVideoFrameBuffer
 {
 public:
     // method name started from capital letter for compatibility with WebRTC API
-    static rtc::scoped_refptr<RgbVideoFrameBuffer> Create(int width, int height,
-                                                          VideoFrameType rgbFormat,
-                                                          int stride = 0,
-                                                          VideoFrameBufferPool framesPool = {});
+    static webrtc::scoped_refptr<RgbVideoFrameBuffer> Create(int width, int height,
+                                                             VideoFrameType rgbFormat,
+                                                             int stride = 0,
+                                                             VideoFrameBufferPool framesPool = {});
     // impl. of NativeVideoFrameBuffer
     int stride(size_t planeIndex) const final;
     const std::byte* data(size_t planeIndex) const final;

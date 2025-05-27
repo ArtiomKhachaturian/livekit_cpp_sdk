@@ -40,7 +40,7 @@ class LocalTrackImpl : public TBaseImpl,
     static_assert(std::is_base_of_v<LocalAudioTrack, TBaseImpl> || std::is_base_of_v<LocalVideoTrack, TBaseImpl>);
 public:
     ~LocalTrackImpl() override;
-    void setFrameTransformer(rtc::scoped_refptr<webrtc::FrameTransformerInterface> transformer);
+    void setFrameTransformer(webrtc::scoped_refptr<webrtc::FrameTransformerInterface> transformer);
     // impl. of LocalTrack
     std::string cid() const final { return TBaseImpl::id(); }
     webrtc::MediaType mediaType() const final;
@@ -67,7 +67,7 @@ protected:
     LocalTrackImpl(std::string name,
                    std::shared_ptr<TMediaDevice> mediaDevice,
                    EncryptionType encryption,
-                   rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
+                   webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                    const std::weak_ptr<TrackManager>& trackManager);
     virtual bool updateSenderInitialParameters(webrtc::RtpParameters& parameters) const;
     webrtc::RtpParameters rtpParameters() const;
@@ -75,7 +75,7 @@ protected:
     // overrides of TrackImpl<>
     void onMuteChanged(bool mute) const final;
 private:
-    rtc::scoped_refptr<webrtc::RtpSenderInterface> sender() const;
+    webrtc::scoped_refptr<webrtc::RtpSenderInterface> sender() const;
     // impl. of webrtc::RtpSenderObserverInterface
     void OnFirstPacketSent(webrtc::MediaType) final;
     static bool setBitratePriority(double priority, std::vector<webrtc::RtpEncodingParameters>& encodings);
@@ -85,7 +85,7 @@ private:
 private:
     const std::string _name;
     const EncryptionType _encryption;
-    const rtc::scoped_refptr<webrtc::RtpTransceiverInterface> _transceiver;
+    const webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> _transceiver;
     std::atomic_bool _remoteMuted = false;
     Bricks::SafeObj<std::string> _sid;
     std::atomic<NetworkPriority> _networkPriority = NetworkPriority::Low;
@@ -98,7 +98,7 @@ template <class TMediaDevice>
 inline LocalTrackImpl<TBaseImpl>::LocalTrackImpl(std::string name,
                                                  std::shared_ptr<TMediaDevice> mediaDevice,
                                                  EncryptionType encryption,
-                                                 rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
+                                                 webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver,
                                                  const std::weak_ptr<TrackManager>& trackManager)
     : TBaseImpl(std::move(mediaDevice), trackManager)
     , _name(std::move(name))
@@ -119,7 +119,7 @@ inline LocalTrackImpl<TBaseImpl>::~LocalTrackImpl()
 }
 
 template <class TBaseImpl>
-inline void LocalTrackImpl<TBaseImpl>::setFrameTransformer(rtc::scoped_refptr<webrtc::FrameTransformerInterface> transformer)
+inline void LocalTrackImpl<TBaseImpl>::setFrameTransformer(webrtc::scoped_refptr<webrtc::FrameTransformerInterface> transformer)
 {
     if (const auto sender = this->sender()) {
         sender->SetFrameTransformer(std::move(transformer));
@@ -246,7 +246,7 @@ inline void LocalTrackImpl<TBaseImpl>::onMuteChanged(bool mute) const
 }
 
 template <class TBaseImpl>
-inline rtc::scoped_refptr<webrtc::RtpSenderInterface> LocalTrackImpl<TBaseImpl>::sender() const
+inline webrtc::scoped_refptr<webrtc::RtpSenderInterface> LocalTrackImpl<TBaseImpl>::sender() const
 {
     if (_transceiver) {
         return _transceiver->sender();

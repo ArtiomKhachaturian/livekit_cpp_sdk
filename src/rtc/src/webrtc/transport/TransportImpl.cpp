@@ -90,7 +90,7 @@ void TransportImpl::logWebRTCError(const webrtc::RTCError& error,
     }
 }
 
-void TransportImpl::removeTrackBySender(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender)
+void TransportImpl::removeTrackBySender(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender)
 {
     if (sender) {
         const auto id = sender->id();
@@ -143,17 +143,17 @@ void TransportImpl::OnSignalingChange(webrtc::PeerConnectionInterface::Signaling
     }
 }
 
-void TransportImpl::OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
+void TransportImpl::OnAddStream(webrtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
 {
     notify(&TransportListener::onRemoteStreamAdded, std::move(stream));
 }
 
-void TransportImpl::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
+void TransportImpl::OnRemoveStream(webrtc::scoped_refptr<webrtc::MediaStreamInterface> stream)
 {
     notify(&TransportListener::onRemoteStreamRemoved, std::move(stream));
 }
 
-void TransportImpl::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+void TransportImpl::OnDataChannel(webrtc::scoped_refptr<webrtc::DataChannelInterface> channel)
 {
     notify(&TransportListener::onRemoteDataChannelOpened,
            DataChannel::create(false, std::move(channel)));
@@ -201,7 +201,7 @@ void TransportImpl::OnIceCandidateError(const std::string& address, int port,
            url, errorCode, errorText);
 }
 
-void TransportImpl::OnIceCandidatesRemoved(const std::vector<cricket::Candidate>& candidates)
+void TransportImpl::OnIceCandidatesRemoved(const std::vector<webrtc::Candidate>& candidates)
 {
     notify(&TransportListener::onIceCandidatesRemoved, candidates);
 }
@@ -211,18 +211,18 @@ void TransportImpl::OnIceConnectionReceivingChange(bool receiving)
     notify(&TransportListener::onIceConnectionReceivingChange, receiving);
 }
 
-void TransportImpl::OnIceSelectedCandidatePairChanged(const cricket::CandidatePairChangeEvent& event)
+void TransportImpl::OnIceSelectedCandidatePairChanged(const webrtc::CandidatePairChangeEvent& event)
 {
     notify(&TransportListener::onIceSelectedCandidatePairChanged, event);
 }
 
-void TransportImpl::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                                 const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
+void TransportImpl::OnAddTrack(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                                 const std::vector<webrtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
 {
     notify(&TransportListener::onRemoteTrackAdded, std::move(receiver), streams);
 }
 
-/*void TransportImpl::OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+/*void TransportImpl::OnTrack(webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (transceiver) {
         if (auto receiver = transceiver->receiver()) {
@@ -232,7 +232,7 @@ void TransportImpl::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> 
     notify(&TransportListener::onRemoteTrackAdded, std::move(transceiver));
 }*/
 
-void TransportImpl::OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+void TransportImpl::OnRemoveTrack(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     notify(&TransportListener::onRemotedTrackRemoved, std::move(receiver));
 }

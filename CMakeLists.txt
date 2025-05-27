@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Project name
-project("LiveKitClient" LANGUAGES CXX VERSION 0.0.1)
+project("LiveKitClient" LANGUAGES C CXX VERSION 0.0.1)
 set(SIGNALING_LIB "Signaling")
 set(RTC_LIB "Rtc")
 
@@ -335,8 +335,18 @@ if (WEBRTC_AVAILABLE)
     endif(WIN32)
     
     if (USE_RN_NOISE_SUPPRESSOR)
+        list(APPEND RN_NOISE_SOURCES ${CMAKE_SOURCE_DIR}/rnnoise/src/celt_lpc.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/denoise.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/kiss_fft.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/pitch.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/nnet_default.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/nnet.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/nnet.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/parse_lpcnet_weights.c 
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/rnnoise_tables.c
+                                     ${CMAKE_BINARY_DIR}/rnnoise_data/rnnoise_data.c
+                                     ${CMAKE_SOURCE_DIR}/rnnoise/src/rnn.c)
         file(GLOB_RECURSE RN_NOISE_HEADERS ${CMAKE_SOURCE_DIR}/rnnoise/include/*.${HEADER_FILE_EXT})
-        file(GLOB_RECURSE RN_NOISE_SOURCES ${CMAKE_SOURCE_DIR}/rnnoise/src/*.c)
     endif(USE_RN_NOISE_SUPPRESSOR)
 
     # Create a shared library
@@ -361,7 +371,7 @@ if (WEBRTC_AVAILABLE)
     source_group(TREE ${CMAKE_SOURCE_DIR}/src/rtc/${PLATFORM_SRC_FOLDER} PREFIX "Rtc/${PLATFORM_SRC_FOLDER}" FILES ${RTC_PLATFORM_HEADERS}
                                                                                                                    ${RTC_PLATFORM_SOURCES})
     if (USE_RN_NOISE_SUPPRESSOR)
-        source_group(TREE ${CMAKE_SOURCE_DIR}/rnnoise PREFIX "RNNoise" FILES ${RN_NOISE_HEADERS} ${RN_NOISE_SOURCES})
+       # source_group(TREE ${CMAKE_SOURCE_DIR}/rnnoise PREFIX "RNNoise" FILES ${RN_NOISE_HEADERS} ${RN_NOISE_SOURCES})
     endif(USE_RN_NOISE_SUPPRESSOR)
 
     set(RTC_SRC_DIR ${CMAKE_SOURCE_DIR}/src/rtc)
@@ -462,6 +472,9 @@ if (WEBRTC_AVAILABLE)
         target_compile_definitions(${RTC_LIB} PRIVATE -DUSE_PLATFORM_DECODERS)
     endif(USE_PLATFORM_DECODERS)
     if (USE_RN_NOISE_SUPPRESSOR)
+        target_include_directories(${RTC_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/rnnoise/include
+                                                      ${CMAKE_SOURCE_DIR}/rnnoise/src
+                                                      ${CMAKE_BINARY_DIR}/rnnoise_data)
         target_compile_definitions(${RTC_LIB} PRIVATE -DUSE_RN_NOISE_SUPPRESSOR)
     endif(USE_RN_NOISE_SUPPRESSOR)
 endif()

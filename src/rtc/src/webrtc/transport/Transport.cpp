@@ -48,7 +48,7 @@ inline webrtc::MediaType fromString(const std::string& type) {
     return webrtc::MediaType::UNSUPPORTED;
 }
 
-rtc::scoped_refptr<webrtc::RtpSenderInterface>
+webrtc::scoped_refptr<webrtc::RtpSenderInterface>
     findSender(const webrtc::scoped_refptr<webrtc::PeerConnectionInterface>& pc,
                const std::string& id);
 
@@ -238,8 +238,8 @@ void Transport::addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> c
     }
 }
 
-void Transport::queryReceiverStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
-                                   const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
+void Transport::queryReceiverStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                                   const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver) const
 {
     if (callback) {
         if (const auto impl = loadImpl()) {
@@ -256,8 +256,8 @@ void Transport::queryReceiverStats(const rtc::scoped_refptr<webrtc::RTCStatsColl
     }
 }
 
-void Transport::querySenderStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
-                                 const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
+void Transport::querySenderStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                                 const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender) const
 {
     if (callback) {
         if (const auto impl = loadImpl()) {
@@ -423,7 +423,7 @@ bool Transport::closed() const noexcept
     return webrtc::PeerConnectionInterface::PeerConnectionState::kClosed == state();
 }
 
-std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transport::transceivers() const
+std::vector<webrtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transport::transceivers() const
 {
     if (const auto impl = loadImpl()) {
         if (const auto pc = impl->peerConnection()) {
@@ -433,7 +433,7 @@ std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transport::tran
     return {};
 }
 
-std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> Transport::receivers() const
+std::vector<webrtc::scoped_refptr<webrtc::RtpReceiverInterface>> Transport::receivers() const
 {
     if (const auto impl = loadImpl()) {
         if (const auto pc = impl->peerConnection()) {
@@ -443,7 +443,7 @@ std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> Transport::receive
     return {};
 }
 
-std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> Transport::senders() const
+std::vector<webrtc::scoped_refptr<webrtc::RtpSenderInterface>> Transport::senders() const
 {
     if (const auto impl = loadImpl()) {
         if (const auto pc = impl->peerConnection()) {
@@ -629,7 +629,7 @@ void Transport::onFailure(bool local, webrtc::RTCError error)
 namespace
 {
 
-rtc::scoped_refptr<webrtc::RtpSenderInterface>
+webrtc::scoped_refptr<webrtc::RtpSenderInterface>
     findSender(const webrtc::scoped_refptr<webrtc::PeerConnectionInterface>& pc,
                const std::string& id)
 {

@@ -132,7 +132,7 @@ void DesktopCapturer::deliverCaptured(const webrtc::VideoFrame& frame)
     }
 }
 
-void DesktopCapturer::deliverCaptured(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
+void DesktopCapturer::deliverCaptured(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                                       int64_t timeStampMicro,
                                       webrtc::VideoRotation rotation,
                                       const std::optional<webrtc::ColorSpace>& colorSpace)
@@ -148,7 +148,7 @@ void DesktopCapturer::deliverCaptured(std::unique_ptr<webrtc::DesktopFrame> fram
     if (frame) {
         const auto timestamp = frame->capture_time_ms();
         const auto buffer = webrtc::make_ref_counted<DesktopFrameVideoBuffer>(std::move(frame), _framesPool);
-        deliverCaptured(buffer, timestamp * rtc::kNumMicrosecsPerMillisec);
+        deliverCaptured(buffer, timestamp * webrtc::kNumMicrosecsPerMillisec);
     }
 }
 

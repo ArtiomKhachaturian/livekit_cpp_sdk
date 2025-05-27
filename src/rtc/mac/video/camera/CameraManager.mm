@@ -74,9 +74,9 @@ std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> CameraManager::createDev
     return std::make_unique<MacOSDeviceInfoImpl>();
 }
 
-rtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev,
-                                                                 VideoFrameBufferPool framesPool,
-                                                                 const std::shared_ptr<Bricks::Logger>& /*logger*/) const
+webrtc::scoped_refptr<CameraCapturer> CameraManager::createCapturer(const MediaDeviceInfo& dev,
+                                                                    VideoFrameBufferPool framesPool,
+                                                                    const std::shared_ptr<Bricks::Logger>& /*logger*/) const
 {
     return MacCameraCapturer::create(dev, std::move(framesPool));
 }

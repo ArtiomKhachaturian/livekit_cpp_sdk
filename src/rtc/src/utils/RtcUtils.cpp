@@ -143,7 +143,7 @@ std::string fourccToString(int fourcc)
 
 std::string makeUuid()
 {
-    return rtc::CreateRandomUuid();
+    return webrtc::CreateRandomUuid();
 }
 
 std::string makeStateChangesString(webrtc::PeerConnectionInterface::PeerConnectionState from,

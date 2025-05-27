@@ -47,9 +47,9 @@ public:
     void setInfo(const std::weak_ptr<TrackManager>& trackManager, const std::vector<ParticipantInfo>& infos = {});
     void updateInfo(const std::weak_ptr<TrackManager>& trackManager, const std::vector<ParticipantInfo>& infos);
     bool addMedia(const std::weak_ptr<TrackManager>& trackManager,
-                  const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                  const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
                   std::string trackSid, std::string participantSid = {});
-    bool removeMedia(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
+    bool removeMedia(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver);
     void reset();
     size_t count() const;
     std::shared_ptr<RemoteParticipantImpl> at(size_t index) const;

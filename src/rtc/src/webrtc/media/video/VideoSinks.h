@@ -20,7 +20,7 @@
 namespace LiveKitCpp
 {
 
-class VideoSinks : public Sinks<VideoSink, rtc::VideoSinkInterface<webrtc::VideoFrame>>
+class VideoSinks : public Sinks<VideoSink, webrtc::VideoSinkInterface<webrtc::VideoFrame>>
 {
 public:
     // impl. of rtc::VideoSinkInterface<webrtc::VideoFrame>

@@ -149,7 +149,7 @@ VideoOptions AsyncCameraSourceImpl::validate(VideoOptions options) const
 
 webrtc::VideoCaptureCapability AsyncCameraSourceImpl::
     bestMatched(webrtc::VideoCaptureCapability capability,
-                const rtc::scoped_refptr<CameraCapturer>& capturer) const
+                const webrtc::scoped_refptr<CameraCapturer>& capturer) const
 {
     if (capturer) {
         webrtc::VideoCaptureCapability matched;
@@ -166,7 +166,7 @@ webrtc::VideoCaptureCapability AsyncCameraSourceImpl::bestMatched(webrtc::VideoC
     return bestMatched(std::move(capability), _capturer());
 }
 
-rtc::scoped_refptr<CameraCapturer> AsyncCameraSourceImpl::create(const MediaDeviceInfo& dev) const
+webrtc::scoped_refptr<CameraCapturer> AsyncCameraSourceImpl::create(const MediaDeviceInfo& dev) const
 {
     if (const auto manager = _manager.lock()) {
         return manager->createCapturer(dev, framesPool(), logger());
@@ -174,7 +174,7 @@ rtc::scoped_refptr<CameraCapturer> AsyncCameraSourceImpl::create(const MediaDevi
     return {};
 }
 
-bool AsyncCameraSourceImpl::startCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer,
+bool AsyncCameraSourceImpl::startCapturer(const webrtc::scoped_refptr<CameraCapturer>& capturer,
                                           const webrtc::VideoCaptureCapability& capability) const
 {
     int32_t code = 0;
@@ -197,7 +197,7 @@ bool AsyncCameraSourceImpl::startCapturer(const rtc::scoped_refptr<CameraCapture
     return 0 == code;
 }
 
-bool AsyncCameraSourceImpl::stopCapturer(const rtc::scoped_refptr<CameraCapturer>& capturer) const
+bool AsyncCameraSourceImpl::stopCapturer(const webrtc::scoped_refptr<CameraCapturer>& capturer) const
 {
     int32_t code = 0;
     if (capturer && capturer->CaptureStarted()) {
@@ -219,7 +219,7 @@ bool AsyncCameraSourceImpl::stopCapturer(const rtc::scoped_refptr<CameraCapturer
     return 0 == code;
 }
 
-void AsyncCameraSourceImpl::logError(const rtc::scoped_refptr<CameraCapturer>& capturer,
+void AsyncCameraSourceImpl::logError(const webrtc::scoped_refptr<CameraCapturer>& capturer,
                                      const std::string& message, int code) const
 {
     if (capturer && canLogError()) {
@@ -234,7 +234,7 @@ void AsyncCameraSourceImpl::logError(const rtc::scoped_refptr<CameraCapturer>& c
     }
 }
 
-void AsyncCameraSourceImpl::logVerbose(const rtc::scoped_refptr<CameraCapturer>& capturer,
+void AsyncCameraSourceImpl::logVerbose(const webrtc::scoped_refptr<CameraCapturer>& capturer,
                                        const std::string& message) const
 {
     if (capturer && canLogVerbose()) {

@@ -34,12 +34,12 @@ public:
                const VideoFrameBufferPool& pool = {});
     bool consistent() const;
     // overrides of webrtc::VideoFrameBuffer
-    rtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
-                                                              int offsetY,
-                                                              int cropWidth,
-                                                              int cropHeight,
-                                                              int scaledWidth,
-                                                              int scaledHeight) override;
+    webrtc::scoped_refptr<webrtc::VideoFrameBuffer> CropAndScale(int offsetX,
+                                                                 int offsetY,
+                                                                 int cropWidth,
+                                                                 int cropHeight,
+                                                                 int scaledWidth,
+                                                                 int scaledHeight) override;
     // impl. of webrtc::NV12BufferInterface
     Type type() const final { return Type::kNV12; }
     int StrideY() const override { return strideY(width()); }
@@ -48,7 +48,7 @@ protected:
     NV12VideoFrameBuffer(VideoFrameBufferPool framesPool);
 private:
     // impl. of VideoFrameBuffer
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 } // namespace LiveKitCpp

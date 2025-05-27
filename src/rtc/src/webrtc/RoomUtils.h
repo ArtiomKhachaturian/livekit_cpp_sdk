@@ -31,7 +31,7 @@ public:
     static std::unique_ptr<webrtc::IceCandidateInterface> map(const IceCandidate& candidate,
                                                               webrtc::SdpParseError* error = nullptr);
     static IceCandidate map(const webrtc::IceCandidateInterface* candidate);
-    static IceCandidate map(std::string sdpMid, int sdpMlineIndex, const cricket::Candidate& candidate);
+    static IceCandidate map(std::string sdpMid, int sdpMlineIndex, const webrtc::Candidate& candidate);
     static std::optional<SessionDescription> map(const webrtc::SessionDescriptionInterface* desc);
     static std::optional<SessionDescription> map(std::string type, std::string sdp);
     static std::unique_ptr<webrtc::SessionDescriptionInterface> map(const SessionDescription& desc,

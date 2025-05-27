@@ -66,7 +66,7 @@ public:
     int dataSize(size_t planeIndex) const final { return frame()->dataSize(planeIndex); }
 private:
     // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 class ExternalRgbBuffer : public ExternalFrameHolder<RgbGenericVideoFrameBuffer>
@@ -123,7 +123,7 @@ public:
     const uint8_t* DataV() const final { return data(2U); }
 private:
     // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 class ExternalI444Buffer : public ExternalVideoFrameBuffer<webrtc::I444BufferInterface>
@@ -141,7 +141,7 @@ public:
     const uint8_t* DataV() const final { return data(2U); }
 private:
     // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 class ExternalI010Buffer : public ExternalVideoFrameBuffer<webrtc::I010BufferInterface>
@@ -159,7 +159,7 @@ public:
     const uint16_t* DataV() const final { return data<uint16_t>(2U); }
 private:
     // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 class ExternalI210Buffer : public ExternalVideoFrameBuffer<webrtc::I210BufferInterface>
@@ -177,7 +177,7 @@ public:
     const uint16_t* DataV() const final { return data<uint16_t>(2U); }
 private:
     // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 class ExternalI410Buffer : public ExternalVideoFrameBuffer<webrtc::I410BufferInterface>
@@ -195,7 +195,7 @@ public:
     const uint16_t* DataV() const final { return data<uint16_t>(2U); }
 private:
     // impl. of VideoFrameBuffer<>
-    rtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
+    webrtc::scoped_refptr<webrtc::I420BufferInterface> convertToI420() const final;
 };
 
 inline int halfHeight(const webrtc::VideoFrameBuffer* buffer) {
@@ -211,7 +211,7 @@ namespace LiveKitCpp
 {
 
 VideoFrameImpl::VideoFrameImpl(VideoFrameType type, int rotation, int64_t timestampUs,
-                               rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer)
+                               webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer)
     : VideoFrame(type, rotation, timestampUs)
     , _buffer(std::move(buffer))
 {
@@ -222,7 +222,7 @@ std::shared_ptr<VideoFrame> VideoFrameImpl::create(const webrtc::VideoFrame& fra
     return create(frame.video_frame_buffer(), frame.rotation(), frame.timestamp_us());
 }
 
-std::shared_ptr<VideoFrame> VideoFrameImpl::create(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
+std::shared_ptr<VideoFrame> VideoFrameImpl::create(webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
                                                    webrtc::VideoRotation rotation,
                                                    int64_t timestampUs)
 {
@@ -401,7 +401,7 @@ int VideoFrameImpl::dataSize(size_t planeIndex) const
     return 0;
 }
 
-std::optional<VideoFrameType> VideoFrameImpl::detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer)
+std::optional<VideoFrameType> VideoFrameImpl::detectType(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer)
 {
     if (buffer) {
         switch (buffer->type()) {
@@ -470,8 +470,8 @@ webrtc::VideoRotation VideoFrameImpl::mapToRtc(int rotation)
     return webrtc::kVideoRotation_0;
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameImpl::
-    map(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer)
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> VideoFrameImpl::
+    map(webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer)
 {
     if (buffer) {
         switch (buffer->type()) {
@@ -704,7 +704,7 @@ int VideoFrameImpl::dataSizeNV12(size_t planeIndex, const webrtc::NV12BufferInte
 VideoFrame::VideoFrame(VideoFrameType type, int rotation, int64_t timestampUs)
     : _type(type)
     , _rotation(rotation)
-    , _timestampUs(timestampUs ? timestampUs : rtc::TimeMicros())
+    , _timestampUs(timestampUs ? timestampUs : webrtc::TimeMicros())
 {
 }
 
@@ -837,7 +837,7 @@ ExternalMJpegBuffer::ExternalMJpegBuffer(const std::shared_ptr<VideoFrame>& fram
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalMJpegBuffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> ExternalMJpegBuffer::convertToI420() const
 {
     auto i420 = createI420(width(), height());
     if (i420 && 0 == libyuv::MJPGToI420(Base::data<uint8_t>(0U), dataSize(0),
@@ -874,7 +874,7 @@ ExternalI422Buffer::ExternalI422Buffer(const std::shared_ptr<VideoFrame>& frame,
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI422Buffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI422Buffer::convertToI420() const
 {
     auto i420 = createI420(width(), height());
     if (i420 && 0 == libyuv::I422ToI420(DataY(), StrideY(),
@@ -895,7 +895,7 @@ ExternalI444Buffer::ExternalI444Buffer(const std::shared_ptr<VideoFrame>& frame,
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI444Buffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI444Buffer::convertToI420() const
 {
     auto i420 = createI420(width(), height());
     if (i420 && 0 == libyuv::I444ToI420(DataY(), StrideY(),
@@ -916,7 +916,7 @@ ExternalI010Buffer::ExternalI010Buffer(const std::shared_ptr<VideoFrame>& frame,
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI010Buffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI010Buffer::convertToI420() const
 {
     auto i420 = createI420(width(), height());
     if (i420 && 0 == libyuv::I010ToI420(DataY(), StrideY(),
@@ -937,7 +937,7 @@ ExternalI210Buffer::ExternalI210Buffer(const std::shared_ptr<VideoFrame>& frame,
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI210Buffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI210Buffer::convertToI420() const
 {
     auto i420 = createI420(width(), height());
     if (i420 && 0 == libyuv::I210ToI420(DataY(), StrideY(),
@@ -958,7 +958,7 @@ ExternalI410Buffer::ExternalI410Buffer(const std::shared_ptr<VideoFrame>& frame,
 {
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI410Buffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> ExternalI410Buffer::convertToI420() const
 {
     auto i420 = createI420(width(), height());
     if (i420 && 0 == libyuv::I410ToI420(DataY(), StrideY(),

@@ -20,7 +20,7 @@ namespace LiveKitCpp
 
 AsyncMicSourceImpl::AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                                        const std::shared_ptr<Bricks::Logger>& logger,
-                                       cricket::AudioOptions options,
+                                       webrtc::AudioOptions options,
                                        std::weak_ptr<AdmProxyFacade> admProxy)
     : AsyncAudioSourceImpl(std::move(signalingQueue), logger, false)
     , _options(std::move(options))

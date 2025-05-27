@@ -43,11 +43,11 @@ const std::byte* RgbVideoFrameBuffer::data(size_t planeIndex) const
     return 0U == planeIndex ? _data.get() : nullptr;
 }
 
-rtc::scoped_refptr<RgbVideoFrameBuffer> RgbVideoFrameBuffer::Create(int width,
-                                                                    int height,
-                                                                    VideoFrameType rgbFormat,
-                                                                    int stride,
-                                                                    VideoFrameBufferPool framesPool)
+webrtc::scoped_refptr<RgbVideoFrameBuffer> RgbVideoFrameBuffer::Create(int width,
+                                                                       int height,
+                                                                       VideoFrameType rgbFormat,
+                                                                       int stride,
+                                                                       VideoFrameBufferPool framesPool)
 {
     if (width > 0 && height > 0 && isRGB(rgbFormat)) {
         return webrtc::make_ref_counted<RgbVideoFrameBuffer>(rgbFormat, width, height,

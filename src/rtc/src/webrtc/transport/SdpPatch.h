@@ -42,7 +42,7 @@ public:
 private:
     std::vector<webrtc::MediaContentDescription*> descriptions(webrtc::MediaType kind) const;
     static void moveCodecProfilesToFront(webrtc::MediaContentDescription* desc, std::string_view codecName);
-    static bool isAssociatedCodec(int payload, const cricket::Codec& codec);
+    static bool isAssociatedCodec(int payload, const webrtc::Codec& codec);
 private:
     webrtc::SessionDescriptionInterface* const _session;
 };

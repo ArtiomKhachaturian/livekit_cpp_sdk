@@ -49,7 +49,7 @@ IceCandidate RoomUtils::map(const webrtc::IceCandidateInterface* candidate)
     return {};
 }
 
-IceCandidate RoomUtils::map(std::string sdpMid, int sdpMlineIndex, const cricket::Candidate& candidate)
+IceCandidate RoomUtils::map(std::string sdpMid, int sdpMlineIndex, const webrtc::Candidate& candidate)
 {
     std::string sdp = webrtc::SdpSerializeCandidate(candidate);
     if (!sdp.empty()) {

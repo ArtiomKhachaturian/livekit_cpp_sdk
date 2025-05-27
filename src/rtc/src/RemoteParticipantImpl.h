@@ -51,10 +51,10 @@ public:
     std::optional<TrackType> trackType(const std::string& trackSid) const;
     bool addAudio(const std::string& trackSid,
                   const std::weak_ptr<TrackManager>& trackManager,
-                  rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
+                  webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
     bool addVideo(const std::string& trackSid,
                   const std::weak_ptr<TrackManager>& trackManager,
-                  rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
+                  webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver = {});
     bool removeAudio(const std::string& trackSid);
     bool removeVideo(const std::string& trackSid);
     ParticipantInfo info() const { return _info(); }
@@ -91,7 +91,7 @@ private:
     template <class TTrack>
     bool addTrack(const std::string& trackSid,
                   const std::weak_ptr<TrackManager>& trackManager,
-                  rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                  webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
                   Bricks::SafeObj<Tracks<TTrack>>& collection) const;
     template <class TTrack>
     bool removeTrack(const std::string& trackSid, Bricks::SafeObj<Tracks<TTrack>>& collection) const;

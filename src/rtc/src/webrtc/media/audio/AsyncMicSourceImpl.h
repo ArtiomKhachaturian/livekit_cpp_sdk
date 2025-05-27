@@ -29,14 +29,14 @@ class AsyncMicSourceImpl : public AsyncAudioSourceImpl, private AdmProxyListener
 public:
     AsyncMicSourceImpl(std::weak_ptr<webrtc::TaskQueueBase> signalingQueue,
                        const std::shared_ptr<Bricks::Logger>& logger,
-                       cricket::AudioOptions options,
+                       webrtc::AudioOptions options,
                        std::weak_ptr<AdmProxyFacade> admProxy);
     ~AsyncMicSourceImpl() override;
     // impl. of AsyncAudioSourceImpl
     void setVolume(double) final {}
     void addSink(webrtc::AudioTrackSinkInterface* sink) final;
     void removeSink(webrtc::AudioTrackSinkInterface* sink) final;
-    cricket::AudioOptions options() const final { return _options; }
+    webrtc::AudioOptions options() const final { return _options; }
 private:
     std::shared_ptr<AdmProxyFacade> adm() const noexcept { return _admProxy.lock(); }
     // impl. of AdmProxyListener
@@ -47,7 +47,7 @@ private:
     void onMuteChanged(bool, bool mute) final;
     void onDeviceChanged(bool, const MediaDeviceInfo&) final;
 private:
-    const cricket::AudioOptions _options;
+    const webrtc::AudioOptions _options;
     const std::weak_ptr<AdmProxyFacade> _admProxy;
     Bricks::SafeObj<VolumeControl> _volumeControl;
 };

@@ -54,7 +54,7 @@ int RgbGenericVideoFrameBuffer::bytesPerPixel(VideoFrameType rgbFormat)
     return 0;
 }
 
-rtc::scoped_refptr<webrtc::VideoFrameBuffer> RgbGenericVideoFrameBuffer::
+webrtc::scoped_refptr<webrtc::VideoFrameBuffer> RgbGenericVideoFrameBuffer::
     CropAndScale(int offsetX, int offsetY, int cropWidth,
                  int cropHeight, int scaledWidth, int scaledHeight)
 {
@@ -85,12 +85,12 @@ rtc::scoped_refptr<webrtc::VideoFrameBuffer> RgbGenericVideoFrameBuffer::
     return Base::CropAndScale(offsetX, offsetY, cropWidth, cropHeight, scaledWidth, scaledHeight);
 }
 
-rtc::scoped_refptr<RgbGenericVideoFrameBuffer> RgbGenericVideoFrameBuffer::createRGB(int width, int height)
+webrtc::scoped_refptr<RgbGenericVideoFrameBuffer> RgbGenericVideoFrameBuffer::createRGB(int width, int height)
 {
     return framesPool().createRgb(width, height, nativeType());
 }
 
-rtc::scoped_refptr<webrtc::I420BufferInterface> RgbGenericVideoFrameBuffer::convertToI420() const
+webrtc::scoped_refptr<webrtc::I420BufferInterface> RgbGenericVideoFrameBuffer::convertToI420() const
 {
     const auto w = width(), h = height();
     const auto stride = this->stride(0U);

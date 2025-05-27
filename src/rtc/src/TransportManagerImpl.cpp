@@ -198,7 +198,7 @@ void TransportManagerImpl::addIceCandidate(SignalTarget target, std::unique_ptr<
     }
 }
 
-void TransportManagerImpl::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void TransportManagerImpl::queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (callback && !closed()) {
         _publisher.querySenderStats(callback);
@@ -206,16 +206,16 @@ void TransportManagerImpl::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsC
     }
 }
 
-void TransportManagerImpl::queryReceiverStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                                              const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void TransportManagerImpl::queryReceiverStats(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                              const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (receiver && callback && !closed()) {
         _subscriber.queryReceiverStats(callback, receiver);
     }
 }
 
-void TransportManagerImpl::querySenderStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
-                                            const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void TransportManagerImpl::querySenderStats(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                                            const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (sender && callback && !closed()) {
         _publisher.querySenderStats(callback, sender);
@@ -505,7 +505,7 @@ void TransportManagerImpl::onSdpSetFailure(SignalTarget target, bool local, webr
 void TransportManagerImpl::onLocalAudioTrackAdded(SignalTarget target,
                                                   std::shared_ptr<AudioDeviceImpl> device,
                                                   EncryptionType encryption,
-                                                  rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+                                                  webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (SignalTarget::Publisher == target && device && transceiver) {
         auto track = std::make_shared<LocalAudioTrackImpl>(std::move(device), encryption,
@@ -523,7 +523,7 @@ void TransportManagerImpl::onLocalAudioTrackAdded(SignalTarget target,
 void TransportManagerImpl::onLocalVideoTrackAdded(SignalTarget target,
                                                   std::shared_ptr<LocalVideoDeviceImpl> device,
                                                   EncryptionType encryption,
-                                                  rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
+                                                  webrtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver)
 {
     if (SignalTarget::Publisher == target && device && transceiver) {
         auto track = std::make_shared<LocalVideoTrackImpl>(std::move(device), encryption,
@@ -567,7 +567,7 @@ void TransportManagerImpl::onLocalTrackRemoved(SignalTarget target,
 }
 
 void TransportManagerImpl::onLocalDataChannelCreated(SignalTarget target,
-                                                     rtc::scoped_refptr<DataChannel> channel)
+                                                     webrtc::scoped_refptr<DataChannel> channel)
 {
     if (SignalTarget::Publisher == target && channel) {
         const auto label = channel->label();
@@ -624,7 +624,7 @@ void TransportManagerImpl::onNegotiationNeededEvent(SignalTarget target, uint32_
 }
 
 void TransportManagerImpl::onRemoteDataChannelOpened(SignalTarget target,
-                                                     rtc::scoped_refptr<DataChannel> channel)
+                                                     webrtc::scoped_refptr<DataChannel> channel)
 {
     if (SignalTarget::Subscriber == target) {
         // in subscriber primary mode, server side opens sub data channels
@@ -643,8 +643,8 @@ void TransportManagerImpl::onIceCandidateGathered(SignalTarget target,
 }
 
 void TransportManagerImpl::onRemoteTrackAdded(SignalTarget target,
-                                              rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
-                                              const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
+                                              webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+                                              const std::vector<webrtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
 {
     if (SignalTarget::Subscriber == target && receiver) {
         std::string participantSid, streamId, trackId = receiver->id();
@@ -664,7 +664,7 @@ void TransportManagerImpl::onRemoteTrackAdded(SignalTarget target,
 }
 
 void TransportManagerImpl::onRemotedTrackRemoved(SignalTarget target,
-                                                 rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
+                                                 webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver)
 {
     if (SignalTarget::Subscriber == target) {
         _listener.invoke(&TransportManagerListener::onRemotedTrackRemoved, std::move(receiver));

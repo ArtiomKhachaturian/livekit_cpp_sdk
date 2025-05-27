@@ -68,12 +68,12 @@ public:
     // to be displayed correctly on a normally rotated display.
     bool orientation(std::string_view guid, webrtc::VideoRotation& orientation) const;
     bool orientation(const MediaDeviceInfo& info, webrtc::VideoRotation& orientation) const;
-    rtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
-                                                      VideoFrameBufferPool framesPool = {},
-                                                      const std::shared_ptr<Bricks::Logger>& logger = {}) const;
-    rtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev,
-                                                      VideoFrameBufferPool framesPool = {},
-                                                      const std::shared_ptr<Bricks::Logger>& logger = {}) const;
+    webrtc::scoped_refptr<CameraCapturer> createCapturer(std::string_view guid,
+                                                         VideoFrameBufferPool framesPool = {},
+                                                         const std::shared_ptr<Bricks::Logger>& logger = {}) const;
+    webrtc::scoped_refptr<CameraCapturer> createCapturer(const MediaDeviceInfo& dev,
+                                                         VideoFrameBufferPool framesPool = {},
+                                                         const std::shared_ptr<Bricks::Logger>& logger = {}) const;
     bool displaySettingsDialogBox(std::string_view guid,
                                   std::string_view dialogTitleUTF8,
                                   void* parentWindow,

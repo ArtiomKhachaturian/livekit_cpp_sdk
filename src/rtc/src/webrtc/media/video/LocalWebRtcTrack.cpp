@@ -102,15 +102,15 @@ void LocalWebRtcTrack::set_content_hint(ContentHint hint)
     }
 }
 
-void LocalWebRtcTrack::AddOrUpdateSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
-                                       const rtc::VideoSinkWants& wants)
+void LocalWebRtcTrack::AddOrUpdateSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                                       const webrtc::VideoSinkWants& wants)
 {
     if (_source) {
         _source->AddOrUpdateSink(sink, wants);
     }
 }
 
-void LocalWebRtcTrack::RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
+void LocalWebRtcTrack::RemoveSink(webrtc::VideoSinkInterface<webrtc::VideoFrame>* sink)
 {
     if (_source) {
         _source->RemoveSink(sink);

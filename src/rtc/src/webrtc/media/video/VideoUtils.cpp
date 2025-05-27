@@ -81,7 +81,7 @@ extern CodecStatus platformEncoderStatus(webrtc::VideoCodecType type, const webr
 extern CodecStatus platformDecoderStatus(webrtc::VideoCodecType type, const webrtc::CodecParameterMap& parameters);
 #endif
 
-std::optional<webrtc::VideoFrame> createVideoFrame(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
+std::optional<webrtc::VideoFrame> createVideoFrame(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buff,
                                                    webrtc::VideoRotation rotation,
                                                    int64_t timeStampMicro, uint16_t id,
                                                    const std::optional<webrtc::ColorSpace>& colorSpace)

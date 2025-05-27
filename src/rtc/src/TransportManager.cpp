@@ -151,7 +151,7 @@ void TransportManager::addIceCandidate(SignalTarget target, std::unique_ptr<webr
     }
 }
 
-void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void TransportManager::queryStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (callback) {
         if (const auto impl = loadImpl()) {
@@ -160,8 +160,8 @@ void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RTCStatsColle
     }
 }
 
-void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
-                                  const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void TransportManager::queryStats(const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver,
+                                  const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (receiver && callback) {
         if (const auto impl = loadImpl()) {
@@ -170,8 +170,8 @@ void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RtpReceiverIn
     }
 }
 
-void TransportManager::queryStats(const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
-                                  const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
+void TransportManager::queryStats(const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender,
+                                  const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback) const
 {
     if (sender && callback) {
         if (const auto impl = loadImpl()) {

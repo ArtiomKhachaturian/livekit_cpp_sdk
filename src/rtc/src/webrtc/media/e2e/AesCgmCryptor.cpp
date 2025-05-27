@@ -157,14 +157,14 @@ void AesCgmCryptor::Transform(std::unique_ptr<webrtc::TransformableFrameInterfac
     }
 }
 
-void AesCgmCryptor::RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback)
+void AesCgmCryptor::RegisterTransformedFrameCallback(webrtc::scoped_refptr<webrtc::TransformedFrameCallback> callback)
 {
     if (callback) {
         _sink(std::move(callback));
     }
 }
 
-void AesCgmCryptor::RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
+void AesCgmCryptor::RegisterTransformedFrameSinkCallback(webrtc::scoped_refptr<webrtc::TransformedFrameCallback> callback,
                                                          uint32_t ssrc)
 {
     if (callback) {
@@ -238,14 +238,14 @@ void AesCgmCryptor::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
         }
         
         const auto frameHeaderSize = unencryptedBytes(frame.get(), _mediaType);
-        rtc::Buffer frameHeader(frameHeaderSize);
+        webrtc::Buffer frameHeader(frameHeaderSize);
         for (size_t i = 0U; i < frameHeaderSize; i++) {
             frameHeader[i] = dataIn[i];
         }
         
-        rtc::Buffer iv = makeIv(frame->GetSsrc(), frame->GetTimestamp());
+        webrtc::Buffer iv = makeIv(frame->GetSsrc(), frame->GetTimestamp());
         
-        rtc::Buffer payload(dataIn.size() - frameHeaderSize);
+        webrtc::Buffer payload(dataIn.size() - frameHeaderSize);
         for (size_t i = frameHeaderSize; i < dataIn.size(); i++) {
             payload[i - frameHeaderSize] = dataIn[i];
         }
@@ -253,19 +253,19 @@ void AesCgmCryptor::encryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
         std::vector<uint8_t> buffer;
         if (encryptOrDecrypt(true, keySet->_encryptionKey, iv, frameHeader,
                              payload, buffer)) {
-            rtc::Buffer frameTrailer(2U);
+            webrtc::Buffer frameTrailer(2U);
             frameTrailer[0] = ivSize();
             frameTrailer[1] = _keyIndex;
             
-            rtc::Buffer encryptedPayload(buffer.data(), buffer.size());
-            rtc::Buffer tag(encryptedPayload.data() + encryptedPayload.size() - 16, 16);
+            webrtc::Buffer encryptedPayload(buffer.data(), buffer.size());
+            webrtc::Buffer tag(encryptedPayload.data() + encryptedPayload.size() - 16, 16);
             
-            rtc::Buffer dataWithoutHeader;
+            webrtc::Buffer dataWithoutHeader;
             dataWithoutHeader.AppendData(encryptedPayload);
             dataWithoutHeader.AppendData(iv);
             dataWithoutHeader.AppendData(frameTrailer);
 
-            rtc::Buffer dataOut;
+            webrtc::Buffer dataOut;
             dataOut.AppendData(frameHeader);
             if (frameIsH264(frame.get(), _mediaType)) {
                 webrtc::H264::WriteRbsp(dataWithoutHeader, &dataOut);
@@ -331,7 +331,7 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
             if (data == sif) {
                 // magic bytes detected, this is a non-encrypted frame,
                 // skip frame decryption
-                rtc::Buffer dataOut;
+                webrtc::Buffer dataOut;
                 dataOut.AppendData(dataIn.subview(0, dataIn.size() - sif.size()));
                 frame->SetData(dataOut);
                 sink->OnTransformedFrame(std::move(frame));
@@ -340,12 +340,12 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
         }
         
         const auto frameHeaderSize = unencryptedBytes(frame.get(), _mediaType);
-        rtc::Buffer frameHeader(frameHeaderSize);
+        webrtc::Buffer frameHeader(frameHeaderSize);
         for (size_t i = 0U; i < frameHeaderSize; i++) {
             frameHeader[i] = dataIn[i];
         }
         
-        rtc::Buffer frameTrailer(2);
+        webrtc::Buffer frameTrailer(2);
         frameTrailer[0] = dataIn[dataIn.size() - 2];
         frameTrailer[1] = dataIn[dataIn.size() - 1];
         uint8_t ivLength = frameTrailer[0];
@@ -389,12 +389,12 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
             return;
         }
         
-        rtc::Buffer iv(ivLength);
+        webrtc::Buffer iv(ivLength);
         for (size_t i = 0U; i < ivLength; i++) {
             iv[i] = dataIn[dataIn.size() - 2 - ivLength + i];
         }
         
-        rtc::Buffer encryptedBuffer(dataIn.size() - frameHeaderSize);
+        webrtc::Buffer encryptedBuffer(dataIn.size() - frameHeaderSize);
         for (size_t i = frameHeaderSize; i < dataIn.size(); i++) {
             encryptedBuffer[i - frameHeaderSize] = dataIn[i];
         }
@@ -410,12 +410,12 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
             }
         }
         
-        rtc::Buffer encryptedPayload(encryptedBuffer.size() - ivLength - 2);
+        webrtc::Buffer encryptedPayload(encryptedBuffer.size() - ivLength - 2);
         for (size_t i = 0U; i < encryptedPayload.size(); i++) {
             encryptedPayload[i] = encryptedBuffer[i];
         }
 
-        rtc::Buffer tag(encryptedPayload.data() + encryptedPayload.size() - 16, 16);
+        webrtc::Buffer tag(encryptedPayload.data() + encryptedPayload.size() - 16, 16);
         std::vector<uint8_t> buffer;
         auto initialKeyMaterial = keySet->_material;
         bool decryptionSuccess = encryptOrDecrypt(false, keySet->_encryptionKey,
@@ -473,8 +473,8 @@ void AesCgmCryptor::decryptFrame(std::unique_ptr<webrtc::TransformableFrameInter
             return;
         }
         
-        rtc::Buffer payload(buffer.data(), buffer.size());
-        rtc::Buffer dataOut;
+        webrtc::Buffer payload(buffer.data(), buffer.size());
+        webrtc::Buffer dataOut;
         dataOut.AppendData(frameHeader);
         dataOut.AppendData(payload);
         frame->SetData(dataOut);
@@ -573,7 +573,7 @@ bool AesCgmCryptor::encryptOrDecrypt(bool encrypt,
     return true;
 }
 
-rtc::Buffer AesCgmCryptor::makeIv(uint32_t ssrc, uint32_t timestamp)
+webrtc::Buffer AesCgmCryptor::makeIv(uint32_t ssrc, uint32_t timestamp)
 {
     uint32_t sendCount = 0U;
     const auto it = _sendCounts.find(ssrc);
@@ -584,13 +584,13 @@ rtc::Buffer AesCgmCryptor::makeIv(uint32_t ssrc, uint32_t timestamp)
     else {
         sendCount = it->second;
     }
-    rtc::ByteBufferWriter buf;
+    webrtc::ByteBufferWriter buf;
     buf.WriteUInt32(ssrc);
     buf.WriteUInt32(timestamp);
     buf.WriteUInt32(timestamp - (sendCount % 0xFFFF));
     _sendCounts[ssrc] = sendCount + 1;
     RTC_CHECK_EQ(buf.Length(), ivSize());
-    return rtc::Buffer(buf.Data(), buf.Length());
+    return webrtc::Buffer(buf.Data(), buf.Length());
 }
 
 std::optional<E2ECryptoError> toCryptoError(AesCgmCryptorState state)

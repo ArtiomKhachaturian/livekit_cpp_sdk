@@ -68,10 +68,10 @@ public:
     bool removeTrack(const std::string& id);
     void addIceCandidate(std::unique_ptr<webrtc::IceCandidateInterface> candidate);
     // stats
-    void queryReceiverStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
-                            const rtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver = {}) const;
-    void querySenderStats(const rtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
-                          const rtc::scoped_refptr<webrtc::RtpSenderInterface>& sender = {}) const;
+    void queryReceiverStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                            const webrtc::scoped_refptr<webrtc::RtpReceiverInterface>& receiver = {}) const;
+    void querySenderStats(const webrtc::scoped_refptr<webrtc::RTCStatsCollectorCallback>& callback,
+                          const webrtc::scoped_refptr<webrtc::RtpSenderInterface>& sender = {}) const;
     // SDP manipulations
     void createOffer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
     void createAnswer(const webrtc::PeerConnectionInterface::RTCOfferAnswerOptions& options = {});
@@ -87,9 +87,9 @@ public:
     bool iceConnected() const noexcept;
     bool closed() const noexcept;
     // sync getters
-    std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> transceivers() const;
-    std::vector<rtc::scoped_refptr<webrtc::RtpReceiverInterface>> receivers() const;
-    std::vector<rtc::scoped_refptr<webrtc::RtpSenderInterface>> senders() const;
+    std::vector<webrtc::scoped_refptr<webrtc::RtpTransceiverInterface>> transceivers() const;
+    std::vector<webrtc::scoped_refptr<webrtc::RtpReceiverInterface>> receivers() const;
+    std::vector<webrtc::scoped_refptr<webrtc::RtpSenderInterface>> senders() const;
     // audio
     // Enable/disable playout of received audio streams. Enabled by default. Note
     // that even if playout is enabled, streams will only be played out if the

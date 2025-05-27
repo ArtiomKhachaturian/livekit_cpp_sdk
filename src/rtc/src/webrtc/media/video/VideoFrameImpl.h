@@ -24,7 +24,7 @@ class VideoFrameImpl : public VideoFrame
 {
 public:
     static std::shared_ptr<VideoFrame> create(const webrtc::VideoFrame& frame);
-    static std::shared_ptr<VideoFrame> create(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
+    static std::shared_ptr<VideoFrame> create(webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer,
                                               webrtc::VideoRotation rotation = webrtc::VideoRotation::kVideoRotation_0,
                                               int64_t timestampUs = 0);
     static std::optional<webrtc::VideoFrame> create(const std::shared_ptr<VideoFrame>& frame,
@@ -38,11 +38,11 @@ public:
     int dataSize(size_t planeIndex) const final;
 private:
     VideoFrameImpl(VideoFrameType type, int rotation, int64_t timestampUs,
-                   rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
-    static std::optional<VideoFrameType> detectType(const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
+                   webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
+    static std::optional<VideoFrameType> detectType(const webrtc::scoped_refptr<webrtc::VideoFrameBuffer>& buffer);
     static int mapFromRtc(webrtc::VideoRotation rotation);
     static webrtc::VideoRotation mapToRtc(int rotation);
-    static rtc::scoped_refptr<webrtc::VideoFrameBuffer> map(rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
+    static webrtc::scoped_refptr<webrtc::VideoFrameBuffer> map(webrtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer);
     static int stride(size_t planeIndex, const webrtc::PlanarYuvBuffer* buffer);
     static int stride(size_t planeIndex, const webrtc::BiplanarYuvBuffer* buffer);
     static const std::byte* data(size_t planeIndex, const webrtc::PlanarYuv8Buffer* buffer);
@@ -56,7 +56,7 @@ private:
     static int dataSizeI410(size_t planeIndex, const webrtc::I410BufferInterface* buffer);
     static int dataSizeNV12(size_t planeIndex, const webrtc::NV12BufferInterface* buffer);
 private:
-    const rtc::scoped_refptr<webrtc::VideoFrameBuffer> _buffer;
+    const webrtc::scoped_refptr<webrtc::VideoFrameBuffer> _buffer;
 };
 
 } // namespace LiveKitCpp
