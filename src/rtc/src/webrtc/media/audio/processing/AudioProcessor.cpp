@@ -144,22 +144,24 @@ void AudioProcessor::RnDenoiser::denoiseChannel(float* channel, size_t numFrames
 {
     if (channel && numFrames) {
         const auto maxFrames = rnnoise_get_frame_size();
-        if (numFrames == maxFrames) {
-            rnnoise_process_frame(_state, channel, channel);
-        }
-        else {
-            static thread_local std::vector<float> processingBuffer;
-            processingBuffer.resize(maxFrames);
-            if (numFrames < maxFrames) {
-                const auto size = sizeof(float) * numFrames;
-                std::memcpy(processingBuffer.data(), channel, size);
+        // sliding window
+        for (size_t i = 0U; i < numFrames; i += maxFrames) {
+            const auto data = channel + (sizeof(float) * i);
+            if (numFrames - i < maxFrames) {
+                const auto rest = numFrames - i;
+                const auto size = sizeof(float) * rest;
+                std::vector<float> processingBuffer;
+                processingBuffer.resize(maxFrames);
+                // copy source data to processing buffer
+                std::memcpy(processingBuffer.data(), data, size);
+                // padding zero
                 std::memset(processingBuffer.data() + size, 0, processingBuffer.size() - size);
                 rnnoise_process_frame(_state, processingBuffer.data(), processingBuffer.data());
+                // copy processed data to source buffer
+                std::memcpy(data, processingBuffer.data(), size);
             }
             else {
-                // sliding window
-                // not yet implemented
-                RTC_DCHECK_NOTREACHED();
+                rnnoise_process_frame(_state, data, data);
             }
         }
     }
