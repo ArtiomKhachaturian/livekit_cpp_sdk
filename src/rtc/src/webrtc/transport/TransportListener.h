@@ -212,9 +212,8 @@ public:
      * to become invalidated by subsequently chained operations.
      *
      * @param target The target of the signal.
-     * @param eventId The event ID.
      */
-    virtual void onNegotiationNeededEvent(SignalTarget /*target*/, uint32_t /*eventId*/) {}
+    virtual void onNegotiationNeededEvent(SignalTarget /*target*/) {}
 
     /**
      * @brief Triggered when media is received on a new stream from a remote peer.

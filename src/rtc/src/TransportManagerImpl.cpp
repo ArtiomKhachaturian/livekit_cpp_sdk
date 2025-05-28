@@ -107,7 +107,14 @@ void TransportManagerImpl::negotiate(bool force)
 {
     // if publish only, negotiate
     if (force || canNegotiate()) {
-        createPublisherOffer();
+        if (_negotiationDelay) {
+            cancelNegotiationTimer();
+            _negotiationTimer.singleShot([this](){ createPublisherOffer(); },
+                                         _negotiationDelay, _negotiationTimerId);
+        }
+        else {
+            createPublisherOffer();
+        }
     }
 }
 
@@ -236,9 +243,9 @@ void TransportManagerImpl::setAudioRecording(bool recording)
 
 void TransportManagerImpl::close()
 {
+    cancelNegotiationTimer();
     _publisher.close();
     _subscriber.close();
-    cancelNegotiationTimer();
     stopPing();
     remove<webrtc::MediaType::AUDIO>(_audioTracks);
     remove<webrtc::MediaType::VIDEO>(_videoTracks);
@@ -477,18 +484,8 @@ void TransportManagerImpl::onSdpSet(SignalTarget target, bool local,
             }
         }
     }
-    else { // remote
-        switch (target) {
-            case SignalTarget::Publisher: // see [setRemoteAnswer]
-                if (!canNegotiate()) {
-                    createPublisherOffer();
-                }
-                break;
-            case SignalTarget::Subscriber: // see [setRemoteOffer]
-                _subscriber.createAnswer();
-                break;
-                
-        }
+    else if (SignalTarget::Subscriber == target) { // remote
+        _subscriber.createAnswer();
     }
 }
 
@@ -516,6 +513,7 @@ void TransportManagerImpl::onLocalAudioTrackAdded(SignalTarget target,
             LOCK_WRITE_SAFE_OBJ(_audioTracks);
             _audioTracks->insert(std::make_pair(track->id(), track));
         }
+        negotiate(true);
         _listener.invoke(&TransportManagerListener::onLocalAudioTrackAdded, track);
     }
 }
@@ -533,6 +531,7 @@ void TransportManagerImpl::onLocalVideoTrackAdded(SignalTarget target,
             LOCK_WRITE_SAFE_OBJ(_videoTracks);
             _videoTracks->insert(std::make_pair(track->id(), track));
         }
+        negotiate(true);
         _listener.invoke(&TransportManagerListener::onLocalVideoTrackAdded, track);
     }
 }
@@ -553,6 +552,7 @@ void TransportManagerImpl::onLocalTrackRemoved(SignalTarget target,
                                                const std::vector<std::string>&)
 {
     if (SignalTarget::Publisher == target) {
+        negotiate(true);
         switch (type) {
             case webrtc::MediaType::AUDIO:
                 remove<webrtc::MediaType::AUDIO>(id, _audioTracks);
@@ -605,21 +605,6 @@ void TransportManagerImpl::onSignalingChange(SignalTarget target,
 {
     if (isPrimary(target)) {
         updateState();
-    }
-}
-
-void TransportManagerImpl::onNegotiationNeededEvent(SignalTarget target, uint32_t /*eventId*/)
-{
-    if (SignalTarget::Publisher == target && localDataChannelsAreCreated() && !closed()) {
-        if (_negotiationDelay) {
-            cancelNegotiationTimer();
-            _negotiationTimer.singleShot([this](){
-                _listener.invoke(&TransportManagerListener::onNegotiationNeeded);
-            }, _negotiationDelay, _negotiationTimerId);
-        }
-        else {
-            _listener.invoke(&TransportManagerListener::onNegotiationNeeded);
-        }
     }
 }
 

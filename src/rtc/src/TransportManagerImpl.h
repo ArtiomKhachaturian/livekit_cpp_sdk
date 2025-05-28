@@ -42,7 +42,7 @@ public:
                          bool disableAudioRed,
                          int32_t pingTimeout,
                          int32_t pingInterval,
-                         uint64_t negotiationDelay, // ms
+                         uint64_t negotiationDelay,
                          std::vector<TrackInfo> tracksInfo,
                          const webrtc::scoped_refptr<PeerConnectionFactory>& pcf,
                          const webrtc::PeerConnectionInterface::RTCConfiguration& conf,
@@ -114,7 +114,6 @@ private:
     void onConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::PeerConnectionState) final;
     void onIceConnectionChange(SignalTarget, webrtc::PeerConnectionInterface::IceConnectionState) final;
     void onSignalingChange(SignalTarget, webrtc::PeerConnectionInterface::SignalingState) final;
-    void onNegotiationNeededEvent(SignalTarget target, uint32_t eventId) final;
     void onRemoteDataChannelOpened(SignalTarget target,
                                    webrtc::scoped_refptr<DataChannel> channel) final;
     void onIceCandidateGathered(SignalTarget target, const webrtc::IceCandidateInterface* candidate) final;

@@ -143,15 +143,24 @@ void AudioProcessor::RnDenoiser::denoise(webrtc::AudioBuffer* buffer)
 void AudioProcessor::RnDenoiser::denoiseChannel(float* channel, size_t numFrames)
 {
     if (channel && numFrames) {
-        if (numFrames == rnnoise_get_frame_size()) {
+        const auto maxFrames = rnnoise_get_frame_size();
+        if (numFrames == maxFrames) {
             rnnoise_process_frame(_state, channel, channel);
         }
         else {
-            // sliding window
             static thread_local std::vector<float> processingBuffer;
-            processingBuffer.resize(rnnoise_get_frame_size());
-            // not yet implemented
-            RTC_DCHECK_NOTREACHED();
+            processingBuffer.resize(maxFrames);
+            if (numFrames < maxFrames) {
+                const auto size = sizeof(float) * numFrames;
+                std::memcpy(processingBuffer.data(), channel, size);
+                std::memset(processingBuffer.data() + size, 0, processingBuffer.size() - size);
+                rnnoise_process_frame(_state, processingBuffer.data(), processingBuffer.data());
+            }
+            else {
+                // sliding window
+                // not yet implemented
+                RTC_DCHECK_NOTREACHED();
+            }
         }
     }
 }

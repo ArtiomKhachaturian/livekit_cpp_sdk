@@ -122,7 +122,6 @@ private:
    // webrtc::scoped_refptr<webrtc::MediaStreamTrackInterface> localTrack(const std::string& id, bool cid) const;
     SendResult sendAddTrack(AddTrackRequest request) const;
     SendResult sendMuteTrack(MuteTrackRequest request) const;
-    SendResult sendUpdateLocalAudioTrack(UpdateLocalAudioTrack request) const;
     bool closed() const;
     template <class Method, typename... Args>
     void notify(const Method& method, Args&&... args) const;
@@ -195,7 +194,6 @@ private:
                             std::string trackId, std::string participantSid) final;
     void onRemotedTrackRemoved(webrtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver) final;
     void onSdpOperationFailed(SignalTarget, webrtc::RTCError error) final;
-    void onNegotiationNeeded() final;
     void onPublisherOffer(std::string type, std::string sdp) final;
     void onSubscriberAnswer(std::string type, std::string sdp) final;
     void onIceCandidateGathered(SignalTarget target, std::string sdpMid,

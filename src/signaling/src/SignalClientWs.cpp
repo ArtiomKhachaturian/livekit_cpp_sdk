@@ -34,7 +34,7 @@ const std::string g_libraryVersion(PROJECT_VERSION);
 
 inline std::string urlQueryItem(const std::string& key, const std::string& val) {
     if (!key.empty() && !val.empty()) {
-        return "&" + key + "=" + val;
+        return key + "=" + val;
     }
     return {};
 }
@@ -59,6 +59,19 @@ enum class ChangeTransportStateResult
     NotChanged,
     Rejected
 };
+
+inline std::string formatHost(std::string addr, std::string token) {
+    if (!addr.empty()) {
+        // see example in https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Support/Utils.swift#L138
+        if ('/' != addr.back()) {
+            addr += '/';
+        }
+        if (!token.empty()) {
+            addr += "rtc?access_token=" + token;
+        }
+    }
+    return addr;
+}
 
 }
 
@@ -309,50 +322,47 @@ Websocket::Options SignalClientWs::UrlData::buildOptions() const
 {
     Websocket::Options options;
     auto host = _host();
-    const auto authToken = _authToken();
+    auto authToken = _authToken();
     if (!host.empty() && !authToken.empty()) {
-        // see example in https://github.com/livekit/client-sdk-swift/blob/main/Sources/LiveKit/Support/Utils.swift#L138
-        options._host = std::move(host);
-        if ('/' != options._host.back()) {
-            options._host += '/';
-        }
-        options._host += "rtc?access_token=" + authToken;
-        options._host += urlQueryItem("auto_subscribe", _autoSubscribe.load());
-        options._host += urlQueryItem("adaptive_stream", _adaptiveStream.load());
-        options._host += urlQueryItem("publish", _publish());
+        std::vector<std::string> data;
+        data.push_back(formatHost(std::move(host), std::move(authToken)));
+        data.push_back(urlQueryItem("auto_subscribe", _autoSubscribe.load()));
+        data.push_back(urlQueryItem("adaptive_stream", _adaptiveStream.load()));
+        data.push_back(urlQueryItem("publish", _publish()));
         // only for quick-reconnect
         const auto participantSid = _participantSid();
         if (!participantSid.empty()) {
-            options._host += urlQueryItem("reconnect", 1);
-            options._host += urlQueryItem("sid", participantSid);
+            data.push_back(urlQueryItem("reconnect", 1));
+            data.push_back(urlQueryItem("sid", participantSid));
         }
         LOCK_READ_SAFE_OBJ(_clientInfo);
         if (const auto ci = _clientInfo.constRef()) {
-            options._host += urlQueryItem("sdk", toString(ci->_sdk));
-            options._host += urlQueryItem("version", ci->_version);
-            options._host += urlQueryItem("protocol", ci->_protocol > 0 ?
-                                          ci->_protocol : LIVEKIT_PROTOCOL_VERSION);
-            options._host += urlQueryItem("os", ci->_os.empty() ?
-                                          operatingSystemName() : ci->_os);
-            options._host += urlQueryItem("os_version", ci->_osVersion.empty() ?
-                                          operatingSystemVersionString() : ci->_osVersion);
-            options._host += urlQueryItem("device_model", ci->_deviceModel.empty() ?
-                                          modelIdentifier() : ci->_deviceModel);
+            data.push_back(urlQueryItem("sdk", toString(ci->_sdk)));
+            data.push_back(urlQueryItem("version", ci->_version));
+            data.push_back(urlQueryItem("protocol", ci->_protocol > 0 ?
+                                        ci->_protocol : LIVEKIT_PROTOCOL_VERSION));
+            data.push_back(urlQueryItem("os", ci->_os.empty() ?
+                                        operatingSystemName() : ci->_os));
+            data.push_back(urlQueryItem("os_version", ci->_osVersion.empty() ?
+                                        operatingSystemVersionString() : ci->_osVersion));
+            data.push_back(urlQueryItem("device_model", ci->_deviceModel.empty() ?
+                                        modelIdentifier() : ci->_deviceModel));
             auto network = ci->_network;
             if (network.empty()) {
                 network = toString(activeNetworkType());
             }
-            options._host += urlQueryItem("network", network);
+            data.push_back(urlQueryItem("network", network));
         }
         else {
-            options._host += urlQueryItem("sdk", toString(SDK::CPP));
-            options._host += urlQueryItem("version", g_libraryVersion);
-            options._host += urlQueryItem("protocol", LIVEKIT_PROTOCOL_VERSION);
-            options._host += urlQueryItem("os", operatingSystemName());
-            options._host += urlQueryItem("os_version", operatingSystemVersionString());
-            options._host += urlQueryItem("device_model", modelIdentifier());
-            options._host += urlQueryItem("network", toString(activeNetworkType()));
+            data.push_back(urlQueryItem("sdk", toString(SDK::CPP)));
+            data.push_back(urlQueryItem("version", g_libraryVersion));
+            data.push_back(urlQueryItem("protocol", LIVEKIT_PROTOCOL_VERSION));
+            data.push_back(urlQueryItem("os", operatingSystemName()));
+            data.push_back(urlQueryItem("os_version", operatingSystemVersionString()));
+            data.push_back(urlQueryItem("device_model", modelIdentifier()));
+            data.push_back(urlQueryItem("network", toString(activeNetworkType())));
         }
+        options._host = join(data, "&");
     }
     return options;
 }

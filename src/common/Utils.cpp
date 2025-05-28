@@ -89,9 +89,9 @@ std::string operatingSystemVersionString(bool withPatchVersion)
 std::string operatingSystemName()
 {
 #ifdef __APPLE__
-    return "macos";
+    return "macOS";
 #elif defined(_WIN32)
-    return "windows";
+    return "Windows";
 #else
     static_assert(false, "not yet implemented");
 #endif

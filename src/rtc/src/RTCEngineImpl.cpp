@@ -257,11 +257,6 @@ RTCEngineImpl::SendResult RTCEngineImpl::sendMuteTrack(MuteTrackRequest request)
     return sendRequestToServer(&SignalClient::sendMuteTrack, std::move(request));
 }
 
-RTCEngineImpl::SendResult RTCEngineImpl::sendUpdateLocalAudioTrack(UpdateLocalAudioTrack request) const
-{
-    return sendRequestToServer(&SignalClient::sendUpdateAudioTrack, std::move(request));
-}
-
 bool RTCEngineImpl::closed() const
 {
     if (TransportState::Connected != _client.transportState()) {
@@ -357,7 +352,7 @@ webrtc::PeerConnectionInterface::RTCConfiguration RTCEngineImpl::
     webrtc::PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
     // enable ICE renomination, like on Android (   "a=ice-options:trickle renomination")
-    //config.enable_ice_renomination = true;
+    config.enable_ice_renomination = true;
     if (cc.has_value() && ClientConfigSetting::Enabled  == cc->_forceRelay) {
         config.type = webrtc::PeerConnectionInterface::kRelay;
     }
@@ -445,7 +440,7 @@ void RTCEngineImpl::changeState(TransportState state)
 void RTCEngineImpl::createTransportManager(const JoinResponse& response,
                                            const webrtc::PeerConnectionInterface::RTCConfiguration& conf)
 {
-    const auto negotiationDelay = std::min<uint64_t>(_options._negotiationDelay.count(), 100ULL);
+    const auto negotiationDelay = std::min<uint64_t>(_options._negotiationDelay.count(), 50ULL);
     auto pcManager = std::make_shared<TransportManager>(response._subscriberPrimary,
                                                         response._fastPublish,
                                                         _disableAudioRed,
@@ -629,23 +624,6 @@ void RTCEngineImpl::onTrackPublished(TrackPublishedResponse published)
             const auto muted = t->muted();
             if (muted != published._track._muted) {
                 notifyAboutMuteChanges(published._track._sid, muted);
-            }
-            switch (published._track._type) {
-                case TrackType::Audio:
-                    if (const auto audio = std::dynamic_pointer_cast<AudioTrack>(t)) {
-                        auto features = audio->features();
-                        if (!features.empty()) {
-                            UpdateLocalAudioTrack request;
-                            request._trackSid = published._track._sid;
-                            request._features = std::move(features);
-                            sendUpdateLocalAudioTrack(std::move(request));
-                        }
-                    }
-                    break;
-                case TrackType::Video:
-                    break;
-                default:
-                    break;
             }
         }
     }
@@ -872,13 +850,6 @@ void RTCEngineImpl::onSdpOperationFailed(SignalTarget, webrtc::RTCError error)
 {
     sendLeave();
     cleanup(LiveKitError::RTC, error.message());
-}
-
-void RTCEngineImpl::onNegotiationNeeded()
-{
-    if (const auto pcManager = std::atomic_load(&_pcManager)) {
-        pcManager->negotiate(true);
-    }
 }
 
 void RTCEngineImpl::onPublisherOffer(std::string type, std::string sdp)

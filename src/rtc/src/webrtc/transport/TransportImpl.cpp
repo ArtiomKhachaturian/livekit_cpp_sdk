@@ -161,7 +161,9 @@ void TransportImpl::OnDataChannel(webrtc::scoped_refptr<webrtc::DataChannelInter
 
 void TransportImpl::OnNegotiationNeededEvent(uint32_t eventId)
 {
-    notify(&TransportListener::onNegotiationNeededEvent, eventId);
+    if (_pc->ShouldFireNegotiationNeededEvent(eventId)) {
+        notify(&TransportListener::onNegotiationNeededEvent);
+    }
 }
 
 void TransportImpl::OnStandardizedIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState newState)
