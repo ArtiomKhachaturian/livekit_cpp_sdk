@@ -14,10 +14,11 @@
 #include "AudioProcessingBuilder.h"
 #include "ControlledAudioProcessor.h"
 #ifdef USE_RN_NOISE_SUPPRESSOR
-#include "AudioProcessor.h"
+#include "RnNoiseAudioProcessor.h"
 #endif
 #include "Utils.h"
 #include <api/make_ref_counted.h>
+#include <api/field_trials_view.h>
 
 namespace LiveKitCpp
 {
@@ -35,7 +36,9 @@ absl::Nullable<webrtc::scoped_refptr<webrtc::AudioProcessing>>
     auto processing = _default.Build(env);
     if (processing) {
 #ifdef USE_RN_NOISE_SUPPRESSOR
-        processing = webrtc::make_ref_counted<AudioProcessor>(std::move(processing));
+        if (env.field_trials().IsEnabled("WebRTC-RNNoiseSuppressor")) {
+            processing = webrtc::make_ref_counted<RnNoiseAudioProcessor>(std::move(processing));
+        }
 #endif
         return webrtc::make_ref_counted<ControlledAudioProcessor>(std::move(processing), _controller);
     }

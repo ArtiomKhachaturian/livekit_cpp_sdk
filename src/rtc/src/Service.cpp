@@ -1098,6 +1098,9 @@ std::unique_ptr<webrtc::FieldTrialsView> Service::Impl::createTrials(const Servi
         trials->setEnabled("WebRTC-FlexFEC-03", true);
         trials->setEnabled("WebRTC-FlexFEC-03-Advertised", true);
     }
+    if (initInfo._enableRNNoiseSuppressor) {
+        trials->setEnabled("WebRTC-RNNoiseSuppressor", true);
+    }
     if (trials->empty()) {
         trials.reset();
     }

@@ -30,6 +30,8 @@ struct ServiceInitInfo
     bool _enableFlexFec = false; // WebRTC-FlexFEC-03 + WebRTC-FlexFEC-03-Advertised
     // true if RED (Redundant Encoding) is disabled for audio
     std::optional<bool> _disableAudioRed;
+    // https://jmvalin.ca/demo/rnnoise/
+    bool _enableRNNoiseSuppressor = true;
 };
 
 } // namespace LiveKitCpp

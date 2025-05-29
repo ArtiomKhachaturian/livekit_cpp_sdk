@@ -12,19 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #ifdef USE_RN_NOISE_SUPPRESSOR
-#include "AudioProcessor.h"
+#include "RnNoiseAudioProcessor.h"
 #include "rnnoise.h"
 #include <modules/audio_processing/audio_buffer.h>
 #include <rtc_base/checks.h>
 
+namespace
+{
+
+inline webrtc::AudioBuffer makeBuffer(const webrtc::StreamConfig& config) {
+    return webrtc::AudioBuffer(config.sample_rate_hz(), config.num_channels(),
+                               config.sample_rate_hz(), config.num_channels(),
+                               config.sample_rate_hz(), config.num_channels());
+}
+
+}
+
 namespace LiveKitCpp
 {
 
-class AudioProcessor::RnDenoiser
+class RnNoiseAudioProcessor::Denoiser
 {
 public:
-    RnDenoiser();
-    ~RnDenoiser();
+    Denoiser();
+    ~Denoiser();
     void process(const int16_t* src, const webrtc::StreamConfig& config);
     void process(const float* const* src, const webrtc::StreamConfig& config);
 private:
@@ -34,17 +45,17 @@ private:
     DenoiseState* const _state;
 };
 
-AudioProcessor::AudioProcessor(webrtc::scoped_refptr<webrtc::AudioProcessing> impl)
-    : AudioProcessingWrapper(std::move(impl))
+RnNoiseAudioProcessor::RnNoiseAudioProcessor(webrtc::scoped_refptr<webrtc::AudioProcessing> standardProcessing)
+    : AudioProcessingWrapper(std::move(standardProcessing))
 {
 }
 
-AudioProcessor::~AudioProcessor()
+RnNoiseAudioProcessor::~RnNoiseAudioProcessor()
 {
     destroyDenoiser();
 }
 
-void AudioProcessor::ApplyConfig(const webrtc::AudioProcessing::Config& config)
+void RnNoiseAudioProcessor::ApplyConfig(const webrtc::AudioProcessing::Config& config)
 {
     AudioProcessingWrapper::ApplyConfig(config);
     if (config.noise_suppression.enabled) {
@@ -55,10 +66,10 @@ void AudioProcessor::ApplyConfig(const webrtc::AudioProcessing::Config& config)
     }
 }
 
-int AudioProcessor::ProcessStream(const int16_t* const src,
-                                  const webrtc::StreamConfig& inputConfig,
-                                  const webrtc::StreamConfig& outputConfig,
-                                  int16_t* const dest)
+int RnNoiseAudioProcessor::ProcessStream(const int16_t* const src,
+                                         const webrtc::StreamConfig& inputConfig,
+                                         const webrtc::StreamConfig& outputConfig,
+                                         int16_t* const dest)
 {
     if (src) {
         LOCK_READ_SAFE_OBJ(_denoiser);
@@ -69,10 +80,10 @@ int AudioProcessor::ProcessStream(const int16_t* const src,
     return AudioProcessingWrapper::ProcessStream(src, inputConfig, outputConfig, dest);
 }
 
-int AudioProcessor::ProcessStream(const float* const* src,
-                                  const webrtc::StreamConfig& inputConfig,
-                                  const webrtc::StreamConfig& outputConfig,
-                                  float* const* dest)
+int RnNoiseAudioProcessor::ProcessStream(const float* const* src,
+                                         const webrtc::StreamConfig& inputConfig,
+                                         const webrtc::StreamConfig& outputConfig,
+                                         float* const* dest)
 {
     if (src) {
         LOCK_READ_SAFE_OBJ(_denoiser);
@@ -83,54 +94,52 @@ int AudioProcessor::ProcessStream(const float* const* src,
     return AudioProcessingWrapper::ProcessStream(src, inputConfig, outputConfig, dest);
 }
 
-void AudioProcessor::createDenoiser()
+void RnNoiseAudioProcessor::createDenoiser()
 {
     LOCK_WRITE_SAFE_OBJ(_denoiser);
     if (!_denoiser.constRef()) {
-        _denoiser = std::make_unique<RnDenoiser>();
+        _denoiser = std::make_unique<Denoiser>();
     }
 }
 
-void AudioProcessor::destroyDenoiser()
+void RnNoiseAudioProcessor::destroyDenoiser()
 {
     _denoiser({});
 }
 
-AudioProcessor::RnDenoiser::RnDenoiser()
+RnNoiseAudioProcessor::Denoiser::Denoiser()
     : _state(rnnoise_create(nullptr))
 {
 }
 
-AudioProcessor::RnDenoiser::~RnDenoiser()
+RnNoiseAudioProcessor::Denoiser::~Denoiser()
 {
     rnnoise_destroy(_state);
 }
 
-void AudioProcessor::RnDenoiser::process(const int16_t* src, const webrtc::StreamConfig& config)
+void RnNoiseAudioProcessor::Denoiser::process(const int16_t* src,
+                                              const webrtc::StreamConfig& config)
 {
     if (src) {
-        webrtc::AudioBuffer buffer(config.sample_rate_hz(), config.num_channels(),
-                                   config.sample_rate_hz(), config.num_channels(),
-                                   config.sample_rate_hz(), config.num_channels());
+        auto buffer = makeBuffer(config);
         buffer.CopyFrom(src, config);
         denoise(&buffer);
         buffer.CopyTo(config, const_cast<int16_t*>(src));
     }
 }
 
-void AudioProcessor::RnDenoiser::process(const float* const* src, const webrtc::StreamConfig& config)
+void RnNoiseAudioProcessor::Denoiser::process(const float* const* src,
+                                              const webrtc::StreamConfig& config)
 {
     if (src) {
-        webrtc::AudioBuffer buffer(config.sample_rate_hz(), config.num_channels(),
-                                   config.sample_rate_hz(), config.num_channels(),
-                                   config.sample_rate_hz(), config.num_channels());
+        auto buffer = makeBuffer(config);
         buffer.CopyFrom(src, config);
         denoise(&buffer);
         buffer.CopyTo(config, const_cast<float**>(src));
     }
 }
 
-void AudioProcessor::RnDenoiser::denoise(webrtc::AudioBuffer* buffer)
+void RnNoiseAudioProcessor::Denoiser::denoise(webrtc::AudioBuffer* buffer)
 {
     if (buffer) {
         const size_t numFrames = buffer->num_frames();
@@ -140,7 +149,7 @@ void AudioProcessor::RnDenoiser::denoise(webrtc::AudioBuffer* buffer)
     }
 }
 
-void AudioProcessor::RnDenoiser::denoiseChannel(float* channel, size_t numFrames)
+void RnNoiseAudioProcessor::Denoiser::denoiseChannel(float* channel, size_t numFrames)
 {
     if (channel && numFrames) {
         const auto maxFrames = rnnoise_get_frame_size();

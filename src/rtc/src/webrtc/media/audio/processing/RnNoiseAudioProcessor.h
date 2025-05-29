@@ -23,12 +23,12 @@ class AudioBuffer;
 namespace LiveKitCpp
 {
 
-class AudioProcessor : public AudioProcessingWrapper
+class RnNoiseAudioProcessor : public AudioProcessingWrapper
 {
-    class RnDenoiser;
+    class Denoiser;
 public:
-    AudioProcessor(webrtc::scoped_refptr<webrtc::AudioProcessing> impl);
-    ~AudioProcessor() override;
+    RnNoiseAudioProcessor(webrtc::scoped_refptr<webrtc::AudioProcessing> standardProcessing);
+    ~RnNoiseAudioProcessor() override;
     // overrides of AudioProcessingWrapper
     void ApplyConfig(const webrtc::AudioProcessing::Config& config) final;
     int ProcessStream(const int16_t* const src,
@@ -43,7 +43,7 @@ private:
     void createDenoiser();
     void destroyDenoiser();
 private:
-    Bricks::SafeUniquePtr<RnDenoiser> _denoiser;
+    Bricks::SafeUniquePtr<Denoiser> _denoiser;
 };
 
 } // namespace LiveKitCpp
