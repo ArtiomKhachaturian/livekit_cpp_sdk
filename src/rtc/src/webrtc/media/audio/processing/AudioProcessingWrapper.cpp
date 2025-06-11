@@ -82,7 +82,6 @@ int AudioProcessingWrapper::ProcessStream(const int16_t* const src,
                                           const webrtc::StreamConfig& outputConfig,
                                           int16_t* const dest)
 {
-    int result = kNullPointerError;
     if (_impl) {
         return _impl->ProcessStream(src, inputConfig, outputConfig, dest);
     }

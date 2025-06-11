@@ -26,8 +26,8 @@ echo "Set path of depot tools to sys PATH variable - $depot_tools_path"
 export PATH=$depot_tools_path:$PATH
 
 # https://chromiumdash.appspot.com/releases?platform=Mac
-# stable 136
-release_revision=2c8f5be6924d507ee74191b1aeadcec07f747f21
+# stable 137.0.7151.68
+release_revision=cec4daea7ed5da94fc38d790bd12694c86865447
 
 echo "Fetch WebRTC sources, revision $release_revision"
 fetch --nohooks webrtc

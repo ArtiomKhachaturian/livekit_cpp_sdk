@@ -14,18 +14,12 @@
 #pragma once // AudioProcessingBuilder.h
 #include "AudioProcessingController.h"
 #include <api/audio/builtin_audio_processing_builder.h>
-#include <rtc_base/weak_ptr.h>
-#include <atomic>
-#include <list>
 
 namespace LiveKitCpp
 {
 
-class AudioProcessingWrapper;
-
 class AudioProcessingBuilder : public webrtc::AudioProcessingBuilderInterface
 {
-    using ProcessingList = std::list<webrtc::scoped_refptr<AudioProcessingWrapper>>;
 public:
     AudioProcessingBuilder(const AudioProcessingController& controller);
     ~AudioProcessingBuilder() override;

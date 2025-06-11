@@ -152,7 +152,7 @@ void RnNoiseAudioProcessor::Denoiser::denoise(webrtc::AudioBuffer* buffer)
 void RnNoiseAudioProcessor::Denoiser::denoiseChannel(float* channel, size_t numFrames)
 {
     if (channel && numFrames) {
-        const auto maxFrames = rnnoise_get_frame_size();
+        const size_t maxFrames = static_cast<size_t>(rnnoise_get_frame_size());
         // sliding window
         for (size_t i = 0U; i < numFrames; i += maxFrames) {
             const auto data = channel + (sizeof(float) * i);

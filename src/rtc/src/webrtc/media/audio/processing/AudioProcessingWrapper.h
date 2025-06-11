@@ -14,7 +14,6 @@
 #pragma once // AudioProcessingWrapper.h
 #include <api/audio/audio_processing.h>
 #include <modules/audio_processing/include/aec_dump.h>
-#include <atomic>
 
 namespace LiveKitCpp
 {

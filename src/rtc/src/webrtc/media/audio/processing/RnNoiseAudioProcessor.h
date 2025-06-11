@@ -16,10 +16,6 @@
 #include "AudioProcessingWrapper.h"
 #include "SafeObjAliases.h"
 
-namespace webrtc {
-class AudioBuffer;
-}
-
 namespace LiveKitCpp
 {
 
