@@ -1,0 +1,4 @@
+How to fix protoc launch error (on Mac, 'Killed: 9'):
+1. Open terminal and go to the folder with protoc executable (/protobuf/bin/):
+2. Run the next command: > codesign --sign - --force --preserve-metadata=entitlements,requirements,flags,runtime ./protoc
+3. Check the output, it should be: './protoc: replacing existing signature'
